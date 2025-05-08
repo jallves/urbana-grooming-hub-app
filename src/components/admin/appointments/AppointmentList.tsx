@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -78,11 +78,7 @@ const AppointmentList: React.FC = () => {
       setAppointments(data || []);
     } catch (error) {
       console.error('Error fetching appointments:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível carregar os agendamentos.",
-      });
+      toast.error("Não foi possível carregar os agendamentos.");
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +86,28 @@ const AppointmentList: React.FC = () => {
   
   useEffect(() => {
     fetchAppointments();
+    
+    // Add real-time subscription for appointments
+    const channel = supabase
+      .channel('appointment-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('Appointment data changed:', payload);
+          toast.info('Dados de agendamentos atualizados');
+          fetchAppointments(); // Refresh data when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
@@ -106,15 +124,12 @@ const AppointmentList: React.FC = () => {
         appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
       ));
       
-      toast({
-        title: "Status atualizado",
+      toast.success("Status atualizado", {
         description: "O status do agendamento foi atualizado com sucesso.",
       });
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
+      toast.error("Erro", {
         description: "Não foi possível atualizar o status.",
       });
     }
@@ -133,15 +148,12 @@ const AppointmentList: React.FC = () => {
       
       setAppointments(appointments.filter(appointment => appointment.id !== appointmentToDelete));
       
-      toast({
-        title: "Agendamento excluído",
+      toast.success("Agendamento excluído", {
         description: "O agendamento foi excluído com sucesso.",
       });
     } catch (error) {
       console.error('Error deleting appointment:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
+      toast.error("Erro", {
         description: "Não foi possível excluir o agendamento.",
       });
     } finally {
