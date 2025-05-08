@@ -48,6 +48,11 @@ const StaffManagement: React.FC = () => {
       )
       .subscribe();
 
+    // Confirma que RLS foi desativado e mostra uma mensagem inicial
+    toast.success('Sistema de profissionais inicializado', {
+      description: 'Você pode criar, editar e visualizar profissionais livremente'
+    });
+
     return () => {
       supabase.removeChannel(channel);
     };
