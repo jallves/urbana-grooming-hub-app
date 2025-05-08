@@ -127,7 +127,7 @@ const CouponList = () => {
                     {coupon.max_uses ? `/${coupon.max_uses}` : ''}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={coupon.is_active ? 'success' : 'secondary'}>
+                    <Badge variant={coupon.is_active ? 'default' : 'secondary'}>
                       {coupon.is_active ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>

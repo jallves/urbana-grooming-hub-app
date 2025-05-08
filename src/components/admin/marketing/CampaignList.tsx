@@ -61,7 +61,7 @@ const CampaignList = () => {
   const getBadgeVariant = (status: string) => {
     switch (status) {
       case 'active':
-        return 'success';
+        return 'default'; // Changed from 'success' to 'default'
       case 'draft':
         return 'outline';
       case 'completed':

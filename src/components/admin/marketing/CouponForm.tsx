@@ -203,7 +203,7 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                     <FormControl>
                       <Input
                         type="number"
-                        step={field.value === 'percentage' ? '1' : '0.01'}
+                        step={form.watch('discount_type') === 'percentage' ? '1' : '0.01'}
                         placeholder={
                           form.watch('discount_type') === 'percentage' ? "Ex: 20" : "Ex: 50.00"
                         }
@@ -341,7 +341,7 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                     <FormLabel>Campanha</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value || undefined}
+                      defaultValue={field.value || ""}
                     >
                       <FormControl>
                         <SelectTrigger>
