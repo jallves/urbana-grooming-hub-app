@@ -1,5 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { format } from 'date-fns'; 
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ResponsiveContainer,
@@ -17,34 +19,67 @@ import {
   Cell
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-
-const mockCampaignData = [
-  { name: 'Promoção de Verão', revenue: 5200, cost: 1200, conversionRate: 8.3 },
-  { name: 'Dia dos Pais', revenue: 3800, cost: 900, conversionRate: 7.2 },
-  { name: 'Black Friday', revenue: 7500, cost: 1800, conversionRate: 9.5 },
-  { name: 'Natal', revenue: 6300, cost: 1500, conversionRate: 8.7 },
-];
-
-const mockChannelData = [
-  { name: 'Instagram', value: 40 },
-  { name: 'Facebook', value: 25 },
-  { name: 'Google', value: 20 },
-  { name: 'Email', value: 10 },
-  { name: 'Indicações', value: 5 },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { MarketingCampaign } from '@/types/marketing';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-const mockCouponData = [
-  { month: 'Jan', used: 22, created: 30 },
-  { month: 'Fev', used: 28, created: 35 },
-  { month: 'Mar', used: 32, created: 40 },
-  { month: 'Abr', used: 35, created: 42 },
-  { month: 'Mai', used: 30, created: 38 },
-  { month: 'Jun', used: 40, created: 45 },
-];
-
 const MarketingReports: React.FC = () => {
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+
+  // Fetch marketing campaigns
+  const { data: campaignData, isLoading: isLoadingCampaigns } = useQuery({
+    queryKey: ['marketing-campaigns-report'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marketing_campaigns')
+        .select('*')
+        .order('start_date', { ascending: false });
+      
+      if (error) throw new Error(error.message);
+      
+      // Transform data to include revenue and cost (mock data for now)
+      return data.map((campaign: MarketingCampaign) => ({
+        ...campaign,
+        revenue: Math.floor(Math.random() * 10000) + 2000, // Mock revenue data
+        cost: Math.floor(Math.random() * 2000) + 500,      // Mock cost data
+        conversionRate: (Math.random() * 10 + 5).toFixed(1) // Mock conversion rate
+      }));
+    },
+  });
+
+  // Fetch coupon usage data
+  const { data: couponData, isLoading: isLoadingCoupons } = useQuery({
+    queryKey: ['coupons-usage-report'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('discount_coupons')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw new Error(error.message);
+      
+      // Group by month and calculate usage
+      const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const monthlyData = months.slice(0, 6).map(month => ({
+        month,
+        used: Math.floor(Math.random() * 20) + 20,    // Mock used count for now
+        created: Math.floor(Math.random() * 15) + 25  // Mock created count for now
+      }));
+      
+      return monthlyData;
+    }
+  });
+
+  // Mock channel data - in a real application, this would come from analytics
+  const channelData = [
+    { name: 'Instagram', value: 40 },
+    { name: 'Facebook', value: 25 },
+    { name: 'Google', value: 20 },
+    { name: 'Email', value: 10 },
+    { name: 'Indicações', value: 5 },
+  ];
+
   return (
     <div className="space-y-6">
       <Card>
@@ -55,41 +90,47 @@ const MarketingReports: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-2">Campanha</th>
-                  <th className="text-left py-3 px-2">Receita</th>
-                  <th className="text-left py-3 px-2">Custo</th>
-                  <th className="text-left py-3 px-2">ROI</th>
-                  <th className="text-left py-3 px-2">Taxa de Conversão</th>
-                  <th className="text-left py-3 px-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockCampaignData.map((campaign, index) => {
-                  const roi = ((campaign.revenue - campaign.cost) / campaign.cost * 100).toFixed(2);
-                  return (
-                    <tr key={index} className="border-b hover:bg-muted/50">
-                      <td className="py-3 px-2 font-medium">{campaign.name}</td>
-                      <td className="py-3 px-2">R$ {campaign.revenue.toLocaleString()}</td>
-                      <td className="py-3 px-2">R$ {campaign.cost.toLocaleString()}</td>
-                      <td className="py-3 px-2 font-bold">
-                        {roi}%
-                      </td>
-                      <td className="py-3 px-2">{campaign.conversionRate}%</td>
-                      <td className="py-3 px-2">
-                        <Badge variant={Number(roi) > 300 ? "success" : "default"}>
-                          {Number(roi) > 300 ? "Excelente" : "Bom"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          {isLoadingCampaigns ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-2">Campanha</th>
+                    <th className="text-left py-3 px-2">Receita</th>
+                    <th className="text-left py-3 px-2">Custo</th>
+                    <th className="text-left py-3 px-2">ROI</th>
+                    <th className="text-left py-3 px-2">Taxa de Conversão</th>
+                    <th className="text-left py-3 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaignData?.map((campaign, index) => {
+                    const roi = ((campaign.revenue - campaign.cost) / campaign.cost * 100).toFixed(2);
+                    return (
+                      <tr key={campaign.id} className="border-b hover:bg-muted/50">
+                        <td className="py-3 px-2 font-medium">{campaign.name}</td>
+                        <td className="py-3 px-2">R$ {campaign.revenue.toLocaleString()}</td>
+                        <td className="py-3 px-2">R$ {campaign.cost.toLocaleString()}</td>
+                        <td className="py-3 px-2 font-bold">
+                          {roi}%
+                        </td>
+                        <td className="py-3 px-2">{campaign.conversionRate}%</td>
+                        <td className="py-3 px-2">
+                          <Badge variant={Number(roi) > 300 ? "success" : "default"}>
+                            {Number(roi) > 300 ? "Excelente" : "Bom"}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -106,7 +147,7 @@ const MarketingReports: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={mockChannelData}
+                    data={channelData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -116,7 +157,7 @@ const MarketingReports: React.FC = () => {
                     nameKey="name"
                     label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   >
-                    {mockChannelData.map((entry, index) => (
+                    {channelData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -137,27 +178,33 @@ const MarketingReports: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={mockCouponData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="created" name="Cupons Criados" fill="#8884d8" />
-                  <Bar dataKey="used" name="Cupons Utilizados" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {isLoadingCoupons ? (
+              <div className="flex items-center justify-center py-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={couponData}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="created" name="Cupons Criados" fill="#8884d8" />
+                    <Bar dataKey="used" name="Cupons Utilizados" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

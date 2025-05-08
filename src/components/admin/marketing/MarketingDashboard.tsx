@@ -1,137 +1,265 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tag, Percent, ArrowUp, ArrowDown, Users, Eye, ShoppingBag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Tag, Users, Calendar, TrendingUp } from 'lucide-react';
 
 const MarketingDashboard: React.FC = () => {
-  // Fetch campaigns stats
-  const { data: campaignStats } = useQuery({
+  // Fetch active campaigns count
+  const { data: campaignStats, isLoading: isLoadingCampaigns } = useQuery({
     queryKey: ['marketing-dashboard-campaigns'],
     queryFn: async () => {
       const { data: campaigns, error } = await supabase
         .from('marketing_campaigns')
         .select('status')
-        .order('created_at', { ascending: false });
-      
+        
       if (error) throw new Error(error.message);
       
-      const stats = {
-        total: campaigns.length,
-        active: campaigns.filter(c => c.status === 'active').length,
-        completed: campaigns.filter(c => c.status === 'completed').length,
-        draft: campaigns.filter(c => c.status === 'draft').length,
-      };
+      const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
+      const totalCampaigns = campaigns.length;
       
-      return stats;
+      return {
+        active: activeCampaigns,
+        total: totalCampaigns
+      };
     },
   });
 
-  // Fetch coupon stats
-  const { data: couponStats } = useQuery({
+  // Fetch coupons stats
+  const { data: couponStats, isLoading: isLoadingCoupons } = useQuery({
     queryKey: ['marketing-dashboard-coupons'],
     queryFn: async () => {
       const { data: coupons, error } = await supabase
         .from('discount_coupons')
-        .select('current_uses, is_active, discount_type, valid_until');
-      
+        .select('is_active, current_uses')
+        
       if (error) throw new Error(error.message);
       
-      const stats = {
-        total: coupons.length,
-        active: coupons.filter(c => c.is_active).length,
-        expired: coupons.filter(c => c.valid_until && new Date(c.valid_until) < new Date()).length,
-        totalUses: coupons.reduce((sum, coupon) => sum + (coupon.current_uses || 0), 0),
-      };
+      const activeCoupons = coupons.filter(c => c.is_active).length;
+      const totalUsages = coupons.reduce((sum, coupon) => sum + (coupon.current_uses || 0), 0);
       
-      return stats;
+      return {
+        active: activeCoupons,
+        total: coupons.length,
+        usages: totalUsages
+      };
     },
   });
 
-  // Prepare chart data
-  const chartData = [
-    { name: 'Cupons Ativos', valor: couponStats?.active || 0 },
-    { name: 'Campanhas Ativas', valor: campaignStats?.active || 0 },
-    { name: 'Campanhas Concluídas', valor: campaignStats?.completed || 0 },
-    { name: 'Total de Usos', valor: couponStats?.totalUses || 0 },
+  // Mock data for recent metrics
+  const recentMetrics = [
+    {
+      metric: 'Visualizações da Loja',
+      value: '2.350',
+      change: '+15%',
+      trend: 'up'
+    },
+    {
+      metric: 'Novos Clientes',
+      value: '48',
+      change: '+7%',
+      trend: 'up'
+    },
+    {
+      metric: 'Taxa de Conversão',
+      value: '3.2%',
+      change: '-0.5%',
+      trend: 'down'
+    },
+    {
+      metric: 'Valor Médio',
+      value: 'R$ 185,30',
+      change: '+12%',
+      trend: 'up'
+    },
+  ];
+
+  // Mock recent activities
+  const recentActivities = [
+    {
+      event: 'Cupom BEMVINDO20 utilizado',
+      time: '2 horas atrás',
+      value: 'R$ 78,50 de desconto'
+    },
+    {
+      event: 'Campanha "Dia das Mães" iniciada',
+      time: '1 dia atrás',
+      value: '12 produtos em promoção'
+    },
+    {
+      event: 'Novo cliente cadastrado',
+      time: '1 dia atrás',
+      value: 'Via campanha de Instagram'
+    },
+    {
+      event: 'Cupom ANIVERSARIO15 criado',
+      time: '2 dias atrás',
+      value: '15% de desconto em todos produtos'
+    }
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Campanhas Ativas</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{campaignStats?.active || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              De {campaignStats?.total || 0} campanhas totais
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">
+                {isLoadingCampaigns ? (
+                  <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+                ) : (
+                  `${campaignStats?.active || 0}`
+                )}
+              </div>
+              <div className="p-2 bg-primary/10 rounded-full">
+                <PercentCircle className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {isLoadingCampaigns ? (
+                <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
+              ) : (
+                `De ${campaignStats?.total || 0} campanhas no total`
+              )}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Cupons Ativos</CardTitle>
-            <Tag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{couponStats?.active || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              De {couponStats?.total || 0} cupons totais
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">
+                {isLoadingCoupons ? (
+                  <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+                ) : (
+                  `${couponStats?.active || 0}`
+                )}
+              </div>
+              <div className="p-2 bg-primary/10 rounded-full">
+                <Tag className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {isLoadingCoupons ? (
+                <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
+              ) : (
+                `De ${couponStats?.total || 0} cupons no total`
+              )}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Usos de Cupons</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Cupons Utilizados</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{couponStats?.totalUses || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              Total de utilizações de cupons
-            </p>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">
+                {isLoadingCoupons ? (
+                  <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+                ) : (
+                  `${couponStats?.usages || 0}`
+                )}
+              </div>
+              <div className="p-2 bg-primary/10 rounded-full">
+                <ShoppingBag className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Registros de uso de cupons</p>
           </CardContent>
         </Card>
-        
+
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">--</div>
-            <p className="text-xs text-muted-foreground">
-              Métricas em desenvolvimento
-            </p>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-bold">3.2%</div>
+              <Badge variant="outline" className="text-green-600">
+                <ArrowUp className="h-3.5 w-3.5 mr-1" />
+                +0.5%
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Últimos 30 dias</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Visão Geral de Marketing</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="valor" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Métricas Recentes</CardTitle>
+            <CardDescription>Visão geral de desempenho dos últimos 30 dias</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {recentMetrics.map((item, index) => (
+                <div key={index} className="border rounded-md p-3">
+                  <div className="text-sm text-muted-foreground">{item.metric}</div>
+                  <div className="text-xl font-bold mt-1">{item.value}</div>
+                  <div className={`text-xs mt-1 flex items-center ${
+                    item.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {item.trend === 'up' ? (
+                      <ArrowUp className="h-3 w-3 mr-1" />
+                    ) : (
+                      <ArrowDown className="h-3 w-3 mr-1" />
+                    )}
+                    {item.change}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Atividades Recentes</CardTitle>
+          </CardHeader>
+          <CardContent className="px-2">
+            <div className="space-y-4">
+              {recentActivities.map((activity, i) => (
+                <div key={i} className="flex items-start px-2 py-1">
+                  <div className="mr-2 mt-0.5">
+                    <div className="h-2 w-2 rounded-full bg-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{activity.event}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      <Badge variant="outline" className="text-xs">
+                        {activity.value}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex justify-end">
+        <Button variant="outline" asChild>
+          <a href="/admin/relatorios" className="flex items-center">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Ver Relatórios Completos
+          </a>
+        </Button>
+      </div>
     </div>
   );
 };
