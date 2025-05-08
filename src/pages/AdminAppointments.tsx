@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import AdminLayout from '../components/admin/AdminLayout';
-import AppointmentCalendar from '../components/admin/appointments/AppointmentCalendar';
+import AppointmentCalendar from '../components/admin/appointments/calendar/AppointmentCalendar';
 import AppointmentList from '../components/admin/appointments/list/AppointmentList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
