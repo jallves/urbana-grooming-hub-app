@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
@@ -42,6 +42,33 @@ const CampaignList = () => {
       return data as MarketingCampaign[];
     },
   });
+
+  // Set up real-time subscription for campaigns
+  useEffect(() => {
+    const channel = supabase
+      .channel('campaign-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'marketing_campaigns'
+        },
+        (payload) => {
+          console.log('Campaign data changed:', payload);
+          toast({
+            title: 'Atualização',
+            description: 'Dados de campanhas atualizados'
+          });
+          refetch(); // Refresh data when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch, toast]);
 
   const handleEdit = (campaign: MarketingCampaign) => {
     setSelectedCampaign(campaign);

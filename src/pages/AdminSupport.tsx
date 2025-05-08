@@ -17,6 +17,28 @@ const AdminSupport: React.FC = () => {
 
   useEffect(() => {
     fetchTickets();
+    
+    // Set up real-time subscription for tickets
+    const channel = supabase
+      .channel('support-tickets-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'support_tickets'
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          toast.info('Atualização de tickets recebida');
+          fetchTickets(); // Refresh data when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchTickets = async () => {

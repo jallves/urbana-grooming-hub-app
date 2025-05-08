@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ClientList from './ClientList';
@@ -28,6 +28,30 @@ const ClientManagement: React.FC = () => {
       return data;
     }
   });
+
+  // Set up real-time subscription for clients
+  useEffect(() => {
+    const channel = supabase
+      .channel('client-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'clients'
+        },
+        (payload) => {
+          console.log('Client data changed:', payload);
+          toast.info('Dados de clientes atualizados');
+          refetch(); // Refresh data when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   if (error) {
     toast.error('Erro ao carregar clientes', {

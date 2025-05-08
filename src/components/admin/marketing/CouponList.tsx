@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Plus, Tag } from 'lucide-react';
@@ -42,6 +42,33 @@ const CouponList = () => {
       return data as (DiscountCoupon & { marketing_campaigns: { name: string } | null })[];
     },
   });
+
+  // Set up real-time subscription for coupons
+  useEffect(() => {
+    const channel = supabase
+      .channel('coupon-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'discount_coupons'
+        },
+        (payload) => {
+          console.log('Coupon data changed:', payload);
+          toast({
+            title: 'Atualização',
+            description: 'Dados de cupons atualizados'
+          });
+          refetch(); // Refresh data when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch, toast]);
 
   const handleEdit = (coupon: DiscountCoupon) => {
     setSelectedCoupon(coupon);

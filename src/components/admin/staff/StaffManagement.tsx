@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import StaffList from './StaffList';
@@ -28,6 +28,30 @@ const StaffManagement: React.FC = () => {
       return data;
     }
   });
+
+  // Set up real-time subscription for staff
+  useEffect(() => {
+    const channel = supabase
+      .channel('staff-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'staff'
+        },
+        (payload) => {
+          console.log('Staff data changed:', payload);
+          toast.info('Dados de profissionais atualizados');
+          refetch(); // Refresh data when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   if (error) {
     toast.error('Erro ao carregar profissionais', {
