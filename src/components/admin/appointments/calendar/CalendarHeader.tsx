@@ -23,6 +23,14 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   const startDate = viewMode === 'week' ? startOfWeek(date, { weekStartsOn: 1 }) : date;
   const endDate = viewMode === 'week' ? endOfWeek(date, { weekStartsOn: 1 }) : date;
   
+  const handlePreviousDay = () => {
+    setDate(addDays(date, -1));
+  };
+  
+  const handleNextDay = () => {
+    setDate(addDays(date, 1));
+  };
+  
   return (
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-2">
@@ -43,7 +51,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
       </div>
       
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" onClick={() => setDate(prev => addDays(prev, -1))}>
+        <Button variant="outline" size="icon" onClick={handlePreviousDay}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         
@@ -54,7 +62,7 @@ const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           }
         </span>
         
-        <Button variant="outline" size="icon" onClick={() => setDate(prev => addDays(prev, 1))}>
+        <Button variant="outline" size="icon" onClick={handleNextDay}>
           <ChevronRight className="h-4 w-4" />
         </Button>
         
