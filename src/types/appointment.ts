@@ -1,11 +1,18 @@
 
 import { Database } from '@/integrations/supabase/types';
 
-// Define um tipo baseado na tabela appointments do Supabase
-export type Appointment = Database['public']['Tables']['appointments']['Row'];
+// Base appointment type from the database
+export type Appointment = Database['public']['Tables']['appointments']['Row'] & {
+  // Include joined relations
+  client?: Database['public']['Tables']['clients']['Row'];
+  service?: Database['public']['Tables']['services']['Row'];
+};
 
 // Define um tipo para novos agendamentos (sem id e timestamps)
-export type NewAppointment = Omit<Appointment, 'id' | 'created_at' | 'updated_at'>;
+export type NewAppointment = Omit<
+  Database['public']['Tables']['appointments']['Row'], 
+  'id' | 'created_at' | 'updated_at'
+>;
 
 // Define um tipo para o formulário de agendamento
 export interface AppointmentFormData {
