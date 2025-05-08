@@ -27,20 +27,6 @@ import {
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 
-interface BannerImage {
-  id: number;
-  imageUrl: string;
-  title: string;
-  subtitle: string;
-  description: string;
-}
-
-interface GalleryImage {
-  id: number;
-  src: string;
-  alt: string;
-}
-
 const BannerGallerySettings: React.FC = () => {
   const { toast } = useToast();
   const [bannerImages, setBannerImages] = useState<BannerImage[]>([
