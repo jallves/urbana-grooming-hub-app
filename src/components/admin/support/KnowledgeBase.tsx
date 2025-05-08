@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, MessageSquare, Info, Tool } from 'lucide-react';
+import { FileText, MessageSquare, Info, Search } from 'lucide-react';
 
 const KnowledgeBase: React.FC = () => {
   // Dados mockados para a base de conhecimento
@@ -32,7 +32,7 @@ const KnowledgeBase: React.FC = () => {
     {
       id: 3,
       name: 'Suporte Técnico',
-      icon: <Tool className="h-5 w-5" />,
+      icon: <Search className="h-5 w-5" />,
       description: 'Resolução de problemas técnicos',
       articles: [
         { id: 7, title: 'Problemas com login', views: 189 },
