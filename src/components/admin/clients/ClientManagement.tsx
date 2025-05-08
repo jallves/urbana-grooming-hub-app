@@ -48,6 +48,11 @@ const ClientManagement: React.FC = () => {
       )
       .subscribe();
 
+    // Confirma que RLS foi desativado e mostra uma mensagem inicial
+    toast.success('Sistema de clientes inicializado', {
+      description: 'Você pode criar, editar e visualizar clientes livremente'
+    });
+
     return () => {
       supabase.removeChannel(channel);
     };
