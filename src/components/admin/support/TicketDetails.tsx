@@ -101,8 +101,9 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
         .from('ticket_responses')
         .insert({
           ticket_id: ticketId,
-          staff_id: staffId,
-          content: newResponse,
+          responder_id: staffId,
+          responder_type: 'staff',
+          response_text: newResponse,
         });
 
       if (error) throw error;
@@ -178,7 +179,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
                 <div className="flex justify-between mb-2">
                   <h3 className="font-medium">Assunto: {ticket.subject}</h3>
                   <span className="text-sm text-muted-foreground">
-                    Cliente: {ticket.clients?.name || 'Desconhecido'}
+                    Cliente: {(ticket as any).clients?.name || 'Desconhecido'}
                   </span>
                 </div>
                 <p className="whitespace-pre-wrap">{ticket.description}</p>
@@ -194,13 +195,13 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
                     <div key={response.id} className="bg-muted/50 p-4 rounded-md">
                       <div className="flex justify-between mb-2">
                         <span className="font-medium">
-                          {response.staff?.name || 'Atendente'}
+                          {(response as any).staff?.name || 'Atendente'}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {formatDate(response.created_at)}
                         </span>
                       </div>
-                      <p className="whitespace-pre-wrap">{response.content}</p>
+                      <p className="whitespace-pre-wrap">{response.response_text}</p>
                     </div>
                   ))
                 )}

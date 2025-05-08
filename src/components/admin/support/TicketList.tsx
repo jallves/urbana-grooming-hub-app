@@ -13,15 +13,15 @@ interface TicketListProps {
   tickets: SupportTicket[];
   isLoading: boolean;
   onRefresh: () => void;
-  onStatusChange: (ticketId: string, status: string) => void;
+  onStatusChange: (ticketId: string, status: string) => Promise<void>;
 }
 
 const TicketList: React.FC<TicketListProps> = ({ tickets, isLoading, onRefresh, onStatusChange }) => {
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
   const [showTicketDetails, setShowTicketDetails] = useState(false);
 
   const handleOpenTicket = (ticket: SupportTicket) => {
-    setSelectedTicket(ticket);
+    setSelectedTicket(ticket.id);
     setShowTicketDetails(true);
   };
 
@@ -59,8 +59,8 @@ const TicketList: React.FC<TicketListProps> = ({ tickets, isLoading, onRefresh, 
     }
   };
 
-  const handleStatusChange = (ticketId: string, newStatus: string) => {
-    onStatusChange(ticketId, newStatus);
+  const handleStatusChange = async (ticketId: string, newStatus: string) => {
+    await onStatusChange(ticketId, newStatus);
   };
 
   return (
@@ -132,7 +132,7 @@ const TicketList: React.FC<TicketListProps> = ({ tickets, isLoading, onRefresh, 
                       </Button>
                       <Select
                         defaultValue={ticket.status}
-                        onValueChange={(value) => handleStatusChange(ticket.id, value)}
+                        onValueChange={async (value) => await handleStatusChange(ticket.id, value)}
                       >
                         <SelectTrigger className="h-8 w-[110px]">
                           <SelectValue placeholder="Selecionar..." />
@@ -155,8 +155,8 @@ const TicketList: React.FC<TicketListProps> = ({ tickets, isLoading, onRefresh, 
 
       {selectedTicket && (
         <TicketDetails
-          ticket={selectedTicket}
-          open={showTicketDetails}
+          ticketId={selectedTicket}
+          isOpen={showTicketDetails}
           onClose={handleCloseTicket}
           onStatusChange={onStatusChange}
         />

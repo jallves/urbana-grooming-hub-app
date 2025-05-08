@@ -2,13 +2,25 @@
 import { Database } from '@/integrations/supabase/types';
 
 // Define o tipo para tickets de suporte
-export type SupportTicket = Database['public']['Tables']['support_tickets']['Row'];
+export type SupportTicket = Database['public']['Tables']['support_tickets']['Row'] & {
+  clients?: {
+    name: string;
+    email?: string | null;
+  };
+  staff?: {
+    name: string;
+  };
+};
 
 // Define um tipo para novos tickets (sem id e timestamps)
 export type NewSupportTicket = Omit<SupportTicket, 'id' | 'created_at' | 'updated_at'>;
 
 // Define o tipo para respostas de tickets
-export type TicketResponse = Database['public']['Tables']['ticket_responses']['Row'];
+export type TicketResponse = Database['public']['Tables']['ticket_responses']['Row'] & {
+  staff?: {
+    name: string;
+  };
+};
 
 // Define um tipo para o formulário de tickets
 export interface SupportTicketFormData {
