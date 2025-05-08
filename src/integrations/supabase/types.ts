@@ -186,6 +186,71 @@ export type Database = {
         }
         Relationships: []
       }
+      client_reviews: {
+        Row: {
+          appointment_id: string | null
+          client_id: string
+          comment: string | null
+          created_at: string | null
+          id: string
+          is_published: boolean | null
+          rating: number
+          service_id: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          rating: number
+          service_id?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          is_published?: boolean | null
+          rating?: number
+          service_id?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_reviews_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reviews_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reviews_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string | null
@@ -212,6 +277,109 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      discount_coupons: {
+        Row: {
+          campaign_id: string | null
+          code: string
+          created_at: string | null
+          current_uses: number | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          updated_at: string | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          code: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          updated_at?: string | null
+          valid_from: string
+          valid_until?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          code?: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          updated_at?: string | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_coupons_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          payment_method: string | null
+          status: string
+          transaction_date: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_method?: string | null
+          status: string
+          transaction_date: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_method?: string | null
+          status?: string
+          transaction_date?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       food_analysis: {
         Row: {
@@ -379,6 +547,132 @@ export type Database = {
           },
         ]
       }
+      marketing_campaigns: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date: string
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      product_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      product_category_relations: {
+        Row: {
+          category_id: string
+          product_id: string
+        }
+        Insert: {
+          category_id: string
+          product_id: string
+        }
+        Update: {
+          category_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_category_relations_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_category_relations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          cost_price: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          stock_quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cost_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cost_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -514,6 +808,51 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_settings: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          logo_url: string | null
+          phone: string | null
+          shop_name: string
+          social_facebook: string | null
+          social_instagram: string | null
+          social_twitter: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          shop_name: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_twitter?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          shop_name?: string
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_twitter?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       special_dates: {
         Row: {
           created_at: string | null
@@ -573,6 +912,92 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          description: string
+          id: string
+          priority: string
+          staff_id: string | null
+          status: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          priority: string
+          staff_id?: string | null
+          status: string
+          subject: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          priority?: string
+          staff_id?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_responses: {
+        Row: {
+          created_at: string | null
+          id: string
+          responder_id: string | null
+          responder_type: string
+          response_text: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          responder_id?: string | null
+          responder_type: string
+          response_text: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          responder_id?: string | null
+          responder_type?: string
+          response_text?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_responses_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

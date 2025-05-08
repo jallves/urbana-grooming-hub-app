@@ -1,14 +1,20 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, Home, Users, User } from 'lucide-react';
+import { Calendar, Home, Users, User, Package, DollarSign, Settings, BarChart2, MessageSquare, Tag } from 'lucide-react';
 
 const AdminSidebar: React.FC = () => {
   const navItems = [
     { name: 'Dashboard', href: '/admin', icon: <Home className="h-5 w-5" /> },
     { name: 'Agendamentos', href: '/admin/agendamentos', icon: <Calendar className="h-5 w-5" /> },
     { name: 'Profissionais', href: '/admin/profissionais', icon: <User className="h-5 w-5" /> },
-    { name: 'Clientes', href: '/admin/clientes', icon: <Users className="h-5 w-5" /> }
+    { name: 'Clientes', href: '/admin/clientes', icon: <Users className="h-5 w-5" /> },
+    { name: 'Produtos e Serviços', href: '/admin/produtos', icon: <Package className="h-5 w-5" /> },
+    { name: 'Financeiro', href: '/admin/financeiro', icon: <DollarSign className="h-5 w-5" /> },
+    { name: 'Marketing', href: '/admin/marketing', icon: <Tag className="h-5 w-5" /> },
+    { name: 'Relatórios', href: '/admin/relatorios', icon: <BarChart2 className="h-5 w-5" /> },
+    { name: 'Suporte', href: '/admin/suporte', icon: <MessageSquare className="h-5 w-5" /> },
+    { name: 'Configurações', href: '/admin/configuracoes', icon: <Settings className="h-5 w-5" /> }
   ];
 
   return (
