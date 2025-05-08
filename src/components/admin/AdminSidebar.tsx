@@ -1,79 +1,41 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  Calendar, 
-  Users, 
-  Scissors, 
-  DollarSign, 
-  Package, 
-  BarChart2, 
-  Settings, 
-  MessageSquare, 
-  ShoppingCart, 
-  Megaphone 
-} from 'lucide-react';
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuItem, 
-  SidebarMenuButton 
-} from "@/components/ui/sidebar";
+import { Calendar, Home, Users, User } from 'lucide-react';
 
 const AdminSidebar: React.FC = () => {
-  const menuItems = [
-    { title: 'Dashboard', url: '/admin', icon: BarChart2 },
-    { title: 'Agendamentos', url: '/admin/agendamentos', icon: Calendar },
-    { title: 'Profissionais', url: '/admin/profissionais', icon: Scissors },
-    { title: 'Clientes', url: '/admin/clientes', icon: Users },
-    { title: 'Financeiro', url: '/admin/financeiro', icon: DollarSign },
-    { title: 'Serviços e Produtos', url: '/admin/servicos', icon: Package },
-    { title: 'Vendas', url: '/admin/vendas', icon: ShoppingCart },
-    { title: 'Marketing', url: '/admin/marketing', icon: Megaphone },
-    { title: 'Relatórios', url: '/admin/relatorios', icon: BarChart2 },
-    { title: 'Suporte', url: '/admin/suporte', icon: MessageSquare },
-    { title: 'Configurações', url: '/admin/configuracoes', icon: Settings }
+  const navItems = [
+    { name: 'Dashboard', href: '/admin', icon: <Home className="h-5 w-5" /> },
+    { name: 'Agendamentos', href: '/admin/agendamentos', icon: <Calendar className="h-5 w-5" /> },
+    { name: 'Profissionais', href: '/admin/profissionais', icon: <User className="h-5 w-5" /> },
+    { name: 'Clientes', href: '/admin/clientes', icon: <Users className="h-5 w-5" /> }
   ];
 
   return (
-    <Sidebar>
-      <SidebarContent>
-        <div className="py-6 px-4">
-          <h2 className="text-xl font-bold text-gray-800">Urbana Barbearia</h2>
-          <p className="text-xs text-gray-500">Sistema Administrativo</p>
-        </div>
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url}
-                      className={({ isActive }) => 
-                        `flex items-center gap-2 w-full py-2 px-3 rounded-md text-sm ${
-                          isActive 
-                            ? 'bg-gray-200 text-gray-900 font-medium' 
-                            : 'text-gray-600 hover:bg-gray-100'
-                        }`
-                      }
-                    >
-                      <item.icon size={18} />
-                      <span>{item.title}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+    <div className="h-full px-3 py-4 overflow-y-auto bg-background border-r">
+      <div className="mb-6 px-2">
+        <h2 className="text-xl font-semibold">Admin</h2>
+      </div>
+      <ul className="space-y-2 px-2">
+        {navItems.map((item) => (
+          <li key={item.name}>
+            <NavLink
+              to={item.href}
+              className={({ isActive }) =>
+                `flex items-center p-2 rounded-lg ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted text-foreground'
+                }`
+              }
+            >
+              {item.icon}
+              <span className="ml-3">{item.name}</span>
+            </NavLink>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 
