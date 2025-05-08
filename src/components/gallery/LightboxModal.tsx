@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from "framer-motion";
-import type { GalleryImageType } from "@/types/settings";
+import type { GalleryImage as GalleryImageType } from "@/types/settings";
 
 interface LightboxModalProps {
   selectedImage: number;

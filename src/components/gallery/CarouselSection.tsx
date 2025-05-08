@@ -1,7 +1,7 @@
 
 import React from 'react';
 import GalleryImage from './GalleryImage';
-import type { GalleryImageType } from "@/types/settings";
+import type { GalleryImage as GalleryImageType } from "@/types/settings";
 import { 
   Carousel,
   CarouselContent,

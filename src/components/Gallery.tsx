@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { GalleryImageType } from "@/types/settings";
+import type { GalleryImage as GalleryImageType } from "@/types/settings";
 import GalleryImage from './gallery/GalleryImage';
 import LightboxModal from './gallery/LightboxModal';
 import CarouselSection from './gallery/CarouselSection';
