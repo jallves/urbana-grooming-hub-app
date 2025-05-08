@@ -1,14 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Menu, X } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
         setIsScrolled(true);
@@ -18,85 +22,80 @@ const Navbar: React.FC = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
-  const navLinks = [
-    { name: 'Início', href: '/' },
-    { name: 'Serviços', href: '#services' },
-    { name: 'Equipe', href: '#team' },
-    { name: 'Galeria', href: '#gallery' },
-    { name: 'Contato', href: '#contact' },
-  ];
-
   return (
-    <nav 
-      className={`fixed w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 shadow-md py-2' : 'bg-transparent py-4'
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? 'bg-urbana-black py-2 shadow-lg' : 'bg-transparent py-4'
       }`}
     >
-      <div className="urbana-container flex items-center justify-between">
-        <Link to="/" className="flex items-center">
-          <h1 className={`text-2xl font-bold ${isScrolled ? 'text-urbana-black' : 'text-white'}`}>
-            COSTA<span className="text-urbana-gold">URBANA</span>
-          </h1>
+      <div className="urbana-container flex justify-between items-center">
+        <Link to="/" className="text-2xl font-bold text-white flex items-center">
+          URBANA
+          <span className="text-urbana-gold">.</span>
         </Link>
 
-        {/* Mobile menu button */}
-        <div className="md:hidden">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className={`${isScrolled ? 'text-urbana-black' : 'text-white'}`}
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-        </div>
-
         {/* Desktop Navigation */}
-        <div className="hidden md:flex space-x-8">
-          {navLinks.map((link) => (
-            <a 
-              key={link.name} 
-              href={link.href}
-              className={`font-medium hover:text-urbana-gold transition-colors ${
-                isScrolled ? 'text-urbana-black' : 'text-white'
-              }`}
-            >
-              {link.name}
-            </a>
-          ))}
-        </div>
+        <nav className="hidden md:flex items-center space-x-8">
+          <NavLink href="/#services">Serviços</NavLink>
+          <NavLink href="/#team">Equipe</NavLink>
+          <NavLink href="/#appointment">Agendar</NavLink>
+          <NavLink href="tel:+5511999999999">Contato</NavLink>
+          <NavLink href="/admin">Admin</NavLink>
+        </nav>
 
-        <div className="hidden md:block">
-          <Button className="bg-urbana-gold hover:bg-urbana-gold/90 text-white">
-            Agendar Agora
-          </Button>
+        {/* Mobile Navigation */}
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" className="p-2 text-white">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="bg-urbana-black text-white">
+              <nav className="flex flex-col space-y-6 pt-10">
+                <MobileNavLink href="/#services">Serviços</MobileNavLink>
+                <MobileNavLink href="/#team">Equipe</MobileNavLink>
+                <MobileNavLink href="/#appointment">Agendar</MobileNavLink>
+                <MobileNavLink href="tel:+5511999999999">Contato</MobileNavLink>
+                <MobileNavLink href="/admin">Admin</MobileNavLink>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
+    </header>
+  );
+};
 
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className="md:hidden bg-white border-t">
-          <div className="urbana-container py-4 space-y-3">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="block font-medium text-urbana-black hover:text-urbana-gold"
-                onClick={() => setIsOpen(false)}
-              >
-                {link.name}
-              </a>
-            ))}
-            <Button className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-white mt-4">
-              Agendar Agora
-            </Button>
-          </div>
-        </div>
-      )}
-    </nav>
+interface NavLinkProps {
+  href: string;
+  children: React.ReactNode;
+}
+
+const NavLink: React.FC<NavLinkProps> = ({ href, children }) => {
+  return (
+    <a
+      href={href}
+      className="text-white text-sm uppercase tracking-wider font-medium hover:text-urbana-gold transition-colors"
+    >
+      {children}
+    </a>
+  );
+};
+
+const MobileNavLink: React.FC<NavLinkProps> = ({ href, children }) => {
+  return (
+    <a
+      href={href}
+      className="text-white text-xl uppercase tracking-wider font-medium hover:text-urbana-gold transition-colors"
+    >
+      {children}
+    </a>
   );
 };
 
