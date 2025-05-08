@@ -66,7 +66,8 @@ const InventoryReports: React.FC = () => {
               </thead>
               <tbody>
                 {mockInventoryData.map((item, index) => {
-                  let status = "default";
+                  // Define type-safe variants
+                  let status: "default" | "secondary" | "destructive" | "outline" | "success" = "default";
                   let statusText = "Normal";
                   
                   if (item.stock <= item.minStock) {
