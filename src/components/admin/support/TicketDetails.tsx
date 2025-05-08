@@ -72,14 +72,21 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
       // Fetch ticket responses
       const { data: responsesData, error: responsesError } = await supabase
         .from('ticket_responses')
-        .select('*, staff(*)')
+        .select('*')
         .eq('ticket_id', ticketId)
         .order('created_at', { ascending: true });
 
       if (responsesError) throw responsesError;
 
-      setTicket(ticketData);
-      setResponses(responsesData || []);
+      // Convert the response data to the expected type
+      const typedResponses: TicketResponse[] = responsesData.map(response => ({
+        ...response,
+        // We'll handle staff names via UI instead of relying on a join that doesn't work
+        staff: undefined
+      }));
+
+      setTicket(ticketData as SupportTicket);
+      setResponses(typedResponses);
     } catch (error) {
       console.error('Error fetching ticket details:', error);
       toast.error('Erro ao carregar detalhes do ticket');
@@ -149,6 +156,12 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
       minute: '2-digit',
     });
   };
+  
+  // Helper function to get responder name
+  const getResponderName = (response: TicketResponse) => {
+    // Since we can't rely on the join with staff table, we'll just show a generic name
+    return response.responder_type === 'staff' ? 'Atendente' : 'Cliente';
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -195,7 +208,7 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
                     <div key={response.id} className="bg-muted/50 p-4 rounded-md">
                       <div className="flex justify-between mb-2">
                         <span className="font-medium">
-                          {(response as any).staff?.name || 'Atendente'}
+                          {getResponderName(response)}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {formatDate(response.created_at)}
