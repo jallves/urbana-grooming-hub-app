@@ -1,42 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-// Use a type-only import with 'type' keyword to avoid conflict with the component
-import type { GalleryImage as GalleryImageType } from "@/types/settings";
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-
-const GalleryImage = ({ src, alt, delay, onClick }: { src: string; alt: string; delay: number; onClick?: () => void }) => {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay }}
-      viewport={{ once: true }}
-      className="relative aspect-square overflow-hidden group cursor-pointer"
-      onClick={onClick}
-    >
-      <img 
-        src={src} 
-        alt={alt} 
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
-        <div className="p-4 text-white">
-          <h3 className="font-bold text-lg">{alt}</h3>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+import type { GalleryImageType } from "@/types/settings";
+import GalleryImage from './gallery/GalleryImage';
+import LightboxModal from './gallery/LightboxModal';
+import CarouselSection from './gallery/CarouselSection';
 
 const Gallery: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
@@ -132,28 +102,7 @@ const Gallery: React.FC = () => {
           <p className="urbana-subheading text-center">Nossos maiores orgulhos são os resultados que entregamos aos nossos clientes</p>
         </div>
 
-        <div className="mb-12">
-          <Carousel className="w-full">
-            <CarouselContent>
-              {images.slice(0, 3).map((image, index) => (
-                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-                  <div className="p-2 h-full">
-                    <GalleryImage 
-                      src={image.src} 
-                      alt={image.alt} 
-                      delay={0.1} 
-                      onClick={() => setSelectedImage(index)}
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="flex justify-center mt-4">
-              <CarouselPrevious className="static mr-2 translate-y-0" />
-              <CarouselNext className="static ml-2 translate-y-0" />
-            </div>
-          </Carousel>
-        </div>
+        <CarouselSection images={images} onSelectImage={setSelectedImage} />
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {images.map((image, index) => (
@@ -184,55 +133,14 @@ const Gallery: React.FC = () => {
         </div>
       </div>
 
-      {/* Lightbox Modal */}
       {selectedImage !== null && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-urbana-black/90 z-50 flex items-center justify-center p-4"
-          onClick={closeModal}
-        >
-          <div className="relative max-w-4xl w-full" onClick={e => e.stopPropagation()}>
-            <img 
-              src={images[selectedImage].src} 
-              alt={images[selectedImage].alt}
-              className="w-full h-auto object-contain max-h-[80vh]"
-            />
-            <button 
-              className="absolute top-2 right-2 text-white bg-urbana-black/50 hover:bg-urbana-black p-2 rounded-full"
-              onClick={closeModal}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2">
-              <button 
-                className="p-2 bg-urbana-black/50 hover:bg-urbana-black text-white rounded-full"
-                onClick={(e) => { e.stopPropagation(); showPrevious(); }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-              </button>
-            </div>
-            <div className="absolute right-0 top-1/2 transform -translate-y-1/2">
-              <button 
-                className="p-2 bg-urbana-black/50 hover:bg-urbana-black text-white rounded-full"
-                onClick={(e) => { e.stopPropagation(); showNext(); }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </button>
-            </div>
-            <div className="text-white text-center py-2">
-              {images[selectedImage].alt} - {selectedImage + 1}/{images.length}
-            </div>
-          </div>
-        </motion.div>
+        <LightboxModal 
+          selectedImage={selectedImage}
+          images={images}
+          onClose={closeModal}
+          onPrevious={showPrevious}
+          onNext={showNext}
+        />
       )}
     </section>
   );
