@@ -8,7 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Service, StaffMember, AppointmentFormData } from "@/types/appointment";
 import { addHours } from "date-fns";
@@ -247,7 +247,7 @@ const Appointment: React.FC = () => {
                 <label htmlFor="barber" className="block text-sm font-medium mb-2">
                   Barbeiro Preferido
                 </label>
-                <Select value={formData.barber} onValueChange={(value) => handleSelectChange(value, 'barber')}>
+                <Select value={formData.barber || "any"} onValueChange={(value) => handleSelectChange(value, 'barber')}>
                   <SelectTrigger className="bg-white/20 border-urbana-gold/50">
                     <SelectValue placeholder="Selecione um barbeiro" />
                   </SelectTrigger>
