@@ -97,8 +97,12 @@ const FinancialTransactionForm: React.FC<FinancialTransactionFormProps> = ({
         .single();
       
       if (error) throw new Error(error.message);
+      
+      // Parse and convert the data to match our form schema
       return {
         ...data,
+        type: data.type as 'income' | 'expense',
+        status: data.status as 'pending' | 'completed' | 'canceled',
         transaction_date: new Date(data.transaction_date),
       };
     },
