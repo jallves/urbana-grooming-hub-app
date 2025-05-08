@@ -38,3 +38,9 @@ export interface MediaSettings {
   bannerImages: BannerImage[];
   galleryImages: GalleryImage[];
 }
+
+// Define um tipo para o upload de imagem
+export interface ImageUpload {
+  file: File;
+  previewUrl: string;
+}

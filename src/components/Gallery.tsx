@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -44,6 +44,20 @@ const Gallery: React.FC = () => {
     { src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
     { src: "/gallery-6.jpg", alt: "Experiência Completa" },
   ]);
+
+  // Could load gallery images from Supabase here
+  // useEffect(() => {
+  //   const fetchGalleryImages = async () => {
+  //     try {
+  //       // Load from supabase or local storage
+  //       // setImages(loadedImages);
+  //     } catch (error) {
+  //       console.error('Error loading gallery images:', error);
+  //     }
+  //   };
+  //
+  //   fetchGalleryImages();
+  // }, []);
 
   const closeModal = () => {
     setSelectedImage(null);

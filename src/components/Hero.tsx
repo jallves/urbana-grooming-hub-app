@@ -45,6 +45,20 @@ const Hero: React.FC = () => {
     setCurrentSlide((prev) => (prev - 1 + bannerImages.length) % bannerImages.length);
   };
 
+  // Could load banner images from Supabase here
+  // useEffect(() => {
+  //   const fetchBannerImages = async () => {
+  //     try {
+  //       // Load from supabase or local storage
+  //       // setBannerImages(loadedImages);
+  //     } catch (error) {
+  //       console.error('Error loading banner images:', error);
+  //     }
+  //   };
+  //
+  //   fetchBannerImages();
+  // }, []);
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Vintage Filter */}

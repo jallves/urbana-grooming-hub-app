@@ -1,13 +1,14 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { GalleryHorizontal, Image, Plus, Trash2 } from "lucide-react";
+import { GalleryHorizontal, Image, Plus, Trash2, Upload, FileImage } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { BannerImage, GalleryImage, ImageUpload } from '@/types/settings';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 interface BannerImage {
   id: number;
@@ -87,53 +90,182 @@ const BannerGallerySettings: React.FC = () => {
 
   const [editingBanner, setEditingBanner] = useState<BannerImage | null>(null);
   const [editingGallery, setEditingGallery] = useState<GalleryImage | null>(null);
+  
+  // File upload state
+  const [bannerUpload, setBannerUpload] = useState<ImageUpload | null>(null);
+  const [galleryUpload, setGalleryUpload] = useState<ImageUpload | null>(null);
+  const [uploading, setUploading] = useState(false);
+  
+  // Ref for file inputs
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddBanner = () => {
-    if (!newBanner.imageUrl || !newBanner.title) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha URL da imagem e título",
-        variant: "destructive",
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const previewUrl = URL.createObjectURL(file);
+      setBannerUpload({ file, previewUrl });
+      
+      // Update the imageUrl in newBanner
+      setNewBanner({
+        ...newBanner,
+        imageUrl: previewUrl
       });
-      return;
     }
-    
-    const newId = Math.max(0, ...bannerImages.map(img => img.id)) + 1;
-    setBannerImages([...bannerImages, { ...newBanner, id: newId }]);
-    setNewBanner({
-      imageUrl: '',
-      title: '',
-      subtitle: '',
-      description: ''
-    });
-    
-    toast({
-      title: "Banner adicionado",
-      description: "O novo banner foi adicionado com sucesso",
-    });
   };
 
-  const handleAddGalleryImage = () => {
-    if (!newGalleryImage.src || !newGalleryImage.alt) {
+  const handleGalleryFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const previewUrl = URL.createObjectURL(file);
+      setGalleryUpload({ file, previewUrl });
+      
+      // Update the src in newGalleryImage
+      setNewGalleryImage({
+        ...newGalleryImage,
+        src: previewUrl
+      });
+    }
+  };
+
+  // Helper function to upload file to Supabase Storage
+  const uploadFile = async (file: File, bucket: string, path: string): Promise<string> => {
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${path}/${fileName}`;
+      
+      // Mock upload for now - in real scenario, you would upload to Supabase
+      // const { data, error } = await supabase.storage.from(bucket).upload(filePath, file);
+      
+      // if (error) throw error;
+      
+      // const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      
+      // Return mocked URL for now
+      return URL.createObjectURL(file);
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddBanner = async () => {
+    if (!newBanner.title) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha URL da imagem e descrição",
+        title: "Campo obrigatório",
+        description: "O título é obrigatório",
         variant: "destructive",
       });
       return;
     }
     
-    const newId = Math.max(0, ...galleryImages.map(img => img.id)) + 1;
-    setGalleryImages([...galleryImages, { ...newGalleryImage, id: newId }]);
-    setNewGalleryImage({
-      src: '',
-      alt: ''
-    });
+    try {
+      let imageUrl = newBanner.imageUrl;
+      
+      // Upload file if provided
+      if (bannerUpload) {
+        imageUrl = await uploadFile(bannerUpload.file, 'banners', 'banner-images');
+      }
+      
+      if (!imageUrl) {
+        toast({
+          title: "Imagem obrigatória",
+          description: "Adicione uma URL de imagem ou faça upload de um arquivo",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const newId = Math.max(0, ...bannerImages.map(img => img.id)) + 1;
+      const newBannerWithId = { 
+        ...newBanner, 
+        id: newId,
+        imageUrl 
+      };
+      
+      setBannerImages([...bannerImages, newBannerWithId]);
+      
+      setNewBanner({
+        imageUrl: '',
+        title: '',
+        subtitle: '',
+        description: ''
+      });
+      
+      setBannerUpload(null);
+      if (bannerFileInputRef.current) {
+        bannerFileInputRef.current.value = '';
+      }
+      
+      toast({
+        title: "Banner adicionado",
+        description: "O novo banner foi adicionado com sucesso",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao adicionar banner",
+        description: "Ocorreu um erro ao adicionar o banner",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddGalleryImage = async () => {
+    if (!newGalleryImage.alt) {
+      toast({
+        title: "Campo obrigatório",
+        description: "A descrição é obrigatória",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    toast({
-      title: "Imagem adicionada",
-      description: "A nova imagem foi adicionada à galeria",
-    });
+    try {
+      let src = newGalleryImage.src;
+      
+      // Upload file if provided
+      if (galleryUpload) {
+        src = await uploadFile(galleryUpload.file, 'gallery', 'gallery-images');
+      }
+      
+      if (!src) {
+        toast({
+          title: "Imagem obrigatória",
+          description: "Adicione uma URL de imagem ou faça upload de um arquivo",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const newId = Math.max(0, ...galleryImages.map(img => img.id)) + 1;
+      
+      setGalleryImages([...galleryImages, { ...newGalleryImage, id: newId, src }]);
+      
+      setNewGalleryImage({
+        src: '',
+        alt: ''
+      });
+      
+      setGalleryUpload(null);
+      if (galleryFileInputRef.current) {
+        galleryFileInputRef.current.value = '';
+      }
+      
+      toast({
+        title: "Imagem adicionada",
+        description: "A nova imagem foi adicionada à galeria",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao adicionar imagem",
+        description: "Ocorreu um erro ao adicionar a imagem à galeria",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteBanner = (id: number) => {
@@ -322,19 +454,56 @@ const BannerGallerySettings: React.FC = () => {
                 <div className="border rounded-md p-4 mt-6">
                   <h3 className="text-lg font-medium mb-4">Adicionar Novo Banner</h3>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="newImageUrl">URL da Imagem</Label>
-                        <Input 
-                          id="newImageUrl" 
-                          value={newBanner.imageUrl}
-                          onChange={(e) => setNewBanner({
-                            ...newBanner,
-                            imageUrl: e.target.value
-                          })}
-                          placeholder="/banner-image.jpg"
-                        />
+                    <div className="space-y-4">
+                      <div className="flex flex-col space-y-2">
+                        <Label htmlFor="bannerImage">Imagem do Banner</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <Input
+                              id="newImageUrl"
+                              placeholder="URL da imagem (ou faça upload)"
+                              value={newBanner.imageUrl}
+                              onChange={(e) => setNewBanner({
+                                ...newBanner,
+                                imageUrl: e.target.value
+                              })}
+                            />
+                          </div>
+                          <span className="text-sm text-gray-500">ou</span>
+                          <div>
+                            <label htmlFor="bannerUpload" className="cursor-pointer">
+                              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80">
+                                <Upload className="h-4 w-4" />
+                                <span>Upload</span>
+                              </div>
+                              <input
+                                id="bannerUpload"
+                                ref={bannerFileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleBannerFileChange}
+                              />
+                            </label>
+                          </div>
+                        </div>
                       </div>
+                      
+                      {bannerUpload && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-500 mb-2">Preview:</p>
+                          <div className="relative h-32 w-full rounded overflow-hidden bg-gray-100">
+                            <img
+                              src={bannerUpload.previewUrl}
+                              alt="Preview"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="newTitle">Título</Label>
                         <Input 
@@ -347,8 +516,6 @@ const BannerGallerySettings: React.FC = () => {
                           placeholder="Título do Banner"
                         />
                       </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="newSubtitle">Subtítulo</Label>
                         <Input 
@@ -361,21 +528,26 @@ const BannerGallerySettings: React.FC = () => {
                           placeholder="Subtítulo do Banner"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="newDescription">Descrição</Label>
-                        <Input 
-                          id="newDescription" 
-                          value={newBanner.description}
-                          onChange={(e) => setNewBanner({
-                            ...newBanner,
-                            description: e.target.value
-                          })}
-                          placeholder="Descrição breve"
-                        />
-                      </div>
                     </div>
-                    <Button onClick={handleAddBanner} className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" /> Adicionar Banner
+                    <div className="space-y-2">
+                      <Label htmlFor="newDescription">Descrição</Label>
+                      <Input 
+                        id="newDescription" 
+                        value={newBanner.description}
+                        onChange={(e) => setNewBanner({
+                          ...newBanner,
+                          description: e.target.value
+                        })}
+                        placeholder="Descrição breve"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleAddBanner} 
+                      className="flex items-center"
+                      disabled={uploading}
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> 
+                      {uploading ? "Enviando..." : "Adicionar Banner"}
                     </Button>
                   </div>
                 </div>
@@ -470,34 +642,74 @@ const BannerGallerySettings: React.FC = () => {
                 <div className="border rounded-md p-4 mt-6">
                   <h3 className="text-lg font-medium mb-4">Adicionar Nova Imagem</h3>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="newImageSrc">URL da Imagem</Label>
-                        <Input 
-                          id="newImageSrc" 
-                          value={newGalleryImage.src}
-                          onChange={(e) => setNewGalleryImage({
-                            ...newGalleryImage,
-                            src: e.target.value
-                          })}
-                          placeholder="/gallery-image.jpg"
-                        />
+                    <div className="space-y-4">
+                      <div className="flex flex-col space-y-2">
+                        <Label htmlFor="galleryImage">Imagem para Galeria</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <Input
+                              id="newImageSrc"
+                              placeholder="URL da imagem (ou faça upload)"
+                              value={newGalleryImage.src}
+                              onChange={(e) => setNewGalleryImage({
+                                ...newGalleryImage,
+                                src: e.target.value
+                              })}
+                            />
+                          </div>
+                          <span className="text-sm text-gray-500">ou</span>
+                          <div>
+                            <label htmlFor="galleryUpload" className="cursor-pointer">
+                              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80">
+                                <FileImage className="h-4 w-4" />
+                                <span>Upload</span>
+                              </div>
+                              <input
+                                id="galleryUpload"
+                                ref={galleryFileInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleGalleryFileChange}
+                              />
+                            </label>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="newImageAlt">Descrição</Label>
-                        <Input 
-                          id="newImageAlt" 
-                          value={newGalleryImage.alt}
-                          onChange={(e) => setNewGalleryImage({
-                            ...newGalleryImage,
-                            alt: e.target.value
-                          })}
-                          placeholder="Descrição da imagem"
-                        />
-                      </div>
+                      
+                      {galleryUpload && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-500 mb-2">Preview:</p>
+                          <div className="relative h-32 w-full rounded overflow-hidden bg-gray-100">
+                            <img
+                              src={galleryUpload.previewUrl}
+                              alt="Preview"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <Button onClick={handleAddGalleryImage} className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" /> Adicionar à Galeria
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="newImageAlt">Descrição</Label>
+                      <Input 
+                        id="newImageAlt" 
+                        value={newGalleryImage.alt}
+                        onChange={(e) => setNewGalleryImage({
+                          ...newGalleryImage,
+                          alt: e.target.value
+                        })}
+                        placeholder="Descrição da imagem"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleAddGalleryImage} 
+                      className="flex items-center"
+                      disabled={uploading}
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> 
+                      {uploading ? "Enviando..." : "Adicionar à Galeria"}
                     </Button>
                   </div>
                 </div>
