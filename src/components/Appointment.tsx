@@ -23,8 +23,8 @@ const Appointment: React.FC = () => {
     setTimeout(() => {
       setLoading(false);
       toast({
-        title: "Appointment Request Submitted",
-        description: "We'll contact you shortly to confirm your appointment.",
+        title: "Solicitação de Agendamento Enviada",
+        description: "Entraremos em contato em breve para confirmar seu horário.",
       });
     }, 1500);
   };
@@ -33,9 +33,9 @@ const Appointment: React.FC = () => {
     <section id="appointment" className="urbana-section bg-urbana-brown text-white">
       <div className="urbana-container">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">Book Your Appointment</h2>
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">Agende seu Horário</h2>
           <p className="text-xl md:text-2xl mb-12 max-w-2xl mx-auto opacity-90">
-            Schedule your visit and experience premium grooming services
+            Marque sua visita e experimente serviços premium de barbearia
           </p>
         </div>
 
@@ -44,11 +44,11 @@ const Appointment: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium mb-2">
-                  Full Name
+                  Nome Completo
                 </label>
                 <Input
                   id="name"
-                  placeholder="Your name"
+                  placeholder="Seu nome"
                   required
                   className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
                 />
@@ -56,12 +56,12 @@ const Appointment: React.FC = () => {
               
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                  Phone Number
+                  Telefone
                 </label>
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="Your phone number"
+                  placeholder="Seu número de telefone"
                   required
                   className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
                 />
@@ -69,12 +69,12 @@ const Appointment: React.FC = () => {
 
               <div>
                 <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email Address
+                  E-mail
                 </label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Your email"
+                  placeholder="Seu e-mail"
                   required
                   className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
                 />
@@ -82,32 +82,32 @@ const Appointment: React.FC = () => {
 
               <div>
                 <label htmlFor="service" className="block text-sm font-medium mb-2">
-                  Service
+                  Serviço
                 </label>
                 <Select>
                   <SelectTrigger className="bg-white/20 border-urbana-gold/50">
-                    <SelectValue placeholder="Select a service" />
+                    <SelectValue placeholder="Selecione um serviço" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="haircut">Classic Haircut</SelectItem>
-                    <SelectItem value="beard">Beard Trim</SelectItem>
-                    <SelectItem value="shave">Luxury Shave</SelectItem>
-                    <SelectItem value="combo">Hair & Beard Combo</SelectItem>
-                    <SelectItem value="color">Color Treatment</SelectItem>
+                    <SelectItem value="haircut">Corte Clássico</SelectItem>
+                    <SelectItem value="beard">Barba</SelectItem>
+                    <SelectItem value="shave">Barboterapia</SelectItem>
+                    <SelectItem value="combo">Combo Cabelo & Barba</SelectItem>
+                    <SelectItem value="color">Coloração</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
                 <label htmlFor="barber" className="block text-sm font-medium mb-2">
-                  Preferred Barber
+                  Barbeiro Preferido
                 </label>
                 <Select>
                   <SelectTrigger className="bg-white/20 border-urbana-gold/50">
-                    <SelectValue placeholder="Select a barber" />
+                    <SelectValue placeholder="Selecione um barbeiro" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any Available</SelectItem>
+                    <SelectItem value="any">Qualquer Disponível</SelectItem>
                     <SelectItem value="rafael">Rafael Costa</SelectItem>
                     <SelectItem value="lucas">Lucas Oliveira</SelectItem>
                     <SelectItem value="gabriel">Gabriel Santos</SelectItem>
@@ -118,7 +118,7 @@ const Appointment: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Preferred Date
+                  Data Preferida
                 </label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -127,15 +127,16 @@ const Appointment: React.FC = () => {
                       className="w-full bg-white/20 border-urbana-gold/50 text-left justify-start h-10"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Select a date</span>}
+                      {date ? format(date, "dd/MM/yyyy") : <span>Selecione uma data</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={date}
                       onSelect={setDate}
                       initialFocus
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -144,11 +145,11 @@ const Appointment: React.FC = () => {
 
             <div>
               <label htmlFor="notes" className="block text-sm font-medium mb-2">
-                Additional Notes
+                Observações Adicionais
               </label>
               <Textarea
                 id="notes"
-                placeholder="Any special requests or information"
+                placeholder="Pedidos especiais ou informações adicionais"
                 rows={4}
                 className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
               />
@@ -160,7 +161,7 @@ const Appointment: React.FC = () => {
                 className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-white py-6 text-lg"
                 disabled={loading}
               >
-                {loading ? "Submitting..." : "Book Appointment"}
+                {loading ? "Enviando..." : "Agendar Horário"}
               </Button>
             </div>
           </form>

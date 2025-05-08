@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-2xl font-bold mb-4 text-urbana-gold">Costa Urbana</h3>
             <p className="mb-6 text-gray-300">
-              Premium barbershop providing expert grooming services with a focus on client satisfaction and a relaxed atmosphere.
+              Barbearia premium oferecendo serviços especializados com foco na satisfação do cliente e um ambiente relaxado.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-urbana-gold transition-colors">
@@ -28,27 +28,27 @@ const Footer: React.FC = () => {
 
           {/* Hours Section */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Opening Hours</h3>
+            <h3 className="text-xl font-bold mb-4">Horário de Funcionamento</h3>
             <ul className="space-y-2 text-gray-300">
               <li className="flex items-start">
                 <Clock className="h-5 w-5 mr-2 text-urbana-gold shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">Monday - Friday</p>
-                  <p>9:00 AM - 8:00 PM</p>
+                  <p className="font-medium">Segunda - Sexta</p>
+                  <p>9:00 - 20:00</p>
                 </div>
               </li>
               <li className="flex items-start">
                 <Clock className="h-5 w-5 mr-2 text-urbana-gold shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">Saturday</p>
-                  <p>9:00 AM - 6:00 PM</p>
+                  <p className="font-medium">Sábado</p>
+                  <p>9:00 - 18:00</p>
                 </div>
               </li>
               <li className="flex items-start">
                 <Clock className="h-5 w-5 mr-2 text-urbana-gold shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium">Sunday</p>
-                  <p>Closed</p>
+                  <p className="font-medium">Domingo</p>
+                  <p>Fechado</p>
                 </div>
               </li>
             </ul>
@@ -56,11 +56,11 @@ const Footer: React.FC = () => {
 
           {/* Contact Section */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Contact Us</h3>
+            <h3 className="text-xl font-bold mb-4">Contato</h3>
             <ul className="space-y-3 text-gray-300">
               <li className="flex items-start">
                 <MapPin className="h-5 w-5 mr-2 text-urbana-gold shrink-0 mt-0.5" />
-                <p>123 Barber Street, São Paulo, SP, Brazil</p>
+                <p>Rua da Barbearia, 123, São Paulo, SP</p>
               </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 mr-2 text-urbana-gold shrink-0" />
@@ -68,29 +68,29 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail className="h-5 w-5 mr-2 text-urbana-gold shrink-0" />
-                <p>info@costaurbana.com.br</p>
+                <p>contato@costaurbana.com.br</p>
               </li>
             </ul>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h3 className="text-xl font-bold mb-4">Quick Links</h3>
+            <h3 className="text-xl font-bold mb-4">Links Rápidos</h3>
             <ul className="space-y-2 text-gray-300">
               <li>
-                <a href="#services" className="hover:text-urbana-gold transition-colors">Services</a>
+                <a href="#services" className="hover:text-urbana-gold transition-colors">Serviços</a>
               </li>
               <li>
-                <a href="#team" className="hover:text-urbana-gold transition-colors">Our Team</a>
+                <a href="#team" className="hover:text-urbana-gold transition-colors">Nossa Equipe</a>
               </li>
               <li>
-                <a href="#gallery" className="hover:text-urbana-gold transition-colors">Gallery</a>
+                <a href="#gallery" className="hover:text-urbana-gold transition-colors">Galeria</a>
               </li>
               <li>
-                <a href="#appointment" className="hover:text-urbana-gold transition-colors">Book Appointment</a>
+                <a href="#appointment" className="hover:text-urbana-gold transition-colors">Agendar Horário</a>
               </li>
               <li>
-                <a href="#" className="hover:text-urbana-gold transition-colors">Privacy Policy</a>
+                <a href="#" className="hover:text-urbana-gold transition-colors">Política de Privacidade</a>
               </li>
             </ul>
           </div>
@@ -98,7 +98,7 @@ const Footer: React.FC = () => {
 
         <div className="border-t border-gray-800 mt-12 pt-8">
           <p className="text-center text-gray-500">
-            © {new Date().getFullYear()} Costa Urbana Barbershop. All rights reserved.
+            © {new Date().getFullYear()} Costa Urbana Barbearia. Todos os direitos reservados.
           </p>
         </div>
       </div>

@@ -23,8 +23,8 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
           <div className="p-4 w-full text-white">
-            <p className="text-sm mb-1">Experience: {experience}</p>
-            <p className="text-sm">Specializes in classic and modern styles</p>
+            <p className="text-sm mb-1">Experiência: {experience}</p>
+            <p className="text-sm">Especialista em estilos clássicos e modernos</p>
           </div>
         </div>
       </div>
@@ -38,26 +38,26 @@ const Team: React.FC = () => {
   const teamMembers = [
     {
       name: "Rafael Costa",
-      role: "Master Barber & Founder",
-      experience: "15+ years",
+      role: "Barbeiro Master & Fundador",
+      experience: "+15 anos",
       image: "/team-1.jpg"
     },
     {
       name: "Lucas Oliveira",
-      role: "Senior Stylist",
-      experience: "8+ years",
+      role: "Estilista Sênior",
+      experience: "+8 anos",
       image: "/team-2.jpg"
     },
     {
       name: "Gabriel Santos",
-      role: "Beard Specialist",
-      experience: "6+ years",
+      role: "Especialista em Barba",
+      experience: "+6 anos",
       image: "/team-3.jpg"
     },
     {
       name: "Mateus Silva",
-      role: "Color Expert",
-      experience: "7+ years",
+      role: "Especialista em Coloração",
+      experience: "+7 anos",
       image: "/team-4.jpg"
     }
   ];
@@ -66,8 +66,8 @@ const Team: React.FC = () => {
     <section id="team" className="urbana-section">
       <div className="urbana-container">
         <div className="text-center mb-16">
-          <h2 className="urbana-heading">Meet Our Team</h2>
-          <p className="urbana-subheading">Our skilled barbers are dedicated to providing you with the best grooming experience</p>
+          <h2 className="urbana-heading">Nossa Equipe</h2>
+          <p className="urbana-subheading">Nossos barbeiros qualificados estão dedicados a proporcionar a melhor experiência de cuidado</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">

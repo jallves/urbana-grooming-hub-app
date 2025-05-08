@@ -28,52 +28,52 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description }) => {
 const Services: React.FC = () => {
   const services = [
     {
-      title: "Classic Haircut",
+      title: "Corte Clássico",
       price: "R$ 50",
-      description: "Precision cut tailored to your style, includes hot towel finish and styling."
+      description: "Corte de precisão adaptado ao seu estilo, inclui toalha quente e finalização."
     },
     {
-      title: "Beard Trim",
+      title: "Barba",
       price: "R$ 35",
-      description: "Shape and define your beard with precision tools and hot towel treatment."
+      description: "Modelagem e definição da sua barba com ferramentas de precisão e tratamento com toalha quente."
     },
     {
-      title: "Luxury Shave",
+      title: "Barboterapia",
       price: "R$ 45",
-      description: "Traditional straight razor shave with pre and post-shave treatments."
+      description: "Barbear tradicional com navalha e tratamentos pré e pós-barba."
     },
     {
-      title: "Hair & Beard Combo",
+      title: "Combo Cabelo & Barba",
       price: "R$ 75",
-      description: "Complete grooming package with haircut, beard trim, and styling."
+      description: "Pacote completo com corte de cabelo, barba e finalização."
     },
     {
-      title: "Color Treatment",
+      title: "Coloração",
       price: "R$ 60+",
-      description: "Professional color application to cover grays or change your look."
+      description: "Aplicação profissional de cor para cobrir grisalhos ou mudar seu visual."
     },
     {
-      title: "Kid's Haircut",
+      title: "Corte Infantil",
       price: "R$ 35",
-      description: "Gentle haircut service for children under 12 years."
+      description: "Serviço de corte suave para crianças menores de 12 anos."
     }
   ];
 
   const features = [
     {
       icon: <Scissors className="h-8 w-8 text-urbana-gold" />,
-      title: "Expert Barbers",
-      description: "Our team of skilled professionals provide premium grooming services."
+      title: "Profissionais Experientes",
+      description: "Nossa equipe de profissionais qualificados oferece serviços de qualidade premium."
     },
     {
       icon: <Clock className="h-8 w-8 text-urbana-gold" />,
-      title: "Efficient Service",
-      description: "We respect your time and ensure prompt, quality service."
+      title: "Serviço Eficiente",
+      description: "Respeitamos seu tempo e garantimos um serviço rápido e de qualidade."
     },
     {
       icon: <Star className="h-8 w-8 text-urbana-gold" />,
-      title: "Premium Experience",
-      description: "Enjoy complimentary beverages and a relaxing atmosphere."
+      title: "Experiência Premium",
+      description: "Desfrute de bebidas gratuitas e um ambiente relaxante."
     }
   ];
 
@@ -81,8 +81,8 @@ const Services: React.FC = () => {
     <section id="services" className="urbana-section bg-urbana-light">
       <div className="urbana-container">
         <div className="text-center mb-16">
-          <h2 className="urbana-heading">Our Services</h2>
-          <p className="urbana-subheading">Experience premium grooming with our range of professional services</p>
+          <h2 className="urbana-heading">Nossos Serviços</h2>
+          <p className="urbana-subheading">Experimente um cuidado premium com nossa gama de serviços profissionais</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">

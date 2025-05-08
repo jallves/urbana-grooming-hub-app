@@ -22,11 +22,11 @@ const Navbar: React.FC = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'Services', href: '#services' },
-    { name: 'Team', href: '#team' },
-    { name: 'Gallery', href: '#gallery' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'Início', href: '/' },
+    { name: 'Serviços', href: '#services' },
+    { name: 'Equipe', href: '#team' },
+    { name: 'Galeria', href: '#gallery' },
+    { name: 'Contato', href: '#contact' },
   ];
 
   return (
@@ -71,7 +71,7 @@ const Navbar: React.FC = () => {
 
         <div className="hidden md:block">
           <Button className="bg-urbana-gold hover:bg-urbana-gold/90 text-white">
-            Book Now
+            Agendar Agora
           </Button>
         </div>
       </div>
@@ -91,7 +91,7 @@ const Navbar: React.FC = () => {
               </a>
             ))}
             <Button className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-white mt-4">
-              Book Now
+              Agendar Agora
             </Button>
           </div>
         </div>
