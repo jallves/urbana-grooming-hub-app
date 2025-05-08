@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { GalleryImage } from "@/types/settings";
+// Use a type-only import with 'type' keyword to avoid conflict with the component
+import type { GalleryImage as GalleryImageType } from "@/types/settings";
 import { 
   Carousel,
   CarouselContent,
@@ -39,7 +40,7 @@ const GalleryImage = ({ src, alt, delay, onClick }: { src: string; alt: string; 
 
 const Gallery: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
-  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [images, setImages] = useState<GalleryImageType[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -59,7 +60,7 @@ const Gallery: React.FC = () => {
         }
 
         if (data && data.length > 0) {
-          const formattedData: GalleryImage[] = data.map(item => ({
+          const formattedData: GalleryImageType[] = data.map(item => ({
             id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
             src: item.src,
             alt: item.alt
