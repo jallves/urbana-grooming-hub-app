@@ -156,6 +156,42 @@ export type Database = {
         }
         Relationships: []
       }
+      banner_images: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          subtitle: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          subtitle: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          subtitle?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       business_hours: {
         Row: {
           created_at: string | null
@@ -546,6 +582,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gallery_images: {
+        Row: {
+          alt: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          src: string
+          updated_at: string | null
+        }
+        Insert: {
+          alt: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          src: string
+          updated_at?: string | null
+        }
+        Update: {
+          alt?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          src?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       marketing_campaigns: {
         Row: {

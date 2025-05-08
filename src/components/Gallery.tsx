@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { GalleryImage } from "@/types/settings";
 import { 
   Carousel,
   CarouselContent,
@@ -36,28 +39,57 @@ const GalleryImage = ({ src, alt, delay, onClick }: { src: string; alt: string; 
 
 const Gallery: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
-  const [images, setImages] = useState([
-    { src: "/gallery-1.jpg", alt: "Corte Clássico" },
-    { src: "/gallery-2.jpg", alt: "Barba Estilizada" },
-    { src: "/gallery-3.jpg", alt: "Ambiente Premium" },
-    { src: "/gallery-4.jpg", alt: "Atendimento Exclusivo" },
-    { src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
-    { src: "/gallery-6.jpg", alt: "Experiência Completa" },
-  ]);
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Could load gallery images from Supabase here
-  // useEffect(() => {
-  //   const fetchGalleryImages = async () => {
-  //     try {
-  //       // Load from supabase or local storage
-  //       // setImages(loadedImages);
-  //     } catch (error) {
-  //       console.error('Error loading gallery images:', error);
-  //     }
-  //   };
-  //
-  //   fetchGalleryImages();
-  // }, []);
+  // Fetch gallery images from Supabase
+  useEffect(() => {
+    const fetchGalleryImages = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('gallery_images')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .eq('is_active', true);
+        
+        if (error) {
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          const formattedData: GalleryImage[] = data.map(item => ({
+            id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
+            src: item.src,
+            alt: item.alt
+          }));
+          setImages(formattedData);
+        } else {
+          // Fallback to default images if no data is available
+          setImages([
+            { id: 1, src: "/gallery-1.jpg", alt: "Corte Clássico" },
+            { id: 2, src: "/gallery-2.jpg", alt: "Barba Estilizada" },
+            { id: 3, src: "/gallery-3.jpg", alt: "Ambiente Premium" },
+            { id: 4, src: "/gallery-4.jpg", alt: "Atendimento Exclusivo" },
+            { id: 5, src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
+            { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading gallery images:', error);
+        toast({
+          title: "Erro ao carregar galeria",
+          description: "Não foi possível carregar as imagens da galeria do banco de dados",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGalleryImages();
+  }, [toast]);
 
   const closeModal = () => {
     setSelectedImage(null);
@@ -74,6 +106,17 @@ const Gallery: React.FC = () => {
       setSelectedImage((selectedImage - 1 + images.length) % images.length);
     }
   };
+
+  if (loading) {
+    return (
+      <section id="gallery" className="urbana-section py-24">
+        <div className="urbana-container text-center">
+          <div className="w-16 h-16 border-t-4 border-urbana-gold border-solid rounded-full animate-spin mx-auto mb-4"></div>
+          <p>Carregando galeria...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="gallery" className="urbana-section py-24">

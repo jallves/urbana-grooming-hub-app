@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { BannerImage } from '@/types/settings';
 import { BannerFormProps, ImageUpload } from './types';
 import { useImageUpload } from './useImageUpload';
 import ImageUploader from './ImageUploader';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const [bannerUpload, setBannerUpload] = useState<ImageUpload | null>(null);
   const [editingBanner, setEditingBanner] = useState<BannerImage | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   const [newBanner, setNewBanner] = useState<Omit<BannerImage, 'id'>>({
     imageUrl: '',
@@ -34,6 +36,43 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
     subtitle: '',
     description: ''
   });
+
+  // Fetch banner images from Supabase
+  useEffect(() => {
+    const fetchBannerImages = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('banner_images')
+          .select('*')
+          .order('display_order', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (data) {
+          const formattedData: BannerImage[] = data.map(item => ({
+            id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
+            imageUrl: item.image_url,
+            title: item.title,
+            subtitle: item.subtitle,
+            description: item.description || ''
+          }));
+          setBannerImages(formattedData);
+        }
+      } catch (error) {
+        console.error('Error fetching banner images:', error);
+        toast({
+          title: "Erro ao carregar banners",
+          description: "Não foi possível carregar os banners do banco de dados",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBannerImages();
+  }, [setBannerImages, toast]);
 
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -76,32 +115,51 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
         return;
       }
       
-      const newId = Math.max(0, ...bannerImages.map(img => img.id)) + 1;
-      const newBannerWithId = { 
-        ...newBanner, 
-        id: newId,
-        imageUrl 
-      };
+      // Insert new banner into Supabase
+      const { data, error } = await supabase
+        .from('banner_images')
+        .insert({
+          image_url: imageUrl,
+          title: newBanner.title,
+          subtitle: newBanner.subtitle,
+          description: newBanner.description,
+          display_order: bannerImages.length,
+          is_active: true
+        })
+        .select();
       
-      setBannerImages([...bannerImages, newBannerWithId]);
+      if (error) throw error;
       
-      setNewBanner({
-        imageUrl: '',
-        title: '',
-        subtitle: '',
-        description: ''
-      });
-      
-      setBannerUpload(null);
-      if (bannerFileInputRef.current) {
-        bannerFileInputRef.current.value = '';
+      if (data && data[0]) {
+        const newBannerWithId: BannerImage = {
+          id: parseInt(data[0].id.toString().replace(/-/g, '').substring(0, 8), 16),
+          imageUrl: data[0].image_url,
+          title: data[0].title,
+          subtitle: data[0].subtitle,
+          description: data[0].description || ''
+        };
+        
+        setBannerImages([...bannerImages, newBannerWithId]);
+        
+        setNewBanner({
+          imageUrl: '',
+          title: '',
+          subtitle: '',
+          description: ''
+        });
+        
+        setBannerUpload(null);
+        if (bannerFileInputRef.current) {
+          bannerFileInputRef.current.value = '';
+        }
+        
+        toast({
+          title: "Banner adicionado",
+          description: "O novo banner foi adicionado com sucesso",
+        });
       }
-      
-      toast({
-        title: "Banner adicionado",
-        description: "O novo banner foi adicionado com sucesso",
-      });
     } catch (error) {
+      console.error('Error adding banner:', error);
       toast({
         title: "Erro ao adicionar banner",
         description: "Ocorreu um erro ao adicionar o banner",
@@ -110,7 +168,7 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
     }
   };
 
-  const handleDeleteBanner = (id: number) => {
+  const handleDeleteBanner = async (id: number) => {
     if (bannerImages.length <= 1) {
       toast({
         title: "Operação não permitida",
@@ -120,26 +178,78 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
       return;
     }
     
-    setBannerImages(bannerImages.filter(img => img.id !== id));
-    toast({
-      title: "Banner removido",
-      description: "O banner foi removido com sucesso",
-    });
+    try {
+      // Find the UUID in the original format from our database
+      const bannerToDelete = bannerImages.find(img => img.id === id);
+      if (!bannerToDelete) return;
+      
+      // Delete from Supabase by matching imageUrl since we don't have the original UUID
+      const { error } = await supabase
+        .from('banner_images')
+        .delete()
+        .eq('image_url', bannerToDelete.imageUrl);
+      
+      if (error) throw error;
+      
+      setBannerImages(bannerImages.filter(img => img.id !== id));
+      toast({
+        title: "Banner removido",
+        description: "O banner foi removido com sucesso",
+      });
+    } catch (error) {
+      console.error('Error deleting banner:', error);
+      toast({
+        title: "Erro ao remover banner",
+        description: "Ocorreu um erro ao remover o banner",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateBanner = () => {
+  const handleUpdateBanner = async () => {
     if (!editingBanner) return;
     
-    setBannerImages(bannerImages.map(img => 
-      img.id === editingBanner.id ? editingBanner : img
-    ));
-    
-    setEditingBanner(null);
-    toast({
-      title: "Banner atualizado",
-      description: "As alterações foram salvas com sucesso",
-    });
+    try {
+      // Find the banner in Supabase by matching imageUrl
+      const { data, error } = await supabase
+        .from('banner_images')
+        .update({
+          image_url: editingBanner.imageUrl,
+          title: editingBanner.title,
+          subtitle: editingBanner.subtitle,
+          description: editingBanner.description
+        })
+        .eq('image_url', editingBanner.imageUrl)
+        .select();
+      
+      if (error) throw error;
+      
+      setBannerImages(bannerImages.map(img => 
+        img.id === editingBanner.id ? editingBanner : img
+      ));
+      
+      setEditingBanner(null);
+      toast({
+        title: "Banner atualizado",
+        description: "As alterações foram salvas com sucesso",
+      });
+    } catch (error) {
+      console.error('Error updating banner:', error);
+      toast({
+        title: "Erro ao atualizar banner",
+        description: "Ocorreu um erro ao atualizar o banner",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="w-10 h-10 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

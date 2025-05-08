@@ -3,38 +3,88 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { BannerImage } from "@/types/settings";
+import { useToast } from "@/hooks/use-toast";
 
 const Hero: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [bannerImages, setBannerImages] = useState([
-    {
-      id: 1,
-      imageUrl: '/hero-background.jpg',
-      title: 'Experiência Premium',
-      subtitle: 'em Barbearia',
-      description: 'A arte da barbearia tradicional com sofisticação moderna'
-    },
-    {
-      id: 2,
-      imageUrl: '/banner-2.jpg',
-      title: 'Estilo & Precisão',
-      subtitle: 'para Cavalheiros',
-      description: 'Cortes clássicos com um toque contemporâneo'
-    },
-    {
-      id: 3,
-      imageUrl: '/banner-3.jpg',
-      title: 'Ambiente Exclusivo',
-      subtitle: 'para Relaxar',
-      description: 'Um espaço onde tradição e conforto se encontram'
-    }
-  ]);
+  const [bannerImages, setBannerImages] = useState<BannerImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Fetch banner images from Supabase
+  useEffect(() => {
+    const fetchBannerImages = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('banner_images')
+          .select('*')
+          .order('display_order', { ascending: true })
+          .eq('is_active', true);
+        
+        if (error) {
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          const formattedData: BannerImage[] = data.map(item => ({
+            id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
+            imageUrl: item.image_url,
+            title: item.title,
+            subtitle: item.subtitle,
+            description: item.description || ''
+          }));
+          setBannerImages(formattedData);
+        } else {
+          // Fallback to default banners if no data is available
+          setBannerImages([
+            {
+              id: 1,
+              imageUrl: '/hero-background.jpg',
+              title: 'Experiência Premium',
+              subtitle: 'em Barbearia',
+              description: 'A arte da barbearia tradicional com sofisticação moderna'
+            },
+            {
+              id: 2,
+              imageUrl: '/banner-2.jpg',
+              title: 'Estilo & Precisão',
+              subtitle: 'para Cavalheiros',
+              description: 'Cortes clássicos com um toque contemporâneo'
+            },
+            {
+              id: 3,
+              imageUrl: '/banner-3.jpg',
+              title: 'Ambiente Exclusivo',
+              subtitle: 'para Relaxar',
+              description: 'Um espaço onde tradição e conforto se encontram'
+            }
+          ]);
+        }
+      } catch (error) {
+        console.error('Error loading banner images:', error);
+        toast({
+          title: "Erro ao carregar banners",
+          description: "Não foi possível carregar os banners do banco de dados",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBannerImages();
+  }, [toast]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    if (bannerImages.length > 0) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
   }, [bannerImages.length]);
 
   const nextSlide = () => {
@@ -45,19 +95,16 @@ const Hero: React.FC = () => {
     setCurrentSlide((prev) => (prev - 1 + bannerImages.length) % bannerImages.length);
   };
 
-  // Could load banner images from Supabase here
-  // useEffect(() => {
-  //   const fetchBannerImages = async () => {
-  //     try {
-  //       // Load from supabase or local storage
-  //       // setBannerImages(loadedImages);
-  //     } catch (error) {
-  //       console.error('Error loading banner images:', error);
-  //     }
-  //   };
-  //
-  //   fetchBannerImages();
-  // }, []);
+  if (loading || bannerImages.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-urbana-black">
+        <div className="text-white text-center">
+          <div className="w-16 h-16 border-t-4 border-urbana-gold border-solid rounded-full animate-spin mx-auto mb-4"></div>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">

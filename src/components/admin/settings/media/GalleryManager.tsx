@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { GalleryImage } from '@/types/settings';
 import { GalleryFormProps, ImageUpload } from './types';
 import { useImageUpload } from './useImageUpload';
 import ImageUploader from './ImageUploader';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -26,11 +27,47 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
   const [galleryUpload, setGalleryUpload] = useState<ImageUpload | null>(null);
   const [editingGallery, setEditingGallery] = useState<GalleryImage | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   const [newGalleryImage, setNewGalleryImage] = useState<Omit<GalleryImage, 'id'>>({
     src: '',
     alt: ''
   });
+
+  // Fetch gallery images from Supabase
+  useEffect(() => {
+    const fetchGalleryImages = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('gallery_images')
+          .select('*')
+          .order('display_order', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (data) {
+          const formattedData: GalleryImage[] = data.map(item => ({
+            id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
+            src: item.src,
+            alt: item.alt
+          }));
+          setGalleryImages(formattedData);
+        }
+      } catch (error) {
+        console.error('Error fetching gallery images:', error);
+        toast({
+          title: "Erro ao carregar galeria",
+          description: "Não foi possível carregar as imagens da galeria do banco de dados",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGalleryImages();
+  }, [setGalleryImages, toast]);
 
   const handleGalleryFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -73,25 +110,45 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
         return;
       }
       
-      const newId = Math.max(0, ...galleryImages.map(img => img.id)) + 1;
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('gallery_images')
+        .insert({
+          src: src,
+          alt: newGalleryImage.alt,
+          display_order: galleryImages.length,
+          is_active: true
+        })
+        .select();
       
-      setGalleryImages([...galleryImages, { ...newGalleryImage, id: newId, src }]);
+      if (error) throw error;
       
-      setNewGalleryImage({
-        src: '',
-        alt: ''
-      });
-      
-      setGalleryUpload(null);
-      if (galleryFileInputRef.current) {
-        galleryFileInputRef.current.value = '';
+      if (data && data[0]) {
+        const newImage: GalleryImage = {
+          id: parseInt(data[0].id.toString().replace(/-/g, '').substring(0, 8), 16),
+          src: data[0].src,
+          alt: data[0].alt
+        };
+        
+        setGalleryImages([...galleryImages, newImage]);
+        
+        setNewGalleryImage({
+          src: '',
+          alt: ''
+        });
+        
+        setGalleryUpload(null);
+        if (galleryFileInputRef.current) {
+          galleryFileInputRef.current.value = '';
+        }
+        
+        toast({
+          title: "Imagem adicionada",
+          description: "A nova imagem foi adicionada à galeria",
+        });
       }
-      
-      toast({
-        title: "Imagem adicionada",
-        description: "A nova imagem foi adicionada à galeria",
-      });
     } catch (error) {
+      console.error('Error adding gallery image:', error);
       toast({
         title: "Erro ao adicionar imagem",
         description: "Ocorreu um erro ao adicionar a imagem à galeria",
@@ -100,27 +157,76 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
     }
   };
 
-  const handleDeleteGallery = (id: number) => {
-    setGalleryImages(galleryImages.filter(img => img.id !== id));
-    toast({
-      title: "Imagem removida",
-      description: "A imagem foi removida da galeria",
-    });
+  const handleDeleteGallery = async (id: number) => {
+    try {
+      // Find the image by id
+      const imageToDelete = galleryImages.find(img => img.id === id);
+      if (!imageToDelete) return;
+      
+      // Delete from Supabase by matching src
+      const { error } = await supabase
+        .from('gallery_images')
+        .delete()
+        .eq('src', imageToDelete.src);
+      
+      if (error) throw error;
+      
+      setGalleryImages(galleryImages.filter(img => img.id !== id));
+      toast({
+        title: "Imagem removida",
+        description: "A imagem foi removida da galeria",
+      });
+    } catch (error) {
+      console.error('Error deleting gallery image:', error);
+      toast({
+        title: "Erro ao remover imagem",
+        description: "Ocorreu um erro ao remover a imagem da galeria",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateGallery = () => {
+  const handleUpdateGallery = async () => {
     if (!editingGallery) return;
     
-    setGalleryImages(galleryImages.map(img => 
-      img.id === editingGallery.id ? editingGallery : img
-    ));
-    
-    setEditingGallery(null);
-    toast({
-      title: "Imagem atualizada",
-      description: "As alterações foram salvas com sucesso",
-    });
+    try {
+      // Update in Supabase by matching src
+      const { error } = await supabase
+        .from('gallery_images')
+        .update({
+          src: editingGallery.src,
+          alt: editingGallery.alt
+        })
+        .eq('src', editingGallery.src);
+      
+      if (error) throw error;
+      
+      setGalleryImages(galleryImages.map(img => 
+        img.id === editingGallery.id ? editingGallery : img
+      ));
+      
+      setEditingGallery(null);
+      toast({
+        title: "Imagem atualizada",
+        description: "As alterações foram salvas com sucesso",
+      });
+    } catch (error) {
+      console.error('Error updating gallery image:', error);
+      toast({
+        title: "Erro ao atualizar imagem",
+        description: "Ocorreu um erro ao atualizar a imagem",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="w-10 h-10 border-t-4 border-primary border-solid rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
