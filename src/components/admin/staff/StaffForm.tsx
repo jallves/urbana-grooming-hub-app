@@ -82,9 +82,18 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
         if (error) throw error;
         toast.success('Profissional atualizado com sucesso!');
       } else {
+        // Ensure that the required fields are present in the object
+        const staffData = {
+          name: values.name,
+          email: values.email || null,
+          phone: values.phone || null,
+          role: values.role || null,
+          is_active: values.is_active
+        };
+
         const { error } = await supabase
           .from('staff')
-          .insert([values]);
+          .insert([staffData]);
 
         if (error) throw error;
         toast.success('Profissional criado com sucesso!');

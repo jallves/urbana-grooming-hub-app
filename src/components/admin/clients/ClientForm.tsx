@@ -76,9 +76,16 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
         if (error) throw error;
         toast.success('Cliente atualizado com sucesso!');
       } else {
+        // Ensure that the required fields are present in the object
+        const clientData = {
+          name: values.name,
+          phone: values.phone,
+          email: values.email || null,
+        };
+
         const { error } = await supabase
           .from('clients')
-          .insert([values]);
+          .insert([clientData]);
 
         if (error) throw error;
         toast.success('Cliente criado com sucesso!');
