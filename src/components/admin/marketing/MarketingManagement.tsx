@@ -5,7 +5,7 @@ import CampaignList from './CampaignList';
 import CouponList from './CouponList';
 import MarketingDashboard from './MarketingDashboard';
 import MarketingReports from '../reports/MarketingReports';
-import { BarChart3, Ticket, PercentCircle, LayoutDashboard } from 'lucide-react';
+import { BarChart3, Ticket, Percent, LayoutDashboard } from 'lucide-react';
 
 const MarketingManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -24,7 +24,7 @@ const MarketingManagement: React.FC = () => {
             <span className="hidden sm:inline">Dashboard</span>
           </TabsTrigger>
           <TabsTrigger value="campaigns" className="flex items-center gap-2">
-            <PercentCircle className="h-4 w-4" />
+            <Percent className="h-4 w-4" />
             <span className="hidden sm:inline">Campanhas</span>
           </TabsTrigger>
           <TabsTrigger value="coupons" className="flex items-center gap-2">

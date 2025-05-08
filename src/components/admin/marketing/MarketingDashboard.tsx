@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tag, Percent, ArrowUp, ArrowDown, Users, Eye, ShoppingBag } from 'lucide-react';
+import { Tag, Percent, ArrowUp, ArrowDown, Users, Eye, ShoppingBag, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const MarketingDashboard: React.FC = () => {
@@ -119,7 +119,7 @@ const MarketingDashboard: React.FC = () => {
                 )}
               </div>
               <div className="p-2 bg-primary/10 rounded-full">
-                <PercentCircle className="h-5 w-5 text-primary" />
+                <Percent className="h-5 w-5 text-primary" />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
