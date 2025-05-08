@@ -14,6 +14,9 @@ interface TicketRowProps {
 }
 
 const TicketRow: React.FC<TicketRowProps> = ({ ticket, onOpenTicket, onStatusChange }) => {
+  // Garantir que o status nunca seja uma string vazia
+  const ticketStatus = ticket.status || 'open';
+  
   return (
     <TableRow>
       <TableCell className="font-medium">{ticket.subject}</TableCell>
@@ -26,7 +29,7 @@ const TicketRow: React.FC<TicketRowProps> = ({ ticket, onOpenTicket, onStatusCha
         )}
       </TableCell>
       <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+      <TableCell>{getStatusBadge(ticketStatus)}</TableCell>
       <TableCell>
         {ticket.created_at && format(new Date(ticket.created_at), 'dd/MM/yyyy')}
       </TableCell>
@@ -40,7 +43,7 @@ const TicketRow: React.FC<TicketRowProps> = ({ ticket, onOpenTicket, onStatusCha
             Ver
           </Button>
           <Select
-            defaultValue={ticket.status}
+            defaultValue={ticketStatus}
             onValueChange={async (value) => await onStatusChange(ticket.id, value)}
           >
             <SelectTrigger className="h-8 w-[110px]">
