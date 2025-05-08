@@ -5,6 +5,7 @@ import { BarChart3 } from 'lucide-react';
 import MetricsSection from './dashboard/MetricsSection';
 import RecentMetrics from './dashboard/RecentMetrics';
 import ActivityList from './dashboard/ActivityList';
+import type { MetricItem } from './dashboard/RecentMetrics';
 
 const MarketingDashboard: React.FC = () => {
   // Mock data for recent metrics
@@ -13,25 +14,25 @@ const MarketingDashboard: React.FC = () => {
       metric: 'Visualizações da Loja',
       value: '2.350',
       change: '+15%',
-      trend: 'up'
+      trend: 'up' as const
     },
     {
       metric: 'Novos Clientes',
       value: '48',
       change: '+7%',
-      trend: 'up'
+      trend: 'up' as const
     },
     {
       metric: 'Taxa de Conversão',
       value: '3.2%',
       change: '-0.5%',
-      trend: 'down'
+      trend: 'down' as const
     },
     {
       metric: 'Valor Médio',
       value: 'R$ 185,30',
       change: '+12%',
-      trend: 'up'
+      trend: 'up' as const
     },
   ] as const;
 

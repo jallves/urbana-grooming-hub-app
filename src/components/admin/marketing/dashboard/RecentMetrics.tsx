@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 
-interface MetricItem {
+export interface MetricItem {
   metric: string;
   value: string;
   change: string;
@@ -10,7 +10,7 @@ interface MetricItem {
 }
 
 interface RecentMetricsProps {
-  metrics: MetricItem[];
+  metrics: readonly MetricItem[] | MetricItem[];
 }
 
 import { ArrowUp, ArrowDown } from 'lucide-react';
