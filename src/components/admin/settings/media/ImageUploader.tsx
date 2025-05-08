@@ -1,0 +1,76 @@
+
+import React, { useRef } from 'react';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, FileImage } from "lucide-react";
+import { ImageUpload } from './types';
+
+interface ImageUploaderProps {
+  imageUrl: string;
+  setImageUrl: (url: string) => void;
+  upload: ImageUpload | null;
+  setUpload: React.Dispatch<React.SetStateAction<ImageUpload | null>>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  iconComponent?: React.ReactNode;
+  placeholder?: string;
+}
+
+const ImageUploader: React.FC<ImageUploaderProps> = ({
+  imageUrl,
+  setImageUrl,
+  upload,
+  setUpload,
+  fileInputRef,
+  handleFileChange,
+  iconComponent = <Upload className="h-4 w-4" />,
+  placeholder = "URL da imagem (ou faça upload)"
+}) => {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col space-y-2">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <Input
+              placeholder={placeholder}
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+            />
+          </div>
+          <span className="text-sm text-gray-500">ou</span>
+          <div>
+            <label htmlFor={fileInputRef.current?.id} className="cursor-pointer">
+              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80">
+                {iconComponent}
+                <span>Upload</span>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      {upload && (
+        <div className="mt-2">
+          <p className="text-sm text-gray-500 mb-2">Preview:</p>
+          <div className="relative h-32 w-full rounded overflow-hidden bg-gray-100">
+            <img
+              src={upload.previewUrl}
+              alt="Preview"
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ImageUploader;
