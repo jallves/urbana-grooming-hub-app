@@ -1,12 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { SupportTicket, TicketResponse } from '@/types/support';
 import { toast } from 'sonner';
+
+// Import our new components
+import TicketHeader from './components/TicketHeader';
+import TicketDescription from './components/TicketDescription';
+import ResponseList from './components/ResponseList';
+import ResponseForm from './components/ResponseForm';
+import TicketActions from './components/TicketActions';
+import { formatDate, getResponderName } from './utils/ticketUtils';
 
 interface TicketDetailsProps {
   ticketId: string | null;
@@ -131,36 +136,10 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <Badge className="bg-blue-100 text-blue-800">Aberto</Badge>;
-      case 'in_progress':
-        return <Badge className="bg-yellow-100 text-yellow-800">Em Andamento</Badge>;
-      case 'resolved':
-        return <Badge className="bg-green-100 text-green-800">Resolvido</Badge>;
-      case 'closed':
-        return <Badge className="bg-gray-100 text-gray-800">Fechado</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+  const handleStatusChange = async (status: string) => {
+    if (ticket) {
+      await onStatusChange(ticket.id, status);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-  
-  // Helper function to get responder name
-  const getResponderName = (response: TicketResponse) => {
-    // Since we can't rely on the join with staff table, we'll just show a generic name
-    return response.responder_type === 'staff' ? 'Atendente' : 'Cliente';
   };
 
   return (
@@ -173,99 +152,45 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
         ) : !ticket ? (
           <div className="text-center py-8">
             <p>Ticket não encontrado ou foi removido.</p>
-            <Button onClick={onClose} className="mt-4">Fechar</Button>
+            <button onClick={onClose} className="mt-4 px-4 py-2 bg-primary text-white rounded-md">Fechar</button>
           </div>
         ) : (
           <>
             <DialogHeader>
-              <div className="flex items-center justify-between">
-                <DialogTitle className="text-xl">Ticket #{ticket.id}</DialogTitle>
-                {getStatusBadge(ticket.status)}
-              </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                Criado em {formatDate(ticket.created_at)}
-              </div>
+              <TicketHeader ticket={ticket} formatDate={formatDate} />
             </DialogHeader>
             
             <div className="space-y-4 my-4">
-              <div className="bg-muted p-4 rounded-md">
-                <div className="flex justify-between mb-2">
-                  <h3 className="font-medium">Assunto: {ticket.subject}</h3>
-                  <span className="text-sm text-muted-foreground">
-                    Cliente: {(ticket as any).clients?.name || 'Desconhecido'}
-                  </span>
-                </div>
-                <p className="whitespace-pre-wrap">{ticket.description}</p>
-              </div>
+              <TicketDescription ticket={ticket} />
               
               <div className="space-y-4 mt-6">
                 <h3 className="font-medium">Histórico de Respostas</h3>
-                
-                {responses.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic">Nenhuma resposta ainda.</p>
-                ) : (
-                  responses.map((response) => (
-                    <div key={response.id} className="bg-muted/50 p-4 rounded-md">
-                      <div className="flex justify-between mb-2">
-                        <span className="font-medium">
-                          {getResponderName(response)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(response.created_at)}
-                        </span>
-                      </div>
-                      <p className="whitespace-pre-wrap">{response.response_text}</p>
-                    </div>
-                  ))
-                )}
+                <ResponseList 
+                  responses={responses} 
+                  formatDate={formatDate} 
+                  getResponderName={getResponderName} 
+                />
               </div>
               
               {ticket.status !== 'closed' && ticket.status !== 'resolved' && (
-                <div className="space-y-3 mt-6">
-                  <label htmlFor="response" className="block text-sm font-medium">
-                    Adicionar Resposta
-                  </label>
-                  <Textarea
-                    id="response"
-                    rows={4}
-                    placeholder="Digite sua resposta aqui..."
-                    value={newResponse}
-                    onChange={(e) => setNewResponse(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
+                <ResponseForm 
+                  newResponse={newResponse} 
+                  setNewResponse={setNewResponse} 
+                  handleSubmitResponse={handleSubmitResponse} 
+                  isSubmitting={isSubmitting} 
+                />
               )}
             </div>
             
-            <DialogFooter className="flex space-x-2 justify-end">
-              {ticket.status !== 'closed' && ticket.status !== 'resolved' && (
-                <Button 
-                  onClick={handleSubmitResponse} 
-                  disabled={!newResponse.trim() || isSubmitting}
-                >
-                  {isSubmitting ? 'Enviando...' : 'Enviar Resposta'}
-                </Button>
+            <DialogFooter>
+              {ticket.status !== 'closed' && (
+                <TicketActions 
+                  ticketStatus={ticket.status} 
+                  onClose={onClose}
+                  onStatusChange={handleStatusChange}
+                  ticketId={ticket.id}
+                />
               )}
-              
-              {ticket.status === 'open' || ticket.status === 'in_progress' ? (
-                <Button 
-                  variant="outline" 
-                  onClick={() => onStatusChange(ticket.id, 'resolved')}
-                >
-                  Marcar como Resolvido
-                </Button>
-              ) : ticket.status === 'resolved' ? (
-                <Button 
-                  variant="outline" 
-                  onClick={() => onStatusChange(ticket.id, 'closed')}
-                >
-                  Fechar Ticket
-                </Button>
-              ) : null}
-              
-              <Button variant="ghost" onClick={onClose}>
-                Fechar
-              </Button>
             </DialogFooter>
           </>
         )}
