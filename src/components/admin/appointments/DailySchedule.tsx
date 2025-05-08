@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Appointment } from '@/types/appointment';
 import AppointmentForm from './AppointmentForm';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface DailyScheduleProps {
   date: Date;
@@ -32,6 +33,8 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCreatingAppointment, setIsCreatingAppointment] = useState(false);
+  const [newAppointmentTime, setNewAppointmentTime] = useState<Date | null>(null);
   
   const fetchAppointments = async () => {
     try {
@@ -65,6 +68,9 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
       setAppointments(data || []);
     } catch (error) {
       console.error('Error fetching appointments:', error);
+      toast.error('Erro ao carregar agendamentos', {
+        description: 'Não foi possível carregar os agendamentos. Tente novamente.'
+      });
     }
   };
   
@@ -129,6 +135,14 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
   
   const handleEditAppointment = (appointmentId: string) => {
     setSelectedAppointment(appointmentId);
+    setIsCreatingAppointment(false);
+    setIsFormOpen(true);
+  };
+  
+  const handleCreateAppointment = (slotTime: Date) => {
+    setNewAppointmentTime(slotTime);
+    setSelectedAppointment(null);
+    setIsCreatingAppointment(true);
     setIsFormOpen(true);
   };
   
@@ -138,7 +152,18 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
         {generateTimeSlots().map((slot, index) => (
           <Card key={index}>
             <CardContent className="p-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">{slot.label}</h3>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium text-gray-500">{slot.label}</h3>
+                {viewMode === 'day' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleCreateAppointment(slot.time)}
+                  >
+                    + Agendar
+                  </Button>
+                )}
+              </div>
               
               {slot.appointments.length === 0 ? (
                 <p className="text-sm text-gray-400">Nenhum agendamento</p>
@@ -174,15 +199,17 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
         ))}
       </div>
       
-      {isFormOpen && selectedAppointment && (
+      {isFormOpen && (
         <AppointmentForm
           isOpen={isFormOpen}
           onClose={() => {
             setIsFormOpen(false);
             setSelectedAppointment(null);
+            setIsCreatingAppointment(false);
             fetchAppointments();
           }}
           appointmentId={selectedAppointment}
+          defaultDate={isCreatingAppointment && newAppointmentTime ? newAppointmentTime : new Date()}
         />
       )}
     </>
