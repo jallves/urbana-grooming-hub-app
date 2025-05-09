@@ -6,7 +6,7 @@ const VintageOverlay: React.FC = () => {
     <>
       {/* Vintage Pattern Overlay */}
       <div 
-        className="absolute inset-0 z-0 opacity-10"
+        className="absolute inset-0 z-0 opacity-15"
         style={{
           backgroundImage: `url('/vintage-pattern.png')`,
           backgroundRepeat: 'repeat',

@@ -26,9 +26,9 @@ const BannerSlide: React.FC<BannerSlideProps> = ({ slide, isActive }) => {
           backgroundImage: `url('${slide.imageUrl}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundBlendMode: 'soft-light',
-          filter: 'sepia(15%)',
-          opacity: 0.9,
+          backgroundBlendMode: 'multiply',
+          filter: 'brightness(0.7) sepia(20%)',
+          opacity: 0.85,
         }}
       />
     </motion.div>
