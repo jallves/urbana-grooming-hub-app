@@ -1,11 +1,10 @@
 
 import React from 'react';
 import GalleryHeader from './gallery/GalleryHeader';
-import GalleryGrid from './gallery/GalleryGrid';
-import GalleryFooter from './gallery/GalleryFooter';
 import LoadingState from './gallery/LoadingState';
 import LightboxModal from './gallery/LightboxModal';
 import CarouselSection from './gallery/CarouselSection';
+import GalleryFooter from './gallery/GalleryFooter';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useLightbox } from '@/hooks/useLightbox';
 
@@ -32,11 +31,6 @@ const Gallery: React.FC = () => {
         <GalleryHeader />
         
         <CarouselSection 
-          images={images} 
-          onSelectImage={setSelectedImage} 
-        />
-
-        <GalleryGrid 
           images={images} 
           onSelectImage={setSelectedImage} 
         />

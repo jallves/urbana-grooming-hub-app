@@ -16,13 +16,11 @@ interface CarouselSectionProps {
 }
 
 const CarouselSection: React.FC<CarouselSectionProps> = ({ images, onSelectImage }) => {
-  const displayedImages = images.slice(0, 3); // Only show first 3 images in carousel
-  
   return (
     <div className="mb-12">
       <Carousel className="w-full">
         <CarouselContent>
-          {displayedImages.map((image, index) => (
+          {images.map((image, index) => (
             <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
               <div className="p-2 h-full">
                 <GalleryImage 
