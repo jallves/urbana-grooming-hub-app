@@ -45,7 +45,7 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
   
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-2">
         {timeSlots.map((slot, index) => (
           <TimeSlot
             key={index}

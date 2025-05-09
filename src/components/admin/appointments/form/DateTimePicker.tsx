@@ -2,13 +2,13 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from 'react-hook-form';
 
 interface DateTimePickerProps {
@@ -16,6 +16,21 @@ interface DateTimePickerProps {
 }
 
 const DateTimePicker: React.FC<DateTimePickerProps> = ({ form }) => {
+  // Generate time slots in 30-minute intervals from 8:00 to 20:00
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 8; hour < 20; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const formattedHour = hour.toString().padStart(2, '0');
+        const formattedMinute = minute.toString().padStart(2, '0');
+        slots.push(`${formattedHour}:${formattedMinute}`);
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <FormField
@@ -64,16 +79,23 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Hora</FormLabel>
-            <FormControl>
-              <div className="relative">
-                <Input
-                  {...field}
-                  type="time"
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              </div>
-            </FormControl>
+            <Select
+              onValueChange={field.onChange}
+              defaultValue={field.value}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um horário" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {timeSlots.map((time) => (
+                  <SelectItem key={time} value={time}>
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}

@@ -27,17 +27,20 @@ export const generateTimeSlots = ({
 }: TimeSlotGeneratorProps): TimeSlot[] => {
   const slots: TimeSlot[] = [];
   
-  // For day view, show hourly slots
+  // For day view, show 30-minute slots
   if (viewMode === 'day') {
     for (let hour = businessHours.start; hour < businessHours.end; hour++) {
-      const slotTime = new Date(date);
-      slotTime.setHours(hour, 0, 0, 0);
-      
-      slots.push({
-        time: slotTime,
-        label: format(slotTime, 'HH:mm'),
-        appointments: getAppointmentsForHour(appointments, hour),
-      });
+      // Create slots for both :00 and :30 of each hour
+      for (let minute = 0; minute < 60; minute += 30) {
+        const slotTime = new Date(date);
+        slotTime.setHours(hour, minute, 0, 0);
+        
+        slots.push({
+          time: slotTime,
+          label: format(slotTime, 'HH:mm'),
+          appointments: getAppointmentsForTimeSlot(appointments, hour, minute),
+        });
+      }
     }
     
     return slots;
@@ -58,11 +61,12 @@ export const generateTimeSlots = ({
   return slots;
 };
 
-// Get appointments for a specific hour
-const getAppointmentsForHour = (appointments: Appointment[], hour: number) => {
+// Get appointments for a specific 30-minute slot
+const getAppointmentsForTimeSlot = (appointments: Appointment[], hour: number, minute: number) => {
   return appointments.filter(appointment => {
     const appointmentDate = new Date(appointment.start_time);
-    return appointmentDate.getHours() === hour;
+    return appointmentDate.getHours() === hour && 
+           Math.floor(appointmentDate.getMinutes() / 30) * 30 === minute;
   });
 };
 

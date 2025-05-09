@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { addHours } from "date-fns";
 import { AppointmentFormData } from "@/types/appointment";
 import PersonalInfoFields from './PersonalInfoFields';
 import ServiceSelection from './ServiceSelection';
@@ -82,10 +81,11 @@ const AppointmentForm: React.FC = () => {
       const startTime = formData.date;
       if (!startTime) throw new Error("Data não selecionada");
       
-      // Calcular horário final baseado na duração do serviço
-      const endTime = addHours(startTime, serviceData.duration / 60);
+      // Definir hora de término com base na duração do serviço (em minutos)
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + serviceData.duration);
 
-      // 2. Inserir agendamento - usando "scheduled" em vez de "agendado"
+      // 2. Inserir agendamento
       const { error: appointmentError } = await supabase
         .from('appointments')
         .insert({
