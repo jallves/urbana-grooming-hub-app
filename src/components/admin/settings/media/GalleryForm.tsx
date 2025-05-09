@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +34,14 @@ const GalleryForm: React.FC<GalleryFormProps> = ({
   handleAddGalleryImage,
   uploading
 }) => {
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Limpar erro ao tentar novo upload
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+    handleGalleryFileChange(e);
+  };
+
   return (
     <div className="border rounded-md p-4 mt-6">
       <h3 className="text-lg font-medium mb-4">Adicionar Nova Imagem</h3>
@@ -50,8 +58,9 @@ const GalleryForm: React.FC<GalleryFormProps> = ({
               upload={galleryUpload}
               setUpload={setGalleryUpload}
               fileInputRef={galleryFileInputRef}
-              handleFileChange={handleGalleryFileChange}
+              handleFileChange={handleFileChange}
               placeholder="URL da imagem (ou faça upload)"
+              uploadError={uploadError}
             />
           </div>
         </div>

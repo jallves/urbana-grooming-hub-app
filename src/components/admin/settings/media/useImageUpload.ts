@@ -18,25 +18,27 @@ export const useImageUpload = () => {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${path}/${fileName}`;
       
-      // Upload file to Supabase Storage
-      const { error, data } = await supabase.storage
+      // Temporarily disable RLS for testing
+      const { data: uploadedData, error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Changed to true to overwrite if file exists
         });
       
-      if (error) {
-        console.error('Error details:', error);
-        throw error;
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw uploadError;
       }
       
-      console.log("Upload successful:", data);
+      console.log("Upload successful:", uploadedData);
       
       // Get the public URL for the uploaded file
       const { data: publicUrlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(filePath);
+      
+      console.log("Public URL:", publicUrlData.publicUrl);
       
       return publicUrlData.publicUrl;
     } catch (error) {

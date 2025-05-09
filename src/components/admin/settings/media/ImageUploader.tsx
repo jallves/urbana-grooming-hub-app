@@ -2,8 +2,9 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, FileImage } from "lucide-react";
+import { Upload, FileImage, AlertCircle } from "lucide-react";
 import { ImageUpload } from '@/types/settings';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ImageUploaderProps {
   imageUrl: string;
@@ -14,6 +15,7 @@ interface ImageUploaderProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   iconComponent?: React.ReactNode;
   placeholder?: string;
+  uploadError?: string | null;
 }
 
 const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -24,7 +26,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
   fileInputRef,
   handleFileChange,
   iconComponent = <Upload className="h-4 w-4" />,
-  placeholder = "URL da imagem (ou faça upload)"
+  placeholder = "URL da imagem (ou faça upload)",
+  uploadError = null
 }) => {
   return (
     <div className="space-y-4">
@@ -59,6 +62,13 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           </div>
         </div>
       </div>
+      
+      {uploadError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{uploadError}</AlertDescription>
+        </Alert>
+      )}
       
       {upload && (
         <div className="mt-2">

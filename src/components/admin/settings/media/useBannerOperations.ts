@@ -67,11 +67,18 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
           console.log("Uploading banner image to Supabase Storage");
           imageUrl = await uploadFile(bannerUpload.file, 'banners', 'images');
           console.log("Banner image upload successful, URL:", imageUrl);
-        } catch (uploadError) {
+        } catch (uploadError: any) {
           console.error("Banner upload error:", uploadError);
+          
+          // Show more detailed error message to help debugging
+          let errorMessage = "Não foi possível fazer o upload da imagem do banner";
+          if (uploadError.message) {
+            errorMessage += ": " + uploadError.message;
+          }
+          
           toast({
             title: "Erro no upload",
-            description: "Não foi possível fazer o upload da imagem do banner",
+            description: errorMessage,
             variant: "destructive",
           });
           return false;
@@ -100,7 +107,10 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
         })
         .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting banner record:", error);
+        throw error;
+      }
       
       if (data && data[0]) {
         const newBannerWithId: BannerImage = {
@@ -119,11 +129,11 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
         return true;
       }
       return false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding banner:', error);
       toast({
         title: "Erro ao adicionar banner",
-        description: "Ocorreu um erro ao adicionar o banner",
+        description: "Ocorreu um erro ao adicionar o banner: " + error.message,
         variant: "destructive",
       });
       return false;
