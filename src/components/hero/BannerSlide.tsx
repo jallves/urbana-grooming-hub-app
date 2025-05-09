@@ -18,10 +18,10 @@ const BannerSlide: React.FC<BannerSlideProps> = ({ slide, isActive }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 1 }}
-      className="absolute inset-0 z-0"
+      className="absolute inset-0 z-0 rounded-lg overflow-hidden"
     >
       <div 
-        className="absolute inset-0 bg-urbana-black"
+        className="absolute inset-0 bg-urbana-black rounded-lg"
         style={{
           backgroundImage: `url('${slide.imageUrl}')`,
           backgroundSize: 'cover',

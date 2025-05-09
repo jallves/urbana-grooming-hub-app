@@ -26,24 +26,26 @@ const Hero: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with Vintage Filter */}
-      <AnimatePresence mode="wait">
-        {bannerImages.map((slide, index) => (
-          <BannerSlide 
-            key={slide.id}
-            slide={slide}
-            isActive={currentSlide === index}
-          />
-        ))}
-      </AnimatePresence>
-      
-      <VintageOverlay />
-      
-      {/* Navigation Arrows */}
-      <NavigationArrows onPrev={prevSlide} onNext={nextSlide} />
+      <div className="w-[70%] mx-auto relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Image with Vintage Filter */}
+        <AnimatePresence mode="wait">
+          {bannerImages.map((slide, index) => (
+            <BannerSlide 
+              key={slide.id}
+              slide={slide}
+              isActive={currentSlide === index}
+            />
+          ))}
+        </AnimatePresence>
+        
+        <VintageOverlay />
+        
+        {/* Navigation Arrows */}
+        <NavigationArrows onPrev={prevSlide} onNext={nextSlide} />
+      </div>
       
       {/* Content */}
-      <div className="urbana-container z-10 text-center">
+      <div className="urbana-container z-10 text-center absolute">
         <AnimatePresence mode="wait">
           <HeroContent key={currentSlide} slide={bannerImages[currentSlide]} />
         </AnimatePresence>
