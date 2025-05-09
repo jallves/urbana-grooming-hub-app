@@ -14,6 +14,8 @@ export const useGalleryImages = () => {
     const fetchGalleryImages = async () => {
       try {
         setLoading(true);
+        console.log('Tentando buscar imagens da galeria');
+        
         const { data, error } = await supabase
           .from('gallery_images')
           .select('*')
@@ -21,10 +23,12 @@ export const useGalleryImages = () => {
           .eq('is_active', true);
         
         if (error) {
+          console.error('Erro ao buscar galeria:', error);
           throw error;
         }
 
         if (data && data.length > 0) {
+          console.log('Imagens da galeria encontradas:', data.length);
           const formattedData: GalleryImageType[] = data.map(item => ({
             id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
             src: item.src,
@@ -32,6 +36,7 @@ export const useGalleryImages = () => {
           }));
           setImages(formattedData);
         } else {
+          console.log('Nenhuma imagem da galeria encontrada, usando fallback');
           // Fallback to default images if no data is available
           setImages([
             { id: 1, src: "/gallery-1.jpg", alt: "Corte Clássico" },
@@ -44,9 +49,19 @@ export const useGalleryImages = () => {
         }
       } catch (error) {
         console.error('Error loading gallery images:', error);
+        // Fallback to default images if there's an error
+        setImages([
+          { id: 1, src: "/gallery-1.jpg", alt: "Corte Clássico" },
+          { id: 2, src: "/gallery-2.jpg", alt: "Barba Estilizada" },
+          { id: 3, src: "/gallery-3.jpg", alt: "Ambiente Premium" },
+          { id: 4, src: "/gallery-4.jpg", alt: "Atendimento Exclusivo" },
+          { id: 5, src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
+          { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
+        ]);
+        
         toast({
           title: "Erro ao carregar galeria",
-          description: "Não foi possível carregar as imagens da galeria do banco de dados",
+          description: "Usando imagens padrão para exibição",
           variant: "destructive",
         });
       } finally {

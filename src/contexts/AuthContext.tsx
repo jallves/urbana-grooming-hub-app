@@ -22,7 +22,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('AuthProvider iniciado');
 
-    // Verificar sessão atual primeiro
+    // Configurar o listener para mudanças no estado de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log('Evento de autenticação:', event);
+        
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        // Verificar se o usuário é admin quando a sessão mudar
+        if (newSession?.user) {
+          console.log('Nova sessão, verificando papel do usuário');
+          await checkUserRole(newSession.user.id);
+        } else {
+          console.log('Sessão terminada ou inválida');
+          setIsAdmin(false);
+        }
+      }
+    );
+
+    // Verificar sessão atual
     const getSession = async () => {
       try {
         console.log('Obtendo sessão atual');
@@ -46,25 +65,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    // Configurar o listener para mudanças no estado de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('Evento de autenticação:', event);
-        
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
-        // Verificar se o usuário é admin quando a sessão mudar
-        if (newSession?.user) {
-          console.log('Nova sessão, verificando papel do usuário');
-          await checkUserRole(newSession.user.id);
-        } else {
-          console.log('Sessão terminada ou inválida');
-          setIsAdmin(false);
-        }
-      }
-    );
-
     getSession();
 
     return () => {
@@ -80,11 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Buscar todos os registros para este usuário onde o papel seja 'admin'
       const { data, error } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('*')
         .eq('user_id', userId)
         .eq('role', 'admin');
       
-      console.log('Resultado da consulta:', data);
+      console.log('Resultado da consulta de role:', data);
       
       // Se tiver pelo menos um resultado, o usuário é admin
       const hasAdminRole = data && data.length > 0;

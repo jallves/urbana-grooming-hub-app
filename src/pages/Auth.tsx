@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [initComplete, setInitComplete] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -26,6 +27,9 @@ const Auth: React.FC = () => {
       } else {
         navigate('/');
       }
+    } else if (!authLoading) {
+      // Se não estiver autenticado e não estiver carregando, marcar como inicialização completa
+      setInitComplete(true);
     }
   }, [user, isAdmin, navigate, authLoading]);
 
@@ -63,7 +67,7 @@ const Auth: React.FC = () => {
           if (signUpData.user) {
             console.log("Usuário criado, adicionando role de admin...");
             // Adicionar usuário à tabela de funções como administrador
-            await supabase
+            const { error: roleError } = await supabase
               .from('user_roles')
               .insert([
                 { 
@@ -72,7 +76,11 @@ const Auth: React.FC = () => {
                 }
               ]);
               
-            console.log('Usuário específico criado com sucesso');
+            if (roleError) {
+              console.error('Erro ao adicionar role de admin:', roleError);
+            } else {
+              console.log('Usuário específico criado com sucesso e role adicionada');
+            }
           }
         } else {
           console.log("Usuário específico já existe");
@@ -82,8 +90,10 @@ const Auth: React.FC = () => {
       }
     };
     
-    createSpecificUser();
-  }, []);
+    if (initComplete && !authLoading && !user) {
+      createSpecificUser();
+    }
+  }, [initComplete, authLoading, user]);
 
   // Renderizar o loading state enquanto verifica autenticação
   if (authLoading) {

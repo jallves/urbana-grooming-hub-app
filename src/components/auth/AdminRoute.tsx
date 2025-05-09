@@ -30,6 +30,15 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     }
   }, [loading, user, isAdmin, toast]);
   
+  // Exibir mensagem detalhada de debug no console
+  console.log('AdminRoute: Estado atual', { 
+    isLoading: loading, 
+    isAuthenticated: !!user, 
+    userEmail: user?.email, 
+    isAdmin: isAdmin,
+    path: location.pathname
+  });
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -40,15 +49,17 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   
   if (!user) {
     // Redirecionar para a página de login se não estiver autenticado
+    console.log('AdminRoute: Redirecionando para /auth pois usuário não está autenticado');
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
   
   if (!isAdmin) {
-    console.log("Usuário não é admin:", user.email);
+    console.log("AdminRoute: Redirecionando para / pois usuário não é admin:", user.email);
     // Redirecionar para a página principal se não for administrador
     return <Navigate to="/" state={{ from: location }} replace />;
   }
   
+  console.log('AdminRoute: Renderizando conteúdo admin para', user.email);
   return <>{children}</>;
 };
 
