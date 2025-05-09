@@ -2,8 +2,15 @@
 import { useState, useEffect } from 'react';
 import { GalleryImage } from '@/types/settings';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useImageUpload } from './useImageUpload';
+import { useGalleryValidation } from './hooks/useGalleryValidation';
+import {
+  fetchGalleryImages,
+  createGalleryImage,
+  updateGalleryImage,
+  deleteGalleryImage,
+  updateGalleryImageOrder
+} from './api/galleryApi';
 
 export const useGalleryOperations = (
   galleryImages: GalleryImage[],
@@ -11,29 +18,17 @@ export const useGalleryOperations = (
 ) => {
   const { toast } = useToast();
   const { uploadFile, uploading } = useImageUpload();
+  const { validateGalleryImage } = useGalleryValidation();
   const [isLoading, setIsLoading] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
 
   // Fetch gallery images from Supabase
   useEffect(() => {
-    const fetchGalleryImages = async () => {
+    const loadGalleryImages = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from('gallery_images')
-          .select('*')
-          .order('display_order', { ascending: true });
-        
-        if (error) throw error;
-        
-        if (data) {
-          const formattedData: GalleryImage[] = data.map(item => ({
-            id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
-            src: item.src,
-            alt: item.alt
-          }));
-          setGalleryImages(formattedData);
-        }
+        const data = await fetchGalleryImages();
+        setGalleryImages(data);
       } catch (error) {
         console.error('Error fetching gallery images:', error);
         toast({
@@ -46,24 +41,20 @@ export const useGalleryOperations = (
       }
     };
 
-    fetchGalleryImages();
+    loadGalleryImages();
   }, [setGalleryImages, toast]);
 
   const handleAddGalleryImage = async (
     newImage: { src: string; alt: string },
     galleryUpload: { file: File; previewUrl: string } | null
   ) => {
-    if (!newImage.alt) {
-      toast({
-        title: "Campo obrigatório",
-        description: "A descrição da imagem é obrigatória",
-        variant: "destructive",
-      });
-      return false;
-    }
-    
     try {
       let imageUrl = newImage.src;
+      
+      // Validate the form data
+      if (!validateGalleryImage(newImage.alt, galleryUpload ? 'placeholder' : imageUrl)) {
+        return false;
+      }
       
       // Upload file if provided
       if (galleryUpload) {
@@ -82,27 +73,12 @@ export const useGalleryOperations = (
         }
       }
       
-      if (!imageUrl) {
-        toast({
-          title: "Imagem obrigatória",
-          description: "Adicione uma URL de imagem ou faça upload de um arquivo",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Insert new gallery image into Supabase
-      const { data, error } = await supabase
-        .from('gallery_images')
-        .insert({
-          src: imageUrl,
-          alt: newImage.alt,
-          display_order: galleryImages.length,
-          is_active: true
-        })
-        .select();
-      
-      if (error) throw error;
+      // Create gallery image in Supabase
+      const data = await createGalleryImage({
+        src: imageUrl,
+        alt: newImage.alt,
+        display_order: galleryImages.length
+      });
       
       if (data && data[0]) {
         const newGalleryImage: GalleryImage = {
@@ -138,12 +114,7 @@ export const useGalleryOperations = (
       if (!imageToDelete) return;
       
       // Delete from Supabase
-      const { error } = await supabase
-        .from('gallery_images')
-        .delete()
-        .eq('src', imageToDelete.src);
-      
-      if (error) throw error;
+      await deleteGalleryImage(imageToDelete.src);
       
       setGalleryImages(galleryImages.filter(img => img.id !== id));
       
@@ -166,15 +137,10 @@ export const useGalleryOperations = (
     
     try {
       // Update in Supabase
-      const { error } = await supabase
-        .from('gallery_images')
-        .update({
-          src: editingImage.src,
-          alt: editingImage.alt
-        })
-        .eq('src', editingImage.src);
-      
-      if (error) throw error;
+      await updateGalleryImage({
+        src: editingImage.src,
+        alt: editingImage.alt
+      });
       
       setGalleryImages(galleryImages.map(img => 
         img.id === editingImage.id ? editingImage : img
@@ -210,23 +176,8 @@ export const useGalleryOperations = (
     
     // Update display_order in the database
     try {
-      const batch = [];
-      
-      batch.push(
-        supabase
-          .from('gallery_images')
-          .update({ display_order: newIndex })
-          .eq('src', galleryImages[currentIndex].src)
-      );
-      
-      batch.push(
-        supabase
-          .from('gallery_images')
-          .update({ display_order: currentIndex })
-          .eq('src', galleryImages[newIndex].src)
-      );
-      
-      await Promise.all(batch);
+      await updateGalleryImageOrder(galleryImages[currentIndex].src, newIndex);
+      await updateGalleryImageOrder(galleryImages[newIndex].src, currentIndex);
       
       setGalleryImages(updatedImages);
     } catch (error) {
