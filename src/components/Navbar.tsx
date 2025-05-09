@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
+import { Shield } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -77,7 +78,7 @@ const Navbar: React.FC = () => {
                     className="hover:text-primary transition-colors"
                     title={isAdmin ? "Acessar painel admin" : "Autenticação necessária"}
                   >
-                    Admin
+                    <Shield size={20} />
                   </Link>
                 </li>
                 <li>
@@ -88,8 +89,8 @@ const Navbar: React.FC = () => {
               </>
             ) : (
               <li>
-                <Link to="/auth" className="hover:text-primary transition-colors">
-                  Admin
+                <Link to="/auth" className="hover:text-primary transition-colors" title="Admin">
+                  <Shield size={20} />
                 </Link>
               </li>
             )}
