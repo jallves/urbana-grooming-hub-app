@@ -950,6 +950,7 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
+          experience: string | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -961,6 +962,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email?: string | null
+          experience?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -972,6 +974,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string | null
+          experience?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
