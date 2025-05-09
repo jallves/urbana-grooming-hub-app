@@ -49,7 +49,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     );
   }
   
-  // Se não estiver autenticado, redirecionar para a página de login
+  // Se não estiver autenticado, redirecionar para a página de login com o state preservado
   if (!user) {
     console.log('AdminRoute: Redirecionando para /auth pois usuário não está autenticado');
     return <Navigate to="/auth" state={{ from: location }} replace />;
