@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,20 @@ import { useToast } from '@/hooks/use-toast';
 const Navbar: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const { toast } = useToast();
+  const [scrolled, setScrolled] = useState(false);
+
+  // Effect to detect scrolling and add shadow/background when scrolled
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [scrolled]);
 
   const handleSignOut = async () => {
     try {
@@ -26,7 +40,9 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <div className="bg-white shadow">
+    <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      scrolled ? 'bg-white shadow-md' : 'bg-white/95 shadow'
+    }`}>
       <div className="container mx-auto py-4 px-5 flex items-center justify-between">
         <Link to="/" className="text-2xl font-bold text-primary">
           Urbana Barbearia
