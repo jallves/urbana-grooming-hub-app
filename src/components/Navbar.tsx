@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
     }`}>
       <div className="container mx-auto py-4 px-5 flex items-center justify-between">
         <Link to="/" className="text-2xl font-bold text-primary">
-          Urbana Barbearia
+          Barbearia Costa Urbana
         </Link>
         <nav>
           <ul className="flex items-center space-x-6">
