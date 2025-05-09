@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -10,6 +11,22 @@ interface AdminRouteProps {
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const { user, isAdmin, loading } = useAuth();
   const location = useLocation();
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log('AdminRoute: Usuário não autenticado, redirecionando para /auth');
+      } else if (!isAdmin) {
+        console.log('AdminRoute: Usuário não é admin:', user.email);
+        toast({
+          title: "Acesso Restrito",
+          description: "Você não tem permissão para acessar o painel administrativo.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [loading, user, isAdmin, toast]);
   
   if (loading) {
     return (

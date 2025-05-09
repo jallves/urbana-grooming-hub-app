@@ -22,13 +22,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Configurar o listener para mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+      async (_event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
         // Verificar se o usuário é admin quando a sessão mudar
         if (newSession?.user) {
-          checkUserRole(newSession.user.id);
+          await checkUserRole(newSession.user.id);
         } else {
           setIsAdmin(false);
         }
@@ -62,15 +62,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Verificar se o usuário tem papel de administrador
   const checkUserRole = async (userId: string) => {
     try {
-      // Modificação aqui: em vez de .single(), vamos usar .maybeSingle()
+      // Buscar todos os registros para este usuário onde o papel seja 'admin'
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .eq('role', 'admin');
       
+      console.log('Verificando admin role para usuário:', userId);
+      console.log('Resultado da consulta:', data);
+      
       // Se tiver pelo menos um resultado, o usuário é admin
-      setIsAdmin(data && data.length > 0);
+      const hasAdminRole = data && data.length > 0;
+      console.log('Usuário é admin:', hasAdminRole);
+      
+      setIsAdmin(hasAdminRole);
       
       if (error) {
         console.error('Erro ao verificar papel do usuário:', error);

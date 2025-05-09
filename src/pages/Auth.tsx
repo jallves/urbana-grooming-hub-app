@@ -6,32 +6,28 @@ import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   
   // Verificar se o usuário já está autenticado
   useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
+    if (!authLoading && user) {
+      console.log("Auth: Usuário autenticado, redirecionando");
+      console.log("Auth: isAdmin:", isAdmin);
+      
+      // Se for admin, redirecionar para o painel administrativo
+      if (isAdmin) {
         navigate('/admin');
+      } else {
+        navigate('/');
       }
-    };
-    
-    checkSession();
-    
-    // Configurar listener para mudanças no estado de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate('/admin');
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    }
+  }, [user, isAdmin, navigate, authLoading]);
 
   // Criar o usuário específico se ele não existir
   useEffect(() => {

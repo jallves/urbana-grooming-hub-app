@@ -24,6 +24,7 @@ const AdminHeader: React.FC = () => {
     }
   };
   
+  // Obter nome do usuário das metadados ou fallback para email
   const userName = user?.user_metadata?.full_name || user?.email || 'Admin';
   
   return (
