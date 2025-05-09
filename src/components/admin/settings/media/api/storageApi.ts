@@ -17,7 +17,7 @@ export const uploadFileToStorage = async (file: File, bucket: string, path: stri
   const filePath = `${path}/${fileName}`;
   
   // Upload to storage with the correct bucket
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError, data: uploadData } = await supabase.storage
     .from(bucket)
     .upload(filePath, file, {
       cacheControl: '3600',
