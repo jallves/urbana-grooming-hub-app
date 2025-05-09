@@ -15,6 +15,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { Loader2, Building, Phone, Mail, Globe, Instagram, Facebook, Twitter } from 'lucide-react';
 import { ShopSettingsFormData } from '@/types/settings';
@@ -199,6 +200,9 @@ const ShopSettingsForm: React.FC = () => {
                         <Input className="pl-10" placeholder="(00) 00000-0000" {...field} value={field.value || ''} />
                       </div>
                     </FormControl>
+                    <FormDescription>
+                      Este número será usado para o botão de WhatsApp no site. Inclua o código do país e DDD.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

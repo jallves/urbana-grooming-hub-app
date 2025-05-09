@@ -1,12 +1,24 @@
 
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
+import { useShopSettings } from '@/hooks/useShopSettings';
 
 const WhatsAppButton: React.FC = () => {
-  // Número de telefone para o WhatsApp (substitua pelo seu número)
-  const phoneNumber = '5511999999999'; // Formato: código do país + DDD + número
+  const { shopSettings, loading } = useShopSettings();
+  
+  // Usar o número de telefone das configurações da barbearia ou um valor padrão
+  const phoneNumber = shopSettings?.phone || '5511999999999';
+  
+  // Remover caracteres não numéricos do número de telefone
+  const formattedPhone = phoneNumber.replace(/\D/g, '');
   const message = encodeURIComponent('Olá, gostaria de mais informações sobre a Urbana Barbearia!');
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${message}`;
+
+  // Não mostrar o botão se não tiver configuração de telefone
+  if (loading) return null;
+  
+  // Se não houver número de telefone nas configurações, não mostrar o botão
+  if (!shopSettings?.phone) return null;
 
   return (
     <a 
