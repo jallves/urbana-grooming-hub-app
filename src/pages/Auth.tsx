@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
@@ -12,31 +12,44 @@ const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [initComplete, setInitComplete] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
   
+  // Obter o "from" do state ou usar fallback "/"
+  const from = location.state?.from?.pathname || "/";
+  
   // Verificar se o usuário já está autenticado
   useEffect(() => {
+    console.log('Auth: Verificando autenticação', { user, authLoading, isAdmin });
+    
     // Add a timeout to ensure we don't block the UI from rendering
     const redirectTimeout = setTimeout(() => {
       if (!authLoading && user) {
         console.log("Auth: Usuário autenticado, redirecionando");
         console.log("Auth: isAdmin:", isAdmin);
+        console.log("Auth: from:", from);
         
-        // Se for admin, redirecionar para o painel administrativo
-        if (isAdmin) {
+        // Se a rota anterior for uma rota admin, verificar se o usuário é admin
+        if (from.startsWith('/admin') && isAdmin) {
+          console.log('Auth: Redirecionando de volta para:', from);
+          navigate(from);
+        } else if (isAdmin) {
+          console.log('Auth: Redirecionando para o painel administrativo');
           navigate('/admin');
         } else {
+          console.log('Auth: Redirecionando para a página principal');
           navigate('/');
         }
       } else if (!authLoading) {
         // Se não estiver autenticado e não estiver carregando, marcar como inicialização completa
+        console.log('Auth: Inicialização completa, sem usuário autenticado');
         setInitComplete(true);
       }
     }, 500); // Short timeout to ensure we don't block rendering
 
     return () => clearTimeout(redirectTimeout);
-  }, [user, isAdmin, navigate, authLoading]);
+  }, [user, isAdmin, navigate, authLoading, from]);
 
   // Criar o usuário específico se ele não existir
   useEffect(() => {
