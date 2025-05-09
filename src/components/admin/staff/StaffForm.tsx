@@ -18,8 +18,9 @@ import {
 } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useImageUpload } from '@/components/admin/settings/media/useImageUpload';
+import { StaffFormData } from '@/types/staff';
 
 interface StaffFormProps {
   staffId: string | null;
@@ -88,7 +89,9 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
     
     try {
       setUploadProgress(true);
+      console.log('Uploading profile image to staff-photos/profiles');
       const imageUrl = await uploadFile(selectedFile, 'staff-photos', 'profiles');
+      console.log('Image uploaded successfully:', imageUrl);
       return imageUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -126,19 +129,26 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
           .update(staffData)
           .eq('id', staffId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating staff:', error);
+          throw error;
+        }
         toast.success('Profissional atualizado com sucesso!');
       } else {
         const { error } = await supabase
           .from('staff')
           .insert([staffData]);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating staff:', error);
+          throw error;
+        }
         toast.success('Profissional criado com sucesso!');
       }
       
       onSuccess();
     } catch (error) {
+      console.error('Error in onSubmit:', error);
       toast.error('Erro ao salvar profissional', {
         description: (error as Error).message
       });

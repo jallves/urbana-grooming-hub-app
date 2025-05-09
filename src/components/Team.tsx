@@ -8,7 +8,7 @@ interface TeamMemberProps {
   name: string;
   role: string;
   experience: string;
-  image: string;
+  image: string | null;
 }
 
 const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }) => {
@@ -17,7 +17,7 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
       <div className="relative mb-5 overflow-hidden rounded-lg">
         <div className="aspect-square w-full overflow-hidden">
           <Avatar className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
-            <AvatarImage src={image} alt={name} className="object-cover object-center h-full w-full" />
+            <AvatarImage src={image || ''} alt={name} className="object-cover object-center h-full w-full" />
             <AvatarFallback className="text-2xl bg-urbana-gold text-white h-full w-full">
               {name.split(' ').map(n => n[0]).join('')}
             </AvatarFallback>
@@ -102,7 +102,7 @@ const Team: React.FC = () => {
               name={member.name}
               role={member.role || 'Barbeiro'}
               experience={member.experience || '+5 anos'}
-              image={member.image_url || '/team-1.jpg'}
+              image={member.image_url}
             />
           ))}
         </div>

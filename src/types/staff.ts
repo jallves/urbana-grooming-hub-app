@@ -17,3 +17,16 @@ export interface StaffFormData {
   image_url: string | null;
   experience?: string | null;
 }
+
+// Update staff table type to include image_url
+export interface Staff {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  role?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+  image_url?: string | null;
+}
