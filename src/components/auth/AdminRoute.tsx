@@ -39,26 +39,29 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     path: location.pathname
   });
   
+  // Se ainda estiver carregando, mostrar um spinner
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+        <p className="text-muted-foreground">Verificando permissões...</p>
       </div>
     );
   }
   
+  // Se não estiver autenticado, redirecionar para a página de login
   if (!user) {
-    // Redirecionar para a página de login se não estiver autenticado
     console.log('AdminRoute: Redirecionando para /auth pois usuário não está autenticado');
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
   
+  // Se não for admin, redirecionar para a página principal
   if (!isAdmin) {
     console.log("AdminRoute: Redirecionando para / pois usuário não é admin:", user.email);
-    // Redirecionar para a página principal se não for administrador
     return <Navigate to="/" state={{ from: location }} replace />;
   }
   
+  // Se for admin, permitir acesso
   console.log('AdminRoute: Renderizando conteúdo admin para', user.email);
   return <>{children}</>;
 };

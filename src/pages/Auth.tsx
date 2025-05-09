@@ -17,20 +17,25 @@ const Auth: React.FC = () => {
   
   // Verificar se o usuário já está autenticado
   useEffect(() => {
-    if (!authLoading && user) {
-      console.log("Auth: Usuário autenticado, redirecionando");
-      console.log("Auth: isAdmin:", isAdmin);
-      
-      // Se for admin, redirecionar para o painel administrativo
-      if (isAdmin) {
-        navigate('/admin');
-      } else {
-        navigate('/');
+    // Add a timeout to ensure we don't block the UI from rendering
+    const redirectTimeout = setTimeout(() => {
+      if (!authLoading && user) {
+        console.log("Auth: Usuário autenticado, redirecionando");
+        console.log("Auth: isAdmin:", isAdmin);
+        
+        // Se for admin, redirecionar para o painel administrativo
+        if (isAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      } else if (!authLoading) {
+        // Se não estiver autenticado e não estiver carregando, marcar como inicialização completa
+        setInitComplete(true);
       }
-    } else if (!authLoading) {
-      // Se não estiver autenticado e não estiver carregando, marcar como inicialização completa
-      setInitComplete(true);
-    }
+    }, 500); // Short timeout to ensure we don't block rendering
+
+    return () => clearTimeout(redirectTimeout);
   }, [user, isAdmin, navigate, authLoading]);
 
   // Criar o usuário específico se ele não existir
@@ -61,6 +66,11 @@ const Auth: React.FC = () => {
 
           if (signUpError) {
             console.error('Erro ao criar usuário específico:', signUpError);
+            toast({
+              title: "Erro ao criar usuário administrador",
+              description: signUpError.message,
+              variant: "destructive",
+            });
             return;
           }
           
@@ -78,8 +88,17 @@ const Auth: React.FC = () => {
               
             if (roleError) {
               console.error('Erro ao adicionar role de admin:', roleError);
+              toast({
+                title: "Erro ao configurar permissões de admin",
+                description: roleError.message,
+                variant: "destructive",
+              });
             } else {
               console.log('Usuário específico criado com sucesso e role adicionada');
+              toast({
+                title: "Usuário administrador criado",
+                description: "Utilize o email joao.colimoides@gmail.com e a senha fornecida para login de admin",
+              });
             }
           }
         } else {
@@ -87,19 +106,25 @@ const Auth: React.FC = () => {
         }
       } catch (error) {
         console.error('Erro ao verificar ou criar usuário específico:', error);
+        toast({
+          title: "Erro ao verificar usuário",
+          description: "Ocorreu um erro ao verificar ou criar o usuário administrador",
+          variant: "destructive",
+        });
       }
     };
     
     if (initComplete && !authLoading && !user) {
       createSpecificUser();
     }
-  }, [initComplete, authLoading, user]);
+  }, [initComplete, authLoading, user, toast]);
 
   // Renderizar o loading state enquanto verifica autenticação
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+        <p className="text-muted-foreground">Verificando autenticação...</p>
       </div>
     );
   }

@@ -22,60 +22,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('AuthProvider iniciado');
 
-    // Configurar o listener para mudanças no estado de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('Evento de autenticação:', event);
-        
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
-        // Verificar se o usuário é admin quando a sessão mudar
-        if (newSession?.user) {
-          console.log('Nova sessão, verificando papel do usuário');
-          await checkUserRole(newSession.user.id);
-        } else {
-          console.log('Sessão terminada ou inválida');
-          setIsAdmin(false);
+    try {
+      // Configurar o listener para mudanças no estado de autenticação
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, newSession) => {
+          console.log('Evento de autenticação:', event);
+          
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          
+          // Verificar se o usuário é admin quando a sessão mudar
+          if (newSession?.user) {
+            console.log('Nova sessão, verificando papel do usuário');
+            // Use setTimeout to avoid potential deadlocks with Supabase client
+            setTimeout(() => {
+              checkUserRole(newSession.user.id).catch(err => {
+                console.error('Erro ao verificar papel do usuário via timeout:', err);
+                setIsAdmin(false);
+              });
+            }, 0);
+          } else {
+            console.log('Sessão terminada ou inválida');
+            setIsAdmin(false);
+          }
         }
-      }
-    );
+      );
 
-    // Verificar sessão atual
-    const getSession = async () => {
-      try {
-        console.log('Obtendo sessão atual');
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        if (currentSession?.user) {
-          console.log('Sessão encontrada, verificando papel do usuário');
-          await checkUserRole(currentSession.user.id);
-        } else {
-          console.log('Nenhuma sessão encontrada');
+      // Verificar sessão atual
+      const getSession = async () => {
+        try {
+          console.log('Obtendo sessão atual');
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+          
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          if (currentSession?.user) {
+            console.log('Sessão encontrada, verificando papel do usuário');
+            await checkUserRole(currentSession.user.id);
+          } else {
+            console.log('Nenhuma sessão encontrada');
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error('Erro ao obter sessão:', error);
           setIsAdmin(false);
+        } finally {
+          console.log('Carregamento completo');
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Erro ao obter sessão:', error);
-      } finally {
-        console.log('Carregamento completo');
-        setLoading(false);
-      }
-    };
+      };
 
-    getSession();
+      getSession();
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.error('Erro crítico no AuthProvider:', error);
+      setLoading(false);
+      setUser(null);
+      setSession(null);
+      setIsAdmin(false);
+    }
   }, []);
 
   // Verificar se o usuário tem papel de administrador
   const checkUserRole = async (userId: string) => {
     try {
       console.log('Verificando admin role para usuário:', userId);
+      
+      // Verificar se temos userId antes de consultar
+      if (!userId) {
+        console.log('userId vazio, não é possível verificar roles');
+        setIsAdmin(false);
+        return;
+      }
       
       // Buscar todos os registros para este usuário onde o papel seja 'admin'
       const { data, error } = await supabase
@@ -84,6 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .eq('role', 'admin');
       
+      if (error) {
+        console.error('Erro ao verificar papel do usuário:', error);
+        setIsAdmin(false);
+        return;
+      }
+      
       console.log('Resultado da consulta de role:', data);
       
       // Se tiver pelo menos um resultado, o usuário é admin
@@ -91,11 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Usuário é admin:', hasAdminRole);
       
       setIsAdmin(hasAdminRole);
-      
-      if (error) {
-        console.error('Erro ao verificar papel do usuário:', error);
-        setIsAdmin(false);
-      }
     } catch (error) {
       console.error('Erro ao verificar papel do usuário:', error);
       setIsAdmin(false);
@@ -104,9 +127,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     console.log('Iniciando logout');
-    await supabase.auth.signOut();
-    console.log('Logout concluído');
-    setIsAdmin(false);
+    try {
+      await supabase.auth.signOut();
+      console.log('Logout concluído');
+      setIsAdmin(false);
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   const contextValue = {
