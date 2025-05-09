@@ -35,6 +35,7 @@ const staffFormSchema = z.object({
   role: z.string().nullable().optional(),
   is_active: z.boolean().default(true),
   image_url: z.string().nullable().optional(),
+  experience: z.string().nullable().optional(),
 });
 
 type StaffFormValues = z.infer<typeof staffFormSchema>;
@@ -71,6 +72,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
       role: '',
       is_active: true,
       image_url: '',
+      experience: '',
     },
     values: staffData || undefined,
   });
@@ -121,6 +123,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
         role: values.role || null,
         is_active: values.is_active,
         image_url: imageUrl || values.image_url || null,
+        experience: values.experience || null,
       };
 
       if (isEditing) {
@@ -208,22 +211,41 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
           />
         </div>
         
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Função</FormLabel>
-              <FormControl>
-                <Input placeholder="Função do profissional" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormDescription>
-                Ex: Barbeiro, Cabeleireiro, Manicure, etc.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Função</FormLabel>
+                <FormControl>
+                  <Input placeholder="Função do profissional" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormDescription>
+                  Ex: Barbeiro, Cabeleireiro, Manicure, etc.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="experience"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Experiência</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ex: +5 anos" {...field} value={field.value || ''} />
+                </FormControl>
+                <FormDescription>
+                  Tempo de experiência do profissional
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}

@@ -15,7 +15,7 @@ export interface StaffFormData {
   role: string | null;
   is_active: boolean;
   image_url: string | null;
-  experience?: string | null;
+  experience: string | null;
 }
 
 // Update staff table type to include image_url
@@ -29,4 +29,5 @@ export interface Staff {
   created_at?: string;
   updated_at?: string;
   image_url?: string | null;
+  experience?: string | null;
 }
