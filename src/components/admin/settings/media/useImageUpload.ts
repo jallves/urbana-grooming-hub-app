@@ -18,17 +18,17 @@ export const useImageUpload = () => {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${path}/${fileName}`;
       
-      // Temporarily disable RLS for testing
+      // Usando anon key para uploads públicos
       const { data: uploadedData, error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: true // Changed to true to overwrite if file exists
+          upsert: true
         });
       
       if (uploadError) {
         console.error('Upload error details:', uploadError);
-        throw uploadError;
+        throw new Error(`${uploadError.message || 'Erro desconhecido durante o upload'}`);
       }
       
       console.log("Upload successful:", uploadedData);

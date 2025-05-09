@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +41,16 @@ const GalleryForm: React.FC<GalleryFormProps> = ({
     setUploadError(null);
     handleGalleryFileChange(e);
   };
+  
+  // Modificar a função de adicionar para capturar erros
+  const handleAddImage = async () => {
+    setUploadError(null);
+    try {
+      await handleAddGalleryImage();
+    } catch (error) {
+      setUploadError((error as Error).message);
+    }
+  };
 
   return (
     <div className="border rounded-md p-4 mt-6">
@@ -79,7 +89,7 @@ const GalleryForm: React.FC<GalleryFormProps> = ({
         </div>
         
         <Button 
-          onClick={handleAddGalleryImage} 
+          onClick={handleAddImage} 
           className="flex items-center"
           disabled={uploading}
         >
