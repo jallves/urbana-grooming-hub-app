@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoginForm from '@/components/auth/LoginForm';
@@ -13,7 +13,7 @@ const Auth: React.FC = () => {
   const { toast } = useToast();
   
   // Verificar se o usuário já está autenticado
-  React.useEffect(() => {
+  useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
@@ -32,6 +32,57 @@ const Auth: React.FC = () => {
     
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Criar o usuário específico se ele não existir
+  useEffect(() => {
+    const createSpecificUser = async () => {
+      try {
+        // Verificar se o usuário já existe
+        const { data: existingUsers, error: searchError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('email', 'joao.colimoides@gmail.com')
+          .single();
+        
+        // Se não existir erro ou não houver usuário, crie um novo
+        if (searchError || !existingUsers) {
+          // Registrar o usuário
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: 'joao.colimoides@gmail.com',
+            password: 'Jb74872701@',
+            options: {
+              data: {
+                full_name: 'João alves Da silva',
+              },
+            }
+          });
+
+          if (signUpError) {
+            console.error('Erro ao criar usuário específico:', signUpError);
+            return;
+          }
+          
+          if (signUpData.user) {
+            // Adicionar usuário à tabela de funções como administrador
+            await supabase
+              .from('user_roles')
+              .insert([
+                { 
+                  user_id: signUpData.user.id,
+                  role: 'admin'
+                }
+              ]);
+              
+            console.log('Usuário específico criado com sucesso');
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao verificar ou criar usuário específico:', error);
+      }
+    };
+    
+    createSpecificUser();
+  }, []);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">

@@ -24,12 +24,14 @@ const AdminHeader: React.FC = () => {
     }
   };
   
+  const userName = user?.user_metadata?.full_name || user?.email || 'Admin';
+  
   return (
     <header className="border-b bg-card p-4 flex justify-between items-center">
       <h1 className="text-xl font-bold">Painel Administrativo</h1>
       <div className="flex items-center gap-4">
         <span className="text-sm text-muted-foreground hidden md:inline-block">
-          {user?.email}
+          {userName}
         </span>
         <Button variant="outline" size="sm" onClick={handleSignOut}>
           Sair

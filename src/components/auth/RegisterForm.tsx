@@ -65,7 +65,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
     setLoading(true);
     try {
       // Registrar o usuário
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -85,12 +85,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
         return;
       }
       
+      if (!signUpData.user) {
+        toast({
+          title: 'Erro ao criar conta',
+          description: 'Não foi possível obter os dados do usuário',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      
       // Adicionar usuário à tabela de funções como administrador
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert([
           { 
-            user_id: (await supabase.auth.getUser()).data.user?.id,
+            user_id: signUpData.user.id,
             role: 'admin'
           }
         ]);

@@ -25,6 +25,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
   
   if (!isAdmin) {
+    console.log("Usuário não é admin:", user.email);
     // Redirecionar para a página principal se não for administrador
     return <Navigate to="/" state={{ from: location }} replace />;
   }

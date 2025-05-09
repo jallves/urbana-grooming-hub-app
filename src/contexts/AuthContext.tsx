@@ -62,14 +62,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Verificar se o usuário tem papel de administrador
   const checkUserRole = async (userId: string) => {
     try {
+      // Modificação aqui: em vez de .single(), vamos usar .maybeSingle()
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .eq('role', 'admin')
-        .single();
+        .eq('role', 'admin');
       
-      setIsAdmin(!!data);
+      // Se tiver pelo menos um resultado, o usuário é admin
+      setIsAdmin(data && data.length > 0);
       
       if (error) {
         console.error('Erro ao verificar papel do usuário:', error);
