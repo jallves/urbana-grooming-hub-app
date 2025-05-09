@@ -1,69 +1,81 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button"
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Navbar: React.FC = () => {
-  const isMobile = useIsMobile();
-  const [isOpen, setIsOpen] = React.useState(false);
-  
-  const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/#services", label: "Serviços" },
-    { href: "/#team", label: "Equipe" },
-    { href: "/#gallery", label: "Galeria" },
-    { href: "/#appointments", label: "Agendar" },
-    { href: "/auth", label: "Admin" }
-  ];
-  
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado com sucesso",
+        description: "Você foi desconectado do sistema.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao fazer logout",
+        description: "Ocorreu um erro ao tentar desconectar.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b">
-      <div className="container mx-auto px-4 flex items-center justify-between h-16">
-        <Link to="/" className="font-bold text-xl font-playfair text-primary">
-          Urbana
+    <div className="bg-white shadow">
+      <div className="container mx-auto py-4 px-5 flex items-center justify-between">
+        <Link to="/" className="text-2xl font-bold text-primary">
+          Urbana Barbearia
         </Link>
-        
-        {isMobile ? (
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu />
-                <span className="sr-only">Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <nav className="flex flex-col gap-4 mt-8">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    to={link.href}
-                    className="text-lg px-3 py-2 hover:text-primary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        ) : (
-          <nav className="flex items-center gap-1 md:gap-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className="px-3 py-2 text-sm font-medium rounded-md hover:text-primary transition-colors"
-              >
-                {link.label}
+        <nav>
+          <ul className="flex items-center space-x-6">
+            <li>
+              <Link to="/" className="hover:text-primary transition-colors">
+                Home
               </Link>
-            ))}
-          </nav>
-        )}
+            </li>
+            <li>
+              <Link to="/" className="hover:text-primary transition-colors">
+                Serviços
+              </Link>
+            </li>
+            <li>
+              <Link to="/" className="hover:text-primary transition-colors">
+                Equipe
+              </Link>
+            </li>
+            <li>
+              <Link to="/" className="hover:text-primary transition-colors">
+                Contato
+              </Link>
+            </li>
+            {user ? (
+              <>
+                <li>
+                  <Link to="/admin" className="hover:text-primary transition-colors">
+                    Admin
+                  </Link>
+                </li>
+                <li>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                    Logout
+                  </Button>
+                </li>
+              </>
+            ) : (
+              <li>
+                <Link to="/auth" className="hover:text-primary transition-colors">
+                  Admin
+                </Link>
+              </li>
+            )}
+          </ul>
+        </nav>
       </div>
-    </header>
+    </div>
   );
 };
 

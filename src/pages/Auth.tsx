@@ -16,12 +16,16 @@ const Auth: React.FC = () => {
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
   
+  // Depurar a origem da navegação
+  console.log('Auth: location state recebido:', location.state);
+  
   // Obter o "from" do state ou usar fallback "/"
-  const from = location.state?.from?.pathname || "/";
+  const from = location.state?.from || "/";
+  console.log('Auth: from path calculado:', from);
   
   // Verificar se o usuário já está autenticado
   useEffect(() => {
-    console.log('Auth: Verificando autenticação', { user, authLoading, isAdmin });
+    console.log('Auth: Verificando autenticação', { user, authLoading, isAdmin, from });
     
     // Add a timeout to ensure we don't block the UI from rendering
     const redirectTimeout = setTimeout(() => {

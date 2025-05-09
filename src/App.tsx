@@ -33,6 +33,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            {/* Garantir que a rota de autenticação seja pública */}
             <Route path="/auth" element={<Auth />} />
             
             {/* Rotas protegidas de admin */}

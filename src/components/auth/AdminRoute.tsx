@@ -36,7 +36,9 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     isAuthenticated: !!user, 
     userEmail: user?.email, 
     isAdmin: isAdmin,
-    path: location.pathname
+    path: location.pathname,
+    redirectTo: '/auth',
+    currentState: location.state
   });
   
   // Se ainda estiver carregando, mostrar um spinner
@@ -52,13 +54,13 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   // Se não estiver autenticado, redirecionar para a página de login com o state preservado
   if (!user) {
     console.log('AdminRoute: Redirecionando para /auth pois usuário não está autenticado');
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
   
   // Se não for admin, redirecionar para a página principal
   if (!isAdmin) {
     console.log("AdminRoute: Redirecionando para / pois usuário não é admin:", user.email);
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/" replace />;
   }
   
   // Se for admin, permitir acesso
