@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import StaffList from './StaffList';
 import StaffForm from './StaffForm';
@@ -13,6 +13,7 @@ import { useStaffStorage } from './useStaffStorage';
 const StaffManagement: React.FC = () => {
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [editingStaff, setEditingStaff] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
   // Initialize staff photos storage bucket
   useStaffStorage();
@@ -91,12 +92,9 @@ const StaffManagement: React.FC = () => {
     // After successful staff update, also refresh the team display
     // by invalidating the team-staff query
     // This ensures the team component on homepage gets updated
-    const queryClient = window.queryClient;
-    if (queryClient) {
-      queryClient.invalidateQueries({
-        queryKey: ['team-staff']
-      });
-    }
+    queryClient.invalidateQueries({
+      queryKey: ['team-staff']
+    });
   };
 
   return (

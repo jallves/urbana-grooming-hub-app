@@ -104,9 +104,19 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
       // Upload image if selected
       const imageUrl = await uploadProfileImage();
       
+      // Ensure name is provided (required by database)
+      if (!values.name) {
+        toast.error('Nome é obrigatório');
+        return;
+      }
+      
       // Update form values with image URL if available
       const staffData = {
-        ...values,
+        name: values.name,
+        email: values.email || null,
+        phone: values.phone || null,
+        role: values.role || null,
+        is_active: values.is_active,
         image_url: imageUrl || values.image_url || null,
       };
 
