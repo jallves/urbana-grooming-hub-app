@@ -63,13 +63,13 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        // Custom colors for barbershop theme (updated)
+        // Updated urbana colors for a slightly darker theme
         urbana: {
-          gold: '#B87333',  // Copper color instead of gold
-          brown: '#3A2618', // Darker brown
-          black: '#151515', // Slightly lighter black
-          gray: '#9A9A9A',  // Lighter gray
-          light: '#F7F3EF', // Warmer light color
+          gold: '#9A632B',       // Darker copper/gold
+          brown: '#2A1810',      // Darker brown
+          black: '#0F0F0F',      // Darker black
+          gray: '#858585',       // Darker gray
+          light: '#F0EBE4',      // Slightly warmer but darker light color
         }
       },
       borderRadius: {
