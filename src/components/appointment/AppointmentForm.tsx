@@ -9,9 +9,12 @@ import PersonalInfoFields from './PersonalInfoFields';
 import ServiceSelection from './ServiceSelection';
 import AppointmentDateTime from './AppointmentDateTime';
 import NotesField from './NotesField';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const AppointmentForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [formData, setFormData] = useState<AppointmentFormData>({
     name: '',
     phone: '',
@@ -39,6 +42,7 @@ const AppointmentForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setFormError(null);
 
     // Validação básica
     if (!formData.name || !formData.phone || !formData.service || !formData.date) {
@@ -81,7 +85,7 @@ const AppointmentForm: React.FC = () => {
       // Calcular horário final baseado na duração do serviço
       const endTime = addHours(startTime, serviceData.duration / 60);
 
-      // 2. Inserir agendamento
+      // 2. Inserir agendamento - usando "scheduled" em vez de "agendado"
       const { error: appointmentError } = await supabase
         .from('appointments')
         .insert({
@@ -89,7 +93,7 @@ const AppointmentForm: React.FC = () => {
           service_id: formData.service,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          status: 'agendado',
+          status: 'scheduled',
           notes: formData.notes || null
         });
 
@@ -112,8 +116,9 @@ const AppointmentForm: React.FC = () => {
         notes: ''
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao enviar agendamento:', error);
+      setFormError("Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
       toast({
         title: "Erro ao enviar agendamento",
         description: "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.",
@@ -126,6 +131,14 @@ const AppointmentForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {formError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erro</AlertTitle>
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <PersonalInfoFields 
           formData={formData} 

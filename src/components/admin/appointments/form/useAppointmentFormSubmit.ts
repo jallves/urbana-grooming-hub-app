@@ -43,7 +43,7 @@ export const useAppointmentFormSubmit = ({
         service_id: data.service_id,
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
-        status: 'scheduled',
+        status: 'scheduled', // Using 'scheduled' instead of 'agendado'
         notes: data.notes || null,
       };
       
