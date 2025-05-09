@@ -64,8 +64,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
       </div>
       
       {uploadError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
+        <Alert variant="destructive" className="mt-2">
+          <AlertCircle className="h-4 w-4 mr-2" />
           <AlertDescription>{uploadError}</AlertDescription>
         </Alert>
       )}

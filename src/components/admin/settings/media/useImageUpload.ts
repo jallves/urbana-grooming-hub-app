@@ -18,20 +18,27 @@ export const useImageUpload = () => {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${path}/${fileName}`;
       
-      // Usando anon key para uploads públicos
-      const { data: uploadedData, error: uploadError } = await supabase.storage
+      // Create signed URL for upload (bypasses RLS)
+      const { data: signedURLData, error: signedURLError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        .createSignedUploadUrl(filePath);
+      
+      if (signedURLError) {
+        console.error('Error creating signed URL:', signedURLError);
+        throw new Error(`Erro ao criar URL assinada: ${signedURLError.message}`);
+      }
+      
+      // Upload the file using the signed URL
+      const { error: uploadError } = await supabase.storage
+        .from(bucket)
+        .uploadToSignedUrl(signedURLData.path, signedURLData.token, file);
       
       if (uploadError) {
         console.error('Upload error details:', uploadError);
-        throw new Error(`${uploadError.message || 'Erro desconhecido durante o upload'}`);
+        throw new Error(`Erro no upload: ${uploadError.message || 'Erro desconhecido durante o upload'}`);
       }
       
-      console.log("Upload successful:", uploadedData);
+      console.log("Upload successful");
       
       // Get the public URL for the uploaded file
       const { data: publicUrlData } = supabase.storage

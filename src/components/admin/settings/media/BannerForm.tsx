@@ -26,8 +26,10 @@ const BannerForm: React.FC<BannerFormProps> = ({
   uploading
 }) => {
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const previewUrl = URL.createObjectURL(file);
@@ -38,6 +40,15 @@ const BannerForm: React.FC<BannerFormProps> = ({
         ...newBanner,
         imageUrl: previewUrl
       });
+    }
+  };
+  
+  const handleAddBannerWithErrorHandling = async () => {
+    setUploadError(null);
+    try {
+      await handleAddBanner();
+    } catch (error) {
+      setUploadError((error as Error).message);
     }
   };
 
@@ -58,6 +69,7 @@ const BannerForm: React.FC<BannerFormProps> = ({
               setUpload={setBannerUpload}
               fileInputRef={bannerFileInputRef}
               handleFileChange={handleBannerFileChange}
+              uploadError={uploadError}
             />
           </div>
         </div>
@@ -101,7 +113,7 @@ const BannerForm: React.FC<BannerFormProps> = ({
           />
         </div>
         <Button 
-          onClick={handleAddBanner} 
+          onClick={handleAddBannerWithErrorHandling} 
           className="flex items-center"
           disabled={uploading}
         >
