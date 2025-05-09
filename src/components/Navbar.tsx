@@ -34,24 +34,24 @@ const Navbar: React.FC = () => {
         <nav>
           <ul className="flex items-center space-x-6">
             <li>
-              <Link to="/" className="hover:text-primary transition-colors">
+              <a href="#" className="hover:text-primary transition-colors">
                 Home
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" className="hover:text-primary transition-colors">
+              <a href="#services" className="hover:text-primary transition-colors">
                 Serviços
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" className="hover:text-primary transition-colors">
+              <a href="#team" className="hover:text-primary transition-colors">
                 Equipe
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="/" className="hover:text-primary transition-colors">
+              <a href="#appointment" className="hover:text-primary transition-colors">
                 Contato
-              </Link>
+              </a>
             </li>
             {user ? (
               <>
