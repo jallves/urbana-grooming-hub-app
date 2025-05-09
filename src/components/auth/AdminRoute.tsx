@@ -17,7 +17,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     if (!loading) {
       if (!user) {
         console.log('AdminRoute: Usuário não autenticado, redirecionando para /auth');
-      } else if (!isAdmin) {
+      } else if (!isAdmin && user.email !== 'joao.colimoides@gmail.com') {
         console.log('AdminRoute: Usuário não é admin:', user.email);
         toast({
           title: "Acesso Restrito",
@@ -55,6 +55,12 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   if (!user) {
     console.log('AdminRoute: Redirecionando para /auth pois usuário não está autenticado');
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+  }
+  
+  // Verificação especial para o email específico
+  if (user.email === 'joao.colimoides@gmail.com') {
+    console.log('AdminRoute: Permitindo acesso para usuário especial:', user.email);
+    return <>{children}</>;
   }
   
   // Se não for admin, redirecionar para a página principal

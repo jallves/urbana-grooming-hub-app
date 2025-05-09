@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
@@ -5,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const Navbar: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { toast } = useToast();
 
   const handleSignOut = async () => {
@@ -55,7 +56,11 @@ const Navbar: React.FC = () => {
             {user ? (
               <>
                 <li>
-                  <Link to="/admin" className="hover:text-primary transition-colors">
+                  <Link 
+                    to={isAdmin ? "/admin" : "/auth"} 
+                    className="hover:text-primary transition-colors"
+                    title={isAdmin ? "Acessar painel admin" : "Autenticação necessária"}
+                  >
                     Admin
                   </Link>
                 </li>

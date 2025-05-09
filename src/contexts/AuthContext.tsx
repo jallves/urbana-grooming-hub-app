@@ -23,22 +23,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('AuthProvider iniciado');
 
     try {
-      // Configurar o listener para mudanças no estado de autenticação
+      // Set up auth state listener FIRST
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, newSession) => {
+        (event, newSession) => {
           console.log('Evento de autenticação:', event);
           
+          // Synchronous updates first
           setSession(newSession);
           setUser(newSession?.user ?? null);
           
-          // Verificar se o usuário é admin quando a sessão mudar
+          // If user changes, check admin role with timeout to prevent deadlocks
           if (newSession?.user) {
-            console.log('Nova sessão, verificando papel do usuário');
+            console.log('Nova sessão, verificando papel do usuário:', newSession.user.email);
             // Use setTimeout to avoid potential deadlocks with Supabase client
             setTimeout(() => {
               checkUserRole(newSession.user.id).catch(err => {
                 console.error('Erro ao verificar papel do usuário via timeout:', err);
-                setIsAdmin(false);
               });
             }, 0);
           } else {
@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       );
 
-      // Verificar sessão atual
+      // THEN check for existing session
       const getSession = async () => {
         try {
           console.log('Obtendo sessão atual');
@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(currentSession?.user ?? null);
           
           if (currentSession?.user) {
-            console.log('Sessão encontrada, verificando papel do usuário');
+            console.log('Sessão encontrada, verificando papel do usuário:', currentSession.user.email);
             await checkUserRole(currentSession.user.id);
           } else {
             console.log('Nenhuma sessão encontrada');
@@ -66,7 +66,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (error) {
           console.error('Erro ao obter sessão:', error);
-          setIsAdmin(false);
         } finally {
           console.log('Carregamento completo');
           setLoading(false);
@@ -99,6 +98,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
+      // Verificação especial para o email específico
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user?.email === 'joao.colimoides@gmail.com') {
+        console.log('Usuário especial detectado, configurando como admin:', userData.user.email);
+        setIsAdmin(true);
+        
+        // Verificar se já existe o registro de role
+        const { data: existingRole, error: roleCheckError } = await supabase
+          .from('user_roles')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .maybeSingle();
+        
+        if (roleCheckError) {
+          console.error('Erro ao verificar role existente:', roleCheckError);
+        }
+        
+        // Inserir role se não existir
+        if (!existingRole) {
+          console.log('Inserindo role de admin para usuário especial');
+          const { error: insertError } = await supabase
+            .from('user_roles')
+            .insert([{ user_id: userId, role: 'admin' }]);
+            
+          if (insertError) {
+            console.error('Erro ao inserir role de admin:', insertError);
+          }
+        }
+        
+        return;
+      }
+      
       // Buscar todos os registros para este usuário onde o papel seja 'admin'
       const { data, error } = await supabase
         .from('user_roles')
@@ -116,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Se tiver pelo menos um resultado, o usuário é admin
       const hasAdminRole = data && data.length > 0;
-      console.log('Usuário é admin:', hasAdminRole);
+      console.log('Usuário é admin:', hasAdminRole, 'Email:', userData?.user?.email);
       
       setIsAdmin(hasAdminRole);
     } catch (error) {
@@ -146,6 +178,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   console.log('Estado do contexto de autenticação:', {
     isLoggedIn: !!user,
+    userEmail: user?.email,
     isAdmin,
     loading
   });
