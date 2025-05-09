@@ -1,10 +1,9 @@
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Upload, FileImage } from "lucide-react";
-import { ImageUpload } from './types';
+import { ImageUpload } from '@/types/settings';
 
 interface ImageUploaderProps {
   imageUrl: string;
@@ -40,19 +39,23 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({
           </div>
           <span className="text-sm text-gray-500">ou</span>
           <div>
-            <label htmlFor={fileInputRef.current?.id} className="cursor-pointer">
-              <div className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80">
-                {iconComponent}
-                <span>Upload</span>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </label>
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2"
+            >
+              {iconComponent}
+              <span>Upload</span>
+            </Button>
+            <input
+              ref={fileInputRef}
+              id="file-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
           </div>
         </div>
       </div>

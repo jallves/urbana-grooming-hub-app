@@ -67,7 +67,19 @@ export const useGalleryOperations = (
       
       // Upload file if provided
       if (galleryUpload) {
-        imageUrl = await uploadFile(galleryUpload.file, 'gallery', 'images');
+        try {
+          console.log("Uploading gallery image to Supabase Storage");
+          imageUrl = await uploadFile(galleryUpload.file, 'gallery', 'images');
+          console.log("Gallery image upload successful, URL:", imageUrl);
+        } catch (uploadError) {
+          console.error("Gallery upload error:", uploadError);
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer o upload da imagem da galeria",
+            variant: "destructive",
+          });
+          return false;
+        }
       }
       
       if (!imageUrl) {

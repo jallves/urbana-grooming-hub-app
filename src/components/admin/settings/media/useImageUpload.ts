@@ -21,9 +21,15 @@ export const useImageUpload = () => {
       // Upload file to Supabase Storage
       const { error, data } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error details:', error);
+        throw error;
+      }
       
       console.log("Upload successful:", data);
       
@@ -37,7 +43,7 @@ export const useImageUpload = () => {
       console.error('Error uploading file:', error);
       toast({
         title: "Erro no upload",
-        description: "Não foi possível fazer o upload da imagem",
+        description: "Não foi possível fazer o upload da imagem: " + (error as Error).message,
         variant: "destructive",
       });
       throw error;

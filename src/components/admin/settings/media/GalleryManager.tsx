@@ -31,10 +31,10 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
       const previewUrl = URL.createObjectURL(file);
       setGalleryUpload({ file, previewUrl });
       
-      // Update the imageUrl in newImage
+      // Update the src in newImage (but don't actually set it to the previewUrl)
       setNewImage({
         ...newImage,
-        src: previewUrl
+        src: '' // We'll leave this empty as the actual URL will come from Supabase
       });
     }
   };

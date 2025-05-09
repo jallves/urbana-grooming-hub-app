@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { ImageUpload } from './types';
+import { ImageUpload } from '@/types/settings';
 import ImageUploader from './ImageUploader';
 
 interface GalleryFormProps {
@@ -51,6 +51,7 @@ const GalleryForm: React.FC<GalleryFormProps> = ({
               setUpload={setGalleryUpload}
               fileInputRef={galleryFileInputRef}
               handleFileChange={handleGalleryFileChange}
+              placeholder="URL da imagem (ou faça upload)"
             />
           </div>
         </div>

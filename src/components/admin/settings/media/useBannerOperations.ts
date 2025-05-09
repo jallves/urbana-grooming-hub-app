@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { BannerImage } from '@/types/settings';
-import { useImageUpload } from './useImageUpload';
+import { useImageUpload } from '@/components/admin/settings/media/useImageUpload';
 
 export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages: React.Dispatch<React.SetStateAction<BannerImage[]>>) => {
   const { toast } = useToast();
@@ -63,7 +63,19 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
       
       // Upload file if provided
       if (bannerUpload) {
-        imageUrl = await uploadFile(bannerUpload.file, 'banners', 'images');
+        try {
+          console.log("Uploading banner image to Supabase Storage");
+          imageUrl = await uploadFile(bannerUpload.file, 'banners', 'images');
+          console.log("Banner image upload successful, URL:", imageUrl);
+        } catch (uploadError) {
+          console.error("Banner upload error:", uploadError);
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer o upload da imagem do banner",
+            variant: "destructive",
+          });
+          return false;
+        }
       }
       
       if (!imageUrl) {
