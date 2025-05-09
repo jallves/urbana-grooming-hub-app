@@ -13,7 +13,7 @@ const AppointmentSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto bg-white/10 backdrop-blur-sm rounded-lg p-6 md:p-10">
+        <div className="max-w-3xl mx-auto bg-black/30 backdrop-blur-sm rounded-lg p-6 md:p-10 shadow-xl">
           <AppointmentForm />
         </div>
       </div>
