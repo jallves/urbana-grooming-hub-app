@@ -11,7 +11,7 @@ import WhatsAppButton from '../components/WhatsAppButton';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <Navbar />
       <div className="pt-16"> {/* Added padding-top to account for the fixed navbar */}
         <Hero />

@@ -1,7 +1,7 @@
+
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -39,4 +39,54 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Mobile viewport adjustments */
+@media (max-width: 768px) {
+  #root {
+    padding: 0;
+  }
+  
+  .card {
+    padding: 1em;
+  }
+}
+
+/* Responsive layout helpers */
+.responsive-container {
+  width: 100%;
+  padding-right: 1rem;
+  padding-left: 1rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+@media (min-width: 640px) {
+  .responsive-container {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .responsive-container {
+    max-width: 1280px;
+  }
+}
+
+/* Touch-friendly buttons for mobile */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
 }
