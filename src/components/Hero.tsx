@@ -8,10 +8,12 @@ import SlideIndicators from './hero/SlideIndicators';
 import VintageOverlay from './hero/VintageOverlay';
 import { useBannerImages } from './hero/useBannerImages';
 import { useSlideController } from './hero/useSlideController';
+import { useShopSettings } from '@/hooks/useShopSettings';
 
 const Hero: React.FC = () => {
   const { bannerImages, loading } = useBannerImages();
   const { currentSlide, setCurrentSlide, nextSlide, prevSlide } = useSlideController(bannerImages.length);
+  const { shopSettings } = useShopSettings();
   
   if (loading || bannerImages.length === 0) {
     return (
@@ -47,7 +49,11 @@ const Hero: React.FC = () => {
       {/* Content */}
       <div className="urbana-container z-10 text-center absolute">
         <AnimatePresence mode="wait">
-          <HeroContent key={currentSlide} slide={bannerImages[currentSlide]} />
+          <HeroContent 
+            key={currentSlide} 
+            slide={bannerImages[currentSlide]} 
+            shopName={shopSettings?.shop_name}
+          />
         </AnimatePresence>
         
         {/* Slide Indicators */}

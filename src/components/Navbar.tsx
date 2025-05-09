@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button"
 import { Shield } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useShopSettings } from '@/hooks/useShopSettings';
 
 const Navbar: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
   const { toast } = useToast();
   const [scrolled, setScrolled] = useState(false);
-
+  const { shopSettings } = useShopSettings();
+  
   // Effect to detect scrolling and add shadow/background when scrolled
   useEffect(() => {
     const handleScroll = () => {
@@ -40,13 +42,16 @@ const Navbar: React.FC = () => {
     }
   };
 
+  // Use shop name from settings or fallback to default
+  const shopName = shopSettings?.shop_name || "Barbearia Costa Urbana";
+
   return (
     <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled ? 'bg-white shadow-md' : 'bg-white/95 shadow'
     }`}>
       <div className="container mx-auto py-4 px-5 flex items-center justify-between">
         <Link to="/" className="text-2xl font-bold text-primary">
-          Barbearia Costa Urbana
+          {shopName}
         </Link>
         <nav>
           <ul className="flex items-center space-x-6">

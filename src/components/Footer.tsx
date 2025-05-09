@@ -1,26 +1,38 @@
 
 import React from 'react';
 import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Twitter } from 'lucide-react';
+import { useShopSettings } from '@/hooks/useShopSettings';
 
 const Footer: React.FC = () => {
+  const { shopSettings } = useShopSettings();
+  
+  // Extract values or use defaults
+  const shopName = shopSettings?.shop_name || "Costa Urbana";
+  const address = shopSettings?.address || "Rua da Barbearia, 123, São Paulo, SP";
+  const phone = shopSettings?.phone || "+55 11 9876-5432";
+  const email = shopSettings?.email || "contato@costaurbana.com.br";
+  const instagram = shopSettings?.social_instagram || "#";
+  const facebook = shopSettings?.social_facebook || "#";
+  const twitter = shopSettings?.social_twitter || "#";
+  
   return (
     <footer id="contact" className="bg-urbana-black text-white">
       <div className="urbana-container pt-16 pb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* About Section */}
           <div>
-            <h3 className="text-2xl font-bold mb-4 text-urbana-gold">Costa Urbana</h3>
+            <h3 className="text-2xl font-bold mb-4 text-urbana-gold">{shopName}</h3>
             <p className="mb-6 text-gray-300">
               Barbearia premium oferecendo serviços especializados com foco na satisfação do cliente e um ambiente relaxado.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-urbana-gold transition-colors">
+              <a href={instagram} className="text-gray-400 hover:text-urbana-gold transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-urbana-gold transition-colors">
+              <a href={facebook} className="text-gray-400 hover:text-urbana-gold transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-urbana-gold transition-colors">
+              <a href={twitter} className="text-gray-400 hover:text-urbana-gold transition-colors">
                 <Twitter className="h-5 w-5" />
               </a>
             </div>
@@ -60,15 +72,15 @@ const Footer: React.FC = () => {
             <ul className="space-y-3 text-gray-300">
               <li className="flex items-start">
                 <MapPin className="h-5 w-5 mr-2 text-urbana-gold shrink-0 mt-0.5" />
-                <p>Rua da Barbearia, 123, São Paulo, SP</p>
+                <p>{address}</p>
               </li>
               <li className="flex items-center">
                 <Phone className="h-5 w-5 mr-2 text-urbana-gold shrink-0" />
-                <p>+55 11 9876-5432</p>
+                <p>{phone}</p>
               </li>
               <li className="flex items-center">
                 <Mail className="h-5 w-5 mr-2 text-urbana-gold shrink-0" />
-                <p>contato@costaurbana.com.br</p>
+                <p>{email}</p>
               </li>
             </ul>
           </div>
@@ -98,7 +110,7 @@ const Footer: React.FC = () => {
 
         <div className="border-t border-gray-800 mt-12 pt-8">
           <p className="text-center text-gray-500">
-            © {new Date().getFullYear()} Costa Urbana Barbearia. Todos os direitos reservados.
+            © {new Date().getFullYear()} {shopName}. Todos os direitos reservados.
           </p>
         </div>
       </div>

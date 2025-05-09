@@ -6,9 +6,10 @@ import { BannerImage } from "@/types/settings";
 
 interface HeroContentProps {
   slide: BannerImage;
+  shopName?: string;
 }
 
-const HeroContent: React.FC<HeroContentProps> = ({ slide }) => {
+const HeroContent: React.FC<HeroContentProps> = ({ slide, shopName }) => {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
