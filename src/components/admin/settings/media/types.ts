@@ -1,5 +1,5 @@
 
-import { BannerImage, GalleryImage } from '@/types/settings';
+import { BannerImage, GalleryImage } from "@/types/settings";
 
 export interface ImageUpload {
   file: File;

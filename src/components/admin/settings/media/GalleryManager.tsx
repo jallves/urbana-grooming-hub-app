@@ -3,11 +3,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Plus, Trash2, FileImage } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GalleryImage } from '@/types/settings';
-import { GalleryFormProps, ImageUpload } from './types';
+import { GalleryFormProps } from './types';
 import { useImageUpload } from './useImageUpload';
 import ImageUploader from './ImageUploader';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,14 +25,13 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
   const { toast } = useToast();
   const { uploadFile, uploading } = useImageUpload();
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
-  const [galleryUpload, setGalleryUpload] = useState<ImageUpload | null>(null);
-  const [editingGallery, setEditingGallery] = useState<GalleryImage | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const [newGalleryImage, setNewGalleryImage] = useState<Omit<GalleryImage, 'id'>>({
+  const [galleryUpload, setGalleryUpload] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+  const [newImage, setNewImage] = useState<Omit<GalleryImage, 'id'>>({
     src: '',
     alt: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   // Fetch gallery images from Supabase
   useEffect(() => {
@@ -57,8 +56,8 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
       } catch (error) {
         console.error('Error fetching gallery images:', error);
         toast({
-          title: "Erro ao carregar galeria",
-          description: "Não foi possível carregar as imagens da galeria do banco de dados",
+          title: "Erro ao carregar imagens",
+          description: "Não foi possível carregar as imagens da galeria",
           variant: "destructive",
         });
       } finally {
@@ -75,33 +74,33 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
       const previewUrl = URL.createObjectURL(file);
       setGalleryUpload({ file, previewUrl });
       
-      // Update the src in newGalleryImage
-      setNewGalleryImage({
-        ...newGalleryImage,
+      // Update the imageUrl in newImage
+      setNewImage({
+        ...newImage,
         src: previewUrl
       });
     }
   };
 
   const handleAddGalleryImage = async () => {
-    if (!newGalleryImage.alt) {
+    if (!newImage.alt) {
       toast({
         title: "Campo obrigatório",
-        description: "A descrição é obrigatória",
+        description: "A descrição da imagem é obrigatória",
         variant: "destructive",
       });
       return;
     }
     
     try {
-      let src = newGalleryImage.src;
+      let imageUrl = newImage.src;
       
       // Upload file if provided
       if (galleryUpload) {
-        src = await uploadFile(galleryUpload.file, 'gallery', 'gallery-images');
+        imageUrl = await uploadFile(galleryUpload.file, 'gallery', 'images');
       }
       
-      if (!src) {
+      if (!imageUrl) {
         toast({
           title: "Imagem obrigatória",
           description: "Adicione uma URL de imagem ou faça upload de um arquivo",
@@ -110,12 +109,12 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
         return;
       }
       
-      // Insert into Supabase
+      // Insert new gallery image into Supabase
       const { data, error } = await supabase
         .from('gallery_images')
         .insert({
-          src: src,
-          alt: newGalleryImage.alt,
+          src: imageUrl,
+          alt: newImage.alt,
           display_order: galleryImages.length,
           is_active: true
         })
@@ -124,15 +123,15 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
       if (error) throw error;
       
       if (data && data[0]) {
-        const newImage: GalleryImage = {
+        const newGalleryImage: GalleryImage = {
           id: parseInt(data[0].id.toString().replace(/-/g, '').substring(0, 8), 16),
           src: data[0].src,
           alt: data[0].alt
         };
         
-        setGalleryImages([...galleryImages, newImage]);
+        setGalleryImages([...galleryImages, newGalleryImage]);
         
-        setNewGalleryImage({
+        setNewImage({
           src: '',
           alt: ''
         });
@@ -144,7 +143,7 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
         
         toast({
           title: "Imagem adicionada",
-          description: "A nova imagem foi adicionada à galeria",
+          description: "A imagem foi adicionada à galeria com sucesso",
         });
       }
     } catch (error) {
@@ -157,13 +156,12 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
     }
   };
 
-  const handleDeleteGallery = async (id: number) => {
+  const handleDeleteGalleryImage = async (id: number) => {
     try {
-      // Find the image by id
       const imageToDelete = galleryImages.find(img => img.id === id);
       if (!imageToDelete) return;
       
-      // Delete from Supabase by matching src
+      // Delete from Supabase
       const { error } = await supabase
         .from('gallery_images')
         .delete()
@@ -172,9 +170,10 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
       if (error) throw error;
       
       setGalleryImages(galleryImages.filter(img => img.id !== id));
+      
       toast({
         title: "Imagem removida",
-        description: "A imagem foi removida da galeria",
+        description: "A imagem foi removida da galeria com sucesso",
       });
     } catch (error) {
       console.error('Error deleting gallery image:', error);
@@ -186,26 +185,27 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
     }
   };
 
-  const handleUpdateGallery = async () => {
-    if (!editingGallery) return;
+  const handleUpdateGalleryImage = async () => {
+    if (!editingImage) return;
     
     try {
-      // Update in Supabase by matching src
+      // Update in Supabase
       const { error } = await supabase
         .from('gallery_images')
         .update({
-          src: editingGallery.src,
-          alt: editingGallery.alt
+          src: editingImage.src,
+          alt: editingImage.alt
         })
-        .eq('src', editingGallery.src);
+        .eq('src', editingImage.src);
       
       if (error) throw error;
       
       setGalleryImages(galleryImages.map(img => 
-        img.id === editingGallery.id ? editingGallery : img
+        img.id === editingImage.id ? editingImage : img
       ));
       
-      setEditingGallery(null);
+      setEditingImage(null);
+      
       toast({
         title: "Imagem atualizada",
         description: "As alterações foram salvas com sucesso",
@@ -214,7 +214,50 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
       console.error('Error updating gallery image:', error);
       toast({
         title: "Erro ao atualizar imagem",
-        description: "Ocorreu um erro ao atualizar a imagem",
+        description: "Ocorreu um erro ao atualizar a imagem da galeria",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateDisplayOrder = async (id: number, direction: 'up' | 'down') => {
+    const currentIndex = galleryImages.findIndex(img => img.id === id);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= galleryImages.length) return;
+    
+    const updatedImages = [...galleryImages];
+    const temp = updatedImages[currentIndex];
+    updatedImages[currentIndex] = updatedImages[newIndex];
+    updatedImages[newIndex] = temp;
+    
+    // Update display_order in the database
+    try {
+      const batch = [];
+      
+      batch.push(
+        supabase
+          .from('gallery_images')
+          .update({ display_order: newIndex })
+          .eq('src', galleryImages[currentIndex].src)
+      );
+      
+      batch.push(
+        supabase
+          .from('gallery_images')
+          .update({ display_order: currentIndex })
+          .eq('src', galleryImages[newIndex].src)
+      );
+      
+      await Promise.all(batch);
+      
+      setGalleryImages(updatedImages);
+    } catch (error) {
+      console.error('Error updating display order:', error);
+      toast({
+        title: "Erro ao reordenar imagens",
+        description: "Ocorreu um erro ao atualizar a ordem das imagens",
         variant: "destructive",
       });
     }
@@ -230,56 +273,89 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {galleryImages.map((image) => (
-          <Card key={image.id} className="overflow-hidden">
-            <div className="aspect-square relative">
-              <img 
-                src={image.src} 
-                alt={image.alt}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                <p className="text-white text-sm font-medium truncate">{image.alt}</p>
-                <div className="flex gap-2 mt-2">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Imagem</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead>Ordem</TableHead>
+            <TableHead className="w-[100px]">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {galleryImages.map((image, index) => (
+            <TableRow key={image.id}>
+              <TableCell>
+                <div className="relative h-14 w-24 rounded overflow-hidden">
+                  <img 
+                    src={image.src} 
+                    alt={image.alt}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                </div>
+              </TableCell>
+              <TableCell>{image.alt}</TableCell>
+              <TableCell>
+                <div className="flex space-x-1">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    onClick={() => updateDisplayOrder(image.id, 'up')}
+                    disabled={index === 0}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    onClick={() => updateDisplayOrder(image.id, 'down')}
+                    disabled={index === galleryImages.length - 1}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-2">
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button 
                         variant="outline" 
                         size="sm"
-                        className="h-7 text-xs bg-white/30 backdrop-blur-sm text-white border-white/50 hover:bg-white hover:text-black"
-                        onClick={() => setEditingGallery(image)}
+                        onClick={() => setEditingImage(image)}
                       >
                         Editar
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Editar Imagem da Galeria</DialogTitle>
+                        <DialogTitle>Editar Imagem</DialogTitle>
                         <DialogDescription>
                           Atualize as informações da imagem.
                         </DialogDescription>
                       </DialogHeader>
-                      {editingGallery && (
+                      {editingImage && (
                         <div className="space-y-4 py-4">
                           <div className="space-y-2">
-                            <Label htmlFor="editSrc">URL da Imagem</Label>
+                            <Label htmlFor="imageSrc">URL da Imagem</Label>
                             <Input 
-                              id="editSrc" 
-                              value={editingGallery.src}
-                              onChange={(e) => setEditingGallery({
-                                ...editingGallery,
+                              id="imageSrc" 
+                              value={editingImage.src}
+                              onChange={(e) => setEditingImage({
+                                ...editingImage,
                                 src: e.target.value
                               })}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="editAlt">Descrição</Label>
+                            <Label htmlFor="imageAlt">Descrição</Label>
                             <Input 
-                              id="editAlt" 
-                              value={editingGallery.alt}
-                              onChange={(e) => setEditingGallery({
-                                ...editingGallery,
+                              id="imageAlt" 
+                              value={editingImage.alt}
+                              onChange={(e) => setEditingImage({
+                                ...editingImage,
                                 alt: e.target.value
                               })}
                             />
@@ -287,58 +363,59 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
                         </div>
                       )}
                       <DialogFooter>
-                        <Button onClick={handleUpdateGallery}>Salvar alterações</Button>
+                        <Button onClick={handleUpdateGalleryImage}>
+                          Salvar alterações
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
                   <Button
                     variant="destructive"
                     size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => handleDeleteGallery(image.id)}
+                    onClick={() => handleDeleteGalleryImage(image.id)}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       <div className="border rounded-md p-4 mt-6">
         <h3 className="text-lg font-medium mb-4">Adicionar Nova Imagem</h3>
         <div className="space-y-4">
           <div className="space-y-4">
             <div className="flex flex-col space-y-2">
-              <Label htmlFor="galleryImage">Imagem para Galeria</Label>
+              <Label htmlFor="galleryImage">Imagem da Galeria</Label>
               <ImageUploader
-                imageUrl={newGalleryImage.src}
-                setImageUrl={(url) => setNewGalleryImage({
-                  ...newGalleryImage,
+                imageUrl={newImage.src}
+                setImageUrl={(url) => setNewImage({
+                  ...newImage,
                   src: url
                 })}
                 upload={galleryUpload}
                 setUpload={setGalleryUpload}
                 fileInputRef={galleryFileInputRef}
                 handleFileChange={handleGalleryFileChange}
-                iconComponent={<FileImage className="h-4 w-4" />}
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
-            <Label htmlFor="newImageAlt">Descrição</Label>
+            <Label htmlFor="newAlt">Descrição</Label>
             <Input 
-              id="newImageAlt" 
-              value={newGalleryImage.alt}
-              onChange={(e) => setNewGalleryImage({
-                ...newGalleryImage,
+              id="newAlt" 
+              value={newImage.alt}
+              onChange={(e) => setNewImage({
+                ...newImage,
                 alt: e.target.value
               })}
               placeholder="Descrição da imagem"
             />
           </div>
+          
           <Button 
             onClick={handleAddGalleryImage} 
             className="flex items-center"

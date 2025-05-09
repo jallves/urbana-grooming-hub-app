@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,7 +102,7 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
       
       // Upload file if provided
       if (bannerUpload) {
-        imageUrl = await uploadFile(bannerUpload.file, 'banners', 'banner-images');
+        imageUrl = await uploadFile(bannerUpload.file, 'banners', 'images');
       }
       
       if (!imageUrl) {
