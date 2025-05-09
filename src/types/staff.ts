@@ -14,4 +14,6 @@ export interface StaffFormData {
   phone: string | null;
   role: string | null;
   is_active: boolean;
+  image_url: string | null;
+  experience?: string | null;
 }

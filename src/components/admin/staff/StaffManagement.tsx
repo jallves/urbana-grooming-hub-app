@@ -8,10 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useStaffStorage } from './useStaffStorage';
 
 const StaffManagement: React.FC = () => {
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [editingStaff, setEditingStaff] = useState<string | null>(null);
+  
+  // Initialize staff photos storage bucket
+  useStaffStorage();
 
   const { data: staffMembers, isLoading, error, refetch } = useQuery({
     queryKey: ['staff'],
@@ -83,6 +87,16 @@ const StaffManagement: React.FC = () => {
     refetch();
     setIsAddingStaff(false);
     setEditingStaff(null);
+    
+    // After successful staff update, also refresh the team display
+    // by invalidating the team-staff query
+    // This ensures the team component on homepage gets updated
+    const queryClient = window.queryClient;
+    if (queryClient) {
+      queryClient.invalidateQueries({
+        queryKey: ['team-staff']
+      });
+    }
   };
 
   return (

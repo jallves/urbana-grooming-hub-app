@@ -1,6 +1,8 @@
 
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TeamMemberProps {
   name: string;
@@ -35,32 +37,55 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
 };
 
 const Team: React.FC = () => {
-  const teamMembers = [
+  // Fetch staff members from Supabase
+  const { data: staffMembers, isLoading } = useQuery({
+    queryKey: ['team-staff'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+        
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+
+  // Use fallback team members if there's no data from the database
+  const fallbackTeamMembers = [
     {
+      id: '1',
       name: "Rafael Costa",
       role: "Barbeiro Master & Fundador",
       experience: "+15 anos",
-      image: "/team-1.jpg"
+      image_url: "/team-1.jpg"
     },
     {
+      id: '2',
       name: "Lucas Oliveira",
       role: "Estilista Sênior",
       experience: "+8 anos",
-      image: "/team-2.jpg"
+      image_url: "/team-2.jpg"
     },
     {
+      id: '3',
       name: "Gabriel Santos",
       role: "Especialista em Barba",
       experience: "+6 anos",
-      image: "/team-3.jpg"
+      image_url: "/team-3.jpg"
     },
     {
+      id: '4',
       name: "Mateus Silva",
       role: "Especialista em Coloração",
       experience: "+7 anos",
-      image: "/team-4.jpg"
+      image_url: "/team-4.jpg"
     }
   ];
+
+  // Display database staff if available, otherwise use fallback
+  const teamToDisplay = staffMembers?.length ? staffMembers : fallbackTeamMembers;
 
   return (
     <section id="team" className="urbana-section">
@@ -71,13 +96,13 @@ const Team: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {teamMembers.map((member, index) => (
+          {teamToDisplay.map((member) => (
             <TeamMember
-              key={index}
+              key={member.id}
               name={member.name}
-              role={member.role}
-              experience={member.experience}
-              image={member.image}
+              role={member.role || 'Barbeiro'}
+              experience={member.experience || '+5 anos'}
+              image={member.image_url || '/team-1.jpg'}
             />
           ))}
         </div>
