@@ -20,37 +20,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    console.log('AuthProvider iniciado');
+
+    // Verificar sessão atual primeiro
+    const getSession = async () => {
+      try {
+        console.log('Obtendo sessão atual');
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          console.log('Sessão encontrada, verificando papel do usuário');
+          await checkUserRole(currentSession.user.id);
+        } else {
+          console.log('Nenhuma sessão encontrada');
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Erro ao obter sessão:', error);
+      } finally {
+        console.log('Carregamento completo');
+        setLoading(false);
+      }
+    };
+
     // Configurar o listener para mudanças no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
+      async (event, newSession) => {
+        console.log('Evento de autenticação:', event);
+        
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
         // Verificar se o usuário é admin quando a sessão mudar
         if (newSession?.user) {
+          console.log('Nova sessão, verificando papel do usuário');
           await checkUserRole(newSession.user.id);
         } else {
+          console.log('Sessão terminada ou inválida');
           setIsAdmin(false);
         }
       }
     );
-
-    // Verificar sessão atual
-    const getSession = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        if (currentSession?.user) {
-          await checkUserRole(currentSession.user.id);
-        }
-      } catch (error) {
-        console.error('Erro ao obter sessão:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     getSession();
 
@@ -62,6 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Verificar se o usuário tem papel de administrador
   const checkUserRole = async (userId: string) => {
     try {
+      console.log('Verificando admin role para usuário:', userId);
+      
       // Buscar todos os registros para este usuário onde o papel seja 'admin'
       const { data, error } = await supabase
         .from('user_roles')
@@ -69,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId)
         .eq('role', 'admin');
       
-      console.log('Verificando admin role para usuário:', userId);
       console.log('Resultado da consulta:', data);
       
       // Se tiver pelo menos um resultado, o usuário é admin
@@ -89,12 +103,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('Iniciando logout');
     await supabase.auth.signOut();
+    console.log('Logout concluído');
     setIsAdmin(false);
   };
 
+  const contextValue = {
+    session,
+    user,
+    isAdmin,
+    loading,
+    signOut
+  };
+
+  console.log('Estado do contexto de autenticação:', {
+    isLoggedIn: !!user,
+    isAdmin,
+    loading
+  });
+
   return (
-    <AuthContext.Provider value={{ session, user, isAdmin, loading, signOut }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

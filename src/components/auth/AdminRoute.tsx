@@ -24,6 +24,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
           description: "Você não tem permissão para acessar o painel administrativo.",
           variant: "destructive",
         });
+      } else {
+        console.log('AdminRoute: Acesso permitido para o usuário admin:', user.email);
       }
     }
   }, [loading, user, isAdmin, toast]);

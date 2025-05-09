@@ -33,6 +33,7 @@ const Auth: React.FC = () => {
   useEffect(() => {
     const createSpecificUser = async () => {
       try {
+        console.log("Verificando usuário específico...");
         // Verificar se o usuário já existe
         const { data: existingUsers, error: searchError } = await supabase
           .from('profiles')
@@ -42,6 +43,7 @@ const Auth: React.FC = () => {
         
         // Se não existir erro ou não houver usuário, crie um novo
         if (searchError || !existingUsers) {
+          console.log("Criando usuário específico...");
           // Registrar o usuário
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: 'joao.colimoides@gmail.com',
@@ -59,6 +61,7 @@ const Auth: React.FC = () => {
           }
           
           if (signUpData.user) {
+            console.log("Usuário criado, adicionando role de admin...");
             // Adicionar usuário à tabela de funções como administrador
             await supabase
               .from('user_roles')
@@ -71,6 +74,8 @@ const Auth: React.FC = () => {
               
             console.log('Usuário específico criado com sucesso');
           }
+        } else {
+          console.log("Usuário específico já existe");
         }
       } catch (error) {
         console.error('Erro ao verificar ou criar usuário específico:', error);
@@ -79,6 +84,15 @@ const Auth: React.FC = () => {
     
     createSpecificUser();
   }, []);
+
+  // Renderizar o loading state enquanto verifica autenticação
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
