@@ -1,37 +1,28 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/integrations/supabase/client';
 import { BannerImage } from '@/types/settings';
 import { useImageUpload } from '@/components/admin/settings/media/useImageUpload';
+import { fetchBannerImages, createBanner, updateBanner, deleteBanner } from './api/bannerApi';
+import { useBannerValidation } from './hooks/useBannerValidation';
 
-export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages: React.Dispatch<React.SetStateAction<BannerImage[]>>) => {
+export const useBannerOperations = (
+  bannerImages: BannerImage[],
+  setBannerImages: React.Dispatch<React.SetStateAction<BannerImage[]>>
+) => {
   const { toast } = useToast();
   const { uploadFile, uploading } = useImageUpload();
+  const { validateBanner } = useBannerValidation();
   const [isLoading, setIsLoading] = useState(false);
   const [editingBanner, setEditingBanner] = useState<BannerImage | null>(null);
   
   // Fetch banner images from Supabase
   useEffect(() => {
-    const fetchBannerImages = async () => {
+    const loadBannerImages = async () => {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from('banner_images')
-          .select('*')
-          .order('display_order', { ascending: true });
-        
-        if (error) throw error;
-        
-        if (data) {
-          const formattedData: BannerImage[] = data.map(item => ({
-            id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
-            imageUrl: item.image_url,
-            title: item.title,
-            subtitle: item.subtitle,
-            description: item.description || ''
-          }));
-          setBannerImages(formattedData);
-        }
+        const formattedData = await fetchBannerImages();
+        setBannerImages(formattedData);
       } catch (error) {
         console.error('Error fetching banner images:', error);
         toast({
@@ -44,18 +35,12 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
       }
     };
 
-    fetchBannerImages();
+    loadBannerImages();
   }, [setBannerImages, toast]);
 
   const handleAddBanner = async (newBanner: Omit<BannerImage, 'id'>, bannerUpload: { file: File, previewUrl: string } | null) => {
-    if (!newBanner.title) {
-      toast({
-        title: "Campo obrigatório",
-        description: "O título é obrigatório",
-        variant: "destructive",
-      });
-      return false;
-    }
+    // Validate input
+    if (!validateBanner(newBanner.title, newBanner.imageUrl)) return false;
     
     try {
       let imageUrl = newBanner.imageUrl;
@@ -72,32 +57,14 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
         }
       }
       
-      if (!imageUrl) {
-        toast({
-          title: "Imagem obrigatória",
-          description: "Adicione uma URL de imagem ou faça upload de um arquivo",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
       // Insert new banner into Supabase
-      const { data, error } = await supabase
-        .from('banner_images')
-        .insert({
-          image_url: imageUrl,
-          title: newBanner.title,
-          subtitle: newBanner.subtitle,
-          description: newBanner.description,
-          display_order: bannerImages.length,
-          is_active: true
-        })
-        .select();
-      
-      if (error) {
-        console.error("Error inserting banner record:", error);
-        throw error;
-      }
+      const data = await createBanner({
+        image_url: imageUrl,
+        title: newBanner.title,
+        subtitle: newBanner.subtitle,
+        description: newBanner.description,
+        display_order: bannerImages.length
+      });
       
       if (data && data[0]) {
         const newBannerWithId: BannerImage = {
@@ -123,7 +90,7 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
         description: "Ocorreu um erro ao adicionar o banner: " + error.message,
         variant: "destructive",
       });
-      throw error; // Re-throw the error so it can be caught by UI components
+      throw error;
     }
   };
 
@@ -138,17 +105,12 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
     }
     
     try {
-      // Find the UUID in the original format from our database
+      // Find the banner with the given id
       const bannerToDelete = bannerImages.find(img => img.id === id);
       if (!bannerToDelete) return;
       
-      // Delete from Supabase by matching imageUrl since we don't have the original UUID
-      const { error } = await supabase
-        .from('banner_images')
-        .delete()
-        .eq('image_url', bannerToDelete.imageUrl);
-      
-      if (error) throw error;
+      // Delete from Supabase using the imageUrl
+      await deleteBanner(bannerToDelete.imageUrl);
       
       setBannerImages(bannerImages.filter(img => img.id !== id));
       toast({
@@ -169,19 +131,13 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
     if (!editingBanner) return;
     
     try {
-      // Find the banner in Supabase by matching imageUrl
-      const { data, error } = await supabase
-        .from('banner_images')
-        .update({
-          image_url: editingBanner.imageUrl,
-          title: editingBanner.title,
-          subtitle: editingBanner.subtitle,
-          description: editingBanner.description
-        })
-        .eq('image_url', editingBanner.imageUrl)
-        .select();
-      
-      if (error) throw error;
+      // Update the banner in Supabase
+      await updateBanner({
+        image_url: editingBanner.imageUrl,
+        title: editingBanner.title,
+        subtitle: editingBanner.subtitle,
+        description: editingBanner.description
+      });
       
       setBannerImages(bannerImages.map(img => 
         img.id === editingBanner.id ? editingBanner : img

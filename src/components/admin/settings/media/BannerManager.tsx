@@ -1,9 +1,9 @@
-
 import React, { useState, useRef } from 'react';
 import { BannerFormProps, ImageUpload } from './types';
 import { useBannerOperations } from './useBannerOperations';
 import BannerTable from './BannerTable';
 import BannerForm from './BannerForm';
+import { BannerImage } from '@/types/settings';
 
 const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImages }) => {
   const {
@@ -80,8 +80,5 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
     </div>
   );
 };
-
-// Add TypeScript type import
-import { BannerImage } from '@/types/settings';
 
 export default BannerManager;
