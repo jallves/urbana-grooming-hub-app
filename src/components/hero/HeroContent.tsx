@@ -44,7 +44,7 @@ const HeroContent: React.FC<HeroContentProps> = ({ slide, shopName }) => {
         >
           <a href="#services">
             <span className="relative z-10 text-urbana-black">Nossos Serviços</span>
-            <span className="absolute inset-0 bg-urbana-gold translate-y-0 transition-transform duration-300"></span>
+            <span className="absolute inset-0 bg-urbana-gold translate-y-0 group-hover:translate-y-0 transition-transform duration-300"></span>
           </a>
         </Button>
       </div>
