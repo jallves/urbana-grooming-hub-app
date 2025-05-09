@@ -13,7 +13,8 @@ export const useStaffStorage = () => {
         const { data, error } = await supabase.storage.getBucket('staff-photos');
         
         if (error) {
-          if (error.statusCode === '404') {
+          // Use error message instead of statusCode for checking
+          if (error.message?.includes('Bucket not found')) {
             console.error('Staff photos bucket does not exist:', error);
             toast.error('Erro ao acessar o bucket para fotos dos profissionais');
           } else {

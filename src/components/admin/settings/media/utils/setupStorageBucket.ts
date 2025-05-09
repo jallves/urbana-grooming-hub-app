@@ -10,7 +10,7 @@ export const setupStaffPhotosBucket = async () => {
     if (bucketError) {
       console.error('Error checking bucket:', bucketError);
       
-      if (bucketError.statusCode === '404') {
+      if (bucketError.message?.includes('Bucket not found')) {
         console.log('Bucket does not exist. The migration should have created it.');
         toast.info('Inicializando bucket para fotos dos profissionais...');
       }
