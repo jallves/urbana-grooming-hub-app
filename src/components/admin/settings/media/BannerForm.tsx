@@ -15,6 +15,7 @@ interface BannerFormProps {
   setBannerUpload: React.Dispatch<React.SetStateAction<ImageUpload | null>>;
   handleAddBanner: () => Promise<void>;
   uploading: boolean;
+  uploadError?: string | null;
 }
 
 const BannerForm: React.FC<BannerFormProps> = ({
@@ -23,13 +24,14 @@ const BannerForm: React.FC<BannerFormProps> = ({
   bannerUpload,
   setBannerUpload,
   handleAddBanner,
-  uploading
+  uploading,
+  uploadError = null
 }) => {
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUploadError(null);
+    setLocalError(null);
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const previewUrl = URL.createObjectURL(file);
@@ -44,13 +46,16 @@ const BannerForm: React.FC<BannerFormProps> = ({
   };
   
   const handleAddBannerWithErrorHandling = async () => {
-    setUploadError(null);
+    setLocalError(null);
     try {
       await handleAddBanner();
     } catch (error) {
-      setUploadError((error as Error).message);
+      setLocalError((error as Error).message);
     }
   };
+
+  // Use either passed-in uploadError or local error
+  const displayError = uploadError || localError;
 
   return (
     <div className="border rounded-md p-4 mt-6">
@@ -69,7 +74,7 @@ const BannerForm: React.FC<BannerFormProps> = ({
               setUpload={setBannerUpload}
               fileInputRef={bannerFileInputRef}
               handleFileChange={handleBannerFileChange}
-              uploadError={uploadError}
+              uploadError={displayError}
             />
           </div>
         </div>

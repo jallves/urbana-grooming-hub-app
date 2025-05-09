@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
@@ -69,19 +68,7 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
           console.log("Banner image upload successful, URL:", imageUrl);
         } catch (uploadError: any) {
           console.error("Banner upload error:", uploadError);
-          
-          // Show more detailed error message to help debugging
-          let errorMessage = "Não foi possível fazer o upload da imagem do banner";
-          if (uploadError.message) {
-            errorMessage += ": " + uploadError.message;
-          }
-          
-          toast({
-            title: "Erro no upload",
-            description: errorMessage,
-            variant: "destructive",
-          });
-          return false;
+          throw new Error(uploadError.message || "Erro ao fazer upload da imagem");
         }
       }
       
@@ -136,7 +123,7 @@ export const useBannerOperations = (bannerImages: BannerImage[], setBannerImages
         description: "Ocorreu um erro ao adicionar o banner: " + error.message,
         variant: "destructive",
       });
-      return false;
+      throw error; // Re-throw the error so it can be caught by UI components
     }
   };
 

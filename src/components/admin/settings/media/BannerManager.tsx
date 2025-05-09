@@ -18,6 +18,7 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
   
   const [bannerUpload, setBannerUpload] = useState<ImageUpload | null>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
   const [newBanner, setNewBanner] = useState<Omit<BannerImage, 'id'>>({
     imageUrl: '',
@@ -27,19 +28,27 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
   });
 
   const handleAddBanner = async () => {
-    const success = await addBanner(newBanner, bannerUpload);
-    if (success) {
-      setNewBanner({
-        imageUrl: '',
-        title: '',
-        subtitle: '',
-        description: ''
-      });
+    setUploadError(null);
+    
+    try {
+      const success = await addBanner(newBanner, bannerUpload);
       
-      setBannerUpload(null);
-      if (bannerFileInputRef.current) {
-        bannerFileInputRef.current.value = '';
+      if (success) {
+        setNewBanner({
+          imageUrl: '',
+          title: '',
+          subtitle: '',
+          description: ''
+        });
+        
+        setBannerUpload(null);
+        if (bannerFileInputRef.current) {
+          bannerFileInputRef.current.value = '';
+        }
       }
+    } catch (error) {
+      console.error('Error adding banner:', error);
+      setUploadError((error as Error).message);
     }
   };
 
@@ -66,6 +75,7 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
         setBannerUpload={setBannerUpload}
         handleAddBanner={handleAddBanner}
         uploading={uploading}
+        uploadError={uploadError}
       />
     </div>
   );

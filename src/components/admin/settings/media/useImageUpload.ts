@@ -18,20 +18,14 @@ export const useImageUpload = () => {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${path}/${fileName}`;
       
-      // Create signed URL for upload (bypasses RLS)
-      const { data: signedURLData, error: signedURLError } = await supabase.storage
-        .from(bucket)
-        .createSignedUploadUrl(filePath);
-      
-      if (signedURLError) {
-        console.error('Error creating signed URL:', signedURLError);
-        throw new Error(`Erro ao criar URL assinada: ${signedURLError.message}`);
-      }
-      
-      // Upload the file using the signed URL
+      // Upload directly using admin rights (no RLS)
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .uploadToSignedUrl(signedURLData.path, signedURLData.token, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type // Explicitly specify content type
+        });
       
       if (uploadError) {
         console.error('Upload error details:', uploadError);
