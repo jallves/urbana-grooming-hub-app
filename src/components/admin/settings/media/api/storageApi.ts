@@ -16,7 +16,7 @@ export const uploadFileToStorage = async (file: File, bucket: string, path: stri
   const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
   const filePath = `${path}/${fileName}`;
   
-  // Upload directly using admin rights (no RLS)
+  // Upload to storage with the correct bucket
   const { error: uploadError } = await supabase.storage
     .from(bucket)
     .upload(filePath, file, {
