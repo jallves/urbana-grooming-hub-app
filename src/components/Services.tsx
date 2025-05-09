@@ -3,11 +3,13 @@ import React from 'react';
 import { Scissors, Clock, Star } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 interface ServiceProps {
   title: string;
   price: string;
-  description: string;
+  description: string | null;
 }
 
 const ServiceCard: React.FC<ServiceProps> = ({ title, price, description }) => {
@@ -19,45 +21,29 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description }) => {
           <span className="font-playfair text-lg font-bold text-urbana-gold">{price}</span>
         </div>
         <Separator className="my-3 bg-urbana-gold/20" />
-        <p className="text-urbana-gray mt-2">{description}</p>
+        <p className="text-urbana-gray mt-2">{description || "Serviço premium de barbearia"}</p>
       </CardContent>
     </Card>
   );
 };
 
 const Services: React.FC = () => {
-  const services = [
-    {
-      title: "Corte Clássico",
-      price: "R$ 50",
-      description: "Corte de precisão adaptado ao seu estilo, inclui toalha quente e finalização."
-    },
-    {
-      title: "Barba",
-      price: "R$ 35",
-      description: "Modelagem e definição da sua barba com ferramentas de precisão e tratamento com toalha quente."
-    },
-    {
-      title: "Barboterapia",
-      price: "R$ 45",
-      description: "Barbear tradicional com navalha e tratamentos pré e pós-barba."
-    },
-    {
-      title: "Combo Cabelo & Barba",
-      price: "R$ 75",
-      description: "Pacote completo com corte de cabelo, barba e finalização."
-    },
-    {
-      title: "Coloração",
-      price: "R$ 60+",
-      description: "Aplicação profissional de cor para cobrir grisalhos ou mudar seu visual."
-    },
-    {
-      title: "Corte Infantil",
-      price: "R$ 35",
-      description: "Serviço de corte suave para crianças menores de 12 anos."
+  const { data: services, isLoading, error } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
     }
-  ];
+  });
 
   const features = [
     {
@@ -77,6 +63,10 @@ const Services: React.FC = () => {
     }
   ];
 
+  const formatPrice = (price: number) => {
+    return `R$ ${price.toFixed(2).replace('.', ',')}`;
+  };
+
   return (
     <section id="services" className="urbana-section bg-urbana-light">
       <div className="urbana-container">
@@ -95,16 +85,32 @@ const Services: React.FC = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service, index) => (
-            <ServiceCard
-              key={index}
-              title={service.title}
-              price={service.price}
-              description={service.description}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-urbana-gold border-r-transparent"></div>
+            <p className="mt-4 text-urbana-gray">Carregando serviços...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12 text-red-600">
+            <p className="text-lg font-semibold">Erro ao carregar serviços</p>
+            <p className="text-sm mt-2">Por favor, tente novamente mais tarde.</p>
+          </div>
+        ) : services && services.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {services.map((service) => (
+              <ServiceCard
+                key={service.id}
+                title={service.name}
+                price={formatPrice(service.price)}
+                description={service.description}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-lg text-urbana-gray">Nenhum serviço disponível no momento.</p>
+          </div>
+        )}
       </div>
     </section>
   );
