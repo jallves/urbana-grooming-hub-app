@@ -25,8 +25,8 @@ const Hero: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <div className="w-[70%] mx-auto relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+      <div className="w-[90%] mx-auto relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         {/* Background Image with Vintage Filter */}
         <AnimatePresence mode="wait">
           {bannerImages.map((slide, index) => (
