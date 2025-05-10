@@ -2,10 +2,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button"
-import { Shield } from "lucide-react";
+import { Shield, Scissors } from "lucide-react"; // Added Scissors icon for barbershop theme
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useShopSettings } from '@/hooks/useShopSettings';
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { 
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 
 const Navbar: React.FC = () => {
   const { user, isAdmin, signOut } = useAuth();
@@ -47,60 +57,121 @@ const Navbar: React.FC = () => {
 
   return (
     <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      scrolled ? 'bg-background/95 backdrop-blur-sm shadow-md' : 'bg-transparent'
+      scrolled 
+        ? 'bg-urbana-black/95 backdrop-blur-sm shadow-md' 
+        : 'bg-urbana-black/80 backdrop-blur-sm'
     }`}>
       <div className="container mx-auto py-4 px-5 flex items-center justify-between">
-        <Link to="/" className="text-2xl font-bold text-urbana-gold">
-          {shopName}
+        <Link to="/" className="flex items-center gap-2">
+          <Scissors className="text-urbana-gold h-6 w-6" />
+          <span className="text-2xl font-bold text-urbana-gold font-playfair">
+            {shopName}
+          </span>
         </Link>
-        <nav>
-          <ul className="flex items-center space-x-6">
-            <li>
-              <a href="#" className="hover:text-urbana-gold transition-colors text-foreground">
+        
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList className="gap-1">
+            <NavigationMenuItem>
+              <NavigationMenuLink 
+                href="#" 
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+              >
                 Home
-              </a>
-            </li>
-            <li>
-              <a href="#services" className="hover:text-urbana-gold transition-colors text-foreground">
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink 
+                href="#services" 
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+              >
                 Serviços
-              </a>
-            </li>
-            <li>
-              <a href="#team" className="hover:text-urbana-gold transition-colors text-foreground">
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink 
+                href="#team" 
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+              >
                 Equipe
-              </a>
-            </li>
-            <li>
-              <a href="#appointment" className="hover:text-urbana-gold transition-colors text-foreground">
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <NavigationMenuLink 
+                href="#appointment" 
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+              >
                 Contato
-              </a>
-            </li>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
             {user ? (
               <>
-                <li>
-                  <Link 
-                    to={isAdmin ? "/admin" : "/auth"} 
-                    className="hover:text-urbana-gold transition-colors text-foreground"
-                    title={isAdmin ? "Acessar painel admin" : "Autenticação necessária"}
+                <NavigationMenuItem>
+                  <NavigationMenuLink 
+                    className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                    href={isAdmin ? "/admin" : "/auth"}
                   >
-                    <Shield size={20} />
-                  </Link>
-                </li>
-                <li>
-                  <Button variant="outline" size="sm" onClick={handleSignOut}>
-                    Logout
+                    <Shield size={18} className="inline-block mr-1" />
+                    Painel
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleSignOut}
+                    className="border-urbana-gold text-urbana-gold hover:bg-urbana-gold/20"
+                  >
+                    Sair
                   </Button>
-                </li>
+                </NavigationMenuItem>
               </>
             ) : (
-              <li>
-                <Link to="/auth" className="hover:text-urbana-gold transition-colors text-foreground" title="Admin">
-                  <Shield size={20} />
-                </Link>
-              </li>
+              <NavigationMenuItem>
+                <NavigationMenuLink 
+                  href="/auth" 
+                  className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                  title="Admin"
+                >
+                  <Shield size={18} />
+                </NavigationMenuLink>
+              </NavigationMenuItem>
             )}
-          </ul>
-        </nav>
+          </NavigationMenuList>
+        </NavigationMenu>
+        
+        {/* Mobile navigation */}
+        <div className="flex md:hidden items-center">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="text-white"
+            asChild
+          >
+            <Link to="/">Home</Link>
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-white"
+            asChild
+          >
+            <a href="#services">Serviços</a>
+          </Button>
+          {user && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="ml-2 border-urbana-gold text-urbana-gold hover:bg-urbana-gold/20"
+            >
+              Sair
+            </Button>
+          )}
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );
