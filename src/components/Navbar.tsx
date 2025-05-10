@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button"
-import { Shield, Scissors } from "lucide-react"; // Added Scissors icon for barbershop theme
+import { Button } from "@/components/ui/button";
+import { Shield, Scissors } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useShopSettings } from '@/hooks/useShopSettings';
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { 
   NavigationMenu,
   NavigationMenuContent,
@@ -58,8 +57,8 @@ const Navbar: React.FC = () => {
   return (
     <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled 
-        ? 'bg-urbana-black/95 backdrop-blur-sm shadow-md' 
-        : 'bg-urbana-black/80 backdrop-blur-sm'
+        ? 'bg-urbana-black shadow-md' 
+        : 'bg-urbana-black/90 backdrop-blur-sm'
     }`}>
       <div className="container mx-auto py-4 px-5 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
@@ -167,10 +166,6 @@ const Navbar: React.FC = () => {
               Sair
             </Button>
           )}
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <ThemeToggle />
         </div>
       </div>
     </div>

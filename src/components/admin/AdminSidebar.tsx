@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, Home, Users, User, Package, DollarSign, Settings, BarChart2, MessageSquare, Tag } from 'lucide-react';
+import { Calendar, Home, Users, User, Package, DollarSign, Settings, BarChart2, MessageSquare, Tag, Scissors } from 'lucide-react';
 
 const AdminSidebar: React.FC = () => {
   const navItems = [
@@ -18,9 +18,10 @@ const AdminSidebar: React.FC = () => {
   ];
 
   return (
-    <div className="h-full px-3 py-4 overflow-y-auto bg-background border-r">
-      <div className="mb-6 px-2">
-        <h2 className="text-xl font-semibold">Admin</h2>
+    <div className="h-full px-3 py-4 overflow-y-auto bg-urbana-black border-r border-urbana-black">
+      <div className="mb-6 px-2 flex items-center">
+        <Scissors className="h-6 w-6 text-urbana-gold mr-2" />
+        <h2 className="text-xl font-semibold text-urbana-gold">Admin</h2>
       </div>
       <ul className="space-y-2 px-2">
         {navItems.map((item) => (
@@ -30,8 +31,8 @@ const AdminSidebar: React.FC = () => {
               className={({ isActive }) =>
                 `flex items-center p-2 rounded-lg ${
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'hover:bg-muted text-foreground'
+                    ? 'bg-urbana-gold text-urbana-black'
+                    : 'hover:bg-urbana-gray/20 text-white'
                 }`
               }
             >

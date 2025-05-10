@@ -27,7 +27,7 @@ const Index = () => {
         <div className="pt-16"> {/* Added padding-top to account for the fixed navbar */}
           <Hero />
           <div className="relative">
-            <div className="absolute inset-0 bg-secondary/50 skew-y-3 -z-10 -mt-16 h-[120vh]"></div>
+            <div className="absolute inset-0 bg-urbana-gray/10 skew-y-3 -z-10 -mt-16 h-[120vh]"></div>
             <Services />
           </div>
           <Gallery />

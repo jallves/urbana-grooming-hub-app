@@ -2,7 +2,6 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
@@ -20,62 +19,61 @@ export default {
     },
     extend: {
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        border: '#808080',
+        input: '#808080',
+        ring: '#FFD700',
+        background: '#FFFFFF',
+        foreground: '#000000',
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))'
+          DEFAULT: '#FFD700',
+          foreground: '#000000'
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))'
+          DEFAULT: '#808080',
+          foreground: '#FFFFFF'
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))'
+          DEFAULT: '#FF0000',
+          foreground: '#FFFFFF'
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))'
+          DEFAULT: '#F0F0F0',
+          foreground: '#808080'
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))'
+          DEFAULT: '#FFD700',
+          foreground: '#000000'
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))'
+          DEFAULT: '#FFFFFF',
+          foreground: '#000000'
         },
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))'
+          DEFAULT: '#FFFFFF',
+          foreground: '#000000'
         },
         sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))'
+          DEFAULT: '#0A0A0A',
+          foreground: '#FFFFFF',
+          primary: '#FFD700',
+          'primary-foreground': '#000000',
+          accent: '#808080',
+          'accent-foreground': '#FFFFFF',
+          border: '#333333',
+          ring: '#FFD700'
         },
-        // Updated urbana colors with improved dark theme coordination
         urbana: {
-          gold: '#B6883D',       // Brighter gold for better contrast in dark mode
-          brown: '#1A0F0A',      
-          black: '#0A0A0A',      
-          gray: '#5D5D5D',       
-          light: '#D6D0C9',      
+          gold: '#FFD700',     // Golden for luxury
+          brown: '#1A0F0A',    // Almost black
+          black: '#0A0A0A',    // Pure black
+          gray: '#808080',     // Medium gray
+          light: '#FFFFFF',    // Pure white
         }
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        lg: '0.5rem',
+        md: '0.4rem',
+        sm: '0.2rem'
       },
       keyframes: {
         'accordion-down': {

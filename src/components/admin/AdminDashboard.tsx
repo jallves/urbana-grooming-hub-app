@@ -15,10 +15,10 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="visao-geral" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
-          <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
-          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+        <TabsList className="mb-6 bg-urbana-black">
+          <TabsTrigger value="visao-geral" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">Visão Geral</TabsTrigger>
+          <TabsTrigger value="agendamentos" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">Agendamentos</TabsTrigger>
+          <TabsTrigger value="financeiro" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">Financeiro</TabsTrigger>
         </TabsList>
         
         <TabsContent value="visao-geral" className="space-y-6">
@@ -54,11 +54,11 @@ const AdminDashboard: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
+            <Card className="border border-gray-200 shadow-lg">
+              <CardHeader className="pb-2 border-b border-gray-200">
                 <CardTitle className="text-lg">Próximos Agendamentos</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <div className="space-y-4">
                   {[1, 2, 3, 4].map((_, i) => (
                     <div key={i} className="flex justify-between items-center border-b pb-2">
@@ -76,11 +76,11 @@ const AdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-2">
+            <Card className="border border-gray-200 shadow-lg">
+              <CardHeader className="pb-2 border-b border-gray-200">
                 <CardTitle className="text-lg">Desempenho dos Barbeiros</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 {['Rafael', 'Bruno', 'Marcos'].map((name, i) => (
                   <div key={i} className="mb-4">
                     <div className="flex justify-between mb-1">
@@ -101,22 +101,22 @@ const AdminDashboard: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="agendamentos">
-          <Card>
-            <CardHeader>
+          <Card className="border border-gray-200 shadow-lg">
+            <CardHeader className="border-b border-gray-200">
               <CardTitle>Agendamentos do Dia</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <p>Conteúdo dos agendamentos será exibido aqui.</p>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="financeiro">
-          <Card>
-            <CardHeader>
+          <Card className="border border-gray-200 shadow-lg">
+            <CardHeader className="border-b border-gray-200">
               <CardTitle>Resumo Financeiro</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <p>Conteúdo financeiro será exibido aqui.</p>
             </CardContent>
           </Card>
@@ -142,7 +142,7 @@ const StatCard: React.FC<StatCardProps> = ({
   trend 
 }) => {
   return (
-    <Card>
+    <Card className="border border-gray-200 shadow-lg">
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
           <div>
@@ -154,7 +154,7 @@ const StatCard: React.FC<StatCardProps> = ({
             </div>
           </div>
           <div className="bg-gray-100 p-3 rounded-full">
-            <Icon className="w-5 h-5 text-gray-600" />
+            <Icon className="w-5 h-5 text-urbana-gold" />
           </div>
         </div>
       </CardContent>

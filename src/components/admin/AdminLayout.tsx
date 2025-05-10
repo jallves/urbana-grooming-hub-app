@@ -11,22 +11,22 @@ interface AdminLayoutProps {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-100 dark:bg-gray-900 overflow-x-hidden">
+      <div className="min-h-screen flex w-full bg-white overflow-x-hidden">
         <AdminSidebar />
         <div className="flex-1 p-3 md:p-6 overflow-auto">
           <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-3">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100">Painel Administrativo</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Urbana Barbearia</p>
+              <h1 className="text-xl md:text-2xl font-bold text-black">Painel Administrativo</h1>
+              <p className="text-sm text-urbana-gray">Urbana Barbearia</p>
             </div>
             <div className="flex items-center gap-2 md:gap-4">
               <Link 
                 to="/" 
-                className="text-xs md:text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white flex items-center gap-1"
+                className="text-xs md:text-sm text-urbana-gray hover:text-black flex items-center gap-1"
               >
                 Ver Site
               </Link>
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-300 font-semibold">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-urbana-black flex items-center justify-center text-urbana-gold font-semibold">
                 A
               </div>
             </div>

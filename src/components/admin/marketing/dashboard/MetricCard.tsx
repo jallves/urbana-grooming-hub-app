@@ -26,15 +26,15 @@ const MetricCard: React.FC<MetricCardProps> = ({
   isLoading = false,
 }) => {
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border border-gray-200 shadow-lg">
+      <CardHeader className="pb-2 border-b border-gray-200">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4">
         <div className="flex items-center justify-between">
           <div className="text-2xl font-bold">
             {isLoading ? (
-              <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+              <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
             ) : value}
           </div>
           {trend ? (
@@ -47,15 +47,15 @@ const MetricCard: React.FC<MetricCardProps> = ({
               {trend.value}
             </Badge>
           ) : (
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Icon className="h-5 w-5 text-primary" />
+            <div className="p-2 bg-gray-100 rounded-full">
+              <Icon className="h-5 w-5 text-urbana-gold" />
             </div>
           )}
         </div>
         {description && (
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-gray-500 mt-2">
             {isLoading ? (
-              <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
+              <div className="h-4 w-24 bg-gray-200 animate-pulse rounded"></div>
             ) : (
               description
             )}

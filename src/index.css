@@ -6,94 +6,6 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Light theme (30% darker) */
-    --background: 40 28% 80%;
-    --foreground: 20 16% 2%;
-
-    --card: 0 0% 87%;
-    --card-foreground: 20 16% 2%;
-
-    --popover: 0 0% 87%;
-    --popover-foreground: 20 16% 2%;
-
-    --primary: 25 76% 30%;
-    --primary-foreground: 26 83% 10%;
-
-    --secondary: 32 40% 13%;
-    --secondary-foreground: 30 30% 90%;
-
-    --muted: 26 10% 70%;
-    --muted-foreground: 26 7.2% 25%;
-
-    --accent: 32 30% 65%;
-    --accent-foreground: 32 40% 13%;
-
-    --destructive: 0 84.2% 40%;
-    --destructive-foreground: 210 40% 90%;
-
-    --border: 26 7.2% 60%;
-    --input: 26 7.2% 60%;
-    --ring: 25 76% 30%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 85%;
-    --sidebar-foreground: 240 5.3% 17%;
-    --sidebar-primary: 240 5.9% 7%;
-    --sidebar-primary-foreground: 0 0% 87%;
-    --sidebar-accent: 240 4.8% 80%;
-    --sidebar-accent-foreground: 240 5.9% 7%;
-    --sidebar-border: 220 13% 75%;
-    --sidebar-ring: 217.2 91.2% 40%;
-  }
-
-  .dark {
-    /* Improved Dark theme with better color combinations */
-    --background: 220 16% 10%;
-    --foreground: 60 9.1% 90%;
-
-    --card: 224 16% 12%;
-    --card-foreground: 60 9.1% 90%;
-
-    --popover: 224 16% 12%;
-    --popover-foreground: 60 9.1% 90%;
-
-    --primary: 35 80% 45%;
-    --primary-foreground: 20 10% 98%;
-
-    --secondary: 210 6.5% 20%;
-    --secondary-foreground: 60 9.1% 90%;
-
-    --muted: 210 6.5% 18%;
-    --muted-foreground: 24 5.4% 70%;
-
-    --accent: 35 80% 45%;
-    --accent-foreground: 60 9.1% 98%;
-
-    --destructive: 0 62.8% 30%;
-    --destructive-foreground: 60 9.1% 90%;
-
-    --border: 210 6.5% 22%;
-    --input: 210 6.5% 22%;
-    --ring: 35 80% 45%;
-
-    --sidebar-background: 220 10% 14%;
-    --sidebar-foreground: 210 4.8% 90%;
-    --sidebar-primary: 35 80% 45%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 210 10% 22%;
-    --sidebar-accent-foreground: 210 4.8% 90%;
-    --sidebar-border: 210 10% 25%;
-    --sidebar-ring: 35 80% 45%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
   body {
     @apply bg-background text-foreground font-raleway;
   }
@@ -120,7 +32,7 @@
 }
 
 .urbana-card {
-  @apply rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:shadow-lg dark:shadow-black/30 bg-white dark:bg-gray-800;
+  @apply rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-white shadow-lg shadow-black/10;
 }
 
 /* Mobile responsive styles */
@@ -155,20 +67,24 @@
   overflow: hidden;
 }
 
-/* Dark mode specific improvements */
-.dark .glass-card {
-  @apply bg-gray-900/80 backdrop-blur-md border border-gray-700/50;
-}
-
-.dark .card-shadow {
-  @apply shadow-lg shadow-black/30;
-}
-
-.dark .text-shadow {
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
-}
-
 /* Glass effect for elements */
 .glass-effect {
-  @apply backdrop-blur-md bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10;
+  @apply backdrop-blur-md bg-white/10 border border-white/20;
+}
+
+/* Luxury theme specific styles */
+.luxury-shadow {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gold-accent {
+  @apply text-urbana-gold;
+}
+
+.gold-border {
+  @apply border-urbana-gold;
+}
+
+.text-shadow-sm {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
