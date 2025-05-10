@@ -104,3 +104,18 @@
 .drop-shadow-lg {
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
 }
+
+/* Dark mode specific styles */
+.dark .urbana-card {
+  @apply bg-gray-800 border border-gray-700;
+}
+
+.dark .form-input,
+.dark .form-select,
+.dark .form-textarea {
+  @apply bg-gray-800 border-gray-700 text-white;
+}
+
+.dark .btn-primary {
+  @apply bg-urbana-gold text-white hover:bg-urbana-gold/90;
+}

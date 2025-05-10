@@ -49,43 +49,43 @@
   }
 
   .dark {
-    /* Dark theme (30% darker) */
-    --background: 20 16% 1.5%;
+    /* Improved Dark theme with better color combinations */
+    --background: 220 16% 10%;
     --foreground: 60 9.1% 90%;
 
-    --card: 20 16% 1.5%;
+    --card: 224 16% 12%;
     --card-foreground: 60 9.1% 90%;
 
-    --popover: 20 16% 1.5%;
+    --popover: 224 16% 12%;
     --popover-foreground: 60 9.1% 90%;
 
-    --primary: 25 76% 30%;
-    --primary-foreground: 26 83% 10%;
+    --primary: 35 80% 45%;
+    --primary-foreground: 20 10% 98%;
 
-    --secondary: 12 6.5% 10%;
+    --secondary: 210 6.5% 20%;
     --secondary-foreground: 60 9.1% 90%;
 
-    --muted: 12 6.5% 10%;
-    --muted-foreground: 24 5.4% 50%;
+    --muted: 210 6.5% 18%;
+    --muted-foreground: 24 5.4% 70%;
 
-    --accent: 12 6.5% 10%;
-    --accent-foreground: 60 9.1% 90%;
+    --accent: 35 80% 45%;
+    --accent-foreground: 60 9.1% 98%;
 
-    --destructive: 0 62.8% 20%;
+    --destructive: 0 62.8% 30%;
     --destructive-foreground: 60 9.1% 90%;
 
-    --border: 12 6.5% 10%;
-    --input: 12 6.5% 10%;
-    --ring: 25 76% 30%;
+    --border: 210 6.5% 22%;
+    --input: 210 6.5% 22%;
+    --ring: 35 80% 45%;
 
-    --sidebar-background: 240 5.9% 5%;
-    --sidebar-foreground: 240 4.8% 85%;
-    --sidebar-primary: 224.3 76.3% 32%;
-    --sidebar-primary-foreground: 0 0% 90%;
-    --sidebar-accent: 240 3.7% 10%;
-    --sidebar-accent-foreground: 240 4.8% 85%;
-    --sidebar-border: 240 3.7% 10%;
-    --sidebar-ring: 217.2 91.2% 40%;
+    --sidebar-background: 220 10% 14%;
+    --sidebar-foreground: 210 4.8% 90%;
+    --sidebar-primary: 35 80% 45%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 10% 22%;
+    --sidebar-accent-foreground: 210 4.8% 90%;
+    --sidebar-border: 210 10% 25%;
+    --sidebar-ring: 35 80% 45%;
   }
 }
 
@@ -153,4 +153,22 @@
 /* Utility class for preventing scroll on body when modal is open */
 .overflow-hidden {
   overflow: hidden;
+}
+
+/* Dark mode specific improvements */
+.dark .glass-card {
+  @apply bg-gray-900/80 backdrop-blur-md border border-gray-700/50;
+}
+
+.dark .card-shadow {
+  @apply shadow-lg shadow-black/30;
+}
+
+.dark .text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+/* Glass effect for elements */
+.glass-effect {
+  @apply backdrop-blur-md bg-white/10 dark:bg-black/30 border border-white/20 dark:border-white/10;
 }

@@ -63,13 +63,13 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))'
         },
-        // Updated urbana colors for a 30% darker theme
+        // Updated urbana colors with improved dark theme coordination
         urbana: {
-          gold: '#7A4E22',       // 30% darker gold
-          brown: '#1A0F0A',      // 30% darker brown
-          black: '#0A0A0A',      // 30% darker black
-          gray: '#5D5D5D',       // 30% darker gray
-          light: '#D6D0C9',      // 30% darker light color
+          gold: '#B6883D',       // Brighter gold for better contrast in dark mode
+          brown: '#1A0F0A',      
+          black: '#0A0A0A',      
+          gray: '#5D5D5D',       
+          light: '#D6D0C9',      
         }
       },
       borderRadius: {
