@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Search, Pencil, Trash2, ShieldCheck } from 'lucide-react';
+import { PlusCircle, Search, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import UserTable from './users/UserTable';
 import AddUserDialog from './users/AddUserDialog';
 import UserRoleDialog from './users/UserRoleDialog';
 import { toast } from 'sonner';
+import { Staff } from '@/types/staff';
 
 interface UserWithRole {
   id: string;
@@ -25,6 +26,7 @@ const UserManagement: React.FC = () => {
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -91,6 +93,68 @@ const UserManagement: React.FC = () => {
     }
   };
 
+  const handleSyncStaff = async () => {
+    try {
+      setSyncLoading(true);
+      
+      // Buscar todos os profissionais
+      const { data: staffMembers, error: staffError } = await supabase
+        .from('staff')
+        .select('*');
+        
+      if (staffError) throw staffError;
+      
+      if (!staffMembers || staffMembers.length === 0) {
+        toast.info('Não há profissionais para sincronizar');
+        return;
+      }
+      
+      // Buscar usuários existentes para evitar duplicatas
+      const { data: existingUsers, error: usersError } = await supabase
+        .from('admin_users')
+        .select('email');
+        
+      if (usersError) throw usersError;
+      
+      const existingEmails = new Set(existingUsers?.map(user => user.email.toLowerCase()));
+      
+      // Filtrar para pegar apenas profissionais que não estão na lista de usuários
+      const newStaff = staffMembers.filter(staff => 
+        staff.email && !existingEmails.has(staff.email.toLowerCase())
+      );
+      
+      if (newStaff.length === 0) {
+        toast.info('Todos os profissionais já foram sincronizados como usuários');
+        return;
+      }
+      
+      // Preparar dados para inserção
+      const usersToInsert = newStaff.map((staff: Staff) => ({
+        email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
+        name: staff.name,
+        role: 'barber',
+        created_at: new Date().toISOString()
+      }));
+      
+      // Inserir os novos usuários
+      const { error: insertError } = await supabase
+        .from('admin_users')
+        .insert(usersToInsert);
+      
+      if (insertError) throw insertError;
+      
+      toast.success(`${usersToInsert.length} profissionais foram adicionados como usuários`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Erro ao sincronizar profissionais:', error);
+      toast.error('Erro ao sincronizar profissionais', { 
+        description: (error as Error).message 
+      });
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) => user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -114,10 +178,16 @@ const UserManagement: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button onClick={handleAddUser} className="ml-4">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Adicionar Usuário
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleAddUser} 
+              className="ml-4"
+              disabled={syncLoading}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Usuário
+            </Button>
+          </div>
         </div>
 
         <UserTable 
@@ -125,6 +195,7 @@ const UserManagement: React.FC = () => {
           loading={loading} 
           onRoleChange={handleRoleChange}
           onDeleteUser={handleDeleteUser}
+          onSyncStaff={handleSyncStaff}
         />
 
         <AddUserDialog 
