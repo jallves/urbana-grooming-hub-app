@@ -41,6 +41,8 @@ const UserTable: React.FC<UserTableProps> = ({
         return 'bg-red-500 hover:bg-red-600';
       case 'moderator':
         return 'bg-amber-500 hover:bg-amber-600';
+      case 'barber':
+        return 'bg-purple-500 hover:bg-purple-600';
       default:
         return 'bg-blue-500 hover:bg-blue-600';
     }
