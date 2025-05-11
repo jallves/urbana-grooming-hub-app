@@ -9,10 +9,11 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Pencil, Trash2, RefreshCw, Users, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UserWithRole {
   id: string;
@@ -50,6 +51,19 @@ const UserTable: React.FC<UserTableProps> = ({
     }
   };
 
+  const getRoleIcon = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'admin':
+        return <ShieldCheck className="h-3 w-3 mr-1" />;
+      case 'barber':
+        return <Users className="h-3 w-3 mr-1" />;
+      case 'moderator':
+        return <User className="h-3 w-3 mr-1" />;
+      default:
+        return null;
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Nunca';
     try {
@@ -82,14 +96,23 @@ const UserTable: React.FC<UserTableProps> = ({
     <div>
       {onSyncStaff && (
         <div className="flex justify-end mb-4">
-          <Button 
-            variant="outline" 
-            onClick={onSyncStaff}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Sincronizar Profissionais
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  onClick={onSyncStaff}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Sincronizar Profissionais
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Importa todos os profissionais ativos como usuários com função de barbeiro</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
       
@@ -112,28 +135,50 @@ const UserTable: React.FC<UserTableProps> = ({
                   <Badge 
                     className={getRoleBadgeColor(user.role)}
                   >
-                    {user.role || 'Usuário'}
+                    <span className="flex items-center">
+                      {getRoleIcon(user.role)}
+                      {user.role || 'Usuário'}
+                    </span>
                   </Badge>
                 </TableCell>
                 <TableCell>{formatDate(user.created_at)}</TableCell>
                 <TableCell>{formatDate(user.last_sign_in_at)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => onRoleChange(user)}
-                    >
-                      <ShieldCheck className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => onDeleteUser(user.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={() => onRoleChange(user)}
+                          >
+                            <ShieldCheck className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Alterar Cargo</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={() => onDeleteUser(user.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Remover Usuário</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </TableCell>
               </TableRow>

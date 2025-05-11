@@ -10,6 +10,8 @@ import AddUserDialog from './users/AddUserDialog';
 import UserRoleDialog from './users/UserRoleDialog';
 import { toast } from 'sonner';
 import { Staff } from '@/types/staff';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import UserRolesList from './users/UserRolesList';
 
 interface UserWithRole {
   id: string;
@@ -27,6 +29,7 @@ const UserManagement: React.FC = () => {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [syncLoading, setSyncLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('users');
 
   useEffect(() => {
     fetchUsers();
@@ -97,15 +100,16 @@ const UserManagement: React.FC = () => {
     try {
       setSyncLoading(true);
       
-      // Buscar todos os profissionais
+      // Buscar todos os profissionais ativos
       const { data: staffMembers, error: staffError } = await supabase
         .from('staff')
-        .select('*');
+        .select('*')
+        .eq('is_active', true);
         
       if (staffError) throw staffError;
       
       if (!staffMembers || staffMembers.length === 0) {
-        toast.info('Não há profissionais para sincronizar');
+        toast.info('Não há profissionais ativos para sincronizar');
         return;
       }
       
@@ -116,7 +120,7 @@ const UserManagement: React.FC = () => {
         
       if (usersError) throw usersError;
       
-      const existingEmails = new Set(existingUsers?.map(user => user.email.toLowerCase()));
+      const existingEmails = new Set(existingUsers?.map(user => user.email?.toLowerCase()) || []);
       
       // Filtrar para pegar apenas profissionais que não estão na lista de usuários
       const newStaff = staffMembers.filter(staff => 
@@ -143,6 +147,36 @@ const UserManagement: React.FC = () => {
       
       if (insertError) throw insertError;
       
+      // Adicionar registros à tabela user_roles
+      try {
+        // Primeiro, buscamos os usuários que acabamos de inserir
+        const { data: newUsers, error: fetchError } = await supabase
+          .from('admin_users')
+          .select('id')
+          .in('email', usersToInsert.map(u => u.email));
+          
+        if (fetchError) throw fetchError;
+        
+        if (newUsers && newUsers.length > 0) {
+          // Preparar dados para inserção na tabela user_roles
+          const rolesToInsert = newUsers.map(user => ({
+            user_id: user.id,
+            role: 'barber'
+          }));
+          
+          // Inserir os novos papéis
+          const { error: roleInsertError } = await supabase
+            .from('user_roles')
+            .insert(rolesToInsert);
+            
+          if (roleInsertError && !roleInsertError.message.includes('duplicate')) {
+            console.error('Erro ao inserir papéis:', roleInsertError);
+          }
+        }
+      } catch (roleError) {
+        console.error('Erro ao sincronizar papéis:', roleError);
+      }
+      
       toast.success(`${usersToInsert.length} profissionais foram adicionados como usuários`);
       fetchUsers();
     } catch (error) {
@@ -164,39 +198,52 @@ const UserManagement: React.FC = () => {
       <CardHeader>
         <CardTitle>Gerenciamento de Usuários</CardTitle>
         <CardDescription>
-          Gerencie usuários e suas permissões no sistema
+          Gerencie usuários, cargos e permissões no sistema
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por email..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleAddUser} 
-              className="ml-4"
-              disabled={syncLoading}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Adicionar Usuário
-            </Button>
-          </div>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="roles">Cargos e Permissões</TabsTrigger>
+          </TabsList>
 
-        <UserTable 
-          users={filteredUsers} 
-          loading={loading} 
-          onRoleChange={handleRoleChange}
-          onDeleteUser={handleDeleteUser}
-          onSyncStaff={handleSyncStaff}
-        />
+          <TabsContent value="users">
+            <div className="flex justify-between items-center mb-6">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por email..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleAddUser} 
+                  className="ml-4"
+                  disabled={syncLoading}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Adicionar Usuário
+                </Button>
+              </div>
+            </div>
+
+            <UserTable 
+              users={filteredUsers} 
+              loading={loading} 
+              onRoleChange={handleRoleChange}
+              onDeleteUser={handleDeleteUser}
+              onSyncStaff={handleSyncStaff}
+            />
+          </TabsContent>
+          
+          <TabsContent value="roles">
+            <UserRolesList />
+          </TabsContent>
+        </Tabs>
 
         <AddUserDialog 
           open={addUserOpen} 
