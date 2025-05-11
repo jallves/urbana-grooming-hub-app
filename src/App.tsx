@@ -18,7 +18,12 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSupport from "./pages/AdminSupport";
 import AdminSettings from "./pages/AdminSettings";
 import Auth from "./pages/Auth";
+import BarberAuth from "./pages/BarberAuth";
+import BarberDashboard from "./pages/BarberDashboard";
+import BarberCommissions from "./pages/BarberCommissions";
+import BarberProfile from "./pages/BarberProfile";
 import AdminRoute from "./components/auth/AdminRoute";
+import BarberRoute from "./components/auth/BarberRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
@@ -35,8 +40,15 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              {/* Garantir que a rota de autenticação seja pública */}
+              
+              {/* Autenticação */}
               <Route path="/auth" element={<Auth />} />
+              <Route path="/barbeiro/login" element={<BarberAuth />} />
+              
+              {/* Rotas protegidas de barbeiro */}
+              <Route path="/barbeiro" element={<BarberRoute><BarberDashboard /></BarberRoute>} />
+              <Route path="/barbeiro/comissoes" element={<BarberRoute><BarberCommissions /></BarberRoute>} />
+              <Route path="/barbeiro/perfil" element={<BarberRoute><BarberProfile /></BarberRoute>} />
               
               {/* Rotas protegidas de admin */}
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
