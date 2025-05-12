@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BarberLayout from '../components/barber/BarberLayout';
 import { Button } from '@/components/ui/button';
 import { Calendar } from "@/components/ui/calendar";
@@ -7,7 +7,8 @@ import {
   Card, 
   CardHeader, 
   CardTitle, 
-  CardContent 
+  CardContent,
+  CardDescription
 } from "@/components/ui/card";
 import {
   Select,
@@ -23,53 +24,95 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog";
-import { format, addDays } from 'date-fns';
+import { format, isSameDay, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
+import { Calendar as CalendarIcon, Clock, Info, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 
-// Mock data for appointments
-const mockAppointments = [
-  {
-    id: '1',
-    clientName: 'João Silva',
-    service: 'Corte Degradê',
-    time: '09:00',
-    status: 'confirmado',
-    notes: 'Cliente prefere degradê alto'
-  },
-  {
-    id: '2',
-    clientName: 'Pedro Almeida',
-    service: 'Barba',
-    time: '10:30',
-    status: 'confirmado',
-    notes: ''
-  },
-  {
-    id: '3',
-    clientName: 'Carlos Mendes',
-    service: 'Corte + Barba',
-    time: '14:00',
-    status: 'concluído',
-    notes: 'Cliente tem cabelo fino'
-  },
-  {
-    id: '4',
-    clientName: 'Lucas Ferreira',
-    service: 'Corte Tesoura',
-    time: '16:30',
-    status: 'cancelado',
-    notes: ''
-  }
-];
+// Define types for appointments
+interface Appointment {
+  id: string;
+  clientName: string;
+  service: string;
+  time: string;
+  fullTime?: Date;
+  status: 'confirmado' | 'concluído' | 'cancelado' | 'reagendamento';
+  notes?: string;
+}
 
 const BarberDashboard: React.FC = () => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
-  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBlockingDialog, setIsBlockingDialog] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [blockNote, setBlockNote] = useState('');
+  const [blockTime, setBlockTime] = useState('09:00');
+  const [blockReason, setBlockReason] = useState('folga');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Mock data for appointments (in a real app, this would come from the database)
+  const mockAppointments = [
+    {
+      id: '1',
+      clientName: 'João Silva',
+      service: 'Corte Degradê',
+      time: '09:00',
+      fullTime: new Date(new Date().setHours(9, 0, 0, 0)),
+      status: 'confirmado' as const,
+      notes: 'Cliente prefere degradê alto'
+    },
+    {
+      id: '2',
+      clientName: 'Pedro Almeida',
+      service: 'Barba',
+      time: '10:30',
+      fullTime: new Date(new Date().setHours(10, 30, 0, 0)),
+      status: 'confirmado' as const,
+      notes: ''
+    },
+    {
+      id: '3',
+      clientName: 'Carlos Mendes',
+      service: 'Corte + Barba',
+      time: '14:00',
+      fullTime: new Date(new Date().setHours(14, 0, 0, 0)),
+      status: 'concluído' as const,
+      notes: 'Cliente tem cabelo fino'
+    },
+    {
+      id: '4',
+      clientName: 'Lucas Ferreira',
+      service: 'Corte Tesoura',
+      time: '16:30',
+      fullTime: new Date(new Date().setHours(16, 30, 0, 0)),
+      status: 'cancelado' as const,
+      notes: ''
+    }
+  ];
+
+  useEffect(() => {
+    // In a real app, fetch appointments from the database for the selected date
+    // For now, we'll use the mock data
+    const filteredAppointments = mockAppointments.filter(appointment => {
+      // Filter by date for daily view
+      if (viewMode === 'daily' && selectedDate) {
+        return appointment.fullTime && isSameDay(appointment.fullTime, selectedDate);
+      }
+      
+      // For weekly view, include all appointments
+      return true;
+    });
+    
+    setAppointments(filteredAppointments);
+  }, [selectedDate, viewMode]);
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -79,32 +122,89 @@ const BarberDashboard: React.FC = () => {
         return 'bg-green-500';
       case 'cancelado':
         return 'bg-red-500';
+      case 'reagendamento':
+        return 'bg-amber-500';
       default:
         return 'bg-gray-500';
     }
   };
 
-  const handleAppointmentClick = (appointment: any) => {
+  const handleAppointmentClick = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setIsDialogOpen(true);
   };
 
-  const handleStatusChange = (status: string) => {
-    // In a real app, this would call an API to update the appointment status
-    console.log(`Alterando status do agendamento ${selectedAppointment?.id} para ${status}`);
-    setSelectedAppointment({
-      ...selectedAppointment,
-      status: status
-    });
-    // Don't close dialog so user can see the status change
+  const handleStatusChange = async (status: 'confirmado' | 'concluído' | 'cancelado' | 'reagendamento') => {
+    if (!selectedAppointment) return;
+    
+    setIsLoading(true);
+    
+    // In a real app, this would update the status in the database
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update the appointment in the local state
+      setAppointments(prev => 
+        prev.map(app => 
+          app.id === selectedAppointment.id 
+            ? { ...app, status } 
+            : app
+        )
+      );
+      
+      // Update the selected appointment state
+      setSelectedAppointment({
+        ...selectedAppointment,
+        status
+      });
+      
+      // Show success message
+      toast.success(`Status alterado para ${status}`);
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleBlockTime = () => {
-    setIsBlockingDialog(true);
+  const handleBlockTimeSubmit = async () => {
+    if (!selectedDate) return;
+    
+    setIsLoading(true);
+    
+    try {
+      // In a real app, this would create a blocked time in the database
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      toast.success('Horário bloqueado com sucesso');
+      setIsBlockingDialog(false);
+      setBlockNote('');
+      
+      // In a real app, refresh the calendar or appointments list
+    } catch (error) {
+      console.error('Erro ao bloquear horário:', error);
+      toast.error('Erro ao bloquear horário');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderAppointments = () => {
-    return mockAppointments.map(appointment => (
+    if (appointments.length === 0) {
+      return (
+        <div className="text-center py-8 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+          <Calendar className="h-12 w-12 text-muted-foreground opacity-50" />
+          <p>Nenhum agendamento para esta data</p>
+          <Button variant="outline" onClick={() => setIsBlockingDialog(true)} className="mt-2">
+            Bloquear Horário
+          </Button>
+        </div>
+      );
+    }
+
+    return appointments.map(appointment => (
       <Card 
         key={appointment.id} 
         className="mb-3 cursor-pointer bg-zinc-900 border-zinc-800 hover:bg-zinc-800"
@@ -151,7 +251,7 @@ const BarberDashboard: React.FC = () => {
                 <Button 
                   variant="outline" 
                   className="border-zinc-700 text-white hover:bg-zinc-800"
-                  onClick={handleBlockTime}
+                  onClick={() => setIsBlockingDialog(true)}
                 >
                   Bloquear Horário
                 </Button>
@@ -190,15 +290,15 @@ const BarberDashboard: React.FC = () => {
                       <span>Agenda Semanal</span>
                     )}
                   </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    {viewMode === 'daily' 
+                      ? 'Visualize e gerencie seus agendamentos do dia'
+                      : 'Visualize uma visão geral da semana'
+                    }
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {renderAppointments()}
-
-                  {mockAppointments.length === 0 && (
-                    <div className="text-center py-10">
-                      <p className="text-gray-400">Nenhum agendamento para esta data</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -207,18 +307,28 @@ const BarberDashboard: React.FC = () => {
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white">Horários Disponíveis</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Horários disponíveis para {selectedDate ? format(selectedDate, 'dd/MM/yyyy', { locale: ptBR }) : ''}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(time => (
-                      <Button 
-                        key={time} 
-                        variant="outline" 
-                        className="border-zinc-700 text-white hover:bg-zinc-800"
-                      >
-                        {time}
-                      </Button>
-                    ))}
+                    {['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'].map(time => {
+                      const isBooked = appointments.some(app => app.time === time);
+                      return (
+                        <Button 
+                          key={time} 
+                          variant={isBooked ? "secondary" : "outline"} 
+                          disabled={isBooked}
+                          className={isBooked 
+                            ? "bg-zinc-700 text-gray-400 cursor-not-allowed" 
+                            : "border-zinc-700 text-white hover:bg-zinc-800"
+                          }
+                        >
+                          {time} {isBooked ? '(Ocupado)' : ''}
+                        </Button>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -266,15 +376,29 @@ const BarberDashboard: React.FC = () => {
               <DialogFooter className="flex flex-col sm:flex-row gap-2">
                 {selectedAppointment.status === 'confirmado' && (
                   <>
-                    <Button className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleStatusChange('concluído')}>
+                    <Button 
+                      className="bg-green-500 hover:bg-green-600 text-white" 
+                      onClick={() => handleStatusChange('concluído')}
+                      disabled={isLoading}
+                    >
                       Finalizar Atendimento
                     </Button>
-                    <Button variant="outline" className="border-zinc-700 text-white" onClick={() => handleStatusChange('reagendamento')}>
+                    <Button 
+                      variant="outline" 
+                      className="border-zinc-700 text-white" 
+                      onClick={() => handleStatusChange('reagendamento')}
+                      disabled={isLoading}
+                    >
                       Solicitar Reagendamento
                     </Button>
                   </>
                 )}
-                <Button variant="outline" className="border-zinc-700 text-white" onClick={() => setIsDialogOpen(false)}>
+                <Button 
+                  variant="outline" 
+                  className="border-zinc-700 text-white" 
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={isLoading}
+                >
                   Fechar
                 </Button>
               </DialogFooter>
@@ -296,7 +420,7 @@ const BarberDashboard: React.FC = () => {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <p className="text-gray-400">Horário:</p>
-              <Select>
+              <Select value={blockTime} onValueChange={setBlockTime}>
                 <SelectTrigger className="col-span-3 bg-zinc-800 border-zinc-700 text-white">
                   <SelectValue placeholder="Selecione o horário" />
                 </SelectTrigger>
@@ -309,7 +433,7 @@ const BarberDashboard: React.FC = () => {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <p className="text-gray-400">Motivo:</p>
-              <Select>
+              <Select value={blockReason} onValueChange={setBlockReason}>
                 <SelectTrigger className="col-span-3 bg-zinc-800 border-zinc-700 text-white">
                   <SelectValue placeholder="Selecione o motivo" />
                 </SelectTrigger>
@@ -321,13 +445,33 @@ const BarberDashboard: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            {blockReason === 'outro' && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <p className="text-gray-400">Detalhes:</p>
+                <Textarea 
+                  value={blockNote} 
+                  onChange={(e) => setBlockNote(e.target.value)}
+                  placeholder="Detalhe o motivo do bloqueio..."
+                  className="col-span-3 bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-zinc-700 text-white" onClick={() => setIsBlockingDialog(false)}>
+            <Button 
+              variant="outline" 
+              className="border-zinc-700 text-white" 
+              onClick={() => setIsBlockingDialog(false)}
+              disabled={isLoading}
+            >
               Cancelar
             </Button>
-            <Button className="bg-white text-black hover:bg-gray-200" onClick={() => setIsBlockingDialog(false)}>
-              Confirmar
+            <Button 
+              className="bg-white text-black hover:bg-gray-200" 
+              onClick={handleBlockTimeSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Processando...' : 'Confirmar'}
             </Button>
           </DialogFooter>
         </DialogContent>

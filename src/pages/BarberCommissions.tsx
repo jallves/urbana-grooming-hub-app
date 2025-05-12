@@ -1,367 +1,630 @@
 
 import React, { useState } from 'react';
 import BarberLayout from '../components/barber/BarberLayout';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import {
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ArrowUp, ArrowDown } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Badge } from '@/components/ui/badge';
+import { format, subDays, isWithinInterval, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Download, Filter, Calendar as CalendarIcon, DollarSign, FileText, TrendingUp } from 'lucide-react';
 
-// Mock data for commissions
-const mockCommissions = [
-  {
-    id: '1',
-    date: '2025-05-10',
-    clientName: 'João Silva',
-    service: 'Corte Degradê',
-    value: 50,
-    commission: 30,
-    status: 'pago'
-  },
-  {
-    id: '2',
-    date: '2025-05-10',
-    clientName: 'Pedro Almeida',
-    service: 'Barba',
-    value: 35,
-    commission: 21,
-    status: 'pago'
-  },
-  {
-    id: '3',
-    date: '2025-05-09',
-    clientName: 'Carlos Mendes',
-    service: 'Corte + Barba',
-    value: 75,
-    commission: 45,
-    status: 'pago'
-  },
-  {
-    id: '4',
-    date: '2025-05-09',
-    clientName: 'Lucas Ferreira',
-    service: 'Corte Tesoura',
-    value: 60,
-    commission: 36,
-    status: 'pago'
-  },
-  {
-    id: '5',
-    date: '2025-05-08',
-    clientName: 'Rafael Costa',
-    service: 'Corte Degradê',
-    value: 50,
-    commission: 30,
-    status: 'pago'
-  },
-  {
-    id: '6',
-    date: '2025-05-07',
-    clientName: 'Marcos Santos',
-    service: 'Barba',
-    value: 35,
-    commission: 21,
-    status: 'pago'
-  }
-];
+// Types for commission data
+interface CommissionItem {
+  id: string;
+  date: Date;
+  client: string;
+  service: string;
+  value: number;
+  commission: number;
+  percentage: number;
+  status: 'pendente' | 'pago';
+}
 
-// Mock data for payments
-const mockPayments = [
-  {
-    id: '1',
-    date: '2025-05-01',
-    period: 'Abril 2025',
-    amount: 1200,
-    method: 'Pix',
-    receipt: 'rec123.pdf'
-  },
-  {
-    id: '2',
-    date: '2025-04-01',
-    period: 'Março 2025',
-    amount: 1350,
-    method: 'Transferência',
-    receipt: 'rec456.pdf'
-  },
-  {
-    id: '3',
-    date: '2025-03-01',
-    period: 'Fevereiro 2025',
-    amount: 1100,
-    method: 'Pix',
-    receipt: 'rec789.pdf'
-  }
-];
-
-// Chart data for daily earnings
-const chartData = {
-  labels: ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
-  data: [120, 160, 150, 180, 200, 170, 0]
-};
+// Types for payment history
+interface PaymentItem {
+  id: string;
+  date: Date;
+  value: number;
+  method: string;
+  description: string;
+  reference: string; // Month or period reference
+  receipt?: string; // URL to receipt PDF
+}
 
 const BarberCommissions: React.FC = () => {
-  const [period, setPeriod] = useState('day');
-  const [sortField, setSortField] = useState('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const { user } = useAuth();
+  const [periodFilter, setPeriodFilter] = useState<'day' | 'week' | 'month'>('month');
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<string>('all');
+  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<PaymentItem | null>(null);
 
-  const sortedCommissions = [...mockCommissions].sort((a, b) => {
-    if (sortField === 'date') {
-      return sortDirection === 'asc' 
-        ? new Date(a.date).getTime() - new Date(b.date).getTime()
-        : new Date(b.date).getTime() - new Date(a.date).getTime();
+  // Mock data for commissions
+  const mockCommissions: CommissionItem[] = [
+    {
+      id: '1',
+      date: new Date(2025, 4, 12),
+      client: 'João Silva',
+      service: 'Corte Degradê',
+      value: 50,
+      commission: 30,
+      percentage: 60,
+      status: 'pago'
+    },
+    {
+      id: '2',
+      date: new Date(2025, 4, 11),
+      client: 'Pedro Almeida',
+      service: 'Barba',
+      value: 35,
+      commission: 21,
+      percentage: 60,
+      status: 'pago'
+    },
+    {
+      id: '3',
+      date: new Date(2025, 4, 10),
+      client: 'Carlos Mendes',
+      service: 'Corte + Barba',
+      value: 75,
+      commission: 45,
+      percentage: 60,
+      status: 'pago'
+    },
+    {
+      id: '4',
+      date: subDays(new Date(), 3),
+      client: 'Lucas Ferreira',
+      service: 'Corte Tesoura',
+      value: 60,
+      commission: 36,
+      percentage: 60,
+      status: 'pendente'
+    },
+    {
+      id: '5',
+      date: subDays(new Date(), 5),
+      client: 'Marcos Oliveira',
+      service: 'Corte Degradê',
+      value: 50,
+      commission: 30,
+      percentage: 60,
+      status: 'pendente'
     }
-    if (sortField === 'value') {
-      return sortDirection === 'asc' ? a.value - b.value : b.value - a.value;
+  ];
+
+  // Mock data for payment history
+  const mockPayments: PaymentItem[] = [
+    {
+      id: '1',
+      date: new Date(2025, 3, 30), // April 30th
+      value: 1254.50,
+      method: 'Transferência',
+      description: 'Pagamento do mês de Abril',
+      reference: 'Abril/2025',
+      receipt: '/receipt-april.pdf'
+    },
+    {
+      id: '2',
+      date: new Date(2025, 2, 31), // March 31st
+      value: 1120.80,
+      method: 'Pix',
+      description: 'Pagamento do mês de Março',
+      reference: 'Março/2025',
+      receipt: '/receipt-march.pdf'
+    },
+    {
+      id: '3',
+      date: new Date(2025, 1, 28), // February 28th
+      value: 980.40,
+      method: 'Transferência',
+      description: 'Pagamento do mês de Fevereiro',
+      reference: 'Fevereiro/2025',
+      receipt: '/receipt-feb.pdf'
     }
-    return 0;
-  });
+  ];
 
-  const totalEarned = mockCommissions.reduce((sum, item) => sum + item.commission, 0);
-  
-  // Calculate daily earnings for the past 7 days
-  const getTodayEarnings = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return mockCommissions
-      .filter(item => item.date === today)
+  // Filter commissions based on selected period
+  const getFilteredCommissions = () => {
+    return mockCommissions.filter(commission => {
+      if (periodFilter === 'day') {
+        return format(commission.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+      } else if (periodFilter === 'week') {
+        const today = new Date();
+        const weekStart = subDays(today, 7);
+        return isWithinInterval(commission.date, { start: weekStart, end: today });
+      } else if (periodFilter === 'month') {
+        // Filter by selected month
+        return (
+          commission.date >= startOfMonth(selectedMonth) &&
+          commission.date <= endOfMonth(selectedMonth)
+        );
+      }
+      return true;
+    }).filter(commission => {
+      // Filter by service if one is selected
+      if (selectedService !== 'all') {
+        return commission.service === selectedService;
+      }
+      return true;
+    });
+  };
+
+  const filteredCommissions = getFilteredCommissions();
+
+  // Calculate summary data
+  const calculateSummary = () => {
+    const total = filteredCommissions.reduce((sum, item) => sum + item.commission, 0);
+    const paid = filteredCommissions
+      .filter(item => item.status === 'pago')
       .reduce((sum, item) => sum + item.commission, 0);
-  };
-
-  const getWeekEarnings = () => {
-    const sevenDaysAgo = subDays(new Date(), 7).toISOString().split('T')[0];
-    return mockCommissions
-      .filter(item => item.date >= sevenDaysAgo)
+    const pending = filteredCommissions
+      .filter(item => item.status === 'pendente')
       .reduce((sum, item) => sum + item.commission, 0);
+      
+    return { total, paid, pending };
   };
 
-  const getMonthEarnings = () => {
-    const currentMonth = new Date().getMonth() + 1;
-    return mockCommissions
-      .filter(item => {
-        const itemMonth = new Date(item.date).getMonth() + 1;
-        return itemMonth === currentMonth;
-      })
-      .reduce((sum, item) => sum + item.commission, 0);
-  };
-  
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
+  const summary = calculateSummary();
+
+  // Prepare chart data
+  const chartDataByDay = () => {
+    // Group commissions by day
+    const groupedData: Record<string, number> = {};
+    
+    filteredCommissions.forEach(item => {
+      const dateKey = format(item.date, 'dd/MM');
+      groupedData[dateKey] = (groupedData[dateKey] || 0) + item.commission;
+    });
+    
+    // Convert to array format for recharts
+    return Object.entries(groupedData).map(([date, value]) => ({
+      date,
+      value,
+    }));
   };
 
-  const renderSortIcon = (field: string) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3 ml-1" /> : <ArrowDown className="h-3 w-3 ml-1" />;
+  // Prepare service distribution data for pie chart
+  const getServiceDistribution = () => {
+    const distribution: Record<string, number> = {};
+    
+    filteredCommissions.forEach(item => {
+      distribution[item.service] = (distribution[item.service] || 0) + item.commission;
+    });
+    
+    return Object.entries(distribution).map(([name, value]) => ({
+      name,
+      value,
+    }));
   };
 
-  const handleDownload = (receiptId: string) => {
-    console.log(`Downloading receipt: ${receiptId}`);
-    // Implementation would connect to backend to download receipt
+  const serviceDistribution = getServiceDistribution();
+  const dailyData = chartDataByDay();
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+
+  // Get unique services from data
+  const uniqueServices = Array.from(new Set(mockCommissions.map(item => item.service)));
+
+  // Handle payment detail view
+  const handleViewReceipt = (payment: PaymentItem) => {
+    setSelectedPaymentDetail(payment);
   };
 
   return (
-    <BarberLayout title="Comissões e Ganhos">
+    <BarberLayout title="Controle de Comissões">
       <div className="space-y-6">
-        {/* Cards for summary information */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg">Ganhos do Dia</CardTitle>
+              <CardTitle className="text-white text-lg">Total de Comissões</CardTitle>
               <CardDescription className="text-gray-400">
-                {format(new Date(), "dd 'de' MMMM", { locale: ptBR })}
+                {periodFilter === 'day' ? 'Hoje' : 
+                 periodFilter === 'week' ? 'Últimos 7 dias' : 
+                 `${format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">R$ {getTodayEarnings().toFixed(2)}</div>
+              <div className="flex items-center">
+                <DollarSign className="h-5 w-5 text-white mr-2" />
+                <span className="text-2xl font-bold text-white">
+                  R$ {summary.total.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
             </CardContent>
           </Card>
           
           <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg">Ganhos da Semana</CardTitle>
-              <CardDescription className="text-gray-400">Últimos 7 dias</CardDescription>
+              <CardTitle className="text-white text-lg">Comissões Pagas</CardTitle>
+              <CardDescription className="text-gray-400">Valores já recebidos</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">R$ {getWeekEarnings().toFixed(2)}</div>
+              <div className="flex items-center">
+                <DollarSign className="h-5 w-5 text-green-500 mr-2" />
+                <span className="text-2xl font-bold text-green-500">
+                  R$ {summary.paid.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
             </CardContent>
           </Card>
           
           <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader className="pb-2">
-              <CardTitle className="text-white text-lg">Ganhos do Mês</CardTitle>
-              <CardDescription className="text-gray-400">
-                {format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })}
-              </CardDescription>
+              <CardTitle className="text-white text-lg">Comissões Pendentes</CardTitle>
+              <CardDescription className="text-gray-400">A receber</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">R$ {getMonthEarnings().toFixed(2)}</div>
+              <div className="flex items-center">
+                <TrendingUp className="h-5 w-5 text-amber-500 mr-2" />
+                <span className="text-2xl font-bold text-amber-500">
+                  R$ {summary.pending.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
             </CardContent>
           </Card>
         </div>
-
-        {/* Chart for earnings visualization */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <CardTitle className="text-white">Histórico de Ganhos</CardTitle>
-              <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[150px] bg-zinc-800 border-zinc-700 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
-                  <SelectItem value="day">Diário</SelectItem>
-                  <SelectItem value="week">Semanal</SelectItem>
-                  <SelectItem value="month">Mensal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 mt-2">
-              {/* Simple bar chart representation */}
-              <div className="flex h-full items-end gap-2">
-                {chartData.data.map((value, index) => (
-                  <div key={index} className="flex flex-col items-center flex-1">
-                    <div 
-                      className="bg-white w-full rounded-t-sm"
-                      style={{ height: `${(value / 200) * 100}%` }}
-                    ></div>
-                    <div className="text-gray-400 text-xs mt-2">{chartData.labels[index]}</div>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            <Select value={periodFilter} onValueChange={(value) => setPeriodFilter(value as 'day' | 'week' | 'month')}>
+              <SelectTrigger className="w-[120px] bg-zinc-900 border-zinc-800 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                <SelectItem value="day">Hoje</SelectItem>
+                <SelectItem value="week">Semana</SelectItem>
+                <SelectItem value="month">Mês</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {periodFilter === 'month' && (
+              <Button 
+                variant="outline" 
+                className="border-zinc-700 text-white"
+                onClick={() => setIsDatePickerOpen(true)}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {format(selectedMonth, 'MMMM yyyy', { locale: ptBR })}
+              </Button>
+            )}
+            
+            <Dialog open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+              <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-white">Selecionar Mês</DialogTitle>
+                </DialogHeader>
+                <div className="p-4 flex flex-col items-center space-y-4">
+                  <div className="flex justify-between w-full">
+                    <Button 
+                      variant="outline" 
+                      className="border-zinc-700 text-white"
+                      onClick={() => setSelectedMonth(addMonths(selectedMonth, -1))}
+                    >
+                      Mês Anterior
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="border-zinc-700 text-white"
+                      onClick={() => setSelectedMonth(addMonths(selectedMonth, 1))}
+                    >
+                      Próximo Mês
+                    </Button>
                   </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tabs for commission details and payment history */}
-        <Tabs defaultValue="services" className="w-full">
+                  <Calendar
+                    mode="single"
+                    selected={selectedMonth}
+                    onSelect={(date) => {
+                      if (date) {
+                        setSelectedMonth(date);
+                        setIsDatePickerOpen(false);
+                      }
+                    }}
+                    className="p-3 pointer-events-auto rounded-md bg-zinc-900 text-white"
+                    classNames={{
+                      day_selected: "bg-white text-black hover:bg-gray-200 hover:text-black",
+                      day_today: "bg-zinc-800 text-white",
+                    }}
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          <Select value={selectedService} onValueChange={setSelectedService}>
+            <SelectTrigger className="w-[180px] bg-zinc-900 border-zinc-800 text-white">
+              <SelectValue placeholder="Todos os serviços" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+              <SelectItem value="all">Todos os serviços</SelectItem>
+              {uniqueServices.map(service => (
+                <SelectItem key={service} value={service}>{service}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <Tabs defaultValue="details" className="w-full">
           <TabsList className="bg-zinc-900 border-zinc-800">
-            <TabsTrigger value="services" className="text-white data-[state=active]:bg-white data-[state=active]:text-black">
-              Serviços
+            <TabsTrigger 
+              value="details" 
+              className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+            >
+              Detalhes
             </TabsTrigger>
-            <TabsTrigger value="payments" className="text-white data-[state=active]:bg-white data-[state=active]:text-black">
-              Histórico de Pagamentos
+            <TabsTrigger 
+              value="charts" 
+              className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+            >
+              Gráficos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="payments" 
+              className="text-white data-[state=active]:bg-white data-[state=active]:text-black"
+            >
+              Pagamentos
             </TabsTrigger>
           </TabsList>
           
-          {/* Services Tab */}
-          <TabsContent value="services">
+          <TabsContent value="details">
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
-                <CardTitle className="text-white">Detalhamento por Serviço</CardTitle>
+                <CardTitle className="text-white">Detalhamento de Comissões</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Lista de serviços e valores
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-zinc-800 hover:bg-zinc-900">
-                      <TableHead 
-                        className="text-white cursor-pointer" 
-                        onClick={() => handleSort('date')}
-                      >
-                        <div className="flex items-center">
-                          Data {renderSortIcon('date')}
-                        </div>
-                      </TableHead>
-                      <TableHead className="text-white">Cliente</TableHead>
-                      <TableHead className="text-white">Serviço</TableHead>
-                      <TableHead 
-                        className="text-white cursor-pointer text-right" 
-                        onClick={() => handleSort('value')}
-                      >
-                        <div className="flex items-center justify-end">
-                          Valor {renderSortIcon('value')}
-                        </div>
-                      </TableHead>
-                      <TableHead className="text-white text-right">Comissão (60%)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedCommissions.map((commission) => (
-                      <TableRow key={commission.id} className="border-zinc-800 hover:bg-zinc-800">
-                        <TableCell className="text-white">
-                          {format(new Date(commission.date), 'dd/MM/yyyy')}
-                        </TableCell>
-                        <TableCell className="text-white">{commission.clientName}</TableCell>
-                        <TableCell className="text-white">{commission.service}</TableCell>
-                        <TableCell className="text-white text-right">R$ {commission.value.toFixed(2)}</TableCell>
-                        <TableCell className="text-white text-right">R$ {commission.commission.toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                    {/* Total row */}
-                    <TableRow className="bg-zinc-800 border-zinc-700">
-                      <TableCell colSpan={4} className="text-white font-semibold">Total</TableCell>
-                      <TableCell className="text-white font-semibold text-right">R$ {totalEarned.toFixed(2)}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-white">
+                    <thead>
+                      <tr className="border-b border-zinc-800">
+                        <th className="text-left py-3 px-2">Data</th>
+                        <th className="text-left py-3 px-2">Cliente</th>
+                        <th className="text-left py-3 px-2">Serviço</th>
+                        <th className="text-right py-3 px-2">Valor</th>
+                        <th className="text-right py-3 px-2">Comissão (%)</th>
+                        <th className="text-right py-3 px-2">Comissão (R$)</th>
+                        <th className="text-center py-3 px-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCommissions.map((item) => (
+                        <tr key={item.id} className="border-b border-zinc-800">
+                          <td className="py-3 px-2">{format(item.date, 'dd/MM/yyyy')}</td>
+                          <td className="py-3 px-2">{item.client}</td>
+                          <td className="py-3 px-2">{item.service}</td>
+                          <td className="py-3 px-2 text-right">R$ {item.value.toFixed(2).replace('.', ',')}</td>
+                          <td className="py-3 px-2 text-right">{item.percentage}%</td>
+                          <td className="py-3 px-2 text-right">R$ {item.commission.toFixed(2).replace('.', ',')}</td>
+                          <td className="py-3 px-2 text-center">
+                            <Badge className={item.status === 'pago' ? 'bg-green-500' : 'bg-amber-500'}>
+                              {item.status === 'pago' ? 'Pago' : 'Pendente'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredCommissions.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="py-4 text-center text-gray-400">
+                            Nenhuma comissão encontrada no período selecionado.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-zinc-800">
+                        <td colSpan={5} className="py-3 px-2 text-right font-bold">Total:</td>
+                        <td className="py-3 px-2 text-right font-bold">
+                          R$ {summary.total.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="py-3 px-2"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
           
-          {/* Payments History Tab */}
+          <TabsContent value="charts">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader>
+                  <CardTitle className="text-white">Comissões por Dia</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Distribuição das comissões no período
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {dailyData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dailyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                        <XAxis dataKey="date" tick={{ fill: '#ccc' }} />
+                        <YAxis tick={{ fill: '#ccc' }} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#333', border: '1px solid #555' }} 
+                          formatter={(value) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, 'Comissão']}
+                        />
+                        <Bar dataKey="value" fill="#fff" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400">
+                      Sem dados no período selecionado
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-zinc-900 border-zinc-800">
+                <CardHeader>
+                  <CardTitle className="text-white">Distribuição por Serviço</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Comissões por tipo de serviço
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  {serviceDistribution.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={serviceDistribution}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({name, percent}) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {serviceDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Legend formatter={(value) => <span style={{ color: '#ccc' }}>{value}</span>} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#333', border: '1px solid #555' }}
+                          formatter={(value) => [`R$ ${Number(value).toFixed(2).replace('.', ',')}`, 'Comissão']}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400">
+                      Sem dados no período selecionado
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
           <TabsContent value="payments">
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle className="text-white">Histórico de Pagamentos</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Registro de pagamentos recebidos
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-zinc-800 hover:bg-zinc-900">
-                      <TableHead className="text-white">Data</TableHead>
-                      <TableHead className="text-white">Período</TableHead>
-                      <TableHead className="text-white">Método</TableHead>
-                      <TableHead className="text-white text-right">Valor</TableHead>
-                      <TableHead className="text-white text-right">Comprovante</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockPayments.map((payment) => (
-                      <TableRow key={payment.id} className="border-zinc-800 hover:bg-zinc-800">
-                        <TableCell className="text-white">
-                          {format(new Date(payment.date), 'dd/MM/yyyy')}
-                        </TableCell>
-                        <TableCell className="text-white">{payment.period}</TableCell>
-                        <TableCell className="text-white">{payment.method}</TableCell>
-                        <TableCell className="text-white text-right">R$ {payment.amount.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="border-zinc-700 text-white hover:bg-zinc-800"
-                            onClick={() => handleDownload(payment.receipt)}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            PDF
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-white">
+                    <thead>
+                      <tr className="border-b border-zinc-800">
+                        <th className="text-left py-3 px-2">Data</th>
+                        <th className="text-left py-3 px-2">Referência</th>
+                        <th className="text-left py-3 px-2">Método</th>
+                        <th className="text-right py-3 px-2">Valor</th>
+                        <th className="text-center py-3 px-2">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mockPayments.map((payment) => (
+                        <tr key={payment.id} className="border-b border-zinc-800">
+                          <td className="py-3 px-2">{format(payment.date, 'dd/MM/yyyy')}</td>
+                          <td className="py-3 px-2">{payment.reference}</td>
+                          <td className="py-3 px-2">{payment.method}</td>
+                          <td className="py-3 px-2 text-right">R$ {payment.value.toFixed(2).replace('.', ',')}</td>
+                          <td className="py-3 px-2 flex justify-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-zinc-700"
+                              onClick={() => handleViewReceipt(payment)}
+                            >
+                              <FileText className="h-4 w-4" />
+                              <span className="sr-only">Ver detalhes</span>
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-zinc-700"
+                              title="Baixar comprovante"
+                            >
+                              <Download className="h-4 w-4" />
+                              <span className="sr-only">Baixar comprovante</span>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {mockPayments.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="py-4 text-center text-gray-400">
+                            Nenhum pagamento encontrado.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+        
+        {/* Payment Detail Dialog */}
+        <Dialog open={!!selectedPaymentDetail} onOpenChange={() => setSelectedPaymentDetail(null)}>
+          <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Detalhes do Pagamento</DialogTitle>
+            </DialogHeader>
+            {selectedPaymentDetail && (
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="text-gray-400">Data:</p>
+                  <p className="col-span-3">{format(selectedPaymentDetail.date, 'dd/MM/yyyy')}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="text-gray-400">Referência:</p>
+                  <p className="col-span-3">{selectedPaymentDetail.reference}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="text-gray-400">Descrição:</p>
+                  <p className="col-span-3">{selectedPaymentDetail.description}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="text-gray-400">Método:</p>
+                  <p className="col-span-3">{selectedPaymentDetail.method}</p>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <p className="text-gray-400">Valor:</p>
+                  <p className="col-span-3">R$ {selectedPaymentDetail.value.toFixed(2).replace('.', ',')}</p>
+                </div>
+                <div className="flex justify-end">
+                  <Button className="bg-white text-black hover:bg-gray-200">
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar Comprovante
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </BarberLayout>
   );

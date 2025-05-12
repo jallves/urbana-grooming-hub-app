@@ -36,7 +36,10 @@ const BarberSidebar = () => {
     <Sidebar>
       <SidebarContent className="bg-zinc-900 border-r border-zinc-800">
         <div className="flex items-center justify-center py-6 border-b border-zinc-800">
-          <Scissors className="h-8 w-8 text-white" />
+          <div className="flex items-center gap-2">
+            <Scissors className="h-7 w-7 text-white" />
+            <span className="text-xl font-semibold text-white">Barbeiro</span>
+          </div>
         </div>
         <SidebarGroup>
           <SidebarGroupLabel className="text-gray-400 px-4 py-2">Menu</SidebarGroupLabel>
@@ -64,6 +67,13 @@ const BarberSidebar = () => {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        <div className="px-4 py-4 mt-auto border-t border-zinc-800">
+          <div className="text-xs text-gray-400 text-center">
+            <p>Urbana Barbearia</p>
+            <p>Versão 1.0.0</p>
+          </div>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
