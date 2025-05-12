@@ -61,9 +61,8 @@ const UsersTab: React.FC = () => {
       <UserTable 
         users={users} 
         loading={loading} 
-        onRoleChange={handleRoleChange}
+        onUpdateRole={handleRoleChange}
         onDeleteUser={handleDeleteUser}
-        onSyncStaff={handleSyncStaff}
       />
 
       <AddUserDialog 

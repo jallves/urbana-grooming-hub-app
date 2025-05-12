@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { UserWithRole } from './types';
 
@@ -25,9 +25,10 @@ interface UserTableProps {
   users: UserWithRole[];
   onUpdateRole: (user: UserWithRole) => void;
   onDeleteUser: (userId: string) => void;
+  loading?: boolean;
 }
 
-const UserTable: React.FC<UserTableProps> = ({ users, onUpdateRole, onDeleteUser }) => {
+const UserTable: React.FC<UserTableProps> = ({ users, onUpdateRole, onDeleteUser, loading }) => {
   const getRoleBadge = (role: string) => {
     switch(role) {
       case 'admin':
@@ -48,6 +49,14 @@ const UserTable: React.FC<UserTableProps> = ({ users, onUpdateRole, onDeleteUser
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="border rounded-md">
       <Table>
@@ -61,43 +70,51 @@ const UserTable: React.FC<UserTableProps> = ({ users, onUpdateRole, onDeleteUser
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="font-medium">{user.email}</TableCell>
-              <TableCell className="hidden md:table-cell">
-                {getRoleBadge(user.role)}
-                <span className="md:hidden block mt-1 text-xs text-muted-foreground">
-                  Criado: {formatDate(user.created_at)}
-                </span>
-              </TableCell>
-              <TableCell className="hidden md:table-cell">{formatDate(user.created_at)}</TableCell>
-              <TableCell className="hidden md:table-cell">{formatDate(user.last_sign_in_at)}</TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <span className="sr-only">Abrir menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onUpdateRole(user)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      <span>Alterar cargo</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      onClick={() => onDeleteUser(user.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Remover usuário</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+          {users.length > 0 ? (
+            users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.email}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {getRoleBadge(user.role)}
+                  <span className="md:hidden block mt-1 text-xs text-muted-foreground">
+                    Criado: {formatDate(user.created_at)}
+                  </span>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">{formatDate(user.created_at)}</TableCell>
+                <TableCell className="hidden md:table-cell">{formatDate(user.last_sign_in_at)}</TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onUpdateRole(user)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        <span>Alterar cargo</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => onDeleteUser(user.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Remover usuário</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                Nenhum usuário encontrado
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </div>
