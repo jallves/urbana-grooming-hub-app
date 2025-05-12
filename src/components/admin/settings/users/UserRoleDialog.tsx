@@ -31,8 +31,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
+// Define AppRole type to match the database enum
+type AppRole = 'admin' | 'barber' | 'user' | 'moderator';
+
 const roleSchema = z.object({
-  role: z.string({ required_error: 'Selecione um cargo' }),
+  role: z.enum(['admin', 'moderator', 'barber', 'user'] as const, { required_error: 'Selecione um cargo' }),
 });
 
 type RoleFormData = z.infer<typeof roleSchema>;
@@ -63,14 +66,14 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
   const form = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: {
-      role: user?.role || 'user',
+      role: (user?.role as AppRole) || 'user',
     },
   });
 
   React.useEffect(() => {
     if (user) {
       form.reset({
-        role: user.role,
+        role: (user.role as AppRole) || 'user',
       });
     }
   }, [user, form]);

@@ -13,6 +13,9 @@ import { Staff } from '@/types/staff';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UserRolesList from './users/UserRolesList';
 
+// Define a type for valid roles to match the app_role enum in the database
+type AppRole = 'admin' | 'barber' | 'user';
+
 interface UserWithRole {
   id: string;
   email: string;
@@ -136,7 +139,7 @@ const UserManagement: React.FC = () => {
       const usersToInsert = newStaff.map((staff: Staff) => ({
         email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
         name: staff.name,
-        role: 'barber',
+        role: 'barber' as AppRole, // Use the correct type
         created_at: new Date().toISOString()
       }));
       
@@ -161,7 +164,7 @@ const UserManagement: React.FC = () => {
           // Preparar dados para inserção na tabela user_roles
           const rolesToInsert = newUsers.map(user => ({
             user_id: user.id,
-            role: 'barber'
+            role: 'barber' as AppRole // Use the correct type
           }));
           
           // Inserir os novos papéis
