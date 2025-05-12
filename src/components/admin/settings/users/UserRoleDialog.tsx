@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +29,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
+import { UserWithRole, AppRole } from './types';
 
 // Define AppRole type to match the database enum
 type AppRole = 'admin' | 'barber' | 'user';
@@ -39,14 +39,6 @@ const roleSchema = z.object({
 });
 
 type RoleFormData = z.infer<typeof roleSchema>;
-
-interface UserWithRole {
-  id: string;
-  email: string;
-  created_at: string;
-  last_sign_in_at: string | null;
-  role: string;
-}
 
 interface UserRoleDialogProps {
   open: boolean;

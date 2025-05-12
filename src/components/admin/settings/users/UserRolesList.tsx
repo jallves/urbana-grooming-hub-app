@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -13,17 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldCheck, Users, User } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Define type for valid roles
-type AppRole = 'admin' | 'barber' | 'user';
-
-interface UserRole {
-  id: string;
-  user_id: string;
-  role: AppRole;
-  user_email?: string;
-  user_name?: string;
-}
+import { AppRole, UserRole } from './types';
 
 const UserRolesList: React.FC = () => {
   const [roles, setRoles] = useState<UserRole[]>([]);

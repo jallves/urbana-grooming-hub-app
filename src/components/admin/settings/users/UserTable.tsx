@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Table, 
@@ -9,19 +8,12 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Pencil, Trash2, RefreshCw, Users, User } from 'lucide-react';
+import { ShieldCheck, Trash2, RefreshCw, Users, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-interface UserWithRole {
-  id: string;
-  email: string;
-  created_at: string;
-  last_sign_in_at: string | null;
-  role: string;
-}
+import { UserWithRole } from './types';
 
 interface UserTableProps {
   users: UserWithRole[];
