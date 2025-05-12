@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,9 +31,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { UserWithRole, AppRole } from './types';
-
-// Define AppRole type to match the database enum
-type AppRole = 'admin' | 'barber' | 'user';
 
 const roleSchema = z.object({
   role: z.enum(['admin', 'barber', 'user'] as const, { required_error: 'Selecione um cargo' }),

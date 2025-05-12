@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -64,9 +65,6 @@ export const useUserManagement = () => {
       }
     }
   };
-  
-  // Type AppRole to match the database enum
-  type AppRole = 'admin' | 'barber' | 'user';
 
   const handleSyncStaff = async () => {
     try {
@@ -168,4 +166,5 @@ export const useUserManagement = () => {
   };
 };
 
-export { UserWithRole };
+// Export UserWithRole as a type, not a value
+// Remove this line since we're not re-exporting anything
