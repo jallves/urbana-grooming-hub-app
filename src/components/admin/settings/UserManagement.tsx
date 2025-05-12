@@ -139,45 +139,36 @@ const UserManagement: React.FC = () => {
       const usersToInsert = newStaff.map((staff: Staff) => ({
         email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
         name: staff.name,
-        role: 'barber' as AppRole, // Use the correct type
+        role: 'barber' as AppRole,
         created_at: new Date().toISOString()
       }));
       
       // Inserir os novos usuários
-      const { error: insertError } = await supabase
+      const { error: insertError, data: insertedUsers } = await supabase
         .from('admin_users')
-        .insert(usersToInsert);
+        .insert(usersToInsert)
+        .select();
       
       if (insertError) throw insertError;
       
       // Adicionar registros à tabela user_roles
-      try {
-        // Primeiro, buscamos os usuários que acabamos de inserir
-        const { data: newUsers, error: fetchError } = await supabase
-          .from('admin_users')
-          .select('id')
-          .in('email', usersToInsert.map(u => u.email));
-          
-        if (fetchError) throw fetchError;
+      if (insertedUsers && insertedUsers.length > 0) {
+        // Preparar dados para inserção na tabela user_roles
+        const rolesToInsert = insertedUsers.map(user => ({
+          user_id: user.id,
+          role: 'barber' as AppRole
+        }));
         
-        if (newUsers && newUsers.length > 0) {
-          // Preparar dados para inserção na tabela user_roles
-          const rolesToInsert = newUsers.map(user => ({
-            user_id: user.id,
-            role: 'barber' as AppRole // Use the correct type
-          }));
-          
-          // Inserir os novos papéis
+        // Inserir um por um para evitar erro de tipo
+        for (const roleData of rolesToInsert) {
           const { error: roleInsertError } = await supabase
             .from('user_roles')
-            .insert(rolesToInsert);
+            .insert(roleData);
             
           if (roleInsertError && !roleInsertError.message.includes('duplicate')) {
-            console.error('Erro ao inserir papéis:', roleInsertError);
+            console.error('Erro ao inserir papel:', roleInsertError);
           }
         }
-      } catch (roleError) {
-        console.error('Erro ao sincronizar papéis:', roleError);
       }
       
       toast.success(`${usersToInsert.length} profissionais foram adicionados como usuários`);

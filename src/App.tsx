@@ -17,6 +17,7 @@ import AdminMarketing from "./pages/AdminMarketing";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminSupport from "./pages/AdminSupport";
 import AdminSettings from "./pages/AdminSettings";
+import AdminBarbers from "./pages/AdminBarbers";
 import Auth from "./pages/Auth";
 import BarberAuth from "./pages/BarberAuth";
 import BarberDashboard from "./pages/BarberDashboard";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
               <Route path="/admin/agendamentos" element={<AdminRoute><AdminAppointments /></AdminRoute>} />
               <Route path="/admin/profissionais" element={<AdminRoute><AdminStaff /></AdminRoute>} />
+              <Route path="/admin/barbeiros" element={<AdminRoute><AdminBarbers /></AdminRoute>} />
               <Route path="/admin/clientes" element={<AdminRoute><AdminClients /></AdminRoute>} />
               <Route path="/admin/produtos" element={<AdminRoute><AdminProducts /></AdminRoute>} />
               <Route path="/admin/financeiro" element={<AdminRoute><AdminFinance /></AdminRoute>} />
