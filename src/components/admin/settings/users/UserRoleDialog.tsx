@@ -32,10 +32,10 @@ import { toast } from 'sonner';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
 // Define AppRole type to match the database enum
-type AppRole = 'admin' | 'barber' | 'user' | 'moderator';
+type AppRole = 'admin' | 'barber' | 'user';
 
 const roleSchema = z.object({
-  role: z.enum(['admin', 'moderator', 'barber', 'user'] as const, { required_error: 'Selecione um cargo' }),
+  role: z.enum(['admin', 'barber', 'user'] as const, { required_error: 'Selecione um cargo' }),
 });
 
 type RoleFormData = z.infer<typeof roleSchema>;
@@ -107,7 +107,7 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
           // Update existing role
           const { error: updateError } = await supabase
             .from('user_roles')
-            .update({ role: data.role })
+            .update({ role: data.role as AppRole })
             .eq('user_id', user.id);
             
           if (updateError) throw updateError;
@@ -115,7 +115,7 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
           // Create new role entry
           const { error: insertError } = await supabase
             .from('user_roles')
-            .insert({ user_id: user.id, role: data.role });
+            .insert({ user_id: user.id, role: data.role as AppRole });
             
           if (insertError) throw insertError;
         }
@@ -171,7 +171,6 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="moderator">Moderador</SelectItem>
                       <SelectItem value="barber">Barbeiro</SelectItem>
                       <SelectItem value="user">Usuário</SelectItem>
                     </SelectContent>
@@ -184,7 +183,6 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
             <div className="space-y-3 mt-4 text-sm text-muted-foreground">
               <p><strong>Permissões:</strong></p>
               <p><strong>Administrador:</strong> Acesso total ao sistema, incluindo configurações.</p>
-              <p><strong>Moderador:</strong> Gerencia conteúdo e usuários, sem acesso às configurações avançadas.</p>
               <p><strong>Barbeiro:</strong> Acesso à área do profissional, agendamentos e clientes.</p>
               <p><strong>Usuário:</strong> Acesso básico, sem permissões administrativas.</p>
             </div>

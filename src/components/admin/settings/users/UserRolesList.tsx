@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -14,7 +15,7 @@ import { ShieldCheck, Users, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Define type for valid roles
-type AppRole = 'admin' | 'barber' | 'user' | 'moderator';
+type AppRole = 'admin' | 'barber' | 'user';
 
 interface UserRole {
   id: string;
@@ -86,8 +87,6 @@ const UserRolesList: React.FC = () => {
     switch (role.toLowerCase()) {
       case 'admin':
         return 'bg-red-500 hover:bg-red-600';
-      case 'moderator':
-        return 'bg-amber-500 hover:bg-amber-600';
       case 'barber':
         return 'bg-purple-500 hover:bg-purple-600';
       default:
@@ -101,10 +100,8 @@ const UserRolesList: React.FC = () => {
         return <ShieldCheck className="h-3 w-3 mr-1" />;
       case 'barber':
         return <Users className="h-3 w-3 mr-1" />;
-      case 'moderator':
-        return <User className="h-3 w-3 mr-1" />;
       default:
-        return null;
+        return <User className="h-3 w-3 mr-1" />;
     }
   };
 
