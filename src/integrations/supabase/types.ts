@@ -1097,6 +1097,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_barber_user: {
+        Args: { p_email: string; p_name: string; p_role?: string }
+        Returns: string
+      }
       has_role: {
         Args:
           | { _user_id: string; _role: Database["public"]["Enums"]["app_role"] }

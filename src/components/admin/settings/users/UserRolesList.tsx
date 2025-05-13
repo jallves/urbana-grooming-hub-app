@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -24,6 +24,20 @@ const UserRolesList: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
 
+  // Effect to periodically refresh user list
+  useEffect(() => {
+    // Initial fetch
+    fetchUsers();
+    
+    // Set up an interval to refresh users every minute
+    const intervalId = setInterval(() => {
+      console.log('Refreshing user list...');
+      fetchUsers();
+    }, 60000); // every minute
+    
+    return () => clearInterval(intervalId);
+  }, [fetchUsers]);
+
   const handleUpdateRole = (user: UserWithRole) => {
     setSelectedUser(user);
     setRoleDialogOpen(true);
@@ -45,7 +59,10 @@ const UserRolesList: React.FC = () => {
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <Button 
-            onClick={handleSyncStaff} 
+            onClick={() => {
+              console.log('Sync staff button clicked');
+              handleSyncStaff();
+            }}
             disabled={syncLoading}
             variant="outline"
             size="sm"
@@ -57,6 +74,15 @@ const UserRolesList: React.FC = () => {
               <UserPlus className="h-4 w-4" />
             )}
             <span>Sincronizar Barbeiros</span>
+          </Button>
+          <Button
+            onClick={fetchUsers}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            <span>Atualizar Lista</span>
           </Button>
         </div>
       </div>

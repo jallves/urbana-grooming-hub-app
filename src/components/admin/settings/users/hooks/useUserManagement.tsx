@@ -91,6 +91,9 @@ export const useUserManagement = () => {
         return;
       }
       
+      // Log fetched staff
+      console.log('Fetched active staff members:', staffMembers);
+
       // Fetch existing users to avoid duplicates
       const { data: existingUsers, error: usersError } = await supabase
         .from('admin_users')
@@ -101,10 +104,14 @@ export const useUserManagement = () => {
       const existingEmails = new Set((existingUsers || []).map(user => 
         user.email?.toLowerCase()).filter(Boolean));
       
+      console.log('Existing emails:', Array.from(existingEmails));
+      
       // Filter staff members who don't already exist as users
       const newStaff = staffMembers.filter(staff => 
         staff.email && !existingEmails.has(staff.email.toLowerCase())
       );
+      
+      console.log('New staff to add:', newStaff);
       
       if (newStaff.length === 0) {
         toast.info('Todos os profissionais já foram sincronizados como usuários');
@@ -113,34 +120,41 @@ export const useUserManagement = () => {
       }
 
       let addedCount = 0;
+      let errors = 0;
       
-      // Use the RPC function to add barbers (using type casting to bypass type checking for RPC function name)
+      // Use the RPC function to add barbers
       for (const staff of newStaff) {
-        console.log(`Adding barber: ${staff.name} with email: ${staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`}`);
+        const staffEmail = staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`;
+        console.log(`Adding barber: ${staff.name} with email: ${staffEmail}`);
         
-        const { data, error: rpcError } = await supabase.rpc(
-          // Need to use type assertion here since 'add_barber_user' is not in the generated types
-          'add_barber_user' as any, 
-          {
-            p_email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
-            p_name: staff.name,
-            p_role: 'barber'
-          }
-        );
+        try {
+          const { data, error: rpcError } = await supabase.rpc(
+            'add_barber_user' as any, 
+            {
+              p_email: staffEmail,
+              p_name: staff.name,
+              p_role: 'barber'
+            }
+          );
 
-        if (rpcError) {
-          console.error('Erro ao adicionar barbeiro:', rpcError);
-        } else {
-          console.log('Barbeiro adicionado com sucesso:', data);
-          addedCount++;
+          if (rpcError) {
+            console.error('Erro ao adicionar barbeiro:', rpcError);
+            errors++;
+          } else {
+            console.log('Barbeiro adicionado com sucesso:', data);
+            addedCount++;
+          }
+        } catch (e) {
+          console.error('Exception ao adicionar barbeiro:', e);
+          errors++;
         }
       }
       
       if (addedCount > 0) {
         toast.success(`${addedCount} profissionais foram adicionados como usuários`);
-        fetchUsers(); // Make sure to fetch users again to update the list
-      } else if (newStaff.length > 0 && addedCount === 0) {
-        toast.error('Não foi possível adicionar os profissionais. Verifique os logs para mais detalhes.');
+        fetchUsers(); // Refresh the list after adding new users
+      } else if (errors > 0) {
+        toast.error(`Não foi possível adicionar os profissionais. Verifique os logs para mais detalhes.`);
       }
     } catch (error) {
       console.error('Erro ao sincronizar profissionais:', error);
