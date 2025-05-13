@@ -105,13 +105,17 @@ export const useUserManagement = () => {
         return;
       }
 
-      // Use the RPC function to add barbers (more reliable than direct insert)
+      // Use the RPC function to add barbers (using type casting to bypass type checking for RPC function name)
       for (const staff of newStaff) {
-        const { error: rpcError } = await supabase.rpc('add_barber_user', {
-          p_email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
-          p_name: staff.name,
-          p_role: 'barber'
-        });
+        const { error: rpcError } = await supabase.rpc(
+          // Need to use type assertion here since 'add_barber_user' is not in the generated types
+          'add_barber_user' as any, 
+          {
+            p_email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
+            p_name: staff.name,
+            p_role: 'barber'
+          }
+        );
 
         if (rpcError) {
           console.error('Erro ao adicionar barbeiro:', rpcError);
