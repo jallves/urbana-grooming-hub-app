@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import StaffList from './StaffList';
 import StaffForm from './StaffForm';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Shield } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useStaffStorage } from './useStaffStorage';
 
@@ -107,6 +107,21 @@ const StaffManagement: React.FC = () => {
           </Button>
         )}
       </div>
+
+      {!isAddingStaff && !editingStaff && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Controle de Acesso aos Módulos
+            </CardTitle>
+            <CardDescription>
+              Agora você pode definir quais módulos cada profissional pode acessar no sistema.
+              Edite um profissional e acesse a aba "Permissões de Acesso" para configurar.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       {(isAddingStaff || editingStaff) && (
         <Card>
