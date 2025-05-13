@@ -18,7 +18,7 @@ export const useUserManagement = () => {
     try {
       setLoading(true);
       
-      // Fetch users from auth.users
+      // Fetch users from admin_users view
       const { data: authUsers, error: authError } = await supabase
         .from('admin_users')
         .select('*');
@@ -70,7 +70,7 @@ export const useUserManagement = () => {
     try {
       setSyncLoading(true);
       
-      // Buscar todos os profissionais ativos
+      // Fetch all active staff members
       const { data: staffMembers, error: staffError } = await supabase
         .from('staff')
         .select('*')
@@ -80,65 +80,45 @@ export const useUserManagement = () => {
       
       if (!staffMembers || staffMembers.length === 0) {
         toast.info('Não há profissionais ativos para sincronizar');
+        setSyncLoading(false);
         return;
       }
       
-      // Buscar usuários existentes para evitar duplicatas
+      // Fetch existing users to avoid duplicates
       const { data: existingUsers, error: usersError } = await supabase
         .from('admin_users')
         .select('email');
         
       if (usersError) throw usersError;
       
-      const existingEmails = new Set(existingUsers?.map(user => user.email?.toLowerCase()) || []);
+      const existingEmails = new Set((existingUsers || []).map(user => 
+        user.email?.toLowerCase()).filter(Boolean));
       
-      // Filtrar para pegar apenas profissionais que não estão na lista de usuários
+      // Filter staff members who don't already exist as users
       const newStaff = staffMembers.filter(staff => 
         staff.email && !existingEmails.has(staff.email.toLowerCase())
       );
       
       if (newStaff.length === 0) {
         toast.info('Todos os profissionais já foram sincronizados como usuários');
+        setSyncLoading(false);
         return;
       }
-      
-      // Preparar dados para inserção
-      const usersToInsert = newStaff.map((staff: any) => ({
-        email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
-        name: staff.name,
-        role: 'barber' as AppRole,
-        created_at: new Date().toISOString()
-      }));
-      
-      // Inserir os novos usuários
-      const { error: insertError, data: insertedUsers } = await supabase
-        .from('admin_users')
-        .insert(usersToInsert)
-        .select();
-      
-      if (insertError) throw insertError;
-      
-      // Adicionar registros à tabela user_roles
-      if (insertedUsers && insertedUsers.length > 0) {
-        // Preparar dados para inserção na tabela user_roles
-        const rolesToInsert = insertedUsers.map(user => ({
-          user_id: user.id,
-          role: 'barber' as AppRole
-        }));
-        
-        // Inserir um por um para evitar erro de tipo
-        for (const roleData of rolesToInsert) {
-          const { error: roleInsertError } = await supabase
-            .from('user_roles')
-            .insert(roleData);
-            
-          if (roleInsertError && !roleInsertError.message.includes('duplicate')) {
-            console.error('Erro ao inserir papel:', roleInsertError);
-          }
+
+      // Use the RPC function to add barbers (more reliable than direct insert)
+      for (const staff of newStaff) {
+        const { error: rpcError } = await supabase.rpc('add_barber_user', {
+          p_email: staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`,
+          p_name: staff.name,
+          p_role: 'barber'
+        });
+
+        if (rpcError) {
+          console.error('Erro ao adicionar barbeiro:', rpcError);
         }
       }
       
-      toast.success(`${usersToInsert.length} profissionais foram adicionados como usuários`);
+      toast.success(`${newStaff.length} profissionais foram adicionados como usuários`);
       fetchUsers();
     } catch (error) {
       console.error('Erro ao sincronizar profissionais:', error);
@@ -165,6 +145,3 @@ export const useUserManagement = () => {
     handleSyncStaff
   };
 };
-
-// Export UserWithRole as a type, not a value
-// Remove this line since we're not re-exporting anything

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, UserPlus } from 'lucide-react';
 import UserTable from './UserTable';
 import AddUserDialog from './AddUserDialog';
 import UserRoleDialog from './UserRoleDialog';
@@ -36,7 +36,7 @@ const UsersTab: React.FC = () => {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -46,11 +46,21 @@ const UsersTab: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button 
-            onClick={handleAddUser} 
-            className="ml-4"
+            onClick={handleSyncStaff} 
+            variant="outline"
+            size="sm"
             disabled={syncLoading}
+            className="flex items-center gap-2 w-full sm:w-auto"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Sincronizar Barbeiros</span>
+          </Button>
+          <Button 
+            onClick={handleAddUser}
+            disabled={syncLoading}
+            className="w-full sm:w-auto"
           >
             <PlusCircle className="mr-2 h-4 w-4" />
             Adicionar Usuário
