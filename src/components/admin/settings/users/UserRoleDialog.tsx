@@ -73,6 +73,7 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
     
     try {
       setIsSubmitting(true);
+      console.log(`Updating user ${user.id} role to ${data.role}`);
       
       // Update user role in admin_users table
       const { error } = await supabase
@@ -80,7 +81,10 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
         .update({ role: data.role })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating admin_users:', error);
+        throw error;
+      }
       
       // Also update or create entry in user_roles table
       try {
@@ -91,7 +95,12 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
           .eq('user_id', user.id)
           .maybeSingle();
           
-        if (checkError) throw checkError;
+        if (checkError) {
+          console.error('Error checking existing role:', checkError);
+          throw checkError;
+        }
+        
+        console.log('Existing role:', existingRole);
         
         if (existingRole) {
           // Update existing role
@@ -100,14 +109,22 @@ const UserRoleDialog: React.FC<UserRoleDialogProps> = ({
             .update({ role: data.role as AppRole })
             .eq('user_id', user.id);
             
-          if (updateError) throw updateError;
+          if (updateError) {
+            console.error('Error updating user_roles:', updateError);
+            throw updateError;
+          }
+          console.log(`Updated existing role for user ${user.id} to ${data.role}`);
         } else {
           // Create new role entry
           const { error: insertError } = await supabase
             .from('user_roles')
             .insert({ user_id: user.id, role: data.role as AppRole });
             
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.error('Error inserting user_roles:', insertError);
+            throw insertError;
+          }
+          console.log(`Created new role entry for user ${user.id} with role ${data.role}`);
         }
       } catch (roleError) {
         console.error('Erro ao atualizar tabela user_roles:', roleError);

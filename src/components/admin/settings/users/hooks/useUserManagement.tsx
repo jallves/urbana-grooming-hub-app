@@ -18,12 +18,18 @@ export const useUserManagement = () => {
     try {
       setLoading(true);
       
-      // Fetch users from admin_users view
+      // Fetch users from admin_users view with more detailed logging
+      console.log("Fetching users from admin_users table...");
       const { data: authUsers, error: authError } = await supabase
         .from('admin_users')
         .select('*');
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error("Error fetching from admin_users:", authError);
+        throw authError;
+      }
+      
+      console.log("Fetched users data:", authUsers);
       
       // Map the data to include roles
       const usersWithRoles = authUsers.map(user => ({
@@ -34,6 +40,7 @@ export const useUserManagement = () => {
         role: user.role || 'user'
       }));
 
+      console.log("Processed users with roles:", usersWithRoles);
       setUsers(usersWithRoles);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
@@ -105,9 +112,13 @@ export const useUserManagement = () => {
         return;
       }
 
+      let addedCount = 0;
+      
       // Use the RPC function to add barbers (using type casting to bypass type checking for RPC function name)
       for (const staff of newStaff) {
-        const { error: rpcError } = await supabase.rpc(
+        console.log(`Adding barber: ${staff.name} with email: ${staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`}`);
+        
+        const { data, error: rpcError } = await supabase.rpc(
           // Need to use type assertion here since 'add_barber_user' is not in the generated types
           'add_barber_user' as any, 
           {
@@ -119,11 +130,18 @@ export const useUserManagement = () => {
 
         if (rpcError) {
           console.error('Erro ao adicionar barbeiro:', rpcError);
+        } else {
+          console.log('Barbeiro adicionado com sucesso:', data);
+          addedCount++;
         }
       }
       
-      toast.success(`${newStaff.length} profissionais foram adicionados como usuários`);
-      fetchUsers();
+      if (addedCount > 0) {
+        toast.success(`${addedCount} profissionais foram adicionados como usuários`);
+        fetchUsers(); // Make sure to fetch users again to update the list
+      } else if (newStaff.length > 0 && addedCount === 0) {
+        toast.error('Não foi possível adicionar os profissionais. Verifique os logs para mais detalhes.');
+      }
     } catch (error) {
       console.error('Erro ao sincronizar profissionais:', error);
       toast.error('Erro ao sincronizar profissionais', { 

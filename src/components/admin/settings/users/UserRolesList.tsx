@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -17,8 +17,10 @@ const UserRolesList: React.FC = () => {
     setSearchQuery, 
     syncLoading, 
     handleDeleteUser, 
-    handleSyncStaff 
+    handleSyncStaff,
+    fetchUsers
   } = useUserManagement();
+  
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
 
@@ -26,6 +28,11 @@ const UserRolesList: React.FC = () => {
     setSelectedUser(user);
     setRoleDialogOpen(true);
   };
+
+  const handleUserUpdated = useCallback(() => {
+    console.log("User updated, refreshing user list");
+    fetchUsers();
+  }, [fetchUsers]);
 
   return (
     <div className="space-y-4">
@@ -95,10 +102,7 @@ const UserRolesList: React.FC = () => {
           open={roleDialogOpen}
           onOpenChange={setRoleDialogOpen}
           user={selectedUser}
-          onUserUpdated={() => {
-            // Reload users list after role update
-            useUserManagement().fetchUsers();
-          }}
+          onUserUpdated={handleUserUpdated}
         />
       )}
     </div>
