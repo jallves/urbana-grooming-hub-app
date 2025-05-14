@@ -1,40 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, Shield, Lock } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+import { Shield, Save } from 'lucide-react';
+import { supabaseRPC, GetStaffModuleAccessResponse, UpdateStaffModuleAccessResponse } from '@/types/supabase-rpc';
 
-// Define types for our RPC functions
 interface GetStaffModuleAccessResponse {
   data: string[] | null;
   error: Error | null;
 }
 
 interface UpdateStaffModuleAccessResponse {
+  data: null;
   error: Error | null;
 }
-
-// Create a type-safe wrapper for our custom RPC functions
-const supabaseRPC = {
-  getStaffModuleAccess: (staffId: string) => {
-    return supabase.rpc(
-      'get_staff_module_access' as any, 
-      { staff_id_param: staffId }
-    ) as unknown as Promise<GetStaffModuleAccessResponse>;
-  },
-  updateStaffModuleAccess: (staffId: string, moduleIds: string[]) => {
-    return supabase.rpc(
-      'update_staff_module_access' as any, 
-      { 
-        staff_id_param: staffId,
-        module_ids_param: moduleIds
-      }
-    ) as unknown as Promise<UpdateStaffModuleAccessResponse>;
-  }
-};
 
 interface Module {
   id: string;
@@ -45,41 +28,42 @@ interface Module {
 
 interface StaffModuleAccessProps {
   staffId: string;
-  onSuccess?: () => void;
 }
 
-const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSuccess }) => {
-  const [modules, setModules] = useState<Module[]>([
-    { 
-      id: 'appointments', 
-      name: 'Agendamentos', 
-      description: 'Gerenciar agendamentos e calendário',
-      icon: <Check className="h-4 w-4" />
-    },
-    { 
-      id: 'clients', 
-      name: 'Clientes', 
-      description: 'Visualizar e gerenciar clientes',
-      icon: <Shield className="h-4 w-4" />
-    },
-    { 
-      id: 'services', 
-      name: 'Serviços', 
-      description: 'Gerenciar serviços oferecidos',
-      icon: <Lock className="h-4 w-4" /> 
-    },
-    { 
-      id: 'reports', 
-      name: 'Relatórios', 
-      description: 'Acesso a relatórios básicos',
-      icon: <Shield className="h-4 w-4" />
-    }
-  ]);
-  
+// Define available modules
+const modules: Module[] = [
+  {
+    id: 'appointments',
+    name: 'Agendamentos',
+    description: 'Visualização e gerenciamento de agendamentos',
+    icon: <Shield className="h-4 w-4 text-muted-foreground" />,
+  },
+  {
+    id: 'clients',
+    name: 'Clientes',
+    description: 'Acesso aos dados de clientes',
+    icon: <Shield className="h-4 w-4 text-muted-foreground" />,
+  },
+  {
+    id: 'services',
+    name: 'Serviços',
+    description: 'Visualização de serviços disponíveis',
+    icon: <Shield className="h-4 w-4 text-muted-foreground" />,
+  },
+  {
+    id: 'reports',
+    name: 'Relatórios',
+    description: 'Acesso a relatórios de desempenho e comissões',
+    icon: <Shield className="h-4 w-4 text-muted-foreground" />,
+  },
+];
+
+export const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId }) => {
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  
-  // Fetch existing modules access for the staff member
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const { toast } = useToast();
+
   useEffect(() => {
     const fetchModuleAccess = async () => {
       try {
@@ -89,29 +73,31 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
         
         if (error) {
           console.error('Error fetching module access:', error);
-          // Fallback to empty array if module_ids doesn't exist yet
-          setSelectedModules([]);
-          return;
-        }
-        
-        if (data && Array.isArray(data)) {
+          toast({
+            title: 'Erro ao carregar permissões',
+            description: 'Não foi possível carregar as permissões de módulos.',
+            variant: 'destructive',
+          });
+        } else if (data) {
           setSelectedModules(data);
-        } else {
-          setSelectedModules([]);
         }
       } catch (error) {
-        console.error('Error in fetchModuleAccess:', error);
-        setSelectedModules([]);
+        console.error('Error in fetching module access:', error);
+        toast({
+          title: 'Erro inesperado',
+          description: 'Ocorreu um erro ao carregar os dados.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
     };
-    
+
     if (staffId) {
       fetchModuleAccess();
     }
-  }, [staffId]);
-  
+  }, [staffId, toast]);
+
   const handleModuleToggle = (moduleId: string) => {
     setSelectedModules(prev => {
       if (prev.includes(moduleId)) {
@@ -121,10 +107,12 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
       }
     });
   };
-  
+
   const handleSaveAccess = async () => {
+    if (!staffId) return;
+    
     try {
-      setLoading(true);
+      setSaving(true);
       
       // Using our type-safe RPC function wrapper
       const { error } = await supabaseRPC.updateStaffModuleAccess(staffId, selectedModules);
@@ -132,81 +120,78 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
       if (error) {
         console.error('Error saving module access:', error);
         toast({
-          title: "Erro",
-          description: "Erro ao salvar permissões de acesso",
-          variant: "destructive",
+          title: 'Erro ao salvar permissões',
+          description: 'Não foi possível atualizar as permissões de módulos.',
+          variant: 'destructive',
         });
-        return;
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: "Permissões de acesso atualizadas com sucesso",
-      });
-      if (onSuccess) {
-        onSuccess();
+      } else {
+        toast({
+          title: 'Permissões atualizadas',
+          description: 'As permissões de acesso foram atualizadas com sucesso.',
+        });
       }
     } catch (error) {
-      console.error('Error in handleSaveAccess:', error);
+      console.error('Error in saving module access:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar permissões de acesso",
-        variant: "destructive",
+        title: 'Erro inesperado',
+        description: 'Ocorreu um erro ao salvar as permissões.',
+        variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
-  
+
+  if (loading) {
+    return (
+      <div className="flex justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Permissões de Acesso aos Módulos</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-4">
-            <div className="animate-spin h-6 w-6 border-2 border-gray-500 rounded-full border-t-transparent"></div>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-4">
-              {modules.map(module => (
-                <div key={module.id} className="flex items-start space-x-3 p-3 border rounded-md hover:bg-gray-50 transition-colors">
-                  <Checkbox 
-                    id={`module-${module.id}`}
-                    checked={selectedModules.includes(module.id)}
-                    onCheckedChange={() => handleModuleToggle(module.id)}
-                  />
-                  <div>
-                    <label 
-                      htmlFor={`module-${module.id}`}
-                      className="font-medium cursor-pointer flex items-center gap-2"
-                    >
-                      {module.icon}
-                      {module.name}
-                    </label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {module.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-6">
-              <Button 
-                onClick={handleSaveAccess} 
-                disabled={loading}
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Acesso aos Módulos</h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleSaveAccess} 
+          disabled={saving}
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {saving ? 'Salvando...' : 'Salvar Permissões'}
+        </Button>
+      </div>
+      
+      <Separator />
+      
+      <div className="space-y-4">
+        {modules.map(module => (
+          <div key={module.id} className="flex items-start space-x-3 p-2 rounded-md hover:bg-accent">
+            <Checkbox 
+              id={`module-${module.id}`}
+              checked={selectedModules.includes(module.id)}
+              onCheckedChange={() => handleModuleToggle(module.id)}
+            />
+            <div className="grid gap-1">
+              <label
+                htmlFor={`module-${module.id}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2"
               >
-                {loading ? 'Salvando...' : 'Salvar Permissões'}
-              </Button>
+                {module.name}
+                <Badge variant="outline" className="ml-2">
+                  {module.icon} Módulo
+                </Badge>
+              </label>
+              <p className="text-sm text-muted-foreground">
+                {module.description}
+              </p>
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
-
-export default StaffModuleAccess;

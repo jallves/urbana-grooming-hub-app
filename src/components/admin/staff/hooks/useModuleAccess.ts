@@ -1,56 +1,44 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-
-// Define return type for the module access function
-interface GetStaffModuleAccessResponse {
-  data: string[] | null;
-  error: Error | null;
-}
-
-// Create a type-safe wrapper for our custom RPC functions
-const supabaseRPC = {
-  getStaffModuleAccess: (staffId: string) => {
-    return supabase.rpc(
-      'get_staff_module_access' as any, 
-      { staff_id_param: staffId }
-    ) as unknown as Promise<GetStaffModuleAccessResponse>;
-  }
-};
+import { useAuth } from '@/contexts/AuthContext';
+import { supabaseRPC, GetStaffModuleAccessResponse } from '@/types/supabase-rpc';
 
 export const useModuleAccess = (requiredModuleId?: string) => {
   const { user, isAdmin } = useAuth();
-  const [hasAccess, setHasAccess] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [moduleAccess, setModuleAccess] = useState<string[]>([]);
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const checkModuleAccess = async () => {
+    const fetchModuleAccess = async () => {
+      // Admin has access to everything
+      if (isAdmin) {
+        setModuleAccess(['admin', 'appointments', 'clients', 'services', 'reports']);
+        setHasAccess(true);
+        setLoading(false);
+        return;
+      }
+
+      // If no user, they don't have access
+      if (!user) {
+        setModuleAccess([]);
+        setHasAccess(false);
+        setLoading(false);
+        return;
+      }
+
       try {
-        // Admins have access to everything
-        if (isAdmin) {
-          setHasAccess(true);
-          setModuleAccess(['appointments', 'clients', 'services', 'reports']);
-          setLoading(false);
-          return;
-        }
-
-        if (!user) {
-          setHasAccess(false);
-          setLoading(false);
-          return;
-        }
-
-        // Find staff record for current user
+        // First, get the staff record for this user
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
           .select('id')
           .eq('email', user.email)
-          .maybeSingle();
+          .single();
 
         if (staffError || !staffData) {
-          console.error('Error finding staff record:', staffError);
+          console.error('Staff record not found:', staffError);
+          setModuleAccess([]);
           setHasAccess(false);
           setLoading(false);
           return;
@@ -61,36 +49,28 @@ export const useModuleAccess = (requiredModuleId?: string) => {
 
         if (error) {
           console.error('Error fetching module access:', error);
-          setHasAccess(false);
           setModuleAccess([]);
+          setHasAccess(false);
         } else if (data) {
-          const moduleIds = Array.isArray(data) ? data : [];
-          setModuleAccess(moduleIds);
-          
-          // If checking for a specific module
+          setModuleAccess(data);
+          // Check if user has access to the specific module if requested
           if (requiredModuleId) {
-            setHasAccess(moduleIds.includes(requiredModuleId));
+            setHasAccess(data.includes(requiredModuleId));
           } else {
-            setHasAccess(moduleIds.length > 0);
+            setHasAccess(true);
           }
-        } else {
-          setHasAccess(false);
-          setModuleAccess([]);
         }
       } catch (error) {
-        console.error('Error in checkModuleAccess:', error);
+        console.error('Error in module access check:', error);
+        setModuleAccess([]);
         setHasAccess(false);
       } finally {
         setLoading(false);
       }
     };
 
-    checkModuleAccess();
+    fetchModuleAccess();
   }, [user, isAdmin, requiredModuleId]);
 
-  return { 
-    hasAccess, 
-    loading, 
-    moduleAccess
-  };
+  return { moduleAccess, hasAccess, loading };
 };
