@@ -3,10 +3,10 @@
 CREATE TABLE IF NOT EXISTS public.staff_module_access (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   staff_id UUID NOT NULL REFERENCES public.staff(id) ON DELETE CASCADE,
-  module_ids TEXT[] DEFAULT '{}',
+  module_id TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  UNIQUE(staff_id)
+  UNIQUE(staff_id, module_id)
 );
 
 -- Add RLS policies

@@ -3,14 +3,13 @@
 CREATE OR REPLACE FUNCTION public.get_staff_module_access(staff_id_param UUID)
 RETURNS TEXT[] AS $$
 DECLARE
-  result TEXT[];
+  modules TEXT[];
 BEGIN
-  SELECT module_ids INTO result
+  SELECT array_agg(module_id) INTO modules
   FROM staff_module_access
   WHERE staff_id = staff_id_param;
   
-  -- Return empty array if no access found
-  RETURN COALESCE(result, ARRAY[]::TEXT[]);
+  RETURN COALESCE(modules, ARRAY[]::TEXT[]);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -21,12 +20,14 @@ CREATE OR REPLACE FUNCTION public.update_staff_module_access(
 )
 RETURNS VOID AS $$
 BEGIN
-  INSERT INTO staff_module_access (staff_id, module_ids, updated_at)
-  VALUES (staff_id_param, module_ids_param, NOW())
-  ON CONFLICT (staff_id)
-  DO UPDATE SET
-    module_ids = module_ids_param,
-    updated_at = NOW();
+  -- Delete existing access
+  DELETE FROM staff_module_access WHERE staff_id = staff_id_param;
+  
+  -- Insert new access
+  IF module_ids_param IS NOT NULL AND array_length(module_ids_param, 1) > 0 THEN
+    INSERT INTO staff_module_access (staff_id, module_id)
+    SELECT staff_id_param, unnest(module_ids_param);
+  END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

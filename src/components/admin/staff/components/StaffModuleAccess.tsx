@@ -4,7 +4,7 @@ import { CheckIcon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { supabaseRPC } from '@/types/supabase-rpc';
 
@@ -34,17 +34,27 @@ export function StaffModuleAccess({ staffId, onSuccess }: StaffModuleAccessProps
       
       setLoading(true);
       try {
+        console.log("Fetching module access for staff ID:", staffId);
         const response = await supabaseRPC.getStaffModuleAccess(staffId);
         
         if (response.error) {
           console.error('Error loading module access:', response.error);
-          toast.error('Erro ao carregar permissões de acesso');
-        } else if (response.data) {
-          setSelectedModules(response.data);
+          toast({
+            title: "Erro ao carregar permissões",
+            description: "Não foi possível carregar as permissões de acesso",
+            variant: "destructive"
+          });
+        } else {
+          console.log("Module access data received:", response.data);
+          setSelectedModules(response.data || []);
         }
       } catch (error) {
         console.error('Error in fetchModuleAccess:', error);
-        toast.error('Erro ao carregar permissões de acesso');
+        toast({
+          title: "Erro ao carregar permissões",
+          description: "Ocorreu um erro ao buscar as permissões de acesso",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
         setInitialLoaded(true);
@@ -71,18 +81,31 @@ export function StaffModuleAccess({ staffId, onSuccess }: StaffModuleAccessProps
     
     setSaving(true);
     try {
+      console.log("Saving module access for staff ID:", staffId, "modules:", selectedModules);
       const response = await supabaseRPC.updateStaffModuleAccess(staffId, selectedModules);
       
       if (response.error) {
         console.error('Error saving module access:', response.error);
-        toast.error('Erro ao salvar permissões de acesso');
+        toast({
+          title: "Erro ao salvar permissões",
+          description: "Não foi possível atualizar as permissões de acesso",
+          variant: "destructive"
+        });
       } else {
-        toast.success('Permissões atualizadas com sucesso');
+        toast({
+          title: "Permissões atualizadas",
+          description: "As permissões de acesso foram atualizadas com sucesso",
+          variant: "success"
+        });
         if (onSuccess) onSuccess();
       }
     } catch (error) {
       console.error('Error in saveModuleAccess:', error);
-      toast.error('Erro ao salvar permissões de acesso');
+      toast({
+        title: "Erro ao salvar permissões",
+        description: "Ocorreu um erro ao atualizar as permissões de acesso",
+        variant: "destructive"
+      });
     } finally {
       setSaving(false);
     }

@@ -12,9 +12,14 @@ export const useModuleAccess = (requiredModuleId?: string) => {
 
   useEffect(() => {
     const fetchModuleAccess = async () => {
+      console.log('useModuleAccess - Checking access for module:', requiredModuleId);
+      console.log('useModuleAccess - User data:', user?.id, 'isAdmin:', isAdmin);
+      
       // Admin has access to everything
       if (isAdmin) {
-        setModuleAccess(['admin', 'appointments', 'clients', 'services', 'reports']);
+        console.log('useModuleAccess - User is admin, granting full access');
+        const allModules = ['admin', 'appointments', 'clients', 'services', 'reports'];
+        setModuleAccess(allModules);
         setHasAccess(true);
         setLoading(false);
         return;
@@ -22,6 +27,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
 
       // If no user, they don't have access
       if (!user) {
+        console.log('useModuleAccess - No user, denying access');
         setModuleAccess([]);
         setHasAccess(false);
         setLoading(false);
@@ -30,6 +36,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
 
       try {
         // First, get the staff record for this user
+        console.log('useModuleAccess - Looking up staff record for email:', user.email);
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
           .select('id')
@@ -37,31 +44,38 @@ export const useModuleAccess = (requiredModuleId?: string) => {
           .single();
 
         if (staffError || !staffData) {
-          console.error('Staff record not found:', staffError);
+          console.error('useModuleAccess - Staff record not found:', staffError);
           setModuleAccess([]);
           setHasAccess(false);
           setLoading(false);
           return;
         }
 
-        // Get module access for this staff member using our type-safe wrapper
+        console.log('useModuleAccess - Found staff record:', staffData.id);
+        
+        // Get module access for this staff member
         const response = await supabaseRPC.getStaffModuleAccess(staffData.id);
 
         if (response.error) {
-          console.error('Error fetching module access:', response.error);
+          console.error('useModuleAccess - Error fetching module access:', response.error);
           setModuleAccess([]);
           setHasAccess(false);
-        } else if (response.data) {
-          setModuleAccess(response.data || []);
+        } else {
+          const modules = response.data || [];
+          console.log('useModuleAccess - Module access retrieved:', modules);
+          setModuleAccess(modules);
+          
           // Check if user has access to the specific module if requested
           if (requiredModuleId) {
-            setHasAccess((response.data || []).includes(requiredModuleId));
+            const moduleHasAccess = modules.includes(requiredModuleId);
+            console.log('useModuleAccess - Access to module', requiredModuleId, ':', moduleHasAccess);
+            setHasAccess(moduleHasAccess);
           } else {
             setHasAccess(true);
           }
         }
       } catch (error) {
-        console.error('Error in module access check:', error);
+        console.error('useModuleAccess - Error in module access check:', error);
         setModuleAccess([]);
         setHasAccess(false);
       } finally {
