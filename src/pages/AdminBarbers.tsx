@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import UserRolesList from '@/components/admin/settings/users/UserRolesList';
 import { UserCheck, ListFilter } from 'lucide-react';
+import BarberManagement from '@/components/admin/barbers/BarberManagement';
 
 const AdminBarbers: React.FC = () => {
   return (
@@ -31,17 +32,8 @@ const AdminBarbers: React.FC = () => {
           
           <TabsContent value="barbers">
             <Card>
-              <CardHeader>
-                <CardTitle>Lista de Barbeiros</CardTitle>
-                <CardDescription>
-                  Visualize e gerencie os barbeiros da barbearia
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Aqui iremos implementar futuramente a listagem de barbeiros */}
-                <div className="text-center py-8 text-muted-foreground">
-                  Em desenvolvimento - Lista de barbeiros será exibida aqui
-                </div>
+              <CardContent className="pt-6">
+                <BarberManagement />
               </CardContent>
             </Card>
           </TabsContent>

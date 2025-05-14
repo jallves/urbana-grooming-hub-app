@@ -17,11 +17,13 @@ export const staffFormSchema = z.object({
   is_active: z.boolean().default(true),
   image_url: z.string().nullable().optional(),
   experience: z.string().nullable().optional(),
+  commission_rate: z.number().nullable().optional(),
+  specialties: z.string().nullable().optional(),
 });
 
 export type StaffFormValues = z.infer<typeof staffFormSchema>;
 
-export function useStaffForm(staffId: string | null, onSuccess: () => void) {
+export function useStaffForm(staffId: string | null, onSuccess: () => void, defaultRole?: string) {
   const isEditing = !!staffId;
   const { uploadFile, uploading } = useImageUpload();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -51,10 +53,12 @@ export function useStaffForm(staffId: string | null, onSuccess: () => void) {
       name: '',
       email: '',
       phone: '',
-      role: '',
+      role: defaultRole || '',
       is_active: true,
       image_url: '',
       experience: '',
+      commission_rate: null,
+      specialties: '',
     },
     values: staffData || undefined,
   });
@@ -103,6 +107,8 @@ export function useStaffForm(staffId: string | null, onSuccess: () => void) {
         is_active: values.is_active,
         image_url: imageUrl || values.image_url || null,
         experience: values.experience || null,
+        commission_rate: values.commission_rate || null,
+        specialties: values.specialties || null,
       };
 
       if (isEditing) {

@@ -2,6 +2,7 @@
 import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { UseFormReturn } from 'react-hook-form';
 import { StaffFormValues } from '../hooks/useStaffForm';
 
@@ -11,40 +12,92 @@ interface StaffProfessionalInfoProps {
 
 const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField
-        control={form.control}
-        name="role"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Função</FormLabel>
-            <FormControl>
-              <Input placeholder="Função do profissional" {...field} value={field.value || ''} />
-            </FormControl>
-            <FormDescription>
-              Ex: Barbeiro, Cabeleireiro, Manicure, etc.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Função</FormLabel>
+              <FormControl>
+                <Input placeholder="Função do profissional" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormDescription>
+                Ex: Barbeiro, Cabeleireiro, Manicure, etc.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="experience"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Experiência</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: +5 anos" {...field} value={field.value || ''} />
+              </FormControl>
+              <FormDescription>
+                Tempo de experiência do profissional
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
       
-      <FormField
-        control={form.control}
-        name="experience"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Experiência</FormLabel>
-            <FormControl>
-              <Input placeholder="Ex: +5 anos" {...field} value={field.value || ''} />
-            </FormControl>
-            <FormDescription>
-              Tempo de experiência do profissional
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="commission_rate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Taxa de Comissão (%)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  placeholder="Ex: 60" 
+                  {...field} 
+                  value={field.value === null ? '' : field.value}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? null : Number(e.target.value);
+                    field.onChange(value);
+                  }}
+                />
+              </FormControl>
+              <FormDescription>
+                Porcentagem que o profissional recebe por serviço
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="specialties"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Especialidades</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Ex: barba, corte degradê, etc (separados por vírgula)" 
+                  {...field} 
+                  value={field.value || ''}
+                  className="resize-none"
+                />
+              </FormControl>
+              <FormDescription>
+                Liste as especialidades separadas por vírgula
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
   );
 };

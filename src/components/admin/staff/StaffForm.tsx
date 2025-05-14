@@ -18,9 +18,10 @@ interface StaffFormProps {
   staffId: string | null;
   onCancel: () => void;
   onSuccess: () => void;
+  defaultRole?: string;
 }
 
-const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) => {
+const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, defaultRole }) => {
   const { 
     form,
     onSubmit,
@@ -31,13 +32,16 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
     uploading,
     uploadProgress,
     isSubmitting
-  } = useStaffForm(staffId, onSuccess);
+  } = useStaffForm(staffId, onSuccess, defaultRole);
 
   useEffect(() => {
     if (staffId) {
       // Fetch staff data for editing is handled by useStaffForm hook
+    } else if (defaultRole && !staffId) {
+      // Set default role for new staff if provided
+      form.setValue('role', defaultRole);
     }
-  }, [staffId]);
+  }, [staffId, defaultRole, form]);
 
   return (
     <Form {...form}>
