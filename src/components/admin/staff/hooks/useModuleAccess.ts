@@ -15,6 +15,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
         // Admins have access to everything
         if (isAdmin) {
           setHasAccess(true);
+          setModuleAccess(['appointments', 'clients', 'services', 'reports']);
           setLoading(false);
           return;
         }
@@ -39,18 +40,16 @@ export const useModuleAccess = (requiredModuleId?: string) => {
           return;
         }
 
-        // Get module access for this staff member
+        // Get module access for this staff member using RPC
         const { data, error } = await supabase
-          .from('staff_module_access')
-          .select('module_ids')
-          .eq('staff_id', staffData.id)
-          .maybeSingle();
+          .rpc('get_staff_module_access', { staff_id_param: staffData.id });
 
         if (error) {
           console.error('Error fetching module access:', error);
           setHasAccess(false);
+          setModuleAccess([]);
         } else if (data) {
-          const moduleIds = data.module_ids || [];
+          const moduleIds = Array.isArray(data) ? data : [];
           setModuleAccess(moduleIds);
           
           // If checking for a specific module
@@ -61,6 +60,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
           }
         } else {
           setHasAccess(false);
+          setModuleAccess([]);
         }
       } catch (error) {
         console.error('Error in checkModuleAccess:', error);

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,16 +23,15 @@ interface StaffFormProps {
 const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) => {
   const { 
     form,
-    isSubmitting,
-    staffSchema,
-    handleSubmit,
-    uploadImage,
-    imageUrl,
-    setImageUrl,
-    uploadState,
-    handleImageChange,
-    handleDeleteImage
-  } = useStaffForm(staffId);
+    onSubmit,
+    isEditing,
+    isLoadingStaff,
+    handleFileChange,
+    selectedFile,
+    uploading,
+    uploadProgress,
+    isSubmitting
+  } = useStaffForm(staffId, onSuccess);
 
   useEffect(() => {
     if (staffId) {
@@ -42,7 +42,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs defaultValue="personal" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="personal" className="flex items-center gap-2">
@@ -65,10 +65,8 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="col-span-1">
                 <StaffProfileImage 
-                  imageUrl={imageUrl}
-                  uploadState={uploadState}
-                  onImageChange={handleImageChange}
-                  onDeleteImage={handleDeleteImage}
+                  form={form}
+                  handleFileChange={handleFileChange}
                 />
               </div>
               

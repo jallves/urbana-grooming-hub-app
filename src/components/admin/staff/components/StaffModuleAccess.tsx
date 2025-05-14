@@ -55,22 +55,25 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
     const fetchModuleAccess = async () => {
       try {
         setLoading(true);
+        // Using the RPC function to get module access since direct table access might not be available yet
         const { data, error } = await supabase
-          .from('staff_module_access')
-          .select('module_ids')
-          .eq('staff_id', staffId)
-          .single();
+          .rpc('get_staff_module_access', { staff_id_param: staffId });
         
         if (error) {
           console.error('Error fetching module access:', error);
+          // Fallback to empty array if module_ids doesn't exist yet
+          setSelectedModules([]);
           return;
         }
         
-        if (data && Array.isArray(data.module_ids)) {
-          setSelectedModules(data.module_ids);
+        if (data && Array.isArray(data)) {
+          setSelectedModules(data);
+        } else {
+          setSelectedModules([]);
         }
       } catch (error) {
         console.error('Error in fetchModuleAccess:', error);
+        setSelectedModules([]);
       } finally {
         setLoading(false);
       }
@@ -95,16 +98,12 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
     try {
       setLoading(true);
       
+      // Using the RPC function to save module access
       const { error } = await supabase
-        .from('staff_module_access')
-        .upsert(
-          { 
-            staff_id: staffId, 
-            module_ids: selectedModules,
-            updated_at: new Date().toISOString()
-          },
-          { onConflict: 'staff_id' }
-        );
+        .rpc('update_staff_module_access', { 
+          staff_id_param: staffId,
+          module_ids_param: selectedModules
+        });
       
       if (error) {
         console.error('Error saving module access:', error);
