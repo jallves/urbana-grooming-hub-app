@@ -4,7 +4,7 @@ import { Check, Shield, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Module {
@@ -55,9 +55,11 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
     const fetchModuleAccess = async () => {
       try {
         setLoading(true);
-        // Using the RPC function to get module access since direct table access might not be available yet
+        // Using the RPC function to get module access
         const { data, error } = await supabase
-          .rpc('get_staff_module_access', { staff_id_param: staffId });
+          .rpc('get_staff_module_access', { 
+            staff_id_param: staffId 
+          } as any);
         
         if (error) {
           console.error('Error fetching module access:', error);
@@ -103,21 +105,32 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
         .rpc('update_staff_module_access', { 
           staff_id_param: staffId,
           module_ids_param: selectedModules
-        });
+        } as any);
       
       if (error) {
         console.error('Error saving module access:', error);
-        toast.error('Erro ao salvar permissões de acesso');
+        toast({
+          title: "Erro",
+          description: "Erro ao salvar permissões de acesso",
+          variant: "destructive",
+        });
         return;
       }
       
-      toast.success('Permissões de acesso atualizadas com sucesso');
+      toast({
+        title: "Sucesso",
+        description: "Permissões de acesso atualizadas com sucesso",
+      });
       if (onSuccess) {
         onSuccess();
       }
     } catch (error) {
       console.error('Error in handleSaveAccess:', error);
-      toast.error('Erro ao salvar permissões de acesso');
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar permissões de acesso",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

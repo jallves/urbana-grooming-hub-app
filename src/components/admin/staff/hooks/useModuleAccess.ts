@@ -42,7 +42,9 @@ export const useModuleAccess = (requiredModuleId?: string) => {
 
         // Get module access for this staff member using RPC
         const { data, error } = await supabase
-          .rpc('get_staff_module_access', { staff_id_param: staffData.id });
+          .rpc('get_staff_module_access', { 
+            staff_id_param: staffData.id 
+          } as any);
 
         if (error) {
           console.error('Error fetching module access:', error);

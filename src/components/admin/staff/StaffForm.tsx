@@ -35,8 +35,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess }) =
 
   useEffect(() => {
     if (staffId) {
-      // Fetch staff data for editing
-      // The useStaffForm hook should handle fetching and setting default values
+      // Fetch staff data for editing is handled by useStaffForm hook
     }
   }, [staffId]);
 
