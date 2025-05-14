@@ -3,6 +3,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+// Define return type for the module access function
+interface GetStaffModuleAccessResponse {
+  data: string[] | null;
+  error: Error | null;
+}
+
 export const useModuleAccess = (requiredModuleId?: string) => {
   const { user, isAdmin } = useAuth();
   const [hasAccess, setHasAccess] = useState(false);
@@ -41,10 +47,11 @@ export const useModuleAccess = (requiredModuleId?: string) => {
         }
 
         // Get module access for this staff member using RPC
-        const { data, error } = await supabase
-          .rpc('get_staff_module_access', { 
-            staff_id_param: staffData.id 
-          } as any);
+        // Use explicit type casting to handle the custom RPC function
+        const { data, error } = await (supabase.rpc(
+          'get_staff_module_access',
+          { staff_id_param: staffData.id }
+        ) as unknown as Promise<GetStaffModuleAccessResponse>);
 
         if (error) {
           console.error('Error fetching module access:', error);

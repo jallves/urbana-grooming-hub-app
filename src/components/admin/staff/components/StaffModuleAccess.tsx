@@ -7,6 +7,16 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
+// Define types for our RPC functions
+interface GetStaffModuleAccessResponse {
+  data: string[] | null;
+  error: Error | null;
+}
+
+interface UpdateStaffModuleAccessResponse {
+  error: Error | null;
+}
+
 interface Module {
   id: string;
   name: string;
@@ -55,11 +65,11 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
     const fetchModuleAccess = async () => {
       try {
         setLoading(true);
-        // Using the RPC function to get module access
-        const { data, error } = await supabase
+        // Using the RPC function with proper type casting
+        const { data, error } = await (supabase
           .rpc('get_staff_module_access', { 
             staff_id_param: staffId 
-          } as any);
+          }) as unknown as Promise<GetStaffModuleAccessResponse>);
         
         if (error) {
           console.error('Error fetching module access:', error);
@@ -100,12 +110,12 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
     try {
       setLoading(true);
       
-      // Using the RPC function to save module access
-      const { error } = await supabase
+      // Using the RPC function with proper type casting
+      const { error } = await (supabase
         .rpc('update_staff_module_access', { 
           staff_id_param: staffId,
           module_ids_param: selectedModules
-        } as any);
+        }) as unknown as Promise<UpdateStaffModuleAccessResponse>);
       
       if (error) {
         console.error('Error saving module access:', error);
