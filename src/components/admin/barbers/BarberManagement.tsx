@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Plus } from 'lucide-react';
 import StaffForm from '../staff/StaffForm';
 import BarberList from './BarberList';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 
 const BarberManagement: React.FC = () => {
   const [isAddingBarber, setIsAddingBarber] = useState(false);
@@ -33,7 +33,9 @@ const BarberManagement: React.FC = () => {
   });
 
   if (error) {
-    toast.error('Erro ao carregar barbeiros', {
+    toast({
+      variant: "destructive",
+      title: "Erro ao carregar barbeiros",
       description: (error as Error).message
     });
   }
