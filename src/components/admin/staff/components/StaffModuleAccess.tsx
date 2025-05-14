@@ -17,6 +17,25 @@ interface UpdateStaffModuleAccessResponse {
   error: Error | null;
 }
 
+// Create a type-safe wrapper for our custom RPC functions
+const supabaseRPC = {
+  getStaffModuleAccess: (staffId: string) => {
+    return supabase.rpc(
+      'get_staff_module_access' as any, 
+      { staff_id_param: staffId }
+    ) as unknown as Promise<GetStaffModuleAccessResponse>;
+  },
+  updateStaffModuleAccess: (staffId: string, moduleIds: string[]) => {
+    return supabase.rpc(
+      'update_staff_module_access' as any, 
+      { 
+        staff_id_param: staffId,
+        module_ids_param: moduleIds
+      }
+    ) as unknown as Promise<UpdateStaffModuleAccessResponse>;
+  }
+};
+
 interface Module {
   id: string;
   name: string;
@@ -65,11 +84,8 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
     const fetchModuleAccess = async () => {
       try {
         setLoading(true);
-        // Using the RPC function with proper type casting
-        const { data, error } = await (supabase
-          .rpc('get_staff_module_access', { 
-            staff_id_param: staffId 
-          }) as unknown as Promise<GetStaffModuleAccessResponse>);
+        // Using our type-safe RPC function wrapper
+        const { data, error } = await supabaseRPC.getStaffModuleAccess(staffId);
         
         if (error) {
           console.error('Error fetching module access:', error);
@@ -110,12 +126,8 @@ const StaffModuleAccess: React.FC<StaffModuleAccessProps> = ({ staffId, onSucces
     try {
       setLoading(true);
       
-      // Using the RPC function with proper type casting
-      const { error } = await (supabase
-        .rpc('update_staff_module_access', { 
-          staff_id_param: staffId,
-          module_ids_param: selectedModules
-        }) as unknown as Promise<UpdateStaffModuleAccessResponse>);
+      // Using our type-safe RPC function wrapper
+      const { error } = await supabaseRPC.updateStaffModuleAccess(staffId, selectedModules);
       
       if (error) {
         console.error('Error saving module access:', error);

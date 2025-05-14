@@ -9,6 +9,16 @@ interface GetStaffModuleAccessResponse {
   error: Error | null;
 }
 
+// Create a type-safe wrapper for our custom RPC functions
+const supabaseRPC = {
+  getStaffModuleAccess: (staffId: string) => {
+    return supabase.rpc(
+      'get_staff_module_access' as any, 
+      { staff_id_param: staffId }
+    ) as unknown as Promise<GetStaffModuleAccessResponse>;
+  }
+};
+
 export const useModuleAccess = (requiredModuleId?: string) => {
   const { user, isAdmin } = useAuth();
   const [hasAccess, setHasAccess] = useState(false);
@@ -46,12 +56,8 @@ export const useModuleAccess = (requiredModuleId?: string) => {
           return;
         }
 
-        // Get module access for this staff member using RPC
-        // Use explicit type casting to handle the custom RPC function
-        const { data, error } = await (supabase.rpc(
-          'get_staff_module_access',
-          { staff_id_param: staffData.id }
-        ) as unknown as Promise<GetStaffModuleAccessResponse>);
+        // Get module access for this staff member using our type-safe wrapper
+        const { data, error } = await supabaseRPC.getStaffModuleAccess(staffData.id);
 
         if (error) {
           console.error('Error fetching module access:', error);
