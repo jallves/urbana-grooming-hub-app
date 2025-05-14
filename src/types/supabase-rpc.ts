@@ -14,19 +14,24 @@ export interface UpdateStaffModuleAccessResponse {
 
 // Create a type-safe wrapper for our custom RPC functions
 export const supabaseRPC = {
-  getStaffModuleAccess: (staffId: string) => {
-    return supabase.rpc(
+  getStaffModuleAccess: async (staffId: string): Promise<GetStaffModuleAccessResponse> => {
+    const { data, error } = await supabase.rpc(
       'get_staff_module_access' as any, 
       { staff_id_param: staffId }
-    ) as unknown as Promise<GetStaffModuleAccessResponse>;
+    );
+    
+    return { data, error } as GetStaffModuleAccessResponse;
   },
-  updateStaffModuleAccess: (staffId: string, moduleIds: string[]) => {
-    return supabase.rpc(
+  
+  updateStaffModuleAccess: async (staffId: string, moduleIds: string[]): Promise<UpdateStaffModuleAccessResponse> => {
+    const { data, error } = await supabase.rpc(
       'update_staff_module_access' as any, 
       { 
         staff_id_param: staffId,
         module_ids_param: moduleIds
       }
-    ) as unknown as Promise<UpdateStaffModuleAccessResponse>;
+    );
+    
+    return { data, error } as UpdateStaffModuleAccessResponse;
   }
 };

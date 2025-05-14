@@ -10,7 +10,7 @@ import StaffProfileImage from './components/StaffProfileImage';
 import StaffPersonalInfo from './components/StaffPersonalInfo';
 import StaffProfessionalInfo from './components/StaffProfessionalInfo';
 import StaffActiveStatus from './components/StaffActiveStatus';
-import StaffModuleAccess from './components/StaffModuleAccess';
+import { StaffModuleAccess } from './components/StaffModuleAccess';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Shield, Settings } from 'lucide-react';
 

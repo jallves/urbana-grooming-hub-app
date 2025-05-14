@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabaseRPC, GetStaffModuleAccessResponse } from '@/types/supabase-rpc';
+import { supabaseRPC } from '@/types/supabase-rpc';
 
 export const useModuleAccess = (requiredModuleId?: string) => {
   const { user, isAdmin } = useAuth();
@@ -45,17 +45,17 @@ export const useModuleAccess = (requiredModuleId?: string) => {
         }
 
         // Get module access for this staff member using our type-safe wrapper
-        const { data, error } = await supabaseRPC.getStaffModuleAccess(staffData.id);
+        const response = await supabaseRPC.getStaffModuleAccess(staffData.id);
 
-        if (error) {
-          console.error('Error fetching module access:', error);
+        if (response.error) {
+          console.error('Error fetching module access:', response.error);
           setModuleAccess([]);
           setHasAccess(false);
-        } else if (data) {
-          setModuleAccess(data);
+        } else if (response.data) {
+          setModuleAccess(response.data || []);
           // Check if user has access to the specific module if requested
           if (requiredModuleId) {
-            setHasAccess(data.includes(requiredModuleId));
+            setHasAccess((response.data || []).includes(requiredModuleId));
           } else {
             setHasAccess(true);
           }

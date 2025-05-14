@@ -80,6 +80,7 @@ export type Database = {
           id: string
           notes: string | null
           service_id: string
+          staff_id: string | null
           start_time: string
           status: string
           updated_at: string | null
@@ -91,6 +92,7 @@ export type Database = {
           id?: string
           notes?: string | null
           service_id: string
+          staff_id?: string | null
           start_time: string
           status: string
           updated_at?: string | null
@@ -102,6 +104,7 @@ export type Database = {
           id?: string
           notes?: string | null
           service_id?: string
+          staff_id?: string | null
           start_time?: string
           status?: string
           updated_at?: string | null
@@ -119,6 +122,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
             referencedColumns: ["id"]
           },
         ]
@@ -191,6 +201,57 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      barber_commissions: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          barber_id: string
+          commission_rate: number
+          created_at: string
+          id: string
+          payment_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          barber_id: string
+          commission_rate: number
+          created_at?: string
+          id?: string
+          payment_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          barber_id?: string
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          payment_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_commissions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_commissions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       business_hours: {
         Row: {
@@ -948,6 +1009,7 @@ export type Database = {
       }
       staff: {
         Row: {
+          commission_rate: number | null
           created_at: string | null
           email: string | null
           experience: string | null
@@ -957,9 +1019,11 @@ export type Database = {
           name: string
           phone: string | null
           role: string | null
+          specialties: string | null
           updated_at: string | null
         }
         Insert: {
+          commission_rate?: number | null
           created_at?: string | null
           email?: string | null
           experience?: string | null
@@ -969,9 +1033,11 @@ export type Database = {
           name: string
           phone?: string | null
           role?: string | null
+          specialties?: string | null
           updated_at?: string | null
         }
         Update: {
+          commission_rate?: number | null
           created_at?: string | null
           email?: string | null
           experience?: string | null
@@ -981,9 +1047,42 @@ export type Database = {
           name?: string
           phone?: string | null
           role?: string | null
+          specialties?: string | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      staff_module_access: {
+        Row: {
+          created_at: string
+          id: string
+          module_id: string
+          staff_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_id: string
+          staff_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_id?: string
+          staff_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_module_access_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_tickets: {
         Row: {
@@ -1101,11 +1200,19 @@ export type Database = {
         Args: { p_email: string; p_name: string; p_role?: string }
         Returns: string
       }
+      get_staff_module_access: {
+        Args: { staff_id_param: string }
+        Returns: string[]
+      }
       has_role: {
         Args:
           | { _user_id: string; _role: Database["public"]["Enums"]["app_role"] }
           | { role_name: string }
         Returns: boolean
+      }
+      update_staff_module_access: {
+        Args: { staff_id_param: string; module_ids_param: string[] }
+        Returns: undefined
       }
     }
     Enums: {
