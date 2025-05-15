@@ -95,7 +95,7 @@ export function StaffModuleAccess({ staffId, onSuccess }: StaffModuleAccessProps
         toast({
           title: "Permissões atualizadas",
           description: "As permissões de acesso foram atualizadas com sucesso",
-          variant: "success"
+          variant: "default"
         });
         if (onSuccess) onSuccess();
       }
