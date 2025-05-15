@@ -2,12 +2,15 @@
 import React from 'react';
 import AdminLayout from '../components/admin/AdminLayout';
 import ClientManagement from '../components/admin/clients/ClientManagement';
+import AdminRoute from '../components/auth/AdminRoute';
 
 const AdminClients: React.FC = () => {
   return (
-    <AdminLayout>
-      <ClientManagement />
-    </AdminLayout>
+    <AdminRoute allowBarber={true} requiredModule="clients">
+      <AdminLayout>
+        <ClientManagement />
+      </AdminLayout>
+    </AdminRoute>
   );
 };
 

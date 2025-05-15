@@ -1,12 +1,14 @@
 
 import React, { useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Calendar, Users, Scissors, ChartBar, Lock, Settings, Shield, DollarSign } from 'lucide-react';
+import { Home, Calendar, Users, Scissors, ChartBar, Lock, Settings, Shield, DollarSign, LayoutDashboard } from 'lucide-react';
 import { useModuleAccess } from '@/components/admin/staff/hooks/useModuleAccess';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BarberSidebar: React.FC = () => {
   const { moduleAccess, loading } = useModuleAccess();
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -58,6 +60,20 @@ const BarberSidebar: React.FC = () => {
       moduleId: null // Always accessible
     }
   ];
+
+  // Add admin panel link if isAdmin or has special modules
+  const hasAdminAccess = isAdmin || 
+    (moduleAccess?.includes('clients') || moduleAccess?.includes('appointments'));
+
+  // Add admin dashboard link at the end if they have access
+  if (hasAdminAccess) {
+    navItems.push({
+      name: 'Painel Admin',
+      href: '/admin',
+      icon: <LayoutDashboard className="h-5 w-5" />,
+      moduleId: null
+    });
+  }
 
   // Filter items based on module access or if they require no specific access
   const filteredNavItems = navItems.filter(item => 

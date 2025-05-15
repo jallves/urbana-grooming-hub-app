@@ -2,12 +2,15 @@
 import React from 'react';
 import AdminLayout from '../components/admin/AdminLayout';
 import StaffManagement from '../components/admin/staff/StaffManagement';
+import AdminRoute from '../components/auth/AdminRoute';
 
 const AdminStaff: React.FC = () => {
   return (
-    <AdminLayout>
-      <StaffManagement />
-    </AdminLayout>
+    <AdminRoute>
+      <AdminLayout>
+        <StaffManagement />
+      </AdminLayout>
+    </AdminRoute>
   );
 };
 

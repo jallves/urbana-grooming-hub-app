@@ -3,46 +3,130 @@ import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Shield } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminRouteProps {
   children: React.ReactNode;
+  allowBarber?: boolean; // New prop to specify if barbers are allowed
+  requiredModule?: string; // New prop to specify required module
 }
 
-const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+const AdminRoute: React.FC<AdminRouteProps> = ({ 
+  children, 
+  allowBarber = false,
+  requiredModule
+}) => {
   const { user, isAdmin, loading } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
   
+  // Check for barber role
+  const [isBarber, setIsBarber] = React.useState<boolean | null>(null);
+  const [hasModuleAccess, setHasModuleAccess] = React.useState<boolean>(false);
+  const [checkingAccess, setCheckingAccess] = React.useState<boolean>(true);
+  
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        console.log('AdminRoute: Usuário não autenticado, redirecionando para /auth');
-      } else if (!isAdmin && user.email !== 'joao.colimoides@gmail.com') {
-        console.log('AdminRoute: Usuário não é admin:', user.email);
-        toast({
-          title: "Acesso Restrito",
-          description: "Você não tem permissão para acessar o painel administrativo.",
-          variant: "destructive",
-        });
-      } else {
-        console.log('AdminRoute: Acesso permitido para o usuário admin:', user.email);
-      }
+    if (!loading && user) {
+      const checkBarberRole = async () => {
+        try {
+          // If already verified as admin, skip further checks
+          if (isAdmin) {
+            setIsBarber(false); // Admin is not considered barber
+            setHasModuleAccess(true); // Admin has access to everything
+            setCheckingAccess(false);
+            return;
+          }
+          
+          const { data, error } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('role', 'barber')
+            .maybeSingle();
+          
+          if (error) {
+            console.error('Error checking barber role:', error);
+            setIsBarber(false);
+          } else {
+            setIsBarber(!!data);
+            
+            // If user is a barber and we need to check module access
+            if (data && requiredModule) {
+              checkModuleAccess(user.id, requiredModule);
+            } else {
+              setCheckingAccess(false);
+            }
+          }
+        } catch (error) {
+          console.error('Error in barber role check:', error);
+          setIsBarber(false);
+          setCheckingAccess(false);
+        }
+      };
+      
+      checkBarberRole();
+    } else if (!loading) {
+      setIsBarber(false);
+      setCheckingAccess(false);
     }
-  }, [loading, user, isAdmin, toast]);
+  }, [user, loading, isAdmin, requiredModule]);
   
-  // Exibir mensagem detalhada de debug no console
-  console.log('AdminRoute: Estado atual', { 
-    isLoading: loading, 
-    isAuthenticated: !!user, 
-    userEmail: user?.email, 
-    isAdmin: isAdmin,
-    path: location.pathname,
-    redirectTo: '/auth',
-    currentState: location.state
-  });
+  // Check for module access
+  const checkModuleAccess = async (userId: string, moduleId: string) => {
+    try {
+      // Get staff ID first
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('email', user?.email)
+        .maybeSingle();
+        
+      if (staffError || !staffData) {
+        console.error('Staff record not found:', staffError || 'No record');
+        setHasModuleAccess(false);
+        setCheckingAccess(false);
+        return;
+      }
+      
+      // Then check module access
+      const { data, error } = await supabase
+        .from('staff_module_access')
+        .select('*')
+        .eq('staff_id', staffData.id)
+        .eq('module_id', moduleId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('Error checking module access:', error);
+        setHasModuleAccess(false);
+      } else {
+        setHasModuleAccess(!!data);
+      }
+    } catch (error) {
+      console.error('Error checking module access:', error);
+      setHasModuleAccess(false);
+    } finally {
+      setCheckingAccess(false);
+    }
+  };
   
-  // Se ainda estiver carregando, mostrar um spinner
-  if (loading) {
+  // Debug logging
+  useEffect(() => {
+    console.log('AdminRoute: Access state', { 
+      isLoading: loading || checkingAccess, 
+      isAuthenticated: !!user, 
+      isAdmin,
+      isBarber,
+      allowBarber,
+      requiredModule,
+      hasModuleAccess,
+      path: location.pathname
+    });
+  }, [loading, checkingAccess, user, isAdmin, isBarber, allowBarber, requiredModule, hasModuleAccess, location.pathname]);
+  
+  // If still loading, show spinner
+  if (loading || checkingAccess) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
@@ -51,27 +135,56 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     );
   }
   
-  // Se não estiver autenticado, redirecionar para a página de login com o state preservado
+  // If not authenticated, redirect to login
   if (!user) {
-    console.log('AdminRoute: Redirecionando para /auth pois usuário não está autenticado');
+    console.log('AdminRoute: Redirecting to /auth (not authenticated)');
+    toast({
+      title: 'Acesso Restrito',
+      description: 'Você precisa estar logado para acessar esta página',
+      variant: 'destructive',
+    });
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
   
-  // Verificação especial para o email específico
+  // Special case for specific email
   if (user.email === 'joao.colimoides@gmail.com') {
-    console.log('AdminRoute: Permitindo acesso para usuário especial:', user.email);
+    console.log('AdminRoute: Allowing access for special user');
     return <>{children}</>;
   }
   
-  // Se não for admin, redirecionar para a página principal
-  if (!isAdmin) {
-    console.log("AdminRoute: Redirecionando para / pois usuário não é admin:", user.email);
-    return <Navigate to="/" replace />;
+  // Access control based on roles
+  if (isAdmin) {
+    console.log('AdminRoute: Allowing access for admin');
+    return <>{children}</>;
   }
   
-  // Se for admin, permitir acesso
-  console.log('AdminRoute: Renderizando conteúdo admin para', user.email);
-  return <>{children}</>;
+  // Barber with allowed access to specific page
+  if (isBarber && allowBarber) {
+    // If module check is required, verify access
+    if (requiredModule && !hasModuleAccess) {
+      console.log(`AdminRoute: Barber doesn't have access to module ${requiredModule}`);
+      toast({
+        title: 'Acesso Restrito',
+        description: 'Você não tem permissão para acessar esta seção',
+        variant: 'destructive',
+      });
+      return <Navigate to="/barbeiro/dashboard" replace />;
+    }
+    
+    console.log('AdminRoute: Allowing access for barber with permission');
+    return <>{children}</>;
+  }
+  
+  // Default: No access, redirect to appropriate location
+  console.log(`AdminRoute: Access denied, redirecting ${isBarber ? 'barber' : 'user'} to appropriate page`);
+  toast({
+    title: 'Acesso Restrito',
+    description: 'Você não tem permissão para acessar o painel administrativo',
+    variant: 'destructive',
+  });
+  
+  // Redirect barbers to barber dashboard, regular users to home
+  return <Navigate to={isBarber ? "/barbeiro/dashboard" : "/"} replace />;
 };
 
 export default AdminRoute;
