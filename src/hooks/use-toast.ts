@@ -133,7 +133,8 @@ function dispatch(action: Action) {
   });
 }
 
-type Toast = Omit<ToasterToast, "id">;
+// Fixed: Updated the Toast type to include optional id property
+type Toast = Omit<ToasterToast, "id"> & { id?: string };
 
 function toast(props: Toast) {
   const id = props.id || generateId();
