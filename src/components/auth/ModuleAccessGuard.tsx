@@ -2,6 +2,7 @@
 import React from 'react';
 import { useModuleAccess } from '../admin/staff/hooks/useModuleAccess';
 import { Shield } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ModuleAccessGuardProps {
   moduleId: string;
@@ -14,7 +15,13 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   children,
   fallback
 }) => {
+  const { isAdmin } = useAuth();
   const { hasAccess, loading } = useModuleAccess(moduleId);
+
+  // Admin has access to everything
+  if (isAdmin) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (

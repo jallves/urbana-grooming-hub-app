@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { supabaseRPC } from '@/types/supabase-rpc';
 
 interface StaffModuleAccessProps {
@@ -17,8 +16,11 @@ interface StaffModuleAccessProps {
 const availableModules = [
   { id: 'appointments', name: 'Agendamentos', description: 'Gestão de horários e agendamentos' },
   { id: 'clients', name: 'Clientes', description: 'Cadastro e gestão de clientes' },
-  { id: 'services', name: 'Serviços', description: 'Visualização dos serviços oferecidos' },
-  { id: 'reports', name: 'Relatórios', description: 'Relatórios financeiros e de desempenho' }
+  { id: 'services', name: 'Serviços', description: 'Gestão de serviços oferecidos' },
+  { id: 'products', name: 'Produtos', description: 'Gestão de produtos e estoque' },
+  { id: 'finance', name: 'Financeiro', description: 'Controle financeiro e pagamentos' },
+  { id: 'reports', name: 'Relatórios', description: 'Relatórios e análises' },
+  { id: 'marketing', name: 'Marketing', description: 'Gestão de campanhas e promoções' }
 ];
 
 export function StaffModuleAccess({ staffId, onSuccess }: StaffModuleAccessProps) {

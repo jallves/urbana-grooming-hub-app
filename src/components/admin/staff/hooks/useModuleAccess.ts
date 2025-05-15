@@ -35,6 +35,22 @@ export const useModuleAccess = (requiredModuleId?: string) => {
       }
 
       try {
+        // Check if the user has a barber role
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'barber')
+          .single();
+
+        if (roleError || !roleData) {
+          console.log('useModuleAccess - User is not a barber:', roleError);
+          setModuleAccess([]);
+          setHasAccess(false);
+          setLoading(false);
+          return;
+        }
+
         // First, get the staff record for this user
         console.log('useModuleAccess - Looking up staff record for email:', user.email);
         const { data: staffData, error: staffError } = await supabase

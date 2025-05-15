@@ -2,161 +2,117 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Plus, Shield } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import StaffForm from '../staff/StaffForm';
 import BarberList from './BarberList';
-import { BarberModuleAccess } from './BarberModuleAccess';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import BarberForm from './BarberForm';
+import { Button } from '@/components/ui/button';
+import { Plus, Shield } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { useStaffStorage } from '../staff/useStaffStorage';
 
 const BarberManagement: React.FC = () => {
   const [isAddingBarber, setIsAddingBarber] = useState(false);
-  const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('barbers');
-  const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
-  const [selectedBarberName, setSelectedBarberName] = useState<string>('');
+  const [editingBarber, setEditingBarber] = useState<string | null>(null);
   
+  // Initialize staff photos storage bucket (shared with staff management)
+  useStaffStorage();
+
   const { data: barbers, isLoading, error, refetch } = useQuery({
     queryKey: ['barbers'],
     queryFn: async () => {
-      // Busca apenas staff com role contendo "barber" ou "barbeiro"
       const { data, error } = await supabase
         .from('staff')
         .select('*')
-        .or('role.ilike.%barber%,role.ilike.%barbeiro%')
+        .eq('role', 'barber')
         .order('name');
       
       if (error) {
-        console.error('Erro ao carregar barbeiros:', error);
         throw new Error(error.message);
       }
       
-      return data || [];
+      return data;
     }
   });
 
   if (error) {
-    toast({
-      variant: "destructive",
-      title: "Erro ao carregar barbeiros",
+    toast.error('Erro ao carregar barbeiros', {
       description: (error as Error).message
     });
   }
 
   const handleAddBarber = () => {
-    setEditingBarberId(null);
+    setEditingBarber(null);
     setIsAddingBarber(true);
-    setActiveTab('barbers');
   };
 
   const handleEditBarber = (id: string) => {
     setIsAddingBarber(false);
-    setEditingBarberId(id);
-    setActiveTab('barbers');
-  };
-
-  const handleManageAccess = (id: string, name: string) => {
-    setSelectedBarber(id);
-    setSelectedBarberName(name);
-    setActiveTab('access');
+    setEditingBarber(id);
   };
 
   const handleCancelForm = () => {
     setIsAddingBarber(false);
-    setEditingBarberId(null);
+    setEditingBarber(null);
   };
 
   const handleSuccess = () => {
     refetch();
     setIsAddingBarber(false);
-    setEditingBarberId(null);
+    setEditingBarber(null);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Gerenciamento de Barbeiros</h2>
-        {!isAddingBarber && !editingBarberId && (
+        <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
+        {!isAddingBarber && !editingBarber && (
           <Button onClick={handleAddBarber}>
-            <Plus className="mr-2 h-4 w-4" /> Adicionar Barbeiro
+            <Plus className="mr-2 h-4 w-4" /> Novo Barbeiro
           </Button>
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="barbers" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Barbeiros
-          </TabsTrigger>
-          {selectedBarber && (
-            <TabsTrigger value="access" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Permissões de Acesso
-            </TabsTrigger>
-          )}
-        </TabsList>
-        
-        <TabsContent value="barbers">
-          {(isAddingBarber || editingBarberId) && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>{editingBarberId ? 'Editar Barbeiro' : 'Novo Barbeiro'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <StaffForm 
-                  staffId={editingBarberId}
-                  onCancel={handleCancelForm}
-                  onSuccess={handleSuccess}
-                  defaultRole="Barbeiro"
-                />
-              </CardContent>
-            </Card>
-          )}
+      {!isAddingBarber && !editingBarber && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Controle de Acesso aos Módulos
+            </CardTitle>
+            <CardDescription>
+              Cada barbeiro pode ter permissões diferentes para acessar os módulos do sistema.
+              Edite um barbeiro e acesse a aba "Permissões de Acesso" para configurar.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
-          <Card>
-            <CardContent className="pt-6">
-              <BarberList 
-                barbers={barbers || []}
-                isLoading={isLoading}
-                onEdit={handleEditBarber}
-                onDelete={() => refetch()}
-                onManageAccess={handleManageAccess}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {selectedBarber && (
-          <TabsContent value="access">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Configurar Permissões: {selectedBarberName}
-                </CardTitle>
-                <CardDescription>
-                  Defina quais recursos este barbeiro poderá acessar no sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BarberModuleAccess 
-                  barberId={selectedBarber}
-                  onSuccess={() => {
-                    toast({
-                      title: "Permissões atualizadas",
-                      description: `As permissões de ${selectedBarberName} foram atualizadas com sucesso`,
-                      variant: "default"
-                    });
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-      </Tabs>
+      {(isAddingBarber || editingBarber) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingBarber ? 'Editar Barbeiro' : 'Novo Barbeiro'}</CardTitle>
+            <CardDescription>
+              {editingBarber 
+                ? 'Edite as informações e permissões do barbeiro' 
+                : 'Preencha as informações para cadastrar um novo barbeiro no sistema'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BarberForm 
+              barberId={editingBarber}
+              onCancel={handleCancelForm}
+              onSuccess={handleSuccess}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <BarberList 
+        barbers={barbers || []}
+        isLoading={isLoading}
+        onEdit={handleEditBarber}
+        onDelete={() => refetch()}
+      />
     </div>
   );
 };
