@@ -3,6 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AppointmentSection from './appointment/AppointmentSection';
+import { supabase } from '@/integrations/supabase/client';
 
 const Appointment: React.FC = () => {
   const { user, isAdmin } = useAuth();
@@ -17,10 +18,8 @@ const Appointment: React.FC = () => {
     // Check if they exist in the staff table with role 'barber'
     else if (user && !isAdmin) {
       const checkIfBarber = async () => {
-        const { data: supabase } = await import('@/integrations/supabase/client');
-        
         try {
-          const { data } = await supabase.supabase
+          const { data } = await supabase
             .from('staff')
             .select('role')
             .eq('email', user.email)

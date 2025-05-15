@@ -100,7 +100,7 @@ const BarberCommissions: React.FC = () => {
   });
   
   // Calculate total commission
-  const totalCommission = filteredCommissions?.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0) || 0;
+  const totalCommission = filteredCommissions?.reduce((sum, item) => sum + parseFloat(item.amount.toString() || '0'), 0) || 0;
   
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
@@ -226,10 +226,10 @@ const BarberCommissions: React.FC = () => {
                     <TableCell>{commission.appointment?.client?.name || 'N/A'}</TableCell>
                     <TableCell>{commission.appointment?.service?.name || 'N/A'}</TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(parseFloat(commission.appointment?.service?.price || '0'))}
+                      {formatCurrency(parseFloat(commission.appointment?.service?.price?.toString() || '0'))}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatCurrency(parseFloat(commission.amount || '0'))}
+                      {formatCurrency(parseFloat(commission.amount?.toString() || '0'))}
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium 
