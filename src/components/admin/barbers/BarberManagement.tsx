@@ -4,14 +4,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { Plus, Shield } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import StaffForm from '../staff/StaffForm';
 import BarberList from './BarberList';
-import { toast } from '@/components/ui/use-toast';
+import { BarberModuleAccess } from './BarberModuleAccess';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const BarberManagement: React.FC = () => {
   const [isAddingBarber, setIsAddingBarber] = useState(false);
   const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('barbers');
+  const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
+  const [selectedBarberName, setSelectedBarberName] = useState<string>('');
   
   const { data: barbers, isLoading, error, refetch } = useQuery({
     queryKey: ['barbers'],
@@ -43,11 +48,19 @@ const BarberManagement: React.FC = () => {
   const handleAddBarber = () => {
     setEditingBarberId(null);
     setIsAddingBarber(true);
+    setActiveTab('barbers');
   };
 
   const handleEditBarber = (id: string) => {
     setIsAddingBarber(false);
     setEditingBarberId(id);
+    setActiveTab('barbers');
+  };
+
+  const handleManageAccess = (id: string, name: string) => {
+    setSelectedBarber(id);
+    setSelectedBarberName(name);
+    setActiveTab('access');
   };
 
   const handleCancelForm = () => {
@@ -72,28 +85,78 @@ const BarberManagement: React.FC = () => {
         )}
       </div>
 
-      {(isAddingBarber || editingBarberId) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{editingBarberId ? 'Editar Barbeiro' : 'Novo Barbeiro'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StaffForm 
-              staffId={editingBarberId}
-              onCancel={handleCancelForm}
-              onSuccess={handleSuccess}
-              defaultRole="Barbeiro"
-            />
-          </CardContent>
-        </Card>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="barbers" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Barbeiros
+          </TabsTrigger>
+          {selectedBarber && (
+            <TabsTrigger value="access" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Permissões de Acesso
+            </TabsTrigger>
+          )}
+        </TabsList>
+        
+        <TabsContent value="barbers">
+          {(isAddingBarber || editingBarberId) && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>{editingBarberId ? 'Editar Barbeiro' : 'Novo Barbeiro'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StaffForm 
+                  staffId={editingBarberId}
+                  onCancel={handleCancelForm}
+                  onSuccess={handleSuccess}
+                  defaultRole="Barbeiro"
+                />
+              </CardContent>
+            </Card>
+          )}
 
-      <BarberList 
-        barbers={barbers || []}
-        isLoading={isLoading}
-        onEdit={handleEditBarber}
-        onDelete={() => refetch()}
-      />
+          <Card>
+            <CardContent className="pt-6">
+              <BarberList 
+                barbers={barbers || []}
+                isLoading={isLoading}
+                onEdit={handleEditBarber}
+                onDelete={() => refetch()}
+                onManageAccess={handleManageAccess}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {selectedBarber && (
+          <TabsContent value="access">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Configurar Permissões: {selectedBarberName}
+                </CardTitle>
+                <CardDescription>
+                  Defina quais recursos este barbeiro poderá acessar no sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BarberModuleAccess 
+                  barberId={selectedBarber}
+                  onSuccess={() => {
+                    toast({
+                      title: "Permissões atualizadas",
+                      description: `As permissões de ${selectedBarberName} foram atualizadas com sucesso`,
+                      variant: "default"
+                    });
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 };
