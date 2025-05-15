@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Calendar, Users, Scissors, ChartBar, Lock, Settings, Shield } from 'lucide-react';
+import { Home, Calendar, Users, Scissors, ChartBar, Lock, Settings, Shield, DollarSign } from 'lucide-react';
 import { useModuleAccess } from '@/components/admin/staff/hooks/useModuleAccess';
 
 const BarberSidebar: React.FC = () => {
@@ -15,7 +15,7 @@ const BarberSidebar: React.FC = () => {
       moduleId: null // Always accessible
     },
     { 
-      name: 'Agendamentos', 
+      name: 'Agendamentos',
       href: '/barbeiro/agendamentos', 
       icon: <Calendar className="h-5 w-5" />,
       moduleId: 'appointments'
