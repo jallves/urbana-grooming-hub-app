@@ -41,28 +41,57 @@ export const useModuleAccess = (requiredModuleId?: string) => {
           .select('role')
           .eq('user_id', user.id)
           .eq('role', 'barber')
-          .single();
+          .maybeSingle();
 
-        if (roleError || !roleData) {
-          console.log('useModuleAccess - User is not a barber:', roleError);
+        if (roleError) {
+          console.error('useModuleAccess - Error checking barber role:', roleError);
           setModuleAccess([]);
           setHasAccess(false);
           setLoading(false);
           return;
         }
 
+        if (!roleData) {
+          console.log('useModuleAccess - User is not a barber');
+          setModuleAccess([]);
+          setHasAccess(false);
+          setLoading(false);
+          return;
+        }
+        
+        console.log('useModuleAccess - User is a barber, checking staff record');
+
         // First, get the staff record for this user
-        console.log('useModuleAccess - Looking up staff record for email:', user.email);
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
           .select('id')
           .eq('email', user.email)
-          .single();
+          .maybeSingle();
 
         if (staffError || !staffData) {
-          console.error('useModuleAccess - Staff record not found:', staffError);
-          setModuleAccess([]);
-          setHasAccess(false);
+          console.error('useModuleAccess - Staff record not found:', staffError || 'No record');
+          // If staff record not found, check directly by user ID
+          const { data: directModules, error: directError } = await supabase
+            .from('staff_module_access')
+            .select('module_id')
+            .eq('staff_id', user.id);
+            
+          if (directError) {
+            console.error('useModuleAccess - Error finding direct modules:', directError);
+            setModuleAccess([]);
+            setHasAccess(false);
+          } else if (directModules && directModules.length > 0) {
+            const modules = directModules.map(item => item.module_id);
+            console.log('useModuleAccess - Direct modules retrieved:', modules);
+            setModuleAccess(modules);
+            setHasAccess(requiredModuleId ? modules.includes(requiredModuleId) : true);
+          } else {
+            // Default access - all barbers get these modules by default
+            const defaultModules = ['appointments', 'reports'];
+            console.log('useModuleAccess - Using default modules:', defaultModules);
+            setModuleAccess(defaultModules);
+            setHasAccess(requiredModuleId ? defaultModules.includes(requiredModuleId) : true);
+          }
           setLoading(false);
           return;
         }

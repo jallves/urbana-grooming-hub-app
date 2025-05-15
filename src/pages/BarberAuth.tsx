@@ -29,23 +29,36 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const BarberAuth = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [checkingRole, setCheckingRole] = useState<boolean>(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
 
   // Check if user is already authenticated and has barber role
   useEffect(() => {
-    if (!authLoading) {
-      if (user) {
-        // Check if the user has a barber role
-        checkBarberRole(user.id);
-      }
+    if (!authLoading && user) {
+      console.log('BarberAuth - User already authenticated, checking roles');
+      setCheckingRole(true);
+      checkBarberRole(user.id);
     }
   }, [user, authLoading, navigate]);
 
   // Check if the user has a barber role
   const checkBarberRole = async (userId: string) => {
+    console.log('BarberAuth - Checking barber role for user ID:', userId);
+    
     try {
+      // If user is admin, redirect to admin dashboard
+      if (isAdmin) {
+        console.log('BarberAuth - User is admin, redirecting to admin dashboard');
+        toast({
+          title: 'Login realizado com sucesso',
+          description: 'Redirecionando para o painel administrativo',
+        });
+        navigate('/admin');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -53,27 +66,44 @@ const BarberAuth = () => {
         .eq('role', 'barber');
       
       if (error) {
-        console.error('Erro ao verificar função do usuário:', error);
+        console.error('BarberAuth - Erro ao verificar função do barbeiro:', error);
+        toast({
+          title: 'Erro de verificação',
+          description: 'Não foi possível verificar seu papel no sistema',
+          variant: 'destructive',
+        });
         return;
       }
       
       // If user has barber role, redirect to barber dashboard
       if (data && data.length > 0) {
-        navigate('/barbeiro');
-      } else if (isAdmin) {
-        // If user is admin, redirect to admin dashboard
-        navigate('/admin');
+        console.log('BarberAuth - User has barber role, redirecting to barber dashboard');
+        toast({
+          title: 'Login realizado com sucesso',
+          description: 'Bem-vindo ao painel do barbeiro',
+        });
+        navigate('/barbeiro/dashboard');
       } else {
-        // If user is not barber or admin, show error
+        // If user is not barber, show error
+        console.log('BarberAuth - User does not have barber role');
         toast({
           title: 'Acesso não autorizado',
           description: 'Você não tem permissão para acessar a área do barbeiro',
           variant: 'destructive',
         });
+        // Sign out the user since they don't have barber role
+        await supabase.auth.signOut();
         navigate('/');
       }
     } catch (error) {
-      console.error('Erro ao verificar papel do barbeiro:', error);
+      console.error('BarberAuth - Erro ao verificar papel do barbeiro:', error);
+      toast({
+        title: 'Erro de verificação',
+        description: 'Ocorreu um erro ao verificar suas permissões',
+        variant: 'destructive',
+      });
+    } finally {
+      setCheckingRole(false);
     }
   };
 
@@ -88,25 +118,33 @@ const BarberAuth = () => {
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('BarberAuth - Attempting login with email:', data.email);
+      
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
+        console.error('BarberAuth - Login error:', error);
         toast({
           title: 'Erro ao fazer login',
           description: error.message,
           variant: 'destructive',
         });
-      } else {
-        // Authentication successful, role check is handled by useEffect
+      } else if (authData?.user) {
+        console.log('BarberAuth - Login successful, checking barber role');
         toast({
           title: 'Login realizado com sucesso',
           description: 'Verificando suas permissões...',
         });
+        
+        // Check barber role after successful login
+        setCheckingRole(true);
+        await checkBarberRole(authData.user.id);
       }
     } catch (error: any) {
+      console.error('BarberAuth - Unexpected error during login:', error);
       toast({
         title: 'Erro ao fazer login',
         description: error.message || 'Ocorreu um erro inesperado',
@@ -116,6 +154,17 @@ const BarberAuth = () => {
       setLoading(false);
     }
   };
+
+  if (authLoading || checkingRole) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
+          <p className="text-white">{checkingRole ? 'Verificando permissões...' : 'Carregando...'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-black px-4">
@@ -189,8 +238,8 @@ const BarberAuth = () => {
                 )}
               />
               
-              <Button type="submit" className="w-full bg-white text-black hover:bg-gray-200" disabled={loading}>
-                {loading ? 'Entrando...' : 'Entrar'}
+              <Button type="submit" className="w-full bg-white text-black hover:bg-gray-200" disabled={loading || checkingRole}>
+                {loading ? 'Entrando...' : (checkingRole ? 'Verificando...' : 'Entrar')}
               </Button>
 
               <div className="text-center text-sm text-gray-400 mt-4">

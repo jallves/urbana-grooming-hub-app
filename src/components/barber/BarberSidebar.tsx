@@ -1,11 +1,18 @@
 
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, Calendar, Users, Scissors, ChartBar, Lock, Settings, Shield, DollarSign } from 'lucide-react';
 import { useModuleAccess } from '@/components/admin/staff/hooks/useModuleAccess';
+import { useToast } from '@/hooks/use-toast';
 
 const BarberSidebar: React.FC = () => {
   const { moduleAccess, loading } = useModuleAccess();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    console.log("BarberSidebar - Module access:", moduleAccess);
+  }, [moduleAccess]);
   
   const navItems = [
     { 
@@ -33,9 +40,9 @@ const BarberSidebar: React.FC = () => {
       moduleId: 'services'
     },
     { 
-      name: 'Relatórios', 
-      href: '/barbeiro/relatorios', 
-      icon: <ChartBar className="h-5 w-5" />,
+      name: 'Comissões', 
+      href: '/barbeiro/comissoes', 
+      icon: <DollarSign className="h-5 w-5" />,
       moduleId: 'reports'
     },
     {
@@ -52,8 +59,9 @@ const BarberSidebar: React.FC = () => {
     }
   ];
 
+  // Filter items based on module access or if they require no specific access
   const filteredNavItems = navItems.filter(item => 
-    item.moduleId === null || moduleAccess.includes(item.moduleId)
+    item.moduleId === null || moduleAccess?.includes(item.moduleId)
   );
 
   if (loading) {
@@ -83,10 +91,20 @@ const BarberSidebar: React.FC = () => {
                     : 'hover:bg-urbana-gray/20 text-white'
                 }`
               }
+              onClick={(e) => {
+                if (item.moduleId && !moduleAccess?.includes(item.moduleId)) {
+                  e.preventDefault();
+                  toast({
+                    title: "Acesso restrito",
+                    description: "Você não tem permissão para acessar este módulo",
+                    variant: "destructive"
+                  });
+                }
+              }}
             >
               {item.icon}
               <span className="ml-3">{item.name}</span>
-              {item.moduleId && (
+              {item.moduleId && !moduleAccess?.includes(item.moduleId) && (
                 <Lock className="ml-auto h-3 w-3 opacity-50" />
               )}
             </NavLink>
