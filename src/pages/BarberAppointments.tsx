@@ -3,13 +3,13 @@ import React from 'react';
 import BarberLayout from '../components/barber/BarberLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, DollarSign } from 'lucide-react';
-import BarberAppointments from '@/components/barber/BarberAppointments';
+import BarberAppointmentsComponent from '@/components/barber/BarberAppointments';
 import BarberCommissions from './BarberCommissions';
-import ModuleAccessGuard from '@/components/auth/ModuleAccessGuard';
+import BarberRoute from '@/components/auth/BarberRoute';
 
 const BarberAppointmentsPage: React.FC = () => {
   return (
-    <ModuleAccessGuard moduleId="appointments">
+    <BarberRoute>
       <BarberLayout title="Agendamentos e Comissões">
         <Tabs defaultValue="appointments" className="space-y-6">
           <TabsList>
@@ -24,7 +24,7 @@ const BarberAppointmentsPage: React.FC = () => {
           </TabsList>
           
           <TabsContent value="appointments">
-            <BarberAppointments />
+            <BarberAppointmentsComponent />
           </TabsContent>
           
           <TabsContent value="commissions">
@@ -32,7 +32,7 @@ const BarberAppointmentsPage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </BarberLayout>
-    </ModuleAccessGuard>
+    </BarberRoute>
   );
 };
 

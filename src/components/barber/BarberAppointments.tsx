@@ -68,14 +68,26 @@ const BarberAppointments = () => {
   const { data: appointmentsData, isLoading } = useQuery({
     queryKey: ['barber-appointments', user?.id, filter],
     queryFn: async () => {
+      if (!user?.email) {
+        return [];
+      }
+      
       // First find the barber record associated with this user
       const { data: staffData, error: staffError } = await supabase
         .from('staff')
         .select('id, name')
-        .eq('email', user?.email)
+        .eq('email', user.email)
         .single();
         
-      if (staffError) throw new Error(staffError.message);
+      if (staffError) {
+        console.error('Error fetching staff data:', staffError);
+        return [];
+      }
+      
+      if (!staffData) {
+        console.error('Staff data not found for email:', user.email);
+        return [];
+      }
       
       let query = supabase
         .from('appointments')
@@ -94,25 +106,33 @@ const BarberAppointments = () => {
       
       const { data, error } = await query;
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        return [];
+      }
+      
       return data || [];
     },
     enabled: !!user?.email,
   });
   
   // Filter appointments by search query
-  const filteredAppointments = appointmentsData?.filter(appointment => {
-    if (!searchQuery) return true;
+  const filteredAppointments = React.useMemo(() => {
+    if (!appointmentsData) return [];
     
-    const clientName = appointment.client?.name?.toLowerCase() || '';
-    const clientPhone = appointment.client?.phone?.toLowerCase() || '';
-    const serviceName = appointment.service?.name?.toLowerCase() || '';
-    const query = searchQuery.toLowerCase();
+    if (!searchQuery) return appointmentsData;
     
-    return clientName.includes(query) || 
-           clientPhone.includes(query) || 
-           serviceName.includes(query);
-  });
+    return appointmentsData.filter(appointment => {
+      const clientName = appointment.client?.name?.toLowerCase() || '';
+      const clientPhone = appointment.client?.phone?.toLowerCase() || '';
+      const serviceName = appointment.service?.name?.toLowerCase() || '';
+      const query = searchQuery.toLowerCase();
+      
+      return clientName.includes(query) || 
+             clientPhone.includes(query) || 
+             serviceName.includes(query);
+    });
+  }, [appointmentsData, searchQuery]);
 
   // Format the date and time
   const formatAppointmentTime = (dateString: string) => {
