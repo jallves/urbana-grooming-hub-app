@@ -3,23 +3,22 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface BarberRouteProps {
   children: React.ReactNode;
 }
 
 const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isBarber } = useAuth();
   const location = useLocation();
-  const [isBarber, setIsBarber] = useState<boolean | null>(null);
   const [checkingRole, setCheckingRole] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkBarberRole = async () => {
       if (!user) {
         console.log('BarberRoute - No user found');
-        setIsBarber(false);
         setCheckingRole(false);
         return;
       }
@@ -27,7 +26,13 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
       // Admin can access everything
       if (isAdmin) {
         console.log('BarberRoute - User is admin, granting access');
-        setIsBarber(true);
+        setCheckingRole(false);
+        return;
+      }
+      
+      // If barber flag is already set in context, use it
+      if (isBarber) {
+        console.log('BarberRoute - User is known barber, granting access');
         setCheckingRole(false);
         return;
       }
@@ -49,11 +54,11 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
             description: 'Não foi possível verificar suas permissões',
             variant: 'destructive',
           });
-          setIsBarber(false);
+          setCheckingRole(false);
         } else {
           const hasBarberRole = roleData && roleData.length > 0;
           console.log('BarberRoute - User has barber role:', hasBarberRole);
-          setIsBarber(hasBarberRole);
+          setCheckingRole(false);
         }
       } catch (error) {
         console.error('BarberRoute - Error in barber role check:', error);
@@ -62,8 +67,6 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
           description: 'Ocorreu um erro ao verificar seu acesso',
           variant: 'destructive',
         });
-        setIsBarber(false);
-      } finally {
         setCheckingRole(false);
       }
     };
@@ -71,7 +74,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     if (!loading) {
       checkBarberRole();
     }
-  }, [user, loading, isAdmin]);
+  }, [user, loading, isAdmin, isBarber, toast]);
 
   // Show loading while checking authentication or role
   if (loading || checkingRole) {
@@ -92,9 +95,9 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  // If not a barber, redirect to an unauthorized page or home
-  if (!isBarber) {
-    console.log('BarberRoute - Not a barber, redirecting to home');
+  // If not a barber or admin, redirect to an unauthorized page or home
+  if (!isBarber && !isAdmin) {
+    console.log('BarberRoute - Not a barber or admin, redirecting to home');
     toast({
       title: 'Acesso Negado',
       description: 'Você não tem permissão para acessar a área do barbeiro',
@@ -103,7 +106,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  // If authenticated and has barber role, render the protected content
+  // If authenticated and has barber role or is admin, render the protected content
   return <>{children}</>;
 };
 

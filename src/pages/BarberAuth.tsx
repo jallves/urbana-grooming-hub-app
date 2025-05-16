@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,7 +31,7 @@ const BarberAuth = () => {
   const [checkingRole, setCheckingRole] = useState<boolean>(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isBarber, loading: authLoading } = useAuth();
 
   // Check if user is already authenticated and has barber role
   useEffect(() => {
@@ -56,6 +55,17 @@ const BarberAuth = () => {
           description: 'Redirecionando para o painel administrativo',
         });
         navigate('/admin');
+        return;
+      }
+
+      // If user is a barber, they can access the barber dashboard
+      if (isBarber) {
+        console.log('BarberAuth - User is barber, redirecting to barber dashboard');
+        toast({
+          title: 'Login realizado com sucesso',
+          description: 'Bem-vindo ao painel do barbeiro',
+        });
+        navigate('/barbeiro/dashboard');
         return;
       }
 
