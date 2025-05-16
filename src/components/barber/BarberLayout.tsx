@@ -35,9 +35,19 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Agenda d
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-black text-white overflow-x-hidden">
-        <BarberSidebar />
-        <div className="flex-1 p-0 overflow-auto">
+      <div className="min-h-screen flex w-full bg-black text-white">
+        {/* Fixed sidebar */}
+        <div className="fixed inset-y-0 left-0 z-40 w-64 hidden md:block">
+          <BarberSidebar />
+        </div>
+        
+        {/* Mobile sidebar - shown via a drawer or sheet */}
+        <div className="md:hidden">
+          <BarberSidebar />
+        </div>
+        
+        {/* Main content with padding to account for fixed sidebar */}
+        <div className="flex-1 md:ml-64 p-0 overflow-auto">
           <header className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-3 sticky top-0 z-10">
             <div className="flex justify-between items-center">
               <div>
