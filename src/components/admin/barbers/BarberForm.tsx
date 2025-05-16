@@ -1,54 +1,21 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, Settings, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useStaffForm } from '../staff/hooks/useStaffForm';
 import StaffProfileImage from '../staff/components/StaffProfileImage';
 import StaffPersonalInfo from '../staff/components/StaffPersonalInfo';
 import StaffProfessionalInfo from '../staff/components/StaffProfessionalInfo';
 import StaffActiveStatus from '../staff/components/StaffActiveStatus';
 import { BarberModuleAccess } from './BarberModuleAccess';
-
-const barberFormSchema = z.object({
-  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres' }),
-  email: z.string().email({ message: 'E-mail inválido' }),
-  phone: z.string().nullable().optional(),
-  role: z.string().default('barber'),
-  is_active: z.boolean().default(true),
-  image_url: z.string().nullable().optional(),
-  experience: z.string().nullable().optional(),
-  commission_rate: z.number().nullable().optional(),
-  specialties: z.string().nullable().optional(),
-  password: z.string()
-    .min(6, 'A senha deve ter pelo menos 6 caracteres')
-    .refine(
-      (password) => /[A-Z]/.test(password),
-      'A senha deve conter pelo menos uma letra maiúscula'
-    )
-    .refine(
-      (password) => /[a-z]/.test(password),
-      'A senha deve conter pelo menos uma letra minúscula'
-    )
-    .refine(
-      (password) => /[0-9]/.test(password),
-      'A senha deve conter pelo menos um número'
-    ),
-  confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'As senhas não coincidem',
-  path: ['confirmPassword'],
-});
-
-type BarberFormValues = z.infer<typeof barberFormSchema>;
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { User, Shield, Settings, Lock } from 'lucide-react';
+import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 
 interface BarberFormProps {
   barberId: string | null;
@@ -59,103 +26,102 @@ interface BarberFormProps {
 const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }) => {
   const { 
     form,
-    onSubmit: staffFormSubmit,
+    onSubmit: originalOnSubmit,
     isEditing,
     isLoadingStaff,
     handleFileChange,
     selectedFile,
     uploading,
     uploadProgress,
-    isSubmitting
+    isSubmitting: originalIsSubmitting
   } = useStaffForm(barberId, onSuccess, 'barber');
-
-  const form2 = useForm<BarberFormValues>({
-    resolver: zodResolver(barberFormSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      role: 'barber',
-      is_active: true,
-      image_url: '',
-      experience: '',
-      commission_rate: null,
-      specialties: '',
-      password: '',
-      confirmPassword: '',
-    },
-  });
-
-  // Sync the forms when staff data is loaded
-  useEffect(() => {
-    if (!isLoadingStaff && form.getValues()) {
-      const values = form.getValues();
-      form2.reset({
-        ...values,
-        password: '',
-        confirmPassword: '',
-      });
-    }
-  }, [isLoadingStaff, form]);
-
-  const onSubmit = async (values: BarberFormValues) => {
-    try {
-      // First save the staff record
-      await staffFormSubmit(values);
-      
-      // If this is a new barber, create auth account
-      if (!barberId && values.email) {
-        // Create auth account with the password
-        const { data, error } = await supabase.auth.signUp({
-          email: values.email,
-          password: values.password,
-          options: {
-            data: {
-              full_name: values.name,
-              role: 'barber'
-            },
-          }
-        });
-
-        if (error) {
-          toast.error('Erro ao criar conta de acesso', {
-            description: error.message
-          });
-          return;
-        }
-        
-        if (data?.user) {
-          // Add user to user_roles table as barber
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert([
-              { 
-                user_id: data.user.id,
-                role: 'barber'
-              }
-            ]);
   
-          if (roleError) {
-            toast.error('Erro ao definir permissões', {
-              description: roleError.message
+  const [isSubmitting, setIsSubmitting] = useState(originalIsSubmitting);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  
+  // Extended onSubmit function that also creates or updates the auth user
+  const onSubmit = async (data: any) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Save barber data first (using the original onSubmit)
+      await originalOnSubmit(data);
+      
+      // If we have an email, create or update the auth user
+      if (data.email) {
+        // Check if user already exists
+        const { data: existingUsers, error: searchError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('email', data.email)
+          .maybeSingle();
+          
+        // For new barbers with no existing user account, create one
+        if (!existingUsers && !barberId && password) {
+          if (password !== confirmPassword) {
+            toast.error('As senhas não correspondem');
+            setIsSubmitting(false);
+            return;
+          }
+          
+          if (password.length < 6) {
+            toast.error('A senha deve ter pelo menos 6 caracteres');
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Register the user
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: data.email,
+            password: password,
+            options: {
+              data: {
+                full_name: data.name,
+              },
+            }
+          });
+
+          if (signUpError) {
+            console.error('Erro ao criar conta de usuário para o barbeiro:', signUpError);
+            toast.error('Erro ao criar conta de usuário', {
+              description: signUpError.message
             });
-          } else {
-            toast.success('Conta de barbeiro criada com sucesso');
+          } else if (signUpData.user) {
+            // Add barber role
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert([{ 
+                user_id: signUpData.user.id,
+                role: 'barber'
+              }]);
+              
+            if (roleError) {
+              console.error('Erro ao adicionar role de barbeiro:', roleError);
+              toast.error('Erro ao configurar permissões de barbeiro');
+            } else {
+              toast.success('Conta de usuário criada para o barbeiro', {
+                description: 'O barbeiro já pode acessar o painel admin'
+              });
+            }
           }
         }
       }
       
+      // Call the original success handler
       onSuccess();
-    } catch (error: any) {
-      toast.error('Erro ao salvar barbeiro', {
-        description: error.message
-      });
+    } catch (error) {
+      console.error('Erro ao salvar barbeiro:', error);
+      toast.error('Erro ao salvar barbeiro');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Form {...form2}>
-      <form onSubmit={form2.handleSubmit(onSubmit)} className="space-y-6">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs defaultValue="personal" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="personal" className="flex items-center gap-2">
@@ -166,12 +132,14 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
               <Settings className="h-4 w-4" />
               Informações Profissionais
             </TabsTrigger>
-            <TabsTrigger value="access" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Acesso ao Sistema
-            </TabsTrigger>
+            {!barberId && (
+              <TabsTrigger value="account" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Conta de Acesso
+              </TabsTrigger>
+            )}
             {barberId && (
-              <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <TabsTrigger value="access" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
                 Permissões de Acesso
               </TabsTrigger>
@@ -188,7 +156,7 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
               </div>
               
               <div className="col-span-1 md:col-span-2">
-                <StaffPersonalInfo form={form2} />
+                <StaffPersonalInfo form={form} />
               </div>
             </div>
           </TabsContent>
@@ -197,55 +165,64 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
             <StaffProfessionalInfo form={form} />
             <StaffActiveStatus form={form} />
           </TabsContent>
-
-          <TabsContent value="access" className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <FormField
-                    control={form2.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha de Acesso</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="Senha para acesso ao sistema" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+          
+          <TabsContent value="account" className="space-y-4">
+            <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-md border border-yellow-200 dark:border-yellow-800 mb-4">
+              <h3 className="font-medium text-yellow-800 dark:text-yellow-300 mb-1">
+                Criação de Conta de Acesso
+              </h3>
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                Estas credenciais permitirão que o barbeiro acesse o painel administrativo.
+                A senha deve ter pelo menos 6 caracteres.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Senha
+                  </label>
+                  <Input 
+                    id="password"
+                    type={passwordVisible ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Digite uma senha"
                   />
-                  
-                  <FormField
-                    control={form2.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirmar Senha</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="Digite novamente a senha" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <div className="font-medium text-foreground">Requisitos de senha:</div>
-                    <ul className="list-disc pl-5">
-                      <li>Mínimo de 6 caracteres</li>
-                      <li>Pelo menos uma letra maiúscula</li>
-                      <li>Pelo menos uma letra minúscula</li>
-                      <li>Pelo menos um número</li>
-                    </ul>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
+                
+                <div className="space-y-2">
+                  <label htmlFor="confirm-password" className="text-sm font-medium">
+                    Confirmar Senha
+                  </label>
+                  <Input 
+                    id="confirm-password"
+                    type={passwordVisible ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirme a senha"
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="show-password"
+                    checked={passwordVisible}
+                    onChange={() => setPasswordVisible(!passwordVisible)}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor="show-password" className="text-sm">
+                    Mostrar senha
+                  </label>
+                </div>
+              </div>
+            </div>
           </TabsContent>
           
           {barberId && (
-            <TabsContent value="permissions" className="space-y-6">
+            <TabsContent value="access" className="space-y-6">
               <BarberModuleAccess barberId={barberId} onSuccess={() => {}} />
             </TabsContent>
           )}

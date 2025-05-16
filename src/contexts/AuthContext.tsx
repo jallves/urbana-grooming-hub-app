@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +9,7 @@ interface AuthContextProps {
   session: Session | null;
   user: User | null;
   isAdmin: boolean;
+  isBarber: boolean; // Add isBarber flag
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -18,6 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isBarber, setIsBarber] = useState<boolean>(false); // Track barber status
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -45,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             console.log('Sessão terminada ou inválida');
             setIsAdmin(false);
+            setIsBarber(false);
           }
         }
       );
@@ -64,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             console.log('Nenhuma sessão encontrada');
             setIsAdmin(false);
+            setIsBarber(false);
           }
         } catch (error) {
           console.error('Erro ao obter sessão:', error);
@@ -84,18 +89,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setIsAdmin(false);
+      setIsBarber(false);
     }
   }, []);
 
-  // Verificar se o usuário tem papel de administrador
+  // Verificar se o usuário tem papel de administrador ou barbeiro
   const checkUserRole = async (userId: string) => {
     try {
-      console.log('Verificando admin role para usuário:', userId);
+      console.log('Verificando roles para usuário:', userId);
       
       // Verificar se temos userId antes de consultar
       if (!userId) {
         console.log('userId vazio, não é possível verificar roles');
         setIsAdmin(false);
+        setIsBarber(false);
         return;
       }
       
@@ -104,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (userData?.user?.email === 'joao.colimoides@gmail.com') {
         console.log('Usuário especial detectado, configurando como admin:', userData.user.email);
         setIsAdmin(true);
+        setIsBarber(false);
         
         // Verificar se já existe o registro de role
         const { data: existingRole, error: roleCheckError } = await supabase
@@ -132,29 +140,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Buscar todos os registros para este usuário onde o papel seja 'admin'
-      const { data, error } = await supabase
+      // Buscar roles para este usuário
+      const { data: roles, error } = await supabase
         .from('user_roles')
         .select('*')
-        .eq('user_id', userId)
-        .eq('role', 'admin');
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Erro ao verificar papel do usuário:', error);
         setIsAdmin(false);
+        setIsBarber(false);
         return;
       }
       
-      console.log('Resultado da consulta de role:', data);
+      console.log('Roles do usuário:', roles);
       
-      // Se tiver pelo menos um resultado, o usuário é admin
-      const hasAdminRole = data && data.length > 0;
-      console.log('Usuário é admin:', hasAdminRole, 'Email:', userData?.user?.email);
+      // Verificar se tem role de admin ou barber
+      const hasAdminRole = roles?.some(role => role.role === 'admin');
+      const hasBarberRole = roles?.some(role => role.role === 'barber');
+      
+      console.log('Usuário é admin:', hasAdminRole, 'É barbeiro:', hasBarberRole, 'Email:', userData?.user?.email);
       
       setIsAdmin(hasAdminRole);
+      setIsBarber(hasBarberRole);
     } catch (error) {
       console.error('Erro ao verificar papel do usuário:', error);
       setIsAdmin(false);
+      setIsBarber(false);
     }
   };
 
@@ -164,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
       console.log('Logout concluído');
       setIsAdmin(false);
+      setIsBarber(false);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
@@ -173,6 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     user,
     isAdmin,
+    isBarber, // Include isBarber in context
     loading,
     signOut
   };
@@ -181,6 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoggedIn: !!user,
     userEmail: user?.email,
     isAdmin,
+    isBarber,
     loading
   });
 

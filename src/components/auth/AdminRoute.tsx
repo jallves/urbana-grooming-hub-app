@@ -4,7 +4,6 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Shield } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -17,120 +16,25 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   allowBarber = true, // Alterado para true por padrão
   requiredModule
 }) => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, isBarber, loading } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
-  
-  // Check for barber role
-  const [isBarber, setIsBarber] = React.useState<boolean | null>(null);
-  const [hasModuleAccess, setHasModuleAccess] = React.useState<boolean>(false);
-  const [checkingAccess, setCheckingAccess] = React.useState<boolean>(true);
-  
-  useEffect(() => {
-    if (!loading && user) {
-      const checkBarberRole = async () => {
-        try {
-          // If already verified as admin, skip further checks
-          if (isAdmin) {
-            setIsBarber(false); // Admin is not considered barber
-            setHasModuleAccess(true); // Admin has access to everything
-            setCheckingAccess(false);
-            return;
-          }
-          
-          const { data, error } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('role', 'barber')
-            .maybeSingle();
-          
-          if (error) {
-            console.error('Error checking barber role:', error);
-            setIsBarber(false);
-          } else {
-            setIsBarber(!!data);
-            
-            // Se o usuário é barbeiro, sempre dê acesso (independente do módulo)
-            if (data) {
-              setHasModuleAccess(true);
-              setCheckingAccess(false);
-            } else if (requiredModule) {
-              // Se não é barbeiro e há requisito de módulo, verificar
-              checkModuleAccess(user.id, requiredModule);
-            } else {
-              setCheckingAccess(false);
-            }
-          }
-        } catch (error) {
-          console.error('Error in barber role check:', error);
-          setIsBarber(false);
-          setCheckingAccess(false);
-        }
-      };
-      
-      checkBarberRole();
-    } else if (!loading) {
-      setIsBarber(false);
-      setCheckingAccess(false);
-    }
-  }, [user, loading, isAdmin, requiredModule]);
-  
-  // Check for module access (mantido para compatibilidade)
-  const checkModuleAccess = async (userId: string, moduleId: string) => {
-    try {
-      // Get staff ID first
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
-        .select('id')
-        .eq('email', user?.email)
-        .maybeSingle();
-        
-      if (staffError || !staffData) {
-        console.error('Staff record not found:', staffError || 'No record');
-        setHasModuleAccess(false);
-        setCheckingAccess(false);
-        return;
-      }
-      
-      // Then check module access
-      const { data, error } = await supabase
-        .from('staff_module_access')
-        .select('*')
-        .eq('staff_id', staffData.id)
-        .eq('module_id', moduleId)
-        .maybeSingle();
-        
-      if (error) {
-        console.error('Error checking module access:', error);
-        setHasModuleAccess(false);
-      } else {
-        setHasModuleAccess(!!data);
-      }
-    } catch (error) {
-      console.error('Error checking module access:', error);
-      setHasModuleAccess(false);
-    } finally {
-      setCheckingAccess(false);
-    }
-  };
   
   // Debug logging
   useEffect(() => {
     console.log('AdminRoute: Access state', { 
-      isLoading: loading || checkingAccess, 
+      isLoading: loading, 
       isAuthenticated: !!user, 
       isAdmin,
       isBarber,
       allowBarber,
       requiredModule,
-      hasModuleAccess,
       path: location.pathname
     });
-  }, [loading, checkingAccess, user, isAdmin, isBarber, allowBarber, requiredModule, hasModuleAccess, location.pathname]);
+  }, [loading, user, isAdmin, isBarber, allowBarber, requiredModule, location.pathname]);
   
   // If still loading, show spinner
-  if (loading || checkingAccess) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
@@ -156,13 +60,13 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     return <>{children}</>;
   }
   
-  // Access control based on roles
+  // Admin always has access
   if (isAdmin) {
     console.log('AdminRoute: Allowing access for admin');
     return <>{children}</>;
   }
   
-  // Barber with allowed access to specific page
+  // Barber with allowed access to admin panel
   if (isBarber && allowBarber) {
     // Todos os barbeiros têm permissão para acessar o painel admin
     console.log('AdminRoute: Allowing access for barber');
