@@ -6,7 +6,7 @@ import AdminRoute from '../components/auth/AdminRoute';
 
 const AdminStaff: React.FC = () => {
   return (
-    <AdminRoute>
+    <AdminRoute allowBarber={true}>
       <AdminLayout>
         <StaffManagement />
       </AdminLayout>

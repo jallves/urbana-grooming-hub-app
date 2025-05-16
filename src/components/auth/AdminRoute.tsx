@@ -14,7 +14,7 @@ interface AdminRouteProps {
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ 
   children, 
-  allowBarber = false,
+  allowBarber = true, // Alterado para true por padrão
   requiredModule
 }) => {
   const { user, isAdmin, loading } = useAuth();
@@ -51,8 +51,12 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
           } else {
             setIsBarber(!!data);
             
-            // If user is a barber and we need to check module access
-            if (data && requiredModule) {
+            // Se o usuário é barbeiro, sempre dê acesso (independente do módulo)
+            if (data) {
+              setHasModuleAccess(true);
+              setCheckingAccess(false);
+            } else if (requiredModule) {
+              // Se não é barbeiro e há requisito de módulo, verificar
               checkModuleAccess(user.id, requiredModule);
             } else {
               setCheckingAccess(false);
@@ -72,7 +76,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     }
   }, [user, loading, isAdmin, requiredModule]);
   
-  // Check for module access
+  // Check for module access (mantido para compatibilidade)
   const checkModuleAccess = async (userId: string, moduleId: string) => {
     try {
       // Get staff ID first
@@ -160,18 +164,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   
   // Barber with allowed access to specific page
   if (isBarber && allowBarber) {
-    // If module check is required, verify access
-    if (requiredModule && !hasModuleAccess) {
-      console.log(`AdminRoute: Barber doesn't have access to module ${requiredModule}`);
-      toast({
-        title: 'Acesso Restrito',
-        description: 'Você não tem permissão para acessar esta seção',
-        variant: 'destructive',
-      });
-      return <Navigate to="/barbeiro/dashboard" replace />;
-    }
-    
-    console.log('AdminRoute: Allowing access for barber with permission');
+    // Todos os barbeiros têm permissão para acessar o painel admin
+    console.log('AdminRoute: Allowing access for barber');
     return <>{children}</>;
   }
   

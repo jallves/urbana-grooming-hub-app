@@ -10,7 +10,7 @@ import AdminRoute from '../components/auth/AdminRoute';
 
 const AdminBarbers: React.FC = () => {
   return (
-    <AdminRoute>
+    <AdminRoute allowBarber={true}>
       <AdminLayout>
         <div className="space-y-6">
           <div className="flex items-center justify-between">

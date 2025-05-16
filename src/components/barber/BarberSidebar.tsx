@@ -58,22 +58,15 @@ const BarberSidebar: React.FC = () => {
       href: '/barbeiro/perfil', 
       icon: <Settings className="h-5 w-5" />,
       moduleId: null // Always accessible
-    }
-  ];
-
-  // Add admin panel link if isAdmin or has special modules
-  const hasAdminAccess = isAdmin || 
-    (moduleAccess?.includes('clients') || moduleAccess?.includes('appointments'));
-
-  // Add admin dashboard link at the end if they have access
-  if (hasAdminAccess) {
-    navItems.push({
+    },
+    // Adicionado o link para o Painel Admin para todos os barbeiros
+    {
       name: 'Painel Admin',
       href: '/admin',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      moduleId: null
-    });
-  }
+      moduleId: null // Sempre disponível para todos os barbeiros
+    }
+  ];
 
   // Filter items based on module access or if they require no specific access
   const filteredNavItems = navItems.filter(item => 
