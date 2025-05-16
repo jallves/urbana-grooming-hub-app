@@ -13,12 +13,8 @@ const AdminBarbers: React.FC = () => {
     <AdminRoute allowBarber={true}>
       <AdminLayout>
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
-              <p className="text-gray-500">Gerencie os barbeiros e suas permissões no sistema</p>
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
+          <p className="text-gray-500">Gerencie os barbeiros e suas permissões no sistema</p>
 
           <Tabs defaultValue="barbers" className="space-y-4">
             <TabsList>

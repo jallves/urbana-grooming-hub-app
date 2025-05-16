@@ -59,12 +59,12 @@ const BarberSidebar: React.FC = () => {
       icon: <Settings className="h-5 w-5" />,
       moduleId: null // Always accessible
     },
-    // Adicionado o link para o Painel Admin para todos os barbeiros
+    // Added link to Admin Panel for all barbers
     {
       name: 'Painel Admin',
       href: '/admin',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      moduleId: null // Sempre disponível para todos os barbeiros
+      moduleId: null // Always available for all barbers
     }
   ];
 

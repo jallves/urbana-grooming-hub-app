@@ -7,13 +7,13 @@ import { Shield } from 'lucide-react';
 
 interface AdminRouteProps {
   children: React.ReactNode;
-  allowBarber?: boolean; // New prop to specify if barbers are allowed
-  requiredModule?: string; // New prop to specify required module
+  allowBarber?: boolean; // Prop to specify if barbers are allowed
+  requiredModule?: string; // Prop to specify required module
 }
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ 
   children, 
-  allowBarber = true, // Alterado para true por padrão
+  allowBarber = true, // Default to true to allow all barbers access
   requiredModule
 }) => {
   const { user, isAdmin, isBarber, loading } = useAuth();
@@ -68,7 +68,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   
   // Barber with allowed access to admin panel
   if (isBarber && allowBarber) {
-    // Todos os barbeiros têm permissão para acessar o painel admin
+    // All barbers have permission to access the admin panel
     console.log('AdminRoute: Allowing access for barber');
     return <>{children}</>;
   }
