@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, Calendar, Users, Scissors, ChartBar, Lock, Settings, Shield, DollarSign, LayoutDashboard } from 'lucide-react';
 import { useModuleAccess } from '@/components/admin/staff/hooks/useModuleAccess';
@@ -11,11 +11,13 @@ const BarberSidebar: React.FC = () => {
   const { isAdmin, isBarber } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [moduleAccessCache, setModuleAccessCache] = useState<string[]>([]);
   
   useEffect(() => {
-    console.log("BarberSidebar - Module access:", moduleAccess);
-    console.log("BarberSidebar - isAdmin:", isAdmin, "isBarber:", isBarber);
-  }, [moduleAccess, isAdmin, isBarber]);
+    if (!loading && moduleAccess) {
+      setModuleAccessCache(moduleAccess);
+    }
+  }, [loading, moduleAccess]);
   
   // Define base modules always available to barbers
   const baseBarberModules = ['appointments', 'reports'];
@@ -24,7 +26,7 @@ const BarberSidebar: React.FC = () => {
     if (!moduleId) return true; // Null moduleId means always accessible
     if (isAdmin) return true; // Admin has access to everything
     if (isBarber && baseBarberModules.includes(moduleId)) return true; // Base modules for barbers
-    return moduleAccess?.includes(moduleId) || false;
+    return moduleAccessCache?.includes(moduleId) || false;
   };
   
   const navItems = [

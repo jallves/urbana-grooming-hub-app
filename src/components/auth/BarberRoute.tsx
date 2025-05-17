@@ -12,76 +12,90 @@ interface BarberRouteProps {
 const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
   const { user, loading, isAdmin, isBarber } = useAuth();
   const location = useLocation();
-  const [checkingRole, setCheckingRole] = useState(loading);
+  const [checkingRole, setCheckingRole] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
   const { toast } = useToast();
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
-    // Only check roles if we're not already loading auth state
-    // and we have a user
-    if (!loading && user) {
-      const checkBarberRole = async () => {
-        try {
+    // Only run this once on initial component mount
+    if (!initialCheckDone) {
+      setInitialCheckDone(true);
+      
+      // Only check roles if not already loading auth state and we have a user
+      if (!loading) {
+        if (user) {
           // Admin can access everything
           if (isAdmin) {
-            console.log('BarberRoute - User is admin, granting access');
             setHasAccess(true);
-            setCheckingRole(false);
             return;
           }
           
           // If barber flag is already set in context, use it
           if (isBarber) {
-            console.log('BarberRoute - User is known barber, granting access');
             setHasAccess(true);
-            setCheckingRole(false);
             return;
           }
+          
+          // Need to check barber role in database
+          setCheckingRole(true);
+          
+          const checkBarberRole = async () => {
+            try {
+              // Check if the user has a barber role in user_roles table
+              const { data: roleData, error: roleError } = await supabase
+                .from('user_roles')
+                .select('*')
+                .eq('user_id', user.id)
+                .eq('role', 'barber');
+              
+              if (roleError) {
+                console.error('BarberRoute - Error checking barber role:', roleError);
+                setHasAccess(false);
+                
+                toast({
+                  title: 'Erro de verificação',
+                  description: 'Não foi possível verificar suas permissões',
+                  variant: 'destructive',
+                });
+              } else {
+                const hasBarberRole = roleData && roleData.length > 0;
+                setHasAccess(hasBarberRole);
+              }
+            } catch (error) {
+              console.error('BarberRoute - Error in barber role check:', error);
+              setHasAccess(false);
+              
+              toast({
+                title: 'Erro de acesso',
+                description: 'Ocorreu um erro ao verificar seu acesso',
+                variant: 'destructive',
+              });
+            } finally {
+              setCheckingRole(false);
+            }
+          };
 
-          console.log('BarberRoute - Checking barber role for user:', user.id);
-          
-          // Check if the user has a barber role in user_roles table
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('role', 'barber');
-          
-          if (roleError) {
-            console.error('BarberRoute - Error checking barber role:', roleError);
-            setHasAccess(false);
-            
-            toast({
-              title: 'Erro de verificação',
-              description: 'Não foi possível verificar suas permissões',
-              variant: 'destructive',
-            });
-          } else {
-            const hasBarberRole = roleData && roleData.length > 0;
-            console.log('BarberRoute - User has barber role:', hasBarberRole);
-            setHasAccess(hasBarberRole);
-          }
-        } catch (error) {
-          console.error('BarberRoute - Error in barber role check:', error);
+          // Use setTimeout to avoid potential supabase client deadlocks
+          setTimeout(() => {
+            checkBarberRole();
+          }, 0);
+        } else {
+          // If not loading and no user, they don't have access
           setHasAccess(false);
-          
-          toast({
-            title: 'Erro de acesso',
-            description: 'Ocorreu um erro ao verificar seu acesso',
-            variant: 'destructive',
-          });
-        } finally {
-          setCheckingRole(false);
         }
-      };
-
-      checkBarberRole();
-    } else if (!loading && !user) {
-      // If not loading and no user, they don't have access
-      setHasAccess(false);
-      setCheckingRole(false);
+      }
     }
-  }, [user, loading, isAdmin, isBarber, toast]);
+  }, [user, loading, isAdmin, isBarber, toast, initialCheckDone]);
+
+  // Use pre-computed values from Auth context when possible
+  useEffect(() => {
+    if (initialCheckDone) {
+      if (isAdmin || isBarber) {
+        setHasAccess(true);
+      }
+    }
+  }, [isAdmin, isBarber, initialCheckDone]);
 
   // Show loading spinner while checking authentication or role
   if (loading || checkingRole) {
