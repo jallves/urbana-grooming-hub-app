@@ -66,23 +66,23 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     return <>{children}</>;
   }
   
-  // Barber with allowed access to admin panel
-  if (isBarber && allowBarber) {
-    // All barbers have permission to access the admin panel
-    console.log('AdminRoute: Allowing access for barber');
+  // All barbers have access to admin panel now
+  if (isBarber) {
+    // All barbers now have permission to access the admin panel
+    console.log('AdminRoute: Allowing access for barber to admin panel');
     return <>{children}</>;
   }
   
   // Default: No access, redirect to appropriate location
-  console.log(`AdminRoute: Access denied, redirecting ${isBarber ? 'barber' : 'user'} to appropriate page`);
+  console.log(`AdminRoute: Access denied, redirecting user to appropriate page`);
   toast({
     title: 'Acesso Restrito',
     description: 'Você não tem permissão para acessar o painel administrativo',
     variant: 'destructive',
   });
   
-  // Redirect barbers to barber dashboard, regular users to home
-  return <Navigate to={isBarber ? "/barbeiro/dashboard" : "/"} replace />;
+  // Redirect regular users to home
+  return <Navigate to="/" replace />;
 };
 
 export default AdminRoute;

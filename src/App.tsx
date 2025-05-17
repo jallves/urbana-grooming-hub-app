@@ -56,7 +56,7 @@ const App = () => (
               <Route path="/barbeiro/perfil" element={<BarberRoute><BarberProfile /></BarberRoute>} />
               <Route path="/barbeiro/modulos" element={<BarberRoute><BarberModules /></BarberRoute>} />
               
-              {/* Rotas protegidas de admin */}
+              {/* Rotas de admin agora acessíveis a barbeiros também */}
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
               <Route path="/admin/agendamentos" element={<AdminRoute><AdminAppointments /></AdminRoute>} />
               <Route path="/admin/profissionais" element={<AdminRoute><AdminStaff /></AdminRoute>} />

@@ -10,7 +10,7 @@ import AdminRoute from '../components/auth/AdminRoute';
 
 const AdminBarbers: React.FC = () => {
   return (
-    <AdminRoute allowBarber={true}>
+    <AdminRoute>
       <AdminLayout>
         <div className="space-y-6">
           <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>

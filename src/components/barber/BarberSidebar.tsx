@@ -72,19 +72,19 @@ const BarberSidebar: React.FC = () => {
       icon: <Settings className="h-5 w-5" />,
       moduleId: null // Always accessible
     },
-    // Added link to Admin Panel for admins only
+    // Always show admin panel link for barbers 
     {
       name: 'Painel Admin',
       href: '/admin',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      moduleId: 'admin', // Only accessible to admins
-      adminOnly: true
+      moduleId: null, // Always accessible to barbers now
+      adminOnly: false // Not just for admins anymore
     }
   ];
 
-  // Filter items based on module access and admin status
+  // Filter items based on module access, no longer filtering admin panel for barbers
   const filteredNavItems = navItems.filter(item => 
-    (item.adminOnly ? isAdmin : true) && hasModuleAccess(item.moduleId)
+    hasModuleAccess(item.moduleId)
   );
 
   if (loading) {
