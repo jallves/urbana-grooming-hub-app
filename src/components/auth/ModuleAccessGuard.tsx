@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useModuleAccess } from '../admin/staff/hooks/useModuleAccess';
 import { Shield } from 'lucide-react';
@@ -21,13 +21,27 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   const { hasAccess, loading, moduleAccess } = useModuleAccess(moduleId);
   const navigate = useNavigate();
   const { toast } = useToast();
-
+  const [showDeniedMessage, setShowDeniedMessage] = useState(false);
+  
+  // Debug logs
   useEffect(() => {
     console.log('ModuleAccessGuard - Checking access for module:', moduleId);
     console.log('ModuleAccessGuard - User is admin:', isAdmin);
     console.log('ModuleAccessGuard - Module access:', moduleAccess);
     console.log('ModuleAccessGuard - Has access:', hasAccess);
   }, [moduleId, isAdmin, hasAccess, moduleAccess]);
+
+  // Show toast notification on access denial
+  useEffect(() => {
+    if (!loading && !hasAccess && user && !isAdmin) {
+      setShowDeniedMessage(true);
+      toast({
+        title: "Acesso Restrito",
+        description: "Você não tem permissão para acessar este módulo",
+        variant: "destructive"
+      });
+    }
+  }, [loading, hasAccess, user, toast, isAdmin]);
 
   // Admin has access to everything
   if (isAdmin) {
@@ -46,17 +60,6 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   if (!hasAccess) {
     console.log('ModuleAccessGuard - Access denied to module:', moduleId);
     
-    // Show toast notification on access denial
-    useEffect(() => {
-      if (!loading && !hasAccess && user) {
-        toast({
-          title: "Acesso Restrito",
-          description: "Você não tem permissão para acessar este módulo",
-          variant: "destructive"
-        });
-      }
-    }, [loading, hasAccess, user]);
-
     return fallback || (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <Shield className="h-12 w-12 text-zinc-400 mb-4" />

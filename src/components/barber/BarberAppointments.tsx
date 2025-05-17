@@ -1,253 +1,119 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Filter, Search } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Card, CardContent } from '@/components/ui/card';
+import ModuleAccessGuard from '@/components/auth/ModuleAccessGuard';
 
-// Status badge component for appointments
-const AppointmentStatusBadge = ({ status }: { status: string }) => {
-  const getStatusColor = () => {
-    switch (status) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor()}`}>
-      {status === 'confirmed' && 'Confirmado'}
-      {status === 'pending' && 'Pendente'}
-      {status === 'cancelled' && 'Cancelado'}
-      {status === 'completed' && 'Concluído'}
-      {!['confirmed', 'pending', 'cancelled', 'completed'].includes(status) && status}
-    </span>
-  );
-};
-
-const BarberAppointments: React.FC = () => {
+const BarberAppointmentsComponent: React.FC = () => {
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const { user } = useAuth();
-  const [filter, setFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  
-  // Fetch appointments for the current barber
-  const { data: appointmentsData, isLoading } = useQuery({
-    queryKey: ['barber-appointments', user?.id, filter],
-    queryFn: async () => {
-      if (!user?.email) {
-        console.log('No user email found, returning empty array');
-        return [];
-      }
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!user) return;
       
       try {
-        // First find the barber record associated with this user
+        console.log('Fetching appointments for user:', user.email);
+        
+        // Primeiro tenta encontrar o registro de staff correspondente ao email do usuário
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
-          .select('id, name')
+          .select('id')
           .eq('email', user.email)
-          .single();
+          .maybeSingle();
           
         if (staffError) {
-          console.error('Error fetching staff data:', staffError);
-          return [];
+          console.error('Erro ao buscar dados do profissional:', staffError);
+          setLoading(false);
+          return;
         }
         
         if (!staffData) {
-          console.error('Staff data not found for email:', user.email);
-          return [];
+          console.log('Nenhum registro de profissional encontrado para este usuário');
+          setLoading(false);
+          return;
         }
         
-        console.log('Found staff data:', staffData);
-        
-        let query = supabase
+        // Buscar os agendamentos para este barbeiro
+        const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
           .select(`
             *,
-            client:client_id(name, phone, email),
-            service:service_id(name, price, duration)
+            services:service_id (*),
+            clients:client_id (*)
           `)
           .eq('staff_id', staffData.id)
           .order('start_time', { ascending: true });
-        
-        // Apply status filter if not "all"
-        if (filter !== 'all') {
-          query = query.eq('status', filter);
+          
+        if (appointmentsError) {
+          console.error('Erro ao buscar agendamentos:', appointmentsError);
+        } else {
+          console.log('Agendamentos encontrados:', appointmentsData?.length || 0);
+          setAppointments(appointmentsData || []);
         }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error('Error fetching appointments:', error);
-          return [];
-        }
-        
-        console.log('Fetched appointments:', data?.length || 0);
-        return data || [];
       } catch (error) {
-        console.error('Unexpected error in appointment fetch:', error);
-        return [];
+        console.error('Erro ao buscar dados:', error);
+      } finally {
+        setLoading(false);
       }
-    },
-    enabled: !!user?.email,
-  });
-  
-  // Filter appointments by search query
-  const filteredAppointments = React.useMemo(() => {
-    if (!appointmentsData) return [];
-    
-    if (!searchQuery) return appointmentsData;
-    
-    return appointmentsData.filter(appointment => {
-      const clientName = appointment.client?.name?.toLowerCase() || '';
-      const clientPhone = appointment.client?.phone?.toLowerCase() || '';
-      const serviceName = appointment.service?.name?.toLowerCase() || '';
-      const query = searchQuery.toLowerCase();
-      
-      return clientName.includes(query) || 
-             clientPhone.includes(query) || 
-             serviceName.includes(query);
-    });
-  }, [appointmentsData, searchQuery]);
+    };
 
-  // Format the date and time
-  const formatAppointmentTime = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      return format(date, "dd 'de' MMMM', às' HH:mm", { locale: ptBR });
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return dateString;
-    }
-  };
+    fetchAppointments();
+  }, [user]);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle>Meus Agendamentos</CardTitle>
-            
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <Select value={filter} onValueChange={setFilter}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendentes</SelectItem>
-                  <SelectItem value="confirmed">Confirmados</SelectItem>
-                  <SelectItem value="completed">Concluídos</SelectItem>
-                  <SelectItem value="cancelled">Cancelados</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <div className="relative w-full sm:w-[200px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
-                <Input
-                  type="search"
-                  placeholder="Buscar..."
-                  className="pl-8 w-full"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
+    <ModuleAccessGuard moduleId="appointments">
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold">Meus Agendamentos</h2>
+        
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
           </div>
-          <CardDescription>
-            Visualize e gerencie seus agendamentos
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-urbana-gold"></div>
-            </div>
-          ) : filteredAppointments && filteredAppointments.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data e Hora</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Serviço</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAppointments.map((appointment) => (
-                    <TableRow key={appointment.id}>
-                      <TableCell className="whitespace-nowrap font-medium">
-                        {formatAppointmentTime(appointment.start_time)}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div>{appointment.client?.name}</div>
-                          <div className="text-sm text-gray-500">{appointment.client?.phone}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{appointment.service?.name}</TableCell>
-                      <TableCell>
-                        {new Intl.NumberFormat('pt-BR', {
-                          style: 'currency',
-                          currency: 'BRL'
-                        }).format(appointment.service?.price || 0)}
-                      </TableCell>
-                      <TableCell>
-                        <AppointmentStatusBadge status={appointment.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center p-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Nenhum agendamento encontrado</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+        ) : appointments.length > 0 ? (
+          <div className="grid gap-4">
+            {appointments.map((appointment) => (
+              <Card key={appointment.id}>
+                <CardContent className="p-4">
+                  <div className="grid gap-2">
+                    <div className="flex justify-between">
+                      <p className="font-medium">{appointment.clients?.name || 'Cliente não identificado'}</p>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        appointment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        appointment.status === 'canceled' ? 'bg-red-100 text-red-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {appointment.status === 'completed' ? 'Concluído' :
+                         appointment.status === 'canceled' ? 'Cancelado' :
+                         appointment.status === 'confirmed' ? 'Confirmado' : 'Agendado'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      {new Date(appointment.start_time).toLocaleDateString('pt-BR', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                    <p className="font-medium">{appointment.services?.name || 'Serviço não especificado'}</p>
+                    {appointment.notes && <p className="text-sm text-gray-600">"{appointment.notes}"</p>}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">Você não tem agendamentos.</p>
+          </div>
+        )}
+      </div>
+    </ModuleAccessGuard>
   );
 };
 
-export default BarberAppointments;
+export default BarberAppointmentsComponent;
