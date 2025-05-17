@@ -17,7 +17,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   children,
   fallback
 }) => {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isBarber, user } = useAuth();
   const { hasAccess, loading, moduleAccess } = useModuleAccess(moduleId);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,13 +27,14 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   useEffect(() => {
     console.log('ModuleAccessGuard - Checking access for module:', moduleId);
     console.log('ModuleAccessGuard - User is admin:', isAdmin);
+    console.log('ModuleAccessGuard - User is barber:', isBarber);
     console.log('ModuleAccessGuard - Module access:', moduleAccess);
     console.log('ModuleAccessGuard - Has access:', hasAccess);
-  }, [moduleId, isAdmin, hasAccess, moduleAccess]);
+  }, [moduleId, isAdmin, isBarber, hasAccess, moduleAccess]);
 
   // Show toast notification on access denial
   useEffect(() => {
-    if (!loading && !hasAccess && user && !isAdmin) {
+    if (!loading && !hasAccess && user && !isAdmin && !showDeniedMessage) {
       setShowDeniedMessage(true);
       toast({
         title: "Acesso Restrito",
@@ -41,11 +42,17 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
         variant: "destructive"
       });
     }
-  }, [loading, hasAccess, user, toast, isAdmin]);
+  }, [loading, hasAccess, user, toast, isAdmin, showDeniedMessage]);
 
   // Admin has access to everything
   if (isAdmin) {
     console.log('ModuleAccessGuard - Admin access granted');
+    return <>{children}</>;
+  }
+  
+  // Barbers automatically have access to basic modules
+  if (isBarber && (moduleId === 'appointments' || moduleId === 'reports')) {
+    console.log('ModuleAccessGuard - Default barber module access granted');
     return <>{children}</>;
   }
 

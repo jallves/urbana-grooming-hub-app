@@ -8,13 +8,24 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const BarberSidebar: React.FC = () => {
   const { moduleAccess, loading } = useModuleAccess();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isBarber } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
   useEffect(() => {
     console.log("BarberSidebar - Module access:", moduleAccess);
-  }, [moduleAccess]);
+    console.log("BarberSidebar - isAdmin:", isAdmin, "isBarber:", isBarber);
+  }, [moduleAccess, isAdmin, isBarber]);
+  
+  // Define base modules always available to barbers
+  const baseBarberModules = ['appointments', 'reports'];
+  
+  const hasModuleAccess = (moduleId: string | null) => {
+    if (!moduleId) return true; // Null moduleId means always accessible
+    if (isAdmin) return true; // Admin has access to everything
+    if (isBarber && baseBarberModules.includes(moduleId)) return true; // Base modules for barbers
+    return moduleAccess?.includes(moduleId) || false;
+  };
   
   const navItems = [
     { 
@@ -59,18 +70,19 @@ const BarberSidebar: React.FC = () => {
       icon: <Settings className="h-5 w-5" />,
       moduleId: null // Always accessible
     },
-    // Added link to Admin Panel for all barbers
+    // Added link to Admin Panel for admins only
     {
       name: 'Painel Admin',
       href: '/admin',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      moduleId: null // Always available for all barbers
+      moduleId: 'admin', // Only accessible to admins
+      adminOnly: true
     }
   ];
 
-  // Filter items based on module access or if they require no specific access
+  // Filter items based on module access and admin status
   const filteredNavItems = navItems.filter(item => 
-    item.moduleId === null || moduleAccess?.includes(item.moduleId)
+    (item.adminOnly ? isAdmin : true) && hasModuleAccess(item.moduleId)
   );
 
   if (loading) {
@@ -101,7 +113,7 @@ const BarberSidebar: React.FC = () => {
                 }`
               }
               onClick={(e) => {
-                if (item.moduleId && !moduleAccess?.includes(item.moduleId)) {
+                if (item.moduleId && !hasModuleAccess(item.moduleId)) {
                   e.preventDefault();
                   toast({
                     title: "Acesso restrito",
@@ -113,7 +125,7 @@ const BarberSidebar: React.FC = () => {
             >
               {item.icon}
               <span className="ml-3">{item.name}</span>
-              {item.moduleId && !moduleAccess?.includes(item.moduleId) && (
+              {item.moduleId && !hasModuleAccess(item.moduleId) && (
                 <Lock className="ml-auto h-3 w-3 opacity-50" />
               )}
             </NavLink>

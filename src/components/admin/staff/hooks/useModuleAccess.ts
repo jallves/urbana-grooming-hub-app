@@ -34,12 +34,23 @@ export const useModuleAccess = (requiredModuleId?: string) => {
       }
 
       try {
-        // Verificação simples para barbeiros: todos têm acesso aos módulos básicos
+        // Verificação para barbeiros: todos têm acesso aos módulos básicos
         if (isBarber) {
           console.log('useModuleAccess - User is barber, checking specific permissions');
           
           // Default modules for barbers
           const defaultModules = ['appointments', 'reports'];
+          
+          // Automatically grant access to default modules for barbers
+          if (requiredModuleId && defaultModules.includes(requiredModuleId)) {
+            console.log('useModuleAccess - Barber has default access to module:', requiredModuleId);
+            setModuleAccess(defaultModules);
+            setHasAccess(true);
+            setLoading(false);
+            return;
+          }
+          
+          // Check for additional module access in database
           let staffId;
           
           // Get the staff record for this barber
@@ -62,8 +73,11 @@ export const useModuleAccess = (requiredModuleId?: string) => {
             if (!moduleError && moduleData && moduleData.length > 0) {
               const specificModules = moduleData.map(item => item.module_id);
               console.log('useModuleAccess - Staff has specific module access:', specificModules);
-              setModuleAccess(specificModules);
-              setHasAccess(requiredModuleId ? specificModules.includes(requiredModuleId) : true);
+              
+              // Combine default modules with specific modules
+              const combinedModules = [...new Set([...defaultModules, ...specificModules])];
+              setModuleAccess(combinedModules);
+              setHasAccess(requiredModuleId ? combinedModules.includes(requiredModuleId) : true);
               setLoading(false);
               return;
             }
@@ -76,28 +90,32 @@ export const useModuleAccess = (requiredModuleId?: string) => {
               
             if (!directError && directModules && directModules.length > 0) {
               const modules = directModules.map(item => item.module_id);
-              console.log('useModuleAccess - Direct modules retrieved:', modules);
-              setModuleAccess(modules);
-              setHasAccess(requiredModuleId ? modules.includes(requiredModuleId) : true);
+              const combinedModules = [...new Set([...defaultModules, ...modules])];
+              console.log('useModuleAccess - Direct modules retrieved:', combinedModules);
+              setModuleAccess(combinedModules);
+              setHasAccess(requiredModuleId ? combinedModules.includes(requiredModuleId) : true);
               setLoading(false);
               return;
             }
           }
           
+          // If no specific permissions found, use default barber modules
           console.log('useModuleAccess - Using default barber modules:', defaultModules);
           setModuleAccess(defaultModules);
           setHasAccess(requiredModuleId ? defaultModules.includes(requiredModuleId) : true);
+          setLoading(false);
+          return;
         } else {
           // Not a barber, so no specific module access
           console.log('useModuleAccess - User is not a barber, denying module access');
           setModuleAccess([]);
           setHasAccess(false);
+          setLoading(false);
         }
       } catch (error) {
         console.error('useModuleAccess - Error in module access check:', error);
         setModuleAccess([]);
         setHasAccess(false);
-      } finally {
         setLoading(false);
       }
     };
