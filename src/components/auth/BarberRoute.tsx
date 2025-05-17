@@ -52,12 +52,14 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         
         if (roleError) {
           console.error('BarberRoute - Error checking barber role:', roleError);
+          setCheckingRole(false);
+          setHasAccess(false);
+          
           toast({
             title: 'Erro de verificação',
             description: 'Não foi possível verificar suas permissões',
             variant: 'destructive',
           });
-          setCheckingRole(false);
         } else {
           const hasBarberRole = roleData && roleData.length > 0;
           console.log('BarberRoute - User has barber role:', hasBarberRole);
@@ -66,12 +68,14 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('BarberRoute - Error in barber role check:', error);
+        setCheckingRole(false);
+        setHasAccess(false);
+        
         toast({
           title: 'Erro de acesso',
           description: 'Ocorreu um erro ao verificar seu acesso',
           variant: 'destructive',
         });
-        setCheckingRole(false);
       }
     };
 
@@ -80,7 +84,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     }
   }, [user, loading, isAdmin, isBarber, toast]);
 
-  // Show loading while checking authentication or role
+  // Show loading spinner while checking authentication or role
   if (loading || checkingRole) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
@@ -89,28 +93,17 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     );
   }
 
-  // If not authenticated, redirect to login
+  // Ensure that the Toast is shown only once by placing the toasts outside of the rendering logic
   if (!user) {
-    console.log('BarberRoute - Not authenticated, redirecting to login');
-    toast({
-      title: 'Acesso Negado',
-      description: 'Você precisa fazer login para acessar esta página',
-    });
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  // If not a barber or admin, redirect to an unauthorized page or home
+  // If not a barber, redirect to home
   if (!hasAccess) {
-    console.log('BarberRoute - Not a barber or admin, redirecting to home');
-    toast({
-      title: 'Acesso Negado',
-      description: 'Você não tem permissão para acessar a área do barbeiro',
-      variant: 'destructive',
-    });
     return <Navigate to="/" replace />;
   }
 
-  // If authenticated and has barber role or is admin, render the protected content
+  // If authenticated and has barber role, render the protected content
   return <>{children}</>;
 };
 
