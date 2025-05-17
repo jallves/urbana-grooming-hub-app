@@ -13,6 +13,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
   const { user, loading, isAdmin, isBarber } = useAuth();
   const location = useLocation();
   const [checkingRole, setCheckingRole] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,21 +24,23 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         return;
       }
 
-      // Admin can access everything
-      if (isAdmin) {
-        console.log('BarberRoute - User is admin, granting access');
-        setCheckingRole(false);
-        return;
-      }
-      
-      // If barber flag is already set in context, use it
-      if (isBarber) {
-        console.log('BarberRoute - User is known barber, granting access');
-        setCheckingRole(false);
-        return;
-      }
-
       try {
+        // Admin can access everything
+        if (isAdmin) {
+          console.log('BarberRoute - User is admin, granting access');
+          setHasAccess(true);
+          setCheckingRole(false);
+          return;
+        }
+        
+        // If barber flag is already set in context, use it
+        if (isBarber) {
+          console.log('BarberRoute - User is known barber, granting access');
+          setHasAccess(true);
+          setCheckingRole(false);
+          return;
+        }
+
         console.log('BarberRoute - Checking barber role for user:', user.id);
         
         // Check if the user has a barber role in user_roles table
@@ -58,6 +61,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         } else {
           const hasBarberRole = roleData && roleData.length > 0;
           console.log('BarberRoute - User has barber role:', hasBarberRole);
+          setHasAccess(hasBarberRole);
           setCheckingRole(false);
         }
       } catch (error) {
@@ -96,7 +100,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
   }
 
   // If not a barber or admin, redirect to an unauthorized page or home
-  if (!isBarber && !isAdmin) {
+  if (!hasAccess) {
     console.log('BarberRoute - Not a barber or admin, redirecting to home');
     toast({
       title: 'Acesso Negado',

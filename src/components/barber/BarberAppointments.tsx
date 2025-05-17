@@ -59,7 +59,7 @@ const AppointmentStatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-const BarberAppointments = () => {
+const BarberAppointments: React.FC = () => {
   const { user } = useAuth();
   const [filter, setFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -69,49 +69,58 @@ const BarberAppointments = () => {
     queryKey: ['barber-appointments', user?.id, filter],
     queryFn: async () => {
       if (!user?.email) {
+        console.log('No user email found, returning empty array');
         return [];
       }
       
-      // First find the barber record associated with this user
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
-        .select('id, name')
-        .eq('email', user.email)
-        .single();
+      try {
+        // First find the barber record associated with this user
+        const { data: staffData, error: staffError } = await supabase
+          .from('staff')
+          .select('id, name')
+          .eq('email', user.email)
+          .single();
+          
+        if (staffError) {
+          console.error('Error fetching staff data:', staffError);
+          return [];
+        }
         
-      if (staffError) {
-        console.error('Error fetching staff data:', staffError);
+        if (!staffData) {
+          console.error('Staff data not found for email:', user.email);
+          return [];
+        }
+        
+        console.log('Found staff data:', staffData);
+        
+        let query = supabase
+          .from('appointments')
+          .select(`
+            *,
+            client:client_id(name, phone, email),
+            service:service_id(name, price, duration)
+          `)
+          .eq('staff_id', staffData.id)
+          .order('start_time', { ascending: true });
+        
+        // Apply status filter if not "all"
+        if (filter !== 'all') {
+          query = query.eq('status', filter);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Error fetching appointments:', error);
+          return [];
+        }
+        
+        console.log('Fetched appointments:', data?.length || 0);
+        return data || [];
+      } catch (error) {
+        console.error('Unexpected error in appointment fetch:', error);
         return [];
       }
-      
-      if (!staffData) {
-        console.error('Staff data not found for email:', user.email);
-        return [];
-      }
-      
-      let query = supabase
-        .from('appointments')
-        .select(`
-          *,
-          client:client_id(name, phone, email),
-          service:service_id(name, price, duration)
-        `)
-        .eq('staff_id', staffData.id)
-        .order('start_time', { ascending: true });
-      
-      // Apply status filter if not "all"
-      if (filter !== 'all') {
-        query = query.eq('status', filter);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching appointments:', error);
-        return [];
-      }
-      
-      return data || [];
     },
     enabled: !!user?.email,
   });

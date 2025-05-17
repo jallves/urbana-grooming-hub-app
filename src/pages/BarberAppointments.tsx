@@ -23,11 +23,11 @@ const BarberAppointmentsPage: React.FC = () => {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="appointments">
+          <TabsContent value="appointments" className="mt-4">
             <BarberAppointmentsComponent />
           </TabsContent>
           
-          <TabsContent value="commissions">
+          <TabsContent value="commissions" className="mt-4">
             <BarberCommissions />
           </TabsContent>
         </Tabs>
