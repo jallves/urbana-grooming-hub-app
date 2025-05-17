@@ -93,13 +93,18 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     );
   }
 
-  // Ensure that the Toast is shown only once by placing the toasts outside of the rendering logic
   if (!user) {
+    // Redirect to login if not authenticated
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  // If not a barber, redirect to home
   if (!hasAccess) {
+    // Show toast and redirect to home if not a barber
+    toast({
+      title: 'Acesso Negado',
+      description: 'Você não tem permissão para acessar esta área',
+      variant: 'destructive',
+    });
     return <Navigate to="/" replace />;
   }
 

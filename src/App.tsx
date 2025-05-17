@@ -26,6 +26,7 @@ import BarberProfile from "./pages/BarberProfile";
 import BarberAppointments from "./pages/BarberAppointments";
 import BarberModules from "./pages/BarberModules";
 import AdminRoute from "./components/auth/AdminRoute";
+import BarberRoute from "./components/auth/BarberRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
@@ -48,12 +49,12 @@ const App = () => (
               <Route path="/barbeiro/login" element={<BarberAuth />} />
               
               {/* Rotas protegidas de barbeiro */}
-              <Route path="/barbeiro" element={<BarberDashboard />} />
-              <Route path="/barbeiro/dashboard" element={<BarberDashboard />} />
-              <Route path="/barbeiro/agendamentos" element={<BarberAppointments />} />
-              <Route path="/barbeiro/comissoes" element={<BarberCommissions />} />
-              <Route path="/barbeiro/perfil" element={<BarberProfile />} />
-              <Route path="/barbeiro/modulos" element={<BarberModules />} />
+              <Route path="/barbeiro" element={<BarberRoute><BarberDashboard /></BarberRoute>} />
+              <Route path="/barbeiro/dashboard" element={<BarberRoute><BarberDashboard /></BarberRoute>} />
+              <Route path="/barbeiro/agendamentos" element={<BarberRoute><BarberAppointments /></BarberRoute>} />
+              <Route path="/barbeiro/comissoes" element={<BarberRoute><BarberCommissions /></BarberRoute>} />
+              <Route path="/barbeiro/perfil" element={<BarberRoute><BarberProfile /></BarberRoute>} />
+              <Route path="/barbeiro/modulos" element={<BarberRoute><BarberModules /></BarberRoute>} />
               
               {/* Rotas protegidas de admin */}
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
