@@ -64,9 +64,9 @@ const BarberCommissionsComponent: React.FC = () => {
           setCommissions(commissionsData || []);
           
           // Calculate totals
-          const total = commissionsData?.reduce((sum, commission) => sum + parseFloat(commission.amount), 0) || 0;
+          const total = commissionsData?.reduce((sum, commission) => sum + Number(commission.amount), 0) || 0;
           const paid = commissionsData?.reduce((sum, commission) => 
-            commission.status === 'paid' ? sum + parseFloat(commission.amount) : sum, 0) || 0;
+            commission.status === 'paid' ? sum + Number(commission.amount) : sum, 0) || 0;
           
           setTotals({
             total,
@@ -142,7 +142,7 @@ const BarberCommissionsComponent: React.FC = () => {
                         {commission.appointments?.services?.name || 'Serviço não especificado'}
                       </span>
                       <span className="font-medium text-green-600">
-                        {formatCurrency(parseFloat(commission.amount))}
+                        {formatCurrency(Number(commission.amount))}
                       </span>
                     </div>
                     <p className="text-xs text-gray-400">
