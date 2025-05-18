@@ -5,10 +5,11 @@ import { useNavigate } from 'react-router-dom';
 const BarberCommissionsRedirect: React.FC = () => {
   const navigate = useNavigate();
   
+  // Use a useEffect with empty dependency array to ensure navigation happens only once
   useEffect(() => {
     // Redirect to appointments page with commissions tab
     navigate('/barbeiro/agendamentos?tab=commissions', { replace: true });
-  }, [navigate]);
+  }, [navigate]); // Include navigate in dependencies
   
   // Show loading while redirecting
   return (

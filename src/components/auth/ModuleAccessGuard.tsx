@@ -24,7 +24,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   const [toastShown, setToastShown] = useState(false);
   
   // Define base modules always available to barbers
-  const baseBarberModules = ['appointments', 'clients', 'reports'];
+  const baseBarberModules = ['appointments', 'clients', 'reports', 'commissions'];
   
   // Check if module is accessible to barbers by default
   const isBarberDefaultModule = baseBarberModules.includes(moduleId);
@@ -33,7 +33,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
     console.log(`ModuleAccessGuard - User access check: ${moduleId}, isAdmin: ${isAdmin}, isBarber: ${isBarber}, isBarberDefaultModule: ${isBarberDefaultModule}, hasAccess: ${hasAccess}`);
   }, [moduleId, isAdmin, isBarber, isBarberDefaultModule, hasAccess]);
 
-  // Fix: Only show toast once when access is denied
+  // Fix: Only show toast once when access is denied - moved to useEffect
   useEffect(() => {
     if (!loading && !hasAccess && !isBarberDefaultModule && user && !isAdmin && !toastShown) {
       setToastShown(true);
@@ -43,7 +43,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
         variant: "destructive"
       });
     }
-  }, [loading, hasAccess, user, toast, isAdmin, toastShown, isBarberDefaultModule]);
+  }, [loading, hasAccess, user, toast, isAdmin, toastShown, isBarberDefaultModule, moduleId]);
 
   // Admin has access to everything
   if (isAdmin) {

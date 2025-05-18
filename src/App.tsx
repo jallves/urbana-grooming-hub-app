@@ -23,6 +23,7 @@ import BarberAuth from "./pages/BarberAuth";
 import BarberDashboard from "./pages/BarberDashboard";
 import BarberProfile from "./pages/BarberProfile";
 import BarberAppointments from "./pages/BarberAppointments";
+import BarberCommissions from "./pages/BarberCommissions";
 import BarberModules from "./pages/BarberModules";
 import BarberClients from "./pages/BarberClients";
 import AdminRoute from "./components/auth/AdminRoute";
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/barbeiro" element={<BarberRoute><BarberDashboard /></BarberRoute>} />
               <Route path="/barbeiro/dashboard" element={<BarberRoute><BarberDashboard /></BarberRoute>} />
               <Route path="/barbeiro/agendamentos" element={<BarberRoute><BarberAppointments /></BarberRoute>} />
+              <Route path="/barbeiro/comissoes" element={<BarberRoute><BarberCommissions /></BarberRoute>} />
               <Route path="/barbeiro/clientes" element={<BarberRoute><BarberClients /></BarberRoute>} />
               <Route path="/barbeiro/perfil" element={<BarberRoute><BarberProfile /></BarberRoute>} />
               <Route path="/barbeiro/modulos" element={<BarberRoute><BarberModules /></BarberRoute>} />
