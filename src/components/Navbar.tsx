@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/navigation-menu";
 
 const Navbar: React.FC = () => {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isBarber, signOut } = useAuth();
   const { toast } = useToast();
   const [scrolled, setScrolled] = useState(false);
   const { shopSettings } = useShopSettings();
@@ -107,7 +107,7 @@ const Navbar: React.FC = () => {
                 <NavigationMenuItem>
                   <NavigationMenuLink 
                     className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
-                    href={isAdmin ? "/admin" : "/auth"}
+                    href={isAdmin ? "/admin" : isBarber ? "/barbeiro/dashboard" : "/auth"}
                   >
                     <Shield size={18} className="inline-block mr-1" />
                     Painel
@@ -125,15 +125,26 @@ const Navbar: React.FC = () => {
                 </NavigationMenuItem>
               </>
             ) : (
-              <NavigationMenuItem>
-                <NavigationMenuLink 
-                  href="/auth" 
-                  className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
-                  title="Admin"
-                >
-                  <Shield size={18} />
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+              <>
+                <NavigationMenuItem>
+                  <NavigationMenuLink 
+                    href="/auth" 
+                    className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                    title="Admin"
+                  >
+                    <Shield size={18} />
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink 
+                    href="/barbeiro/login" 
+                    className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                    title="Área do Barbeiro"
+                  >
+                    <Scissors size={18} className="text-urbana-gold" />
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              </>
             )}
           </NavigationMenuList>
         </NavigationMenu>
@@ -156,7 +167,7 @@ const Navbar: React.FC = () => {
           >
             <a href="#services">Serviços</a>
           </Button>
-          {user && (
+          {user ? (
             <Button 
               variant="outline" 
               size="sm" 
@@ -165,6 +176,29 @@ const Navbar: React.FC = () => {
             >
               Sair
             </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost" 
+                size="sm"
+                className="text-white"
+                asChild
+              >
+                <Link to="/auth">
+                  <Shield size={16} className="mr-1" />
+                </Link>
+              </Button>
+              <Button
+                variant="ghost" 
+                size="sm"
+                className="text-white"
+                asChild
+              >
+                <Link to="/barbeiro/login">
+                  <Scissors size={16} className="text-urbana-gold" />
+                </Link>
+              </Button>
+            </>
           )}
         </div>
       </div>
