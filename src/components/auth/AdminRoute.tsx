@@ -13,7 +13,7 @@ interface AdminRouteProps {
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ 
   children, 
-  allowBarber = true, // Default to true to allow all barbers access
+  allowBarber = false, // Default to false to restrict barber access
   requiredModule
 }) => {
   const { user, isAdmin, isBarber, loading } = useAuth();
@@ -65,12 +65,32 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     console.log('AdminRoute: Allowing access for admin');
     return <>{children}</>;
   }
+
+  // Define allowed paths for barbers
+  const allowedBarberPaths = [
+    '/admin', // Dashboard
+    '/admin/agendamentos', // Appointments
+    '/admin/clientes' // Clients
+  ];
   
-  // All barbers have access to admin panel now
+  // For barbers, check if current path is in allowed paths
   if (isBarber) {
-    // All barbers now have permission to access the admin panel
-    console.log('AdminRoute: Allowing access for barber to admin panel');
-    return <>{children}</>;
+    // Check if current path is in allowed paths
+    const currentPath = location.pathname;
+    const hasAccess = allowedBarberPaths.some(path => currentPath.startsWith(path));
+    
+    if (hasAccess) {
+      console.log('AdminRoute: Allowing access for barber to specific admin page:', currentPath);
+      return <>{children}</>;
+    } else {
+      console.log('AdminRoute: Path not allowed for barber:', currentPath);
+      toast({
+        title: 'Acesso Restrito',
+        description: 'Você não tem permissão para acessar esta seção do painel administrativo',
+        variant: 'destructive',
+      });
+      return <Navigate to="/admin" replace />;
+    }
   }
   
   // Default: No access, redirect to appropriate location

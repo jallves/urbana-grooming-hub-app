@@ -20,7 +20,7 @@ const BarberSidebar: React.FC = () => {
   }, [loading, moduleAccess]);
   
   // Define base modules always available to barbers
-  const baseBarberModules = ['appointments', 'reports'];
+  const baseBarberModules = ['appointments', 'clients', 'reports'];
   
   const hasModuleAccess = (moduleId: string | null) => {
     if (!moduleId) return true; // Null moduleId means always accessible
@@ -72,17 +72,17 @@ const BarberSidebar: React.FC = () => {
       icon: <Settings className="h-5 w-5" />,
       moduleId: null // Always accessible
     },
-    // Always show admin panel link for barbers 
+    // Show admin panel link with limited options
     {
       name: 'Painel Admin',
       href: '/admin',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      moduleId: null, // Always accessible to barbers now
-      adminOnly: false // Not just for admins anymore
+      moduleId: null, // Always accessible but with limited scope
+      adminOnly: false
     }
   ];
 
-  // Filter items based on module access, no longer filtering admin panel for barbers
+  // Filter items based on module access
   const filteredNavItems = navItems.filter(item => 
     hasModuleAccess(item.moduleId)
   );

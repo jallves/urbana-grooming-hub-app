@@ -21,7 +21,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
       // Admin has access to everything
       if (isAdmin) {
         console.log('useModuleAccess - User is admin, granting full access');
-        const allModules = ['appointments', 'clients', 'services', 'reports', 'admin'];
+        const allModules = ['appointments', 'clients', 'services', 'reports', 'admin', 'finances', 'marketing', 'analytics', 'support', 'settings'];
         setModuleAccess(allModules);
         setHasAccess(true);
         setLoading(false);
@@ -38,8 +38,8 @@ export const useModuleAccess = (requiredModuleId?: string) => {
       }
 
       try {
-        // Default modules for barbers
-        const defaultModules = ['appointments', 'reports'];
+        // Default modules for barbers based on RBAC structure
+        const defaultModules = ['appointments', 'clients', 'reports'];
         
         // Barbers always have access to these modules
         if (isBarber) {
@@ -52,7 +52,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
             return;
           }
           
-          // For non-default modules, check database
+          // For non-default modules, check database for additional permissions
           try {
             let staffId;
             
@@ -102,7 +102,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
             console.error('useModuleAccess - Error checking specific permissions:', error);
           }
           
-          // If no specific permissions found, use default barber modules
+          // If no specific permissions found, use default barber modules per RBAC
           console.log('useModuleAccess - Using default barber modules:', defaultModules);
           setModuleAccess(defaultModules);
           setHasAccess(requiredModuleId ? defaultModules.includes(requiredModuleId) : true);

@@ -23,14 +23,19 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   const { toast } = useToast();
   const [toastShown, setToastShown] = useState(false);
   
-  // Debug logs - reduce to essential only
+  // Define base modules always available to barbers
+  const baseBarberModules = ['appointments', 'clients', 'reports'];
+  
+  // Check if module is accessible to barbers by default
+  const isBarberDefaultModule = baseBarberModules.includes(moduleId);
+  
   useEffect(() => {
-    console.log(`ModuleAccessGuard - User access check: ${moduleId}, isAdmin: ${isAdmin}, isBarber: ${isBarber}, hasAccess: ${hasAccess}`);
-  }, [moduleId, isAdmin, isBarber, hasAccess]);
+    console.log(`ModuleAccessGuard - User access check: ${moduleId}, isAdmin: ${isAdmin}, isBarber: ${isBarber}, isBarberDefaultModule: ${isBarberDefaultModule}, hasAccess: ${hasAccess}`);
+  }, [moduleId, isAdmin, isBarber, isBarberDefaultModule, hasAccess]);
 
   // Fix: Only show toast once when access is denied
   useEffect(() => {
-    if (!loading && !hasAccess && user && !isAdmin && !toastShown) {
+    if (!loading && !hasAccess && !isBarberDefaultModule && user && !isAdmin && !toastShown) {
       setToastShown(true);
       toast({
         title: "Acesso Restrito",
@@ -38,15 +43,15 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
         variant: "destructive"
       });
     }
-  }, [loading, hasAccess, user, toast, isAdmin, toastShown]);
+  }, [loading, hasAccess, user, toast, isAdmin, toastShown, isBarberDefaultModule]);
 
   // Admin has access to everything
   if (isAdmin) {
     return <>{children}</>;
   }
   
-  // Fix: Default barber modules check moved here to prevent infinite loop
-  if (isBarber && (moduleId === 'appointments' || moduleId === 'reports')) {
+  // Barber has access to default modules
+  if (isBarber && isBarberDefaultModule) {
     return <>{children}</>;
   }
 
@@ -58,7 +63,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
     );
   }
 
-  if (!hasAccess) {
+  if (!hasAccess && !isBarberDefaultModule) {
     console.log('ModuleAccessGuard - Access denied to module:', moduleId);
     
     return fallback || (
