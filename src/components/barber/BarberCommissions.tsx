@@ -84,7 +84,6 @@ const BarberCommissionsComponent: React.FC = () => {
     fetchCommissions();
   }, [user]);
 
-  // Define formatCurrency to accept a number parameter
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
