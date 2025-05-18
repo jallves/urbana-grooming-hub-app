@@ -1,15 +1,19 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import BarberLayout from '../components/barber/BarberLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, DollarSign } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import BarberAppointmentsComponent from '@/components/barber/BarberAppointments';
-import BarberCommissions from './BarberCommissions';
+import BarberCommissionsComponent from '@/components/barber/BarberCommissions';
 
 const BarberAppointmentsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') === 'commissions' ? 'commissions' : 'appointments';
+  
   return (
     <BarberLayout title="Agendamentos e Comissões">
-      <Tabs defaultValue="appointments" className="space-y-6">
+      <Tabs defaultValue={defaultTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="appointments" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
@@ -26,7 +30,7 @@ const BarberAppointmentsPage: React.FC = () => {
         </TabsContent>
         
         <TabsContent value="commissions" className="mt-4">
-          <BarberCommissions />
+          <BarberCommissionsComponent />
         </TabsContent>
       </Tabs>
     </BarberLayout>
