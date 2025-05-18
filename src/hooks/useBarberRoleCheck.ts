@@ -38,6 +38,33 @@ export const useBarberRoleCheck = () => {
         navigate('/barbeiro/dashboard');
         return;
       }
+      
+      // Get user email for special check
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user?.email === 'jhoaoallves84@gmail.com') {
+        console.log('useBarberRoleCheck - Special barber detected, allowing access');
+        toast({
+          title: 'Login realizado com sucesso',
+          description: 'Bem-vindo ao painel do barbeiro',
+        });
+        
+        // Ensure user has barber role in database
+        const { data: existingRole } = await supabase
+          .from('user_roles')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('role', 'barber');
+        
+        if (!existingRole || existingRole.length === 0) {
+          // Add barber role
+          await supabase
+            .from('user_roles')
+            .insert([{ user_id: userId, role: 'barber' }]);
+        }
+        
+        navigate('/barbeiro/dashboard');
+        return;
+      }
 
       const { data, error } = await supabase
         .from('user_roles')

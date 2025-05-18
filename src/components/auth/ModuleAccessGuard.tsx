@@ -30,12 +30,24 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   const isBarberDefaultModule = baseBarberModules.includes(moduleId);
   
   useEffect(() => {
-    console.log(`ModuleAccessGuard - User access check: ${moduleId}, isAdmin: ${isAdmin}, isBarber: ${isBarber}, isBarberDefaultModule: ${isBarberDefaultModule}, hasAccess: ${hasAccess}`);
-  }, [moduleId, isAdmin, isBarber, isBarberDefaultModule, hasAccess]);
+    console.log(`ModuleAccessGuard - User access check: ${moduleId}, isAdmin: ${isAdmin}, isBarber: ${isBarber}, isBarberDefaultModule: ${isBarberDefaultModule}, hasAccess: ${hasAccess}, email: ${user?.email}`);
+    
+    // Special check for jhoaoallves84@gmail.com
+    if (user?.email === 'jhoaoallves84@gmail.com') {
+      console.log('ModuleAccessGuard - Special barber user detected, allowing access');
+      return;
+    }
+  }, [moduleId, isAdmin, isBarber, isBarberDefaultModule, hasAccess, user]);
 
   // Fix: Only show toast once when access is denied - moved to useEffect
   useEffect(() => {
     if (!loading && !hasAccess && !isBarberDefaultModule && user && !isAdmin && !toastShown) {
+      // Special check for jhoaoallves84@gmail.com
+      if (user.email === 'jhoaoallves84@gmail.com') {
+        console.log('ModuleAccessGuard - Special barber user detected, skipping restriction');
+        return;
+      }
+      
       setToastShown(true);
       toast({
         title: "Acesso Restrito",
@@ -47,6 +59,12 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
 
   // Admin has access to everything
   if (isAdmin) {
+    return <>{children}</>;
+  }
+  
+  // Special user check
+  if (user?.email === 'jhoaoallves84@gmail.com') {
+    console.log('ModuleAccessGuard - Special barber user granted access to:', moduleId);
     return <>{children}</>;
   }
   

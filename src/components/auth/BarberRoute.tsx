@@ -27,12 +27,21 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         if (user) {
           // Admin can access everything
           if (isAdmin) {
+            console.log('BarberRoute - User is admin, granting access');
             setHasAccess(true);
             return;
           }
           
           // If barber flag is already set in context, use it
           if (isBarber) {
+            console.log('BarberRoute - User is barber, granting access');
+            setHasAccess(true);
+            return;
+          }
+          
+          // Special check for email
+          if (user.email === 'jhoaoallves84@gmail.com') {
+            console.log('BarberRoute - Special user detected, granting access');
             setHasAccess(true);
             return;
           }
@@ -42,6 +51,8 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
           
           const checkBarberRole = async () => {
             try {
+              console.log('BarberRoute - Checking barber role for:', user.email);
+              
               // Check if the user has a barber role in user_roles table
               const { data: roleData, error: roleError } = await supabase
                 .from('user_roles')
@@ -60,6 +71,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
                 });
               } else {
                 const hasBarberRole = roleData && roleData.length > 0;
+                console.log('BarberRoute - Has barber role:', hasBarberRole);
                 setHasAccess(hasBarberRole);
               }
             } catch (error) {
@@ -94,8 +106,13 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
       if (isAdmin || isBarber) {
         setHasAccess(true);
       }
+      
+      // Special check for email
+      if (user?.email === 'jhoaoallves84@gmail.com') {
+        setHasAccess(true);
+      }
     }
-  }, [isAdmin, isBarber, initialCheckDone]);
+  }, [isAdmin, isBarber, initialCheckDone, user]);
 
   // Show loading spinner while checking authentication or role
   if (loading || checkingRole) {

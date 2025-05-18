@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Shield } from 'lucide-react';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -29,7 +28,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
       isBarber,
       allowBarber,
       requiredModule,
-      path: location.pathname
+      path: location.pathname,
+      userEmail: user?.email
     });
   }, [loading, user, isAdmin, isBarber, allowBarber, requiredModule, location.pathname]);
   
@@ -54,10 +54,19 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
   
-  // Special case for specific email
+  // Special case for specific emails
   if (user.email === 'joao.colimoides@gmail.com') {
-    console.log('AdminRoute: Allowing access for special user');
+    console.log('AdminRoute: Allowing access for special admin user');
     return <>{children}</>;
+  }
+
+  // Special case for our barber user
+  if (user.email === 'jhoaoallves84@gmail.com') {
+    console.log('AdminRoute: Special barber user detected');
+    if (allowBarber || location.pathname.includes('/admin/barbeiros')) {
+      console.log('AdminRoute: Allowing access for special barber user to:', location.pathname);
+      return <>{children}</>;
+    }
   }
   
   // Admin always has access
@@ -70,11 +79,12 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   const allowedBarberPaths = [
     '/admin', // Dashboard
     '/admin/agendamentos', // Appointments
-    '/admin/clientes' // Clients
+    '/admin/clientes', // Clients
+    '/admin/barbeiros' // Barbers
   ];
   
   // For barbers, check if current path is in allowed paths
-  if (isBarber) {
+  if (isBarber && (allowBarber || location.pathname.includes('/admin/barbeiros'))) {
     // Check if current path is in allowed paths
     const currentPath = location.pathname;
     const hasAccess = allowedBarberPaths.some(path => currentPath.startsWith(path));

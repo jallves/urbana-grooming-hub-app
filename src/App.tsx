@@ -63,9 +63,11 @@ const App = () => (
               <Route path="/admin/agendamentos" element={<AdminRoute allowBarber={true}><AdminAppointments /></AdminRoute>} />
               <Route path="/admin/clientes" element={<AdminRoute allowBarber={true}><AdminClients /></AdminRoute>} />
               
+              {/* Rota específica de barbeiros */}
+              <Route path="/admin/barbeiros" element={<AdminRoute allowBarber={true}><AdminBarbers /></AdminRoute>} />
+              
               {/* Rotas restritas apenas para admin */}
               <Route path="/admin/profissionais" element={<AdminRoute><AdminStaff /></AdminRoute>} />
-              <Route path="/admin/barbeiros" element={<AdminRoute><AdminBarbers /></AdminRoute>} />
               <Route path="/admin/produtos" element={<AdminRoute><AdminProducts /></AdminRoute>} />
               <Route path="/admin/financeiro" element={<AdminRoute><AdminFinance /></AdminRoute>} />
               <Route path="/admin/marketing" element={<AdminRoute><AdminMarketing /></AdminRoute>} />

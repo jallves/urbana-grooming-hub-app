@@ -9,7 +9,7 @@ interface AuthContextProps {
   session: Session | null;
   user: User | null;
   isAdmin: boolean;
-  isBarber: boolean; // Add isBarber flag
+  isBarber: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -20,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isBarber, setIsBarber] = useState<boolean>(false); // Track barber status
+  const [isBarber, setIsBarber] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -108,17 +108,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Verificação especial para o email específico
       const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user?.email === 'joao.colimoides@gmail.com') {
-        console.log('Usuário especial detectado, configurando como admin:', userData.user.email);
-        setIsAdmin(true);
-        setIsBarber(false);
+      
+      // Special check for the specific barber email provided
+      if (userData?.user?.email === 'joao.colimoides@gmail.com' || 
+          userData?.user?.email === 'jhoaoallves84@gmail.com') {
+        console.log('Usuário especial detectado, configurando acesso apropriado:', userData.user.email);
+        
+        // Check which special user this is and set proper role
+        if (userData?.user?.email === 'joao.colimoides@gmail.com') {
+          setIsAdmin(true);
+          setIsBarber(false);
+        } else if (userData?.user?.email === 'jhoaoallves84@gmail.com') {
+          setIsAdmin(false);
+          setIsBarber(true);
+        }
+        
+        // Check if we need to add appropriate role to database
+        const role = userData?.user?.email === 'joao.colimoides@gmail.com' ? 'admin' : 'barber';
         
         // Verificar se já existe o registro de role
         const { data: existingRole, error: roleCheckError } = await supabase
           .from('user_roles')
           .select('*')
           .eq('user_id', userId)
-          .eq('role', 'admin')
+          .eq('role', role)
           .maybeSingle();
         
         if (roleCheckError) {
@@ -127,20 +140,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Inserir role se não existir
         if (!existingRole) {
-          console.log('Inserindo role de admin para usuário especial');
+          console.log(`Inserindo role de ${role} para usuário especial`);
           const { error: insertError } = await supabase
             .from('user_roles')
-            .insert([{ user_id: userId, role: 'admin' }]);
+            .insert([{ user_id: userId, role: role }]);
             
           if (insertError) {
-            console.error('Erro ao inserir role de admin:', insertError);
+            console.error(`Erro ao inserir role de ${role}:`, insertError);
           }
         }
         
         return;
       }
       
-      // Buscar roles para este usuário
+      // Regular role check for other users
       const { data: roles, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -186,7 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     user,
     isAdmin,
-    isBarber, // Include isBarber in context
+    isBarber,
     loading,
     signOut
   };
