@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,97 +21,65 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     if (!initialCheckDone) {
       setInitialCheckDone(true);
       
-      // Only check roles if not already loading auth state and we have a user
-      if (!loading) {
-        if (user) {
-          // Admin can access everything
-          if (isAdmin) {
-            console.log('BarberRoute - User is admin, granting access');
-            setHasAccess(true);
-            return;
-          }
-          
-          // If barber flag is already set in context, use it
-          if (isBarber) {
-            console.log('BarberRoute - User is barber, granting access');
-            setHasAccess(true);
-            return;
-          }
-          
-          // Special check for email
-          if (user.email === 'jhoaoallves84@gmail.com') {
-            console.log('BarberRoute - Special user detected, granting access');
-            setHasAccess(true);
-            return;
-          }
-          
-          // Need to check barber role in database
-          setCheckingRole(true);
-          
-          const checkBarberRole = async () => {
-            try {
-              console.log('BarberRoute - Checking barber role for:', user.email);
-              
-              // Check if the user has a barber role in user_roles table
-              const { data: roleData, error: roleError } = await supabase
-                .from('user_roles')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('role', 'barber');
-              
-              if (roleError) {
-                console.error('BarberRoute - Error checking barber role:', roleError);
-                setHasAccess(false);
-                
-                toast({
-                  title: 'Erro de verificação',
-                  description: 'Não foi possível verificar suas permissões',
-                  variant: 'destructive',
-                });
-              } else {
-                const hasBarberRole = roleData && roleData.length > 0;
-                console.log('BarberRoute - Has barber role:', hasBarberRole);
-                setHasAccess(hasBarberRole);
-              }
-            } catch (error) {
-              console.error('BarberRoute - Error in barber role check:', error);
-              setHasAccess(false);
-              
-              toast({
-                title: 'Erro de acesso',
-                description: 'Ocorreu um erro ao verificar seu acesso',
-                variant: 'destructive',
-              });
-            } finally {
-              setCheckingRole(false);
-            }
-          };
-
-          // Use setTimeout to avoid potential supabase client deadlocks
-          setTimeout(() => {
-            checkBarberRole();
-          }, 0);
-        } else {
-          // If not loading and no user, they don't have access
-          setHasAccess(false);
-        }
+      if (loading) {
+        return; // Wait for auth to complete
       }
-    }
-  }, [user, loading, isAdmin, isBarber, toast, initialCheckDone]);
-
-  // Use pre-computed values from Auth context when possible
-  useEffect(() => {
-    if (initialCheckDone) {
+      
+      if (!user) {
+        console.log('BarberRoute - No user, will redirect to login');
+        setHasAccess(false);
+        return;
+      }
+      
+      // Admin or known barber can access
       if (isAdmin || isBarber) {
+        console.log('BarberRoute - User is barber or admin, granting access');
         setHasAccess(true);
+        return;
       }
       
       // Special check for email
-      if (user?.email === 'jhoaoallves84@gmail.com') {
+      if (user.email === 'jhoaoallves84@gmail.com') {
+        console.log('BarberRoute - Special user detected, granting access');
         setHasAccess(true);
+        return;
       }
+      
+      // Otherwise, need to check barber role
+      setCheckingRole(true);
+      
+      const checkBarberRole = async () => {
+        try {
+          console.log('BarberRoute - Checking barber role for:', user.email);
+          
+          // Check if the user has a barber role in user_roles table
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('role', 'barber');
+          
+          if (roleError) {
+            console.error('BarberRoute - Error checking barber role:', roleError);
+            setHasAccess(false);
+          } else {
+            const hasBarberRole = roleData && roleData.length > 0;
+            console.log('BarberRoute - Has barber role:', hasBarberRole);
+            setHasAccess(hasBarberRole);
+          }
+        } catch (error) {
+          console.error('BarberRoute - Error in barber role check:', error);
+          setHasAccess(false);
+        } finally {
+          setCheckingRole(false);
+        }
+      };
+
+      setTimeout(() => {
+        checkBarberRole();
+      }, 0);
     }
-  }, [isAdmin, isBarber, initialCheckDone, user]);
+  }, [user, loading, isAdmin, isBarber, initialCheckDone]);
 
   // Show loading spinner while checking authentication or role
   if (loading || checkingRole) {

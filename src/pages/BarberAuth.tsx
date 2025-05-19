@@ -3,28 +3,23 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import BarberLoginForm from '@/components/barber/auth/BarberLoginForm';
 import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
-import { useBarberRoleCheck } from '@/hooks/useBarberRoleCheck';
+import { useNavigate } from 'react-router-dom';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { user, loading: authLoading } = useAuth();
-  const { checkingRole, setCheckingRole, checkBarberRole } = useBarberRoleCheck();
+  const { user, loading: authLoading, isBarber } = useAuth();
+  const navigate = useNavigate();
 
-  // Check if user is already authenticated and has barber role
+  // Redirect if already authenticated
   useEffect(() => {
     if (!authLoading && user) {
-      console.log('BarberAuth - User already authenticated, checking roles');
-      setCheckingRole(true);
-      checkBarberRole(user.id);
+      console.log('BarberAuth - User already authenticated, redirecting to dashboard');
+      navigate('/barbeiro/agendamentos');
     }
-  }, [user, authLoading, setCheckingRole, checkBarberRole]);
+  }, [user, authLoading, navigate]);
 
-  if (authLoading || checkingRole) {
-    return (
-      <AuthLoadingScreen 
-        message={checkingRole ? 'Verificando permissões...' : 'Carregando...'}
-      />
-    );
+  if (authLoading) {
+    return <AuthLoadingScreen message="Carregando..." />;
   }
 
   return (
@@ -41,7 +36,6 @@ const BarberAuth: React.FC = () => {
           <BarberLoginForm 
             loading={loading}
             setLoading={setLoading}
-            onLoginSuccess={checkBarberRole}
           />
         </div>
       </div>

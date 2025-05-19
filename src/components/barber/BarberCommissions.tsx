@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import ModuleAccessGuard from '@/components/auth/ModuleAccessGuard';
 
 const BarberCommissionsComponent: React.FC = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
@@ -92,74 +91,72 @@ const BarberCommissionsComponent: React.FC = () => {
   };
 
   return (
-    <ModuleAccessGuard moduleId="commissions">
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Minhas Comissões</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-gray-400">Total de Comissões</div>
-              <div className="text-2xl font-bold text-green-500">{formatCurrency(totals.total)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-gray-400">Comissões Pagas</div>
-              <div className="text-2xl font-bold">{formatCurrency(totals.paid)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-sm text-gray-400">Comissões Pendentes</div>
-              <div className="text-2xl font-bold text-yellow-500">{formatCurrency(totals.pending)}</div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
-          </div>
-        ) : commissions.length > 0 ? (
-          <div className="grid gap-4">
-            {commissions.map((commission) => (
-              <Card key={commission.id}>
-                <CardContent className="p-4">
-                  <div className="grid gap-2">
-                    <div className="flex justify-between">
-                      <p className="font-medium">
-                        {commission.appointments?.clients?.name || 'Cliente não identificado'}
-                      </p>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        commission.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {commission.status === 'paid' ? 'Pago' : 'Pendente'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">
-                        {commission.appointments?.services?.name || 'Serviço não especificado'}
-                      </span>
-                      <span className="font-medium text-green-600">
-                        {formatCurrency(Number(commission.amount))}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400">
-                      {commission.created_at && format(new Date(commission.created_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500">Você não tem comissões registradas.</p>
-          </div>
-        )}
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Minhas Comissões</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-gray-400">Total de Comissões</div>
+            <div className="text-2xl font-bold text-green-500">{formatCurrency(totals.total)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-gray-400">Comissões Pagas</div>
+            <div className="text-2xl font-bold">{formatCurrency(totals.paid)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-sm text-gray-400">Comissões Pendentes</div>
+            <div className="text-2xl font-bold text-yellow-500">{formatCurrency(totals.pending)}</div>
+          </CardContent>
+        </Card>
       </div>
-    </ModuleAccessGuard>
+      
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+        </div>
+      ) : commissions.length > 0 ? (
+        <div className="grid gap-4">
+          {commissions.map((commission) => (
+            <Card key={commission.id}>
+              <CardContent className="p-4">
+                <div className="grid gap-2">
+                  <div className="flex justify-between">
+                    <p className="font-medium">
+                      {commission.appointments?.clients?.name || 'Cliente não identificado'}
+                    </p>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      commission.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {commission.status === 'paid' ? 'Pago' : 'Pendente'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">
+                      {commission.appointments?.services?.name || 'Serviço não especificado'}
+                    </span>
+                    <span className="font-medium text-green-600">
+                      {formatCurrency(Number(commission.amount))}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    {commission.created_at && format(new Date(commission.created_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-gray-500">Você não tem comissões registradas.</p>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { useNavigate } from 'react-router-dom';
 import BarberSidebar from './BarberSidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Bell, Calendar, Settings } from 'lucide-react';
+import { LogOut, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from '@/components/ui/badge';
 
 interface BarberLayoutProps {
@@ -22,7 +21,7 @@ interface BarberLayoutProps {
   title?: string;
 }
 
-const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Agenda do Barbeiro" }) => {
+const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel do Barbeiro" }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -67,7 +66,6 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Agenda d
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar>
-                      <AvatarImage src="/placeholder.svg" alt="@barbeiro" />
                       <AvatarFallback className="bg-zinc-800">{userInitials}</AvatarFallback>
                     </Avatar>
                   </Button>
@@ -77,17 +75,9 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Agenda d
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   <DropdownMenuItem 
                     className="flex items-center cursor-pointer hover:bg-zinc-800"
-                    onClick={() => navigate('/barbeiro')}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>Agenda</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="flex items-center cursor-pointer hover:bg-zinc-800"
                     onClick={() => navigate('/barbeiro/perfil')}
                   >
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configurações</span>
+                    <span>Perfil</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   <DropdownMenuItem 

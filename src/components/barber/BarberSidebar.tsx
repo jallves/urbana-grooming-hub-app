@@ -1,119 +1,43 @@
 
-import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Calendar, Users, Scissors, ChartBar, Lock, Settings, Shield, DollarSign, LayoutDashboard } from 'lucide-react';
-import { useModuleAccess } from '@/components/admin/staff/hooks/useModuleAccess';
-import { useToast } from '@/hooks/use-toast';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { Calendar, Users, DollarSign, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BarberSidebar: React.FC = () => {
-  const { moduleAccess, loading } = useModuleAccess();
-  const { isAdmin, isBarber, user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [moduleAccessCache, setModuleAccessCache] = useState<string[]>([]);
-  
-  useEffect(() => {
-    if (!loading && moduleAccess) {
-      setModuleAccessCache(moduleAccess);
-    }
-  }, [loading, moduleAccess]);
-  
-  // Define base modules always available to barbers
-  const baseBarberModules = ['appointments', 'clients', 'reports', 'services', 'commissions'];
-  
-  const hasModuleAccess = (moduleId: string | null) => {
-    if (!moduleId) return true; // Null moduleId means always accessible
-    if (isAdmin) return true; // Admin has access to everything
-    
-    // Special user check
-    if (user?.email === 'jhoaoallves84@gmail.com') return true;
-    
-    if (isBarber && baseBarberModules.includes(moduleId)) return true; // Base modules for barbers
-    return moduleAccessCache?.includes(moduleId) || false;
-  };
+  const { user } = useAuth();
   
   const navItems = [
     { 
-      name: 'Dashboard', 
-      href: '/barbeiro/dashboard', 
-      icon: <Home className="h-5 w-5" />,
-      moduleId: null // Always accessible
-    },
-    { 
-      name: 'Agendamentos',
+      name: 'Agendamentos', 
       href: '/barbeiro/agendamentos', 
-      icon: <Calendar className="h-5 w-5" />,
-      moduleId: 'appointments'
+      icon: <Calendar className="h-5 w-5" />
     },
     { 
       name: 'Clientes', 
       href: '/barbeiro/clientes', 
-      icon: <Users className="h-5 w-5" />,
-      moduleId: 'clients'
-    },
-    { 
-      name: 'Serviços', 
-      href: '/barbeiro/servicos', 
-      icon: <Scissors className="h-5 w-5" />,
-      moduleId: 'services'
+      icon: <Users className="h-5 w-5" />
     },
     { 
       name: 'Comissões', 
       href: '/barbeiro/comissoes', 
-      icon: <DollarSign className="h-5 w-5" />,
-      moduleId: 'commissions'
-    },
-    {
-      name: 'Permissões', 
-      href: '/barbeiro/modulos', 
-      icon: <Shield className="h-5 w-5" />,
-      moduleId: null // Always accessible to show their permissions
+      icon: <DollarSign className="h-5 w-5" />
     },
     { 
       name: 'Perfil', 
       href: '/barbeiro/perfil', 
-      icon: <Settings className="h-5 w-5" />,
-      moduleId: null // Always accessible
-    },
-    // Show admin panel link with more options
-    {
-      name: 'Painel Admin',
-      href: '/admin',
-      icon: <LayoutDashboard className="h-5 w-5" />,
-      moduleId: null, // Always accessible for special users
-      highlight: true
+      icon: <Settings className="h-5 w-5" />
     }
   ];
-
-  // Filter items based on module access and special user
-  const filteredNavItems = navItems.filter(item => {
-    // Always show admin panel for special barber
-    if (item.name === 'Painel Admin' && user?.email === 'jhoaoallves84@gmail.com') {
-      return true;
-    }
-    
-    // Normal module access check
-    return hasModuleAccess(item.moduleId);
-  });
-
-  if (loading) {
-    return (
-      <div className="h-full w-64 px-3 py-4 overflow-y-auto bg-urbana-black border-r border-urbana-black flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-urbana-gold"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="h-full px-3 py-4 overflow-y-auto bg-urbana-black border-r border-urbana-black">
       <div className="mb-6 px-2 flex items-center">
-        <Scissors className="h-6 w-6 text-urbana-gold mr-2" />
-        <h2 className="text-xl font-semibold text-urbana-gold">Barbeiro</h2>
+        <h2 className="text-xl font-semibold text-urbana-gold">Painel do Barbeiro</h2>
       </div>
       
       <ul className="space-y-2 px-2">
-        {filteredNavItems.map((item) => (
+        {navItems.map((item) => (
           <li key={item.name}>
             <NavLink
               to={item.href}
@@ -121,27 +45,12 @@ const BarberSidebar: React.FC = () => {
                 `flex items-center p-2 rounded-lg ${
                   isActive
                     ? 'bg-urbana-gold text-urbana-black'
-                    : item.highlight 
-                      ? 'bg-urbana-gold/20 hover:bg-urbana-gold/30 text-urbana-gold' 
-                      : 'hover:bg-urbana-gray/20 text-white'
+                    : 'hover:bg-urbana-gray/20 text-white'
                 }`
               }
-              onClick={(e) => {
-                if (item.moduleId && !hasModuleAccess(item.moduleId)) {
-                  e.preventDefault();
-                  toast({
-                    title: "Acesso restrito",
-                    description: "Você não tem permissão para acessar este módulo",
-                    variant: "destructive"
-                  });
-                }
-              }}
             >
               {item.icon}
               <span className="ml-3">{item.name}</span>
-              {item.moduleId && !hasModuleAccess(item.moduleId) && (
-                <Lock className="ml-auto h-3 w-3 opacity-50" />
-              )}
             </NavLink>
           </li>
         ))}

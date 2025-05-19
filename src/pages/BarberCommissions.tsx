@@ -1,22 +1,14 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import BarberLayout from '../components/barber/BarberLayout';
+import BarberCommissionsComponent from '@/components/barber/BarberCommissions';
 
-const BarberCommissionsRedirect: React.FC = () => {
-  const navigate = useNavigate();
-  
-  // Use a useEffect with empty dependency array to ensure navigation happens only once
-  useEffect(() => {
-    // Redirect to appointments page with commissions tab
-    navigate('/barbeiro/agendamentos?tab=commissions', { replace: true });
-  }, [navigate]); // Include navigate in dependencies
-  
-  // Show loading while redirecting
+const BarberCommissionsPage: React.FC = () => {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
-    </div>
+    <BarberLayout title="Minhas Comissões">
+      <BarberCommissionsComponent />
+    </BarberLayout>
   );
 };
 
-export default BarberCommissionsRedirect;
+export default BarberCommissionsPage;
