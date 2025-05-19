@@ -24,31 +24,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    console.log('AuthProvider iniciado');
+    console.log('AuthProvider initialized');
+    let isMounted = true;
 
     try {
       // Set up auth state listener FIRST
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (event, newSession) => {
-          console.log('Evento de autenticação:', event);
+          console.log('Auth event:', event);
+          
+          if (!isMounted) return;
           
           // Synchronous updates first
           setSession(newSession);
           setUser(newSession?.user ?? null);
           
-          // If user changes, check admin role with timeout to prevent deadlocks
+          // If user changes, check role
           if (newSession?.user) {
-            console.log('Nova sessão, verificando papel do usuário:', newSession.user.email);
+            console.log('New session, checking user role:', newSession.user.email);
+            
             // Use setTimeout to avoid potential deadlocks with Supabase client
             setTimeout(() => {
-              checkUserRole(newSession.user.id).catch(err => {
-                console.error('Erro ao verificar papel do usuário via timeout:', err);
-              });
+              if (isMounted) {
+                checkUserRole(newSession.user.id).catch(err => {
+                  console.error('Error checking user role via timeout:', err);
+                });
+              }
             }, 0);
           } else {
-            console.log('Sessão terminada ou inválida');
-            setIsAdmin(false);
-            setIsBarber(false);
+            console.log('Session ended or invalid');
+            if (isMounted) {
+              setIsAdmin(false);
+              setIsBarber(false);
+            }
           }
         }
       );
@@ -56,95 +64,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // THEN check for existing session
       const getSession = async () => {
         try {
-          console.log('Obtendo sessão atual');
+          console.log('Getting current session');
           const { data: { session: currentSession } } = await supabase.auth.getSession();
+          
+          if (!isMounted) return;
           
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
           
           if (currentSession?.user) {
-            console.log('Sessão encontrada, verificando papel do usuário:', currentSession.user.email);
+            console.log('Session found, checking user role:', currentSession.user.email);
             await checkUserRole(currentSession.user.id);
           } else {
-            console.log('Nenhuma sessão encontrada');
+            console.log('No session found');
             setIsAdmin(false);
             setIsBarber(false);
           }
         } catch (error) {
-          console.error('Erro ao obter sessão:', error);
+          console.error('Error getting session:', error);
         } finally {
-          console.log('Carregamento completo');
-          setLoading(false);
+          if (isMounted) {
+            console.log('Loading complete');
+            setLoading(false);
+          }
         }
       };
 
       getSession();
 
       return () => {
+        isMounted = false;
         subscription.unsubscribe();
       };
     } catch (error) {
-      console.error('Erro crítico no AuthProvider:', error);
-      setLoading(false);
-      setUser(null);
-      setSession(null);
-      setIsAdmin(false);
-      setIsBarber(false);
+      console.error('Critical error in AuthProvider:', error);
+      if (isMounted) {
+        setLoading(false);
+        setUser(null);
+        setSession(null);
+        setIsAdmin(false);
+        setIsBarber(false);
+      }
     }
   }, []);
 
-  // Verificar se o usuário tem papel de administrador ou barbeiro
+  // Check if user has admin or barber role
   const checkUserRole = async (userId: string) => {
     try {
-      console.log('Verificando roles para usuário:', userId);
+      console.log('Checking roles for user:', userId);
       
-      // Verificar se temos userId antes de consultar
+      // Check if we have userId before querying
       if (!userId) {
-        console.log('userId vazio, não é possível verificar roles');
+        console.log('userId is empty, cannot check roles');
         setIsAdmin(false);
         setIsBarber(false);
         return;
       }
       
-      // Verificação especial para o email específico
+      // Special check for specific emails
       const { data: userData } = await supabase.auth.getUser();
       
-      // Special check for specific emails - FIXED to match exact emails
       if (userData?.user?.email === 'joao.colimoides@gmail.com' || 
           userData?.user?.email === 'jhoaoallves84@gmail.com') {
-        console.log('Usuário especial detectado, configurando acesso apropriado:', userData.user.email);
+        console.log('Special user detected, setting appropriate access:', userData.user.email);
         
-        // Set roles based on special user email
         if (userData?.user?.email === 'joao.colimoides@gmail.com') {
           setIsAdmin(true);
           setIsBarber(false);
         } else if (userData?.user?.email === 'jhoaoallves84@gmail.com') {
           setIsAdmin(false);
           setIsBarber(true);
-        }
-        
-        // Add appropriate role to database if needed
-        const role = userData?.user?.email === 'joao.colimoides@gmail.com' ? 'admin' : 'barber';
-        
-        try {
-          // Check if role already exists
-          const { data: existingRole } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('role', role)
-            .maybeSingle();
-          
-          // Insert role if it doesn't exist
-          if (!existingRole) {
-            console.log(`Inserindo role de ${role} para usuário especial`);
-            await supabase
-              .from('user_roles')
-              .insert([{ user_id: userId, role: role }]);
-          }
-        } catch (error) {
-          console.error(`Erro ao verificar/inserir role:`, error);
-          // Continue anyway since we're setting the role in state
         }
         
         return;
@@ -157,38 +146,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId);
       
       if (error) {
-        console.error('Erro ao verificar papel do usuário:', error);
+        console.error('Error checking user role:', error);
         setIsAdmin(false);
         setIsBarber(false);
         return;
       }
       
-      console.log('Roles do usuário:', roles);
+      console.log('User roles:', roles);
       
-      // Verificar se tem role de admin ou barber
+      // Check for admin or barber role
       const hasAdminRole = roles?.some(role => role.role === 'admin');
       const hasBarberRole = roles?.some(role => role.role === 'barber');
       
-      console.log('Usuário é admin:', hasAdminRole, 'É barbeiro:', hasBarberRole, 'Email:', userData?.user?.email);
+      console.log('User is admin:', hasAdminRole, 'Is barber:', hasBarberRole);
       
       setIsAdmin(hasAdminRole);
       setIsBarber(hasBarberRole);
     } catch (error) {
-      console.error('Erro ao verificar papel do usuário:', error);
+      console.error('Error checking user role:', error);
       setIsAdmin(false);
       setIsBarber(false);
     }
   };
 
   const signOut = async () => {
-    console.log('Iniciando logout');
+    console.log('Starting logout');
     try {
       await supabase.auth.signOut();
-      console.log('Logout concluído');
+      console.log('Logout completed');
       setIsAdmin(false);
       setIsBarber(false);
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      console.error('Error during logout:', error);
     }
   };
 
