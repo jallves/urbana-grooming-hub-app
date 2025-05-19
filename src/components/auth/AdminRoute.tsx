@@ -63,10 +63,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   // Special case for our barber user
   if (user.email === 'jhoaoallves84@gmail.com') {
     console.log('AdminRoute: Special barber user detected');
-    if (allowBarber || location.pathname.includes('/admin/barbeiros')) {
-      console.log('AdminRoute: Allowing access for special barber user to:', location.pathname);
-      return <>{children}</>;
-    }
+    // For this specific user, allow access to all barber-related admin areas
+    return <>{children}</>;
   }
   
   // Admin always has access
@@ -80,7 +78,9 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     '/admin', // Dashboard
     '/admin/agendamentos', // Appointments
     '/admin/clientes', // Clients
-    '/admin/barbeiros' // Barbers
+    '/admin/barbeiros', // Barbers
+    '/admin/produtos', // Products
+    '/admin/servicos' // Services
   ];
   
   // For barbers, check if current path is in allowed paths

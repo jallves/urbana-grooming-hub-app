@@ -24,7 +24,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   const [toastShown, setToastShown] = useState(false);
   
   // Define base modules always available to barbers
-  const baseBarberModules = ['appointments', 'clients', 'reports', 'commissions'];
+  const baseBarberModules = ['appointments', 'clients', 'reports', 'commissions', 'services'];
   
   // Check if module is accessible to barbers by default
   const isBarberDefaultModule = baseBarberModules.includes(moduleId);

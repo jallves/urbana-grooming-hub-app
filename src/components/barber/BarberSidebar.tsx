@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const BarberSidebar: React.FC = () => {
   const { moduleAccess, loading } = useModuleAccess();
-  const { isAdmin, isBarber } = useAuth();
+  const { isAdmin, isBarber, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [moduleAccessCache, setModuleAccessCache] = useState<string[]>([]);
@@ -20,11 +20,15 @@ const BarberSidebar: React.FC = () => {
   }, [loading, moduleAccess]);
   
   // Define base modules always available to barbers
-  const baseBarberModules = ['appointments', 'clients', 'reports'];
+  const baseBarberModules = ['appointments', 'clients', 'reports', 'services', 'commissions'];
   
   const hasModuleAccess = (moduleId: string | null) => {
     if (!moduleId) return true; // Null moduleId means always accessible
     if (isAdmin) return true; // Admin has access to everything
+    
+    // Special user check
+    if (user?.email === 'jhoaoallves84@gmail.com') return true;
+    
     if (isBarber && baseBarberModules.includes(moduleId)) return true; // Base modules for barbers
     return moduleAccessCache?.includes(moduleId) || false;
   };
@@ -58,7 +62,7 @@ const BarberSidebar: React.FC = () => {
       name: 'Comissões', 
       href: '/barbeiro/comissoes', 
       icon: <DollarSign className="h-5 w-5" />,
-      moduleId: 'reports'
+      moduleId: 'commissions'
     },
     {
       name: 'Permissões', 
@@ -72,20 +76,26 @@ const BarberSidebar: React.FC = () => {
       icon: <Settings className="h-5 w-5" />,
       moduleId: null // Always accessible
     },
-    // Show admin panel link with limited options
+    // Show admin panel link with more options
     {
       name: 'Painel Admin',
       href: '/admin',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      moduleId: null, // Always accessible but with limited scope
-      adminOnly: false
+      moduleId: null, // Always accessible for special users
+      highlight: true
     }
   ];
 
-  // Filter items based on module access
-  const filteredNavItems = navItems.filter(item => 
-    hasModuleAccess(item.moduleId)
-  );
+  // Filter items based on module access and special user
+  const filteredNavItems = navItems.filter(item => {
+    // Always show admin panel for special barber
+    if (item.name === 'Painel Admin' && user?.email === 'jhoaoallves84@gmail.com') {
+      return true;
+    }
+    
+    // Normal module access check
+    return hasModuleAccess(item.moduleId);
+  });
 
   if (loading) {
     return (
@@ -111,7 +121,9 @@ const BarberSidebar: React.FC = () => {
                 `flex items-center p-2 rounded-lg ${
                   isActive
                     ? 'bg-urbana-gold text-urbana-black'
-                    : 'hover:bg-urbana-gray/20 text-white'
+                    : item.highlight 
+                      ? 'bg-urbana-gold/20 hover:bg-urbana-gold/30 text-urbana-gold' 
+                      : 'hover:bg-urbana-gray/20 text-white'
                 }`
               }
               onClick={(e) => {
