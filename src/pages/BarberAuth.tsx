@@ -8,21 +8,31 @@ import { useBarberRoleCheck } from '@/hooks/useBarberRoleCheck';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { user, loading: authLoading } = useAuth();
+  const { user, isBarber, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { checkBarberRole } = useBarberRoleCheck();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated and has barber role
   useEffect(() => {
     if (!authLoading && user) {
-      console.log('BarberAuth - User already authenticated, redirecting to dashboard');
-      navigate('/barbeiro/agendamentos');
+      if (isBarber) {
+        console.log('BarberAuth - Usuário já autenticado como barbeiro, redirecionando para dashboard');
+        navigate('/barbeiro/dashboard');
+      } else {
+        // Verificar o papel do usuário sem redirecionar ainda
+        // O checkBarberRole lidará com o redirecionamento se for necessário
+        console.log('BarberAuth - Usuário autenticado, verificando se é barbeiro');
+      }
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, isBarber, navigate]);
 
   if (authLoading) {
-    return <AuthLoadingScreen message="Carregando..." />;
+    return <AuthLoadingScreen message="Verificando credenciais..." />;
   }
+
+  const handleLoginSuccess = async (userId: string) => {
+    await checkBarberRole(userId);
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-black px-4">
@@ -38,7 +48,7 @@ const BarberAuth: React.FC = () => {
           <BarberLoginForm 
             loading={loading}
             setLoading={setLoading}
-            onLoginSuccess={checkBarberRole}
+            onLoginSuccess={handleLoginSuccess}
           />
         </div>
       </div>

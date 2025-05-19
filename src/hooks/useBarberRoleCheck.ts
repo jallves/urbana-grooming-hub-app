@@ -3,54 +3,31 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
 export const useBarberRoleCheck = () => {
   const [checkingRole, setCheckingRole] = useState<boolean>(false);
-  const { isAdmin, isBarber } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const checkBarberRole = async (userId: string): Promise<void> => {
-    console.log('useBarberRoleCheck - Checking barber role for user ID:', userId);
+    console.log('useBarberRoleCheck - Verificando papel de barbeiro para ID:', userId);
     
     try {
       setCheckingRole(true);
       
-      // If user is admin, redirect to admin dashboard
-      if (isAdmin) {
-        console.log('useBarberRoleCheck - User is admin, redirecting to admin dashboard');
-        toast({
-          title: 'Login realizado com sucesso',
-          description: 'Redirecionando para o painel administrativo',
-        });
-        navigate('/admin');
-        return;
-      }
-
-      // If user is a barber, they can access the barber dashboard
-      if (isBarber) {
-        console.log('useBarberRoleCheck - User is barber, redirecting to barber dashboard');
-        toast({
-          title: 'Login realizado com sucesso',
-          description: 'Bem-vindo ao painel do barbeiro',
-        });
-        navigate('/barbeiro/dashboard');
-        return;
-      }
-      
-      // Get user email for special check
+      // Obter email do usuário para verificação especial
       const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData?.user?.email;
       
-      // Special check for exact email match
-      if (userData?.user?.email === 'jhoaoallves84@gmail.com') {
-        console.log('useBarberRoleCheck - Special barber detected, allowing access');
+      // Verificação especial para email específico
+      if (userEmail === 'jhoaoallves84@gmail.com') {
+        console.log('useBarberRoleCheck - Usuário especial detectado, permitindo acesso');
         toast({
           title: 'Login realizado com sucesso',
           description: 'Bem-vindo ao painel do barbeiro',
         });
         
-        // Add role for this special user if it doesn't exist
+        // Adicionar papel para este usuário especial se não existir
         try {
           const { data: existingRole } = await supabase
             .from('user_roles')
@@ -63,18 +40,18 @@ export const useBarberRoleCheck = () => {
               .from('user_roles')
               .insert([{ user_id: userId, role: 'barber' }]);
             
-            console.log('useBarberRoleCheck - Added barber role for special user');
+            console.log('useBarberRoleCheck - Adicionado papel de barbeiro para usuário especial');
           }
         } catch (error) {
-          console.error('Failed to add barber role', error);
-          // Continue anyway since this is a special user
+          console.error('Falha ao adicionar papel de barbeiro', error);
+          // Continuar mesmo assim já que este é um usuário especial
         }
         
         navigate('/barbeiro/dashboard');
         return;
       }
 
-      // Standard check for barber role in database
+      // Verificação padrão para papel de barbeiro no banco de dados
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -88,26 +65,27 @@ export const useBarberRoleCheck = () => {
           description: 'Não foi possível verificar seu papel no sistema',
           variant: 'destructive',
         });
+        navigate('/barbeiro/login');
         return;
       }
       
-      // If user has barber role, redirect to barber dashboard
+      // Se o usuário tem papel de barbeiro, redirecionar para dashboard de barbeiro
       if (data && data.length > 0) {
-        console.log('useBarberRoleCheck - User has barber role, redirecting to barber dashboard');
+        console.log('useBarberRoleCheck - Usuário tem papel de barbeiro, redirecionando para dashboard');
         toast({
           title: 'Login realizado com sucesso',
           description: 'Bem-vindo ao painel do barbeiro',
         });
         navigate('/barbeiro/dashboard');
       } else {
-        // If user is not barber, show error
-        console.log('useBarberRoleCheck - User does not have barber role');
+        // Se o usuário não é barbeiro, mostrar erro
+        console.log('useBarberRoleCheck - Usuário não tem papel de barbeiro');
         toast({
           title: 'Acesso não autorizado',
           description: 'Você não tem permissão para acessar a área do barbeiro',
           variant: 'destructive',
         });
-        // Sign out and redirect to login page
+        // Encerrar sessão e redirecionar para página de login
         await supabase.auth.signOut();
         navigate('/barbeiro/login');
       }
@@ -118,6 +96,7 @@ export const useBarberRoleCheck = () => {
         description: 'Ocorreu um erro ao verificar suas permissões',
         variant: 'destructive',
       });
+      navigate('/barbeiro/login');
     } finally {
       setCheckingRole(false);
     }

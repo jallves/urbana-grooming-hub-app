@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, DollarSign, Users, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import BarberProfileInfo from '@/components/barber/BarberProfileInfo';
 
 const BarberDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -68,25 +69,7 @@ const BarberDashboard: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumo de Hoje</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Agendamentos</span>
-                <span className="font-medium">0</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Finalizados</span>
-                <span className="font-medium">0</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Comissões</span>
-                <span className="font-medium">R$ 0,00</span>
-              </div>
-            </CardContent>
-          </Card>
+          <BarberProfileInfo />
 
           <Card>
             <CardHeader>
