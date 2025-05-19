@@ -109,12 +109,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Verificação especial para o email específico
       const { data: userData } = await supabase.auth.getUser();
       
-      // Special check for the specific barber email provided
+      // Special check for specific emails - FIXED to match exact emails
       if (userData?.user?.email === 'joao.colimoides@gmail.com' || 
           userData?.user?.email === 'jhoaoallves84@gmail.com') {
         console.log('Usuário especial detectado, configurando acesso apropriado:', userData.user.email);
         
-        // Check which special user this is and set proper role
+        // Set roles based on special user email
         if (userData?.user?.email === 'joao.colimoides@gmail.com') {
           setIsAdmin(true);
           setIsBarber(false);
@@ -123,31 +123,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsBarber(true);
         }
         
-        // Check if we need to add appropriate role to database
+        // Add appropriate role to database if needed
         const role = userData?.user?.email === 'joao.colimoides@gmail.com' ? 'admin' : 'barber';
         
-        // Verificar se já existe o registro de role
-        const { data: existingRole, error: roleCheckError } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('role', role)
-          .maybeSingle();
-        
-        if (roleCheckError) {
-          console.error('Erro ao verificar role existente:', roleCheckError);
-        }
-        
-        // Inserir role se não existir
-        if (!existingRole) {
-          console.log(`Inserindo role de ${role} para usuário especial`);
-          const { error: insertError } = await supabase
+        try {
+          // Check if role already exists
+          const { data: existingRole } = await supabase
             .from('user_roles')
-            .insert([{ user_id: userId, role: role }]);
-            
-          if (insertError) {
-            console.error(`Erro ao inserir role de ${role}:`, insertError);
+            .select('*')
+            .eq('user_id', userId)
+            .eq('role', role)
+            .maybeSingle();
+          
+          // Insert role if it doesn't exist
+          if (!existingRole) {
+            console.log(`Inserindo role de ${role} para usuário especial`);
+            await supabase
+              .from('user_roles')
+              .insert([{ user_id: userId, role: role }]);
           }
+        } catch (error) {
+          console.error(`Erro ao verificar/inserir role:`, error);
+          // Continue anyway since we're setting the role in state
         }
         
         return;
@@ -203,14 +200,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     signOut
   };
-
-  console.log('Estado do contexto de autenticação:', {
-    isLoggedIn: !!user,
-    userEmail: user?.email,
-    isAdmin,
-    isBarber,
-    loading
-  });
 
   return (
     <AuthContext.Provider value={contextValue}>

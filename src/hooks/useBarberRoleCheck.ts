@@ -42,7 +42,7 @@ export const useBarberRoleCheck = () => {
       // Get user email for special check
       const { data: userData } = await supabase.auth.getUser();
       
-      // Check for special user - make sure to use exact email match
+      // Special check for exact email match
       if (userData?.user?.email === 'jhoaoallves84@gmail.com') {
         console.log('useBarberRoleCheck - Special barber detected, allowing access');
         toast({
@@ -50,8 +50,8 @@ export const useBarberRoleCheck = () => {
           description: 'Bem-vindo ao painel do barbeiro',
         });
         
+        // Add role for this special user if it doesn't exist
         try {
-          // Ensure user has barber role in database
           const { data: existingRole } = await supabase
             .from('user_roles')
             .select('*')
@@ -59,10 +59,11 @@ export const useBarberRoleCheck = () => {
             .eq('role', 'barber');
           
           if (!existingRole || existingRole.length === 0) {
-            // Add barber role
             await supabase
               .from('user_roles')
               .insert([{ user_id: userId, role: 'barber' }]);
+            
+            console.log('useBarberRoleCheck - Added barber role for special user');
           }
         } catch (error) {
           console.error('Failed to add barber role', error);
@@ -73,6 +74,7 @@ export const useBarberRoleCheck = () => {
         return;
       }
 
+      // Standard check for barber role in database
       const { data, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -105,7 +107,7 @@ export const useBarberRoleCheck = () => {
           description: 'Você não tem permissão para acessar a área do barbeiro',
           variant: 'destructive',
         });
-        // Sign out the user since they don't have barber role
+        // Sign out and redirect to login page
         await supabase.auth.signOut();
         navigate('/barbeiro/login');
       }

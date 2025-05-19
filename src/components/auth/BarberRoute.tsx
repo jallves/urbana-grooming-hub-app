@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,49 +39,17 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         return;
       }
       
-      // Special check for email - IMPORTANT fix here
+      // Special check for email - FIXED to use exact match
       if (user.email === 'jhoaoallves84@gmail.com') {
         console.log('BarberRoute - Special user detected, granting access');
         setHasAccess(true);
         return;
       }
-      
-      // Otherwise, need to check barber role
-      setCheckingRole(true);
-      
-      const checkBarberRole = async () => {
-        try {
-          console.log('BarberRoute - Checking barber role for:', user.email);
-          
-          // Check if the user has a barber role in user_roles table
-          const { data: roleData, error: roleError } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('role', 'barber');
-          
-          if (roleError) {
-            console.error('BarberRoute - Error checking barber role:', roleError);
-            setHasAccess(false);
-          } else {
-            const hasBarberRole = roleData && roleData.length > 0;
-            console.log('BarberRoute - Has barber role:', hasBarberRole);
-            setHasAccess(hasBarberRole);
-          }
-        } catch (error) {
-          console.error('BarberRoute - Error in barber role check:', error);
-          setHasAccess(false);
-        } finally {
-          setCheckingRole(false);
-        }
-      };
-
-      checkBarberRole();
     }
   }, [user, loading, isAdmin, isBarber, initialCheckDone]);
 
-  // Show loading spinner while checking authentication or role
-  if (loading || checkingRole) {
+  // Show loading spinner while checking authentication
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
@@ -94,7 +63,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  if (!hasAccess) {
+  if (!hasAccess && !isBarber) {
     // Show toast and redirect to home if not a barber
     console.log('BarberRoute - User does not have barber role, redirecting to home');
     toast({

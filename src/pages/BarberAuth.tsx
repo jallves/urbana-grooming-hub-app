@@ -8,7 +8,7 @@ import { useBarberRoleCheck } from '@/hooks/useBarberRoleCheck';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { user, loading: authLoading, isBarber } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { checkBarberRole } = useBarberRoleCheck();
 
