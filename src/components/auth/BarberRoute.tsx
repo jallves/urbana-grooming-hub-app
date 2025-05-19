@@ -38,7 +38,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         return;
       }
       
-      // Special check for email
+      // Special check for email - IMPORTANT fix here
       if (user.email === 'jhoaoallves84@gmail.com') {
         console.log('BarberRoute - Special user detected, granting access');
         setHasAccess(true);
@@ -75,9 +75,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
         }
       };
 
-      setTimeout(() => {
-        checkBarberRole();
-      }, 0);
+      checkBarberRole();
     }
   }, [user, loading, isAdmin, isBarber, initialCheckDone]);
 

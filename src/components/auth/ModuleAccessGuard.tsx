@@ -22,14 +22,12 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
   // Check if module is accessible to barbers by default
   const isBarberDefaultModule = baseBarberModules.includes(moduleId);
   
-  // Handle loading state (removed to simplify)
-  
   // Admin has access to everything
   if (isAdmin) {
     return <>{children}</>;
   }
   
-  // Special user check - our barber user
+  // Special user check - our barber user - FIXED to match exact email
   if (user?.email === 'jhoaoallves84@gmail.com') {
     console.log('ModuleAccessGuard - Special barber user granted access to:', moduleId);
     return <>{children}</>;

@@ -41,6 +41,8 @@ export const useBarberRoleCheck = () => {
       
       // Get user email for special check
       const { data: userData } = await supabase.auth.getUser();
+      
+      // Check for special user - make sure to use exact email match
       if (userData?.user?.email === 'jhoaoallves84@gmail.com') {
         console.log('useBarberRoleCheck - Special barber detected, allowing access');
         toast({
@@ -48,18 +50,23 @@ export const useBarberRoleCheck = () => {
           description: 'Bem-vindo ao painel do barbeiro',
         });
         
-        // Ensure user has barber role in database
-        const { data: existingRole } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('role', 'barber');
-        
-        if (!existingRole || existingRole.length === 0) {
-          // Add barber role
-          await supabase
+        try {
+          // Ensure user has barber role in database
+          const { data: existingRole } = await supabase
             .from('user_roles')
-            .insert([{ user_id: userId, role: 'barber' }]);
+            .select('*')
+            .eq('user_id', userId)
+            .eq('role', 'barber');
+          
+          if (!existingRole || existingRole.length === 0) {
+            // Add barber role
+            await supabase
+              .from('user_roles')
+              .insert([{ user_id: userId, role: 'barber' }]);
+          }
+        } catch (error) {
+          console.error('Failed to add barber role', error);
+          // Continue anyway since this is a special user
         }
         
         navigate('/barbeiro/dashboard');
@@ -100,7 +107,7 @@ export const useBarberRoleCheck = () => {
         });
         // Sign out the user since they don't have barber role
         await supabase.auth.signOut();
-        navigate('/');
+        navigate('/barbeiro/login');
       }
     } catch (error) {
       console.error('useBarberRoleCheck - Erro ao verificar papel do barbeiro:', error);
