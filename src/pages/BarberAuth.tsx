@@ -4,11 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import BarberLoginForm from '@/components/barber/auth/BarberLoginForm';
 import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
 import { useNavigate } from 'react-router-dom';
+import { useBarberRoleCheck } from '@/hooks/useBarberRoleCheck';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { user, loading: authLoading, isBarber } = useAuth();
   const navigate = useNavigate();
+  const { checkBarberRole } = useBarberRoleCheck();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -36,6 +38,7 @@ const BarberAuth: React.FC = () => {
           <BarberLoginForm 
             loading={loading}
             setLoading={setLoading}
+            onLoginSuccess={checkBarberRole}
           />
         </div>
       </div>

@@ -6,10 +6,16 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AdminRouteProps {
   children: React.ReactNode;
+  allowBarber?: boolean;
+  requiredModule?: string;
 }
 
-const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-  const { user, isAdmin, loading } = useAuth();
+const AdminRoute: React.FC<AdminRouteProps> = ({ 
+  children, 
+  allowBarber = false, 
+  requiredModule 
+}) => {
+  const { user, isAdmin, isBarber, loading } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
   
@@ -43,6 +49,12 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   // Admin always has access
   if (isAdmin) {
     console.log('AdminRoute: Allowing access for admin');
+    return <>{children}</>;
+  }
+
+  // If barbers are allowed and user is a barber
+  if (allowBarber && isBarber) {
+    console.log('AdminRoute: Allowing access for barber');
     return <>{children}</>;
   }
   
