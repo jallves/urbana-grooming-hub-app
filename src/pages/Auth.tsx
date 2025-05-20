@@ -7,6 +7,8 @@ import RegisterForm from '@/components/auth/RegisterForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Home } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -15,6 +17,18 @@ const Auth: React.FC = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
+  
+  // Auto redirect timer
+  useEffect(() => {
+    const redirectTimer = setTimeout(() => {
+      if (!user && !loading) {
+        console.log('Auto-redirecting to home after 10 seconds of inactivity');
+        navigate('/');
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearTimeout(redirectTimer);
+  }, [user, loading, navigate]);
   
   // Depurar a origem da navegação
   console.log('Auth: location state recebido:', location.state);
@@ -171,6 +185,18 @@ const Auth: React.FC = () => {
               <RegisterForm loading={loading} setLoading={setLoading} />
             </TabsContent>
           </Tabs>
+        </div>
+
+        {/* View site button */}
+        <div className="flex justify-center">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={() => navigate('/')}
+          >
+            <Home size={16} />
+            Ver Site
+          </Button>
         </div>
       </div>
     </div>
