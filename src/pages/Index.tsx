@@ -9,7 +9,9 @@ import Footer from '../components/Footer';
 import Gallery from '../components/Gallery';
 import WhatsAppButton from '../components/WhatsAppButton';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
+// Create query client outside component to avoid recreation on render
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -20,6 +22,9 @@ const queryClient = new QueryClient({
 });
 
 const Index = () => {
+  // We don't need to do anything special here, as AuthContext is already 
+  // wrapping the entire application and will maintain the user's session
+
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-background text-foreground overflow-x-hidden">

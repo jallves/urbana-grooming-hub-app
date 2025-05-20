@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Shield, Scissors } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ const Navbar: React.FC = () => {
   const { toast } = useToast();
   const [scrolled, setScrolled] = useState(false);
   const { shopSettings } = useShopSettings();
+  const navigate = useNavigate();
   
   // Effect to detect scrolling and add shadow/background when scrolled
   useEffect(() => {
@@ -42,12 +43,23 @@ const Navbar: React.FC = () => {
         title: "Logout realizado com sucesso",
         description: "Você foi desconectado do sistema.",
       });
+      navigate('/'); // Redirect to home after logout
     } catch (error) {
       toast({
         title: "Erro ao fazer logout",
         description: "Ocorreu um erro ao tentar desconectar.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePanelClick = () => {
+    if (isAdmin) {
+      navigate('/admin');
+    } else if (isBarber) {
+      navigate('/barbeiro/dashboard');
+    } else {
+      navigate('/auth');
     }
   };
 
@@ -71,47 +83,48 @@ const Navbar: React.FC = () => {
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList className="gap-1">
             <NavigationMenuItem>
-              <NavigationMenuLink 
-                href="#" 
-                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+              <Link 
+                to="/" 
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
               >
                 Home
-              </NavigationMenuLink>
+              </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink 
+              <a 
                 href="#services" 
-                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
               >
                 Serviços
-              </NavigationMenuLink>
+              </a>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink 
+              <a 
                 href="#team" 
-                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
               >
                 Equipe
-              </NavigationMenuLink>
+              </a>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink 
+              <a 
                 href="#appointment" 
-                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
               >
                 Contato
-              </NavigationMenuLink>
+              </a>
             </NavigationMenuItem>
             {user ? (
               <>
                 <NavigationMenuItem>
-                  <NavigationMenuLink 
+                  <Button
+                    variant="ghost"
                     className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
-                    href={isAdmin ? "/admin" : isBarber ? "/barbeiro/dashboard" : "/auth"}
+                    onClick={handlePanelClick}
                   >
                     <Shield size={18} className="inline-block mr-1" />
                     Painel
-                  </NavigationMenuLink>
+                  </Button>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Button 
@@ -127,22 +140,22 @@ const Navbar: React.FC = () => {
             ) : (
               <>
                 <NavigationMenuItem>
-                  <NavigationMenuLink 
-                    href="/auth" 
-                    className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                  <Link 
+                    to="/auth" 
+                    className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
                     title="Admin"
                   >
                     <Shield size={18} />
-                  </NavigationMenuLink>
+                  </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuLink 
-                    href="/barbeiro/login" 
-                    className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                  <Link 
+                    to="/barbeiro/login" 
+                    className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
                     title="Área do Barbeiro"
                   >
                     <Scissors size={18} className="text-urbana-gold" />
-                  </NavigationMenuLink>
+                  </Link>
                 </NavigationMenuItem>
               </>
             )}
@@ -168,14 +181,24 @@ const Navbar: React.FC = () => {
             <a href="#services">Serviços</a>
           </Button>
           {user ? (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleSignOut}
-              className="ml-2 border-urbana-gold text-urbana-gold hover:bg-urbana-gold/20"
-            >
-              Sair
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white"
+                onClick={handlePanelClick}
+              >
+                <Shield size={16} className="mr-1" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSignOut}
+                className="ml-2 border-urbana-gold text-urbana-gold hover:bg-urbana-gold/20"
+              >
+                Sair
+              </Button>
+            </>
           ) : (
             <>
               <Button
