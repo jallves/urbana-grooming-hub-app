@@ -18,3 +18,9 @@ export interface FinancialTransactionFormData {
   transaction_date: Date;
   appointment_id?: string | null;
 }
+
+// Define um tipo para comissões de barbeiros
+export type BarberCommission = Database['public']['Tables']['barber_commissions']['Row'];
+
+// Define um tipo para novas comissões (sem id e timestamps)
+export type NewBarberCommission = Omit<BarberCommission, 'id' | 'created_at' | 'updated_at'>;
