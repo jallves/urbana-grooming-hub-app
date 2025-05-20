@@ -1,5 +1,5 @@
 
-import React, { Suspense } from 'react';
+import React from 'react';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Services from '../components/Services';
@@ -22,8 +22,8 @@ const queryClient = new QueryClient({
 });
 
 const Index = () => {
-  // We don't need to do anything special here, as AuthContext is already 
-  // wrapping the entire application and will maintain the user's session
+  // No need to do any navigation here - just render the page
+  // Auth status is managed by AuthContext
 
   return (
     <QueryClientProvider client={queryClient}>

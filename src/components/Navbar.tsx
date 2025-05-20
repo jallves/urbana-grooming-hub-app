@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Shield, Scissors } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +22,7 @@ const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const { shopSettings } = useShopSettings();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Effect to detect scrolling and add shadow/background when scrolled
   useEffect(() => {
@@ -43,7 +44,7 @@ const Navbar: React.FC = () => {
         title: "Logout realizado com sucesso",
         description: "Você foi desconectado do sistema.",
       });
-      navigate('/'); // Redirect to home after logout
+      // Don't navigate here - let Auth context handle it
     } catch (error) {
       toast({
         title: "Erro ao fazer logout",
@@ -53,7 +54,8 @@ const Navbar: React.FC = () => {
     }
   };
 
-  const handlePanelClick = () => {
+  const handlePanelClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default action
     if (isAdmin) {
       navigate('/admin');
     } else if (isBarber) {
