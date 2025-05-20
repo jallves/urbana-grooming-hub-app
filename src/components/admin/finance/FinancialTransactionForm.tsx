@@ -66,7 +66,7 @@ const transactionCategories = {
 };
 
 const transactionSchema = z.object({
-  type: z.enum(['income', 'expense']),
+  transaction_type: z.enum(['income', 'expense']),
   amount: z.coerce.number().positive({ message: 'O valor deve ser maior que zero' }),
   description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
@@ -101,7 +101,7 @@ const FinancialTransactionForm: React.FC<FinancialTransactionFormProps> = ({
       // Parse and convert the data to match our form schema
       return {
         ...data,
-        type: data.type as 'income' | 'expense',
+        transaction_type: data.transaction_type as 'income' | 'expense',
         status: data.status as 'pending' | 'completed' | 'canceled',
         transaction_date: new Date(data.transaction_date),
       };
@@ -112,7 +112,7 @@ const FinancialTransactionForm: React.FC<FinancialTransactionFormProps> = ({
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
-      type: 'income',
+      transaction_type: 'income',
       amount: 0,
       description: '',
       category: '',
@@ -124,14 +124,14 @@ const FinancialTransactionForm: React.FC<FinancialTransactionFormProps> = ({
     values: transactionData || undefined,
   });
   
-  const transactionType = form.watch('type');
+  const transactionType = form.watch('transaction_type');
   const { formState } = form;
   const { isSubmitting } = formState;
 
   const onSubmit = async (values: TransactionFormValues) => {
     try {
       const transactionData = {
-        type: values.type,
+        transaction_type: values.transaction_type,
         amount: values.amount,
         description: values.description || null,
         category: values.category || null,
@@ -184,7 +184,7 @@ const FinancialTransactionForm: React.FC<FinancialTransactionFormProps> = ({
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="type"
+                name="transaction_type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo *</FormLabel>
@@ -395,3 +395,4 @@ const FinancialTransactionForm: React.FC<FinancialTransactionFormProps> = ({
 };
 
 export default FinancialTransactionForm;
+

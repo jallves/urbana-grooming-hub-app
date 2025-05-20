@@ -28,7 +28,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import {
+  Badge
+} from "@/components/ui/badge";
 import { Edit, MoreHorizontal, Trash2, Search, Plus, ArrowUpCircle, ArrowDownCircle, Filter } from 'lucide-react';
 import FinancialTransactionForm from './FinancialTransactionForm';
 import {
@@ -88,7 +90,7 @@ const TransactionList: React.FC = () => {
         .lte('transaction_date', end.toISOString());
       
       if (typeFilter !== 'all') {
-        query = query.eq('type', typeFilter);
+        query = query.eq('transaction_type', typeFilter);
       }
       
       if (statusFilter !== 'all') {
@@ -175,11 +177,11 @@ const TransactionList: React.FC = () => {
   // Calculate totals
   const calculateTotals = () => {
     const totalIncome = filteredTransactions
-      .filter(t => t.type === 'income' && t.status !== 'canceled')
+      .filter(t => t.transaction_type === 'income' && t.status !== 'canceled')
       .reduce((sum, t) => sum + Number(t.amount), 0);
       
     const totalExpense = filteredTransactions
-      .filter(t => t.type === 'expense' && t.status !== 'canceled')
+      .filter(t => t.transaction_type === 'expense' && t.status !== 'canceled')
       .reduce((sum, t) => sum + Number(t.amount), 0);
       
     const balance = totalIncome - totalExpense;
@@ -349,16 +351,16 @@ const TransactionList: React.FC = () => {
                     <TableCell>
                       <Badge 
                         variant="outline" 
-                        className={transaction.type === 'income' 
+                        className={transaction.transaction_type === 'income' 
                           ? 'bg-green-100 text-green-800 border-green-200' 
                           : 'bg-red-100 text-red-800 border-red-200'
                         }
                       >
-                        {transaction.type === 'income' ? 'Receita' : 'Despesa'}
+                        {transaction.transaction_type === 'income' ? 'Receita' : 'Despesa'}
                       </Badge>
                     </TableCell>
                     <TableCell className={`text-right font-medium ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      transaction.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'
                     }`}>
                       R$ {Number(transaction.amount).toFixed(2)}
                     </TableCell>
@@ -435,3 +437,4 @@ const TransactionList: React.FC = () => {
 };
 
 export default TransactionList;
+

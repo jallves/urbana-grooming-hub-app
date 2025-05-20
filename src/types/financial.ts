@@ -9,7 +9,7 @@ export type NewFinancialTransaction = Omit<FinancialTransaction, 'id' | 'created
 
 // Define um tipo para o formulário de transações
 export interface FinancialTransactionFormData {
-  type: 'income' | 'expense';
+  transaction_type: 'income' | 'expense';
   amount: number;
   description: string | null;
   category: string | null;
