@@ -35,11 +35,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 variant="ghost" 
                 size="sm"
                 className="text-xs md:text-sm text-gray-400 hover:text-white flex items-center gap-1"
-                asChild
+                onClick={() => navigate('/')}
               >
-                <Link to="/">
-                  Ver Site
-                </Link>
+                Ver Site
               </Button>
               <Button 
                 variant="ghost" 

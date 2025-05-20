@@ -22,7 +22,7 @@ const queryClient = new QueryClient({
 });
 
 const Index = () => {
-  // No need to do any navigation here - just render the page
+  console.log('Rendering Index page');
   // Auth status is managed by AuthContext
 
   return (
