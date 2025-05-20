@@ -31,12 +31,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <p className="text-sm text-gray-400">Urbana Barbearia</p>
             </div>
             <div className="flex items-center gap-2 md:gap-4">
-              <Link 
-                to="/" 
+              <Button 
+                variant="ghost" 
+                size="sm"
                 className="text-xs md:text-sm text-gray-400 hover:text-white flex items-center gap-1"
+                asChild
               >
-                Ver Site
-              </Link>
+                <Link to="/">
+                  Ver Site
+                </Link>
+              </Button>
               <Button 
                 variant="ghost" 
                 size="icon"
