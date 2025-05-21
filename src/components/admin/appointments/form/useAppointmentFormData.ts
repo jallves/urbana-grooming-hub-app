@@ -39,6 +39,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true);
         // Fetch services
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
@@ -69,7 +70,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
         if (appointmentId) {
           const { data: appointment, error } = await supabase
             .from('appointments')
-            .select('*, client:client_id(*), service:service_id(*)')
+            .select('*, client:client_id(*), service:service_id(*), staff:staff_id(*)')
             .eq('id', appointmentId)
             .single();
             
@@ -80,7 +81,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
             form.reset({
               client_id: appointment.client_id,
               service_id: appointment.service_id,
-              staff_id: '', // Need to update schema to include staff
+              staff_id: appointment.staff_id || '',
               date: appointmentDate,
               time: format(appointmentDate, 'HH:mm'),
               notes: appointment.notes || '',
@@ -98,6 +99,8 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
           title: "Erro",
           description: "Não foi possível carregar os dados necessários.",
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     

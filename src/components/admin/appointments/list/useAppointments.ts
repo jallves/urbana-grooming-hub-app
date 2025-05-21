@@ -44,7 +44,8 @@ export const useAppointments = () => {
           .select(`
             *,
             client:client_id(*),
-            service:service_id(*)
+            service:service_id(*),
+            staff:staff_id(*)
           `)
           .eq('staff_id', staffData.id)
           .order('start_time', { ascending: true });
