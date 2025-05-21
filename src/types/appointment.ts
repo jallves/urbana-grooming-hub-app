@@ -6,6 +6,7 @@ export type Appointment = Database['public']['Tables']['appointments']['Row'] & 
   // Include joined relations
   client?: Database['public']['Tables']['clients']['Row'];
   service?: Database['public']['Tables']['services']['Row'];
+  staff?: Database['public']['Tables']['staff']['Row'];
 };
 
 // Define um tipo para novos agendamentos (sem id e timestamps)

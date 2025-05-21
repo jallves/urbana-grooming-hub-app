@@ -3,7 +3,6 @@ import React from 'react';
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -24,34 +23,31 @@ const AppointmentTable: React.FC<AppointmentTableProps> = ({
   isLoading,
   onEdit,
   onStatusChange,
-  onDelete
+  onDelete,
 }) => {
   if (isLoading) {
     return (
-      <TableRow>
-        <TableCell colSpan={6} className="text-center py-4">
-          Carregando agendamentos...
-        </TableCell>
-      </TableRow>
+      <div className="flex justify-center py-8">
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+      </div>
     );
   }
-
+  
   if (appointments.length === 0) {
     return (
-      <TableRow>
-        <TableCell colSpan={6} className="text-center py-4">
-          Nenhum agendamento encontrado
-        </TableCell>
-      </TableRow>
+      <div className="text-center py-8">
+        <p className="text-gray-500">Nenhum agendamento encontrado</p>
+      </div>
     );
   }
-
+  
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Cliente</TableHead>
           <TableHead>Serviço</TableHead>
+          <TableHead>Barbeiro</TableHead>
           <TableHead>Data</TableHead>
           <TableHead>Horário</TableHead>
           <TableHead>Status</TableHead>
