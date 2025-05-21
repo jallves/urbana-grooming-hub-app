@@ -13,6 +13,7 @@ export const useAppointments = () => {
   const fetchAppointments = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching appointments. isAdmin:', isAdmin, 'isBarber:', isBarber);
       
       // If the user is not an admin and is a barber, only load their own appointments
       if (!isAdmin && isBarber && user) {
@@ -32,6 +33,7 @@ export const useAppointments = () => {
         
         if (!staffData) {
           console.log('No staff record found for this user');
+          setAppointments([]);
           setIsLoading(false);
           return;
         }
@@ -47,7 +49,12 @@ export const useAppointments = () => {
           .eq('staff_id', staffData.id)
           .order('start_time', { ascending: true });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching barber appointments:', error);
+          throw error;
+        }
+        
+        console.log('Barber appointments found:', data?.length || 0);
         setAppointments(data || []);
       } else {
         // Admin user - load all appointments
@@ -56,11 +63,17 @@ export const useAppointments = () => {
           .select(`
             *,
             client:client_id(*),
-            service:service_id(*)
+            service:service_id(*),
+            staff:staff_id(*)
           `)
           .order('start_time', { ascending: true });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching all appointments:', error);
+          throw error;
+        }
+        
+        console.log('All appointments found:', data?.length || 0);
         setAppointments(data || []);
       }
     } catch (error) {
@@ -72,29 +85,31 @@ export const useAppointments = () => {
   };
 
   useEffect(() => {
-    fetchAppointments();
-    
-    // Add real-time subscription for appointments
-    const channel = supabase
-      .channel('appointment-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'appointments'
-        },
-        (payload) => {
-          console.log('Appointment data changed:', payload);
-          toast.info('Dados de agendamentos atualizados');
-          fetchAppointments(); // Refresh data when changes occur
-        }
-      )
-      .subscribe();
+    if (user) {
+      fetchAppointments();
+      
+      // Add real-time subscription for appointments
+      const channel = supabase
+        .channel('appointment-changes')
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'appointments'
+          },
+          (payload) => {
+            console.log('Appointment data changed:', payload);
+            toast.info('Dados de agendamentos atualizados');
+            fetchAppointments(); // Refresh data when changes occur
+          }
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [isAdmin, isBarber, user]);
 
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {

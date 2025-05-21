@@ -43,7 +43,7 @@ const AppointmentForm: React.FC = () => {
     setLoading(true);
     setFormError(null);
 
-    // Validação básica
+    // Basic validation
     if (!formData.name || !formData.phone || !formData.service || !formData.date) {
       toast({
         title: "Formulário incompleto",
@@ -55,57 +55,115 @@ const AppointmentForm: React.FC = () => {
     }
 
     try {
-      // 1. Inserir cliente
-      const { data: clientData, error: clientError } = await supabase
+      console.log('Starting appointment submission process');
+      
+      // 1. Insert or find client
+      let clientId: string;
+      
+      // First check if client exists with this phone
+      const { data: existingClient, error: clientSearchError } = await supabase
         .from('clients')
-        .insert({
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email || null
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('phone', formData.phone)
+        .maybeSingle();
+        
+      if (clientSearchError) {
+        console.error('Error searching for existing client:', clientSearchError);
+        throw new Error('Erro ao verificar cliente existente');
+      }
+      
+      if (existingClient) {
+        // Update existing client
+        clientId = existingClient.id;
+        await supabase
+          .from('clients')
+          .update({
+            name: formData.name,
+            email: formData.email || null
+          })
+          .eq('id', clientId);
+          
+        console.log('Updated existing client:', clientId);
+      } else {
+        // Create new client
+        const { data: newClient, error: newClientError } = await supabase
+          .from('clients')
+          .insert({
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email || null
+          })
+          .select()
+          .single();
 
-      if (clientError) throw clientError;
+        if (newClientError) {
+          console.error('Error creating new client:', newClientError);
+          throw newClientError;
+        }
+        
+        clientId = newClient.id;
+        console.log('Created new client:', clientId);
+      }
 
-      // Obter duração do serviço
+      // Get service details for duration
       const { data: serviceData, error: serviceError } = await supabase
         .from('services')
         .select('*')
         .eq('id', formData.service)
         .single();
         
-      if (serviceError) throw serviceError;
-      if (!serviceData) throw new Error("Serviço não encontrado");
+      if (serviceError) {
+        console.error('Error fetching service:', serviceError);
+        throw serviceError;
+      }
+      
+      if (!serviceData) {
+        console.error('Service not found');
+        throw new Error("Serviço não encontrado");
+      }
 
+      // Define appointment times
       const startTime = formData.date;
       if (!startTime) throw new Error("Data não selecionada");
       
-      // Definir hora de término com base na duração do serviço (em minutos)
+      // Set end time based on service duration (in minutes)
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceData.duration);
+      
+      // Prepare appointment data
+      const appointmentData: any = {
+        client_id: clientId,
+        service_id: formData.service,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: 'scheduled',
+        notes: formData.notes || null
+      };
+      
+      // Add staff_id if barber is selected
+      if (formData.barber) {
+        appointmentData.staff_id = formData.barber;
+      }
+      
+      console.log('Inserting appointment with data:', appointmentData);
 
-      // 2. Inserir agendamento
+      // Insert appointment
       const { error: appointmentError } = await supabase
         .from('appointments')
-        .insert({
-          client_id: clientData.id,
-          service_id: formData.service,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          status: 'scheduled',
-          notes: formData.notes || null
-        });
+        .insert(appointmentData);
 
-      if (appointmentError) throw appointmentError;
+      if (appointmentError) {
+        console.error('Error creating appointment:', appointmentError);
+        throw appointmentError;
+      }
 
-      // Sucesso
+      // Success
       toast({
         title: "Solicitação de Agendamento Enviada",
         description: "Entraremos em contato em breve para confirmar seu horário.",
       });
 
-      // Limpar formulário
+      // Clear form
       setFormData({
         name: '',
         phone: '',
