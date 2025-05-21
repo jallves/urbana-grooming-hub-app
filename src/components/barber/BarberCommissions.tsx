@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Check, Clock, DollarSign, Calendar } from 'lucide-react';
+import { Check, Clock, DollarSign, Calendar, User } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const BarberCommissionsComponent: React.FC = () => {
@@ -50,7 +50,7 @@ const BarberCommissionsComponent: React.FC = () => {
         // Fetch appointments to calculate statistics
         const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('appointments')
-          .select('id, status')
+          .select('id, status, service_id')
           .eq('staff_id', staffData.id);
           
         if (appointmentsError) {
@@ -58,6 +58,29 @@ const BarberCommissionsComponent: React.FC = () => {
         } else {
           const completedCount = appointmentsData?.filter(app => app.status === 'completed').length || 0;
           const totalCount = appointmentsData?.length || 0;
+          
+          // Get service prices to calculate potential revenue
+          if (appointmentsData && appointmentsData.length > 0) {
+            const serviceIds = [...new Set(appointmentsData.map(app => app.service_id))];
+            
+            const { data: servicesData } = await supabase
+              .from('services')
+              .select('id, price')
+              .in('id', serviceIds);
+              
+            const servicesPriceMap = {};
+            servicesData?.forEach(service => {
+              servicesPriceMap[service.id] = service.price;
+            });
+            
+            // Calculate potential revenue
+            let potentialRevenue = 0;
+            appointmentsData.forEach(app => {
+              if (app.status === 'completed' && app.service_id) {
+                potentialRevenue += Number(servicesPriceMap[app.service_id] || 0);
+              }
+            });
+          }
           
           // Update appointments statistics
           setTotals(prev => ({
@@ -107,6 +130,24 @@ const BarberCommissionsComponent: React.FC = () => {
     };
 
     fetchCommissions();
+    
+    // Subscribe to real-time changes for commissions
+    const channel = supabase
+      .channel('barber-commissions-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'barber_commissions' },
+        (payload) => {
+          console.log('Commission data changed:', payload);
+          fetchCommissions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    
   }, [user]);
 
   const formatCurrency = (value: number) => {
@@ -129,7 +170,7 @@ const BarberCommissionsComponent: React.FC = () => {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Minhas Comissões</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-6 flex items-center">
             <div className="rounded-full bg-green-100 p-3 mr-4">
@@ -160,6 +201,17 @@ const BarberCommissionsComponent: React.FC = () => {
             <div>
               <div className="text-sm text-gray-500">Comissões Pendentes</div>
               <div className="text-xl font-bold text-yellow-600">{formatCurrency(totals.pending)}</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex items-center">
+            <div className="rounded-full bg-gray-100 p-3 mr-4">
+              <User className="h-6 w-6 text-gray-600" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-500">Total Atendimentos</div>
+              <div className="text-xl font-bold">{totals.completedAppointments}/{totals.totalAppointments}</div>
             </div>
           </CardContent>
         </Card>

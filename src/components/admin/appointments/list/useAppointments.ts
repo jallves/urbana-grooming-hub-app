@@ -3,25 +3,66 @@ import { useState, useEffect } from 'react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment } from '@/types/appointment';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user, isAdmin, isBarber } = useAuth();
   
   const fetchAppointments = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          client:client_id(*),
-          service:service_id(*)
-        `)
-        .order('start_time', { ascending: true });
       
-      if (error) throw error;
-      setAppointments(data || []);
+      // If the user is not an admin and is a barber, only load their own appointments
+      if (!isAdmin && isBarber && user) {
+        // First get the staff ID for the current barber user
+        const { data: staffData, error: staffError } = await supabase
+          .from('staff')
+          .select('id')
+          .eq('email', user.email)
+          .maybeSingle();
+          
+        if (staffError) {
+          console.error('Error fetching staff data:', staffError);
+          toast.error("Não foi possível carregar os dados do profissional.");
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!staffData) {
+          console.log('No staff record found for this user');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Then get appointments for this barber
+        const { data, error } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            client:client_id(*),
+            service:service_id(*)
+          `)
+          .eq('staff_id', staffData.id)
+          .order('start_time', { ascending: true });
+        
+        if (error) throw error;
+        setAppointments(data || []);
+      } else {
+        // Admin user - load all appointments
+        const { data, error } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            client:client_id(*),
+            service:service_id(*)
+          `)
+          .order('start_time', { ascending: true });
+        
+        if (error) throw error;
+        setAppointments(data || []);
+      }
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast.error("Não foi possível carregar os agendamentos.");
@@ -54,7 +95,7 @@ export const useAppointments = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isAdmin, isBarber, user]);
 
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
     try {

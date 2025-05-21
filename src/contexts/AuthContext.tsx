@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -124,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Special check for specific emails
       const { data: userData } = await supabase.auth.getUser();
       
+      // Check specifically for test emails that get special roles
       if (userData?.user?.email === 'joao.colimoides@gmail.com' || 
           userData?.user?.email === 'jhoaoallves84@gmail.com') {
         console.log('Special user detected, setting appropriate access:', userData.user.email);
@@ -139,7 +139,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Regular role check for other users
+      // Check for staff entry with barber role (regardless of user_roles table)
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
+        .select('role')
+        .eq('email', userData?.user?.email)
+        .maybeSingle();
+      
+      if (staffData && !staffError && staffData.role === 'barber') {
+        console.log('User found in staff table with barber role');
+        setIsBarber(true);
+      }
+      
+      // Regular role check for all users
       const { data: roles, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -147,8 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Error checking user role:', error);
-        setIsAdmin(false);
-        setIsBarber(false);
+        if (!staffData || staffData.role !== 'barber') {
+          setIsAdmin(false);
+          setIsBarber(false);
+        }
         return;
       }
       
@@ -156,7 +170,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check for admin or barber role
       const hasAdminRole = roles?.some(role => role.role === 'admin');
-      const hasBarberRole = roles?.some(role => role.role === 'barber');
+      const hasBarberRole = roles?.some(role => role.role === 'barber') || 
+                           (staffData && staffData.role === 'barber');
       
       console.log('User is admin:', hasAdminRole, 'Is barber:', hasBarberRole);
       
