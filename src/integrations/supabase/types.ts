@@ -9,6 +9,110 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_activity_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          details: Json | null
+          entity: string
+          entity_id: string | null
+          id: string
+          ip_address: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: string
+          ip_address?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          ip_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_metrics: {
+        Row: {
+          created_at: string
+          date_recorded: string
+          id: string
+          metric_name: string
+          metric_unit: string | null
+          metric_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          metric_name: string
+          metric_unit?: string | null
+          metric_value: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          metric_name?: string
+          metric_unit?: string | null
+          metric_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -168,6 +272,8 @@ export type Database = {
       }
       banner_images: {
         Row: {
+          button_link: string | null
+          button_text: string | null
           created_at: string | null
           description: string | null
           display_order: number | null
@@ -179,6 +285,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          button_link?: string | null
+          button_text?: string | null
           created_at?: string | null
           description?: string | null
           display_order?: number | null
@@ -190,6 +298,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          button_link?: string | null
+          button_text?: string | null
           created_at?: string | null
           description?: string | null
           display_order?: number | null
@@ -891,7 +1001,9 @@ export type Database = {
       }
       instructors: {
         Row: {
+          active: boolean | null
           availability: Json | null
+          bio: string | null
           certifications: string[] | null
           created_at: string
           id: string
@@ -900,7 +1012,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean | null
           availability?: Json | null
+          bio?: string | null
           certifications?: string[] | null
           created_at?: string
           id?: string
@@ -909,7 +1023,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean | null
           availability?: Json | null
+          bio?: string | null
           certifications?: string[] | null
           created_at?: string
           id?: string

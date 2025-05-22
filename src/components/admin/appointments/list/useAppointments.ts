@@ -75,6 +75,7 @@ export const useAppointments = () => {
         }
         
         console.log('All appointments found:', data?.length || 0);
+        console.log('Appointments with staff data:', data);
         setAppointments(data || []);
       }
     } catch (error) {
