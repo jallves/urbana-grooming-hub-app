@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment } from '@/types/appointment';
@@ -10,7 +10,8 @@ export const useAppointments = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAdmin, isBarber } = useAuth();
   
-  const fetchAppointments = async () => {
+  // Use useCallback to memoize the fetchAppointments function to prevent infinite re-renders
+  const fetchAppointments = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log('Fetching appointments. isAdmin:', isAdmin, 'isBarber:', isBarber);
@@ -84,7 +85,7 @@ export const useAppointments = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAdmin, isBarber, user]); // Include dependencies for useCallback
 
   useEffect(() => {
     if (user) {
@@ -112,7 +113,7 @@ export const useAppointments = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [isAdmin, isBarber, user]);
+  }, [user, fetchAppointments]); // Add fetchAppointments as a dependency
 
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
     try {
