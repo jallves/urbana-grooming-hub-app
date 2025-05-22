@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AppointmentForm from '@/components/admin/appointments/AppointmentForm';
+import AppointmentForm from '@/components/barber/appointments/BarberAppointmentForm';
 
 const BarberAppointmentsComponent: React.FC = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -285,6 +285,7 @@ const BarberAppointmentsComponent: React.FC = () => {
           onClose={closeEditModal}
           appointmentId={selectedAppointmentId || undefined}
           defaultDate={selectedAppointmentDate || undefined}
+          dateTimeOnly={true} // Add flag to indicate only date/time should be editable
         />
       )}
     </div>
