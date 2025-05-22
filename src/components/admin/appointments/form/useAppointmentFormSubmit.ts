@@ -41,11 +41,15 @@ export const useAppointmentFormSubmit = ({
       const appointmentData = {
         client_id: data.client_id,
         service_id: data.service_id,
+        staff_id: data.staff_id, // Make sure staff_id is included
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
         status: 'scheduled', // Using 'scheduled' instead of 'agendado'
         notes: data.notes || null,
       };
+      
+      // Log the data being saved for debugging
+      console.log('Saving appointment with data:', appointmentData);
       
       // Insert or update appointment
       if (appointmentId) {
