@@ -4,11 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Clock, Calendar, User } from 'lucide-react';
+import { Check, Clock, Calendar, User, Edit, CalendarX } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AppointmentForm from '@/components/admin/appointments/AppointmentForm';
 
 const BarberAppointmentsComponent: React.FC = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -20,6 +21,9 @@ const BarberAppointmentsComponent: React.FC = () => {
     upcoming: 0,
     revenue: 0,
   });
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
   const { user } = useAuth();
 
   const fetchAppointments = async () => {
@@ -133,6 +137,33 @@ const BarberAppointmentsComponent: React.FC = () => {
     }
   };
 
+  const handleEditAppointment = (appointmentId: string, startTime: string) => {
+    setSelectedAppointmentId(appointmentId);
+    setSelectedAppointmentDate(new Date(startTime));
+    setIsEditModalOpen(true);
+  };
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    try {
+      setUpdatingId(appointmentId);
+      
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', appointmentId);
+        
+      if (error) throw error;
+      
+      toast.success('Agendamento cancelado com sucesso!');
+      fetchAppointments();
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      toast.error('Não foi possível cancelar o agendamento');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
   };
@@ -160,6 +191,12 @@ const BarberAppointmentsComponent: React.FC = () => {
       case 'confirmed': return 'Confirmado';
       default: return 'Agendado';
     }
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedAppointmentId(null);
+    setSelectedAppointmentDate(null);
   };
 
   return (
@@ -240,6 +277,16 @@ const BarberAppointmentsComponent: React.FC = () => {
           {renderAppointmentList(appointments)}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Appointment Modal */}
+      {isEditModalOpen && (
+        <AppointmentForm
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          appointmentId={selectedAppointmentId || undefined}
+          defaultDate={selectedAppointmentDate || undefined}
+        />
+      )}
     </div>
   );
   
@@ -284,20 +331,42 @@ const BarberAppointmentsComponent: React.FC = () => {
                 {appointment.notes && <p className="text-sm text-gray-600 italic">"{appointment.notes}"</p>}
                 
                 {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2 w-full border-green-600 text-green-600 hover:bg-green-50"
-                    onClick={() => handleCompleteAppointment(appointment.id)}
-                    disabled={updatingId === appointment.id}
-                  >
-                    {updatingId === appointment.id ? (
-                      <Clock className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Check className="h-4 w-4 mr-2" />
-                    )}
-                    Finalizar Atendimento
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-green-600 text-green-600 hover:bg-green-50 flex-1"
+                      onClick={() => handleCompleteAppointment(appointment.id)}
+                      disabled={updatingId === appointment.id}
+                    >
+                      {updatingId === appointment.id ? (
+                        <Clock className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-2" />
+                      )}
+                      Finalizar
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50 flex-1"
+                      onClick={() => handleEditAppointment(appointment.id, appointment.start_time)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-red-600 text-red-600 hover:bg-red-50 flex-1"
+                      onClick={() => handleCancelAppointment(appointment.id)}
+                    >
+                      <CalendarX className="h-4 w-4 mr-2" />
+                      Cancelar
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>
