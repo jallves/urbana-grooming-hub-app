@@ -4,7 +4,6 @@ import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Services from '../components/Services';
 import Team from '../components/Team';
-import Appointment from '../components/Appointment';
 import Footer from '../components/Footer';
 import Gallery from '../components/Gallery';
 import WhatsAppButton from '../components/WhatsAppButton';
@@ -37,7 +36,6 @@ const Index = () => {
           </div>
           <Gallery />
           <Team />
-          <Appointment />
           <Footer />
         </div>
         <WhatsAppButton />
