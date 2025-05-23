@@ -33,5 +33,51 @@ export const supabaseRPC = {
         error: new Error('Failed to update staff module access') 
       };
     }
+  },
+  
+  createPublicClient: async (clientName: string, clientPhone: string, clientEmail: string | null) => {
+    try {
+      const { data, error } = await supabase.rpc('create_public_client', {
+        client_name: clientName,
+        client_phone: clientPhone, 
+        client_email: clientEmail
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Error in createPublicClient RPC:', error);
+      return { 
+        data: null, 
+        error: new Error('Failed to create or find client') 
+      };
+    }
+  },
+  
+  createPublicAppointment: async (
+    clientId: string,
+    serviceId: string,
+    staffId: string | null,
+    startTime: string,
+    endTime: string,
+    notes: string | null
+  ) => {
+    try {
+      const { data, error } = await supabase.rpc('create_public_appointment', {
+        p_client_id: clientId,
+        p_service_id: serviceId,
+        p_staff_id: staffId,
+        p_start_time: startTime,
+        p_end_time: endTime,
+        p_notes: notes
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Error in createPublicAppointment RPC:', error);
+      return { 
+        data: null, 
+        error: new Error('Failed to create appointment') 
+      };
+    }
   }
 };

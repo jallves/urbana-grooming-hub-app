@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +10,7 @@ import AppointmentDateTime from './AppointmentDateTime';
 import NotesField from './NotesField';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { supabaseRPC } from '@/types/supabase-rpc';
 
 const AppointmentForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -61,11 +63,11 @@ const AppointmentForm: React.FC = () => {
       
       // Use anonymous appointments function to create client and appointment
       // as a workaround for RLS policies
-      const { data: createdClient, error: clientError } = await supabase.rpc('create_public_client', {
-        client_name: formData.name,
-        client_phone: formData.phone, 
-        client_email: formData.email || null
-      });
+      const { data: createdClient, error: clientError } = await supabaseRPC.createPublicClient(
+        formData.name,
+        formData.phone, 
+        formData.email || null
+      );
       
       if (clientError) {
         console.error('Error creating client:', clientError);
@@ -101,16 +103,13 @@ const AppointmentForm: React.FC = () => {
       endTime.setMinutes(endTime.getMinutes() + serviceData.duration);
       
       // Create appointment using RPC function to bypass RLS
-      const { error: appointmentError } = await supabase.rpc(
-        'create_public_appointment', 
-        {
-          p_client_id: clientId,
-          p_service_id: formData.service,
-          p_staff_id: formData.barber || null,
-          p_start_time: startTime.toISOString(),
-          p_end_time: endTime.toISOString(),
-          p_notes: formData.notes || null
-        }
+      const { error: appointmentError } = await supabaseRPC.createPublicAppointment(
+        clientId,
+        formData.service,
+        formData.barber || null,
+        startTime.toISOString(),
+        endTime.toISOString(),
+        formData.notes || null
       );
 
       if (appointmentError) {
