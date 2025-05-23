@@ -28,9 +28,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 interface LoginFormProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
+  onLoginSuccess?: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading, onLoginSuccess }) => {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = React.useState(false);
   
@@ -59,8 +60,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       } else {
         toast({
           title: 'Login realizado com sucesso',
-          description: 'Você será redirecionado para o painel administrativo',
+          description: 'Você será redirecionado para o agendamento',
         });
+        
+        // Call onLoginSuccess callback if provided
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        }
       }
     } catch (error: any) {
       toast({

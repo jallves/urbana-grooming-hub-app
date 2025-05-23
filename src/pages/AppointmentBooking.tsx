@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import AppointmentForm from '@/components/appointment/ClientAppointmentForm';
 import { supabaseRPC } from '@/types/supabase-rpc';
 import { CalendarDays, ArrowLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import LoginForm from '@/components/auth/LoginForm';
 
 export default function AppointmentBooking() {
   const { user } = useAuth();
@@ -16,11 +18,13 @@ export default function AppointmentBooking() {
   const { toast } = useToast();
   const [clientId, setClientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("register");
 
   useEffect(() => {
     async function fetchClientId() {
       if (!user) {
-        navigate('/register-auth');
+        // Not redirecting if not authenticated since we now have login option
+        setLoading(false);
         return;
       }
       
@@ -69,6 +73,18 @@ export default function AppointmentBooking() {
     fetchClientId();
   }, [user, navigate, toast]);
 
+  // When user logs in, switch to appointment form
+  useEffect(() => {
+    if (user) {
+      setActiveTab("appointment");
+    }
+  }, [user]);
+
+  const handleLoginSuccess = () => {
+    setActiveTab("appointment");
+    // No need to navigate since the useEffect will handle fetching the client ID
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -100,16 +116,31 @@ export default function AppointmentBooking() {
             {clientId ? (
               <AppointmentForm clientId={clientId} />
             ) : (
-              <div className="text-center py-6">
-                <p className="text-red-500">Não foi possível carregar os dados do cliente.</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4" 
-                  onClick={() => navigate('/register-auth')}
-                >
-                  Voltar ao registro
-                </Button>
-              </div>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="register">Cadastrar</TabsTrigger>
+                  <TabsTrigger value="login">Já tenho cadastro</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="register">
+                  <div className="text-center py-2 mb-4">
+                    <p>Cadastre-se para agendar seu horário</p>
+                  </div>
+                  <Button 
+                    className="w-full bg-urbana-gold hover:bg-urbana-gold/90" 
+                    onClick={() => navigate('/register-auth')}
+                  >
+                    Criar Cadastro
+                  </Button>
+                </TabsContent>
+                
+                <TabsContent value="login">
+                  <div className="text-center py-2 mb-4">
+                    <p>Entre com seus dados para agendar</p>
+                  </div>
+                  <LoginForm loading={false} setLoading={() => {}} onLoginSuccess={handleLoginSuccess} />
+                </TabsContent>
+              </Tabs>
             )}
           </CardContent>
         </Card>
