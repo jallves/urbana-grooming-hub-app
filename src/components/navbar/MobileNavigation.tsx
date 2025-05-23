@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Shield, Scissors } from "lucide-react";
+import { Shield, Scissors, Calendar } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
 
 interface MobileNavigationProps {
@@ -33,6 +33,16 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
         asChild
       >
         <a href="#services">Serviços</a>
+      </Button>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="text-white"
+        asChild
+      >
+        <Link to={user ? "/appointment-booking" : "/register-auth"}>
+          <Calendar size={16} className="text-urbana-gold" />
+        </Link>
       </Button>
       {user ? (
         <>

@@ -30,6 +30,8 @@ import AdminRoute from "./components/auth/AdminRoute";
 import BarberRoute from "./components/auth/BarberRoute";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import RegisterAuth from "./pages/RegisterAuth"; 
+import AppointmentBooking from "./pages/AppointmentBooking";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -48,6 +50,8 @@ const App = () => (
               {/* Autenticação */}
               <Route path="/auth" element={<Auth />} />
               <Route path="/barbeiro/login" element={<BarberAuth />} />
+              <Route path="/register-auth" element={<RegisterAuth />} />
+              <Route path="/appointment-booking" element={<AppointmentBooking />} />
               
               {/* Rotas protegidas de barbeiro */}
               <Route path="/barbeiro" element={<BarberRoute><BarberDashboard /></BarberRoute>} />

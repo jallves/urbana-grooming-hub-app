@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Scissors } from "lucide-react";
+import { Shield, Scissors, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   NavigationMenu,
@@ -54,6 +54,15 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
           >
             Contato
           </a>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link 
+            to={user ? "/appointment-booking" : "/register-auth"}
+            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+          >
+            <Calendar size={18} className="inline-block mr-1 text-urbana-gold" />
+            Agendamento
+          </Link>
         </NavigationMenuItem>
         {user ? (
           <>
