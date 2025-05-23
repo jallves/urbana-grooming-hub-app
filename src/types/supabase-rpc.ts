@@ -1,6 +1,15 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+// Define allowed RPC function names for better type safety
+type RpcFunctionName = 
+  | 'get_staff_module_access'
+  | 'update_staff_module_access'
+  | 'create_public_client'
+  | 'create_public_appointment'
+  | 'add_barber_user'
+  | 'has_role';
+
 export const supabaseRPC = {
   getStaffModuleAccess: async (staffId: string) => {
     try {
@@ -37,7 +46,7 @@ export const supabaseRPC = {
   
   createPublicClient: async (clientName: string, clientPhone: string, clientEmail: string | null) => {
     try {
-      const { data, error } = await supabase.rpc('create_public_client', {
+      const { data, error } = await supabase.rpc('create_public_client' as RpcFunctionName, {
         client_name: clientName,
         client_phone: clientPhone, 
         client_email: clientEmail
@@ -62,7 +71,7 @@ export const supabaseRPC = {
     notes: string | null
   ) => {
     try {
-      const { data, error } = await supabase.rpc('create_public_appointment', {
+      const { data, error } = await supabase.rpc('create_public_appointment' as RpcFunctionName, {
         p_client_id: clientId,
         p_service_id: serviceId,
         p_staff_id: staffId,
