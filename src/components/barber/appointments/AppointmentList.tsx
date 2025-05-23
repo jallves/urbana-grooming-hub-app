@@ -27,7 +27,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
     );
   }
   
-  if (appointments.length === 0) {
+  if (!appointments || appointments.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-gray-500">Nenhum agendamento encontrado</p>

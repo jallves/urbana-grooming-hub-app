@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -57,53 +56,24 @@ const AppointmentForm: React.FC = () => {
     try {
       console.log('Starting appointment submission process');
       
-      // 1. Insert or find client
+      // 1. Insert or find client using the service-role API to bypass RLS
       let clientId: string;
       
-      // First check if client exists with this phone
-      const { data: existingClient, error: clientSearchError } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('phone', formData.phone)
-        .maybeSingle();
-        
-      if (clientSearchError) {
-        console.error('Error searching for existing client:', clientSearchError);
-        throw new Error('Erro ao verificar cliente existente');
+      // Use anonymous appointments function to create client and appointment
+      // as a workaround for RLS policies
+      const { data: createdClient, error: clientError } = await supabase.rpc('create_public_client', {
+        client_name: formData.name,
+        client_phone: formData.phone, 
+        client_email: formData.email || null
+      });
+      
+      if (clientError) {
+        console.error('Error creating client:', clientError);
+        throw new Error('Erro ao criar cliente');
       }
       
-      if (existingClient) {
-        // Update existing client
-        clientId = existingClient.id;
-        await supabase
-          .from('clients')
-          .update({
-            name: formData.name,
-            email: formData.email || null
-          })
-          .eq('id', clientId);
-          
-        console.log('Updated existing client:', clientId);
-      } else {
-        // Create new client
-        const { data: newClient, error: newClientError } = await supabase
-          .from('clients')
-          .insert({
-            name: formData.name,
-            phone: formData.phone,
-            email: formData.email || null
-          })
-          .select()
-          .single();
-
-        if (newClientError) {
-          console.error('Error creating new client:', newClientError);
-          throw newClientError;
-        }
-        
-        clientId = newClient.id;
-        console.log('Created new client:', clientId);
-      }
+      clientId = createdClient;
+      console.log('Client created/found with ID:', clientId);
 
       // Get service details for duration
       const { data: serviceData, error: serviceError } = await supabase
@@ -130,27 +100,18 @@ const AppointmentForm: React.FC = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceData.duration);
       
-      // Prepare appointment data
-      const appointmentData: any = {
-        client_id: clientId,
-        service_id: formData.service,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-        status: 'scheduled',
-        notes: formData.notes || null
-      };
-      
-      // Add staff_id if barber is selected
-      if (formData.barber) {
-        appointmentData.staff_id = formData.barber;
-      }
-      
-      console.log('Inserting appointment with data:', appointmentData);
-
-      // Insert appointment
-      const { error: appointmentError } = await supabase
-        .from('appointments')
-        .insert(appointmentData);
+      // Create appointment using RPC function to bypass RLS
+      const { error: appointmentError } = await supabase.rpc(
+        'create_public_appointment', 
+        {
+          p_client_id: clientId,
+          p_service_id: formData.service,
+          p_staff_id: formData.barber || null,
+          p_start_time: startTime.toISOString(),
+          p_end_time: endTime.toISOString(),
+          p_notes: formData.notes || null
+        }
+      );
 
       if (appointmentError) {
         console.error('Error creating appointment:', appointmentError);
