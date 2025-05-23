@@ -46,7 +46,8 @@ export const supabaseRPC = {
   
   createPublicClient: async (clientName: string, clientPhone: string, clientEmail: string | null) => {
     try {
-      const { data, error } = await supabase.rpc('create_public_client' as RpcFunctionName, {
+      // Use type assertion with 'as any' to bypass TypeScript constraint
+      const { data, error } = await (supabase.rpc as any)('create_public_client', {
         client_name: clientName,
         client_phone: clientPhone, 
         client_email: clientEmail
@@ -71,7 +72,8 @@ export const supabaseRPC = {
     notes: string | null
   ) => {
     try {
-      const { data, error } = await supabase.rpc('create_public_appointment' as RpcFunctionName, {
+      // Use type assertion with 'as any' to bypass TypeScript constraint
+      const { data, error } = await (supabase.rpc as any)('create_public_appointment', {
         p_client_id: clientId,
         p_service_id: serviceId,
         p_staff_id: staffId,
