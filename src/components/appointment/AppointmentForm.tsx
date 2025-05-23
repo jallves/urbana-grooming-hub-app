@@ -44,6 +44,8 @@ const AppointmentForm: React.FC = () => {
     setLoading(true);
     setFormError(null);
 
+    console.log('Form submission started with data:', formData);
+
     // Basic validation
     if (!formData.name || !formData.phone || !formData.service || !formData.date) {
       toast({
@@ -61,8 +63,13 @@ const AppointmentForm: React.FC = () => {
       // 1. Insert or find client using the service-role API to bypass RLS
       let clientId: string;
       
+      console.log('Creating client with:', {
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email || null
+      });
+      
       // Use anonymous appointments function to create client and appointment
-      // as a workaround for RLS policies
       const { data: createdClient, error: clientError } = await supabaseRPC.createPublicClient(
         formData.name,
         formData.phone, 
@@ -78,6 +85,7 @@ const AppointmentForm: React.FC = () => {
       console.log('Client created/found with ID:', clientId);
 
       // Get service details for duration
+      console.log('Fetching service details for ID:', formData.service);
       const { data: serviceData, error: serviceError } = await supabase
         .from('services')
         .select('*')
@@ -93,6 +101,8 @@ const AppointmentForm: React.FC = () => {
         console.error('Service not found');
         throw new Error("Serviço não encontrado");
       }
+      
+      console.log('Service details:', serviceData);
 
       // Define appointment times
       const startTime = formData.date;
@@ -102,8 +112,17 @@ const AppointmentForm: React.FC = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceData.duration);
       
+      console.log('Creating appointment with:', {
+        clientId,
+        serviceId: formData.service,
+        barberId: formData.barber || null,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        notes: formData.notes || null
+      });
+      
       // Create appointment using RPC function to bypass RLS
-      const { error: appointmentError } = await supabaseRPC.createPublicAppointment(
+      const { data: appointmentData, error: appointmentError } = await supabaseRPC.createPublicAppointment(
         clientId,
         formData.service,
         formData.barber || null,
@@ -116,6 +135,8 @@ const AppointmentForm: React.FC = () => {
         console.error('Error creating appointment:', appointmentError);
         throw appointmentError;
       }
+      
+      console.log('Appointment created successfully:', appointmentData);
 
       // Success
       toast({
