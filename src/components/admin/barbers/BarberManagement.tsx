@@ -5,8 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import BarberList from './BarberList';
 import BarberForm from './BarberForm';
 import { Button } from '@/components/ui/button';
-import { Plus, Shield } from 'lucide-react';
+import { Plus, Shield, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useStaffStorage } from '../staff/useStaffStorage';
 
@@ -73,18 +74,28 @@ const BarberManagement: React.FC = () => {
       </div>
 
       {!isAddingBarber && !editingBarber && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Controle de Acesso aos Módulos
-            </CardTitle>
-            <CardDescription>
-              Cada barbeiro pode ter permissões diferentes para acessar os módulos do sistema.
-              Edite um barbeiro e acesse a aba "Permissões de Acesso" para configurar.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <>
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" no módulo de profissionais. 
+              Para adicionar um novo barbeiro, você pode usar o botão "Novo Barbeiro" aqui ou ir ao módulo de profissionais e criar um profissional com categoria "Barbeiro".
+            </AlertDescription>
+          </Alert>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Controle de Acesso aos Módulos
+              </CardTitle>
+              <CardDescription>
+                Cada barbeiro pode ter permissões diferentes para acessar os módulos do sistema.
+                Edite um barbeiro e acesse a aba "Permissões de Acesso" para configurar.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </>
       )}
 
       {(isAddingBarber || editingBarber) && (
@@ -94,7 +105,7 @@ const BarberManagement: React.FC = () => {
             <CardDescription>
               {editingBarber 
                 ? 'Edite as informações e permissões do barbeiro' 
-                : 'Preencha as informações para cadastrar um novo barbeiro no sistema'}
+                : 'Preencha as informações para cadastrar um novo barbeiro no sistema. A categoria será automaticamente definida como "Barbeiro".'}
             </CardDescription>
           </CardHeader>
           <CardContent>

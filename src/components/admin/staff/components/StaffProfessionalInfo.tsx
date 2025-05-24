@@ -3,6 +3,7 @@ import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UseFormReturn } from 'react-hook-form';
 import { StaffFormValues } from '../hooks/useStaffForm';
 
@@ -19,12 +20,21 @@ const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) =
           name="role"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Função</FormLabel>
-              <FormControl>
-                <Input placeholder="Função do profissional" {...field} value={field.value || ''} />
-              </FormControl>
+              <FormLabel>Categoria Profissional</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value || ''}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="barber">Barbeiro</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="attendant">Atendente</SelectItem>
+                </SelectContent>
+              </Select>
               <FormDescription>
-                Ex: Barbeiro, Cabeleireiro, Manicure, etc.
+                Barbeiros aparecerão automaticamente no módulo de barbeiros
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -69,7 +79,7 @@ const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) =
                 />
               </FormControl>
               <FormDescription>
-                Porcentagem que o profissional recebe por serviço
+                Porcentagem que o profissional recebe por serviço (aplicável para barbeiros)
               </FormDescription>
               <FormMessage />
             </FormItem>

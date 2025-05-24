@@ -20,11 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, User, Shield } from 'lucide-react';
+import { Edit, Trash2, User, Shield, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Barber {
   id: string;
@@ -103,10 +104,17 @@ const BarberList: React.FC<BarberListProps> = ({ barbers, isLoading, onEdit, onD
         <CardContent className="py-12">
           <div className="flex flex-col items-center justify-center text-center py-8">
             <User className="h-12 w-12 text-zinc-400 mb-4" />
-            <h3 className="text-xl font-medium mb-2">Nenhum barbeiro cadastrado</h3>
+            <h3 className="text-xl font-medium mb-2">Nenhum barbeiro encontrado</h3>
             <p className="text-zinc-400 max-w-md mb-6">
-              Clique em "Novo Barbeiro" para começar a cadastrar os barbeiros no sistema.
+              Não há profissionais categorizados como "Barbeiro" no sistema. 
+              Vá ao módulo de profissionais para categorizar um profissional como barbeiro ou clique em "Novo Barbeiro" para criar um.
             </p>
+            <Alert className="max-w-md">
+              <ExternalLink className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Dica:</strong> Profissionais categorizados como "Barbeiro" no módulo de profissionais aparecerão automaticamente aqui.
+              </AlertDescription>
+            </Alert>
           </div>
         </CardContent>
       </Card>
@@ -117,7 +125,7 @@ const BarberList: React.FC<BarberListProps> = ({ barbers, isLoading, onEdit, onD
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Barbeiros</CardTitle>
+          <CardTitle>Barbeiros ({barbers.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -141,7 +149,14 @@ const BarberList: React.FC<BarberListProps> = ({ barbers, isLoading, onEdit, onD
                       <AvatarFallback>{getInitials(barber.name)}</AvatarFallback>
                     </Avatar>
                   </TableCell>
-                  <TableCell className="font-medium">{barber.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>
+                      {barber.name}
+                      <div className="text-xs text-muted-foreground">
+                        <Badge variant="default" className="text-xs">Barbeiro</Badge>
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell>{barber.email || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">{barber.phone || '-'}</TableCell>
                   <TableCell className="hidden md:table-cell">
@@ -183,7 +198,7 @@ const BarberList: React.FC<BarberListProps> = ({ barbers, isLoading, onEdit, onD
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir o barbeiro{' '}
-              <strong>{deleteBarber?.name}</strong>? Esta ação não pode ser desfeita.
+              <strong>{deleteBarber?.name}</strong>? Esta ação não pode ser desfeita e removerá o profissional de ambos os módulos (Profissionais e Barbeiros).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

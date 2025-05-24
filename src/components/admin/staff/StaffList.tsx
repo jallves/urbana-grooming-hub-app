@@ -65,6 +65,19 @@ const StaffList: React.FC<StaffListProps> = ({ staffMembers, isLoading, onEdit, 
     setDeleteDialogOpen(true);
   };
 
+  const getCategoryLabel = (role: string | null) => {
+    switch (role) {
+      case 'barber':
+        return { label: 'Barbeiro', variant: 'default' as const };
+      case 'admin':
+        return { label: 'Administrador', variant: 'destructive' as const };
+      case 'attendant':
+        return { label: 'Atendente', variant: 'secondary' as const };
+      default:
+        return { label: 'Sem categoria', variant: 'outline' as const };
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -103,50 +116,55 @@ const StaffList: React.FC<StaffListProps> = ({ staffMembers, isLoading, onEdit, 
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Função</TableHead>
+                <TableHead>Categoria</TableHead>
                 <TableHead>Contato</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {staffMembers.map((staff) => (
-                <TableRow key={staff.id}>
-                  <TableCell className="font-medium">{staff.name}</TableCell>
-                  <TableCell>{staff.role || '-'}</TableCell>
-                  <TableCell>
-                    {staff.email && <div className="text-sm">{staff.email}</div>}
-                    {staff.phone && <div className="text-sm">{staff.phone}</div>}
-                    {!staff.email && !staff.phone && '-'}
-                  </TableCell>
-                  <TableCell>
-                    {staff.is_active ? (
-                      <Badge variant="default" className="bg-green-500">Ativo</Badge>
-                    ) : (
-                      <Badge variant="secondary">Inativo</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(staff.id)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => confirmDelete(staff)} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {staffMembers.map((staff) => {
+                const category = getCategoryLabel(staff.role);
+                return (
+                  <TableRow key={staff.id}>
+                    <TableCell className="font-medium">{staff.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={category.variant}>{category.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {staff.email && <div className="text-sm">{staff.email}</div>}
+                      {staff.phone && <div className="text-sm">{staff.phone}</div>}
+                      {!staff.email && !staff.phone && '-'}
+                    </TableCell>
+                    <TableCell>
+                      {staff.is_active ? (
+                        <Badge variant="default" className="bg-green-500">Ativo</Badge>
+                      ) : (
+                        <Badge variant="secondary">Inativo</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(staff.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => confirmDelete(staff)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
