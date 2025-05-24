@@ -1,13 +1,18 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, Users, DollarSign, Settings } from 'lucide-react';
+import { Calendar, Users, DollarSign, Settings, BarChart2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BarberSidebar: React.FC = () => {
   const { user } = useAuth();
   
   const navItems = [
+    { 
+      name: 'Dashboard', 
+      href: '/barbeiro/dashboard', 
+      icon: <BarChart2 className="h-5 w-5" />
+    },
     { 
       name: 'Agendamentos', 
       href: '/barbeiro/agendamentos', 

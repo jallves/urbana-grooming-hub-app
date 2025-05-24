@@ -3,7 +3,7 @@ import React from 'react';
 import BarberLayout from '../components/barber/BarberLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, DollarSign, Users, Clock } from 'lucide-react';
+import { Calendar, DollarSign, Users, Clock, BarChart2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BarberProfileInfo from '@/components/barber/BarberProfileInfo';
 
@@ -12,6 +12,13 @@ const BarberDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const quickAccessItems = [
+    {
+      title: 'Dashboard Admin',
+      description: 'Visualizar métricas e relatórios',
+      icon: <BarChart2 className="h-8 w-8 text-zinc-300" />,
+      path: '/barbeiro/dashboard',
+      color: 'bg-gradient-to-br from-indigo-600 to-indigo-800'
+    },
     {
       title: 'Minha Agenda',
       description: 'Visualizar e gerenciar agendamentos',
@@ -50,7 +57,7 @@ const BarberDashboard: React.FC = () => {
           <p className="text-zinc-400">Acesse as principais funcionalidades do seu painel</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {quickAccessItems.map((item, index) => (
             <Card 
               key={index} 
