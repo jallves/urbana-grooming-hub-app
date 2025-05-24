@@ -13,10 +13,10 @@ const BarberDashboard: React.FC = () => {
 
   const quickAccessItems = [
     {
-      title: 'Dashboard Admin',
-      description: 'Visualizar métricas e relatórios',
+      title: 'Dashboard',
+      description: 'Visualizar métricas e relatórios pessoais',
       icon: <BarChart2 className="h-8 w-8 text-zinc-300" />,
-      path: '/barbeiro/dashboard',
+      path: '/barbeiro',
       color: 'bg-gradient-to-br from-indigo-600 to-indigo-800'
     },
     {

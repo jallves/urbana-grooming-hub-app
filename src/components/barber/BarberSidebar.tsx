@@ -10,7 +10,7 @@ const BarberSidebar: React.FC = () => {
   const navItems = [
     { 
       name: 'Dashboard', 
-      href: '/barbeiro/dashboard', 
+      href: '/barbeiro', 
       icon: <BarChart2 className="h-5 w-5" />
     },
     { 
