@@ -15,7 +15,7 @@ const BarberAuth: React.FC = () => {
     if (!authLoading && user) {
       if (isBarber) {
         console.log('BarberAuth - User already authenticated as barber, redirecting to dashboard');
-        navigate('/barbeiro/dashboard');
+        navigate('/barbeiro');
       }
     }
   }, [user, authLoading, isBarber, navigate]);
@@ -27,7 +27,7 @@ const BarberAuth: React.FC = () => {
   const handleLoginSuccess = async (userId: string) => {
     // After successful login, simply redirect to dashboard
     // AuthContext will handle the role check
-    navigate('/barbeiro/dashboard');
+    navigate('/barbeiro');
   };
 
   return (

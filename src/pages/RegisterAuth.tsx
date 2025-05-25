@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -98,7 +97,7 @@ export default function RegisterAuth() {
 
         // Redirecionar para a página de agendamentos
         setTimeout(() => {
-          navigate('/appointment-booking');
+          navigate('/agendar');
         }, 2000);
       }
     } catch (error: any) {
@@ -113,7 +112,7 @@ export default function RegisterAuth() {
   }
 
   const handleLoginSuccess = () => {
-    navigate('/appointment-booking');
+    navigate('/agendar');
   };
 
   return (

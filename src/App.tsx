@@ -52,6 +52,7 @@ function App() {
                 <Route path="/agendar" element={<AppointmentBooking />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/register" element={<RegisterAuth />} />
+                <Route path="/register-auth" element={<RegisterAuth />} />
                 
                 {/* Admin routes */}
                 <Route path="/admin" element={<Admin />} />
