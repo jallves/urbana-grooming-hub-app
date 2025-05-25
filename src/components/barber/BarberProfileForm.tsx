@@ -129,6 +129,46 @@ const BarberProfileForm: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const setupBucket = async () => {
+    try {
+      console.log('Verificando bucket staff-photos...');
+      
+      // Check if bucket exists
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        console.error('Erro ao listar buckets:', listError);
+        throw listError;
+      }
+      
+      const bucketExists = buckets?.some(bucket => bucket.name === 'staff-photos');
+      
+      if (!bucketExists) {
+        console.log('Criando bucket staff-photos...');
+        
+        const { error: createError } = await supabase.storage.createBucket('staff-photos', {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB
+          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+        });
+        
+        if (createError) {
+          console.error('Erro ao criar bucket:', createError);
+          throw createError;
+        }
+        
+        console.log('Bucket staff-photos criado com sucesso');
+      } else {
+        console.log('Bucket staff-photos já existe');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao configurar bucket:', error);
+      return false;
+    }
+  };
   
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files.length || !user?.email) {
@@ -136,27 +176,43 @@ const BarberProfileForm: React.FC = () => {
     }
     
     const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const filePath = `profile_images/${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     
     try {
       setUploading(true);
       
+      // Setup bucket first
+      const bucketReady = await setupBucket();
+      if (!bucketReady) {
+        throw new Error('Não foi possível configurar o bucket de storage');
+      }
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `barber_${user.id}_${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+      
+      console.log('Fazendo upload do arquivo:', filePath);
+      
       // Upload the file to Supabase storage
       const { error: uploadError } = await supabase.storage
-        .from('profile_images')
-        .upload(filePath, file);
+        .from('staff-photos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
       if (uploadError) {
+        console.error('Erro no upload:', uploadError);
         throw uploadError;
       }
       
       // Get the public URL for the uploaded image
       const { data } = supabase.storage
-        .from('profile_images')
+        .from('staff-photos')
         .getPublicUrl(filePath);
       
       if (data?.publicUrl) {
+        console.log('URL da imagem:', data.publicUrl);
+        
         // Update the staff record with the new image URL
         const { error: updateError } = await supabase
           .from('staff')

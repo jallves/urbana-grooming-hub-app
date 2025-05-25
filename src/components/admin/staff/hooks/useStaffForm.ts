@@ -88,16 +88,23 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
     setSelectedFile(file);
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
+  const setupBucket = async () => {
     try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      // Ensure bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
+      console.log('Verificando bucket staff-photos...');
+      
+      // Check if bucket exists
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        console.error('Erro ao listar buckets:', listError);
+        throw listError;
+      }
+      
       const bucketExists = buckets?.some(bucket => bucket.name === 'staff-photos');
       
       if (!bucketExists) {
+        console.log('Criando bucket staff-photos...');
+        
         const { error: createError } = await supabase.storage.createBucket('staff-photos', {
           public: true,
           fileSizeLimit: 10485760, // 10MB
@@ -105,13 +112,41 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
         });
         
         if (createError) {
+          console.error('Erro ao criar bucket:', createError);
           throw createError;
         }
+        
+        console.log('Bucket staff-photos criado com sucesso');
+      } else {
+        console.log('Bucket staff-photos já existe');
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao configurar bucket:', error);
+      toast.error('Erro ao configurar storage para fotos');
+      return false;
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+
+      // Setup bucket first
+      const bucketReady = await setupBucket();
+      if (!bucketReady) {
+        throw new Error('Não foi possível configurar o bucket de storage');
       }
 
+      setUploadProgress(25);
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `staff/${fileName}`;
+      const fileName = `staff_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+
+      console.log('Fazendo upload do arquivo:', filePath);
 
       setUploadProgress(50);
 
@@ -122,7 +157,10 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        throw uploadError;
+      }
 
       setUploadProgress(75);
 
@@ -130,7 +168,11 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
         .from('staff-photos')
         .getPublicUrl(filePath);
 
+      console.log('URL da imagem:', data.publicUrl);
+
       setUploadProgress(100);
+      toast.success('Imagem enviada com sucesso!');
+      
       return data.publicUrl;
     } catch (error) {
       console.error('Erro no upload da imagem:', error);
@@ -152,9 +194,13 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
 
       // Upload image if selected
       if (selectedFile) {
+        console.log('Fazendo upload da nova imagem...');
         const uploadedUrl = await uploadImage(selectedFile);
         if (uploadedUrl) {
           imageUrl = uploadedUrl;
+        } else {
+          // Don't proceed if image upload failed and user selected a file
+          return;
         }
       }
 
@@ -170,6 +216,8 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
         commission_rate: data.commission_rate || null,
         specialties: data.specialties || null,
       };
+
+      console.log('Salvando dados do profissional:', staffData);
 
       if (isEditing) {
         const { error } = await supabase
