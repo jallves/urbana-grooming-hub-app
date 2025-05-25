@@ -17,7 +17,7 @@ export interface StaffFormData {
   image_url: string | null;
   experience: string | null;
   commission_rate?: number | null;
-  specialties?: string[] | null;
+  specialties?: string | null;
 }
 
 // Update staff table type to include image_url
@@ -35,4 +35,3 @@ export interface Staff {
   commission_rate?: number | null;
   specialties?: string | null;
 }
-

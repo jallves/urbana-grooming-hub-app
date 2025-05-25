@@ -19,6 +19,8 @@ const staffFormSchema = z.object({
   specialties: z.string().optional(),
 });
 
+export type StaffFormValues = z.infer<typeof staffFormSchema>;
+
 export const useStaffForm = (staffId: string | null, onSuccess: () => void, defaultRole?: string) => {
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -28,7 +30,7 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
 
   const isEditing = Boolean(staffId);
 
-  const form = useForm<StaffFormData>({
+  const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffFormSchema),
     defaultValues: {
       name: '',
@@ -82,7 +84,8 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
     }
   }, [staffId, form]);
 
-  const handleFileChange = (file: File | null) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
     setSelectedFile(file);
   };
 
@@ -142,7 +145,7 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
     }
   };
 
-  const onSubmit = async (data: StaffFormData) => {
+  const onSubmit = async (data: StaffFormValues) => {
     try {
       setIsSubmitting(true);
 
@@ -179,7 +182,7 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
       } else {
         const { error } = await supabase
           .from('staff')
-          .insert([staffData]);
+          .insert(staffData);
 
         if (error) throw error;
 
