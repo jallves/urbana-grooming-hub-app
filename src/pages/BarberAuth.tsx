@@ -7,8 +7,30 @@ import { useNavigate } from 'react-router-dom';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
+  const [timeLeft, setTimeLeft] = useState<number>(10);
   const { user, isBarber, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (!authLoading && !user && timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft(timeLeft - 1);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    } else if (!authLoading && !user && timeLeft === 0) {
+      // Redirect to homepage when timer reaches 0
+      navigate('/');
+    }
+  }, [timeLeft, user, authLoading, navigate]);
+
+  // Reset timer when user changes
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setTimeLeft(10);
+    }
+  }, [user, authLoading]);
 
   // Redirect if already authenticated and has barber role
   useEffect(() => {
@@ -38,6 +60,19 @@ const BarberAuth: React.FC = () => {
           <p className="mt-2 text-gray-400">
             Acesso exclusivo para barbeiros
           </p>
+          {!user && timeLeft > 0 && (
+            <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
+              <p className="text-yellow-400 text-sm">
+                Redirecionando para a página inicial em {timeLeft} segundos
+              </p>
+              <button
+                onClick={() => navigate('/')}
+                className="mt-2 text-yellow-300 hover:text-yellow-100 underline text-sm"
+              >
+                Clique aqui para ir agora
+              </button>
+            </div>
+          )}
         </div>
         
         <div className="bg-zinc-900 shadow-lg rounded-lg p-6 border border-zinc-800">
