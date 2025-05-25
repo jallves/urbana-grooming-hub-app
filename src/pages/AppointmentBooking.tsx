@@ -128,7 +128,7 @@ export default function AppointmentBooking() {
                   </div>
                   <Button 
                     className="w-full bg-urbana-gold hover:bg-urbana-gold/90" 
-                    onClick={() => navigate('/register-auth')}
+                    onClick={() => navigate('/register')}
                   >
                     Criar Cadastro
                   </Button>
