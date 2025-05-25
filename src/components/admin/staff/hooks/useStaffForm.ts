@@ -1,53 +1,34 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useImageUpload } from '@/components/admin/settings/media/useImageUpload';
 import { StaffFormData } from '@/types/staff';
 
-export const staffFormSchema = z.object({
-  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres' }),
-  email: z.string().email({ message: 'E-mail inválido' }).nullable().optional(),
-  phone: z.string().nullable().optional(),
-  role: z.string().nullable().optional(),
+const staffFormSchema = z.object({
+  name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  role: z.string().optional(),
   is_active: z.boolean().default(true),
-  image_url: z.string().nullable().optional(),
-  experience: z.string().nullable().optional(),
-  commission_rate: z.number().nullable().optional(),
-  specialties: z.string().nullable().optional(),
+  image_url: z.string().optional(),
+  experience: z.string().optional(),
+  commission_rate: z.coerce.number().min(0).max(100).optional(),
+  specialties: z.string().optional(),
 });
 
-export type StaffFormValues = z.infer<typeof staffFormSchema>;
-
-export function useStaffForm(staffId: string | null, onSuccess: () => void, defaultRole?: string) {
-  const isEditing = !!staffId;
-  const { uploadFile, uploading } = useImageUpload();
+export const useStaffForm = (staffId: string | null, onSuccess: () => void, defaultRole?: string) => {
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch staff data if editing
-  const { data: staffData, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['staff', staffId],
-    queryFn: async () => {
-      if (!staffId) return null;
-      
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('id', staffId)
-        .single();
-      
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: isEditing,
-  });
+  const isEditing = Boolean(staffId);
 
-  const form = useForm<StaffFormValues>({
+  const form = useForm<StaffFormData>({
     resolver: zodResolver(staffFormSchema),
     defaultValues: {
       name: '',
@@ -57,58 +38,133 @@ export function useStaffForm(staffId: string | null, onSuccess: () => void, defa
       is_active: true,
       image_url: '',
       experience: '',
-      commission_rate: null,
+      commission_rate: 0,
       specialties: '',
     },
-    values: staffData || undefined,
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+  // Load staff data for editing
+  useEffect(() => {
+    if (staffId) {
+      setIsLoadingStaff(true);
+      const fetchStaff = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('id', staffId)
+            .single();
+
+          if (error) throw error;
+
+          if (data) {
+            form.reset({
+              name: data.name || '',
+              email: data.email || '',
+              phone: data.phone || '',
+              role: data.role || '',
+              is_active: data.is_active,
+              image_url: data.image_url || '',
+              experience: data.experience || '',
+              commission_rate: data.commission_rate || 0,
+              specialties: data.specialties || '',
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao carregar profissional:', error);
+          toast.error('Erro ao carregar dados do profissional');
+        } finally {
+          setIsLoadingStaff(false);
+        }
+      };
+
+      fetchStaff();
     }
+  }, [staffId, form]);
+
+  const handleFileChange = (file: File | null) => {
+    setSelectedFile(file);
   };
 
-  const uploadProfileImage = async (): Promise<string | null> => {
-    if (!selectedFile) return form.getValues().image_url || null;
-    
+  const uploadImage = async (file: File): Promise<string | null> => {
     try {
-      setUploadProgress(true);
-      console.log('Uploading profile image to staff-photos/profiles');
-      const imageUrl = await uploadFile(selectedFile, 'staff-photos', 'profiles');
-      console.log('Image uploaded successfully:', imageUrl);
-      return imageUrl;
+      setUploading(true);
+      setUploadProgress(0);
+
+      // Ensure bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'staff-photos');
+      
+      if (!bucketExists) {
+        const { error: createError } = await supabase.storage.createBucket('staff-photos', {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB
+          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+        });
+        
+        if (createError) {
+          throw createError;
+        }
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `staff/${fileName}`;
+
+      setUploadProgress(50);
+
+      const { error: uploadError } = await supabase.storage
+        .from('staff-photos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      setUploadProgress(75);
+
+      const { data } = supabase.storage
+        .from('staff-photos')
+        .getPublicUrl(filePath);
+
+      setUploadProgress(100);
+      return data.publicUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error('Erro ao fazer upload da foto');
+      console.error('Erro no upload da imagem:', error);
+      toast.error('Erro ao fazer upload da imagem', {
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
       return null;
     } finally {
-      setUploadProgress(false);
+      setUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  const onSubmit = async (values: StaffFormValues) => {
+  const onSubmit = async (data: StaffFormData) => {
     try {
+      setIsSubmitting(true);
+
+      let imageUrl = data.image_url;
+
       // Upload image if selected
-      const imageUrl = await uploadProfileImage();
-      
-      // Ensure name is provided (required by database)
-      if (!values.name) {
-        toast.error('Nome é obrigatório');
-        return;
+      if (selectedFile) {
+        const uploadedUrl = await uploadImage(selectedFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
       }
-      
-      // Update form values with image URL if available
+
       const staffData = {
-        name: values.name,
-        email: values.email || null,
-        phone: values.phone || null,
-        role: values.role || null,
-        is_active: values.is_active,
-        image_url: imageUrl || values.image_url || null,
-        experience: values.experience || null,
-        commission_rate: values.commission_rate || null,
-        specialties: values.specialties || null,
+        ...data,
+        image_url: imageUrl,
+        email: data.email || null,
+        phone: data.phone || null,
+        role: data.role || null,
+        experience: data.experience || null,
+        specialties: data.specialties || null,
+        commission_rate: data.commission_rate || null,
       };
 
       if (isEditing) {
@@ -117,29 +173,27 @@ export function useStaffForm(staffId: string | null, onSuccess: () => void, defa
           .update(staffData)
           .eq('id', staffId);
 
-        if (error) {
-          console.error('Error updating staff:', error);
-          throw error;
-        }
+        if (error) throw error;
+
         toast.success('Profissional atualizado com sucesso!');
       } else {
         const { error } = await supabase
           .from('staff')
           .insert([staffData]);
 
-        if (error) {
-          console.error('Error creating staff:', error);
-          throw error;
-        }
+        if (error) throw error;
+
         toast.success('Profissional criado com sucesso!');
       }
-      
+
       onSuccess();
     } catch (error) {
-      console.error('Error in onSubmit:', error);
+      console.error('Erro ao salvar profissional:', error);
       toast.error('Erro ao salvar profissional', {
-        description: (error as Error).message
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -152,6 +206,6 @@ export function useStaffForm(staffId: string | null, onSuccess: () => void, defa
     selectedFile,
     uploading,
     uploadProgress,
-    isSubmitting: form.formState.isSubmitting,
+    isSubmitting,
   };
-}
+};

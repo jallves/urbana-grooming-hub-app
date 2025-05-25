@@ -9,43 +9,50 @@ export const useStaffStorage = () => {
   useEffect(() => {
     const initializeBucket = async () => {
       try {
-        // First check if bucket exists
-        const { data, error } = await supabase.storage.getBucket('staff-photos');
+        console.log('Verificando/criando bucket staff-photos...');
         
-        if (error) {
-          // Use error message instead of statusCode for checking
-          if (error.message?.includes('Bucket not found')) {
-            console.log('Staff photos bucket does not exist. Creating it now...');
-            
-            // Create the bucket if it doesn't exist
-            const { error: createError } = await supabase.storage.createBucket('staff-photos', {
-              public: true,
-              fileSizeLimit: 10485760, // 10MB
-              allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
-            });
-            
-            if (createError) {
-              console.error('Error creating staff photos bucket:', createError);
-              toast.error('Erro ao criar o bucket para fotos dos profissionais');
-              return;
-            }
-            
-            console.log('Staff photos bucket created successfully');
-            toast.success('Bucket para fotos dos profissionais criado com sucesso');
-            setBucketInitialized(true);
-          } else {
-            console.error('Error checking bucket:', error);
-            toast.error('Erro ao verificar o bucket para fotos dos profissionais');
-          }
+        // First check if bucket exists
+        const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+        
+        if (listError) {
+          console.error('Erro ao listar buckets:', listError);
+          toast.error('Erro ao verificar buckets existentes');
           return;
         }
         
-        console.log('Staff photos bucket already exists:', data);
+        const bucketExists = buckets?.some(bucket => bucket.name === 'staff-photos');
+        
+        if (!bucketExists) {
+          console.log('Bucket staff-photos não existe. Criando...');
+          
+          // Create the bucket if it doesn't exist
+          const { error: createError } = await supabase.storage.createBucket('staff-photos', {
+            public: true,
+            fileSizeLimit: 10485760, // 10MB
+            allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+          });
+          
+          if (createError) {
+            console.error('Erro ao criar bucket staff-photos:', createError);
+            toast.error('Erro ao criar o bucket para fotos dos profissionais', {
+              description: createError.message
+            });
+            return;
+          }
+          
+          console.log('Bucket staff-photos criado com sucesso');
+          toast.success('Bucket para fotos dos profissionais criado com sucesso');
+        } else {
+          console.log('Bucket staff-photos já existe');
+          toast.success('Bucket para fotos dos profissionais verificado');
+        }
+        
         setBucketInitialized(true);
-        toast.success('Bucket para fotos dos profissionais inicializado');
       } catch (error) {
-        console.error('Error setting up staff photos bucket:', error);
-        toast.error('Erro ao configurar o bucket para fotos dos profissionais');
+        console.error('Erro ao configurar bucket staff-photos:', error);
+        toast.error('Erro ao configurar o bucket para fotos dos profissionais', {
+          description: error instanceof Error ? error.message : 'Erro desconhecido'
+        });
       }
     };
     
