@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { StaffFormData } from '@/types/staff';
 
 const staffFormSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -159,15 +158,17 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
         }
       }
 
+      // Ensure the staffData object matches the expected Supabase schema
       const staffData = {
-        ...data,
-        image_url: imageUrl,
+        name: data.name, // Required field
         email: data.email || null,
         phone: data.phone || null,
         role: data.role || null,
+        is_active: data.is_active,
+        image_url: imageUrl || null,
         experience: data.experience || null,
-        specialties: data.specialties || null,
         commission_rate: data.commission_rate || null,
+        specialties: data.specialties || null,
       };
 
       if (isEditing) {
