@@ -21,7 +21,7 @@ const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) =
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoria Profissional</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || ''}>
+              <Select onValueChange={field.onChange} value={field.value || "barber"}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a categoria" />

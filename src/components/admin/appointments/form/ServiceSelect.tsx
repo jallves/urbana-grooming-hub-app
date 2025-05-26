@@ -20,7 +20,7 @@ const ServiceSelect: React.FC<ServiceSelectProps> = ({ services, form }) => {
           <FormLabel>Serviço</FormLabel>
           <Select 
             onValueChange={field.onChange} 
-            defaultValue={field.value}
+            value={field.value || ""}
           >
             <FormControl>
               <SelectTrigger>
@@ -29,7 +29,7 @@ const ServiceSelect: React.FC<ServiceSelectProps> = ({ services, form }) => {
             </FormControl>
             <SelectContent>
               {services.map((service) => (
-                <SelectItem key={service.id} value={service.id}>
+                <SelectItem key={service.id} value={service.id || "no-id"}>
                   {service.name} - R$ {service.price} ({service.duration} min)
                 </SelectItem>
               ))}

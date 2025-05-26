@@ -139,7 +139,7 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
                   <FormLabel>Cargo</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    defaultValue={field.value}
+                    value={field.value || "user"}
                   >
                     <FormControl>
                       <SelectTrigger>

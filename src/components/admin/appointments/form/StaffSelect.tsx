@@ -20,7 +20,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({ staffMembers, form }) => {
           <FormLabel>Barbeiro</FormLabel>
           <Select 
             onValueChange={field.onChange} 
-            defaultValue={field.value}
+            value={field.value || ""}
           >
             <FormControl>
               <SelectTrigger>
@@ -29,7 +29,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({ staffMembers, form }) => {
             </FormControl>
             <SelectContent>
               {staffMembers.map((staff) => (
-                <SelectItem key={staff.id} value={staff.id}>
+                <SelectItem key={staff.id} value={staff.id || "no-id"}>
                   {staff.name}
                 </SelectItem>
               ))}

@@ -36,7 +36,7 @@ const AppointmentFilters: React.FC<AppointmentFiltersProps> = ({
       </div>
       
       <Select
-        value={statusFilter}
+        value={statusFilter || "all"}
         onValueChange={setStatusFilter}
       >
         <SelectTrigger className="w-[180px]">

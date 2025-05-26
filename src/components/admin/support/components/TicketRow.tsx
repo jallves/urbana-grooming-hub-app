@@ -43,7 +43,7 @@ const TicketRow: React.FC<TicketRowProps> = ({ ticket, onOpenTicket, onStatusCha
             Ver
           </Button>
           <Select
-            defaultValue={ticketStatus}
+            value={ticketStatus}
             onValueChange={async (value) => await onStatusChange(ticket.id, value)}
           >
             <SelectTrigger className="h-8 w-[110px]">

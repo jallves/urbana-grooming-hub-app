@@ -64,13 +64,13 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
         <label htmlFor="service" className="block text-sm font-medium mb-2">
           Serviço
         </label>
-        <Select value={formData.service} onValueChange={(value) => handleSelectChange(value, 'service')}>
+        <Select value={formData.service || ""} onValueChange={(value) => handleSelectChange(value, 'service')}>
           <SelectTrigger className="bg-white/20 border-urbana-gold/50">
             <SelectValue placeholder="Selecione um serviço" />
           </SelectTrigger>
           <SelectContent>
             {services.map((service) => (
-              <SelectItem key={service.id} value={service.id}>
+              <SelectItem key={service.id} value={service.id || "no-id"}>
                 {service.name} - R$ {service.price}
               </SelectItem>
             ))}
@@ -89,7 +89,7 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
           <SelectContent>
             <SelectItem value="any">Qualquer Disponível</SelectItem>
             {staff.map((barber) => (
-              <SelectItem key={barber.id} value={barber.id}>{barber.name}</SelectItem>
+              <SelectItem key={barber.id} value={barber.id || "no-id"}>{barber.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

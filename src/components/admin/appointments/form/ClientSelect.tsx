@@ -20,7 +20,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({ clients, form }) => {
           <FormLabel>Cliente</FormLabel>
           <Select 
             onValueChange={field.onChange} 
-            defaultValue={field.value}
+            value={field.value || ""}
           >
             <FormControl>
               <SelectTrigger>
@@ -29,7 +29,7 @@ const ClientSelect: React.FC<ClientSelectProps> = ({ clients, form }) => {
             </FormControl>
             <SelectContent>
               {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
+                <SelectItem key={client.id} value={client.id || "no-id"}>
                   {client.name} - {client.phone}
                 </SelectItem>
               ))}
