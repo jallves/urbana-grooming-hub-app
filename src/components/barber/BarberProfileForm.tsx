@@ -121,7 +121,7 @@ const BarberProfileForm: React.FC = () => {
         description: 'Suas informações foram salvas com sucesso.',
       });
     } catch (error: any) {
-      console.error('Erro ao atualizar perfil:', error);
+      console.error('Error updating profile:', error);
       toast({
         title: 'Erro ao salvar',
         description: error.message || 'Ocorreu um erro ao atualizar seu perfil.',
@@ -140,13 +140,13 @@ const BarberProfileForm: React.FC = () => {
     const file = e.target.files[0];
     
     try {
-      console.log('Fazendo upload da imagem do barbeiro...');
+      console.log('Starting barber image upload...');
       
       // Upload the file using the centralized upload system
       const uploadedUrl = await uploadFile(file, 'staff-photos', 'profiles');
       
       if (uploadedUrl) {
-        console.log('URL da imagem:', uploadedUrl);
+        console.log('Image URL:', uploadedUrl);
         
         // Update the staff record with the new image URL
         const { error: updateError } = await supabase
@@ -167,7 +167,7 @@ const BarberProfileForm: React.FC = () => {
         });
       }
     } catch (error: any) {
-      console.error('Erro ao fazer upload da imagem:', error);
+      console.error('Error uploading image:', error);
       toast({
         title: 'Erro ao atualizar imagem',
         description: error.message || 'Ocorreu um erro ao fazer upload da sua foto.',

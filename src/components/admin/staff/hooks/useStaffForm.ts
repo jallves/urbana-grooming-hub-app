@@ -87,17 +87,19 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setSelectedFile(file);
+    console.log('File selected:', file?.name);
   };
 
   const onSubmit = async (data: StaffFormValues) => {
     try {
       setIsSubmitting(true);
+      console.log('Starting form submission...');
 
       let imageUrl = data.image_url;
 
       // Upload image if selected
       if (selectedFile) {
-        console.log('Fazendo upload da nova imagem...');
+        console.log('Uploading new image...');
         setUploadProgress(25);
         
         try {
@@ -105,18 +107,19 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
           if (uploadedUrl) {
             imageUrl = uploadedUrl;
             setUploadProgress(100);
+            console.log('Image uploaded successfully:', uploadedUrl);
             toast.success('Imagem enviada com sucesso!');
           }
         } catch (uploadError) {
-          console.error('Erro no upload da imagem:', uploadError);
+          console.error('Error uploading image:', uploadError);
           toast.error('Erro ao fazer upload da imagem');
           return; // Don't proceed if image upload failed
         }
       }
 
-      // Ensure the staffData object matches the expected Supabase schema
+      // Prepare staff data
       const staffData = {
-        name: data.name, // Required field
+        name: data.name,
         email: data.email || null,
         phone: data.phone || null,
         role: data.role || null,
@@ -127,7 +130,7 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
         specialties: data.specialties || null,
       };
 
-      console.log('Salvando dados do profissional:', staffData);
+      console.log('Saving staff data:', staffData);
 
       if (isEditing) {
         const { error } = await supabase
@@ -150,7 +153,7 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
 
       onSuccess();
     } catch (error) {
-      console.error('Erro ao salvar profissional:', error);
+      console.error('Error saving staff:', error);
       toast.error('Erro ao salvar profissional', {
         description: error instanceof Error ? error.message : 'Erro desconhecido'
       });

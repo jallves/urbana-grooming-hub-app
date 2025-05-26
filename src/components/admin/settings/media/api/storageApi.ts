@@ -22,15 +22,15 @@ export const uploadFileToStorage = async (file: File, bucket: string, path: stri
     .upload(filePath, file, {
       cacheControl: '3600',
       upsert: true,
-      contentType: file.type // Explicitly specify content type
+      contentType: file.type
     });
   
   if (uploadError) {
     console.error('Upload error details:', uploadError);
-    throw new Error(`Erro no upload: ${uploadError.message || 'Erro desconhecido durante o upload'}`);
+    throw new Error(`Erro no upload: ${uploadError.message}`);
   }
   
-  console.log("Upload successful");
+  console.log("Upload successful, data:", uploadData);
   
   // Get the public URL for the uploaded file
   const { data: publicUrlData } = supabase.storage
