@@ -57,7 +57,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
         </NavigationMenuItem>
         <NavigationMenuItem>
           <Link 
-            to={user ? "/appointment-booking" : "/register-auth"}
+            to="/agendar"
             className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
           >
             <Calendar size={18} className="inline-block mr-1 text-urbana-gold" />

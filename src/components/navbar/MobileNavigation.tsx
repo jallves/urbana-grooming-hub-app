@@ -40,7 +40,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
         className="text-white"
         asChild
       >
-        <Link to={user ? "/appointment-booking" : "/register-auth"}>
+        <Link to="/agendar">
           <Calendar size={16} className="text-urbana-gold" />
         </Link>
       </Button>
