@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -45,52 +45,53 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
     },
   });
 
-  // Load staff data for editing
-  useEffect(() => {
-    if (staffId) {
-      setIsLoadingStaff(true);
-      const fetchStaff = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('staff')
-            .select('*')
-            .eq('id', staffId)
-            .single();
+  // Memoize the fetch function to prevent unnecessary re-renders
+  const fetchStaff = useCallback(async () => {
+    if (!staffId) return;
+    
+    setIsLoadingStaff(true);
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('id', staffId)
+        .single();
 
-          if (error) throw error;
+      if (error) throw error;
 
-          if (data) {
-            form.reset({
-              name: data.name || '',
-              email: data.email || '',
-              phone: data.phone || '',
-              role: data.role || '',
-              is_active: data.is_active,
-              image_url: data.image_url || '',
-              experience: data.experience || '',
-              commission_rate: data.commission_rate || 0,
-              specialties: data.specialties || '',
-            });
-          }
-        } catch (error) {
-          console.error('Erro ao carregar profissional:', error);
-          toast.error('Erro ao carregar dados do profissional');
-        } finally {
-          setIsLoadingStaff(false);
-        }
-      };
-
-      fetchStaff();
+      if (data) {
+        form.reset({
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          role: data.role || '',
+          is_active: data.is_active,
+          image_url: data.image_url || '',
+          experience: data.experience || '',
+          commission_rate: data.commission_rate || 0,
+          specialties: data.specialties || '',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar profissional:', error);
+      toast.error('Erro ao carregar dados do profissional');
+    } finally {
+      setIsLoadingStaff(false);
     }
   }, [staffId, form]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Load staff data for editing
+  useEffect(() => {
+    fetchStaff();
+  }, [fetchStaff]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setSelectedFile(file);
     console.log('File selected:', file?.name);
-  };
+  }, []);
 
-  const onSubmit = async (data: StaffFormValues) => {
+  const onSubmit = useCallback(async (data: StaffFormValues) => {
     try {
       setIsSubmitting(true);
       console.log('Starting form submission...');
@@ -161,7 +162,7 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
       setIsSubmitting(false);
       setUploadProgress(0);
     }
-  };
+  }, [selectedFile, uploadFile, isEditing, staffId, onSuccess]);
 
   return {
     form,

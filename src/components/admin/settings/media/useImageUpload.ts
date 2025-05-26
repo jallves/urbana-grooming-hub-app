@@ -1,6 +1,7 @@
 
 import { useUploadState } from './hooks/useUploadState';
 import { uploadFileToStorage } from './api/storageApi';
+import { useCallback } from 'react';
 
 /**
  * Hook for handling image uploads to Supabase Storage
@@ -8,7 +9,7 @@ import { uploadFileToStorage } from './api/storageApi';
 export const useImageUpload = () => {
   const { uploading, setUploading, handleUploadError } = useUploadState();
 
-  const uploadFile = async (file: File, bucket: string, path: string): Promise<string> => {
+  const uploadFile = useCallback(async (file: File, bucket: string, path: string): Promise<string> => {
     setUploading(true);
     console.log(`Starting upload to bucket: ${bucket}, path: ${path}`);
     
@@ -23,7 +24,7 @@ export const useImageUpload = () => {
     } finally {
       setUploading(false);
     }
-  };
+  }, [setUploading, handleUploadError]);
 
   return { uploadFile, uploading };
 };

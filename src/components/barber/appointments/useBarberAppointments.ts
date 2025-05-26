@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
   const { user } = useAuth();
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -86,12 +86,12 @@ export const useBarberAppointments = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchAppointments();
 
-    // Set up a subscription for real-time updates
+    // Set up a subscription for real-time updates with cleanup
     const channel = supabase
       .channel('appointments-changes')
       .on(
@@ -105,11 +105,12 @@ export const useBarberAppointments = () => {
       .subscribe();
 
     return () => {
+      console.log('Cleaning up appointments subscription');
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [fetchAppointments]);
 
-  const handleCompleteAppointment = async (appointmentId: string) => {
+  const handleCompleteAppointment = useCallback(async (appointmentId: string) => {
     try {
       setUpdatingId(appointmentId);
       
@@ -128,15 +129,15 @@ export const useBarberAppointments = () => {
     } finally {
       setUpdatingId(null);
     }
-  };
+  }, [fetchAppointments]);
 
-  const handleEditAppointment = (appointmentId: string, startTime: string) => {
+  const handleEditAppointment = useCallback((appointmentId: string, startTime: string) => {
     setSelectedAppointmentId(appointmentId);
     setSelectedAppointmentDate(new Date(startTime));
     setIsEditModalOpen(true);
-  };
+  }, []);
 
-  const handleCancelAppointment = async (appointmentId: string) => {
+  const handleCancelAppointment = useCallback(async (appointmentId: string) => {
     try {
       setUpdatingId(appointmentId);
       
@@ -155,13 +156,13 @@ export const useBarberAppointments = () => {
     } finally {
       setUpdatingId(null);
     }
-  };
+  }, [fetchAppointments]);
 
-  const closeEditModal = () => {
+  const closeEditModal = useCallback(() => {
     setIsEditModalOpen(false);
     setSelectedAppointmentId(null);
     setSelectedAppointmentDate(null);
-  };
+  }, []);
 
   return {
     appointments,

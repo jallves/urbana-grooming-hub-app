@@ -1,9 +1,8 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Shield, Scissors, Calendar } from "lucide-react";
-import { useAuth } from '@/contexts/AuthContext';
 
 interface MobileNavigationProps {
   user: any;
@@ -17,11 +16,11 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   handleSignOut 
 }) => {
   return (
-    <div className="flex md:hidden items-center">
+    <div className="flex md:hidden items-center space-x-2">
       <Button 
         variant="ghost" 
         size="sm"
-        className="text-white"
+        className="text-white hover:text-urbana-gold transition-colors"
         asChild
       >
         <Link to="/">Home</Link>
@@ -29,7 +28,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
       <Button 
         variant="ghost" 
         size="sm" 
-        className="text-white"
+        className="text-white hover:text-urbana-gold transition-colors"
         asChild
       >
         <a href="#services">Serviços</a>
@@ -37,7 +36,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
       <Button 
         variant="ghost" 
         size="sm" 
-        className="text-white"
+        className="text-white hover:text-urbana-gold transition-colors"
         asChild
       >
         <Link to="/agendar">
@@ -49,16 +48,16 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="text-white"
+            className="text-white hover:text-urbana-gold transition-colors"
             onClick={handlePanelClick}
           >
-            <Shield size={16} className="mr-1" />
+            <Shield size={16} />
           </Button>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={handleSignOut}
-            className="ml-2 border-urbana-gold text-urbana-gold hover:bg-urbana-gold/20"
+            className="border-urbana-gold text-urbana-gold hover:bg-urbana-gold hover:text-black transition-all"
           >
             Sair
           </Button>
@@ -68,17 +67,17 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
           <Button
             variant="ghost" 
             size="sm"
-            className="text-white"
+            className="text-white hover:text-urbana-gold transition-colors"
             asChild
           >
             <Link to="/auth">
-              <Shield size={16} className="mr-1" />
+              <Shield size={16} />
             </Link>
           </Button>
           <Button
             variant="ghost" 
             size="sm"
-            className="text-white"
+            className="text-white hover:text-urbana-gold transition-colors"
             asChild
           >
             <Link to="/barbeiro/login">

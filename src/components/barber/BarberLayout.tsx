@@ -26,8 +26,12 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await signOut();
-    navigate('/barbeiro/login');
+    try {
+      await signOut();
+      navigate('/barbeiro/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const userInitials = user?.email?.charAt(0).toUpperCase() || 'B';
@@ -46,7 +50,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
       
       {/* Main content with padding to account for fixed sidebar */}
       <div className="flex-1 md:ml-64 p-0 overflow-auto">
-        <header className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-3 sticky top-0 z-10">
+        <header className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-3 sticky top-0 z-10 backdrop-blur-sm">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-white">{title}</h1>
@@ -56,7 +60,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="text-gray-400 hover:text-white hover:bg-zinc-800 relative"
+                className="text-gray-400 hover:text-white hover:bg-zinc-800 transition-colors relative"
               >
                 <Bell className="h-5 w-5" />
                 <Badge className="absolute top-0 right-0 h-2 w-2 bg-red-500 p-0 border-0"></Badge>
@@ -64,9 +68,9 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-zinc-800 transition-colors">
                     <Avatar>
-                      <AvatarFallback className="bg-zinc-800">{userInitials}</AvatarFallback>
+                      <AvatarFallback className="bg-zinc-800 text-white">{userInitials}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -74,14 +78,14 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
                   <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   <DropdownMenuItem 
-                    className="flex items-center cursor-pointer hover:bg-zinc-800"
+                    className="flex items-center cursor-pointer hover:bg-zinc-800 transition-colors"
                     onClick={() => navigate('/barbeiro/perfil')}
                   >
                     <span>Perfil</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   <DropdownMenuItem 
-                    className="flex items-center cursor-pointer text-red-500 hover:bg-zinc-800 hover:text-red-500"
+                    className="flex items-center cursor-pointer text-red-500 hover:bg-zinc-800 hover:text-red-400 transition-colors"
                     onClick={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -92,7 +96,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
             </div>
           </div>
         </header>
-        <main className="p-4 md:p-6 overflow-auto">{children}</main>
+        <main className="p-4 md:p-6 overflow-auto min-h-[calc(100vh-80px)]">{children}</main>
       </div>
     </div>
   );

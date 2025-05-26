@@ -76,7 +76,6 @@ export const useAppointments = () => {
         }
         
         console.log('All appointments found:', data?.length || 0);
-        console.log('Appointments with staff data:', data);
         setAppointments(data || []);
       }
     } catch (error) {
@@ -91,7 +90,7 @@ export const useAppointments = () => {
     if (user) {
       fetchAppointments();
       
-      // Add real-time subscription for appointments
+      // Add real-time subscription for appointments with proper cleanup
       const channel = supabase
         .channel('appointment-changes')
         .on(
@@ -103,19 +102,19 @@ export const useAppointments = () => {
           },
           (payload) => {
             console.log('Appointment data changed:', payload);
-            toast.info('Dados de agendamentos atualizados');
             fetchAppointments(); // Refresh data when changes occur
           }
         )
         .subscribe();
 
       return () => {
+        console.log('Cleaning up appointments subscription');
         supabase.removeChannel(channel);
       };
     }
   }, [user, fetchAppointments]); // Add fetchAppointments as a dependency
 
-  const handleStatusChange = async (appointmentId: string, newStatus: string) => {
+  const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from('appointments')
@@ -125,7 +124,7 @@ export const useAppointments = () => {
       if (error) throw error;
       
       // Update local state
-      setAppointments(appointments.map(appointment => 
+      setAppointments(prev => prev.map(appointment => 
         appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
       ));
       
@@ -138,9 +137,9 @@ export const useAppointments = () => {
         description: "Não foi possível atualizar o status.",
       });
     }
-  };
+  }, []);
   
-  const handleDeleteAppointment = async (appointmentId: string) => {
+  const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
     try {
       const { error } = await supabase
         .from('appointments')
@@ -149,7 +148,7 @@ export const useAppointments = () => {
       
       if (error) throw error;
       
-      setAppointments(appointments.filter(appointment => appointment.id !== appointmentId));
+      setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
       
       toast.success("Agendamento excluído", {
         description: "O agendamento foi excluído com sucesso.",
@@ -163,7 +162,7 @@ export const useAppointments = () => {
       });
       return false;
     }
-  };
+  }, []);
 
   return {
     appointments,
