@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useImageUpload } from '../../settings/media/useImageUpload';
 
 const staffFormSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -23,10 +24,10 @@ export type StaffFormValues = z.infer<typeof staffFormSchema>;
 export const useStaffForm = (staffId: string | null, onSuccess: () => void, defaultRole?: string) => {
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
+  const { uploadFile, uploading } = useImageUpload();
   const isEditing = Boolean(staffId);
 
   const form = useForm<StaffFormValues>({
@@ -88,104 +89,6 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
     setSelectedFile(file);
   };
 
-  const setupBucket = async () => {
-    try {
-      console.log('Verificando bucket staff-photos...');
-      
-      // Check if bucket exists
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-      
-      if (listError) {
-        console.error('Erro ao listar buckets:', listError);
-        throw listError;
-      }
-      
-      const bucketExists = buckets?.some(bucket => bucket.name === 'staff-photos');
-      
-      if (!bucketExists) {
-        console.log('Criando bucket staff-photos...');
-        
-        const { error: createError } = await supabase.storage.createBucket('staff-photos', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
-        });
-        
-        if (createError) {
-          console.error('Erro ao criar bucket:', createError);
-          throw createError;
-        }
-        
-        console.log('Bucket staff-photos criado com sucesso');
-      } else {
-        console.log('Bucket staff-photos já existe');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Erro ao configurar bucket:', error);
-      toast.error('Erro ao configurar storage para fotos');
-      return false;
-    }
-  };
-
-  const uploadImage = async (file: File): Promise<string | null> => {
-    try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      // Setup bucket first
-      const bucketReady = await setupBucket();
-      if (!bucketReady) {
-        throw new Error('Não foi possível configurar o bucket de storage');
-      }
-
-      setUploadProgress(25);
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `staff_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
-
-      console.log('Fazendo upload do arquivo:', filePath);
-
-      setUploadProgress(50);
-
-      const { error: uploadError } = await supabase.storage
-        .from('staff-photos')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Erro no upload:', uploadError);
-        throw uploadError;
-      }
-
-      setUploadProgress(75);
-
-      const { data } = supabase.storage
-        .from('staff-photos')
-        .getPublicUrl(filePath);
-
-      console.log('URL da imagem:', data.publicUrl);
-
-      setUploadProgress(100);
-      toast.success('Imagem enviada com sucesso!');
-      
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Erro no upload da imagem:', error);
-      toast.error('Erro ao fazer upload da imagem', {
-        description: error instanceof Error ? error.message : 'Erro desconhecido'
-      });
-      return null;
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
   const onSubmit = async (data: StaffFormValues) => {
     try {
       setIsSubmitting(true);
@@ -195,12 +98,19 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
       // Upload image if selected
       if (selectedFile) {
         console.log('Fazendo upload da nova imagem...');
-        const uploadedUrl = await uploadImage(selectedFile);
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
-        } else {
-          // Don't proceed if image upload failed and user selected a file
-          return;
+        setUploadProgress(25);
+        
+        try {
+          const uploadedUrl = await uploadFile(selectedFile, 'staff-photos', 'profiles');
+          if (uploadedUrl) {
+            imageUrl = uploadedUrl;
+            setUploadProgress(100);
+            toast.success('Imagem enviada com sucesso!');
+          }
+        } catch (uploadError) {
+          console.error('Erro no upload da imagem:', uploadError);
+          toast.error('Erro ao fazer upload da imagem');
+          return; // Don't proceed if image upload failed
         }
       }
 
@@ -246,6 +156,7 @@ export const useStaffForm = (staffId: string | null, onSuccess: () => void, defa
       });
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 

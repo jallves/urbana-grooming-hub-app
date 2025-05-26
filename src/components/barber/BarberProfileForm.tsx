@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Camera } from 'lucide-react';
+import { useImageUpload } from '@/components/admin/settings/media/useImageUpload';
 
 const profileSchema = z.object({
   name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -35,8 +36,9 @@ const BarberProfileForm: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  
+  const { uploadFile, uploading } = useImageUpload();
   
   // Form for profile data
   const form = useForm<ProfileFormValues>({
@@ -129,46 +131,6 @@ const BarberProfileForm: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const setupBucket = async () => {
-    try {
-      console.log('Verificando bucket staff-photos...');
-      
-      // Check if bucket exists
-      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-      
-      if (listError) {
-        console.error('Erro ao listar buckets:', listError);
-        throw listError;
-      }
-      
-      const bucketExists = buckets?.some(bucket => bucket.name === 'staff-photos');
-      
-      if (!bucketExists) {
-        console.log('Criando bucket staff-photos...');
-        
-        const { error: createError } = await supabase.storage.createBucket('staff-photos', {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-          allowedMimeTypes: ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
-        });
-        
-        if (createError) {
-          console.error('Erro ao criar bucket:', createError);
-          throw createError;
-        }
-        
-        console.log('Bucket staff-photos criado com sucesso');
-      } else {
-        console.log('Bucket staff-photos já existe');
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Erro ao configurar bucket:', error);
-      return false;
-    }
-  };
   
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files.length || !user?.email) {
@@ -178,45 +140,18 @@ const BarberProfileForm: React.FC = () => {
     const file = e.target.files[0];
     
     try {
-      setUploading(true);
+      console.log('Fazendo upload da imagem do barbeiro...');
       
-      // Setup bucket first
-      const bucketReady = await setupBucket();
-      if (!bucketReady) {
-        throw new Error('Não foi possível configurar o bucket de storage');
-      }
+      // Upload the file using the centralized upload system
+      const uploadedUrl = await uploadFile(file, 'staff-photos', 'profiles');
       
-      const fileExt = file.name.split('.').pop();
-      const fileName = `barber_${user.id}_${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
-      
-      console.log('Fazendo upload do arquivo:', filePath);
-      
-      // Upload the file to Supabase storage
-      const { error: uploadError } = await supabase.storage
-        .from('staff-photos')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (uploadError) {
-        console.error('Erro no upload:', uploadError);
-        throw uploadError;
-      }
-      
-      // Get the public URL for the uploaded image
-      const { data } = supabase.storage
-        .from('staff-photos')
-        .getPublicUrl(filePath);
-      
-      if (data?.publicUrl) {
-        console.log('URL da imagem:', data.publicUrl);
+      if (uploadedUrl) {
+        console.log('URL da imagem:', uploadedUrl);
         
         // Update the staff record with the new image URL
         const { error: updateError } = await supabase
           .from('staff')
-          .update({ image_url: data.publicUrl })
+          .update({ image_url: uploadedUrl })
           .eq('email', user.email);
         
         if (updateError) {
@@ -224,7 +159,7 @@ const BarberProfileForm: React.FC = () => {
         }
         
         // Update the state with the new image URL
-        setImageUrl(data.publicUrl);
+        setImageUrl(uploadedUrl);
         
         toast({
           title: 'Imagem atualizada',
@@ -238,8 +173,6 @@ const BarberProfileForm: React.FC = () => {
         description: error.message || 'Ocorreu um erro ao fazer upload da sua foto.',
         variant: 'destructive',
       });
-    } finally {
-      setUploading(false);
     }
   };
 
