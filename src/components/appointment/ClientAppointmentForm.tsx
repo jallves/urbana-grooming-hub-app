@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -68,6 +67,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [barberAvailability, setBarberAvailability] = useState<BarberAvailabilityInfo[]>([]);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -158,6 +158,8 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
   const checkBarberAvailability = async (date: Date, timeSlot: string) => {
     if (!date || !timeSlot || !selectedService) return;
 
+    setIsCheckingAvailability(true);
+
     try {
       // Create start time from date and timeSlot
       const [hours, minutes] = timeSlot.split(':').map(Number);
@@ -172,8 +174,10 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       const startISOString = startTime.toISOString();
       const endISOString = endTime.toISOString();
 
-      // Check availability for all barbers
-      const availability = await Promise.all(barbers.map(async (barber) => {
+      // Check availability for all barbers (only active ones)
+      const activeBarbers = barbers.filter(barber => barber.is_active);
+      
+      const availability = await Promise.all(activeBarbers.map(async (barber) => {
         // Check if there are any overlapping appointments
         const { data: overlappingAppointments, error } = await supabase
           .from('appointments')
@@ -225,6 +229,8 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         description: "Não foi possível verificar a disponibilidade dos barbeiros.",
         variant: "destructive",
       });
+    } finally {
+      setIsCheckingAvailability(false);
     }
   };
 
@@ -254,6 +260,9 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
   const disabledDays = (date: Date) => {
     return isBefore(date, new Date()) && !isSameDay(date, new Date());
   };
+
+  const availableBarbers = barberAvailability.filter(barber => barber.available);
+  const unavailableBarbers = barberAvailability.filter(barber => !barber.available);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!selectedService || !clientId) return;
@@ -411,8 +420,15 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           name="barberId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Barbeiro</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={!form.getValues('time')}>
+              <FormLabel>
+                Barbeiro
+                {isCheckingAvailability && <span className="ml-2 text-sm text-gray-500">(Verificando disponibilidade...)</span>}
+              </FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                value={field.value} 
+                disabled={!form.getValues('time') || isCheckingAvailability}
+              >
                 <FormControl>
                   <SelectTrigger className="flex items-center">
                     <User className="mr-2 h-4 w-4" />
@@ -420,25 +436,38 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {barberAvailability.length > 0 ? (
-                    barberAvailability
-                      .filter(barber => barber.available)
-                      .map(barber => (
-                        <SelectItem key={barber.id} value={barber.id}>
-                          {barber.name} ✅
-                        </SelectItem>
-                      ))
-                  ) : (
-                    barbers.map(barber => (
+                  {/* Barbeiros disponíveis */}
+                  {availableBarbers.map(barber => (
+                    <SelectItem key={barber.id} value={barber.id}>
+                      {barber.name} ✅
+                    </SelectItem>
+                  ))}
+                  
+                  {/* Barbeiros indisponíveis (mostrar mas desabilitados) */}
+                  {unavailableBarbers.map(barber => (
+                    <SelectItem 
+                      key={barber.id} 
+                      value={barber.id} 
+                      disabled
+                      className="opacity-50"
+                    >
+                      {barber.name} ❌ (Indisponível)
+                    </SelectItem>
+                  ))}
+                  
+                  {/* Fallback: se não verificou ainda, mostrar todos */}
+                  {barberAvailability.length === 0 && barbers
+                    .filter(barber => barber.is_active)
+                    .map(barber => (
                       <SelectItem key={barber.id} value={barber.id}>
                         {barber.name}
                       </SelectItem>
                     ))
-                  )}
+                  }
                 </SelectContent>
               </Select>
               <FormMessage />
-              {barberAvailability.length > 0 && barberAvailability.every(b => !b.available) && (
+              {availableBarbers.length === 0 && barberAvailability.length > 0 && (
                 <Alert className="mt-2" variant="destructive">
                   <AlertTitle>Nenhum barbeiro disponível</AlertTitle>
                   <AlertDescription>

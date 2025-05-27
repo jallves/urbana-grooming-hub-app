@@ -43,6 +43,10 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const onSubmit = async (data: any) => {
     await handleSubmit(data, selectedService);
   };
+
+  // Obter valores do formulário para passar para StaffSelect
+  const selectedDate = form.watch('date');
+  const selectedTime = form.watch('time');
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -59,9 +63,16 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             
             <ServiceSelect services={services} form={form} />
             
-            <StaffSelect staffMembers={staffMembers} form={form} />
-            
             <DateTimePicker form={form} />
+            
+            <StaffSelect 
+              staffMembers={staffMembers} 
+              form={form} 
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
+              serviceDuration={selectedService?.duration}
+              appointmentId={appointmentId}
+            />
             
             <NotesField form={form} />
             
