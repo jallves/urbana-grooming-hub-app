@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +6,8 @@ import { format, addDays, isBefore, isAfter, parseISO, isSameDay } from 'date-fn
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Clock, User, Scissors } from 'lucide-react';
+import { useAppointmentConfirmation } from '@/hooks/useAppointmentConfirmation';
+import { Calendar as CalendarIcon, Clock, User, Scissors, MessageCircle, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -32,6 +33,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { StaffMember, Service } from '@/types/appointment';
 
@@ -59,6 +62,10 @@ const formSchema = z.object({
     required_error: "Por favor, selecione um horário"
   }),
   notes: z.string().optional(),
+  confirmationMethod: z.enum(['email', 'whatsapp'], {
+    required_error: "Por favor, selecione como deseja receber a confirmação"
+  }),
+  phone: z.string().optional(),
 });
 
 export default function ClientAppointmentForm({ clientId }: ClientAppointmentFormProps) {
@@ -69,7 +76,9 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [barberAvailability, setBarberAvailability] = useState<BarberAvailabilityInfo[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [clientData, setClientData] = useState<any>(null);
   const { toast } = useToast();
+  const { sendConfirmation, isSending } = useAppointmentConfirmation();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,8 +86,32 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       serviceId: '',
       barberId: '',
       notes: '',
+      confirmationMethod: 'email',
+      phone: '',
     },
   });
+
+  // Fetch client data
+  useEffect(() => {
+    const fetchClientData = async () => {
+      if (!clientId) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', clientId)
+          .single();
+
+        if (error) throw error;
+        setClientData(data);
+      } catch (error) {
+        console.error('Error fetching client data:', error);
+      }
+    };
+
+    fetchClientData();
+  }, [clientId]);
 
   // Fetch services and barbers when component mounts
   useEffect(() => {
@@ -289,8 +322,10 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
   const availableBarbers = barberAvailability.filter(barber => barber.available);
   const unavailableBarbers = barberAvailability.filter(barber => !barber.available);
 
+  const watchConfirmationMethod = form.watch('confirmationMethod');
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!selectedService || !clientId) return;
+    if (!selectedService || !clientId || !clientData) return;
     
     setLoading(true);
     
@@ -302,7 +337,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      const { data, error } = await supabase
+      const { data: appointmentData, error } = await supabase
         .from('appointments')
         .insert({
           client_id: clientId,
@@ -313,15 +348,28 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           status: 'scheduled',
           notes: values.notes || null,
         })
-        .select();
+        .select(`
+          *,
+          services:service_id (*),
+          staff:staff_id (*)
+        `)
+        .single();
 
       if (error) throw error;
 
-      toast({
-        title: "Agendamento realizado com sucesso!",
-        description: `Seu horário foi agendado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+      // Enviar confirmação
+      await sendConfirmation({
+        clientName: clientData.name,
+        clientEmail: clientData.email,
+        clientPhone: values.phone,
+        serviceName: selectedService.name,
+        staffName: appointmentData.staff.name,
+        appointmentDate: startTime,
+        servicePrice: selectedService.price,
+        serviceDuration: selectedService.duration,
+        preferredMethod: values.confirmationMethod,
       });
-      
+
       form.reset();
     } catch (error: any) {
       console.error("Error creating appointment:", error);
@@ -497,6 +545,61 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           )}
         />
 
+        {/* Confirmation Method */}
+        <FormField
+          control={form.control}
+          name="confirmationMethod"
+          render={({ field }) => (
+            <FormItem className="space-y-3">
+              <FormLabel>Como deseja receber a confirmação?</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex flex-col space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="email" id="email" />
+                    <Label htmlFor="email" className="flex items-center cursor-pointer">
+                      <Mail className="mr-2 h-4 w-4" />
+                      Email
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="whatsapp" id="whatsapp" />
+                    <Label htmlFor="whatsapp" className="flex items-center cursor-pointer">
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      WhatsApp
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Phone Number (conditional) */}
+        {watchConfirmationMethod === 'whatsapp' && (
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Número do WhatsApp</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="(11) 99999-9999" 
+                    {...field}
+                    className="flex items-center"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         {/* Notes */}
         <FormField
           control={form.control}
@@ -543,9 +646,9 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         <Button 
           type="submit" 
           className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-white py-6"
-          disabled={loading || !form.formState.isValid}
+          disabled={loading || isSending || !form.formState.isValid}
         >
-          {loading ? "Agendando..." : "Confirmar Agendamento"}
+          {loading || isSending ? "Agendando..." : "Confirmar Agendamento"}
         </Button>
       </form>
     </Form>
