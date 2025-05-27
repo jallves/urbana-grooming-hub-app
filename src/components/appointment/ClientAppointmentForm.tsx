@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,7 +84,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
   useEffect(() => {
     const fetchServicesAndBarbers = async () => {
       try {
-        // Fetch services
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
           .select('*')
@@ -92,7 +92,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         if (servicesError) throw servicesError;
         setServices(servicesData || []);
 
-        // Fetch barbers
         const { data: barbersData, error: barbersError } = await supabase
           .from('staff')
           .select('*')
@@ -121,7 +120,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     const service = services.find(s => s.id === serviceId);
     setSelectedService(service || null);
     
-    // Reset barber, date and time when service changes
     form.setValue('barberId', '');
     form.setValue('date', undefined as any);
     form.setValue('time', '');
@@ -133,11 +131,10 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     
     const slots = [];
     const today = new Date();
-    const startHour = isSameDay(selectedDate, today) ? new Date().getHours() + 1 : 8; // Next hour if today
+    const startHour = isSameDay(selectedDate, today) ? Math.max(new Date().getHours() + 1, 8) : 8;
     
     for (let hour = startHour; hour < 20; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        // Skip times in the past for today
         if (isSameDay(selectedDate, today)) {
           const currentTime = new Date();
           if (hour < currentTime.getHours() || (hour === currentTime.getHours() && minute <= currentTime.getMinutes())) {
@@ -156,55 +153,81 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
 
   // Check barber availability for the selected date and time
   const checkBarberAvailability = async (date: Date, timeSlot: string) => {
-    if (!date || !timeSlot || !selectedService) return;
+    if (!date || !timeSlot || !selectedService || !barbers.length) {
+      console.log('Dados insuficientes para verificação, mostrando todos como disponíveis');
+      setBarberAvailability(barbers.map(barber => ({
+        id: barber.id,
+        name: barber.name,
+        available: true
+      })));
+      return;
+    }
 
+    console.log('Verificando disponibilidade dos barbeiros:', { date, timeSlot, serviceDuration: selectedService.duration });
     setIsCheckingAvailability(true);
 
     try {
-      // Create start time from date and timeSlot
       const [hours, minutes] = timeSlot.split(':').map(Number);
       const startTime = new Date(date);
       startTime.setHours(hours, minutes, 0, 0);
 
-      // Create end time based on service duration
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      // Format times for query
-      const startISOString = startTime.toISOString();
-      const endISOString = endTime.toISOString();
+      console.log('Verificando conflitos entre:', startTime.toISOString(), 'e', endTime.toISOString());
 
-      // Check availability for all barbers (only active ones)
       const activeBarbers = barbers.filter(barber => barber.is_active);
       
       const availability = await Promise.all(activeBarbers.map(async (barber) => {
-        // Check if there are any overlapping appointments
-        const { data: overlappingAppointments, error } = await supabase
+        const { data: appointments, error } = await supabase
           .from('appointments')
-          .select('*')
+          .select('id, start_time, end_time')
           .eq('staff_id', barber.id)
           .eq('status', 'scheduled')
-          .or(`start_time.lt.${endISOString},end_time.gt.${startISOString}`);
+          .gte('start_time', startTime.toISOString().split('T')[0])
+          .lte('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao verificar disponibilidade para', barber.name, ':', error);
+          return {
+            id: barber.id,
+            name: barber.name,
+            available: false
+          };
+        }
 
-        const isAvailable = !overlappingAppointments || overlappingAppointments.length === 0;
-        
+        console.log(`Agendamentos encontrados para ${barber.name}:`, appointments);
+
+        const hasConflict = appointments?.some(appointment => {
+          const appStart = new Date(appointment.start_time);
+          const appEnd = new Date(appointment.end_time);
+          
+          const conflict = startTime < appEnd && endTime > appStart;
+          
+          if (conflict) {
+            console.log(`Conflito encontrado para ${barber.name}:`, {
+              existente: `${appStart.toISOString()} - ${appEnd.toISOString()}`,
+              novo: `${startTime.toISOString()} - ${endTime.toISOString()}`
+            });
+          }
+          
+          return conflict;
+        }) || false;
+
         return {
           id: barber.id,
           name: barber.name,
-          available: isAvailable
+          available: !hasConflict
         };
       }));
 
+      console.log('Resultado da verificação de disponibilidade:', availability);
       setBarberAvailability(availability);
 
-      // Update form value if selected barber is not available
       const currentBarberId = form.getValues('barberId');
       if (currentBarberId) {
         const currentBarberAvailable = availability.find(b => b.id === currentBarberId)?.available;
         if (!currentBarberAvailable) {
-          // Find first available barber
           const firstAvailable = availability.find(b => b.available);
           if (firstAvailable) {
             form.setValue('barberId', firstAvailable.id);
@@ -229,6 +252,11 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         description: "Não foi possível verificar a disponibilidade dos barbeiros.",
         variant: "destructive",
       });
+      setBarberAvailability(barbers.map(barber => ({
+        id: barber.id,
+        name: barber.name,
+        available: true
+      })));
     } finally {
       setIsCheckingAvailability(false);
     }
@@ -240,8 +268,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     if (selectedDate && selectedService) {
       const times = generateTimeSlots(selectedDate, selectedService.duration);
       setAvailableTimes(times);
-      
-      // Reset time when date changes
       form.setValue('time', '');
     }
   }, [form.watch('date'), selectedService, form]);
@@ -256,7 +282,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     }
   }, [form.watch('time'), form.watch('date'), selectedService, form]);
 
-  // Filter future dates only (starting from today)
   const disabledDays = (date: Date) => {
     return isBefore(date, new Date()) && !isSameDay(date, new Date());
   };
@@ -270,16 +295,13 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     setLoading(true);
     
     try {
-      // Create date objects for start and end time
       const [hours, minutes] = values.time.split(':').map(Number);
       const startTime = new Date(values.date);
       startTime.setHours(hours, minutes, 0, 0);
 
-      // Calculate end time based on service duration
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      // Insert appointment
       const { data, error } = await supabase
         .from('appointments')
         .insert({
@@ -300,7 +322,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         description: `Seu horário foi agendado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
       });
       
-      // Reset form
       form.reset();
     } catch (error: any) {
       console.error("Error creating appointment:", error);
@@ -436,14 +457,12 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {/* Barbeiros disponíveis */}
                   {availableBarbers.map(barber => (
                     <SelectItem key={barber.id} value={barber.id}>
-                      {barber.name} ✅
+                      {barber.name} ✅ Disponível
                     </SelectItem>
                   ))}
                   
-                  {/* Barbeiros indisponíveis (mostrar mas desabilitados) */}
                   {unavailableBarbers.map(barber => (
                     <SelectItem 
                       key={barber.id} 
@@ -451,11 +470,10 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
                       disabled
                       className="opacity-50"
                     >
-                      {barber.name} ❌ (Indisponível)
+                      {barber.name} ❌ Indisponível
                     </SelectItem>
                   ))}
                   
-                  {/* Fallback: se não verificou ainda, mostrar todos */}
                   {barberAvailability.length === 0 && barbers
                     .filter(barber => barber.is_active)
                     .map(barber => (

@@ -19,7 +19,7 @@ interface StaffSelectProps {
   selectedDate?: Date;
   selectedTime?: string;
   serviceDuration?: number;
-  appointmentId?: string; // Para excluir o próprio agendamento ao editar
+  appointmentId?: string;
 }
 
 const StaffSelect: React.FC<StaffSelectProps> = ({ 
@@ -34,8 +34,10 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
   const [isChecking, setIsChecking] = useState(false);
 
   const checkStaffAvailability = async () => {
-    if (!selectedDate || !selectedTime) {
-      // Se não há data/hora selecionada, todos ficam disponíveis
+    console.log('Verificando disponibilidade dos barbeiros:', { selectedDate, selectedTime, serviceDuration });
+    
+    if (!selectedDate || !selectedTime || !staffMembers.length) {
+      console.log('Dados insuficientes para verificação, mostrando todos como disponíveis');
       setStaffAvailability(staffMembers.map(staff => ({
         id: staff.id,
         name: staff.name,
@@ -47,7 +49,6 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
     setIsChecking(true);
 
     try {
-      // Criar horário de início e fim do agendamento
       const [hours, minutes] = selectedTime.split(':').map(Number);
       const startTime = new Date(selectedDate);
       startTime.setHours(hours, minutes, 0, 0);
@@ -55,27 +56,25 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceDuration);
 
-      const startISOString = startTime.toISOString();
-      const endISOString = endTime.toISOString();
+      console.log('Verificando conflitos entre:', startTime.toISOString(), 'e', endTime.toISOString());
 
-      // Verificar disponibilidade para cada barbeiro
       const availability = await Promise.all(staffMembers.map(async (staff) => {
         let query = supabase
           .from('appointments')
-          .select('id')
+          .select('id, start_time, end_time')
           .eq('staff_id', staff.id)
           .eq('status', 'scheduled')
-          .or(`start_time.lt.${endISOString},end_time.gt.${startISOString}`);
+          .gte('start_time', startTime.toISOString().split('T')[0]) // Mesmo dia
+          .lte('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]); // Até o dia seguinte
 
-        // Se estamos editando um agendamento, excluí-lo da verificação
         if (appointmentId) {
           query = query.neq('id', appointmentId);
         }
 
-        const { data: overlappingAppointments, error } = await query;
+        const { data: appointments, error } = await query;
 
         if (error) {
-          console.error('Erro ao verificar disponibilidade:', error);
+          console.error('Erro ao verificar disponibilidade para', staff.name, ':', error);
           return {
             id: staff.id,
             name: staff.name,
@@ -83,15 +82,34 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
           };
         }
 
-        const isAvailable = !overlappingAppointments || overlappingAppointments.length === 0;
-        
+        console.log(`Agendamentos encontrados para ${staff.name}:`, appointments);
+
+        // Verificar se há conflito de horário
+        const hasConflict = appointments?.some(appointment => {
+          const appStart = new Date(appointment.start_time);
+          const appEnd = new Date(appointment.end_time);
+          
+          // Verificar sobreposição: novo agendamento começa antes do existente terminar E termina depois do existente começar
+          const conflict = startTime < appEnd && endTime > appStart;
+          
+          if (conflict) {
+            console.log(`Conflito encontrado para ${staff.name}:`, {
+              existente: `${appStart.toISOString()} - ${appEnd.toISOString()}`,
+              novo: `${startTime.toISOString()} - ${endTime.toISOString()}`
+            });
+          }
+          
+          return conflict;
+        }) || false;
+
         return {
           id: staff.id,
           name: staff.name,
-          available: isAvailable
+          available: !hasConflict
         };
       }));
 
+      console.log('Resultado da verificação de disponibilidade:', availability);
       setStaffAvailability(availability);
 
       // Verificar se o barbeiro selecionado ainda está disponível
@@ -99,7 +117,6 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
       if (currentStaffId) {
         const currentStaffAvailable = availability.find(s => s.id === currentStaffId)?.available;
         if (!currentStaffAvailable) {
-          // Encontrar primeiro barbeiro disponível
           const firstAvailable = availability.find(s => s.available);
           if (firstAvailable) {
             form.setValue('staff_id', firstAvailable.id);
@@ -125,6 +142,12 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         description: "Não foi possível verificar a disponibilidade dos barbeiros.",
         variant: "destructive",
       });
+      // Em caso de erro, mostrar todos como disponíveis
+      setStaffAvailability(staffMembers.map(staff => ({
+        id: staff.id,
+        name: staff.name,
+        available: true
+      })));
     } finally {
       setIsChecking(false);
     }
@@ -158,14 +181,12 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {/* Barbeiros disponíveis */}
               {availableStaff.map((staff) => (
                 <SelectItem key={staff.id} value={staff.id}>
-                  {staff.name} ✅
+                  {staff.name} ✅ Disponível
                 </SelectItem>
               ))}
               
-              {/* Barbeiros indisponíveis (desabilitados) */}
               {unavailableStaff.map((staff) => (
                 <SelectItem 
                   key={staff.id} 
@@ -173,12 +194,11 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
                   disabled
                   className="opacity-50"
                 >
-                  {staff.name} ❌ (Indisponível)
+                  {staff.name} ❌ Indisponível
                 </SelectItem>
               ))}
               
-              {/* Mensagem quando não há barbeiros disponíveis */}
-              {availableStaff.length === 0 && selectedDate && selectedTime && (
+              {availableStaff.length === 0 && unavailableStaff.length > 0 && (
                 <div className="px-2 py-1 text-sm text-red-600">
                   Nenhum barbeiro disponível neste horário
                 </div>
