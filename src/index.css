@@ -50,16 +50,36 @@
   }
 }
 
-/* Fix sheet/modal width on mobile */
-@media (max-width: 640px) {
-  .sheet-content {
-    @apply w-[90vw] max-w-none;
-  }
-}
-
 /* Mobile navigation menu styling */
 .mobile-nav {
   @apply fixed top-0 left-0 w-full h-screen bg-background z-50 flex flex-col px-6 py-10 transform transition-transform duration-300;
+}
+
+/* Improved mobile sheet/drawer styling */
+@media (max-width: 640px) {
+  .sheet-content {
+    @apply w-[85vw] max-w-none;
+  }
+  
+  /* Ensure proper touch targets on mobile */
+  .mobile-touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+  
+  /* Optimize navbar for mobile */
+  .mobile-navbar {
+    @apply px-3 py-3;
+  }
+  
+  /* Better spacing for mobile forms */
+  .mobile-form-spacing {
+    @apply space-y-4 px-4;
+  }
+  
+  /* Responsive text sizing */
+  .mobile-text-responsive {
+    @apply text-base leading-relaxed;
+  }
 }
 
 /* Utility class for preventing scroll on body when modal is open */
@@ -87,4 +107,34 @@
 
 .text-shadow-sm {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile-first responsive improvements */
+@media (max-width: 768px) {
+  .responsive-padding {
+    @apply px-4 py-6;
+  }
+  
+  .responsive-margin {
+    @apply mx-4 my-6;
+  }
+  
+  /* Ensure buttons are easily tappable on mobile */
+  .mobile-button {
+    @apply py-4 px-6 text-lg min-h-[48px];
+  }
+  
+  /* Better mobile navigation spacing */
+  .mobile-nav-item {
+    @apply py-4 px-3 text-lg;
+  }
+}
+
+/* Improve mobile viewport handling */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  .ios-safari-fix {
+    @apply min-h-screen;
+    min-height: -webkit-fill-available;
+  }
 }

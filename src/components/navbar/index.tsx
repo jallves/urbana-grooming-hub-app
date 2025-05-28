@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
         ? 'bg-urbana-black shadow-md' 
         : 'bg-urbana-black/90 backdrop-blur-sm'
     }`}>
-      <div className="container mx-auto py-4 px-5 flex items-center justify-between">
+      <div className="container mx-auto py-3 md:py-4 px-4 md:px-5 flex items-center justify-between mobile-navbar">
         <NavbarLogo shopName={shopName} />
         <DesktopNavigation 
           user={user} 
