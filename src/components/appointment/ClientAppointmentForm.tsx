@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -366,7 +367,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         staffName: appointmentData.staff.name,
         appointmentDate: startTime,
         servicePrice: selectedService.price,
-        serviceDuration: selectedService.duration,
+        serviceDuration: selectedService.duration.toString(),
         preferredMethod: values.confirmationMethod,
       });
 
