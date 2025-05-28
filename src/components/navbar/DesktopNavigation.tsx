@@ -48,14 +48,6 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
           </a>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <a 
-            href="#appointment" 
-            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
-          >
-            Contato
-          </a>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
           <Link 
             to="/agendar"
             className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
