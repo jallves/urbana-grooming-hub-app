@@ -370,6 +370,12 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         preferredMethod: values.confirmationMethod,
       });
 
+      // Mostrar mensagem de sucesso
+      toast({
+        title: "Agendamento Realizado com Sucesso",
+        description: `Seu agendamento foi confirmado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}. A confirmação foi enviada por ${values.confirmationMethod === 'email' ? 'email' : 'WhatsApp'}.`,
+      });
+
       form.reset();
     } catch (error: any) {
       console.error("Error creating appointment:", error);
