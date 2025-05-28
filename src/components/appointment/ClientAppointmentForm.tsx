@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAppointmentConfirmation } from '@/hooks/useAppointmentConfirmation';
-import { Calendar as CalendarIcon, Clock, User, Scissors, MessageCircle, Mail, Phone } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, User, Scissors } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -33,8 +33,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { StaffMember, Service } from '@/types/appointment';
 
@@ -62,10 +60,6 @@ const formSchema = z.object({
     required_error: "Por favor, selecione um horário"
   }),
   notes: z.string().optional(),
-  confirmationMethod: z.enum(['email', 'whatsapp'], {
-    required_error: "Por favor, selecione como deseja receber a confirmação"
-  }),
-  phone: z.string().optional(),
 });
 
 export default function ClientAppointmentForm({ clientId }: ClientAppointmentFormProps) {
@@ -86,8 +80,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       serviceId: '',
       barberId: '',
       notes: '',
-      confirmationMethod: 'email',
-      phone: '',
     },
   });
 
@@ -322,8 +314,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
   const availableBarbers = barberAvailability.filter(barber => barber.available);
   const unavailableBarbers = barberAvailability.filter(barber => !barber.available);
 
-  const watchConfirmationMethod = form.watch('confirmationMethod');
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!selectedService || !clientId || !clientData) return;
     
@@ -357,23 +347,23 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
 
       if (error) throw error;
 
-      // Enviar confirmação
+      // Enviar confirmação automaticamente por email
       await sendConfirmation({
         clientName: clientData.name,
         clientEmail: clientData.email,
-        clientPhone: values.phone,
+        clientPhone: clientData.phone || '',
         serviceName: selectedService.name,
         staffName: appointmentData.staff.name,
         appointmentDate: startTime,
         servicePrice: selectedService.price.toString(),
         serviceDuration: selectedService.duration,
-        preferredMethod: values.confirmationMethod,
+        preferredMethod: 'email',
       });
 
       // Mostrar mensagem de sucesso
       toast({
         title: "Agendamento Realizado com Sucesso",
-        description: `Seu agendamento foi confirmado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}. A confirmação foi enviada por ${values.confirmationMethod === 'email' ? 'email' : 'WhatsApp'}.`,
+        description: `Seu agendamento foi confirmado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}. A confirmação foi enviada por email.`,
       });
 
       form.reset();
@@ -551,61 +541,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           )}
         />
 
-        {/* Confirmation Method */}
-        <FormField
-          control={form.control}
-          name="confirmationMethod"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Como deseja receber a confirmação?</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-2"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="email" id="email" />
-                    <Label htmlFor="email" className="flex items-center cursor-pointer">
-                      <Mail className="mr-2 h-4 w-4" />
-                      Email
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="whatsapp" id="whatsapp" />
-                    <Label htmlFor="whatsapp" className="flex items-center cursor-pointer">
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      WhatsApp
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Phone Number (conditional) */}
-        {watchConfirmationMethod === 'whatsapp' && (
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Número do WhatsApp</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="(11) 99999-9999" 
-                    {...field}
-                    className="flex items-center"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
         {/* Notes */}
         <FormField
           control={form.control}
@@ -645,6 +580,9 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
                   format(form.getValues('date'), "dd/MM/yyyy", { locale: ptBR })
                 )} às {form.getValues('time')}
               </div>
+              
+              <div>Confirmação:</div>
+              <div className="font-medium">Por email</div>
             </div>
           </div>
         )}
