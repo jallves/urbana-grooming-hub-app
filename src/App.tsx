@@ -10,6 +10,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 const Index = lazy(() => import('./pages/Index'));
 const Auth = lazy(() => import('./pages/Auth'));
 const RegisterAuth = lazy(() => import('./pages/RegisterAuth'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AppointmentBooking = lazy(() => import('./pages/AppointmentBooking'));
 
@@ -71,6 +72,7 @@ function App() {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/register" element={<RegisterAuth />} />
                   <Route path="/register-auth" element={<RegisterAuth />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   
                   {/* Admin routes */}
                   <Route path="/admin" element={<Admin />} />

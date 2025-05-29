@@ -1,41 +1,43 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Input } from '@/components/ui/input';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
+import ForgotPasswordForm from './ForgotPasswordForm';
 
-// Schema de validação
 const loginSchema = z.object({
-  email: z.string().email('Digite um e-mail válido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  email: z.string().email('Por favor, insira um email válido'),
+  password: z.string().min(1, 'A senha é obrigatória'),
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type LoginForm = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
   onLoginSuccess?: () => void;
+  redirectTo?: string;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading, onLoginSuccess }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ 
+  loading, 
+  setLoading, 
+  onLoginSuccess,
+  redirectTo 
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { toast } = useToast();
-  const [showPassword, setShowPassword] = React.useState(false);
-  
-  const form = useForm<LoginFormValues>({
+  const navigate = useNavigate();
+
+  const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
@@ -43,41 +45,59 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading, onLoginSucce
     },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
-        toast({
-          title: 'Erro ao fazer login',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Login realizado com sucesso',
-          description: 'Você será redirecionado para o agendamento',
-        });
-        
-        // Call onLoginSuccess callback if provided
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        }
+        throw error;
+      }
+
+      console.log('Login bem-sucedido:', authData.user?.email);
+      
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo de volta!",
+      });
+
+      if (onLoginSuccess) {
+        onLoginSuccess();
       }
     } catch (error: any) {
+      console.error('Erro no login:', error);
+      
+      let errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = "Email ou senha incorretos. Tente novamente.";
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = "Por favor, confirme seu email antes de fazer login.";
+      } else if (error.message?.includes('Too many requests')) {
+        errorMessage = "Muitas tentativas de login. Tente novamente em alguns minutos.";
+      }
+      
       toast({
-        title: 'Erro ao fazer login',
-        description: error.message || 'Ocorreu um erro inesperado',
-        variant: 'destructive',
+        title: "Erro no login",
+        description: errorMessage,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
+
+  if (showForgotPassword) {
+    return (
+      <ForgotPasswordForm 
+        onBack={() => setShowForgotPassword(false)}
+        redirectTo={redirectTo}
+      />
+    );
+  }
 
   return (
     <Form {...form}>
@@ -87,63 +107,68 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading, onLoginSucce
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>E-mail</FormLabel>
-              <div className="relative">
-                <FormControl>
-                  <Input 
-                    placeholder="seu@email.com" 
-                    {...field} 
-                    className="pl-10" 
-                    disabled={loading} 
-                  />
-                </FormControl>
-                <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="seu@email.com"
+                  {...field}
+                  disabled={loading}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Senha</FormLabel>
-              <div className="relative">
-                <FormControl>
-                  <Input 
-                    type={showPassword ? 'text' : 'password'} 
-                    placeholder="******" 
-                    {...field} 
-                    className="pl-10 pr-10" 
-                    disabled={loading} 
+              <FormControl>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Sua senha"
+                    {...field}
+                    disabled={loading}
                   />
-                </FormControl>
-                <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-10 w-10 px-0"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Entrando...' : 'Entrar'}
-        </Button>
+
+        <div className="space-y-3">
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
+          </Button>
+          
+          <Button 
+            type="button"
+            variant="ghost" 
+            className="w-full text-sm text-muted-foreground hover:text-primary"
+            onClick={() => setShowForgotPassword(true)}
+          >
+            Esqueceu sua senha?
+          </Button>
+        </div>
       </form>
     </Form>
   );

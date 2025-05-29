@@ -1151,6 +1151,168 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string
+          status: string
+          student_id: string | null
+          subscription_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method: string
+          status?: string
+          student_id?: string | null
+          subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string
+          status?: string
+          student_id?: string | null
+          subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      physical_assessments: {
+        Row: {
+          assessment_date: string | null
+          balance_score: number | null
+          body_fat_percentage: number | null
+          created_at: string | null
+          flexibility_score: number | null
+          goals: string | null
+          height: number | null
+          id: string
+          instructor_id: string | null
+          muscle_mass: number | null
+          observations: string | null
+          recommendations: string | null
+          strength_score: number | null
+          student_id: string | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          assessment_date?: string | null
+          balance_score?: number | null
+          body_fat_percentage?: number | null
+          created_at?: string | null
+          flexibility_score?: number | null
+          goals?: string | null
+          height?: number | null
+          id?: string
+          instructor_id?: string | null
+          muscle_mass?: number | null
+          observations?: string | null
+          recommendations?: string | null
+          strength_score?: number | null
+          student_id?: string | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          assessment_date?: string | null
+          balance_score?: number | null
+          body_fat_percentage?: number | null
+          created_at?: string | null
+          flexibility_score?: number | null
+          goals?: string | null
+          height?: number | null
+          id?: string
+          instructor_id?: string | null
+          muscle_mass?: number | null
+          observations?: string | null
+          recommendations?: string | null
+          strength_score?: number | null
+          student_id?: string | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "physical_assessments_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "instructors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "physical_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_types: {
+        Row: {
+          class_limit: number | null
+          created_at: string | null
+          description: string | null
+          duration_months: number
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          class_limit?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_months?: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+          updated_at?: string | null
+        }
+        Update: {
+          class_limit?: number | null
+          created_at?: string | null
+          description?: string | null
+          duration_months?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           class_credits: number | null
@@ -1617,6 +1779,115 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_attendance: {
+        Row: {
+          attendance_date: string | null
+          attended: boolean | null
+          booking_id: string | null
+          class_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          student_id: string | null
+        }
+        Insert: {
+          attendance_date?: string | null
+          attended?: boolean | null
+          booking_id?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          attendance_date?: string | null
+          attended?: boolean | null
+          booking_id?: string | null
+          class_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_attendance_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "class_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_attendance_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_communications: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          message_type: string
+          read_at: string | null
+          sender_id: string | null
+          sent_at: string | null
+          status: string | null
+          student_id: string | null
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          message_type: string
+          read_at?: string | null
+          sender_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          student_id?: string | null
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          message_type?: string
+          read_at?: string | null
+          sender_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          student_id?: string | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_communications_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_communications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
