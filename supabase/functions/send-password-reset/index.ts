@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -11,7 +12,7 @@ const corsHeaders = {
 
 interface PasswordResetRequest {
   email: string;
-  resetLink: string;
+  redirectTo?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,8 +21,34 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, resetLink }: PasswordResetRequest = await req.json();
+    const { email, redirectTo }: PasswordResetRequest = await req.json();
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Generate password reset token using Supabase
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email: email,
+      options: {
+        redirectTo: redirectTo || `${new URL(req.url).origin}/reset-password`
+      }
+    });
+
+    if (error) {
+      console.error('Error generating reset link:', error);
+      throw new Error('Não foi possível gerar o link de recuperação');
+    }
+
+    const resetLink = data.properties?.action_link;
+
+    if (!resetLink) {
+      throw new Error('Não foi possível gerar o link de recuperação');
+    }
+
+    // Send email using Resend
     const emailResponse = await resend.emails.send({
       from: "Urbana Barbearia <onboarding@resend.dev>",
       to: [email],
@@ -67,7 +94,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Password reset email sent successfully:", emailResponse);
 
-    return new Response(JSON.stringify(emailResponse), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: "Email de recuperação enviado com sucesso" 
+    }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -77,7 +107,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-password-reset function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || "Erro interno do servidor",
+        success: false 
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

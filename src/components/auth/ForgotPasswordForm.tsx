@@ -36,12 +36,20 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, redirec
   const onSubmit = async (data: ForgotPasswordForm) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: redirectTo || `${window.location.origin}/reset-password`,
+      // Usar nossa função edge personalizada
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('send-password-reset', {
+        body: {
+          email: data.email,
+          redirectTo: redirectTo || `${window.location.origin}/reset-password`,
+        }
       });
 
-      if (error) {
-        throw error;
+      if (functionError) {
+        throw functionError;
+      }
+
+      if (!functionData?.success) {
+        throw new Error(functionData?.error || 'Erro ao enviar email de recuperação');
       }
 
       setEmailSent(true);
