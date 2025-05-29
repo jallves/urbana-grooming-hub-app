@@ -36,6 +36,8 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, redirec
   const onSubmit = async (data: ForgotPasswordForm) => {
     setLoading(true);
     try {
+      console.log('Enviando solicitação de reset para:', data.email);
+      
       // Usar nossa função edge personalizada
       const { data: functionData, error: functionError } = await supabase.functions.invoke('send-password-reset', {
         body: {
@@ -44,11 +46,15 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, redirec
         }
       });
 
+      console.log('Resposta da função:', functionData, 'Erro:', functionError);
+
       if (functionError) {
+        console.error('Erro da função edge:', functionError);
         throw functionError;
       }
 
       if (!functionData?.success) {
+        console.error('Função retornou erro:', functionData?.error);
         throw new Error(functionData?.error || 'Erro ao enviar email de recuperação');
       }
 
@@ -59,9 +65,21 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, redirec
       });
     } catch (error: any) {
       console.error('Erro ao enviar email de recuperação:', error);
+      
+      let errorMessage = "Não foi possível enviar o email de recuperação. Tente novamente.";
+      
+      // Tratar diferentes tipos de erro
+      if (error.message?.includes('RESEND_API_KEY')) {
+        errorMessage = "Serviço de email não configurado. Entre em contato com o suporte.";
+      } else if (error.message?.includes('validation_error')) {
+        errorMessage = "Email inválido ou serviço de email temporariamente indisponível.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Erro ao enviar email",
-        description: error.message || "Não foi possível enviar o email de recuperação. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -81,6 +99,10 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, redirec
         <p className="text-gray-600">
           Enviamos um link de recuperação para seu email. Clique no link para redefinir sua senha.
         </p>
+        <div className="text-sm text-gray-500 bg-yellow-50 p-3 rounded-lg">
+          <p>📧 Verifique também sua pasta de spam/lixo eletrônico.</p>
+          <p>⏰ O link expira em 1 hora.</p>
+        </div>
         <Button onClick={onBack} variant="outline" className="w-full">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar ao Login
