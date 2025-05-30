@@ -41,11 +41,13 @@ export const useAppointmentFormSubmit = ({
       const appointmentData = {
         client_id: data.client_id,
         service_id: data.service_id,
-        staff_id: data.staff_id, // Make sure staff_id is included
+        staff_id: data.staff_id,
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
-        status: 'scheduled', // Using 'scheduled' instead of 'agendado'
+        status: 'scheduled',
         notes: data.notes || null,
+        coupon_code: data.couponCode || null,
+        discount_amount: data.discountAmount || 0,
       };
       
       // Log the data being saved for debugging

@@ -9,6 +9,7 @@ import ServiceSelect from './form/ServiceSelect';
 import StaffSelect from './form/StaffSelect';
 import DateTimePicker from './form/DateTimePicker';
 import NotesField from './form/NotesField';
+import CouponField from './form/CouponField';
 import AppointmentFormActions from './form/AppointmentFormActions';
 
 interface AppointmentFormProps {
@@ -75,6 +76,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             />
             
             <NotesField form={form} />
+            
+            {appointmentId && (
+              <CouponField 
+                form={form} 
+                appointmentId={appointmentId}
+                servicePrice={selectedService?.price}
+              />
+            )}
             
             <AppointmentFormActions 
               isLoading={isLoading} 

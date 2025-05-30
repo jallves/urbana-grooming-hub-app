@@ -176,10 +176,51 @@ export type Database = {
         }
         Relationships: []
       }
+      appointment_coupons: {
+        Row: {
+          applied_at: string
+          appointment_id: string
+          coupon_id: string
+          discount_amount: number
+          id: string
+        }
+        Insert: {
+          applied_at?: string
+          appointment_id: string
+          coupon_id: string
+          discount_amount: number
+          id?: string
+        }
+        Update: {
+          applied_at?: string
+          appointment_id?: string
+          coupon_id?: string
+          discount_amount?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_coupons_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_coupons_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "discount_coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           client_id: string
+          coupon_code: string | null
           created_at: string | null
+          discount_amount: number | null
           end_time: string
           id: string
           notes: string | null
@@ -191,7 +232,9 @@ export type Database = {
         }
         Insert: {
           client_id: string
+          coupon_code?: string | null
           created_at?: string | null
+          discount_amount?: number | null
           end_time: string
           id?: string
           notes?: string | null
@@ -203,7 +246,9 @@ export type Database = {
         }
         Update: {
           client_id?: string
+          coupon_code?: string | null
           created_at?: string | null
+          discount_amount?: number | null
           end_time?: string
           id?: string
           notes?: string | null
@@ -2246,6 +2291,10 @@ export type Database = {
       add_barber_user: {
         Args: { p_email: string; p_name: string; p_role?: string }
         Returns: string
+      }
+      apply_coupon_to_appointment: {
+        Args: { p_appointment_id: string; p_coupon_code: string }
+        Returns: Json
       }
       get_staff_module_access: {
         Args: { staff_id_param: string }
