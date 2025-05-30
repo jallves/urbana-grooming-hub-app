@@ -15,6 +15,13 @@ interface CouponFieldProps {
   onCouponApplied?: (discount: number) => void;
 }
 
+interface CouponResponse {
+  success: boolean;
+  discount_amount?: number;
+  final_amount?: number;
+  error?: string;
+}
+
 const CouponField: React.FC<CouponFieldProps> = ({ 
   form, 
   appointmentId, 
@@ -41,24 +48,26 @@ const CouponField: React.FC<CouponFieldProps> = ({
 
       if (error) throw error;
 
-      if (data.success) {
+      const response = data as CouponResponse;
+
+      if (response.success) {
         setAppliedCoupon({
           code: couponCode,
-          discount: data.discount_amount,
-          finalAmount: data.final_amount
+          discount: response.discount_amount || 0,
+          finalAmount: response.final_amount || 0
         });
         
-        form.setValue('discountAmount', data.discount_amount);
-        onCouponApplied?.(data.discount_amount);
+        form.setValue('discountAmount', response.discount_amount || 0);
+        onCouponApplied?.(response.discount_amount || 0);
         
         toast({
           title: "Cupom aplicado!",
-          description: `Desconto de R$ ${data.discount_amount.toFixed(2)} aplicado com sucesso.`,
+          description: `Desconto de R$ ${(response.discount_amount || 0).toFixed(2)} aplicado com sucesso.`,
         });
       } else {
         toast({
           title: "Erro ao aplicar cupom",
-          description: data.error,
+          description: response.error || "Erro desconhecido",
           variant: "destructive",
         });
       }
