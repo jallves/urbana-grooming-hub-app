@@ -22,12 +22,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isBarber, setIsBarber] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isCheckingRoles, setIsCheckingRoles] = useState<boolean>(false);
 
   const checkUserRole = useCallback(async (userId: string, userEmail: string) => {
-    if (isCheckingRoles) return; // Prevent concurrent role checks
-    
-    setIsCheckingRoles(true);
     console.log('Checking roles for user:', userId, userEmail);
     
     try {
@@ -40,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Check user roles
+      // Check user roles first
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
@@ -48,7 +44,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (rolesError) {
         console.error('Error checking user roles:', rolesError);
-        return;
       }
       
       const roleArray = roles?.map(r => r.role) || [];
@@ -57,38 +52,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('User roles found:', roleArray);
       
-      // For barber role, also check staff status
-      let isActiveBarber = false;
-      if (hasBarberRole) {
-        const { data: staffMember, error: staffError } = await supabase
-          .from('staff')
-          .select('id')
-          .eq('email', userEmail)
-          .eq('is_active', true)
-          .maybeSingle();
-          
-        if (staffError) {
-          console.error('Error checking staff member:', staffError);
-        }
+      // Check if user is in staff table (for barber role validation)
+      let isActiveStaff = false;
+      const { data: staffMember, error: staffError } = await supabase
+        .from('staff')
+        .select('id, role')
+        .eq('email', userEmail)
+        .eq('is_active', true)
+        .maybeSingle();
         
-        isActiveBarber = !!staffMember;
-        console.log('Staff check result:', { hasBarberRole, isActiveStaff: !!staffMember });
+      if (staffError) {
+        console.error('Error checking staff member:', staffError);
       }
       
-      // Update roles in a single batch
-      setIsAdmin(hasAdminRole);
-      setIsBarber(isActiveBarber);
+      isActiveStaff = !!staffMember;
+      const isBarberInStaff = staffMember?.role === 'barber';
       
-      console.log('Final role assignment:', { hasAdminRole, isActiveBarber });
+      console.log('Staff check result:', { 
+        hasBarberRole, 
+        isActiveStaff, 
+        isBarberInStaff,
+        staffRole: staffMember?.role 
+      });
+      
+      // Admin role check
+      setIsAdmin(hasAdminRole);
+      
+      // Barber role check - user needs BOTH barber role AND be in active staff
+      const finalBarberAccess = hasBarberRole && (isActiveStaff || isBarberInStaff);
+      setIsBarber(finalBarberAccess);
+      
+      console.log('Final role assignment:', { 
+        hasAdminRole, 
+        finalBarberAccess,
+        hasBarberRole,
+        isActiveStaff,
+        isBarberInStaff
+      });
       
     } catch (error) {
       console.error('Error in checkUserRole:', error);
       setIsAdmin(false);
       setIsBarber(false);
-    } finally {
-      setIsCheckingRoles(false);
     }
-  }, [isCheckingRoles]);
+  }, []);
 
   const signOut = useCallback(async () => {
     console.log('Starting logout');
@@ -118,24 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting initial session:', error);
-        }
-        
-        if (!mounted) return;
-        
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-        
-        // Check roles for initial session
-        if (initialSession?.user) {
-          await checkUserRole(initialSession.user.id, initialSession.user.email || '');
-        }
-        
-        // Set up auth state listener
+        // Set up auth state listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
             console.log('Auth event:', event, 'Session:', newSession?.user?.email);
@@ -153,8 +143,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setIsAdmin(false);
               setIsBarber(false);
             }
+            
+            if (mounted) {
+              setLoading(false);
+            }
           }
         );
+
+        // Get initial session
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting initial session:', error);
+        }
+        
+        if (!mounted) return;
+        
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        // Check roles for initial session
+        if (initialSession?.user) {
+          await checkUserRole(initialSession.user.id, initialSession.user.email || '');
+        }
+        
+        if (mounted) {
+          setLoading(false);
+        }
 
         return () => {
           mounted = false;
@@ -162,7 +177,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       } catch (error) {
         console.error('Critical error in AuthProvider:', error);
-      } finally {
         if (mounted) {
           setLoading(false);
         }
