@@ -6,14 +6,14 @@ export const useGalleryImages = () => {
   const [images, setImages] = useState<GalleryImageType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Define default images
+  // Define default images with working placeholder URLs
   const defaultImages: GalleryImageType[] = [
-    { id: 1, src: "/gallery-1.jpg", alt: "Corte Clássico" },
-    { id: 2, src: "/gallery-2.jpg", alt: "Barba Estilizada" },
-    { id: 3, src: "/gallery-3.jpg", alt: "Ambiente Premium" },
-    { id: 4, src: "/gallery-4.jpg", alt: "Atendimento Exclusivo" },
-    { id: 5, src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
-    { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
+    { id: 1, src: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=500&h=400&fit=crop", alt: "Corte Clássico" },
+    { id: 2, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Barba Estilizada" },
+    { id: 3, src: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=500&h=400&fit=crop", alt: "Ambiente Premium" },
+    { id: 4, src: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&h=400&fit=crop", alt: "Atendimento Exclusivo" },
+    { id: 5, src: "https://images.unsplash.com/photo-1622286346003-c8b29c15e5ad?w=500&h=400&fit=crop", alt: "Produtos de Qualidade" },
+    { id: 6, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Experiência Completa" },
   ];
 
   const loadImages = () => {
@@ -23,14 +23,21 @@ export const useGalleryImages = () => {
       // Try to load from localStorage first
       const savedImages = localStorage.getItem('galleryImages');
       if (savedImages) {
-        const parsedImages = JSON.parse(savedImages);
-        console.log('📸 Imagens carregadas do localStorage para homepage:', parsedImages.length);
-        setImages(parsedImages);
-      } else {
-        console.log('📸 Usando imagens padrão na homepage');
-        setImages(defaultImages);
+        try {
+          const parsedImages = JSON.parse(savedImages);
+          if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+            console.log('📸 Imagens carregadas do localStorage para homepage:', parsedImages.length);
+            setImages(parsedImages);
+            setLoading(false);
+            return;
+          }
+        } catch (parseError) {
+          console.warn('Erro ao fazer parse das imagens salvas:', parseError);
+        }
       }
       
+      console.log('📸 Usando imagens padrão na homepage');
+      setImages(defaultImages);
       setLoading(false);
     } catch (error) {
       console.error('❌ Erro ao carregar galeria na homepage:', error);
@@ -44,8 +51,10 @@ export const useGalleryImages = () => {
     
     // Listen for gallery updates from admin panel
     const handleGalleryUpdate = (event: CustomEvent) => {
-      console.log('🔄 Galeria atualizada via painel admin na homepage:', event.detail.images);
-      setImages(event.detail.images);
+      console.log('🔄 Galeria atualizada via painel admin na homepage:', event.detail.images?.length || 0);
+      if (event.detail.images && Array.isArray(event.detail.images)) {
+        setImages(event.detail.images);
+      }
     };
 
     // Listen for storage changes (when localStorage is updated from another tab/window)
@@ -53,8 +62,10 @@ export const useGalleryImages = () => {
       if (event.key === 'galleryImages' && event.newValue) {
         try {
           const newImages = JSON.parse(event.newValue);
-          console.log('🔄 Galeria atualizada via storage event:', newImages.length);
-          setImages(newImages);
+          if (Array.isArray(newImages)) {
+            console.log('🔄 Galeria atualizada via storage event:', newImages.length);
+            setImages(newImages);
+          }
         } catch (error) {
           console.error('Erro ao processar storage event:', error);
         }

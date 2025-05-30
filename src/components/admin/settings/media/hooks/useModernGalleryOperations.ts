@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { GalleryImage } from '@/types/settings';
 
@@ -32,22 +31,25 @@ export const useModernGalleryOperations = () => {
         setIsLoading(true);
         console.log('📂 Carregando galeria do admin...');
         
-        // Load from localStorage if available
-        const savedImages = localStorage.getItem('galleryImages');
+        // Default working images with placeholder URLs
         let defaultImages: GalleryImage[] = [
-          { id: 1, src: "/gallery-1.jpg", alt: "Corte Clássico" },
-          { id: 2, src: "/gallery-2.jpg", alt: "Barba Estilizada" },
-          { id: 3, src: "/gallery-3.jpg", alt: "Ambiente Premium" },
-          { id: 4, src: "/gallery-4.jpg", alt: "Atendimento Exclusivo" },
-          { id: 5, src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
-          { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
+          { id: 1, src: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=500&h=400&fit=crop", alt: "Corte Clássico" },
+          { id: 2, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Barba Estilizada" },
+          { id: 3, src: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=500&h=400&fit=crop", alt: "Ambiente Premium" },
+          { id: 4, src: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&h=400&fit=crop", alt: "Atendimento Exclusivo" },
+          { id: 5, src: "https://images.unsplash.com/photo-1622286346003-c8b29c15e5ad?w=500&h=400&fit=crop", alt: "Produtos de Qualidade" },
+          { id: 6, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Experiência Completa" },
         ];
 
+        // Load from localStorage if available
+        const savedImages = localStorage.getItem('galleryImages');
         if (savedImages) {
           try {
             const parsedImages = JSON.parse(savedImages);
-            defaultImages = parsedImages;
-            console.log('📸 Imagens carregadas do localStorage:', parsedImages.length);
+            if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+              defaultImages = parsedImages;
+              console.log('📸 Imagens carregadas do localStorage no admin:', parsedImages.length);
+            }
           } catch (e) {
             console.warn('Erro ao carregar imagens do localStorage, usando padrão');
           }
@@ -69,13 +71,17 @@ export const useModernGalleryOperations = () => {
   // Save to localStorage whenever galleryImages changes
   useEffect(() => {
     if (galleryImages.length > 0) {
-      localStorage.setItem('galleryImages', JSON.stringify(galleryImages));
-      console.log('💾 Galeria salva no localStorage');
-      
-      // Trigger update event for homepage
-      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
-        detail: { images: galleryImages } 
-      }));
+      try {
+        localStorage.setItem('galleryImages', JSON.stringify(galleryImages));
+        console.log('💾 Galeria salva no localStorage');
+        
+        // Trigger update event for homepage
+        window.dispatchEvent(new CustomEvent('galleryUpdated', { 
+          detail: { images: galleryImages } 
+        }));
+      } catch (error) {
+        console.error('Erro ao salvar no localStorage:', error);
+      }
     }
   }, [galleryImages]);
 
@@ -110,7 +116,7 @@ export const useModernGalleryOperations = () => {
       // Update state
       setGalleryImages(prev => {
         const updatedImages = [...prev, newGalleryImage];
-        console.log('🎯 Nova lista de imagens:', updatedImages);
+        console.log('🎯 Nova lista de imagens:', updatedImages.length);
         return updatedImages;
       });
       
@@ -150,7 +156,7 @@ export const useModernGalleryOperations = () => {
     try {
       setGalleryImages(prev => {
         const updatedImages = prev.filter(img => img.id !== id);
-        console.log('🗑️ Imagem removida, nova lista:', updatedImages);
+        console.log('🗑️ Imagem removida, nova lista:', updatedImages.length);
         return updatedImages;
       });
       
