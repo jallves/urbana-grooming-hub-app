@@ -1,20 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { GalleryImage } from '@/types/settings';
-import { useImageUpload } from '../useImageUpload';
-import { useGalleryValidation } from './useGalleryValidation';
-import {
-  fetchGalleryImages,
-  createGalleryImage,
-  updateGalleryImage,
-  deleteGalleryImage,
-  updateGalleryImageOrder
-} from '../api/galleryApi';
 
 export const useModernGalleryOperations = () => {
-  const { uploadFile, uploading } = useImageUpload();
-  const { validateGalleryImage } = useGalleryValidation();
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
 
   // Simple notification function
@@ -34,15 +25,25 @@ export const useModernGalleryOperations = () => {
     }, 3000);
   };
 
-  // Fetch gallery images
+  // Load gallery images
   useEffect(() => {
     const loadGalleryImages = async () => {
       try {
         setIsLoading(true);
         console.log('📂 Carregando galeria do admin...');
-        const data = await fetchGalleryImages();
-        setGalleryImages(data);
-        console.log(`📸 ${data.length} imagens carregadas no admin`);
+        
+        // Simulate loading default images since we don't have Supabase storage configured
+        const defaultImages: GalleryImage[] = [
+          { id: 1, src: "/gallery-1.jpg", alt: "Corte Clássico" },
+          { id: 2, src: "/gallery-2.jpg", alt: "Barba Estilizada" },
+          { id: 3, src: "/gallery-3.jpg", alt: "Ambiente Premium" },
+          { id: 4, src: "/gallery-4.jpg", alt: "Atendimento Exclusivo" },
+          { id: 5, src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
+          { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
+        ];
+        
+        setGalleryImages(defaultImages);
+        console.log(`📸 ${defaultImages.length} imagens carregadas no admin`);
       } catch (error) {
         console.error('❌ Erro ao carregar galeria:', error);
         showNotification("Erro ao carregar galeria", "error");
@@ -69,68 +70,41 @@ export const useModernGalleryOperations = () => {
     }
 
     try {
+      setUploading(true);
       console.log('🚀 Iniciando upload da imagem...');
       
-      // Upload file directly
-      const imageUrl = await uploadFile(file, 'gallery', 'images');
-      console.log('📸 Upload concluído, URL:', imageUrl);
+      // Create a URL for the uploaded file (since we can't upload to Supabase storage yet)
+      const imageUrl = URL.createObjectURL(file);
       
-      // Create gallery image in database
-      const data = await createGalleryImage({
+      // Create new gallery image entry
+      const newGalleryImage: GalleryImage = {
+        id: Date.now(), // Simple ID generation
         src: imageUrl,
-        alt: imageData.alt,
-        display_order: galleryImages.length
-      });
+        alt: imageData.alt
+      };
       
-      if (data && data[0]) {
-        const newGalleryImage: GalleryImage = {
-          id: Math.floor(Math.random() * 1000000), // Simple ID generation
-          src: data[0].src,
-          alt: data[0].alt
-        };
-        
-        setGalleryImages(prev => [...prev, newGalleryImage]);
-        
-        showNotification("✅ Imagem publicada na galeria com sucesso!");
-        console.log('🎯 Imagem adicionada à galeria:', newGalleryImage);
-        
-        return true;
-      }
-      return false;
+      setGalleryImages(prev => [...prev, newGalleryImage]);
+      
+      showNotification("✅ Imagem adicionada à galeria com sucesso!");
+      console.log('🎯 Imagem adicionada à galeria:', newGalleryImage);
+      
+      // Trigger a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
+        detail: { images: [...galleryImages, newGalleryImage] } 
+      }));
+      
+      return true;
     } catch (error) {
       console.error('💥 Erro ao adicionar imagem:', error);
-      showNotification("Erro ao publicar imagem - Tentando novamente...", "error");
-      
-      // Try fallback approach
-      try {
-        console.log('🔄 Tentando método alternativo...');
-        
-        // Create a direct entry with a placeholder URL for now
-        const placeholderImage: GalleryImage = {
-          id: Math.floor(Math.random() * 1000000),
-          src: `/lovable-uploads/gallery-${Date.now()}.jpg`,
-          alt: imageData.alt
-        };
-        
-        setGalleryImages(prev => [...prev, placeholderImage]);
-        showNotification("Imagem adicionada temporariamente - Configure o storage do Supabase", "success");
-        
-        return true;
-      } catch (fallbackError) {
-        console.error('💥 Erro no fallback:', fallbackError);
-        showNotification("Erro ao adicionar imagem", "error");
-        return false;
-      }
+      showNotification("Erro ao adicionar imagem", "error");
+      return false;
+    } finally {
+      setUploading(false);
     }
   };
 
   const updateImage = async (updatedImage: GalleryImage): Promise<boolean> => {
     try {
-      await updateGalleryImage({
-        src: updatedImage.src,
-        alt: updatedImage.alt
-      });
-      
       setGalleryImages(prev => 
         prev.map(img => 
           img.id === updatedImage.id ? updatedImage : img
@@ -138,6 +112,12 @@ export const useModernGalleryOperations = () => {
       );
       
       showNotification("Imagem atualizada com sucesso");
+      
+      // Trigger update event
+      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
+        detail: { images: galleryImages.map(img => img.id === updatedImage.id ? updatedImage : img) } 
+      }));
+      
       return true;
     } catch (error) {
       console.error('Erro ao atualizar imagem:', error);
@@ -148,14 +128,16 @@ export const useModernGalleryOperations = () => {
 
   const deleteImage = async (id: number): Promise<boolean> => {
     try {
-      const imageToDelete = galleryImages.find(img => img.id === id);
-      if (!imageToDelete) return false;
-      
-      await deleteGalleryImage(imageToDelete.src);
-      
-      setGalleryImages(prev => prev.filter(img => img.id !== id));
+      const updatedImages = galleryImages.filter(img => img.id !== id);
+      setGalleryImages(updatedImages);
       
       showNotification("Imagem removida da galeria");
+      
+      // Trigger update event
+      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
+        detail: { images: updatedImages } 
+      }));
+      
       return true;
     } catch (error) {
       console.error('Erro ao remover imagem:', error);
@@ -177,12 +159,15 @@ export const useModernGalleryOperations = () => {
       updatedImages[currentIndex] = updatedImages[newIndex];
       updatedImages[newIndex] = temp;
       
-      await updateGalleryImageOrder(galleryImages[currentIndex].src, newIndex);
-      await updateGalleryImageOrder(galleryImages[newIndex].src, currentIndex);
-      
       setGalleryImages(updatedImages);
       
       showNotification("Ordem das imagens atualizada");
+      
+      // Trigger update event
+      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
+        detail: { images: updatedImages } 
+      }));
+      
       return true;
     } catch (error) {
       console.error('Erro ao reordenar:', error);

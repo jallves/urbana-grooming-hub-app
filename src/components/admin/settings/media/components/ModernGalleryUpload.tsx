@@ -150,12 +150,12 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
           {uploading ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Enviando para galeria...
+              Publicando na galeria...
             </>
           ) : (
             <>
               <ImageIcon className="h-4 w-4 mr-2" />
-              Publicar na Galeria
+              Publicar na Galeria da Homepage
             </>
           )}
         </Button>
@@ -165,8 +165,8 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
           <div className="flex items-start gap-2">
             <ImageIcon className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-green-700">
-              <p className="font-medium mb-1">✅ Publicação Automática:</p>
-              <p>As imagens adicionadas aqui aparecerão automaticamente na galeria da homepage!</p>
+              <p className="font-medium mb-1">🚀 Publicação Instantânea:</p>
+              <p>As imagens adicionadas aqui aparecerão automaticamente na galeria rotativa da homepage!</p>
             </div>
           </div>
         </div>

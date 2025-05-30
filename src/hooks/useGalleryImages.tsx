@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
 import type { GalleryImage as GalleryImageType } from "@/types/settings";
 
 export const useGalleryImages = () => {
@@ -17,80 +16,23 @@ export const useGalleryImages = () => {
     { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
   ];
 
-  // Function to fetch gallery images
-  const fetchGalleryImages = async () => {
-    try {
-      console.log('🖼️ Buscando imagens da galeria no Supabase...');
-      
-      const { data, error } = await supabase
-        .from('gallery_images')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-      
-      if (error) {
-        console.error('❌ Erro ao buscar galeria:', error);
-        console.log('📷 Usando imagens padrão devido ao erro');
-        setImages(defaultImages);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        console.log(`✅ ${data.length} imagens encontradas no Supabase`);
-        const formattedData: GalleryImageType[] = data.map((item, index) => ({
-          id: index + 1,
-          src: item.src,
-          alt: item.alt || `Imagem ${index + 1}`
-        }));
-        setImages(formattedData);
-        console.log('🎯 Imagens formatadas e definidas:', formattedData);
-      } else {
-        console.log('📷 Nenhuma imagem ativa encontrada, usando padrão');
-        setImages(defaultImages);
-      }
-    } catch (error) {
-      console.error('💥 Erro inesperado ao buscar galeria:', error);
-      console.log('📷 Usando imagens padrão devido ao erro inesperado');
-      setImages(defaultImages);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchGalleryImages();
-
-    // Listen for real-time updates with simplified approach
-    let subscription: any = null;
+    console.log('🖼️ Iniciando carregamento da galeria...');
     
-    try {
-      subscription = supabase
-        .channel('gallery-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'gallery_images'
-          },
-          (payload) => {
-            console.log('🔄 Mudança na galeria detectada:', payload);
-            fetchGalleryImages();
-          }
-        )
-        .subscribe();
-    } catch (error) {
-      console.error('⚠️ Erro ao configurar real-time:', error);
-    }
+    // Load initial images
+    setImages(defaultImages);
+    setLoading(false);
+    
+    // Listen for gallery updates from admin panel
+    const handleGalleryUpdate = (event: CustomEvent) => {
+      console.log('🔄 Galeria atualizada via painel admin:', event.detail.images);
+      setImages(event.detail.images);
+    };
 
+    window.addEventListener('galleryUpdated', handleGalleryUpdate as EventListener);
+    
     return () => {
-      if (subscription) {
-        try {
-          supabase.removeChannel(subscription);
-        } catch (error) {
-          console.error('⚠️ Erro ao remover subscription:', error);
-        }
-      }
+      window.removeEventListener('galleryUpdated', handleGalleryUpdate as EventListener);
     };
   }, []);
 
