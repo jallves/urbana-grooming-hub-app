@@ -9,14 +9,10 @@ import { Plus, Shield, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { useStaffStorage } from '../staff/useStaffStorage';
 
 const BarberManagement: React.FC = () => {
   const [isAddingBarber, setIsAddingBarber] = useState(false);
   const [editingBarber, setEditingBarber] = useState<string | null>(null);
-  
-  // Initialize staff photos storage bucket (shared with staff management)
-  useStaffStorage();
 
   const { data: barbers, isLoading, error, refetch } = useQuery({
     queryKey: ['barbers'],

@@ -8,15 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Plus, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { useStaffStorage } from './useStaffStorage';
 
 const StaffManagement: React.FC = () => {
   const [isAddingStaff, setIsAddingStaff] = useState(false);
   const [editingStaff, setEditingStaff] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  
-  // Initialize staff photos storage bucket
-  useStaffStorage();
 
   const { data: staffMembers, isLoading, error, refetch } = useQuery({
     queryKey: ['staff'],
@@ -52,11 +48,6 @@ const StaffManagement: React.FC = () => {
         }
       )
       .subscribe();
-
-    // Confirma que RLS foi desativado e mostra uma mensagem inicial
-    toast.success('Sistema de profissionais inicializado', {
-      description: 'Você pode criar, editar e visualizar profissionais livremente'
-    });
 
     return () => {
       supabase.removeChannel(channel);

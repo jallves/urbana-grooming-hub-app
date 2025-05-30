@@ -720,6 +720,78 @@ export type Database = {
           },
         ]
       }
+      employees: {
+        Row: {
+          certifications: string[] | null
+          commission_rate: number | null
+          created_at: string | null
+          emergency_contact: Json | null
+          employee_number: string | null
+          hire_date: string
+          id: string
+          job_role_id: string | null
+          notes: string | null
+          profile_id: string | null
+          salary: number | null
+          specializations: string[] | null
+          status: string | null
+          termination_date: string | null
+          updated_at: string | null
+          work_schedule: Json | null
+        }
+        Insert: {
+          certifications?: string[] | null
+          commission_rate?: number | null
+          created_at?: string | null
+          emergency_contact?: Json | null
+          employee_number?: string | null
+          hire_date: string
+          id?: string
+          job_role_id?: string | null
+          notes?: string | null
+          profile_id?: string | null
+          salary?: number | null
+          specializations?: string[] | null
+          status?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          work_schedule?: Json | null
+        }
+        Update: {
+          certifications?: string[] | null
+          commission_rate?: number | null
+          created_at?: string | null
+          emergency_contact?: Json | null
+          employee_number?: string | null
+          hire_date?: string
+          id?: string
+          job_role_id?: string | null
+          notes?: string | null
+          profile_id?: string | null
+          salary?: number | null
+          specializations?: string[] | null
+          status?: string | null
+          termination_date?: string | null
+          updated_at?: string | null
+          work_schedule?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_job_role_id_fkey"
+            columns: ["job_role_id"]
+            isOneToOne: false
+            referencedRelation: "job_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faqs: {
         Row: {
           answer: string
@@ -1079,6 +1151,36 @@ export type Database = {
           price?: number
           speed?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      job_roles: {
+        Row: {
+          created_at: string | null
+          department: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          department: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          department?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
