@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -19,6 +19,7 @@ interface DateTimeSelectionFieldsProps {
   availableTimes: string[];
   disabledDays: (date: Date) => boolean;
   getFieldValue: (field: keyof ClientAppointmentFormData) => any;
+  fetchAvailableTimes: (date: Date, serviceId: string, staffId: string) => Promise<void>;
 }
 
 export function DateTimeSelectionFields({ 
@@ -26,8 +27,20 @@ export function DateTimeSelectionFields({
   selectedService, 
   availableTimes, 
   disabledDays,
-  getFieldValue 
+  getFieldValue,
+  fetchAvailableTimes
 }: DateTimeSelectionFieldsProps) {
+  
+  // Watch for date changes to refresh available times
+  useEffect(() => {
+    const date = getFieldValue('date');
+    const serviceId = getFieldValue('serviceId');
+    
+    if (date && serviceId) {
+      fetchAvailableTimes(date, serviceId, '');
+    }
+  }, [getFieldValue('date'), getFieldValue('serviceId'), fetchAvailableTimes]);
+
   return (
     <>
       {/* Date Selection */}
@@ -69,6 +82,11 @@ export function DateTimeSelectionFields({
               </PopoverContent>
             </Popover>
             <FormMessage />
+            {!selectedService && (
+              <p className="text-sm text-muted-foreground">
+                Selecione um serviço primeiro
+              </p>
+            )}
           </FormItem>
         )}
       />
@@ -82,7 +100,7 @@ export function DateTimeSelectionFields({
             <FormLabel>Horário</FormLabel>
             <Select 
               onValueChange={field.onChange} 
-              defaultValue={field.value} 
+              value={field.value || ""} 
               disabled={!getFieldValue('date') || !availableTimes.length}
             >
               <FormControl>
@@ -92,14 +110,25 @@ export function DateTimeSelectionFields({
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {availableTimes.map((time) => (
-                  <SelectItem key={time} value={time}>
-                    {time}
-                  </SelectItem>
-                ))}
+                {availableTimes.length > 0 ? (
+                  availableTimes.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-1 text-sm text-muted-foreground">
+                    {!getFieldValue('date') ? 'Selecione uma data primeiro' : 'Nenhum horário disponível'}
+                  </div>
+                )}
               </SelectContent>
             </Select>
             <FormMessage />
+            {getFieldValue('date') && availableTimes.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Carregando horários disponíveis...
+              </p>
+            )}
           </FormItem>
         )}
       />

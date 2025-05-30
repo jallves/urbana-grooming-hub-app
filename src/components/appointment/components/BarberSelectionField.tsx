@@ -3,7 +3,7 @@ import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { User } from 'lucide-react';
+import { User, Loader2 } from 'lucide-react';
 import { Control } from 'react-hook-form';
 import { ClientAppointmentFormData } from '../hooks/useClientAppointmentForm';
 import { StaffMember } from '@/types/appointment';
@@ -29,8 +29,14 @@ export function BarberSelectionField({
   isCheckingAvailability,
   getFieldValue 
 }: BarberSelectionFieldProps) {
+  const selectedDate = getFieldValue('date');
+  const selectedTime = getFieldValue('time');
+  
   const availableBarbers = barberAvailability.filter(barber => barber.available);
   const unavailableBarbers = barberAvailability.filter(barber => !barber.available);
+
+  // If no availability check has been done yet, show all barbers
+  const showAllBarbers = !selectedDate || !selectedTime || barberAvailability.length === 0;
 
   return (
     <FormField
@@ -38,14 +44,19 @@ export function BarberSelectionField({
       name="barberId"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>
+          <FormLabel className="flex items-center gap-2">
             Barbeiro
-            {isCheckingAvailability && <span className="ml-2 text-sm text-gray-500">(Verificando disponibilidade...)</span>}
+            {isCheckingAvailability && (
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Verificando disponibilidade...
+              </div>
+            )}
           </FormLabel>
           <Select 
             onValueChange={field.onChange} 
-            value={field.value} 
-            disabled={!getFieldValue('time') || isCheckingAvailability}
+            value={field.value || ""} 
+            disabled={!selectedTime || isCheckingAvailability}
           >
             <FormControl>
               <SelectTrigger className="flex items-center">
@@ -54,35 +65,62 @@ export function BarberSelectionField({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {availableBarbers.map(barber => (
-                <SelectItem key={barber.id} value={barber.id}>
-                  {barber.name} ✅ Disponível
-                </SelectItem>
-              ))}
+              {showAllBarbers ? (
+                // Show all barbers when no availability check is done
+                barbers
+                  .filter(barber => barber.is_active)
+                  .map(barber => (
+                    <SelectItem key={barber.id} value={barber.id}>
+                      {barber.name}
+                    </SelectItem>
+                  ))
+              ) : (
+                <>
+                  {/* Available barbers first */}
+                  {availableBarbers.map(barber => (
+                    <SelectItem key={barber.id} value={barber.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-600">✅</span>
+                        {barber.name}
+                        <span className="text-sm text-muted-foreground">Disponível</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  
+                  {/* Unavailable barbers */}
+                  {unavailableBarbers.map(barber => (
+                    <SelectItem 
+                      key={barber.id} 
+                      value={barber.id} 
+                      disabled
+                      className="opacity-50"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-600">❌</span>
+                        {barber.name}
+                        <span className="text-sm text-muted-foreground">Indisponível</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
               
-              {unavailableBarbers.map(barber => (
-                <SelectItem 
-                  key={barber.id} 
-                  value={barber.id} 
-                  disabled
-                  className="opacity-50"
-                >
-                  {barber.name} ❌ Indisponível
-                </SelectItem>
-              ))}
-              
-              {barberAvailability.length === 0 && barbers
-                .filter(barber => barber.is_active)
-                .map(barber => (
-                  <SelectItem key={barber.id} value={barber.id}>
-                    {barber.name}
-                  </SelectItem>
-                ))
-              }
+              {!showAllBarbers && availableBarbers.length === 0 && (
+                <div className="px-2 py-1 text-sm text-red-600">
+                  Nenhum barbeiro disponível neste horário
+                </div>
+              )}
             </SelectContent>
           </Select>
           <FormMessage />
-          {availableBarbers.length === 0 && barberAvailability.length > 0 && (
+          
+          {!selectedTime && (
+            <p className="text-sm text-muted-foreground">
+              Selecione um horário primeiro
+            </p>
+          )}
+          
+          {selectedTime && !showAllBarbers && availableBarbers.length === 0 && (
             <Alert className="mt-2" variant="destructive">
               <AlertTitle>Nenhum barbeiro disponível</AlertTitle>
               <AlertDescription>

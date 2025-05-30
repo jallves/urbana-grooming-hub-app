@@ -32,6 +32,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     onSubmit,
     onApplyCoupon,
     onRemoveCoupon,
+    fetchAvailableTimes,
   } = useClientAppointmentForm(clientId);
 
   // Calculate final price correctly
@@ -54,6 +55,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           availableTimes={availableTimes}
           disabledDays={disabledDays}
           getFieldValue={form.getValues}
+          fetchAvailableTimes={fetchAvailableTimes}
         />
 
         {/* Barber Selection with Availability Indicator */}

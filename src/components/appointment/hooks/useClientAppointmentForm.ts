@@ -58,8 +58,25 @@ export const useClientAppointmentForm = (clientId: string) => {
     if (serviceId) {
       const service = services.find(s => s.id === serviceId);
       setSelectedService(service || null);
+      // Reset time and barber when service changes
+      form.setValue('time', '');
+      form.setValue('barberId', '');
+      setAvailableTimes([]);
+      setBarberAvailability([]);
     }
   }, [form.watch('serviceId'), services]);
+
+  // Watch for date changes to load available times
+  useEffect(() => {
+    const date = form.watch('date');
+    const serviceId = form.watch('serviceId');
+    
+    if (date && serviceId && selectedService) {
+      fetchAvailableTimes(date, serviceId, '');
+      form.setValue('time', '');
+      form.setValue('barberId', '');
+    }
+  }, [form.watch('date'), selectedService]);
 
   // Watch for date/time changes to check barber availability
   useEffect(() => {
@@ -77,7 +94,8 @@ export const useClientAppointmentForm = (clientId: string) => {
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('name');
 
       if (error) throw error;
       setServices(data || []);
@@ -96,7 +114,8 @@ export const useClientAppointmentForm = (clientId: string) => {
       const { data, error } = await supabase
         .from('staff')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('name');
 
       if (error) throw error;
       setBarbers(data || []);
@@ -110,12 +129,30 @@ export const useClientAppointmentForm = (clientId: string) => {
     }
   };
 
-  const fetchAvailableTimes = async (date: Date, serviceId: string, staffId: string) => {
+  const fetchAvailableTimes = async (date: Date, serviceId: string, staffId: string = '') => {
     try {
       const day = date.toISOString().split('T')[0];
       
-      // Since get_available_times is not in the allowed RPC functions,
-      // we'll fetch appointments directly and calculate available times
+      // Get service duration
+      const service = services.find(s => s.id === serviceId);
+      if (!service) return;
+
+      // Generate time slots from 8:00 to 18:00 in 30-minute intervals
+      const businessHours = [];
+      for (let hour = 8; hour < 18; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          businessHours.push(timeString);
+        }
+      }
+
+      // If no specific staff, show all times (they'll be filtered by availability later)
+      if (!staffId) {
+        setAvailableTimes(businessHours);
+        return;
+      }
+
+      // Fetch appointments for the specific day and staff
       const { data: appointments, error } = await supabase
         .from('appointments')
         .select('start_time, end_time')
@@ -126,14 +163,11 @@ export const useClientAppointmentForm = (clientId: string) => {
 
       if (error) throw error;
 
-      // Generate available time slots (simplified version)
-      const businessHours = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
-      const bookedTimes = appointments?.map(apt => 
-        new Date(apt.start_time).toLocaleTimeString('pt-BR', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        })
-      ) || [];
+      // Filter out booked times
+      const bookedTimes = appointments?.map(apt => {
+        const startTime = new Date(apt.start_time);
+        return startTime.toTimeString().slice(0, 5);
+      }) || [];
 
       const availableSlots = businessHours.filter(time => !bookedTimes.includes(time));
       setAvailableTimes(availableSlots);
@@ -151,10 +185,19 @@ export const useClientAppointmentForm = (clientId: string) => {
   const checkBarberAvailability = async (date: Date, time: string, serviceId: string) => {
     setIsCheckingAvailability(true);
     try {
-      const day = date.toISOString().split('T')[0];
-      const timeSlot = `${day}T${time}:00`;
+      const service = services.find(s => s.id === serviceId);
+      if (!service) return;
 
-      // Check which barbers are available at this time
+      const day = date.toISOString().split('T')[0];
+      const [hours, minutes] = time.split(':').map(Number);
+      const startTime = new Date(date);
+      startTime.setHours(hours, minutes, 0, 0);
+      
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + service.duration);
+
+      console.log('Checking availability for:', startTime.toISOString(), 'to', endTime.toISOString());
+
       const availability = await Promise.all(
         barbers.map(async (barber) => {
           const { data: conflicts, error } = await supabase
@@ -162,10 +205,16 @@ export const useClientAppointmentForm = (clientId: string) => {
             .select('id')
             .eq('staff_id', barber.id)
             .eq('status', 'scheduled')
-            .gte('start_time', timeSlot)
-            .lt('end_time', timeSlot);
+            .or(`and(start_time.lte.${startTime.toISOString()},end_time.gt.${startTime.toISOString()}),and(start_time.lt.${endTime.toISOString()},end_time.gte.${endTime.toISOString()}),and(start_time.gte.${startTime.toISOString()},end_time.lte.${endTime.toISOString()})`);
 
-          if (error) throw error;
+          if (error) {
+            console.error('Error checking availability for barber:', barber.name, error);
+            return {
+              id: barber.id,
+              name: barber.name,
+              available: false
+            };
+          }
 
           return {
             id: barber.id,
@@ -186,31 +235,89 @@ export const useClientAppointmentForm = (clientId: string) => {
   const onApplyCoupon = async (code: string) => {
     setIsApplyingCoupon(true);
     try {
-      // Use the existing apply_coupon_to_appointment function
-      const { data, error } = await supabase.rpc('apply_coupon_to_appointment', {
-        p_appointment_id: 'temp', // This would be set after appointment creation
-        p_coupon_code: code
-      });
+      console.log('Validating coupon:', code);
 
-      if (error) throw error;
+      const { data: coupon, error } = await supabase
+        .from('discount_coupons')
+        .select('*')
+        .eq('code', code.toUpperCase())
+        .single();
 
-      // For now, simulate coupon application
+      if (error || !coupon) {
+        toast({
+          title: 'Cupom inválido',
+          description: 'O cupom informado não foi encontrado.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Verify coupon is active and valid
+      if (!coupon.is_active) {
+        toast({
+          title: 'Cupom inativo',
+          description: 'Este cupom não está mais ativo.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      if (coupon.valid_from > today) {
+        toast({
+          title: 'Cupom ainda não válido',
+          description: 'Este cupom ainda não pode ser usado.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (coupon.valid_until && coupon.valid_until < today) {
+        toast({
+          title: 'Cupom expirado',
+          description: 'Este cupom já expirou.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
+        toast({
+          title: 'Cupom esgotado',
+          description: 'Este cupom já atingiu o limite de usos.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Calculate discount
+      let discountAmount = 0;
+      const price = selectedService?.price || 0;
+      
+      if (coupon.discount_type === 'percentage') {
+        discountAmount = price * (coupon.discount_value / 100);
+      } else {
+        discountAmount = coupon.discount_value;
+      }
+
+      discountAmount = Math.min(discountAmount, price);
+
       setAppliedCoupon({
-        code: code,
-        discountType: 'percentage',
-        discountValue: 10,
-        discountAmount: selectedService ? selectedService.price * 0.1 : 0
+        code: coupon.code,
+        discountType: coupon.discount_type,
+        discountValue: coupon.discount_value,
+        discountAmount: discountAmount
       });
 
       toast({
         title: 'Cupom aplicado!',
-        description: `Desconto de 10% aplicado com sucesso.`,
+        description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado com sucesso.`,
       });
     } catch (error: any) {
       console.error('Error applying coupon:', error);
       toast({
         title: 'Erro ao aplicar cupom',
-        description: error.message || 'Cupom inválido ou expirado.',
+        description: 'Não foi possível validar o cupom.',
         variant: 'destructive',
       });
     } finally {
@@ -254,24 +361,42 @@ export const useClientAppointmentForm = (clientId: string) => {
 
       const endTime = new Date(startTime.getTime() + service.duration * 60000);
 
-      // Create appointment using direct table insert since RPC functions are limited
+      // Create appointment
+      const appointmentData = {
+        client_id: clientId,
+        service_id: sanitizedData.serviceId,
+        staff_id: sanitizedData.barberId,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: 'scheduled',
+        notes: sanitizedData.notes || null,
+        coupon_code: appliedCoupon?.code || null,
+        discount_amount: appliedCoupon?.discountAmount || 0
+      };
+
       const { data: appointmentResult, error: appointmentError } = await supabase
         .from('appointments')
-        .insert({
-          client_id: clientId,
-          service_id: sanitizedData.serviceId,
-          staff_id: sanitizedData.barberId,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          status: 'scheduled',
-          notes: sanitizedData.notes || null
-        })
+        .insert(appointmentData)
         .select()
         .single();
 
       if (appointmentError) {
         console.error('Error creating appointment:', appointmentError);
         throw new Error('Erro ao agendar. Tente novamente.');
+      }
+
+      // If coupon was applied, update its usage count
+      if (appliedCoupon) {
+        const { error: couponError } = await supabase
+          .from('discount_coupons')
+          .update({ 
+            current_uses: supabase.rpc('increment_coupon_usage', { coupon_code: appliedCoupon.code })
+          })
+          .eq('code', appliedCoupon.code);
+
+        if (couponError) {
+          console.error('Error updating coupon usage:', couponError);
+        }
       }
 
       toast({
@@ -282,6 +407,8 @@ export const useClientAppointmentForm = (clientId: string) => {
       // Reset form
       form.reset();
       setAppliedCoupon(null);
+      setAvailableTimes([]);
+      setBarberAvailability([]);
     } catch (error: any) {
       console.error('Error submitting appointment:', error);
       setError(error.message || 'Erro ao agendar. Tente novamente.');
