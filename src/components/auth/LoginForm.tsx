@@ -63,16 +63,19 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
     setLoading(true);
     try {
+      console.log('Attempting login for:', data.email);
+      
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
+        console.error('Login error:', error);
         throw error;
       }
 
-      console.log('Login bem-sucedido:', authData.user?.email);
+      console.log('Login successful for:', authData.user?.email);
       
       // Reset rate limiting on successful login
       resetRateLimit(data.email);
@@ -82,9 +85,15 @@ const LoginForm: React.FC<LoginFormProps> = ({
         description: "Bem-vindo de volta!",
       });
 
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      }
+      // Wait a moment for auth state to update
+      setTimeout(() => {
+        if (onLoginSuccess) {
+          onLoginSuccess();
+        } else if (redirectTo) {
+          navigate(redirectTo);
+        }
+      }, 500);
+
     } catch (error: any) {
       console.error('Erro no login:', error);
       

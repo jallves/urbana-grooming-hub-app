@@ -4,31 +4,31 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import AppointmentForm from '@/components/appointment/ClientAppointmentForm';
-import { supabaseRPC } from '@/types/supabase-rpc';
+import ClientAppointmentForm from '@/components/appointment/ClientAppointmentForm';
 import { CalendarDays, ArrowLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LoginForm from '@/components/auth/LoginForm';
 
 export default function AppointmentBooking() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clientId, setClientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>("register");
+  const [activeTab, setActiveTab] = useState<string>("login");
 
   useEffect(() => {
     async function fetchClientId() {
       if (!user) {
-        // Not redirecting if not authenticated since we now have login option
         setLoading(false);
         return;
       }
       
       try {
+        console.log('Fetching client for user:', user.email);
+        
         // Buscar cliente pelo email do usuário autenticado
         const { data, error } = await supabase
           .from('clients')
@@ -37,29 +37,36 @@ export default function AppointmentBooking() {
           .maybeSingle();
 
         if (error) {
+          console.error('Error fetching client:', error);
           throw error;
         }
 
         if (data) {
+          console.log('Client found:', data.id);
           setClientId(data.id);
         } else {
+          console.log('No client found, creating new one');
           // Se não encontrar cliente, criar um novo
-          if (user.user_metadata?.full_name && user.email) {
-            const { data: createdClient, error: clientError } = await supabaseRPC.createPublicClient(
-              user.user_metadata.full_name,
-              user.user_metadata.phone || '',
-              user.email
-            );
-            
-            if (clientError) {
-              throw clientError;
-            }
-            
-            setClientId(createdClient);
+          const { data: createdClient, error: clientError } = await supabase
+            .from('clients')
+            .insert([{
+              name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Cliente',
+              phone: user.user_metadata?.phone || '',
+              email: user.email
+            }])
+            .select('id')
+            .single();
+          
+          if (clientError) {
+            console.error('Error creating client:', clientError);
+            throw clientError;
           }
+          
+          console.log('Client created:', createdClient.id);
+          setClientId(createdClient.id);
         }
       } catch (error: any) {
-        console.error('Error fetching client:', error);
+        console.error('Error in fetchClientId:', error);
         toast({
           title: "Erro ao buscar informações do cliente",
           description: error.message || "Não foi possível carregar suas informações. Por favor, tente novamente.",
@@ -70,22 +77,20 @@ export default function AppointmentBooking() {
       }
     }
 
-    fetchClientId();
-  }, [user, navigate, toast]);
-
-  // When user logs in, switch to appointment form
-  useEffect(() => {
-    if (user) {
-      setActiveTab("appointment");
+    if (!authLoading) {
+      fetchClientId();
     }
-  }, [user]);
+  }, [user, authLoading, toast]);
 
+  // When user logs in successfully, switch to appointment form
   const handleLoginSuccess = () => {
+    console.log('Login successful, user:', user);
+    // Force a re-fetch of client data after login
+    setLoading(true);
     setActiveTab("appointment");
-    // No need to navigate since the useEffect will handle fetching the client ID
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin h-12 w-12 border-t-2 border-b-2 border-urbana-gold rounded-full"></div>
@@ -113,14 +118,25 @@ export default function AppointmentBooking() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            {clientId ? (
-              <AppointmentForm clientId={clientId} />
+            {user && clientId ? (
+              <ClientAppointmentForm clientId={clientId} />
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
+                  <TabsTrigger value="login">Entrar</TabsTrigger>
                   <TabsTrigger value="register">Cadastrar</TabsTrigger>
-                  <TabsTrigger value="login">Já tenho cadastro</TabsTrigger>
                 </TabsList>
+                
+                <TabsContent value="login">
+                  <div className="text-center py-2 mb-4">
+                    <p>Entre com seus dados para agendar</p>
+                  </div>
+                  <LoginForm 
+                    loading={false} 
+                    setLoading={() => {}} 
+                    onLoginSuccess={handleLoginSuccess} 
+                  />
+                </TabsContent>
                 
                 <TabsContent value="register">
                   <div className="text-center py-2 mb-4">
@@ -132,13 +148,6 @@ export default function AppointmentBooking() {
                   >
                     Criar Cadastro
                   </Button>
-                </TabsContent>
-                
-                <TabsContent value="login">
-                  <div className="text-center py-2 mb-4">
-                    <p>Entre com seus dados para agendar</p>
-                  </div>
-                  <LoginForm loading={false} setLoading={() => {}} onLoginSuccess={handleLoginSuccess} />
                 </TabsContent>
               </Tabs>
             )}
