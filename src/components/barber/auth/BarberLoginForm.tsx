@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -85,7 +86,33 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({
         return;
       }
       
-      // STEP 3: Check if user is active staff member first
+      // STEP 3: Check if user has barber role
+      const { data: barberRoles, error: barberRoleError } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', authData.user.id)
+        .eq('role', 'barber');
+      
+      if (barberRoleError) {
+        console.error('❌ Error checking barber role:', barberRoleError);
+        await supabase.auth.signOut();
+        throw new Error('Erro ao verificar permissões de barbeiro');
+      }
+      
+      const hasBarberRole = barberRoles && barberRoles.length > 0;
+      
+      if (!hasBarberRole) {
+        console.log('❌ User does NOT have barber role - access denied');
+        await supabase.auth.signOut();
+        toast({
+          title: "Acesso Negado",
+          description: "Você não possui permissão de barbeiro. Entre em contato com o administrador.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // STEP 4: Check if user is active staff member
       const { data: staffMember, error: staffError } = await supabase
         .from('staff')
         .select('*')
@@ -95,61 +122,23 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({
       
       if (staffError) {
         console.error('❌ Error checking staff member:', staffError);
-        // Don't block login for staff check errors, continue with role check
+        // Don't block login for staff check errors, just warn
+        console.warn('Warning: Could not verify staff status, but user has barber role');
       }
       
       if (!staffMember) {
-        console.log('❌ User is not an active staff member');
-        await supabase.auth.signOut();
+        console.warn('⚠️ User has barber role but is not in active staff table');
+        // Allow login but show warning
         toast({
-          title: "Acesso Negado",
-          description: "Você não está cadastrado como barbeiro ativo. Entre em contato com o administrador.",
+          title: "Aviso",
+          description: "Você tem permissão de barbeiro mas não está na lista de funcionários ativos. Algumas funcionalidades podem estar limitadas.",
           variant: "destructive",
         });
-        return;
+      } else {
+        console.log('✅ User is confirmed active staff member');
       }
       
-      console.log('✅ User is active staff member:', staffMember);
-      
-      // STEP 4: Check if user has barber role
-      const { data: barberRoles, error: barberRoleError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', authData.user.id)
-        .eq('role', 'barber');
-      
-      if (barberRoleError) {
-        console.error('❌ Error checking barber role:', barberRoleError);
-      }
-      
-      const hasBarberRole = barberRoles && barberRoles.length > 0;
-      
-      // If user is active staff but doesn't have barber role, let's auto-assign it
-      if (!hasBarberRole && staffMember) {
-        console.log('⚠️ Active staff member without barber role, attempting to assign...');
-        
-        const { error: roleInsertError } = await supabase
-          .from('user_roles')
-          .insert([{
-            user_id: authData.user.id,
-            role: 'barber'
-          }]);
-        
-        if (roleInsertError) {
-          console.error('❌ Error assigning barber role:', roleInsertError);
-          await supabase.auth.signOut();
-          toast({
-            title: "Erro de Permissão",
-            description: "Não foi possível atribuir permissões de barbeiro. Entre em contato com o administrador.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        console.log('✅ Barber role assigned successfully');
-      }
-      
-      console.log('✅ Access granted - User is active staff with barber permissions');
+      console.log('✅ Access granted - User has barber role');
       
       toast({
         title: "Login realizado com sucesso!",
