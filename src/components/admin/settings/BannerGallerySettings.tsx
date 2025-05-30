@@ -10,7 +10,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import BannerManager from './media/BannerManager';
-import ModernGalleryManager from './media/ModernGalleryManager';
+import AutoGalleryManager from './media/components/AutoGalleryManager';
 
 const BannerGallerySettings: React.FC = () => {
   const [bannerImages, setBannerImages] = useState<BannerImage[]>([
@@ -43,7 +43,7 @@ const BannerGallerySettings: React.FC = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="gallery" className="flex items-center gap-2">
             <Image className="h-4 w-4" />
-            Galeria de Fotos
+            Galeria Automática
           </TabsTrigger>
           <TabsTrigger value="banner" className="flex items-center gap-2">
             <GalleryHorizontal className="h-4 w-4" />
@@ -52,7 +52,7 @@ const BannerGallerySettings: React.FC = () => {
         </TabsList>
         
         <TabsContent value="gallery" className="space-y-6 mt-6">
-          <ModernGalleryManager />
+          <AutoGalleryManager />
         </TabsContent>
 
         <TabsContent value="banner" className="space-y-6 mt-6">
