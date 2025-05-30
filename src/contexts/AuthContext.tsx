@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { checkRateLimit, resetRateLimit } from '@/lib/security';
 
 type AppRole = 'admin' | 'user' | 'barber';
 
@@ -109,16 +108,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Check if user has admin or barber role AND is active staff member
+  // STRICT role checking: user must have barber role AND be active staff member
   const checkUserRole = async (userId: string, userEmail: string) => {
     try {
-      console.log('Checking roles for user:', userId, userEmail);
+      console.log('STRICT role check for user:', userId, userEmail);
+      
+      // Reset roles first
+      setIsAdmin(false);
+      setIsBarber(false);
       
       // Check if we have userId before querying
       if (!userId) {
         console.log('userId is empty, cannot check roles');
-        setIsAdmin(false);
-        setIsBarber(false);
         return;
       }
       
@@ -130,22 +131,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Error checking user role:', error);
-        setIsAdmin(false);
-        setIsBarber(false);
         return;
       }
       
-      console.log('User roles:', roles);
+      console.log('User roles from database:', roles);
       
       // Check for admin role
       const hasAdminRole = roles?.some(role => role.role === 'admin');
       
-      // For barber role, we need to verify they are an active staff member
+      // For barber role, we need STRICT verification
       const hasBarberRole = roles?.some(role => role.role === 'barber');
       let isActiveBarber = false;
       
       if (hasBarberRole) {
-        // Check if user is an active staff member
+        console.log('User has barber role, checking if active staff member...');
+        
+        // STRICT CHECK: user must be an active staff member
         const { data: staffMember, error: staffError } = await supabase
           .from('staff')
           .select('*')
@@ -156,19 +157,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (staffError) {
           console.error('Error checking staff member:', staffError);
         } else if (staffMember) {
-          console.log('User is active staff member:', staffMember);
+          console.log('✅ User is confirmed as active staff member:', staffMember);
           isActiveBarber = true;
         } else {
-          console.log('User has barber role but is not an active staff member');
+          console.log('❌ User has barber role but is NOT an active staff member or not found in staff table');
         }
+      } else {
+        console.log('❌ User does NOT have barber role');
       }
       
-      console.log('User is admin:', hasAdminRole, 'Is active barber:', isActiveBarber);
+      console.log('Final role determination:', {
+        email: userEmail,
+        hasAdminRole,
+        hasBarberRole,
+        isActiveBarber,
+        finalIsAdmin: hasAdminRole,
+        finalIsBarber: isActiveBarber
+      });
       
-      setIsAdmin(hasAdminRole);
+      setIsAdmin(hasAdminRole || false);
       setIsBarber(isActiveBarber);
+      
     } catch (error) {
-      console.error('Error checking user role:', error);
+      console.error('Error in checkUserRole:', error);
       setIsAdmin(false);
       setIsBarber(false);
     }
