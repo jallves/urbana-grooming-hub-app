@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { useStaffForm } from '../staff/hooks/useStaffForm';
+import { useStaffForm, StaffFormValues } from '../staff/hooks/useStaffForm';
 import StaffProfileImage from '../staff/components/StaffProfileImage';
 import StaffPersonalInfo from '../staff/components/StaffPersonalInfo';
 import StaffProfessionalInfo from '../staff/components/StaffProfessionalInfo';
@@ -42,7 +42,7 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
   const [passwordVisible, setPasswordVisible] = useState(false);
   
   // Extended onSubmit function that also creates or updates the auth user
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: StaffFormValues) => {
     setIsSubmitting(true);
     
     try {
