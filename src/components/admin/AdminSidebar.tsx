@@ -1,7 +1,20 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, Home, Users, User, Package, DollarSign, Settings, BarChart2, MessageSquare, Tag, Scissors, UserCheck } from 'lucide-react';
+import { 
+  Calendar, 
+  Home, 
+  Users, 
+  User, 
+  Package, 
+  DollarSign, 
+  Settings, 
+  BarChart2, 
+  MessageSquare, 
+  Tag, 
+  Scissors, 
+  UserCheck 
+} from 'lucide-react';
 
 const AdminSidebar: React.FC = () => {
   const navItems = [
@@ -30,7 +43,7 @@ const AdminSidebar: React.FC = () => {
             <NavLink
               to={item.href}
               className={({ isActive }) =>
-                `flex items-center p-2 rounded-lg ${
+                `flex items-center p-2 rounded-lg transition-colors ${
                   isActive
                     ? 'bg-urbana-gold text-urbana-black'
                     : 'hover:bg-urbana-gray/20 text-white'

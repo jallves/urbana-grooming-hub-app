@@ -4,7 +4,6 @@ import {
   Calendar, 
   DollarSign, 
   Users, 
-  Scissors, 
   Clock, 
   TrendingUp 
 } from 'lucide-react';
@@ -16,9 +15,15 @@ const AdminDashboard: React.FC = () => {
     <div className="space-y-6">
       <Tabs defaultValue="visao-geral" className="w-full">
         <TabsList className="mb-6 bg-urbana-black">
-          <TabsTrigger value="visao-geral" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">Visão Geral</TabsTrigger>
-          <TabsTrigger value="agendamentos" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">Agendamentos</TabsTrigger>
-          <TabsTrigger value="financeiro" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">Financeiro</TabsTrigger>
+          <TabsTrigger value="visao-geral" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">
+            Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="agendamentos" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">
+            Agendamentos
+          </TabsTrigger>
+          <TabsTrigger value="financeiro" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">
+            Financeiro
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="visao-geral" className="space-y-6">
