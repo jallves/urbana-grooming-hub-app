@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UserWithRole, AppRole } from '../types';
+import { sanitizeInput } from '@/lib/security';
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -124,15 +124,17 @@ export const useUserManagement = () => {
       
       // Use the RPC function to add barbers - REMOVED AUTOMATIC ADMIN ROLE ASSIGNMENT
       for (const staff of newStaff) {
-        const staffEmail = staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`;
-        console.log(`Adding barber: ${staff.name} with email: ${staffEmail}`);
+        // Sanitize inputs before sending to database
+        const staffEmail = sanitizeInput(staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`);
+        const staffName = sanitizeInput(staff.name);
+        console.log(`Adding barber: ${staffName} with email: ${staffEmail}`);
         
         try {
           const { data, error: rpcError } = await supabase.rpc(
             'add_barber_user' as any, 
             {
               p_email: staffEmail,
-              p_name: staff.name,
+              p_name: staffName,
               p_role: 'barber' // Default to barber role, not admin
             }
           );
