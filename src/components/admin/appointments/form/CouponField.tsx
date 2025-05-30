@@ -37,38 +37,105 @@ const CouponField: React.FC<CouponFieldProps> = ({
 
   const applyCoupon = async () => {
     const couponCode = form.getValues('couponCode');
-    if (!couponCode || !appointmentId) return;
+    if (!couponCode) {
+      toast({
+        title: "Código necessário",
+        description: "Por favor, insira um código de cupom.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsApplying(true);
     try {
-      const { data, error } = await supabase.rpc('apply_coupon_to_appointment', {
-        p_appointment_id: appointmentId,
-        p_coupon_code: couponCode
-      });
+      if (appointmentId) {
+        // Para agendamentos existentes, usar a função RPC
+        const { data, error } = await supabase.rpc('apply_coupon_to_appointment', {
+          p_appointment_id: appointmentId,
+          p_coupon_code: couponCode
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const response = data as unknown as CouponResponse;
+        const response = data as unknown as CouponResponse;
 
-      if (response.success) {
+        if (response.success) {
+          setAppliedCoupon({
+            code: couponCode,
+            discount: response.discount_amount || 0,
+            finalAmount: response.final_amount || 0
+          });
+          
+          form.setValue('discountAmount', response.discount_amount || 0);
+          onCouponApplied?.(response.discount_amount || 0);
+          
+          toast({
+            title: "Cupom aplicado!",
+            description: `Desconto de R$ ${(response.discount_amount || 0).toFixed(2)} aplicado com sucesso.`,
+          });
+        } else {
+          toast({
+            title: "Erro ao aplicar cupom",
+            description: response.error || "Erro desconhecido",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Para novos agendamentos, validar o cupom
+        const { data: coupon, error } = await supabase
+          .from('discount_coupons')
+          .select('*')
+          .eq('code', couponCode.toUpperCase())
+          .eq('is_active', true)
+          .lte('valid_from', new Date().toISOString().split('T')[0])
+          .or(`valid_until.is.null,valid_until.gte.${new Date().toISOString().split('T')[0]}`)
+          .single();
+
+        if (error || !coupon) {
+          toast({
+            title: "Cupom inválido",
+            description: "O cupom não foi encontrado ou não está válido.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Verificar limite de uso
+        if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
+          toast({
+            title: "Cupom esgotado",
+            description: "Este cupom já atingiu o limite máximo de utilizações.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Calcular desconto
+        let discountAmount = 0;
+        const price = servicePrice || 0;
+        
+        if (coupon.discount_type === 'percentage') {
+          discountAmount = price * (coupon.discount_value / 100);
+        } else {
+          discountAmount = coupon.discount_value;
+        }
+
+        // Garantir que o desconto não seja maior que o preço
+        discountAmount = Math.min(discountAmount, price);
+        const finalAmount = price - discountAmount;
+
         setAppliedCoupon({
-          code: couponCode,
-          discount: response.discount_amount || 0,
-          finalAmount: response.final_amount || 0
+          code: coupon.code,
+          discount: discountAmount,
+          finalAmount
         });
         
-        form.setValue('discountAmount', response.discount_amount || 0);
-        onCouponApplied?.(response.discount_amount || 0);
+        form.setValue('discountAmount', discountAmount);
+        onCouponApplied?.(discountAmount);
         
         toast({
           title: "Cupom aplicado!",
-          description: `Desconto de R$ ${(response.discount_amount || 0).toFixed(2)} aplicado com sucesso.`,
-        });
-      } else {
-        toast({
-          title: "Erro ao aplicar cupom",
-          description: response.error || "Erro desconhecido",
-          variant: "destructive",
+          description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado com sucesso.`,
         });
       }
     } catch (error) {
@@ -144,7 +211,7 @@ const CouponField: React.FC<CouponFieldProps> = ({
                 type="button"
                 variant="outline"
                 onClick={applyCoupon}
-                disabled={!field.value || isApplying || !appointmentId}
+                disabled={!field.value || isApplying}
               >
                 {isApplying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Aplicar

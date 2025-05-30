@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +13,13 @@ interface BarberAvailabilityInfo {
   id: string;
   name: string;
   available: boolean;
+}
+
+interface AppliedCoupon {
+  code: string;
+  discountAmount: number;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
 }
 
 const formSchema = z.object({
@@ -43,6 +49,8 @@ export function useClientAppointmentForm(clientId: string) {
   const [barberAvailability, setBarberAvailability] = useState<BarberAvailabilityInfo[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [clientData, setClientData] = useState<any>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const { toast } = useToast();
   const { sendConfirmation, isSending } = useAppointmentConfirmation();
 
@@ -54,6 +62,13 @@ export function useClientAppointmentForm(clientId: string) {
       notes: '',
     },
   });
+
+  // Calculate final service price
+  const finalServicePrice = selectedService 
+    ? appliedCoupon 
+      ? selectedService.price - appliedCoupon.discountAmount
+      : selectedService.price
+    : 0;
 
   // Fetch client data
   useEffect(() => {
@@ -281,6 +296,82 @@ export function useClientAppointmentForm(clientId: string) {
     return isBefore(date, new Date()) && !isSameDay(date, new Date());
   };
 
+  const onApplyCoupon = async (couponCode: string) => {
+    if (!selectedService || !couponCode) return;
+
+    setIsApplyingCoupon(true);
+    try {
+      // Verificar se o cupom existe e está válido
+      const { data: coupon, error } = await supabase
+        .from('discount_coupons')
+        .select('*')
+        .eq('code', couponCode)
+        .eq('is_active', true)
+        .lte('valid_from', new Date().toISOString().split('T')[0])
+        .or(`valid_until.is.null,valid_until.gte.${new Date().toISOString().split('T')[0]}`)
+        .single();
+
+      if (error || !coupon) {
+        toast({
+          title: "Cupom inválido",
+          description: "O cupom não foi encontrado ou não está válido.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar limite de uso
+      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
+        toast({
+          title: "Cupom esgotado",
+          description: "Este cupom já atingiu o limite máximo de utilizações.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Calcular desconto
+      let discountAmount = 0;
+      if (coupon.discount_type === 'percentage') {
+        discountAmount = selectedService.price * (coupon.discount_value / 100);
+      } else {
+        discountAmount = coupon.discount_value;
+      }
+
+      // Garantir que o desconto não seja maior que o preço
+      discountAmount = Math.min(discountAmount, selectedService.price);
+
+      setAppliedCoupon({
+        code: coupon.code,
+        discountAmount,
+        discountType: coupon.discount_type,
+        discountValue: coupon.discount_value,
+      });
+
+      toast({
+        title: "Cupom aplicado!",
+        description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      toast({
+        title: "Erro ao aplicar cupom",
+        description: "Não foi possível aplicar o cupom. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const onRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    toast({
+      title: "Cupom removido",
+      description: "O cupom foi removido do agendamento.",
+    });
+  };
+
   const onSubmit = async (values: ClientAppointmentFormData) => {
     if (!selectedService || !clientId || !clientData) return;
     
@@ -294,17 +385,22 @@ export function useClientAppointmentForm(clientId: string) {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      const { data: appointmentData, error } = await supabase
+      // Criar agendamento
+      const appointmentData = {
+        client_id: clientId,
+        service_id: values.serviceId,
+        staff_id: values.barberId,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: 'scheduled',
+        notes: values.notes || null,
+        coupon_code: appliedCoupon?.code || null,
+        discount_amount: appliedCoupon?.discountAmount || 0,
+      };
+
+      const { data: appointmentResult, error } = await supabase
         .from('appointments')
-        .insert({
-          client_id: clientId,
-          service_id: values.serviceId,
-          staff_id: values.barberId,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          status: 'scheduled',
-          notes: values.notes || null,
-        })
+        .insert(appointmentData)
         .select(`
           *,
           services:service_id (*),
@@ -314,26 +410,54 @@ export function useClientAppointmentForm(clientId: string) {
 
       if (error) throw error;
 
+      // Se houver cupom aplicado, incrementar o uso
+      if (appliedCoupon) {
+        await supabase
+          .from('discount_coupons')
+          .update({ 
+            current_uses: supabase.raw('current_uses + 1')
+          })
+          .eq('code', appliedCoupon.code);
+
+        // Inserir registro na tabela de aplicação de cupons
+        await supabase
+          .from('appointment_coupons')
+          .insert({
+            appointment_id: appointmentResult.id,
+            coupon_id: (await supabase
+              .from('discount_coupons')
+              .select('id')
+              .eq('code', appliedCoupon.code)
+              .single()).data?.id,
+            discount_amount: appliedCoupon.discountAmount,
+          });
+      }
+
       // Enviar confirmação automaticamente por email
       await sendConfirmation({
         clientName: clientData.name,
         clientEmail: clientData.email,
         clientPhone: clientData.phone || '',
         serviceName: selectedService.name,
-        staffName: appointmentData.staff.name,
+        staffName: appointmentResult.staff.name,
         appointmentDate: startTime,
-        servicePrice: selectedService.price.toString(),
+        servicePrice: finalServicePrice.toString(),
         serviceDuration: selectedService.duration,
         preferredMethod: 'email',
       });
 
       // Mostrar mensagem de sucesso
+      const successMessage = appliedCoupon 
+        ? `Seu agendamento foi confirmado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} com desconto de R$ ${appliedCoupon.discountAmount.toFixed(2)}. Total: R$ ${finalServicePrice.toFixed(2)}. A confirmação foi enviada por email.`
+        : `Seu agendamento foi confirmado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}. A confirmação foi enviada por email.`;
+
       toast({
         title: "Agendamento Realizado com Sucesso",
-        description: `Seu agendamento foi confirmado para ${format(startTime, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}. A confirmação foi enviada por email.`,
+        description: successMessage,
       });
 
       form.reset();
+      setAppliedCoupon(null);
     } catch (error: any) {
       console.error("Error creating appointment:", error);
       toast({
@@ -358,6 +482,11 @@ export function useClientAppointmentForm(clientId: string) {
     clientData,
     isSending,
     disabledDays,
+    appliedCoupon,
+    isApplyingCoupon,
+    finalServicePrice,
     onSubmit,
+    onApplyCoupon,
+    onRemoveCoupon,
   };
 }

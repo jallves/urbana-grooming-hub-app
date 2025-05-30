@@ -8,9 +8,17 @@ interface AppointmentSummaryProps {
   selectedService: Service | null;
   selectedDate: Date | undefined;
   selectedTime: string;
+  appliedCoupon?: any;
+  finalPrice?: number;
 }
 
-export function AppointmentSummary({ selectedService, selectedDate, selectedTime }: AppointmentSummaryProps) {
+export function AppointmentSummary({ 
+  selectedService, 
+  selectedDate, 
+  selectedTime, 
+  appliedCoupon,
+  finalPrice 
+}: AppointmentSummaryProps) {
   if (!selectedService || !selectedDate || !selectedTime) {
     return null;
   }
@@ -25,8 +33,26 @@ export function AppointmentSummary({ selectedService, selectedDate, selectedTime
         <div>Duração:</div>
         <div className="font-medium">{selectedService.duration} minutos</div>
         
-        <div>Valor:</div>
-        <div className="font-medium">R$ {selectedService.price}</div>
+        {appliedCoupon ? (
+          <>
+            <div>Valor original:</div>
+            <div className="font-medium">R$ {selectedService.price.toFixed(2)}</div>
+            
+            <div>Cupom:</div>
+            <div className="font-medium text-green-600">{appliedCoupon.code}</div>
+            
+            <div>Desconto:</div>
+            <div className="font-medium text-green-600">- R$ {appliedCoupon.discountAmount.toFixed(2)}</div>
+            
+            <div>Valor final:</div>
+            <div className="font-medium text-lg text-green-600">R$ {finalPrice?.toFixed(2)}</div>
+          </>
+        ) : (
+          <>
+            <div>Valor:</div>
+            <div className="font-medium">R$ {selectedService.price.toFixed(2)}</div>
+          </>
+        )}
         
         <div>Data e Hora:</div>
         <div className="font-medium">

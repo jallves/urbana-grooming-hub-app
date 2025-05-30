@@ -8,6 +8,7 @@ import { ServiceSelectionField } from './components/ServiceSelectionField';
 import { DateTimeSelectionFields } from './components/DateTimeSelectionFields';
 import { BarberSelectionField } from './components/BarberSelectionField';
 import { AppointmentSummary } from './components/AppointmentSummary';
+import { CouponField } from './components/CouponField';
 
 interface ClientAppointmentFormProps {
   clientId: string;
@@ -25,7 +26,12 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     isCheckingAvailability,
     isSending,
     disabledDays,
+    appliedCoupon,
+    isApplyingCoupon,
+    finalServicePrice,
     onSubmit,
+    onApplyCoupon,
+    onRemoveCoupon,
   } = useClientAppointmentForm(clientId);
 
   return (
@@ -52,6 +58,19 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           getFieldValue={form.getValues}
         />
 
+        {/* Coupon Field */}
+        {selectedService && (
+          <CouponField
+            form={form}
+            servicePrice={selectedService.price}
+            appliedCoupon={appliedCoupon}
+            isApplyingCoupon={isApplyingCoupon}
+            finalPrice={finalServicePrice}
+            onApplyCoupon={onApplyCoupon}
+            onRemoveCoupon={onRemoveCoupon}
+          />
+        )}
+
         {/* Notes */}
         <FormField
           control={form.control}
@@ -76,6 +95,8 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           selectedService={selectedService}
           selectedDate={form.getValues('date')}
           selectedTime={form.getValues('time')}
+          appliedCoupon={appliedCoupon}
+          finalPrice={finalServicePrice}
         />
 
         <Button 
