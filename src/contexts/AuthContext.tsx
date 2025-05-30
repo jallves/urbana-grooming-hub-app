@@ -27,10 +27,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('Checking roles for user:', userId, userEmail);
     
     try {
-      // Reset roles first
-      setIsAdmin(false);
-      setIsBarber(false);
-      
       if (!userId || !userEmail) {
         console.log('No userId or email provided');
         return;
@@ -53,38 +49,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('User roles found:', roleArray);
       
-      // For barber role, also check staff status - but allow access even if not in staff table
-      let isActiveBarber = hasBarberRole; // Default to true if has barber role
-      
-      if (hasBarberRole) {
-        const { data: staffMember, error: staffError } = await supabase
-          .from('staff')
-          .select('id')
-          .eq('email', userEmail)
-          .eq('is_active', true)
-          .maybeSingle();
-          
-        if (staffError) {
-          console.error('Error checking staff member:', staffError);
-        }
-        
-        // If staff member exists and is active, that's great
-        // But if not, still allow access as long as they have barber role
-        console.log('Staff check result:', { hasBarberRole, isActiveStaff: !!staffMember });
-      }
-      
       // Update roles
       setIsAdmin(hasAdminRole);
-      setIsBarber(isActiveBarber);
+      setIsBarber(hasBarberRole);
       
-      console.log('Final role assignment:', { hasAdminRole, isActiveBarber });
+      console.log('Final role assignment:', { hasAdminRole, hasBarberRole });
       
     } catch (error) {
       console.error('Error in checkUserRole:', error);
       setIsAdmin(false);
       setIsBarber(false);
     }
-  }, []); // Remove isCheckingRoles from dependencies to prevent infinite loop
+  }, []);
 
   const signOut = useCallback(async () => {
     console.log('Starting logout');
@@ -179,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array - only run once
+  }, [checkUserRole]);
 
   const contextValue = {
     session,
