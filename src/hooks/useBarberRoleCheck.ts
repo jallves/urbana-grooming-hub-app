@@ -31,7 +31,8 @@ export const useBarberRoleCheck = () => {
         return;
       }
       
-      // STEP 1: Check if user is an active staff member FIRST
+      // STEP 1: Check if user is an active staff member FIRST (MOST IMPORTANT)
+      console.log('Checking if user is active staff member with email:', userEmail);
       const { data: staffMember, error: staffError } = await supabase
         .from('staff')
         .select('*')
@@ -52,10 +53,10 @@ export const useBarberRoleCheck = () => {
       }
       
       if (!staffMember) {
-        console.log('❌ User is NOT an active staff member');
+        console.log('❌ User is NOT an active staff member - ACCESS DENIED');
         toast({
           title: 'Acesso negado',
-          description: 'Você não está cadastrado como barbeiro ativo no sistema',
+          description: 'Você não está cadastrado como barbeiro ativo no sistema. Apenas barbeiros cadastrados pelo administrador podem acessar.',
           variant: 'destructive',
         });
         await supabase.auth.signOut();
@@ -93,42 +94,15 @@ export const useBarberRoleCheck = () => {
         });
         navigate('/barbeiro/dashboard');
       } else {
-        // If user is active staff but doesn't have barber role, try to add it
-        console.log('⚠️ Active staff member without barber role, attempting to add role');
-        
-        try {
-          const { error: addRoleError } = await supabase
-            .from('user_roles')
-            .insert([{ user_id: userId, role: 'barber' }]);
-          
-          if (addRoleError) {
-            console.error('❌ Error adding barber role:', addRoleError);
-            toast({
-              title: 'Erro de configuração',
-              description: 'Entre em contato com o administrador para configurar seu acesso',
-              variant: 'destructive',
-            });
-            await supabase.auth.signOut();
-            navigate('/barbeiro/login');
-            return;
-          }
-          
-          console.log('✅ Barber role added successfully - ACCESS GRANTED');
-          toast({
-            title: 'Login realizado com sucesso',
-            description: 'Bem-vindo ao painel do barbeiro',
-          });
-          navigate('/barbeiro/dashboard');
-        } catch (error) {
-          console.error('❌ Exception adding barber role:', error);
-          toast({
-            title: 'Erro de configuração',
-            description: 'Entre em contato com o administrador para configurar seu acesso',
-            variant: 'destructive',
-          });
-          await supabase.auth.signOut();
-          navigate('/barbeiro/login');
-        }
+        // User is active staff but doesn't have barber role - DENY ACCESS
+        console.log('❌ Active staff member but NO barber role - ACCESS DENIED');
+        toast({
+          title: 'Acesso negado',
+          description: 'Você é um profissional cadastrado, mas não tem permissão de barbeiro. Entre em contato com o administrador.',
+          variant: 'destructive',
+        });
+        await supabase.auth.signOut();
+        navigate('/barbeiro/login');
       }
     } catch (error) {
       console.error('❌ Critical error in barber role check:', error);

@@ -123,60 +123,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // First check database roles
-      const { data: roles, error } = await supabase
-        .from('user_roles')
+      // STEP 1: Check if user is an active staff member FIRST (most important check)
+      console.log('Checking if user is active staff member...');
+      const { data: staffMember, error: staffError } = await supabase
+        .from('staff')
         .select('*')
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('Error checking user role:', error);
+        .eq('email', userEmail)
+        .eq('is_active', true)
+        .maybeSingle();
+        
+      if (staffError) {
+        console.error('Error checking staff member:', staffError);
         return;
       }
-      
-      console.log('User roles from database:', roles);
-      
-      // Check for admin role
-      const hasAdminRole = roles?.some(role => role.role === 'admin');
-      
-      // For barber role, we need STRICT verification
-      const hasBarberRole = roles?.some(role => role.role === 'barber');
+
       let isActiveBarber = false;
       
-      if (hasBarberRole) {
-        console.log('User has barber role, checking if active staff member...');
+      if (staffMember) {
+        console.log('✅ User is confirmed as active staff member:', staffMember);
         
-        // STRICT CHECK: user must be an active staff member
-        const { data: staffMember, error: staffError } = await supabase
-          .from('staff')
+        // STEP 2: Only if user is active staff, check for barber role
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
           .select('*')
-          .eq('email', userEmail)
-          .eq('is_active', true)
-          .maybeSingle();
-          
-        if (staffError) {
-          console.error('Error checking staff member:', staffError);
-        } else if (staffMember) {
-          console.log('✅ User is confirmed as active staff member:', staffMember);
+          .eq('user_id', userId);
+        
+        if (rolesError) {
+          console.error('Error checking user role:', rolesError);
+          return;
+        }
+        
+        console.log('User roles from database:', roles);
+        
+        // Check for admin role
+        const hasAdminRole = roles?.some(role => role.role === 'admin');
+        
+        // Check for barber role (only matters if user is active staff)
+        const hasBarberRole = roles?.some(role => role.role === 'barber');
+        
+        if (hasBarberRole) {
+          console.log('✅ User has barber role AND is active staff - ACCESS GRANTED');
           isActiveBarber = true;
         } else {
-          console.log('❌ User has barber role but is NOT an active staff member or not found in staff table');
+          console.log('❌ User is active staff but does NOT have barber role in user_roles table');
         }
+        
+        console.log('Final role determination:', {
+          email: userEmail,
+          hasAdminRole,
+          hasBarberRole,
+          isActiveStaff: true,
+          finalIsAdmin: hasAdminRole,
+          finalIsBarber: isActiveBarber
+        });
+        
+        setIsAdmin(hasAdminRole || false);
+        setIsBarber(isActiveBarber);
       } else {
-        console.log('❌ User does NOT have barber role');
+        console.log('❌ User is NOT an active staff member - NO BARBER ACCESS');
+        
+        // Still check for admin role even if not staff
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('*')
+          .eq('user_id', userId);
+        
+        if (!rolesError && roles) {
+          const hasAdminRole = roles?.some(role => role.role === 'admin');
+          setIsAdmin(hasAdminRole || false);
+          console.log('User admin status:', hasAdminRole);
+        }
+        
+        setIsBarber(false); // Definitely not a barber if not active staff
       }
-      
-      console.log('Final role determination:', {
-        email: userEmail,
-        hasAdminRole,
-        hasBarberRole,
-        isActiveBarber,
-        finalIsAdmin: hasAdminRole,
-        finalIsBarber: isActiveBarber
-      });
-      
-      setIsAdmin(hasAdminRole || false);
-      setIsBarber(isActiveBarber);
       
     } catch (error) {
       console.error('Error in checkUserRole:', error);

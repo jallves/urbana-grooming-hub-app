@@ -4,11 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import BarberLoginForm from '@/components/barber/auth/BarberLoginForm';
 import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(10);
-  const { user, isBarber, isAdmin, loading: authLoading } = useAuth();
+  const { user, isBarber, isAdmin, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
 
   // Timer countdown effect
@@ -51,6 +52,11 @@ const BarberAuth: React.FC = () => {
     navigate('/barbeiro');
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/barbeiro/login');
+  };
+
   // Show access denied message if user is logged in but not a barber
   if (!authLoading && user && !isAdmin && !isBarber) {
     return (
@@ -62,11 +68,14 @@ const BarberAuth: React.FC = () => {
               <p className="text-red-400 text-sm font-medium mb-2">
                 ❌ Você não tem permissão para acessar esta área
               </p>
-              <p className="text-red-300 text-xs">
-                Apenas barbeiros cadastrados e ativos no sistema podem acessar este painel.
+              <p className="text-red-300 text-xs mb-2">
+                <strong>Apenas barbeiros cadastrados pelo administrador</strong> podem acessar este painel.
               </p>
-              <p className="text-red-300 text-xs mt-2">
-                Se você é barbeiro, entre em contato com o administrador.
+              <p className="text-red-300 text-xs mb-2">
+                Usuários que se cadastraram pelo formulário de agendamento <strong>NÃO</strong> têm acesso a esta área.
+              </p>
+              <p className="text-red-300 text-xs">
+                Se você é barbeiro, entre em contato com o administrador para ser cadastrado no sistema.
               </p>
             </div>
             <div className="mt-4 space-y-2">
@@ -77,11 +86,7 @@ const BarberAuth: React.FC = () => {
                 Voltar para Home
               </button>
               <button
-                onClick={async () => {
-                  const { signOut } = useAuth();
-                  await signOut();
-                  navigate('/barbeiro/login');
-                }}
+                onClick={handleLogout}
                 className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
               >
                 Fazer Logout
@@ -99,17 +104,20 @@ const BarberAuth: React.FC = () => {
         <div className="text-center">
           <h1 className="text-4xl font-bold text-white">Urbana Barbearia</h1>
           <p className="mt-2 text-gray-400">
-            Acesso exclusivo para barbeiros cadastrados
+            Acesso exclusivo para barbeiros cadastrados pelo administrador
           </p>
           <div className="mt-4 p-3 bg-blue-900/30 border border-blue-600 rounded-lg">
             <p className="text-blue-400 text-sm font-medium">
-              🔒 Acesso Restrito
+              🔒 Acesso Ultra Restrito
             </p>
             <p className="text-blue-300 text-xs mt-1">
-              Apenas barbeiros cadastrados no sistema e ativos na equipe podem acessar
+              <strong>Apenas barbeiros cadastrados pelo administrador master</strong> podem acessar
             </p>
             <p className="text-blue-300 text-xs mt-1">
-              Se você é barbeiro e não consegue acessar, entre em contato com o administrador
+              Usuários do formulário de agendamento <strong>NÃO</strong> têm acesso
+            </p>
+            <p className="text-blue-300 text-xs mt-1">
+              Se você é barbeiro e não consegue acessar, solicite cadastro ao administrador
             </p>
           </div>
           {!user && timeLeft > 0 && (
