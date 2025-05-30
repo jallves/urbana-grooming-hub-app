@@ -402,7 +402,7 @@ export function useClientAppointmentForm(clientId: string) {
 
       toast({
         title: "Cupom aplicado com sucesso!",
-        description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado. ${coupon.discount_type === 'percentage' ? `(${coupon.discount_value}%)` : ''}`,
+        description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado. ${coupon.discount_type === 'percentage' ? `(${coupon.discount_value}%)` : 'Valor fixo'}`,
       });
 
       console.log('Cupom aplicado com sucesso:', {
