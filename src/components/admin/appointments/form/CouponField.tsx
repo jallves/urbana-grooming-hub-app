@@ -48,7 +48,7 @@ const CouponField: React.FC<CouponFieldProps> = ({
 
       if (error) throw error;
 
-      const response = data as CouponResponse;
+      const response = data as unknown as CouponResponse;
 
       if (response.success) {
         setAppliedCoupon({
