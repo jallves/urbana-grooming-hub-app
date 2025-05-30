@@ -75,7 +75,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
         throw error;
       }
 
-      console.log('Login successful for:', authData.user?.email);
+      if (!authData.user || !authData.session) {
+        throw new Error('Login failed: No user or session returned');
+      }
+
+      console.log('Login successful for:', authData.user.email);
       
       // Reset rate limiting on successful login
       resetRateLimit(data.email);
@@ -85,14 +89,15 @@ const LoginForm: React.FC<LoginFormProps> = ({
         description: "Bem-vindo de volta!",
       });
 
-      // Wait a moment for auth state to update
-      setTimeout(() => {
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        } else if (redirectTo) {
-          navigate(redirectTo);
-        }
-      }, 500);
+      // Clear form
+      form.reset();
+
+      // Handle navigation/callback
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      } else if (redirectTo) {
+        navigate(redirectTo);
+      }
 
     } catch (error: any) {
       console.error('Erro no login:', error);

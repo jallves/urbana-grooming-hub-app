@@ -12,7 +12,7 @@ import { Home } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [initComplete, setInitComplete] = useState(false);
+  const [redirectTimer, setRedirectTimer] = useState(10);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -20,71 +20,56 @@ const Auth: React.FC = () => {
   
   // Auto redirect timer
   useEffect(() => {
-    const redirectTimer = setTimeout(() => {
-      if (!user && !loading) {
-        console.log('Auto-redirecting to home after 10 seconds of inactivity');
-        navigate('/');
-      }
-    }, 10000); // 10 seconds
+    if (!user && !authLoading && redirectTimer > 0) {
+      const timer = setTimeout(() => {
+        setRedirectTimer(prev => prev - 1);
+      }, 1000);
 
-    return () => clearTimeout(redirectTimer);
-  }, [user, loading, navigate]);
+      return () => clearTimeout(timer);
+    } else if (!user && !authLoading && redirectTimer === 0) {
+      console.log('Auto-redirecting to home after timer');
+      navigate('/');
+    }
+  }, [redirectTimer, user, authLoading, navigate]);
   
-  // Depurar a origem da navegação
-  console.log('Auth: location state recebido:', location.state);
-  
-  // Obter o "from" do state ou usar fallback "/"
+  // Get redirect path
   const from = location.state?.from || "/";
-  console.log('Auth: from path calculado:', from);
+  console.log('Auth: from path:', from);
   
-  // Verificar se o usuário já está autenticado
+  // Handle authenticated user redirect
   useEffect(() => {
-    console.log('Auth: Verificando autenticação', { user, authLoading, isAdmin, from });
-    
-    // Add a timeout to ensure we don't block the UI from rendering
-    const redirectTimeout = setTimeout(() => {
-      if (!authLoading && user) {
-        console.log("Auth: Usuário autenticado, redirecionando");
-        console.log("Auth: isAdmin:", isAdmin);
-        console.log("Auth: from:", from);
-        
-        // Se a rota anterior for uma rota admin, verificar se o usuário é admin
-        if (from.startsWith('/admin') && isAdmin) {
-          console.log('Auth: Redirecionando de volta para:', from);
-          navigate(from);
-        } else if (isAdmin) {
-          console.log('Auth: Redirecionando para o painel administrativo');
-          navigate('/admin');
-        } else {
-          console.log('Auth: Redirecionando para a página principal');
-          navigate('/');
-        }
-      } else if (!authLoading) {
-        // Se não estiver autenticado e não estiver carregando, marcar como inicialização completa
-        console.log('Auth: Inicialização completa, sem usuário autenticado');
-        setInitComplete(true);
+    if (!authLoading && user) {
+      console.log("Auth: User authenticated, redirecting", { isAdmin, from });
+      
+      // Determine redirect destination
+      let redirectPath = '/';
+      
+      if (from.startsWith('/admin') && isAdmin) {
+        redirectPath = from;
+      } else if (isAdmin) {
+        redirectPath = '/admin';
       }
-    }, 500); // Short timeout to ensure we don't block rendering
-
-    return () => clearTimeout(redirectTimeout);
+      
+      console.log('Auth: Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true });
+    }
   }, [user, isAdmin, navigate, authLoading, from]);
 
-  // Criar o usuário específico se ele não existir
+  // Create specific admin user if needed
   useEffect(() => {
-    const createSpecificUser = async () => {
+    const createAdminUser = async () => {
+      if (authLoading || user) return;
+      
       try {
-        console.log("Verificando usuário específico...");
-        // Verificar se o usuário já existe
-        const { data: existingUsers, error: searchError } = await supabase
+        console.log("Checking for admin user...");
+        const { data: existingUser } = await supabase
           .from('profiles')
           .select('email')
           .eq('email', 'joao.colimoides@gmail.com')
           .single();
         
-        // Se não existir erro ou não houver usuário, crie um novo
-        if (searchError || !existingUsers) {
-          console.log("Criando usuário específico...");
-          // Registrar o usuário
+        if (!existingUser) {
+          console.log("Creating admin user...");
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: 'joao.colimoides@gmail.com',
             password: 'Jb74872701@',
@@ -96,18 +81,11 @@ const Auth: React.FC = () => {
           });
 
           if (signUpError) {
-            console.error('Erro ao criar usuário específico:', signUpError);
-            toast({
-              title: "Erro ao criar usuário administrador",
-              description: signUpError.message,
-              variant: "destructive",
-            });
+            console.error('Error creating admin user:', signUpError);
             return;
           }
           
           if (signUpData.user) {
-            console.log("Usuário criado, adicionando role de admin...");
-            // Adicionar usuário à tabela de funções como administrador
             const { error: roleError } = await supabase
               .from('user_roles')
               .insert([
@@ -118,39 +96,25 @@ const Auth: React.FC = () => {
               ]);
               
             if (roleError) {
-              console.error('Erro ao adicionar role de admin:', roleError);
-              toast({
-                title: "Erro ao configurar permissões de admin",
-                description: roleError.message,
-                variant: "destructive",
-              });
+              console.error('Error adding admin role:', roleError);
             } else {
-              console.log('Usuário específico criado com sucesso e role adicionada');
+              console.log('Admin user created successfully');
               toast({
                 title: "Usuário administrador criado",
-                description: "Utilize o email joao.colimoides@gmail.com e a senha fornecida para login de admin",
+                description: "Use joao.colimoides@gmail.com para login de admin",
               });
             }
           }
-        } else {
-          console.log("Usuário específico já existe");
         }
       } catch (error) {
-        console.error('Erro ao verificar ou criar usuário específico:', error);
-        toast({
-          title: "Erro ao verificar usuário",
-          description: "Ocorreu um erro ao verificar ou criar o usuário administrador",
-          variant: "destructive",
-        });
+        console.error('Error checking/creating admin user:', error);
       }
     };
     
-    if (initComplete && !authLoading && !user) {
-      createSpecificUser();
-    }
-  }, [initComplete, authLoading, user, toast]);
+    createAdminUser();
+  }, [authLoading, user, toast]);
 
-  // Renderizar o loading state enquanto verifica autenticação
+  // Show loading screen while checking authentication
   if (authLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background">
@@ -187,7 +151,22 @@ const Auth: React.FC = () => {
           </Tabs>
         </div>
 
-        {/* View site button */}
+        {!user && redirectTimer > 0 && (
+          <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-700 text-sm">
+              Redirecionando para a página inicial em {redirectTimer} segundos
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="mt-2"
+            >
+              Ir agora
+            </Button>
+          </div>
+        )}
+
         <div className="flex justify-center">
           <Button 
             variant="outline" 

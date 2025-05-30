@@ -18,6 +18,7 @@ export default function AppointmentBooking() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("login");
+  const [loginLoading, setLoginLoading] = useState(false);
 
   useEffect(() => {
     async function fetchClientId() {
@@ -29,7 +30,7 @@ export default function AppointmentBooking() {
       try {
         console.log('Fetching client for user:', user.email);
         
-        // Buscar cliente pelo email do usuário autenticado
+        // Search for existing client
         const { data, error } = await supabase
           .from('clients')
           .select('id')
@@ -46,7 +47,7 @@ export default function AppointmentBooking() {
           setClientId(data.id);
         } else {
           console.log('No client found, creating new one');
-          // Se não encontrar cliente, criar um novo
+          // Create new client if not found
           const { data: createdClient, error: clientError } = await supabase
             .from('clients')
             .insert([{
@@ -82,12 +83,11 @@ export default function AppointmentBooking() {
     }
   }, [user, authLoading, toast]);
 
-  // When user logs in successfully, switch to appointment form
+  // Handle successful login
   const handleLoginSuccess = () => {
-    console.log('Login successful, user:', user);
-    // Force a re-fetch of client data after login
-    setLoading(true);
+    console.log('Login successful, switching to appointment form');
     setActiveTab("appointment");
+    // The useEffect above will handle fetching client data when user changes
   };
 
   if (authLoading || loading) {
@@ -132,8 +132,8 @@ export default function AppointmentBooking() {
                     <p>Entre com seus dados para agendar</p>
                   </div>
                   <LoginForm 
-                    loading={false} 
-                    setLoading={() => {}} 
+                    loading={loginLoading} 
+                    setLoading={setLoginLoading} 
                     onLoginSuccess={handleLoginSuccess} 
                   />
                 </TabsContent>
