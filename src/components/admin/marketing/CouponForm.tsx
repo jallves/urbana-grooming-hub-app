@@ -42,6 +42,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 
 interface CouponFormProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ interface CouponFormProps {
 }
 
 const couponSchema = z.object({
-  code: z.string().min(3, 'O código deve ter pelo menos 3 caracteres').toUpperCase(),
+  code: z.string().min(3, 'O código deve ter pelo menos 3 caracteres'),
   discount_type: z.enum(['percentage', 'fixed']),
   discount_value: z.number().positive('O valor deve ser positivo'),
   valid_from: z.date({ required_error: 'A data de início é obrigatória' }),
@@ -63,6 +64,7 @@ const couponSchema = z.object({
 
 const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coupon }) => {
   const isEditing = !!coupon;
+  const { toast } = useToast();
 
   // Fetch campaigns for the select dropdown
   const { data: campaigns } = useQuery({
@@ -94,52 +96,77 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
 
   const mutation = useMutation({
     mutationFn: async (data: DiscountCouponFormData) => {
+      console.log('Enviando dados do cupom:', data);
+      
+      const couponData = {
+        code: data.code.toUpperCase(),
+        discount_type: data.discount_type,
+        discount_value: data.discount_value,
+        valid_from: data.valid_from.toISOString().split('T')[0],
+        valid_until: data.valid_until ? data.valid_until.toISOString().split('T')[0] : null,
+        max_uses: data.max_uses,
+        campaign_id: data.campaign_id,
+        is_active: data.is_active,
+      };
+
       if (isEditing && coupon) {
-        const { error } = await supabase
+        const { data: result, error } = await supabase
           .from('discount_coupons')
           .update({
-            code: data.code.toUpperCase(),
-            discount_type: data.discount_type,
-            discount_value: data.discount_value,
-            valid_from: data.valid_from.toISOString().split('T')[0],
-            valid_until: data.valid_until ? data.valid_until.toISOString().split('T')[0] : null,
-            max_uses: data.max_uses,
-            campaign_id: data.campaign_id,
-            is_active: data.is_active,
+            ...couponData,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', coupon.id);
+          .eq('id', coupon.id)
+          .select();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+          console.error('Erro ao atualizar cupom:', error);
+          throw new Error(error.message);
+        }
+        console.log('Cupom atualizado:', result);
       } else {
-        const { error } = await supabase
+        const { data: result, error } = await supabase
           .from('discount_coupons')
-          .insert({
-            code: data.code.toUpperCase(),
-            discount_type: data.discount_type,
-            discount_value: data.discount_value,
-            valid_from: data.valid_from.toISOString().split('T')[0],
-            valid_until: data.valid_until ? data.valid_until.toISOString().split('T')[0] : null,
-            max_uses: data.max_uses,
-            campaign_id: data.campaign_id,
-            is_active: data.is_active,
-          });
+          .insert(couponData)
+          .select();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+          console.error('Erro ao criar cupom:', error);
+          throw new Error(error.message);
+        }
+        console.log('Cupom criado:', result);
       }
     },
     onSuccess: () => {
+      toast({
+        title: 'Sucesso',
+        description: isEditing ? 'Cupom atualizado com sucesso!' : 'Cupom criado com sucesso!',
+      });
       onSubmit();
       form.reset();
+    },
+    onError: (error) => {
+      console.error('Erro na mutação:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao salvar cupom',
+        variant: 'destructive',
+      });
     },
   });
 
   const onFormSubmit = form.handleSubmit(async (data) => {
+    console.log('Dados do formulário:', data);
     await mutation.mutateAsync(data);
   });
 
+  const handleClose = () => {
+    form.reset();
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -161,7 +188,11 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                 <FormItem>
                   <FormLabel>Código do Cupom</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: BLACKFRIDAY20" />
+                    <Input 
+                      {...field} 
+                      placeholder="Ex: BLACKFRIDAY20"
+                      onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                    />
                   </FormControl>
                   <FormDescription>
                     Um código único que os clientes utilizarão para aplicar o desconto.
@@ -178,7 +209,7 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo de Desconto</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o tipo de desconto" />
@@ -207,7 +238,7 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                         placeholder={
                           form.watch('discount_type') === 'percentage' ? "Ex: 20" : "Ex: 50.00"
                         }
-                        {...field}
+                        value={field.value || ''}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
                     </FormControl>
@@ -254,7 +285,6 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                           selected={field.value}
                           onSelect={field.onChange}
                           initialFocus
-                          className="p-3 pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -294,7 +324,6 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                           selected={field.value || undefined}
                           onSelect={(date) => field.onChange(date)}
                           initialFocus
-                          className="p-3 pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -318,7 +347,7 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                       <Input
                         type="number"
                         placeholder="Ilimitado"
-                        value={field.value === null ? '' : field.value}
+                        value={field.value || ''}
                         onChange={(e) => {
                           const value = e.target.value ? parseInt(e.target.value) : null;
                           field.onChange(value);
@@ -340,8 +369,8 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                   <FormItem>
                     <FormLabel>Campanha</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || ""}
+                      onValueChange={(value) => field.onChange(value || null)}
+                      value={field.value || ""}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -388,7 +417,7 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
