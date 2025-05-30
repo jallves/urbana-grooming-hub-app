@@ -21,7 +21,7 @@ export default function AppointmentBooking() {
   const [loginLoading, setLoginLoading] = useState(false);
 
   const fetchClientId = useCallback(async () => {
-    if (!user || loading) return;
+    if (!user) return;
     
     setLoading(true);
     try {
@@ -73,13 +73,13 @@ export default function AppointmentBooking() {
     } finally {
       setLoading(false);
     }
-  }, [user, toast, loading]);
+  }, [user?.email, user?.user_metadata, toast]);
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && user.email) {
       fetchClientId();
     }
-  }, [authLoading, user, fetchClientId]);
+  }, [authLoading, user?.email]); // Remove fetchClientId from dependencies
 
   // Handle successful login
   const handleLoginSuccess = useCallback(() => {
