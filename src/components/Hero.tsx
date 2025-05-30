@@ -17,19 +17,22 @@ const Hero: React.FC = () => {
   
   if (loading || bannerImages.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-urbana-black">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-urbana-black via-urbana-brown to-urbana-black">
         <div className="text-white text-center">
-          <div className="w-16 h-16 border-t-4 border-urbana-gold border-solid rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Carregando...</p>
+          <div className="w-20 h-20 border-4 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+          <p className="text-xl font-playfair">Carregando experiência premium...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-[70vh] flex items-center justify-center overflow-hidden pt-16">
-      <div className="w-[90%] mx-auto relative min-h-[70vh] flex items-center justify-center overflow-hidden">
-        {/* Background Image with Vintage Filter */}
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Modern geometric background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-brown/80 to-urbana-black/90 z-5"></div>
+      
+      <div className="w-full relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Image with Modern Filter */}
         <AnimatePresence mode="wait">
           {bannerImages.map((slide, index) => (
             <BannerSlide 
@@ -40,29 +43,36 @@ const Hero: React.FC = () => {
           ))}
         </AnimatePresence>
         
-        <VintageOverlay />
+        {/* Modern overlay with subtle pattern */}
+        <div className="absolute inset-0 bg-gradient-to-b from-urbana-black/40 via-transparent to-urbana-black/60 z-10"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)] z-10"></div>
         
         {/* Navigation Arrows */}
         <NavigationArrows onPrev={prevSlide} onNext={nextSlide} />
       </div>
       
       {/* Content */}
-      <div className="urbana-container z-10 text-center absolute">
-        <AnimatePresence mode="wait">
-          <HeroContent 
-            key={currentSlide} 
-            slide={bannerImages[currentSlide]} 
-            shopName={shopSettings?.shop_name}
+      <div className="absolute inset-0 flex items-center justify-center z-20">
+        <div className="urbana-container text-center px-4">
+          <AnimatePresence mode="wait">
+            <HeroContent 
+              key={currentSlide} 
+              slide={bannerImages[currentSlide]} 
+              shopName={shopSettings?.shop_name}
+            />
+          </AnimatePresence>
+          
+          {/* Modern Slide Indicators */}
+          <SlideIndicators 
+            count={bannerImages.length}
+            currentSlide={currentSlide}
+            setCurrentSlide={setCurrentSlide}
           />
-        </AnimatePresence>
-        
-        {/* Slide Indicators */}
-        <SlideIndicators 
-          count={bannerImages.length}
-          currentSlide={currentSlide}
-          setCurrentSlide={setCurrentSlide}
-        />
+        </div>
       </div>
+
+      {/* Modern decorative elements */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/50 to-transparent z-15"></div>
     </div>
   );
 };
