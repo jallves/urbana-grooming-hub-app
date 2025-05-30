@@ -1,32 +1,27 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ensureStorageBucket, getPublicUrl } from './utils/storageUtils';
 
 export const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);
 
   const uploadFile = async (
     file: File, 
-    folder: string = 'images',
+    folder: string = 'gallery',
     bucketName: string = 'images'
   ): Promise<string> => {
     try {
       setUploading(true);
       
-      // Ensure bucket exists
-      const bucketReady = await ensureStorageBucket(bucketName);
-      if (!bucketReady) {
-        throw new Error('Não foi possível configurar o storage');
-      }
-
+      console.log(`🚀 Iniciando upload para bucket: ${bucketName}`);
+      
       // Generate unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       
-      console.log(`Uploading file to: ${bucketName}/${fileName}`);
+      console.log(`📁 Nome do arquivo: ${fileName}`);
       
-      // Upload file
+      // Try to upload directly without checking bucket existence
       const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(fileName, file, {
@@ -35,7 +30,7 @@ export const useImageUpload = () => {
         });
 
       if (error) {
-        console.error('Upload error:', error);
+        console.error('❌ Erro no upload:', error);
         throw new Error(`Erro no upload: ${error.message}`);
       }
 
@@ -44,12 +39,16 @@ export const useImageUpload = () => {
       }
 
       // Get public URL
-      const publicUrl = getPublicUrl(bucketName, data.path);
-      console.log('Upload successful, public URL:', publicUrl);
+      const { data: publicUrlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(data.path);
+      
+      const publicUrl = publicUrlData.publicUrl;
+      console.log('✅ Upload bem-sucedido, URL:', publicUrl);
       
       return publicUrl;
     } catch (error) {
-      console.error('Error in uploadFile:', error);
+      console.error('💥 Erro no uploadFile:', error);
       throw error;
     } finally {
       setUploading(false);

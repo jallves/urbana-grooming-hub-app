@@ -30,7 +30,7 @@ export const useGalleryImages = () => {
       
       if (error) {
         console.error('❌ Erro ao buscar galeria:', error);
-        console.log('📷 Usando imagens padrão');
+        console.log('📷 Usando imagens padrão devido ao erro');
         setImages(defaultImages);
         return;
       }
@@ -49,8 +49,8 @@ export const useGalleryImages = () => {
         setImages(defaultImages);
       }
     } catch (error) {
-      console.error('💥 Erro inesperado:', error);
-      console.log('📷 Usando imagens padrão devido ao erro');
+      console.error('💥 Erro inesperado ao buscar galeria:', error);
+      console.log('📷 Usando imagens padrão devido ao erro inesperado');
       setImages(defaultImages);
     } finally {
       setLoading(false);
@@ -60,25 +60,37 @@ export const useGalleryImages = () => {
   useEffect(() => {
     fetchGalleryImages();
 
-    // Listen for real-time updates
-    const channel = supabase
-      .channel('gallery-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'gallery_images'
-        },
-        (payload) => {
-          console.log('🔄 Mudança na galeria detectada:', payload);
-          fetchGalleryImages();
-        }
-      )
-      .subscribe();
+    // Listen for real-time updates with simplified approach
+    let subscription: any = null;
+    
+    try {
+      subscription = supabase
+        .channel('gallery-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'gallery_images'
+          },
+          (payload) => {
+            console.log('🔄 Mudança na galeria detectada:', payload);
+            fetchGalleryImages();
+          }
+        )
+        .subscribe();
+    } catch (error) {
+      console.error('⚠️ Erro ao configurar real-time:', error);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (subscription) {
+        try {
+          supabase.removeChannel(subscription);
+        } catch (error) {
+          console.error('⚠️ Erro ao remover subscription:', error);
+        }
+      }
     };
   }, []);
 
