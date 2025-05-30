@@ -49,7 +49,8 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
       console.log('Starting barber creation/update process...');
       
       // For new barbers with email and password, handle user account creation
-      if (!barberId && data.email && password) {
+      const userEmail = data.email;
+      if (!barberId && userEmail && userEmail.trim() !== '' && password) {
         if (password !== confirmPassword) {
           toast.error('As senhas não correspondem');
           setIsSubmitting(false);
@@ -65,7 +66,7 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
         // Check if user already exists first
         console.log('Checking if user already exists...');
         const { data: existingAuth } = await supabase.auth.admin.listUsers();
-        const userExists = existingAuth.users?.find(user => user.email === data.email);
+        const userExists = existingAuth.users?.find(user => user.email === userEmail);
         
         if (userExists) {
           console.log('User already exists, checking roles...');
@@ -100,7 +101,7 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
           // Create new user account
           console.log('Creating new user account...');
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: data.email,
+            email: userEmail,
             password: password,
             options: {
               data: {
