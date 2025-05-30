@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,108 +22,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isBarber, setIsBarber] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isCheckingRoles, setIsCheckingRoles] = useState<boolean>(false);
 
-  useEffect(() => {
-    console.log('AuthProvider initialized');
-    let isMounted = true;
-
-    const initAuth = async () => {
-      try {
-        // Set up auth state listener FIRST
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
-            console.log('Auth event:', event, 'Session:', newSession?.user?.email);
-            
-            if (!isMounted) return;
-            
-            // Update state synchronously first
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            
-            // Handle role checking after state updates
-            if (newSession?.user && event !== 'SIGNED_OUT') {
-              // Use setTimeout to prevent deadlocks
-              setTimeout(() => {
-                if (isMounted) {
-                  checkUserRole(newSession.user.id, newSession.user.email || '');
-                }
-              }, 100);
-            } else {
-              // Clear roles immediately on sign out
-              if (isMounted) {
-                setIsAdmin(false);
-                setIsBarber(false);
-              }
-            }
-          }
-        );
-
-        // Get initial session
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting initial session:', error);
-        }
-        
-        if (!isMounted) return;
-        
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-        
-        if (initialSession?.user) {
-          await checkUserRole(initialSession.user.id, initialSession.user.email || '');
-        }
-
-        return () => {
-          isMounted = false;
-          subscription.unsubscribe();
-        };
-      } catch (error) {
-        console.error('Critical error in AuthProvider:', error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initAuth();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const checkUserRole = async (userId: string, userEmail: string) => {
+  const checkUserRole = useCallback(async (userId: string, userEmail: string) => {
+    if (isCheckingRoles) return; // Prevent concurrent role checks
+    
+    setIsCheckingRoles(true);
+    console.log('Checking roles for user:', userId, userEmail);
+    
     try {
-      console.log('Checking roles for user:', userId, userEmail);
-      
       // Reset roles first
       setIsAdmin(false);
       setIsBarber(false);
       
-      if (!userId) {
-        console.log('No userId provided');
+      if (!userId || !userEmail) {
+        console.log('No userId or email provided');
         return;
       }
       
-      // Check staff status first
-      const { data: staffMember, error: staffError } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('email', userEmail)
-        .eq('is_active', true)
-        .maybeSingle();
-        
-      if (staffError) {
-        console.error('Error checking staff member:', staffError);
-        return;
-      }
-
       // Check user roles
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('*')
+        .select('role')
         .eq('user_id', userId);
       
       if (rolesError) {
@@ -131,32 +51,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      console.log('User roles:', roles);
+      const roleArray = roles?.map(r => r.role) || [];
+      const hasAdminRole = roleArray.includes('admin');
+      const hasBarberRole = roleArray.includes('barber');
       
-      const hasAdminRole = roles?.some(role => role.role === 'admin') || false;
-      const hasBarberRole = roles?.some(role => role.role === 'barber') || false;
+      console.log('User roles found:', roleArray);
       
-      // Only set barber role if user is also active staff
-      const isActiveBarber = hasBarberRole && !!staffMember;
+      // For barber role, also check staff status
+      let isActiveBarber = false;
+      if (hasBarberRole) {
+        const { data: staffMember, error: staffError } = await supabase
+          .from('staff')
+          .select('id')
+          .eq('email', userEmail)
+          .eq('is_active', true)
+          .maybeSingle();
+          
+        if (staffError) {
+          console.error('Error checking staff member:', staffError);
+        }
+        
+        isActiveBarber = !!staffMember;
+        console.log('Staff check result:', { hasBarberRole, isActiveStaff: !!staffMember });
+      }
       
-      console.log('Role check result:', {
-        hasAdminRole,
-        hasBarberRole,
-        isActiveStaff: !!staffMember,
-        finalIsBarber: isActiveBarber
-      });
-      
+      // Update roles in a single batch
       setIsAdmin(hasAdminRole);
       setIsBarber(isActiveBarber);
+      
+      console.log('Final role assignment:', { hasAdminRole, isActiveBarber });
       
     } catch (error) {
       console.error('Error in checkUserRole:', error);
       setIsAdmin(false);
       setIsBarber(false);
+    } finally {
+      setIsCheckingRoles(false);
     }
-  };
+  }, [isCheckingRoles]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     console.log('Starting logout');
     try {
       // Clear state first
@@ -175,7 +109,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error during logout:', error);
     }
-  };
+  }, []);
+
+  // Initialize auth and set up listener
+  useEffect(() => {
+    console.log('AuthProvider initialized');
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Get initial session
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting initial session:', error);
+        }
+        
+        if (!mounted) return;
+        
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        
+        // Check roles for initial session
+        if (initialSession?.user) {
+          await checkUserRole(initialSession.user.id, initialSession.user.email || '');
+        }
+        
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, newSession) => {
+            console.log('Auth event:', event, 'Session:', newSession?.user?.email);
+            
+            if (!mounted) return;
+            
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+            
+            if (newSession?.user && event !== 'SIGNED_OUT') {
+              // Check roles for new session
+              await checkUserRole(newSession.user.id, newSession.user.email || '');
+            } else {
+              // Clear roles on sign out
+              setIsAdmin(false);
+              setIsBarber(false);
+            }
+          }
+        );
+
+        return () => {
+          mounted = false;
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Critical error in AuthProvider:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty dependency array - only run once
 
   const contextValue = {
     session,

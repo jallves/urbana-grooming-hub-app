@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,79 +16,76 @@ export default function AppointmentBooking() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clientId, setClientId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("login");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  useEffect(() => {
-    async function fetchClientId() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+  const fetchClientId = useCallback(async () => {
+    if (!user || loading) return;
+    
+    setLoading(true);
+    try {
+      console.log('Fetching client for user:', user.email);
       
-      try {
-        console.log('Fetching client for user:', user.email);
-        
-        // Search for existing client
-        const { data, error } = await supabase
-          .from('clients')
-          .select('id')
-          .eq('email', user.email)
-          .maybeSingle();
+      // Search for existing client
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching client:', error);
-          throw error;
-        }
-
-        if (data) {
-          console.log('Client found:', data.id);
-          setClientId(data.id);
-        } else {
-          console.log('No client found, creating new one');
-          // Create new client if not found
-          const { data: createdClient, error: clientError } = await supabase
-            .from('clients')
-            .insert([{
-              name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Cliente',
-              phone: user.user_metadata?.phone || '',
-              email: user.email
-            }])
-            .select('id')
-            .single();
-          
-          if (clientError) {
-            console.error('Error creating client:', clientError);
-            throw clientError;
-          }
-          
-          console.log('Client created:', createdClient.id);
-          setClientId(createdClient.id);
-        }
-      } catch (error: any) {
-        console.error('Error in fetchClientId:', error);
-        toast({
-          title: "Erro ao buscar informações do cliente",
-          description: error.message || "Não foi possível carregar suas informações. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error('Error fetching client:', error);
+        throw error;
       }
-    }
 
-    if (!authLoading) {
+      if (data) {
+        console.log('Client found:', data.id);
+        setClientId(data.id);
+      } else {
+        console.log('No client found, creating new one');
+        // Create new client if not found
+        const { data: createdClient, error: clientError } = await supabase
+          .from('clients')
+          .insert([{
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Cliente',
+            phone: user.user_metadata?.phone || '',
+            email: user.email
+          }])
+          .select('id')
+          .single();
+        
+        if (clientError) {
+          console.error('Error creating client:', clientError);
+          throw clientError;
+        }
+        
+        console.log('Client created:', createdClient.id);
+        setClientId(createdClient.id);
+      }
+    } catch (error: any) {
+      console.error('Error in fetchClientId:', error);
+      toast({
+        title: "Erro ao buscar informações do cliente",
+        description: error.message || "Não foi possível carregar suas informações. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast, loading]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
       fetchClientId();
     }
-  }, [user, authLoading, toast]);
+  }, [authLoading, user, fetchClientId]);
 
   // Handle successful login
-  const handleLoginSuccess = () => {
+  const handleLoginSuccess = useCallback(() => {
     console.log('Login successful, switching to appointment form');
     setActiveTab("appointment");
-    // The useEffect above will handle fetching client data when user changes
-  };
+  }, []);
 
   if (authLoading || loading) {
     return (
