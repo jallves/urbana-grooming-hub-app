@@ -32,8 +32,9 @@ export const useModernGalleryOperations = () => {
         setIsLoading(true);
         console.log('📂 Carregando galeria do admin...');
         
-        // Simulate loading default images since we don't have Supabase storage configured
-        const defaultImages: GalleryImage[] = [
+        // Load from localStorage if available
+        const savedImages = localStorage.getItem('galleryImages');
+        let defaultImages: GalleryImage[] = [
           { id: 1, src: "/gallery-1.jpg", alt: "Corte Clássico" },
           { id: 2, src: "/gallery-2.jpg", alt: "Barba Estilizada" },
           { id: 3, src: "/gallery-3.jpg", alt: "Ambiente Premium" },
@@ -41,6 +42,16 @@ export const useModernGalleryOperations = () => {
           { id: 5, src: "/gallery-5.jpg", alt: "Produtos de Qualidade" },
           { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
         ];
+
+        if (savedImages) {
+          try {
+            const parsedImages = JSON.parse(savedImages);
+            defaultImages = parsedImages;
+            console.log('📸 Imagens carregadas do localStorage:', parsedImages.length);
+          } catch (e) {
+            console.warn('Erro ao carregar imagens do localStorage, usando padrão');
+          }
+        }
         
         setGalleryImages(defaultImages);
         console.log(`📸 ${defaultImages.length} imagens carregadas no admin`);
@@ -54,6 +65,19 @@ export const useModernGalleryOperations = () => {
 
     loadGalleryImages();
   }, []);
+
+  // Save to localStorage whenever galleryImages changes
+  useEffect(() => {
+    if (galleryImages.length > 0) {
+      localStorage.setItem('galleryImages', JSON.stringify(galleryImages));
+      console.log('💾 Galeria salva no localStorage');
+      
+      // Trigger update event for homepage
+      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
+        detail: { images: galleryImages } 
+      }));
+    }
+  }, [galleryImages]);
 
   const addImage = async (
     imageData: { alt: string },
@@ -73,7 +97,7 @@ export const useModernGalleryOperations = () => {
       setUploading(true);
       console.log('🚀 Iniciando upload da imagem...');
       
-      // Create a URL for the uploaded file (since we can't upload to Supabase storage yet)
+      // Create a URL for the uploaded file
       const imageUrl = URL.createObjectURL(file);
       
       // Create new gallery image entry
@@ -83,15 +107,15 @@ export const useModernGalleryOperations = () => {
         alt: imageData.alt
       };
       
-      setGalleryImages(prev => [...prev, newGalleryImage]);
+      // Update state
+      setGalleryImages(prev => {
+        const updatedImages = [...prev, newGalleryImage];
+        console.log('🎯 Nova lista de imagens:', updatedImages);
+        return updatedImages;
+      });
       
       showNotification("✅ Imagem adicionada à galeria com sucesso!");
       console.log('🎯 Imagem adicionada à galeria:', newGalleryImage);
-      
-      // Trigger a custom event to notify other components
-      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
-        detail: { images: [...galleryImages, newGalleryImage] } 
-      }));
       
       return true;
     } catch (error) {
@@ -105,19 +129,15 @@ export const useModernGalleryOperations = () => {
 
   const updateImage = async (updatedImage: GalleryImage): Promise<boolean> => {
     try {
-      setGalleryImages(prev => 
-        prev.map(img => 
+      setGalleryImages(prev => {
+        const updatedImages = prev.map(img => 
           img.id === updatedImage.id ? updatedImage : img
-        )
-      );
+        );
+        console.log('🔄 Imagem atualizada:', updatedImage);
+        return updatedImages;
+      });
       
       showNotification("Imagem atualizada com sucesso");
-      
-      // Trigger update event
-      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
-        detail: { images: galleryImages.map(img => img.id === updatedImage.id ? updatedImage : img) } 
-      }));
-      
       return true;
     } catch (error) {
       console.error('Erro ao atualizar imagem:', error);
@@ -128,16 +148,13 @@ export const useModernGalleryOperations = () => {
 
   const deleteImage = async (id: number): Promise<boolean> => {
     try {
-      const updatedImages = galleryImages.filter(img => img.id !== id);
-      setGalleryImages(updatedImages);
+      setGalleryImages(prev => {
+        const updatedImages = prev.filter(img => img.id !== id);
+        console.log('🗑️ Imagem removida, nova lista:', updatedImages);
+        return updatedImages;
+      });
       
       showNotification("Imagem removida da galeria");
-      
-      // Trigger update event
-      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
-        detail: { images: updatedImages } 
-      }));
-      
       return true;
     } catch (error) {
       console.error('Erro ao remover imagem:', error);
@@ -154,20 +171,15 @@ export const useModernGalleryOperations = () => {
     if (newIndex < 0 || newIndex >= galleryImages.length) return false;
     
     try {
-      const updatedImages = [...galleryImages];
-      const temp = updatedImages[currentIndex];
-      updatedImages[currentIndex] = updatedImages[newIndex];
-      updatedImages[newIndex] = temp;
-      
-      setGalleryImages(updatedImages);
+      setGalleryImages(prev => {
+        const updatedImages = [...prev];
+        const temp = updatedImages[currentIndex];
+        updatedImages[currentIndex] = updatedImages[newIndex];
+        updatedImages[newIndex] = temp;
+        return updatedImages;
+      });
       
       showNotification("Ordem das imagens atualizada");
-      
-      // Trigger update event
-      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
-        detail: { images: updatedImages } 
-      }));
-      
       return true;
     } catch (error) {
       console.error('Erro ao reordenar:', error);

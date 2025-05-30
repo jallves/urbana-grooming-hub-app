@@ -16,25 +16,64 @@ export const useGalleryImages = () => {
     { id: 6, src: "/gallery-6.jpg", alt: "Experiência Completa" },
   ];
 
+  const loadImages = () => {
+    try {
+      console.log('🖼️ Carregando galeria da homepage...');
+      
+      // Try to load from localStorage first
+      const savedImages = localStorage.getItem('galleryImages');
+      if (savedImages) {
+        const parsedImages = JSON.parse(savedImages);
+        console.log('📸 Imagens carregadas do localStorage para homepage:', parsedImages.length);
+        setImages(parsedImages);
+      } else {
+        console.log('📸 Usando imagens padrão na homepage');
+        setImages(defaultImages);
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('❌ Erro ao carregar galeria na homepage:', error);
+      setImages(defaultImages);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    console.log('🖼️ Iniciando carregamento da galeria...');
-    
-    // Load initial images
-    setImages(defaultImages);
-    setLoading(false);
+    loadImages();
     
     // Listen for gallery updates from admin panel
     const handleGalleryUpdate = (event: CustomEvent) => {
-      console.log('🔄 Galeria atualizada via painel admin:', event.detail.images);
+      console.log('🔄 Galeria atualizada via painel admin na homepage:', event.detail.images);
       setImages(event.detail.images);
     };
 
+    // Listen for storage changes (when localStorage is updated from another tab/window)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'galleryImages' && event.newValue) {
+        try {
+          const newImages = JSON.parse(event.newValue);
+          console.log('🔄 Galeria atualizada via storage event:', newImages.length);
+          setImages(newImages);
+        } catch (error) {
+          console.error('Erro ao processar storage event:', error);
+        }
+      }
+    };
+
     window.addEventListener('galleryUpdated', handleGalleryUpdate as EventListener);
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       window.removeEventListener('galleryUpdated', handleGalleryUpdate as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
-  return { images, loading };
+  // Reload function for manual refresh
+  const reloadImages = () => {
+    loadImages();
+  };
+
+  return { images, loading, reloadImages };
 };
