@@ -3,6 +3,7 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { BannerImage } from "@/types/settings";
 import { ArrowRight, Calendar } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface HeroContentProps {
   slide: BannerImage;
@@ -63,14 +64,14 @@ const HeroContent: React.FC<HeroContentProps> = ({ slide, shopName }) => {
         transition={{ delay: 0.6, duration: 0.8 }}
         className="flex flex-col sm:flex-row gap-4 justify-center items-center"
       >
-        <a 
-          href="#appointment"
+        <Link 
+          to="/agendar"
           className="group relative inline-flex items-center gap-3 bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-bold px-8 py-4 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-2xl shadow-lg"
         >
           <Calendar className="w-5 h-5" />
           <span className="text-lg">Agendar Horário</span>
           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-        </a>
+        </Link>
         
         <a 
           href="#services"
