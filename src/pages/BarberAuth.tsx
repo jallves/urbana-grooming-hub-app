@@ -32,23 +32,19 @@ const BarberAuth: React.FC = () => {
     }
   }, [user, authLoading]);
 
-  // Redirect if already authenticated and has barber role
+  // Redirect if already authenticated and has barber role AND is active staff
   useEffect(() => {
     if (!authLoading && user) {
       if (isBarber) {
-        console.log('BarberAuth - User already authenticated as barber, redirecting to dashboard');
+        console.log('BarberAuth - User already authenticated as active barber, redirecting to dashboard');
         navigate('/barbeiro');
       }
     }
   }, [user, authLoading, isBarber, navigate]);
 
-  if (authLoading) {
-    return <AuthLoadingScreen message="Verificando credenciais..." />;
-  }
-
   const handleLoginSuccess = async (userId: string) => {
     // After successful login, simply redirect to dashboard
-    // AuthContext will handle the role check
+    // AuthContext will handle the role and staff verification
     navigate('/barbeiro');
   };
 
@@ -58,8 +54,16 @@ const BarberAuth: React.FC = () => {
         <div className="text-center">
           <h1 className="text-4xl font-bold text-white">Urbana Barbearia</h1>
           <p className="mt-2 text-gray-400">
-            Acesso exclusivo para barbeiros
+            Acesso exclusivo para barbeiros cadastrados
           </p>
+          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-600 rounded-lg">
+            <p className="text-blue-400 text-sm font-medium">
+              ⚠️ Apenas barbeiros cadastrados no sistema podem acessar
+            </p>
+            <p className="text-blue-300 text-xs mt-1">
+              Se você é barbeiro e não consegue acessar, entre em contato com o administrador
+            </p>
+          </div>
           {!user && timeLeft > 0 && (
             <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
               <p className="text-yellow-400 text-sm">

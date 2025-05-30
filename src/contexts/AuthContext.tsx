@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Use setTimeout to avoid potential deadlocks with Supabase client
             setTimeout(() => {
               if (isMounted) {
-                checkUserRole(newSession.user.id).catch(err => {
+                checkUserRole(newSession.user.id, newSession.user.email || '').catch(err => {
                   console.error('Error checking user role via timeout:', err);
                 });
               }
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (currentSession?.user) {
             console.log('Session found, checking user role:', currentSession.user.email);
-            await checkUserRole(currentSession.user.id);
+            await checkUserRole(currentSession.user.id, currentSession.user.email || '');
           } else {
             console.log('No session found');
             setIsAdmin(false);
@@ -109,10 +109,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Check if user has admin or barber role - REMOVED HARDCODED PRIVILEGES
-  const checkUserRole = async (userId: string) => {
+  // Check if user has admin or barber role AND is active staff member
+  const checkUserRole = async (userId: string, userEmail: string) => {
     try {
-      console.log('Checking roles for user:', userId);
+      console.log('Checking roles for user:', userId, userEmail);
       
       // Check if we have userId before querying
       if (!userId) {
@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Only use database-driven role checking - NO HARDCODED EMAILS
+      // First check database roles
       const { data: roles, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -137,14 +137,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('User roles:', roles);
       
-      // Check for admin or barber role
+      // Check for admin role
       const hasAdminRole = roles?.some(role => role.role === 'admin');
-      const hasBarberRole = roles?.some(role => role.role === 'barber');
       
-      console.log('User is admin:', hasAdminRole, 'Is barber:', hasBarberRole);
+      // For barber role, we need to verify they are an active staff member
+      const hasBarberRole = roles?.some(role => role.role === 'barber');
+      let isActiveBarber = false;
+      
+      if (hasBarberRole) {
+        // Check if user is an active staff member
+        const { data: staffMember, error: staffError } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('email', userEmail)
+          .eq('is_active', true)
+          .maybeSingle();
+          
+        if (staffError) {
+          console.error('Error checking staff member:', staffError);
+        } else if (staffMember) {
+          console.log('User is active staff member:', staffMember);
+          isActiveBarber = true;
+        } else {
+          console.log('User has barber role but is not an active staff member');
+        }
+      }
+      
+      console.log('User is admin:', hasAdminRole, 'Is active barber:', isActiveBarber);
       
       setIsAdmin(hasAdminRole);
-      setIsBarber(hasBarberRole);
+      setIsBarber(isActiveBarber);
     } catch (error) {
       console.error('Error checking user role:', error);
       setIsAdmin(false);
