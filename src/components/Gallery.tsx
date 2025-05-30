@@ -3,7 +3,7 @@ import React from 'react';
 import GalleryHeader from './gallery/GalleryHeader';
 import LoadingState from './gallery/LoadingState';
 import LightboxModal from './gallery/LightboxModal';
-import ModernGalleryGrid from './gallery/ModernGalleryGrid';
+import CarouselSection from './gallery/CarouselSection';
 import GalleryFooter from './gallery/GalleryFooter';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useLightbox } from '@/hooks/useLightbox';
@@ -33,7 +33,7 @@ const Gallery: React.FC = () => {
         <GalleryHeader />
         
         {images.length > 0 ? (
-          <ModernGalleryGrid 
+          <CarouselSection 
             images={images} 
             onSelectImage={setSelectedImage} 
           />

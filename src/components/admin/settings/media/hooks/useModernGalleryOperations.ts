@@ -18,10 +18,21 @@ export const useModernGalleryOperations = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
 
-  // Simple toast function to replace useToast
-  const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
-    console.log(`${variant === 'destructive' ? 'ERROR' : 'SUCCESS'}: ${title} - ${description}`);
-    // You can implement a custom toast here if needed
+  // Simple notification function
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    console.log(`${type === 'error' ? '❌' : '✅'} ${message}`);
+    
+    // Create a simple visual notification
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg text-white font-medium transform transition-all duration-300 ${
+      type === 'error' ? 'bg-red-500' : 'bg-green-500'
+    }`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   };
 
   // Fetch gallery images
@@ -29,11 +40,13 @@ export const useModernGalleryOperations = () => {
     const loadGalleryImages = async () => {
       try {
         setIsLoading(true);
+        console.log('📂 Carregando galeria do admin...');
         const data = await fetchGalleryImages();
         setGalleryImages(data);
+        console.log(`📸 ${data.length} imagens carregadas no admin`);
       } catch (error) {
-        console.error('Error fetching gallery images:', error);
-        showToast("Erro ao carregar galeria", "Não foi possível carregar as imagens da galeria", "destructive");
+        console.error('❌ Erro ao carregar galeria:', error);
+        showNotification("Erro ao carregar galeria", "error");
       } finally {
         setIsLoading(false);
       }
@@ -46,28 +59,22 @@ export const useModernGalleryOperations = () => {
     imageData: { alt: string },
     file?: File
   ): Promise<boolean> => {
-    try {
-      let imageUrl = '';
-      
-      if (!file) {
-        showToast("Erro", "Selecione uma imagem para fazer upload", "destructive");
-        return false;
-      }
+    if (!file) {
+      showNotification("Selecione uma imagem para fazer upload", "error");
+      return false;
+    }
 
-      if (!validateGalleryImage(imageData.alt, 'placeholder')) {
-        return false;
-      }
+    if (!imageData.alt.trim()) {
+      showNotification("Adicione uma descrição para a imagem", "error");
+      return false;
+    }
+
+    try {
+      console.log('🚀 Iniciando upload da imagem...');
       
-      // Upload file
-      try {
-        console.log("Uploading gallery image to Supabase Storage");
-        imageUrl = await uploadFile(file, 'gallery', 'images');
-        console.log("Gallery image upload successful, URL:", imageUrl);
-      } catch (uploadError) {
-        console.error("Gallery upload error:", uploadError);
-        showToast("Erro no upload", "Não foi possível fazer o upload da imagem", "destructive");
-        return false;
-      }
+      // Upload file to Supabase Storage
+      const imageUrl = await uploadFile(file, 'gallery', 'images');
+      console.log('📸 Upload concluído, URL:', imageUrl);
       
       // Create gallery image in database
       const data = await createGalleryImage({
@@ -85,14 +92,15 @@ export const useModernGalleryOperations = () => {
         
         setGalleryImages(prev => [...prev, newGalleryImage]);
         
-        showToast("Sucesso!", "Imagem adicionada à galeria com sucesso");
+        showNotification("✅ Imagem publicada na galeria com sucesso!");
+        console.log('🎯 Imagem adicionada à galeria:', newGalleryImage);
         
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error adding gallery image:', error);
-      showToast("Erro ao adicionar imagem", "Ocorreu um erro ao adicionar a imagem à galeria", "destructive");
+      console.error('💥 Erro ao adicionar imagem:', error);
+      showNotification("Erro ao publicar imagem", "error");
       return false;
     }
   };
@@ -110,12 +118,11 @@ export const useModernGalleryOperations = () => {
         )
       );
       
-      showToast("Sucesso!", "Imagem atualizada com sucesso");
-      
+      showNotification("Imagem atualizada com sucesso");
       return true;
     } catch (error) {
-      console.error('Error updating gallery image:', error);
-      showToast("Erro ao atualizar", "Ocorreu um erro ao atualizar a imagem", "destructive");
+      console.error('Erro ao atualizar imagem:', error);
+      showNotification("Erro ao atualizar imagem", "error");
       return false;
     }
   };
@@ -129,12 +136,11 @@ export const useModernGalleryOperations = () => {
       
       setGalleryImages(prev => prev.filter(img => img.id !== id));
       
-      showToast("Sucesso!", "Imagem removida da galeria com sucesso");
-      
+      showNotification("Imagem removida da galeria");
       return true;
     } catch (error) {
-      console.error('Error deleting gallery image:', error);
-      showToast("Erro ao remover", "Ocorreu um erro ao remover a imagem da galeria", "destructive");
+      console.error('Erro ao remover imagem:', error);
+      showNotification("Erro ao remover imagem", "error");
       return false;
     }
   };
@@ -152,18 +158,16 @@ export const useModernGalleryOperations = () => {
       updatedImages[currentIndex] = updatedImages[newIndex];
       updatedImages[newIndex] = temp;
       
-      // Update display_order in the database
       await updateGalleryImageOrder(galleryImages[currentIndex].src, newIndex);
       await updateGalleryImageOrder(galleryImages[newIndex].src, currentIndex);
       
       setGalleryImages(updatedImages);
       
-      showToast("Sucesso!", "Ordem das imagens atualizada");
-      
+      showNotification("Ordem das imagens atualizada");
       return true;
     } catch (error) {
-      console.error('Error updating display order:', error);
-      showToast("Erro ao reordenar", "Ocorreu um erro ao atualizar a ordem das imagens", "destructive");
+      console.error('Erro ao reordenar:', error);
+      showNotification("Erro ao reordenar imagens", "error");
       return false;
     }
   };

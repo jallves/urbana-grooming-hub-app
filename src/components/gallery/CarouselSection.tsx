@@ -9,6 +9,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 interface CarouselSectionProps {
   images: GalleryImageType[];
@@ -16,9 +17,22 @@ interface CarouselSectionProps {
 }
 
 const CarouselSection: React.FC<CarouselSectionProps> = ({ images, onSelectImage }) => {
+  const plugin = React.useRef(
+    Autoplay({ delay: 4000, stopOnInteraction: true })
+  );
+
   return (
     <div className="mb-12">
-      <Carousel className="w-full">
+      <Carousel 
+        className="w-full"
+        plugins={[plugin.current]}
+        opts={{
+          align: "start",
+          loop: true,
+        }}
+        onMouseEnter={plugin.current.stop}
+        onMouseLeave={plugin.current.reset}
+      >
         <CarouselContent>
           {images.map((image, index) => (
             <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
@@ -33,11 +47,18 @@ const CarouselSection: React.FC<CarouselSectionProps> = ({ images, onSelectImage
             </CarouselItem>
           ))}
         </CarouselContent>
-        <div className="flex justify-center mt-4">
-          <CarouselPrevious className="static mr-2 translate-y-0" />
-          <CarouselNext className="static ml-2 translate-y-0" />
+        <div className="flex justify-center mt-4 gap-2">
+          <CarouselPrevious className="static translate-y-0 bg-urbana-gold hover:bg-urbana-gold/80 text-white border-urbana-gold" />
+          <CarouselNext className="static translate-y-0 bg-urbana-gold hover:bg-urbana-gold/80 text-white border-urbana-gold" />
         </div>
       </Carousel>
+      
+      <div className="text-center mt-6">
+        <p className="text-sm text-gray-500">
+          {images.length} {images.length === 1 ? 'foto disponível' : 'fotos disponíveis'} 
+          {images.length > 3 && ' • Navegação automática ativa'}
+        </p>
+      </div>
     </div>
   );
 };
