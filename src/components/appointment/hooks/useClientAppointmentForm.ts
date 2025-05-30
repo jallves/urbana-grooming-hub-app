@@ -385,17 +385,25 @@ export const useClientAppointmentForm = (clientId: string) => {
         throw new Error('Erro ao agendar. Tente novamente.');
       }
 
-      // If coupon was applied, update its usage count
+      // If coupon was applied, update its usage count manually
       if (appliedCoupon) {
-        const { error: couponError } = await supabase
+        const { data: currentCoupon } = await supabase
           .from('discount_coupons')
-          .update({ 
-            current_uses: supabase.rpc('increment_coupon_usage', { coupon_code: appliedCoupon.code })
-          })
-          .eq('code', appliedCoupon.code);
+          .select('current_uses')
+          .eq('code', appliedCoupon.code)
+          .single();
 
-        if (couponError) {
-          console.error('Error updating coupon usage:', couponError);
+        if (currentCoupon) {
+          const { error: couponError } = await supabase
+            .from('discount_coupons')
+            .update({ 
+              current_uses: (currentCoupon.current_uses || 0) + 1
+            })
+            .eq('code', appliedCoupon.code);
+
+          if (couponError) {
+            console.error('Error updating coupon usage:', couponError);
+          }
         }
       }
 
