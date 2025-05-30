@@ -13,11 +13,11 @@ const PersonalInfoFields: React.FC<PersonalInfoFieldsProps> = ({ formData, handl
     <>
       <div>
         <label htmlFor="name" className="block text-sm font-medium mb-2">
-          Nome Completo
+          Nome Completo *
         </label>
         <Input
           id="name"
-          placeholder="Seu nome"
+          placeholder="Seu nome completo"
           required
           value={formData.name}
           onChange={handleInputChange}
@@ -27,12 +27,12 @@ const PersonalInfoFields: React.FC<PersonalInfoFieldsProps> = ({ formData, handl
       
       <div>
         <label htmlFor="phone" className="block text-sm font-medium mb-2">
-          Telefone
+          Telefone *
         </label>
         <Input
           id="phone"
           type="tel"
-          placeholder="Seu número de telefone"
+          placeholder="(11) 99999-9999"
           required
           value={formData.phone}
           onChange={handleInputChange}
@@ -42,12 +42,12 @@ const PersonalInfoFields: React.FC<PersonalInfoFieldsProps> = ({ formData, handl
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-2">
-          E-mail
+          E-mail (opcional)
         </label>
         <Input
           id="email"
           type="email"
-          placeholder="Seu e-mail"
+          placeholder="seu@email.com"
           value={formData.email}
           onChange={handleInputChange}
           className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"

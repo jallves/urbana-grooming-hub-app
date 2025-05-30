@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,8 +57,30 @@ export default function RegisterAuth() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
+    console.log('Iniciando cadastro com dados:', values);
+    
     try {
-      // Registrar o usuário no Supabase Auth
+      // Primeiro, criar cliente na base de dados
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .insert([
+          {
+            name: values.fullName,
+            email: values.email,
+            phone: values.phone
+          }
+        ])
+        .select()
+        .single();
+
+      if (clientError) {
+        console.error('Erro ao criar cliente:', clientError);
+        throw new Error('Erro ao criar registro de cliente');
+      }
+
+      console.log('Cliente criado com sucesso:', clientData);
+
+      // Depois, registrar o usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -65,45 +88,32 @@ export default function RegisterAuth() {
           data: {
             full_name: values.fullName,
             phone: values.phone,
+            client_id: clientData.id
           }
         }
       });
 
       if (authError) {
+        console.error('Erro no Supabase Auth:', authError);
+        // Se o auth falhar, tentar deletar o cliente criado
+        await supabase.from('clients').delete().eq('id', clientData.id);
         throw authError;
       }
 
-      if (authData.user) {
-        // Criar cliente para o usuário
-        const { data: clientData, error: clientError } = await supabase
-          .from('clients')
-          .insert([
-            {
-              name: values.fullName,
-              email: values.email,
-              phone: values.phone
-            }
-          ])
-          .select();
+      console.log('Usuário registrado com sucesso:', authData);
 
-        if (clientError) {
-          throw clientError;
-        }
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Você pode agora fazer login e agendar seus horários.",
+      });
 
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Você será redirecionado para a página de agendamentos.",
-        });
-
-        // Redirecionar para a página de agendamentos
-        setTimeout(() => {
-          navigate('/agendar');
-        }, 2000);
-      }
+      // Redirecionar para login
+      setActiveTab("login");
     } catch (error: any) {
+      console.error('Erro completo:', error);
       toast({
         title: "Erro ao criar conta",
-        description: error.message || "Ocorreu um erro ao criar sua conta.",
+        description: error.message || "Ocorreu um erro ao criar sua conta. Tente novamente.",
         variant: "destructive",
       });
     } finally {

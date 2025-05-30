@@ -10,7 +10,6 @@ import AppointmentDateTime from './AppointmentDateTime';
 import NotesField from './NotesField';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { supabaseRPC } from '@/types/supabase-rpc';
 
 const AppointmentForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -60,7 +59,7 @@ const AppointmentForm: React.FC = () => {
     try {
       console.log('Starting appointment submission process');
       
-      // 1. Insert or find client using the service-role API to bypass RLS
+      // 1. Create or find client
       let clientId: string;
       
       console.log('Creating client with:', {
@@ -69,20 +68,54 @@ const AppointmentForm: React.FC = () => {
         email: formData.email || null
       });
       
-      // Use anonymous appointments function to create client and appointment
-      const { data: createdClient, error: clientError } = await supabaseRPC.createPublicClient(
-        formData.name,
-        formData.phone, 
-        formData.email || null
-      );
-      
-      if (clientError) {
-        console.error('Error creating client:', clientError);
-        throw new Error('Erro ao criar cliente');
+      // First, check if client already exists by phone
+      const { data: existingClient, error: searchError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('phone', formData.phone)
+        .maybeSingle();
+
+      if (searchError) {
+        console.error('Error searching for existing client:', searchError);
+        throw new Error('Erro ao verificar cliente existente');
       }
-      
-      clientId = createdClient;
-      console.log('Client created/found with ID:', clientId);
+
+      if (existingClient) {
+        console.log('Existing client found:', existingClient.id);
+        clientId = existingClient.id;
+        
+        // Update client info if needed
+        const { error: updateError } = await supabase
+          .from('clients')
+          .update({
+            name: formData.name,
+            email: formData.email || null
+          })
+          .eq('id', clientId);
+
+        if (updateError) {
+          console.error('Error updating client:', updateError);
+        }
+      } else {
+        // Create new client
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert([{
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email || null
+          }])
+          .select('id')
+          .single();
+        
+        if (clientError) {
+          console.error('Error creating client:', clientError);
+          throw new Error('Erro ao criar cliente');
+        }
+        
+        clientId = newClient.id;
+        console.log('New client created with ID:', clientId);
+      }
 
       // Get service details for duration
       console.log('Fetching service details for ID:', formData.service);
@@ -94,11 +127,10 @@ const AppointmentForm: React.FC = () => {
         
       if (serviceError) {
         console.error('Error fetching service:', serviceError);
-        throw serviceError;
+        throw new Error('Erro ao buscar serviço');
       }
       
       if (!serviceData) {
-        console.error('Service not found');
         throw new Error("Serviço não encontrado");
       }
       
@@ -121,19 +153,24 @@ const AppointmentForm: React.FC = () => {
         notes: formData.notes || null
       });
       
-      // Create appointment using RPC function to bypass RLS
-      const { data: appointmentData, error: appointmentError } = await supabaseRPC.createPublicAppointment(
-        clientId,
-        formData.service,
-        formData.barber || null,
-        startTime.toISOString(),
-        endTime.toISOString(),
-        formData.notes || null
-      );
+      // Create appointment
+      const { data: appointmentData, error: appointmentError } = await supabase
+        .from('appointments')
+        .insert([{
+          client_id: clientId,
+          service_id: formData.service,
+          staff_id: formData.barber || null,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          status: 'scheduled',
+          notes: formData.notes || null
+        }])
+        .select()
+        .single();
 
       if (appointmentError) {
         console.error('Error creating appointment:', appointmentError);
-        throw appointmentError;
+        throw new Error('Erro ao criar agendamento');
       }
       
       console.log('Appointment created successfully:', appointmentData);
@@ -157,10 +194,10 @@ const AppointmentForm: React.FC = () => {
 
     } catch (error: any) {
       console.error('Erro ao enviar agendamento:', error);
-      setFormError("Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
+      setFormError(error.message || "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.");
       toast({
         title: "Erro ao enviar agendamento",
-        description: "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.",
+        description: error.message || "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.",
         variant: "destructive",
       });
     } finally {
