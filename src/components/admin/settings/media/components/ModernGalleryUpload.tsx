@@ -165,8 +165,9 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
           <div className="flex items-start gap-2">
             <ImageIcon className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="text-xs text-green-700">
-              <p className="font-medium mb-1">🚀 Publicação Instantânea:</p>
-              <p>As imagens adicionadas aqui aparecerão automaticamente na galeria rotativa da homepage!</p>
+              <p className="font-medium mb-1">🚀 Atualização Instantânea:</p>
+              <p>As imagens adicionadas aqui aparecerão automaticamente na galeria da homepage!</p>
+              <p className="mt-1 font-medium">💡 Dica: Após adicionar, atualize a página da homepage para ver as mudanças.</p>
             </div>
           </div>
         </div>

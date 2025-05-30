@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { GalleryImage } from '@/types/settings';
 
@@ -24,6 +25,25 @@ export const useModernGalleryOperations = () => {
     }, 3000);
   };
 
+  // Unified save function that persists to localStorage and triggers events
+  const saveGalleryImages = (images: GalleryImage[]) => {
+    try {
+      localStorage.setItem('galleryImages', JSON.stringify(images));
+      console.log('💾 Galeria salva no localStorage:', images.length, 'imagens');
+      
+      // Trigger update event for homepage and other listeners
+      window.dispatchEvent(new CustomEvent('galleryUpdated', { 
+        detail: { images } 
+      }));
+      
+      // Also trigger a refresh event to force reload
+      window.dispatchEvent(new CustomEvent('galleryRefresh'));
+    } catch (error) {
+      console.error('❌ Erro ao salvar galeria:', error);
+      showNotification('Erro ao salvar galeria', 'error');
+    }
+  };
+
   // Load gallery images
   useEffect(() => {
     const loadGalleryImages = async () => {
@@ -31,23 +51,15 @@ export const useModernGalleryOperations = () => {
         setIsLoading(true);
         console.log('📂 Carregando galeria do admin...');
         
-        // Default working images with placeholder URLs
-        let defaultImages: GalleryImage[] = [
-          { id: 1, src: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=500&h=400&fit=crop", alt: "Corte Clássico" },
-          { id: 2, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Barba Estilizada" },
-          { id: 3, src: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=500&h=400&fit=crop", alt: "Ambiente Premium" },
-          { id: 4, src: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&h=400&fit=crop", alt: "Atendimento Exclusivo" },
-          { id: 5, src: "https://images.unsplash.com/photo-1622286346003-c8b29c15e5ad?w=500&h=400&fit=crop", alt: "Produtos de Qualidade" },
-          { id: 6, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Experiência Completa" },
-        ];
-
-        // Load from localStorage if available
+        // Load from localStorage
         const savedImages = localStorage.getItem('galleryImages');
+        let loadedImages: GalleryImage[] = [];
+        
         if (savedImages) {
           try {
             const parsedImages = JSON.parse(savedImages);
-            if (Array.isArray(parsedImages) && parsedImages.length > 0) {
-              defaultImages = parsedImages;
+            if (Array.isArray(parsedImages)) {
+              loadedImages = parsedImages;
               console.log('📸 Imagens carregadas do localStorage no admin:', parsedImages.length);
             }
           } catch (e) {
@@ -55,8 +67,23 @@ export const useModernGalleryOperations = () => {
           }
         }
         
-        setGalleryImages(defaultImages);
-        console.log(`📸 ${defaultImages.length} imagens carregadas no admin`);
+        // If no saved images, use defaults
+        if (loadedImages.length === 0) {
+          loadedImages = [
+            { id: 1, src: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=500&h=400&fit=crop", alt: "Corte Clássico" },
+            { id: 2, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Barba Estilizada" },
+            { id: 3, src: "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=500&h=400&fit=crop", alt: "Ambiente Premium" },
+            { id: 4, src: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=500&h=400&fit=crop", alt: "Atendimento Exclusivo" },
+            { id: 5, src: "https://images.unsplash.com/photo-1622286346003-c8b29c15e5ad?w=500&h=400&fit=crop", alt: "Produtos de Qualidade" },
+            { id: 6, src: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=500&h=400&fit=crop", alt: "Experiência Completa" },
+          ];
+          
+          // Save defaults to localStorage
+          saveGalleryImages(loadedImages);
+        }
+        
+        setGalleryImages(loadedImages);
+        console.log(`📸 ${loadedImages.length} imagens carregadas no admin`);
       } catch (error) {
         console.error('❌ Erro ao carregar galeria:', error);
         showNotification("Erro ao carregar galeria", "error");
@@ -67,23 +94,6 @@ export const useModernGalleryOperations = () => {
 
     loadGalleryImages();
   }, []);
-
-  // Save to localStorage whenever galleryImages changes
-  useEffect(() => {
-    if (galleryImages.length > 0) {
-      try {
-        localStorage.setItem('galleryImages', JSON.stringify(galleryImages));
-        console.log('💾 Galeria salva no localStorage');
-        
-        // Trigger update event for homepage
-        window.dispatchEvent(new CustomEvent('galleryUpdated', { 
-          detail: { images: galleryImages } 
-        }));
-      } catch (error) {
-        console.error('Erro ao salvar no localStorage:', error);
-      }
-    }
-  }, [galleryImages]);
 
   const addImage = async (
     imageData: { alt: string },
@@ -113,12 +123,12 @@ export const useModernGalleryOperations = () => {
         alt: imageData.alt
       };
       
-      // Update state
-      setGalleryImages(prev => {
-        const updatedImages = [...prev, newGalleryImage];
-        console.log('🎯 Nova lista de imagens:', updatedImages.length);
-        return updatedImages;
-      });
+      // Update state and save
+      const updatedImages = [...galleryImages, newGalleryImage];
+      setGalleryImages(updatedImages);
+      
+      // Save to localStorage and trigger events
+      saveGalleryImages(updatedImages);
       
       showNotification("✅ Imagem adicionada à galeria com sucesso!");
       console.log('🎯 Imagem adicionada à galeria:', newGalleryImage);
@@ -135,15 +145,15 @@ export const useModernGalleryOperations = () => {
 
   const updateImage = async (updatedImage: GalleryImage): Promise<boolean> => {
     try {
-      setGalleryImages(prev => {
-        const updatedImages = prev.map(img => 
-          img.id === updatedImage.id ? updatedImage : img
-        );
-        console.log('🔄 Imagem atualizada:', updatedImage);
-        return updatedImages;
-      });
+      const updatedImages = galleryImages.map(img => 
+        img.id === updatedImage.id ? updatedImage : img
+      );
+      
+      setGalleryImages(updatedImages);
+      saveGalleryImages(updatedImages);
       
       showNotification("Imagem atualizada com sucesso");
+      console.log('🔄 Imagem atualizada:', updatedImage);
       return true;
     } catch (error) {
       console.error('Erro ao atualizar imagem:', error);
@@ -154,13 +164,12 @@ export const useModernGalleryOperations = () => {
 
   const deleteImage = async (id: number): Promise<boolean> => {
     try {
-      setGalleryImages(prev => {
-        const updatedImages = prev.filter(img => img.id !== id);
-        console.log('🗑️ Imagem removida, nova lista:', updatedImages.length);
-        return updatedImages;
-      });
+      const updatedImages = galleryImages.filter(img => img.id !== id);
+      setGalleryImages(updatedImages);
+      saveGalleryImages(updatedImages);
       
       showNotification("Imagem removida da galeria");
+      console.log('🗑️ Imagem removida, nova lista:', updatedImages.length);
       return true;
     } catch (error) {
       console.error('Erro ao remover imagem:', error);
@@ -177,13 +186,13 @@ export const useModernGalleryOperations = () => {
     if (newIndex < 0 || newIndex >= galleryImages.length) return false;
     
     try {
-      setGalleryImages(prev => {
-        const updatedImages = [...prev];
-        const temp = updatedImages[currentIndex];
-        updatedImages[currentIndex] = updatedImages[newIndex];
-        updatedImages[newIndex] = temp;
-        return updatedImages;
-      });
+      const updatedImages = [...galleryImages];
+      const temp = updatedImages[currentIndex];
+      updatedImages[currentIndex] = updatedImages[newIndex];
+      updatedImages[newIndex] = temp;
+      
+      setGalleryImages(updatedImages);
+      saveGalleryImages(updatedImages);
       
       showNotification("Ordem das imagens atualizada");
       return true;

@@ -54,6 +54,8 @@ export const useGalleryImages = () => {
       console.log('🔄 Galeria atualizada via painel admin na homepage:', event.detail.images?.length || 0);
       if (event.detail.images && Array.isArray(event.detail.images)) {
         setImages(event.detail.images);
+        // Persist to localStorage immediately
+        localStorage.setItem('galleryImages', JSON.stringify(event.detail.images));
       }
     };
 
@@ -72,12 +74,20 @@ export const useGalleryImages = () => {
       }
     };
 
+    // Listen for manual gallery refresh events
+    const handleGalleryRefresh = () => {
+      console.log('🔄 Forçando atualização da galeria');
+      loadImages();
+    };
+
     window.addEventListener('galleryUpdated', handleGalleryUpdate as EventListener);
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('galleryRefresh', handleGalleryRefresh);
     
     return () => {
       window.removeEventListener('galleryUpdated', handleGalleryUpdate as EventListener);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('galleryRefresh', handleGalleryRefresh);
     };
   }, []);
 
