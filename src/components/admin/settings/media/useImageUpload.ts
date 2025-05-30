@@ -1,12 +1,10 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from "@/hooks/use-toast";
 import { ensureStorageBucket, getPublicUrl } from './utils/storageUtils';
 
 export const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);
-  const { toast } = useToast();
 
   const uploadFile = async (
     file: File, 
@@ -52,11 +50,6 @@ export const useImageUpload = () => {
       return publicUrl;
     } catch (error) {
       console.error('Error in uploadFile:', error);
-      toast({
-        title: "Erro no upload",
-        description: error instanceof Error ? error.message : "Erro desconhecido",
-        variant: "destructive",
-      });
       throw error;
     } finally {
       setUploading(false);

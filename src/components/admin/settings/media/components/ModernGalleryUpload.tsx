@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Image as ImageIcon, X } from "lucide-react";
-import { GalleryImage } from '@/types/settings';
 
 interface ModernGalleryUploadProps {
   onUpload: (imageData: { alt: string }, file?: File) => Promise<boolean>;
@@ -84,7 +83,7 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          Adicionar Nova Imagem
+          Adicionar Nova Imagem à Galeria
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -138,7 +137,7 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
             required
           />
           <p className="text-xs text-gray-500">
-            Esta descrição aparecerá quando a imagem for exibida na galeria
+            Esta descrição aparecerá quando a imagem for exibida na galeria da homepage
           </p>
         </div>
 
@@ -151,28 +150,23 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
           {uploading ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Enviando...
+              Enviando para galeria...
             </>
           ) : (
             <>
               <ImageIcon className="h-4 w-4 mr-2" />
-              Adicionar à Galeria
+              Publicar na Galeria
             </>
           )}
         </Button>
 
         {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+        <div className="bg-green-50 border border-green-200 rounded-md p-3">
           <div className="flex items-start gap-2">
-            <ImageIcon className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-blue-700">
-              <p className="font-medium mb-1">💡 Dicas para melhores resultados:</p>
-              <ul className="space-y-1 list-disc list-inside">
-                <li>Use imagens de alta qualidade (mínimo 800x600px)</li>
-                <li>Formato recomendado: JPG ou PNG</li>
-                <li>Tamanho máximo: 5MB</li>
-                <li>Escolha descrições claras e descritivas</li>
-              </ul>
+            <ImageIcon className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-green-700">
+              <p className="font-medium mb-1">✅ Publicação Automática:</p>
+              <p>As imagens adicionadas aqui aparecerão automaticamente na galeria da homepage!</p>
             </div>
           </div>
         </div>

@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { GalleryImage } from '@/types/settings';
-import { useToast } from "@/hooks/use-toast";
 import { useImageUpload } from '../useImageUpload';
 import { useGalleryValidation } from './useGalleryValidation';
 import {
@@ -13,12 +12,17 @@ import {
 } from '../api/galleryApi';
 
 export const useModernGalleryOperations = () => {
-  const { toast } = useToast();
   const { uploadFile, uploading } = useImageUpload();
   const { validateGalleryImage } = useGalleryValidation();
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+
+  // Simple toast function to replace useToast
+  const showToast = (title: string, description: string, variant: 'default' | 'destructive' = 'default') => {
+    console.log(`${variant === 'destructive' ? 'ERROR' : 'SUCCESS'}: ${title} - ${description}`);
+    // You can implement a custom toast here if needed
+  };
 
   // Fetch gallery images
   useEffect(() => {
@@ -29,18 +33,14 @@ export const useModernGalleryOperations = () => {
         setGalleryImages(data);
       } catch (error) {
         console.error('Error fetching gallery images:', error);
-        toast({
-          title: "Erro ao carregar galeria",
-          description: "Não foi possível carregar as imagens da galeria",
-          variant: "destructive",
-        });
+        showToast("Erro ao carregar galeria", "Não foi possível carregar as imagens da galeria", "destructive");
       } finally {
         setIsLoading(false);
       }
     };
 
     loadGalleryImages();
-  }, [toast]);
+  }, []);
 
   const addImage = async (
     imageData: { alt: string },
@@ -50,11 +50,7 @@ export const useModernGalleryOperations = () => {
       let imageUrl = '';
       
       if (!file) {
-        toast({
-          title: "Erro",
-          description: "Selecione uma imagem para fazer upload",
-          variant: "destructive",
-        });
+        showToast("Erro", "Selecione uma imagem para fazer upload", "destructive");
         return false;
       }
 
@@ -69,11 +65,7 @@ export const useModernGalleryOperations = () => {
         console.log("Gallery image upload successful, URL:", imageUrl);
       } catch (uploadError) {
         console.error("Gallery upload error:", uploadError);
-        toast({
-          title: "Erro no upload",
-          description: "Não foi possível fazer o upload da imagem",
-          variant: "destructive",
-        });
+        showToast("Erro no upload", "Não foi possível fazer o upload da imagem", "destructive");
         return false;
       }
       
@@ -93,21 +85,14 @@ export const useModernGalleryOperations = () => {
         
         setGalleryImages(prev => [...prev, newGalleryImage]);
         
-        toast({
-          title: "Sucesso!",
-          description: "Imagem adicionada à galeria com sucesso",
-        });
+        showToast("Sucesso!", "Imagem adicionada à galeria com sucesso");
         
         return true;
       }
       return false;
     } catch (error) {
       console.error('Error adding gallery image:', error);
-      toast({
-        title: "Erro ao adicionar imagem",
-        description: "Ocorreu um erro ao adicionar a imagem à galeria",
-        variant: "destructive",
-      });
+      showToast("Erro ao adicionar imagem", "Ocorreu um erro ao adicionar a imagem à galeria", "destructive");
       return false;
     }
   };
@@ -125,19 +110,12 @@ export const useModernGalleryOperations = () => {
         )
       );
       
-      toast({
-        title: "Sucesso!",
-        description: "Imagem atualizada com sucesso",
-      });
+      showToast("Sucesso!", "Imagem atualizada com sucesso");
       
       return true;
     } catch (error) {
       console.error('Error updating gallery image:', error);
-      toast({
-        title: "Erro ao atualizar",
-        description: "Ocorreu um erro ao atualizar a imagem",
-        variant: "destructive",
-      });
+      showToast("Erro ao atualizar", "Ocorreu um erro ao atualizar a imagem", "destructive");
       return false;
     }
   };
@@ -151,19 +129,12 @@ export const useModernGalleryOperations = () => {
       
       setGalleryImages(prev => prev.filter(img => img.id !== id));
       
-      toast({
-        title: "Sucesso!",
-        description: "Imagem removida da galeria com sucesso",
-      });
+      showToast("Sucesso!", "Imagem removida da galeria com sucesso");
       
       return true;
     } catch (error) {
       console.error('Error deleting gallery image:', error);
-      toast({
-        title: "Erro ao remover",
-        description: "Ocorreu um erro ao remover a imagem da galeria",
-        variant: "destructive",
-      });
+      showToast("Erro ao remover", "Ocorreu um erro ao remover a imagem da galeria", "destructive");
       return false;
     }
   };
@@ -187,19 +158,12 @@ export const useModernGalleryOperations = () => {
       
       setGalleryImages(updatedImages);
       
-      toast({
-        title: "Sucesso!",
-        description: "Ordem das imagens atualizada",
-      });
+      showToast("Sucesso!", "Ordem das imagens atualizada");
       
       return true;
     } catch (error) {
       console.error('Error updating display order:', error);
-      toast({
-        title: "Erro ao reordenar",
-        description: "Ocorreu um erro ao atualizar a ordem das imagens",
-        variant: "destructive",
-      });
+      showToast("Erro ao reordenar", "Ocorreu um erro ao atualizar a ordem das imagens", "destructive");
       return false;
     }
   };

@@ -1,13 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { GalleryImage as GalleryImageType } from "@/types/settings";
 
 export const useGalleryImages = () => {
   const [images, setImages] = useState<GalleryImageType[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   // Define default images outside the effect for easier access
   const defaultImages: GalleryImageType[] = [
@@ -26,33 +24,18 @@ export const useGalleryImages = () => {
         setLoading(true);
         console.log('Tentando buscar imagens da galeria do Supabase');
         
-        // Set a timeout to ensure we don't wait too long for the database
-        const timeoutPromise = new Promise<null>((resolve) => {
-          setTimeout(() => resolve(null), 5000); // 5 seconds timeout
-        });
-        
-        const fetchPromise = supabase
+        const { data, error } = await supabase
           .from('gallery_images')
           .select('*')
           .order('display_order', { ascending: true })
           .eq('is_active', true);
-          
-        // Race between the fetch and timeout
-        const result = await Promise.race([
-          fetchPromise,
-          timeoutPromise
-        ]);
-        
-        if (result === null) {
-          console.log('Timeout ao buscar galeria, usando imagens padrão');
-          throw new Error('Timeout ao buscar galeria');
-        }
-        
-        const { data, error } = result;
         
         if (error) {
           console.error('Erro ao buscar galeria:', error);
-          throw error;
+          console.log('Usando imagens padrão devido ao erro da database');
+          setImages(defaultImages);
+          setLoading(false);
+          return;
         }
 
         if (data && data.length > 0) {
@@ -66,30 +49,19 @@ export const useGalleryImages = () => {
           console.log('Imagens formatadas e carregadas:', formattedData);
         } else {
           console.log('Nenhuma imagem da galeria encontrada no Supabase, usando padrão');
-          // Fallback to default images if no data is available
           setImages(defaultImages);
         }
       } catch (error) {
         console.error('Error loading gallery images:', error);
-        // Fallback to default images if there's an error
-        setImages(defaultImages);
         console.log('Usando imagens padrão devido ao erro');
-        
-        // Only show toast if it's not a timeout error
-        if (error instanceof Error && !error.message.includes('Timeout')) {
-          toast({
-            title: "Aviso",
-            description: "Usando galeria padrão. Verifique sua conexão.",
-            variant: "default",
-          });
-        }
+        setImages(defaultImages);
       } finally {
         setLoading(false);
       }
     };
 
     fetchGalleryImages();
-  }, [toast]);
+  }, []);
 
   return { images, loading };
 };
