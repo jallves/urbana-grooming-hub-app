@@ -70,6 +70,13 @@ export function useClientAppointmentForm(clientId: string) {
       : selectedService.price
     : 0;
 
+  console.log('Hook state:', {
+    selectedService: selectedService?.name,
+    selectedServicePrice: selectedService?.price,
+    appliedCoupon,
+    finalServicePrice
+  });
+
   // Fetch client data
   useEffect(() => {
     const fetchClientData = async () => {
@@ -298,7 +305,7 @@ export function useClientAppointmentForm(clientId: string) {
 
   const onApplyCoupon = async (couponCode: string) => {
     if (!selectedService || !couponCode) {
-      console.log('Dados insuficientes para aplicar cupom');
+      console.log('Dados insuficientes para aplicar cupom', { selectedService: !!selectedService, couponCode });
       return;
     }
 
@@ -389,12 +396,15 @@ export function useClientAppointmentForm(clientId: string) {
       // Garantir que o desconto não seja maior que o preço do serviço
       discountAmount = Math.min(discountAmount, selectedService.price);
 
-      setAppliedCoupon({
+      const newAppliedCoupon = {
         code: coupon.code,
         discountAmount,
         discountType: coupon.discount_type as 'percentage' | 'fixed',
         discountValue: coupon.discount_value,
-      });
+      };
+
+      console.log('Aplicando cupom:', newAppliedCoupon);
+      setAppliedCoupon(newAppliedCoupon);
 
       toast({
         title: "Cupom aplicado com sucesso!",
@@ -421,6 +431,7 @@ export function useClientAppointmentForm(clientId: string) {
   };
 
   const onRemoveCoupon = () => {
+    console.log('Removendo cupom aplicado');
     setAppliedCoupon(null);
     toast({
       title: "Cupom removido",

@@ -34,6 +34,13 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     onRemoveCoupon,
   } = useClientAppointmentForm(clientId);
 
+  // Calculate final price correctly
+  const finalPrice = selectedService 
+    ? appliedCoupon 
+      ? selectedService.price - appliedCoupon.discountAmount
+      : selectedService.price
+    : 0;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -65,7 +72,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
             servicePrice={selectedService.price}
             appliedCoupon={appliedCoupon}
             isApplyingCoupon={isApplyingCoupon}
-            finalPrice={finalServicePrice}
+            finalPrice={finalPrice}
             onApplyCoupon={onApplyCoupon}
             onRemoveCoupon={onRemoveCoupon}
           />
@@ -96,7 +103,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           selectedDate={form.getValues('date')}
           selectedTime={form.getValues('time')}
           appliedCoupon={appliedCoupon}
-          finalPrice={finalServicePrice}
+          finalPrice={finalPrice}
         />
 
         <Button 
