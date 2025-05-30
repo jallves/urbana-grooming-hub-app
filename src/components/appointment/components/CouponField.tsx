@@ -5,10 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Tag, X } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface CouponFieldProps {
   form: any;
@@ -41,92 +38,13 @@ export function CouponField({
       return;
     }
 
-    console.log('Iniciando validação do cupom:', couponCode);
-
+    console.log('Botão aplicar clicado com código:', couponCode);
+    
     try {
-      // Buscar cupom no banco de dados
-      const { data: coupon, error } = await supabase
-        .from('discount_coupons')
-        .select('*')
-        .eq('code', couponCode.trim().toUpperCase())
-        .maybeSingle();
-
-      if (error) {
-        console.error('Erro ao buscar cupom:', error);
-        toast({
-          title: "Erro ao validar cupom",
-          description: "Erro interno ao verificar o cupom. Tente novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!coupon) {
-        console.log('Cupom não encontrado');
-        toast({
-          title: "Cupom inválido",
-          description: "O cupom informado não foi encontrado em nosso sistema.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Cupom encontrado:', coupon);
-
-      // Verificar se o cupom está ativo
-      if (!coupon.is_active) {
-        toast({
-          title: "Cupom inativo",
-          description: "Este cupom não está mais ativo.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Verificar data de início
-      const today = new Date().toISOString().split('T')[0];
-      if (coupon.valid_from > today) {
-        toast({
-          title: "Cupom ainda não válido",
-          description: `Este cupom só será válido a partir de ${format(new Date(coupon.valid_from), 'dd/MM/yyyy', { locale: ptBR })}.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Verificar data de expiração
-      if (coupon.valid_until && coupon.valid_until < today) {
-        toast({
-          title: "Cupom expirado",
-          description: `Este cupom expirou em ${format(new Date(coupon.valid_until), 'dd/MM/yyyy', { locale: ptBR })}.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Verificar limite de uso
-      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
-        toast({
-          title: "Cupom esgotado",
-          description: "Este cupom já atingiu o limite máximo de utilizações.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('Cupom válido, aplicando...');
-      
-      // Aplicar cupom através da função callback
       await onApplyCoupon(couponCode.trim().toUpperCase());
       setCouponCode('');
-
     } catch (error) {
-      console.error('Erro inesperado ao validar cupom:', error);
-      toast({
-        title: "Erro ao validar cupom",
-        description: "Não foi possível validar o cupom. Tente novamente.",
-        variant: "destructive",
-      });
+      console.error('Erro ao aplicar cupom:', error);
     }
   };
 
