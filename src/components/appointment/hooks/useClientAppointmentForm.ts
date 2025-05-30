@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,50 +46,48 @@ export const useClientAppointmentForm = (clientId: string) => {
     }
   });
 
-  // Load services and barbers on mount
+  // Load services and barbers on mount - only once
   useEffect(() => {
     loadServices();
     loadBarbers();
   }, []);
 
-  // Watch for service changes
+  // Watch form values with proper dependencies
+  const watchedServiceId = form.watch('serviceId');
+  const watchedDate = form.watch('date');
+  const watchedTime = form.watch('time');
+
+  // Handle service selection changes
   useEffect(() => {
-    const serviceId = form.watch('serviceId');
-    if (serviceId) {
-      const service = services.find(s => s.id === serviceId);
+    if (watchedServiceId && services.length > 0) {
+      const service = services.find(s => s.id === watchedServiceId);
       setSelectedService(service || null);
-      // Reset time and barber when service changes
+      
+      // Reset dependent fields when service changes
       form.setValue('time', '');
       form.setValue('barberId', '');
       setAvailableTimes([]);
       setBarberAvailability([]);
     }
-  }, [form.watch('serviceId'), services]);
+  }, [watchedServiceId, services, form]);
 
-  // Watch for date changes to load available times
+  // Handle date changes
   useEffect(() => {
-    const date = form.watch('date');
-    const serviceId = form.watch('serviceId');
-    
-    if (date && serviceId && selectedService) {
-      fetchAvailableTimes(date, serviceId, '');
+    if (watchedDate && watchedServiceId && selectedService) {
+      fetchAvailableTimes(watchedDate, watchedServiceId, '');
       form.setValue('time', '');
       form.setValue('barberId', '');
     }
-  }, [form.watch('date'), selectedService]);
+  }, [watchedDate, watchedServiceId, selectedService]);
 
-  // Watch for date/time changes to check barber availability
+  // Handle time changes for barber availability
   useEffect(() => {
-    const date = form.watch('date');
-    const time = form.watch('time');
-    const serviceId = form.watch('serviceId');
-    
-    if (date && time && serviceId) {
-      checkBarberAvailability(date, time, serviceId);
+    if (watchedDate && watchedTime && watchedServiceId) {
+      checkBarberAvailability(watchedDate, watchedTime, watchedServiceId);
     }
-  }, [form.watch('date'), form.watch('time'), form.watch('serviceId')]);
+  }, [watchedDate, watchedTime, watchedServiceId]);
 
-  const loadServices = async () => {
+  const loadServices = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('services')
@@ -107,9 +105,9 @@ export const useClientAppointmentForm = (clientId: string) => {
         variant: 'destructive',
       });
     }
-  };
+  }, [toast]);
 
-  const loadBarbers = async () => {
+  const loadBarbers = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('staff')
@@ -127,9 +125,9 @@ export const useClientAppointmentForm = (clientId: string) => {
         variant: 'destructive',
       });
     }
-  };
+  }, [toast]);
 
-  const fetchAvailableTimes = async (date: Date, serviceId: string, staffId: string = '') => {
+  const fetchAvailableTimes = useCallback(async (date: Date, serviceId: string, staffId: string = '') => {
     try {
       const day = date.toISOString().split('T')[0];
       
@@ -180,9 +178,9 @@ export const useClientAppointmentForm = (clientId: string) => {
       });
       setAvailableTimes([]);
     }
-  };
+  }, [services, toast]);
 
-  const checkBarberAvailability = async (date: Date, time: string, serviceId: string) => {
+  const checkBarberAvailability = useCallback(async (date: Date, time: string, serviceId: string) => {
     setIsCheckingAvailability(true);
     try {
       const service = services.find(s => s.id === serviceId);
@@ -230,9 +228,9 @@ export const useClientAppointmentForm = (clientId: string) => {
     } finally {
       setIsCheckingAvailability(false);
     }
-  };
+  }, [services, barbers]);
 
-  const onApplyCoupon = async (code: string) => {
+  const onApplyCoupon = useCallback(async (code: string) => {
     setIsApplyingCoupon(true);
     try {
       console.log('Validating coupon:', code);
@@ -323,17 +321,17 @@ export const useClientAppointmentForm = (clientId: string) => {
     } finally {
       setIsApplyingCoupon(false);
     }
-  };
+  }, [selectedService?.price, toast]);
 
-  const onRemoveCoupon = () => {
+  const onRemoveCoupon = useCallback(() => {
     setAppliedCoupon(null);
     toast({
       title: 'Cupom removido',
       description: 'O cupom foi removido do agendamento.',
     });
-  };
+  }, [toast]);
 
-  const onSubmit = async (data: ClientAppointmentFormData) => {
+  const onSubmit = useCallback(async (data: ClientAppointmentFormData) => {
     setIsSubmitting(true);
     setError(null);
     
@@ -428,14 +426,14 @@ export const useClientAppointmentForm = (clientId: string) => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [clientId, services, appliedCoupon, toast, form]);
 
   // Helper function for disabled days
-  const disabledDays = (date: Date) => {
+  const disabledDays = useCallback((date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return date < today || date.getDay() === 0; // Disable past dates and Sundays
-  };
+  }, []);
 
   return {
     form,
