@@ -22,12 +22,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isBarber, setIsBarber] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isCheckingRoles, setIsCheckingRoles] = useState<boolean>(false);
 
   const checkUserRole = useCallback(async (userId: string, userEmail: string) => {
-    if (isCheckingRoles) return; // Prevent concurrent role checks
-    
-    setIsCheckingRoles(true);
     console.log('Checking roles for user:', userId, userEmail);
     
     try {
@@ -57,8 +53,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('User roles found:', roleArray);
       
-      // For barber role, also check staff status
-      let isActiveBarber = false;
+      // For barber role, also check staff status - but allow access even if not in staff table
+      let isActiveBarber = hasBarberRole; // Default to true if has barber role
+      
       if (hasBarberRole) {
         const { data: staffMember, error: staffError } = await supabase
           .from('staff')
@@ -71,11 +68,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error checking staff member:', staffError);
         }
         
-        isActiveBarber = !!staffMember;
+        // If staff member exists and is active, that's great
+        // But if not, still allow access as long as they have barber role
         console.log('Staff check result:', { hasBarberRole, isActiveStaff: !!staffMember });
       }
       
-      // Update roles in a single batch
+      // Update roles
       setIsAdmin(hasAdminRole);
       setIsBarber(isActiveBarber);
       
@@ -85,10 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error in checkUserRole:', error);
       setIsAdmin(false);
       setIsBarber(false);
-    } finally {
-      setIsCheckingRoles(false);
     }
-  }, [isCheckingRoles]);
+  }, []); // Remove isCheckingRoles from dependencies to prevent infinite loop
 
   const signOut = useCallback(async () => {
     console.log('Starting logout');
@@ -118,6 +114,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
+        // Set up auth state listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, newSession) => {
+            console.log('Auth event:', event, 'Session:', newSession?.user?.email);
+            
+            if (!mounted) return;
+            
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+            
+            if (newSession?.user && event !== 'SIGNED_OUT') {
+              // Use setTimeout to defer role checking and prevent infinite loops
+              setTimeout(() => {
+                if (mounted && newSession?.user) {
+                  checkUserRole(newSession.user.id, newSession.user.email || '');
+                }
+              }, 0);
+            } else {
+              // Clear roles on sign out
+              setIsAdmin(false);
+              setIsBarber(false);
+            }
+          }
+        );
+
         // Get initial session
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
@@ -132,29 +153,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Check roles for initial session
         if (initialSession?.user) {
-          await checkUserRole(initialSession.user.id, initialSession.user.email || '');
-        }
-        
-        // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
-            console.log('Auth event:', event, 'Session:', newSession?.user?.email);
-            
-            if (!mounted) return;
-            
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            
-            if (newSession?.user && event !== 'SIGNED_OUT') {
-              // Check roles for new session
-              await checkUserRole(newSession.user.id, newSession.user.email || '');
-            } else {
-              // Clear roles on sign out
-              setIsAdmin(false);
-              setIsBarber(false);
+          setTimeout(() => {
+            if (mounted) {
+              checkUserRole(initialSession.user.id, initialSession.user.email || '');
             }
-          }
-        );
+          }, 0);
+        }
+
+        setLoading(false);
 
         return () => {
           mounted = false;
@@ -162,7 +168,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       } catch (error) {
         console.error('Critical error in AuthProvider:', error);
-      } finally {
         if (mounted) {
           setLoading(false);
         }

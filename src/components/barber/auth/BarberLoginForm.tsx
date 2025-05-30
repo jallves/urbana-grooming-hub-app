@@ -112,33 +112,8 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({
         return;
       }
       
-      // STEP 4: Check if user is active staff member
-      const { data: staffMember, error: staffError } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('email', data.email)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      if (staffError) {
-        console.error('❌ Error checking staff member:', staffError);
-        // Don't block login for staff check errors, just warn
-        console.warn('Warning: Could not verify staff status, but user has barber role');
-      }
-      
-      if (!staffMember) {
-        console.warn('⚠️ User has barber role but is not in active staff table');
-        // Allow login but show warning
-        toast({
-          title: "Aviso",
-          description: "Você tem permissão de barbeiro mas não está na lista de funcionários ativos. Algumas funcionalidades podem estar limitadas.",
-          variant: "destructive",
-        });
-      } else {
-        console.log('✅ User is confirmed active staff member');
-      }
-      
-      console.log('✅ Access granted - User has barber role');
+      // STEP 4: Allow access for all users with barber role
+      console.log('✅ User has barber role - access granted');
       
       toast({
         title: "Login realizado com sucesso!",

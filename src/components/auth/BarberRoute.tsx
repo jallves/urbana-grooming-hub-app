@@ -25,7 +25,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Allow access if user is admin OR has barber role
+  // Allow access if user is admin OR has barber role (simplified access)
   const hasAccess = isAdmin || isBarber;
   
   if (!hasAccess) {
