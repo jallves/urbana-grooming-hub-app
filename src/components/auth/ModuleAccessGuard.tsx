@@ -27,11 +27,7 @@ const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
     return <>{children}</>;
   }
   
-  // Special user check - FIXED to use exact email match
-  if (user?.email === 'jhoaoallves84@gmail.com') {
-    console.log('ModuleAccessGuard - Special barber user granted access to:', moduleId);
-    return <>{children}</>;
-  }
+  // REMOVED HARDCODED EMAIL CHECKS - Now only using database roles
   
   // Barber has access to default modules
   if (isBarber && isBarberDefaultModule) {

@@ -9,12 +9,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import ForgotPasswordForm from './ForgotPasswordForm';
+import { checkRateLimit, resetRateLimit, sanitizeInput } from '@/lib/security';
 
 const loginSchema = z.object({
-  email: z.string().email('Por favor, insira um email válido'),
-  password: z.string().min(1, 'A senha é obrigatória'),
+  email: z.string().email('Por favor, insira um email válido')
+    .transform(val => sanitizeInput(val)),
+  password: z.string().min(1, 'A senha é obrigatória')
+    .transform(val => sanitizeInput(val)),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -34,6 +37,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -46,6 +50,17 @@ const LoginForm: React.FC<LoginFormProps> = ({
   });
 
   const onSubmit = async (data: LoginForm) => {
+    // Check rate limiting
+    if (!checkRateLimit(data.email)) {
+      setIsLocked(true);
+      toast({
+        title: "Muitas tentativas de login",
+        description: "Sua conta foi temporariamente bloqueada por 15 minutos devido a muitas tentativas de login falhadas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
@@ -58,6 +73,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
       }
 
       console.log('Login bem-sucedido:', authData.user?.email);
+      
+      // Reset rate limiting on successful login
+      resetRateLimit(data.email);
       
       toast({
         title: "Login realizado com sucesso!",
@@ -102,6 +120,15 @@ const LoginForm: React.FC<LoginFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {isLocked && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <p className="text-sm text-red-700">
+              Conta temporariamente bloqueada. Tente novamente em 15 minutos.
+            </p>
+          </div>
+        )}
+
         <FormField
           control={form.control}
           name="email"
@@ -113,7 +140,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
                   type="email"
                   placeholder="seu@email.com"
                   {...field}
-                  disabled={loading}
+                  disabled={loading || isLocked}
+                  autoComplete="email"
                 />
               </FormControl>
               <FormMessage />
@@ -133,7 +161,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     type={showPassword ? "text" : "password"}
                     placeholder="Sua senha"
                     {...field}
-                    disabled={loading}
+                    disabled={loading || isLocked}
+                    autoComplete="current-password"
                   />
                   <Button
                     type="button"
@@ -141,6 +170,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     size="sm"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading || isLocked}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -156,7 +186,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         />
 
         <div className="space-y-3">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || isLocked}>
             {loading ? "Entrando..." : "Entrar"}
           </Button>
           
@@ -165,6 +195,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             variant="ghost" 
             className="w-full text-sm text-muted-foreground hover:text-primary"
             onClick={() => setShowForgotPassword(true)}
+            disabled={loading}
           >
             Esqueceu sua senha?
           </Button>

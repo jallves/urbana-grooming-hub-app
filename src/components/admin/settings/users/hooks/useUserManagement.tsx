@@ -122,7 +122,7 @@ export const useUserManagement = () => {
       let addedCount = 0;
       let errors = 0;
       
-      // Use the RPC function to add barbers
+      // Use the RPC function to add barbers - REMOVED AUTOMATIC ADMIN ROLE ASSIGNMENT
       for (const staff of newStaff) {
         const staffEmail = staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`;
         console.log(`Adding barber: ${staff.name} with email: ${staffEmail}`);
@@ -133,7 +133,7 @@ export const useUserManagement = () => {
             {
               p_email: staffEmail,
               p_name: staff.name,
-              p_role: 'barber'
+              p_role: 'barber' // Default to barber role, not admin
             }
           );
 

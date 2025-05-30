@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { checkRateLimit, resetRateLimit } from '@/lib/security';
 
 type AppRole = 'admin' | 'user' | 'barber';
 
@@ -107,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Check if user has admin or barber role
+  // Check if user has admin or barber role - REMOVED HARDCODED PRIVILEGES
   const checkUserRole = async (userId: string) => {
     try {
       console.log('Checking roles for user:', userId);
@@ -120,38 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      // Special check for specific emails
-      const { data: userData } = await supabase.auth.getUser();
-      
-      // Check specifically for test emails that get special roles
-      if (userData?.user?.email === 'joao.colimoides@gmail.com' || 
-          userData?.user?.email === 'jhoaoallves84@gmail.com') {
-        console.log('Special user detected, setting appropriate access:', userData.user.email);
-        
-        if (userData?.user?.email === 'joao.colimoides@gmail.com') {
-          setIsAdmin(true);
-          setIsBarber(false);
-        } else if (userData?.user?.email === 'jhoaoallves84@gmail.com') {
-          setIsAdmin(false);
-          setIsBarber(true);
-        }
-        
-        return;
-      }
-      
-      // Check for staff entry with barber role (regardless of user_roles table)
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
-        .select('role')
-        .eq('email', userData?.user?.email)
-        .maybeSingle();
-      
-      if (staffData && !staffError && staffData.role === 'barber') {
-        console.log('User found in staff table with barber role');
-        setIsBarber(true);
-      }
-      
-      // Regular role check for all users
+      // Only use database-driven role checking - NO HARDCODED EMAILS
       const { data: roles, error } = await supabase
         .from('user_roles')
         .select('*')
@@ -159,10 +130,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Error checking user role:', error);
-        if (!staffData || staffData.role !== 'barber') {
-          setIsAdmin(false);
-          setIsBarber(false);
-        }
+        setIsAdmin(false);
+        setIsBarber(false);
         return;
       }
       
@@ -170,8 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Check for admin or barber role
       const hasAdminRole = roles?.some(role => role.role === 'admin');
-      const hasBarberRole = roles?.some(role => role.role === 'barber') || 
-                           (staffData && staffData.role === 'barber');
+      const hasBarberRole = roles?.some(role => role.role === 'barber');
       
       console.log('User is admin:', hasAdminRole, 'Is barber:', hasBarberRole);
       

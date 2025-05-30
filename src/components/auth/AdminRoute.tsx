@@ -40,11 +40,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
   
-  // Special case for specific emails
-  if (user.email === 'joao.colimoides@gmail.com') {
-    console.log('AdminRoute: Allowing access for special admin user');
-    return <>{children}</>;
-  }
+  // REMOVED HARDCODED EMAIL CHECKS - Now only using database roles
 
   // Admin always has access
   if (isAdmin) {

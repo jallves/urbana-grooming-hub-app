@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAppointmentConfirmation } from '@/hooks/useAppointmentConfirmation';
 import { StaffMember, Service } from '@/types/appointment';
+import { sanitizeInput, sanitizeHtml } from '@/lib/security';
 
 interface BarberAvailabilityInfo {
   id: string;
@@ -22,6 +23,7 @@ interface AppliedCoupon {
   discountValue: number;
 }
 
+// Enhanced form schema with input sanitization
 const formSchema = z.object({
   serviceId: z.string({
     required_error: "Por favor, selecione um serviço"
@@ -35,7 +37,7 @@ const formSchema = z.object({
   time: z.string({
     required_error: "Por favor, selecione um horário"
   }),
-  notes: z.string().optional(),
+  notes: z.string().optional().transform(val => val ? sanitizeHtml(val) : ''),
 });
 
 export type ClientAppointmentFormData = z.infer<typeof formSchema>;
@@ -309,15 +311,26 @@ export function useClientAppointmentForm(clientId: string) {
       return;
     }
 
+    // Sanitize coupon code input
+    const sanitizedCouponCode = sanitizeInput(couponCode);
+    if (!sanitizedCouponCode) {
+      toast({
+        title: "Código de cupom inválido",
+        description: "O código do cupom contém caracteres inválidos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsApplyingCoupon(true);
-    console.log('Iniciando aplicação do cupom:', couponCode);
+    console.log('Iniciando aplicação do cupom:', sanitizedCouponCode);
 
     try {
       // Buscar cupom no banco de dados
       const { data: coupon, error } = await supabase
         .from('discount_coupons')
         .select('*')
-        .eq('code', couponCode.toUpperCase())
+        .eq('code', sanitizedCouponCode.toUpperCase())
         .maybeSingle();
 
       if (error) {

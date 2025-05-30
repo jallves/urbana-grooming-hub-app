@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, Check, AlertTriangle } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -16,28 +16,22 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { validatePasswordStrength, sanitizeInput } from '@/lib/security';
 
-// Schema de validação com regras específicas para senha
+// Enhanced schema with stronger validation
 const registerSchema = z.object({
-  fullName: z.string().min(3, 'O nome completo deve ter pelo menos 3 caracteres'),
-  email: z.string().email('Digite um e-mail válido'),
+  fullName: z.string()
+    .min(3, 'O nome completo deve ter pelo menos 3 caracteres')
+    .max(100, 'O nome completo deve ter no máximo 100 caracteres')
+    .transform(val => sanitizeInput(val)),
+  email: z.string()
+    .email('Digite um e-mail válido')
+    .transform(val => sanitizeInput(val)),
   password: z.string()
-    .min(6, 'A senha deve ter pelo menos 6 caracteres')
+    .min(12, 'A senha deve ter pelo menos 12 caracteres')
     .refine(
-      (password) => /[A-Z]/.test(password),
-      'A senha deve conter pelo menos uma letra maiúscula'
-    )
-    .refine(
-      (password) => /[a-z]/.test(password),
-      'A senha deve conter pelo menos uma letra minúscula'
-    )
-    .refine(
-      (password) => /[0-9]/.test(password),
-      'A senha deve conter pelo menos um número'
-    )
-    .refine(
-      (password) => /[^A-Za-z0-9]/.test(password),
-      'A senha deve conter pelo menos um caractere especial'
+      (password) => validatePasswordStrength(password).isValid,
+      'A senha não atende aos critérios de segurança'
     ),
 });
 
@@ -64,6 +58,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
   const onSubmit = async (data: RegisterFormValues) => {
     setLoading(true);
     try {
+      // Additional password validation
+      const passwordValidation = validatePasswordStrength(data.password);
+      if (!passwordValidation.isValid) {
+        toast({
+          title: 'Senha insegura',
+          description: passwordValidation.errors.join(', '),
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
       // Registrar o usuário
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: data.email,
@@ -72,6 +78,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
           data: {
             full_name: data.fullName,
           },
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
@@ -95,28 +102,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
         return;
       }
       
-      // Adicionar usuário à tabela de funções como administrador
+      // Add user role as regular user (NOT admin by default)
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert([
           { 
             user_id: signUpData.user.id,
-            role: 'admin'
+            role: 'user' // Default to user role for security
           }
         ]);
 
       if (roleError) {
-        toast({
-          title: 'Erro ao definir permissões',
-          description: roleError.message,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Conta criada com sucesso',
-          description: 'Você será redirecionado para o painel administrativo',
-        });
+        console.error('Error setting user role:', roleError);
+        // Don't fail registration for role error, just log it
       }
+
+      toast({
+        title: 'Conta criada com sucesso',
+        description: 'Verifique seu email para confirmar a conta antes de fazer login.',
+      });
     } catch (error: any) {
       toast({
         title: 'Erro ao criar conta',
@@ -128,14 +132,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
     }
   };
 
-  // Função para verificar condições da senha
+  // Function to check password conditions
   const checkPassword = (password: string) => {
+    const validation = validatePasswordStrength(password);
     return {
-      length: password.length >= 6,
+      length: password.length >= 12,
       uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
       special: /[^A-Za-z0-9]/.test(password),
+      noCommon: !validation.errors.some(error => error.includes('palavras comuns')),
     };
   };
 
@@ -156,7 +162,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
                     placeholder="João da Silva" 
                     {...field} 
                     className="pl-10" 
-                    disabled={loading} 
+                    disabled={loading}
+                    maxLength={100}
                   />
                 </FormControl>
                 <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -178,7 +185,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
                     placeholder="seu@email.com" 
                     {...field} 
                     className="pl-10" 
-                    disabled={loading} 
+                    disabled={loading}
+                    autoComplete="email"
                   />
                 </FormControl>
                 <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -201,7 +209,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
                     placeholder="******" 
                     {...field} 
                     className="pl-10 pr-10" 
-                    disabled={loading} 
+                    disabled={loading}
+                    autoComplete="new-password"
                   />
                 </FormControl>
                 <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -222,11 +231,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
               </div>
               <FormMessage />
               
-              {/* Indicadores de requisitos de senha */}
+              {/* Enhanced password requirements indicator */}
               <div className="mt-2 space-y-1 text-xs">
                 <div className={`flex items-center ${passwordConditions.length ? 'text-green-600' : 'text-muted-foreground'}`}>
                   {passwordConditions.length ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
-                  Mínimo de 6 caracteres
+                  Mínimo de 12 caracteres
                 </div>
                 <div className={`flex items-center ${passwordConditions.uppercase ? 'text-green-600' : 'text-muted-foreground'}`}>
                   {passwordConditions.uppercase ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
@@ -244,13 +253,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
                   {passwordConditions.special ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
                   Pelo menos um caractere especial
                 </div>
+                <div className={`flex items-center ${passwordConditions.noCommon ? 'text-green-600' : 'text-muted-foreground'}`}>
+                  {passwordConditions.noCommon ? <Check className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
+                  Não conter palavras comuns
+                </div>
               </div>
             </FormItem>
           )}
         />
         
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Cadastrando...' : 'Cadastrar'}
+          {loading ? 'Cadastrando...' : 'Criar Conta'}
         </Button>
       </form>
     </Form>
