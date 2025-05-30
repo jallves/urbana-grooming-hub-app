@@ -88,8 +88,8 @@ const AppointmentReports: React.FC = () => {
     };
     
     appointmentsData.forEach(apt => {
-      if (statusCounts[apt.status] !== undefined) {
-        statusCounts[apt.status]++;
+      if (statusCounts[apt.status as keyof typeof statusCounts] !== undefined) {
+        statusCounts[apt.status as keyof typeof statusCounts]++;
       }
     });
     

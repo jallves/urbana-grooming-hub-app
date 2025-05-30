@@ -27,6 +27,11 @@ interface ClientStatistics {
   revenue: number;
 }
 
+interface MonthlyRevenueData {
+  month: string;
+  revenue: number;
+}
+
 const ClientReports: React.FC = () => {
   // Fetch clients data with appointments
   const { data: clientsData, isLoading } = useQuery({
@@ -81,12 +86,12 @@ const ClientReports: React.FC = () => {
   }, [clientsData?.clients]);
 
   // Process monthly revenue
-  const monthlyRevenue = React.useMemo(() => {
+  const monthlyRevenue = React.useMemo((): MonthlyRevenueData[] => {
     if (!clientsData?.appointments) return [];
     
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const currentMonth = new Date().getMonth();
-    const revenueStats = [];
+    const revenueStats: MonthlyRevenueData[] = [];
     
     for (let i = 5; i >= 0; i--) {
       const monthIndex = (currentMonth - i + 12) % 12;
