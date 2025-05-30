@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
 import AdminLayout from '../components/admin/AdminLayout';
-import GeneralSettings from '../components/admin/settings/GeneralSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Image } from "lucide-react";
+import { Settings, Image, Users } from "lucide-react";
+import ShopSettingsForm from '../components/admin/settings/ShopSettingsForm';
+import UserManagement from '../components/admin/settings/UserManagement';
 import BannerGallerySettings from '../components/admin/settings/BannerGallerySettings';
 
 const AdminSettings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('shop');
   
   return (
     <AdminLayout>
@@ -19,22 +20,30 @@ const AdminSettings: React.FC = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
-            <TabsTrigger value="general" className="flex items-center gap-2">
+            <TabsTrigger value="shop" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Gerais
+              Barbearia
             </TabsTrigger>
             <TabsTrigger value="media" className="flex items-center gap-2">
               <Image className="h-4 w-4" />
               Banners & Galeria
             </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Usuários
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="general" className="space-y-6 mt-6">
-            <GeneralSettings />
+          <TabsContent value="shop" className="space-y-6 mt-6">
+            <ShopSettingsForm />
           </TabsContent>
           
           <TabsContent value="media" className="space-y-6 mt-6">
             <BannerGallerySettings />
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6 mt-6">
+            <UserManagement />
           </TabsContent>
         </Tabs>
       </div>
