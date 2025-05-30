@@ -4,12 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import BarberLoginForm from '@/components/barber/auth/BarberLoginForm';
 import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(10);
-  const { user, isBarber, isAdmin, loading: authLoading, signOut } = useAuth();
+  const { user, isBarber, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Timer countdown effect
@@ -33,73 +32,20 @@ const BarberAuth: React.FC = () => {
     }
   }, [user, authLoading]);
 
-  // STRICT ACCESS CONTROL: Check user access and force logout if unauthorized
+  // Redirect authenticated users with proper access
   useEffect(() => {
-    const checkUserAccess = async () => {
-      if (!authLoading && user) {
-        console.log('🔍 BarberAuth - Checking user access:', user.email);
-        
-        // Double-check: verify user is both admin OR (active staff + has barber role)
-        if (isAdmin) {
-          console.log('✅ Admin user detected - allowing access');
-          navigate('/barbeiro');
-          return;
-        }
-        
-        if (!isBarber) {
-          console.log('❌ User is NOT a barber - BLOCKING ACCESS and forcing logout');
-          
-          // Additional verification by checking staff table directly
-          const { data: staffMember } = await supabase
-            .from('staff')
-            .select('*')
-            .eq('email', user.email)
-            .eq('is_active', true)
-            .maybeSingle();
-          
-          if (!staffMember) {
-            console.log('❌ User is NOT in active staff table - FORCING LOGOUT');
-            await signOut();
-            navigate('/barbeiro/login');
-            return;
-          }
-          
-          // Check barber role in database
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('role', 'barber');
-          
-          if (!roles || roles.length === 0) {
-            console.log('❌ User has no barber role - FORCING LOGOUT');
-            await signOut();
-            navigate('/barbeiro/login');
-            return;
-          }
-        }
-        
-        // If all checks pass, redirect to dashboard
-        console.log('✅ All access checks passed - redirecting to dashboard');
-        navigate('/barbeiro');
-      }
-    };
-
-    checkUserAccess();
-  }, [user, authLoading, isBarber, isAdmin, navigate, signOut]);
+    if (!authLoading && user && (isAdmin || isBarber)) {
+      console.log('✅ User has access - redirecting to dashboard');
+      navigate('/barbeiro');
+    }
+  }, [user, authLoading, isBarber, isAdmin, navigate]);
 
   const handleLoginSuccess = async (userId: string) => {
-    // After successful login, simply redirect to dashboard
-    // AuthContext will handle the role and staff verification
+    // Redirect to dashboard after successful login
     navigate('/barbeiro');
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/barbeiro/login');
-  };
-
-  // Show access denied message if user is logged in but not a barber
+  // Show access denied message if user is logged in but doesn't have access
   if (!authLoading && user && !isAdmin && !isBarber) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black px-4">
@@ -112,9 +58,6 @@ const BarberAuth: React.FC = () => {
               </p>
               <p className="text-red-300 text-xs mb-2">
                 <strong>Apenas barbeiros cadastrados pelo administrador</strong> podem acessar este painel.
-              </p>
-              <p className="text-red-300 text-xs mb-2">
-                Usuários que se cadastraram pelo formulário de agendamento <strong>NÃO</strong> têm acesso a esta área.
               </p>
               <p className="text-red-300 text-xs mb-2">
                 Email detectado: <strong>{user.email}</strong>
@@ -130,12 +73,6 @@ const BarberAuth: React.FC = () => {
               >
                 Voltar para Home
               </button>
-              <button
-                onClick={handleLogout}
-                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
-              >
-                Fazer Logout
-              </button>
             </div>
           </div>
         </div>
@@ -149,22 +86,8 @@ const BarberAuth: React.FC = () => {
         <div className="text-center">
           <h1 className="text-4xl font-bold text-white">Urbana Barbearia</h1>
           <p className="mt-2 text-gray-400">
-            Acesso exclusivo para barbeiros cadastrados pelo administrador
+            Acesso para barbeiros cadastrados
           </p>
-          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-600 rounded-lg">
-            <p className="text-blue-400 text-sm font-medium">
-              🔒 Acesso Ultra Restrito
-            </p>
-            <p className="text-blue-300 text-xs mt-1">
-              <strong>Apenas barbeiros cadastrados pelo administrador master</strong> podem acessar
-            </p>
-            <p className="text-blue-300 text-xs mt-1">
-              Usuários do formulário de agendamento <strong>NÃO</strong> têm acesso
-            </p>
-            <p className="text-blue-300 text-xs mt-1">
-              Se você é barbeiro e não consegue acessar, solicite cadastro ao administrador
-            </p>
-          </div>
           {!user && timeLeft > 0 && (
             <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
               <p className="text-yellow-400 text-sm">

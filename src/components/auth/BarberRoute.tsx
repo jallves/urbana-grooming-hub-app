@@ -25,11 +25,11 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  // STRICT CHECK: Only allow admin OR active barber
+  // Allow access if user is admin OR has barber role
   const hasAccess = isAdmin || isBarber;
   
   if (!hasAccess) {
-    console.log('BarberRoute - Access DENIED. User is not admin or active barber:', {
+    console.log('BarberRoute - Access DENIED. User is not admin or barber:', {
       email: user.email,
       isAdmin,
       isBarber
@@ -37,11 +37,11 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     
     toast({
       title: 'Acesso Negado',
-      description: 'Você não tem permissão para acessar esta área. Apenas barbeiros cadastrados e ativos podem acessar.',
+      description: 'Você não tem permissão para acessar esta área.',
       variant: 'destructive',
     });
     
-    // Force logout and redirect to login
+    // Redirect to login instead of forcing logout
     return <Navigate to="/barbeiro/login" replace />;
   }
 
