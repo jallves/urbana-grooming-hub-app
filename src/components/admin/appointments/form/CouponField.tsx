@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Tag, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface CouponFieldProps {
   form: any;
@@ -81,20 +83,53 @@ const CouponField: React.FC<CouponFieldProps> = ({
           });
         }
       } else {
-        // Para novos agendamentos, validar o cupom
+        // Para novos agendamentos, validar o cupom manualmente
+        console.log('Validando cupom para novo agendamento:', couponCode);
+
         const { data: coupon, error } = await supabase
           .from('discount_coupons')
           .select('*')
           .eq('code', couponCode.toUpperCase())
-          .eq('is_active', true)
-          .lte('valid_from', new Date().toISOString().split('T')[0])
-          .or(`valid_until.is.null,valid_until.gte.${new Date().toISOString().split('T')[0]}`)
           .single();
 
         if (error || !coupon) {
+          console.log('Cupom não encontrado:', error);
           toast({
             title: "Cupom inválido",
-            description: "O cupom não foi encontrado ou não está válido.",
+            description: "O cupom informado não foi encontrado em nosso sistema.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        console.log('Cupom encontrado:', coupon);
+
+        // Verificar se o cupom está ativo
+        if (!coupon.is_active) {
+          toast({
+            title: "Cupom inativo",
+            description: "Este cupom não está mais ativo.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Verificar data de início
+        const today = new Date().toISOString().split('T')[0];
+        if (coupon.valid_from > today) {
+          toast({
+            title: "Cupom ainda não válido",
+            description: `Este cupom só será válido a partir de ${format(new Date(coupon.valid_from), 'dd/MM/yyyy', { locale: ptBR })}.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Verificar data de expiração
+        if (coupon.valid_until && coupon.valid_until < today) {
+          toast({
+            title: "Cupom expirado",
+            description: `Este cupom expirou em ${format(new Date(coupon.valid_until), 'dd/MM/yyyy', { locale: ptBR })}.`,
             variant: "destructive",
           });
           return;
@@ -116,12 +151,32 @@ const CouponField: React.FC<CouponFieldProps> = ({
         
         if (coupon.discount_type === 'percentage') {
           discountAmount = price * (coupon.discount_value / 100);
+          // Validar se a porcentagem não é maior que 100%
+          if (coupon.discount_value > 100) {
+            toast({
+              title: "Erro no cupom",
+              description: "Este cupom possui uma configuração inválida.",
+              variant: "destructive",
+            });
+            return;
+          }
         } else {
           discountAmount = coupon.discount_value;
         }
 
         // Garantir que o desconto não seja maior que o preço
         discountAmount = Math.min(discountAmount, price);
+        
+        // Garantir que o desconto não seja negativo
+        if (discountAmount <= 0) {
+          toast({
+            title: "Cupom inválido",
+            description: "Este cupom não oferece desconto válido para este serviço.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const finalAmount = price - discountAmount;
 
         setAppliedCoupon({
@@ -134,15 +189,22 @@ const CouponField: React.FC<CouponFieldProps> = ({
         onCouponApplied?.(discountAmount);
         
         toast({
-          title: "Cupom aplicado!",
-          description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado com sucesso.`,
+          title: "Cupom aplicado com sucesso!",
+          description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado. ${coupon.discount_type === 'percentage' ? `(${coupon.discount_value}%)` : ''}`,
+        });
+
+        console.log('Cupom aplicado:', {
+          code: coupon.code,
+          discountAmount,
+          originalPrice: price,
+          finalPrice: finalAmount
         });
       }
     } catch (error) {
       console.error('Erro ao aplicar cupom:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível aplicar o cupom.",
+        title: "Erro ao validar cupom",
+        description: "Não foi possível validar o cupom. Tente novamente.",
         variant: "destructive",
       });
     } finally {

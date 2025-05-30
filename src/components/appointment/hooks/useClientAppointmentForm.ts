@@ -301,20 +301,53 @@ export function useClientAppointmentForm(clientId: string) {
 
     setIsApplyingCoupon(true);
     try {
-      // Verificar se o cupom existe e está válido
+      console.log('Validando cupom:', couponCode);
+
+      // Verificar se o cupom existe e buscar suas informações
       const { data: coupon, error } = await supabase
         .from('discount_coupons')
         .select('*')
-        .eq('code', couponCode)
-        .eq('is_active', true)
-        .lte('valid_from', new Date().toISOString().split('T')[0])
-        .or(`valid_until.is.null,valid_until.gte.${new Date().toISOString().split('T')[0]}`)
+        .eq('code', couponCode.toUpperCase())
         .single();
 
       if (error || !coupon) {
+        console.log('Cupom não encontrado:', error);
         toast({
           title: "Cupom inválido",
-          description: "O cupom não foi encontrado ou não está válido.",
+          description: "O cupom informado não foi encontrado em nosso sistema.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Cupom encontrado:', coupon);
+
+      // Verificar se o cupom está ativo
+      if (!coupon.is_active) {
+        toast({
+          title: "Cupom inativo",
+          description: "Este cupom não está mais ativo.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar data de início
+      const today = new Date().toISOString().split('T')[0];
+      if (coupon.valid_from > today) {
+        toast({
+          title: "Cupom ainda não válido",
+          description: `Este cupom só será válido a partir de ${format(new Date(coupon.valid_from), 'dd/MM/yyyy', { locale: ptBR })}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar data de expiração
+      if (coupon.valid_until && coupon.valid_until < today) {
+        toast({
+          title: "Cupom expirado",
+          description: `Este cupom expirou em ${format(new Date(coupon.valid_until), 'dd/MM/yyyy', { locale: ptBR })}.`,
           variant: "destructive",
         });
         return;
@@ -334,12 +367,31 @@ export function useClientAppointmentForm(clientId: string) {
       let discountAmount = 0;
       if (coupon.discount_type === 'percentage') {
         discountAmount = selectedService.price * (coupon.discount_value / 100);
+        // Validar se a porcentagem não é maior que 100%
+        if (coupon.discount_value > 100) {
+          toast({
+            title: "Erro no cupom",
+            description: "Este cupom possui uma configuração inválida.",
+            variant: "destructive",
+          });
+          return;
+        }
       } else {
         discountAmount = coupon.discount_value;
       }
 
-      // Garantir que o desconto não seja maior que o preço
+      // Garantir que o desconto não seja maior que o preço do serviço
       discountAmount = Math.min(discountAmount, selectedService.price);
+
+      // Garantir que o desconto não seja negativo
+      if (discountAmount <= 0) {
+        toast({
+          title: "Cupom inválido",
+          description: "Este cupom não oferece desconto válido para este serviço.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       setAppliedCoupon({
         code: coupon.code,
@@ -349,14 +401,22 @@ export function useClientAppointmentForm(clientId: string) {
       });
 
       toast({
-        title: "Cupom aplicado!",
-        description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado com sucesso.`,
+        title: "Cupom aplicado com sucesso!",
+        description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado. ${coupon.discount_type === 'percentage' ? `(${coupon.discount_value}%)` : ''}`,
       });
+
+      console.log('Cupom aplicado com sucesso:', {
+        code: coupon.code,
+        discountAmount,
+        originalPrice: selectedService.price,
+        finalPrice: selectedService.price - discountAmount
+      });
+
     } catch (error) {
-      console.error('Error applying coupon:', error);
+      console.error('Erro ao validar cupom:', error);
       toast({
-        title: "Erro ao aplicar cupom",
-        description: "Não foi possível aplicar o cupom. Tente novamente.",
+        title: "Erro ao validar cupom",
+        description: "Não foi possível validar o cupom. Tente novamente.",
         variant: "destructive",
       });
     } finally {
