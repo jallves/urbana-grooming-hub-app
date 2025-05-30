@@ -46,33 +46,59 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
     setIsSubmitting(true);
     
     try {
-      // Save barber data first (using the original onSubmit)
-      await originalOnSubmit(data);
+      console.log('Starting barber creation/update process...');
       
-      // If we have an email, create or update the auth user
-      if (data.email) {
-        // Check if user already exists
-        const { data: existingUsers, error: searchError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('email', data.email)
-          .maybeSingle();
+      // For new barbers with email and password, handle user account creation
+      if (!barberId && data.email && password) {
+        if (password !== confirmPassword) {
+          toast.error('As senhas não correspondem');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        if (password.length < 6) {
+          toast.error('A senha deve ter pelo menos 6 caracteres');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Check if user already exists first
+        console.log('Checking if user already exists...');
+        const { data: existingAuth } = await supabase.auth.admin.listUsers();
+        const userExists = existingAuth.users?.find(user => user.email === data.email);
+        
+        if (userExists) {
+          console.log('User already exists, checking roles...');
           
-        // For new barbers with no existing user account, create one
-        if (!existingUsers && !barberId && password) {
-          if (password !== confirmPassword) {
-            toast.error('As senhas não correspondem');
-            setIsSubmitting(false);
-            return;
+          // Check if user has barber role
+          const { data: userRoles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', userExists.id);
+          
+          const hasBarberRole = userRoles?.some(role => role.role === 'barber');
+          
+          if (!hasBarberRole) {
+            // Add barber role to existing user
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert([{ 
+                user_id: userExists.id,
+                role: 'barber'
+              }]);
+              
+            if (roleError) {
+              console.error('Error adding barber role:', roleError);
+              toast.error('Erro ao adicionar permissões de barbeiro ao usuário existente');
+            } else {
+              toast.success('Permissões de barbeiro adicionadas ao usuário existente');
+            }
+          } else {
+            toast.success('Usuário já possui permissões de barbeiro');
           }
-          
-          if (password.length < 6) {
-            toast.error('A senha deve ter pelo menos 6 caracteres');
-            setIsSubmitting(false);
-            return;
-          }
-          
-          // Register the user
+        } else {
+          // Create new user account
+          console.log('Creating new user account...');
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: data.email,
             password: password,
@@ -84,11 +110,15 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
           });
 
           if (signUpError) {
-            console.error('Erro ao criar conta de usuário para o barbeiro:', signUpError);
+            console.error('Error creating user account:', signUpError);
             toast.error('Erro ao criar conta de usuário', {
               description: signUpError.message
             });
+            setIsSubmitting(false);
+            return;
           } else if (signUpData.user) {
+            console.log('User account created successfully');
+            
             // Add barber role
             const { error: roleError } = await supabase
               .from('user_roles')
@@ -98,22 +128,27 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
               }]);
               
             if (roleError) {
-              console.error('Erro ao adicionar role de barbeiro:', roleError);
+              console.error('Error adding barber role:', roleError);
               toast.error('Erro ao configurar permissões de barbeiro');
             } else {
-              toast.success('Conta de usuário criada para o barbeiro', {
-                description: 'O barbeiro já pode acessar o painel admin'
-              });
+              console.log('Barber role added successfully');
+              toast.success('Conta de usuário criada para o barbeiro');
             }
           }
         }
       }
       
-      // Call the original success handler
-      onSuccess();
+      // Save barber data using the original onSubmit
+      console.log('Saving barber staff data...');
+      await originalOnSubmit(data);
+      
+      console.log('Barber creation/update completed successfully');
+      
     } catch (error) {
-      console.error('Erro ao salvar barbeiro:', error);
-      toast.error('Erro ao salvar barbeiro');
+      console.error('Error in barber creation process:', error);
+      toast.error('Erro ao salvar barbeiro', {
+        description: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -167,13 +202,13 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
           </TabsContent>
           
           <TabsContent value="account" className="space-y-4">
-            <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-md border border-yellow-200 dark:border-yellow-800 mb-4">
-              <h3 className="font-medium text-yellow-800 dark:text-yellow-300 mb-1">
-                Criação de Conta de Acesso
+            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-md border border-blue-200 dark:border-blue-800 mb-4">
+              <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-1">
+                Criação de Conta de Acesso (Opcional)
               </h3>
-              <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                Estas credenciais permitirão que o barbeiro acesse o painel administrativo.
-                A senha deve ter pelo menos 6 caracteres.
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                Se o barbeiro já possui uma conta no sistema, deixe os campos de senha em branco.
+                Caso contrário, defina uma senha para criar uma nova conta de acesso.
               </p>
             </div>
             
@@ -181,42 +216,49 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <label htmlFor="password" className="text-sm font-medium">
-                    Senha
+                    Senha (opcional)
                   </label>
                   <Input 
                     id="password"
                     type={passwordVisible ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Digite uma senha"
+                    placeholder="Deixe em branco se o usuário já existe"
                   />
+                  <p className="text-xs text-gray-500">
+                    Mínimo de 6 caracteres. Deixe vazio se o barbeiro já possui conta.
+                  </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <label htmlFor="confirm-password" className="text-sm font-medium">
-                    Confirmar Senha
-                  </label>
-                  <Input 
-                    id="confirm-password"
-                    type={passwordVisible ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirme a senha"
-                  />
-                </div>
+                {password && (
+                  <div className="space-y-2">
+                    <label htmlFor="confirm-password" className="text-sm font-medium">
+                      Confirmar Senha
+                    </label>
+                    <Input 
+                      id="confirm-password"
+                      type={passwordVisible ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirme a senha"
+                    />
+                  </div>
+                )}
                 
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="show-password"
-                    checked={passwordVisible}
-                    onChange={() => setPasswordVisible(!passwordVisible)}
-                    className="rounded border-gray-300"
-                  />
-                  <label htmlFor="show-password" className="text-sm">
-                    Mostrar senha
-                  </label>
-                </div>
+                {password && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="show-password"
+                      checked={passwordVisible}
+                      onChange={() => setPasswordVisible(!passwordVisible)}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="show-password" className="text-sm">
+                      Mostrar senha
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>
@@ -233,7 +275,7 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
             Cancelar
           </Button>
           
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || uploading}>
             {isSubmitting ? 'Salvando...' : barberId ? 'Atualizar' : 'Salvar'}
           </Button>
         </div>

@@ -21,7 +21,31 @@ export const useImageUpload = () => {
       
       console.log(`📁 Nome do arquivo: ${fileName}`);
       
-      // Try to upload directly without checking bucket existence
+      // Check if bucket exists, if not create it
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+      
+      if (listError) {
+        console.error('❌ Erro ao listar buckets:', listError);
+        throw new Error(`Erro ao acessar storage: ${listError.message}`);
+      }
+      
+      const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+      
+      if (!bucketExists) {
+        console.log(`📦 Criando bucket: ${bucketName}`);
+        const { error: createError } = await supabase.storage.createBucket(bucketName, {
+          public: true,
+          allowedMimeTypes: ['image/*'],
+          fileSizeLimit: 10485760 // 10MB
+        });
+        
+        if (createError) {
+          console.error('❌ Erro ao criar bucket:', createError);
+          throw new Error(`Erro ao criar bucket: ${createError.message}`);
+        }
+      }
+      
+      // Upload the file
       const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(fileName, file, {
