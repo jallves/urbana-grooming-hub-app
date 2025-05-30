@@ -369,8 +369,8 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                   <FormItem>
                     <FormLabel>Campanha</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value || null)}
-                      value={field.value || ""}
+                      onValueChange={(value) => field.onChange(value === "no-campaign" ? null : value)}
+                      value={field.value || "no-campaign"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -378,7 +378,7 @@ const CouponForm: React.FC<CouponFormProps> = ({ isOpen, onClose, onSubmit, coup
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sem campanha</SelectItem>
+                        <SelectItem value="no-campaign">Sem campanha</SelectItem>
                         {campaigns?.map((campaign) => (
                           <SelectItem key={campaign.id} value={campaign.id}>
                             {campaign.name}
