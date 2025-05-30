@@ -36,21 +36,28 @@ export function AppointmentSummary({
         {appliedCoupon ? (
           <>
             <div>Valor original:</div>
-            <div className="font-medium">R$ {selectedService.price.toFixed(2)}</div>
+            <div className="font-medium line-through text-gray-500">R$ {selectedService.price.toFixed(2)}</div>
             
-            <div>Cupom:</div>
+            <div>Cupom aplicado:</div>
             <div className="font-medium text-green-600">{appliedCoupon.code}</div>
             
             <div>Desconto:</div>
-            <div className="font-medium text-green-600">- R$ {appliedCoupon.discountAmount.toFixed(2)}</div>
+            <div className="font-medium text-green-600">
+              - R$ {appliedCoupon.discountAmount.toFixed(2)}
+              {appliedCoupon.discountType === 'percentage' && ` (${appliedCoupon.discountValue}%)`}
+            </div>
             
-            <div>Valor final:</div>
-            <div className="font-medium text-lg text-green-600">R$ {finalPrice?.toFixed(2)}</div>
+            <div className="col-span-2 border-t pt-2 mt-2">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-lg">Valor final:</span>
+                <span className="font-bold text-lg text-green-600">R$ {finalPrice?.toFixed(2)}</span>
+              </div>
+            </div>
           </>
         ) : (
           <>
             <div>Valor:</div>
-            <div className="font-medium">R$ {selectedService.price.toFixed(2)}</div>
+            <div className="font-medium text-lg">R$ {selectedService.price.toFixed(2)}</div>
           </>
         )}
         

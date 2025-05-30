@@ -38,7 +38,7 @@ export function CouponField({
       return;
     }
 
-    console.log('Botão aplicar clicado com código:', couponCode);
+    console.log('Aplicando cupom:', couponCode);
     
     try {
       await onApplyCoupon(couponCode.trim().toUpperCase());
@@ -50,7 +50,7 @@ export function CouponField({
 
   if (appliedCoupon) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <FormLabel>Cupom de Desconto</FormLabel>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="flex items-center gap-1">
@@ -67,17 +67,17 @@ export function CouponField({
             </Button>
           </Badge>
         </div>
-        <div className="text-sm space-y-1">
-          <div className="flex justify-between">
+        <div className="bg-green-50 border border-green-200 rounded-md p-3 space-y-2">
+          <div className="flex justify-between text-sm">
             <span>Valor original:</span>
-            <span>R$ {servicePrice.toFixed(2)}</span>
+            <span className="line-through text-gray-500">R$ {servicePrice.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-green-600">
+          <div className="flex justify-between text-sm text-green-600">
             <span>Desconto ({appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}%` : 'Fixo'}):</span>
             <span>- R$ {appliedCoupon.discountAmount.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between font-medium text-lg border-t pt-1">
-            <span>Total a pagar:</span>
+          <div className="flex justify-between font-bold text-lg border-t border-green-200 pt-2">
+            <span>Valor final:</span>
             <span className="text-green-600">R$ {finalPrice.toFixed(2)}</span>
           </div>
         </div>
