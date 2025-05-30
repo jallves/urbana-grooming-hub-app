@@ -22,11 +22,13 @@ const GalleryHeader: React.FC = () => {
           Nossa <span className="text-urbana-gold">Galeria</span>
         </motion.h2>
         
-        {/* Decorative background text */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-5 overflow-hidden">
-          <span className="text-8xl font-bold text-urbana-black whitespace-nowrap">
-            PORTFOLIO
-          </span>
+        {/* Decorative elements - modern barber theme */}
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-10">
+          <div className="flex items-center gap-8">
+            <div className="w-1 h-16 bg-urbana-gold rotate-12"></div>
+            <div className="w-8 h-1 bg-urbana-black"></div>
+            <div className="w-1 h-12 bg-urbana-gold -rotate-12"></div>
+          </div>
         </div>
       </div>
       
@@ -41,14 +43,17 @@ const GalleryHeader: React.FC = () => {
         de estilo, tradição e excelência que define a <strong>Barbearia Urbana</strong>.
       </motion.p>
       
-      {/* Decorative line */}
+      {/* Modern decorative line with barber-inspired details */}
       <motion.div 
         initial={{ width: 0 }}
-        whileInView={{ width: "5rem" }}
+        whileInView={{ width: "8rem" }}
         transition={{ duration: 0.8, delay: 0.6 }}
         viewport={{ once: true }}
-        className="h-1 bg-gradient-to-r from-urbana-gold to-urbana-gold/50 mx-auto mt-8 rounded-full"
-      />
+        className="relative mx-auto mt-8"
+      >
+        <div className="h-1 bg-gradient-to-r from-transparent via-urbana-gold to-transparent rounded-full"></div>
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-urbana-gold rounded-full"></div>
+      </motion.div>
     </motion.div>
   );
 };
