@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ResponsiveContainer,
@@ -10,189 +11,310 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  LineChart,
-  Line
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
-const mockInventoryData = [
-  { name: 'Shampoo Profissional', stock: 28, minStock: 10, maxStock: 50, category: 'Cabelo' },
-  { name: 'Condicionador Hidratante', stock: 22, minStock: 10, maxStock: 50, category: 'Cabelo' },
-  { name: 'Óleo para Barba', stock: 15, minStock: 15, maxStock: 40, category: 'Barba' },
-  { name: 'Pomada Modeladora', stock: 8, minStock: 12, maxStock: 30, category: 'Styling' },
-  { name: 'Cera para Cabelo', stock: 5, minStock: 10, maxStock: 25, category: 'Styling' },
-  { name: 'Balm Pós-Barba', stock: 18, minStock: 8, maxStock: 30, category: 'Barba' },
-  { name: 'Tesoura Profissional', stock: 6, minStock: 5, maxStock: 15, category: 'Equipamento' },
-  { name: 'Máquina de Corte', stock: 4, minStock: 3, maxStock: 10, category: 'Equipamento' },
-];
-
-const mockSalesData = [
-  { month: 'Jan', sales: 32 },
-  { month: 'Fev', sales: 38 },
-  { month: 'Mar', sales: 30 },
-  { month: 'Abr', sales: 35 },
-  { month: 'Mai', sales: 40 },
-  { month: 'Jun', sales: 45 },
-];
-
-const mockCategoryData = [
-  { name: 'Cabelo', value: 42 },
-  { name: 'Barba', value: 28 },
-  { name: 'Styling', value: 18 },
-  { name: 'Equipamento', value: 12 },
-];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const InventoryReports: React.FC = () => {
+  // Fetch products and categories data
+  const { data: inventoryData, isLoading } = useQuery({
+    queryKey: ['inventory-reports'],
+    queryFn: async () => {
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('name');
+      
+      const { data: categories, error: categoriesError } = await supabase
+        .from('product_categories')
+        .select('*');
+        
+      const { data: categoryRelations, error: relationsError } = await supabase
+        .from('product_category_relations')
+        .select('*');
+      
+      if (productsError || categoriesError || relationsError) {
+        throw new Error(productsError?.message || categoriesError?.message || relationsError?.message);
+      }
+      
+      return { products, categories, categoryRelations };
+    }
+  });
+
+  // Process stock levels data
+  const stockLevels = React.useMemo(() => {
+    if (!inventoryData?.products) return [];
+    
+    const levels = {
+      'Sem Estoque': 0,
+      'Estoque Baixo (1-5)': 0,
+      'Estoque Normal (6-20)': 0,
+      'Estoque Alto (21+)': 0
+    };
+    
+    inventoryData.products.forEach(product => {
+      const stock = product.stock_quantity || 0;
+      
+      if (stock === 0) {
+        levels['Sem Estoque']++;
+      } else if (stock <= 5) {
+        levels['Estoque Baixo (1-5)']++;
+      } else if (stock <= 20) {
+        levels['Estoque Normal (6-20)']++;
+      } else {
+        levels['Estoque Alto (21+)']++;
+      }
+    });
+    
+    return Object.entries(levels).map(([level, count]) => ({
+      name: level,
+      value: count
+    }));
+  }, [inventoryData]);
+
+  // Process products by category
+  const categoryData = React.useMemo(() => {
+    if (!inventoryData?.products || !inventoryData?.categories || !inventoryData?.categoryRelations) return [];
+    
+    const categoryStats = {};
+    
+    // Initialize categories
+    inventoryData.categories.forEach(category => {
+      categoryStats[category.id] = {
+        name: category.name,
+        totalValue: 0,
+        productCount: 0
+      };
+    });
+    
+    // Add uncategorized
+    categoryStats['uncategorized'] = {
+      name: 'Sem Categoria',
+      totalValue: 0,
+      productCount: 0
+    };
+    
+    inventoryData.products.forEach(product => {
+      const relations = inventoryData.categoryRelations.filter(rel => rel.product_id === product.id);
+      const productValue = Number(product.price) * Number(product.stock_quantity || 0);
+      
+      if (relations.length === 0) {
+        // Uncategorized product
+        categoryStats['uncategorized'].totalValue += productValue;
+        categoryStats['uncategorized'].productCount++;
+      } else {
+        relations.forEach(relation => {
+          if (categoryStats[relation.category_id]) {
+            categoryStats[relation.category_id].totalValue += productValue;
+            categoryStats[relation.category_id].productCount++;
+          }
+        });
+      }
+    });
+    
+    return Object.values(categoryStats)
+      .filter(category => category.productCount > 0)
+      .map(category => ({
+        name: category.name,
+        value: Math.round(category.totalValue),
+        products: category.productCount
+      }));
+  }, [inventoryData]);
+
+  // Calculate low stock products
+  const lowStockProducts = React.useMemo(() => {
+    if (!inventoryData?.products) return [];
+    
+    return inventoryData.products
+      .filter(product => (product.stock_quantity || 0) <= 5)
+      .sort((a, b) => (a.stock_quantity || 0) - (b.stock_quantity || 0))
+      .slice(0, 10);
+  }, [inventoryData]);
+
+  // Calculate summary metrics
+  const summaryMetrics = React.useMemo(() => {
+    if (!inventoryData?.products) return {};
+    
+    const totalProducts = inventoryData.products.length;
+    const activeProducts = inventoryData.products.filter(p => p.is_active).length;
+    const totalValue = inventoryData.products.reduce((sum, product) => {
+      return sum + (Number(product.price) * Number(product.stock_quantity || 0));
+    }, 0);
+    const outOfStock = inventoryData.products.filter(p => (p.stock_quantity || 0) === 0).length;
+    
+    return {
+      totalProducts,
+      activeProducts,
+      totalValue,
+      outOfStock
+    };
+  }, [inventoryData]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Status do Estoque</CardTitle>
-          <CardDescription>
-            Situação atual dos produtos em estoque
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-2">Produto</th>
-                  <th className="text-left py-3 px-2">Categoria</th>
-                  <th className="text-left py-3 px-2">Estoque Atual</th>
-                  <th className="text-left py-3 px-2">Estoque Mínimo</th>
-                  <th className="text-left py-3 px-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockInventoryData.map((item, index) => {
-                  // Define type-safe variants
-                  let status: "default" | "secondary" | "destructive" | "outline" | "success" = "default";
-                  let statusText = "Normal";
-                  
-                  if (item.stock <= item.minStock) {
-                    status = "destructive";
-                    statusText = "Baixo";
-                  } else if (item.stock >= item.maxStock) {
-                    status = "success";
-                    statusText = "Excesso";
-                  }
-                  
-                  return (
-                    <tr key={index} className="border-b hover:bg-muted/50">
-                      <td className="py-3 px-2 font-medium">{item.name}</td>
-                      <td className="py-3 px-2">{item.category}</td>
-                      <td className="py-3 px-2">{item.stock} unid.</td>
-                      <td className="py-3 px-2">{item.minStock} unid.</td>
-                      <td className="py-3 px-2">
-                        <Badge variant={status}>
-                          {statusText}
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Vendas de Produtos (Unidades)</CardTitle>
-            <CardDescription>
-              Evolução das vendas nos últimos 6 meses
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={mockSalesData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="sales" 
-                    name="Unidades Vendidas" 
-                    stroke="#8884d8" 
-                    activeDot={{ r: 8 }} 
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold">{summaryMetrics.totalProducts}</div>
+            <p className="text-xs text-muted-foreground">Total de Produtos</p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle>Distribuição por Categoria</CardTitle>
-            <CardDescription>
-              Produtos em estoque por categoria
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={mockCategoryData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="value" name="Quantidade" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-green-600">{summaryMetrics.activeProducts}</div>
+            <p className="text-xs text-muted-foreground">Produtos Ativos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold">
+              R$ {summaryMetrics.totalValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
+            <p className="text-xs text-muted-foreground">Valor Total do Estoque</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-red-600">{summaryMetrics.outOfStock}</div>
+            <p className="text-xs text-muted-foreground">Produtos em Falta</p>
           </CardContent>
         </Card>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Stock Levels */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Níveis de Estoque</CardTitle>
+            <CardDescription>
+              Distribuição de produtos por nível de estoque
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={stockLevels}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {stockLevels.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Category Value */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Valor por Categoria</CardTitle>
+            <CardDescription>
+              Valor total em estoque por categoria de produto
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {categoryData.length > 0 ? (
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value) => [`R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'Valor']}
+                    />
+                    <Bar dataKey="value" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma categoria de produto encontrada.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Low Stock Alert */}
       <Card>
         <CardHeader>
-          <CardTitle>Métricas de Estoque</CardTitle>
+          <CardTitle>Produtos com Estoque Baixo</CardTitle>
           <CardDescription>
-            Principais indicadores de gestão de inventário
+            Produtos que precisam de reposição (estoque ≤ 5 unidades)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-2">Giro de Estoque</div>
-              <div className="text-2xl font-bold">4.8x</div>
-              <div className="text-xs text-green-600 mt-1">▲ 0.3 em relação ao mês anterior</div>
+          {lowStockProducts.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-2">Produto</th>
+                    <th className="text-left py-3 px-2">Estoque Atual</th>
+                    <th className="text-left py-3 px-2">Preço Unitário</th>
+                    <th className="text-left py-3 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lowStockProducts.map((product) => (
+                    <tr key={product.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3 px-2 font-medium">{product.name}</td>
+                      <td className="py-3 px-2">
+                        <span className={`font-bold ${
+                          (product.stock_quantity || 0) === 0 ? 'text-red-600' : 'text-orange-600'
+                        }`}>
+                          {product.stock_quantity || 0}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2">
+                        R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-3 px-2">
+                        <Badge variant={(product.stock_quantity || 0) === 0 ? "destructive" : "secondary"}>
+                          {(product.stock_quantity || 0) === 0 ? "Sem Estoque" : "Estoque Baixo"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-2">Produtos com Estoque Baixo</div>
-              <div className="text-2xl font-bold">3</div>
-              <div className="text-xs text-red-600 mt-1">▲ 2 em relação ao mês anterior</div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              Todos os produtos estão com estoque adequado.
             </div>
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <div className="text-sm text-muted-foreground mb-2">Valor do Inventário</div>
-              <div className="text-2xl font-bold">R$ 12.450</div>
-              <div className="text-xs text-green-600 mt-1">▲ 5% em relação ao mês anterior</div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

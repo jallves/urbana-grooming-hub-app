@@ -1,183 +1,293 @@
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  BarChart,
-  Bar
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
 
-const mockMonthlyData = [
-  { month: 'Jan', appointments: 45 },
-  { month: 'Fev', appointments: 52 },
-  { month: 'Mar', appointments: 48 },
-  { month: 'Abr', appointments: 61 },
-  { month: 'Mai', appointments: 58 },
-  { month: 'Jun', appointments: 65 },
-];
-
-const mockServiceTypeData = [
-  { name: 'Cortes', value: 120 },
-  { name: 'Barba', value: 80 },
-  { name: 'Cabelo + Barba', value: 70 },
-  { name: 'Tratamentos', value: 30 },
-  { name: 'Coloração', value: 20 },
-];
-
-const mockDailyData = [
-  { day: 'Seg', morning: 8, afternoon: 6 },
-  { day: 'Ter', morning: 7, afternoon: 8 },
-  { day: 'Qua', morning: 9, afternoon: 7 },
-  { day: 'Qui', morning: 8, afternoon: 9 },
-  { day: 'Sex', morning: 10, afternoon: 12 },
-  { day: 'Sab', morning: 15, afternoon: 14 },
-];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const AppointmentReports: React.FC = () => {
+  // Fetch appointments data
+  const { data: appointmentsData, isLoading: isLoadingAppointments } = useQuery({
+    queryKey: ['appointment-reports'],
+    queryFn: async () => {
+      const { data: appointments, error } = await supabase
+        .from('appointments')
+        .select('*, services(name), staff(name)')
+        .gte('start_time', new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString())
+        .order('start_time');
+      
+      if (error) throw new Error(error.message);
+      
+      return appointments;
+    }
+  });
+
+  // Process monthly appointment data
+  const monthlyData = React.useMemo(() => {
+    if (!appointmentsData) return [];
+    
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const currentMonth = new Date().getMonth();
+    const monthlyStats = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const monthIndex = (currentMonth - i + 12) % 12;
+      const monthAppointments = appointmentsData.filter(apt => {
+        const appointmentMonth = new Date(apt.start_time).getMonth();
+        return appointmentMonth === monthIndex;
+      });
+      
+      const completed = monthAppointments.filter(apt => apt.status === 'completed').length;
+      const cancelled = monthAppointments.filter(apt => apt.status === 'cancelled').length;
+      const scheduled = monthAppointments.filter(apt => apt.status === 'scheduled').length;
+      
+      monthlyStats.push({
+        month: months[monthIndex],
+        completed,
+        cancelled,
+        scheduled,
+        total: monthAppointments.length
+      });
+    }
+    
+    return monthlyStats;
+  }, [appointmentsData]);
+
+  // Process status distribution
+  const statusData = React.useMemo(() => {
+    if (!appointmentsData) return [];
+    
+    const statusCounts = {
+      completed: 0,
+      scheduled: 0,
+      cancelled: 0,
+      'no-show': 0
+    };
+    
+    appointmentsData.forEach(apt => {
+      if (statusCounts[apt.status] !== undefined) {
+        statusCounts[apt.status]++;
+      }
+    });
+    
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      name: status === 'completed' ? 'Concluído' : 
+            status === 'scheduled' ? 'Agendado' :
+            status === 'cancelled' ? 'Cancelado' : 'Não Compareceu',
+      value: count
+    }));
+  }, [appointmentsData]);
+
+  // Process staff performance
+  const staffData = React.useMemo(() => {
+    if (!appointmentsData) return [];
+    
+    const staffStats = {};
+    
+    appointmentsData.forEach(apt => {
+      const staffName = apt.staff?.name || 'Não Definido';
+      if (!staffStats[staffName]) {
+        staffStats[staffName] = { total: 0, completed: 0 };
+      }
+      staffStats[staffName].total++;
+      if (apt.status === 'completed') {
+        staffStats[staffName].completed++;
+      }
+    });
+    
+    return Object.entries(staffStats).map(([name, stats]) => ({
+      staff: name,
+      total: stats.total,
+      completed: stats.completed,
+      rate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
+    }));
+  }, [appointmentsData]);
+
+  // Calculate summary metrics
+  const summaryMetrics = React.useMemo(() => {
+    if (!appointmentsData) return {};
+    
+    const total = appointmentsData.length;
+    const completed = appointmentsData.filter(apt => apt.status === 'completed').length;
+    const cancelled = appointmentsData.filter(apt => apt.status === 'cancelled').length;
+    const noShow = appointmentsData.filter(apt => apt.status === 'no-show').length;
+    
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const cancellationRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+    const noShowRate = total > 0 ? Math.round((noShow / total) * 100) : 0;
+    
+    // Calculate average appointments per day
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = monthEnd.getDate();
+    
+    const thisMonthAppointments = appointmentsData.filter(apt => {
+      const aptDate = new Date(apt.start_time);
+      return aptDate >= monthStart && aptDate <= monthEnd;
+    }).length;
+    
+    const avgPerDay = Math.round(thisMonthAppointments / daysInMonth * 10) / 10;
+    
+    return {
+      total,
+      completed,
+      completionRate,
+      cancellationRate,
+      noShowRate,
+      avgPerDay
+    };
+  }, [appointmentsData]);
+
+  if (isLoadingAppointments) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <Card className="w-full">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold">{summaryMetrics.total}</div>
+            <p className="text-xs text-muted-foreground">Total de Agendamentos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-green-600">{summaryMetrics.completionRate}%</div>
+            <p className="text-xs text-muted-foreground">Taxa de Conclusão</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold text-red-600">{summaryMetrics.cancellationRate}%</div>
+            <p className="text-xs text-muted-foreground">Taxa de Cancelamento</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-2xl font-bold">{summaryMetrics.avgPerDay}</div>
+            <p className="text-xs text-muted-foreground">Média por Dia (Este Mês)</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Monthly Trends */}
+      <Card>
         <CardHeader>
-          <CardTitle>Agendamentos por Mês</CardTitle>
+          <CardTitle>Tendência de Agendamentos</CardTitle>
           <CardDescription>
-            Total de agendamentos nos últimos 6 meses
+            Agendamentos dos últimos 6 meses por status (dados reais)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full">
+          <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={mockMonthlyData}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
+              <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="appointments" 
-                  name="Agendamentos" 
-                  stroke="#8884d8" 
-                  activeDot={{ r: 8 }} 
-                />
-              </LineChart>
+                <Bar dataKey="completed" name="Concluídos" fill="#4ade80" />
+                <Bar dataKey="scheduled" name="Agendados" fill="#3b82f6" />
+                <Bar dataKey="cancelled" name="Cancelados" fill="#ef4444" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Status Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>Agendamentos por Turno</CardTitle>
+            <CardTitle>Distribuição por Status</CardTitle>
             <CardDescription>
-              Distribuição de agendamentos por turno em cada dia da semana
+              Distribuição de todos os agendamentos por status
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={mockDailyData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
                   <Tooltip />
-                  <Legend />
-                  <Bar dataKey="morning" name="Manhã" fill="#8884d8" />
-                  <Bar dataKey="afternoon" name="Tarde" fill="#82ca9d" />
-                </BarChart>
+                </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
+        {/* Staff Performance */}
         <Card>
           <CardHeader>
-            <CardTitle>Estatísticas de Agendamentos</CardTitle>
+            <CardTitle>Desempenho por Profissional</CardTitle>
             <CardDescription>
-              Resumo e métricas de desempenho
+              Taxa de conclusão de agendamentos por profissional
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm font-medium">Total de Agendamentos (Mês)</span>
-                <span className="text-lg font-bold">65</span>
+            {staffData.length > 0 ? (
+              <div className="space-y-4">
+                {staffData.map((staff, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">{staff.staff}</span>
+                      <span>{staff.rate}% ({staff.completed}/{staff.total})</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${staff.rate}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm font-medium">Taxa de Comparecimento</span>
-                <span className="text-lg font-bold text-green-600">92%</span>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhum dado de profissional encontrado.
               </div>
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm font-medium">Taxa de Cancelamento</span>
-                <span className="text-lg font-bold text-amber-600">5%</span>
-              </div>
-              <div className="flex justify-between items-center border-b pb-2">
-                <span className="text-sm font-medium">No-shows</span>
-                <span className="text-lg font-bold text-red-600">3%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Recorrência de Clientes</span>
-                <span className="text-lg font-bold">68%</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Agendamentos por Tipo de Serviço</CardTitle>
-          <CardDescription>
-            Distribuição dos serviços mais agendados no último mês
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={mockServiceTypeData}
-                layout="vertical"
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 60,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="value" name="Quantidade" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
