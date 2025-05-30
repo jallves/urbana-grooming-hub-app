@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,7 +48,7 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
       console.log('Starting barber creation/update process...');
       
       // For new barbers with email and password, handle user account creation
-      const userEmail = data.email;
+      const userEmail = data.email || '';
       if (!barberId && userEmail && userEmail.trim() !== '' && password) {
         if (password !== confirmPassword) {
           toast.error('As senhas não correspondem');
