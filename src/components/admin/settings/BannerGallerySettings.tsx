@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GalleryHorizontal, Image } from "lucide-react";
+import { GalleryHorizontal, Image, Database } from "lucide-react";
 import { BannerImage } from '@/types/settings';
 import {
   Tabs,
@@ -10,7 +10,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import BannerManager from './media/BannerManager';
-import AutoGalleryManager from './media/components/AutoGalleryManager';
+import DatabaseGalleryManager from './media/components/DatabaseGalleryManager';
 
 const BannerGallerySettings: React.FC = () => {
   const [bannerImages, setBannerImages] = useState<BannerImage[]>([
@@ -39,11 +39,11 @@ const BannerGallerySettings: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="gallery" className="w-full">
+      <Tabs defaultValue="database-gallery" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="gallery" className="flex items-center gap-2">
-            <Image className="h-4 w-4" />
-            Galeria Automática
+          <TabsTrigger value="database-gallery" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Galeria Permanente
           </TabsTrigger>
           <TabsTrigger value="banner" className="flex items-center gap-2">
             <GalleryHorizontal className="h-4 w-4" />
@@ -51,8 +51,8 @@ const BannerGallerySettings: React.FC = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="gallery" className="space-y-6 mt-6">
-          <AutoGalleryManager />
+        <TabsContent value="database-gallery" className="space-y-6 mt-6">
+          <DatabaseGalleryManager />
         </TabsContent>
 
         <TabsContent value="banner" className="space-y-6 mt-6">
