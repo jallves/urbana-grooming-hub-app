@@ -1,18 +1,55 @@
 
 import React from 'react';
-import { Separator } from "@/components/ui/separator";
+import { motion } from "framer-motion";
 
 const GalleryHeader: React.FC = () => {
   return (
-    <div className="flex flex-col items-center mb-12">
-      <div className="flex items-center w-full max-w-md justify-center mb-6">
-        <Separator className="w-16 bg-urbana-gold h-[1px]" />
-        <span className="px-4 text-urbana-gold font-semibold uppercase tracking-wider text-sm">Nossa Galeria</span>
-        <Separator className="w-16 bg-urbana-gold h-[1px]" />
+    <motion.div 
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+      className="text-center mb-16"
+    >
+      <div className="relative">
+        <motion.h2 
+          initial={{ opacity: 0, scale: 0.8 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="urbana-heading mb-6 relative z-10"
+        >
+          Nossa <span className="text-urbana-gold">Galeria</span>
+        </motion.h2>
+        
+        {/* Decorative background text */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-5 overflow-hidden">
+          <span className="text-8xl font-bold text-urbana-black whitespace-nowrap">
+            PORTFOLIO
+          </span>
+        </div>
       </div>
-      <h2 className="urbana-heading text-center">Conheça Nosso Trabalho</h2>
-      <p className="urbana-subheading text-center">Nossos maiores orgulhos são os resultados que entregamos aos nossos clientes</p>
-    </div>
+      
+      <motion.p 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        viewport={{ once: true }}
+        className="text-lg text-urbana-gray max-w-2xl mx-auto leading-relaxed"
+      >
+        Descubra a arte e precisão dos nossos trabalhos. Cada corte conta uma história 
+        de estilo, tradição e excelência que define a <strong>Barbearia Urbana</strong>.
+      </motion.p>
+      
+      {/* Decorative line */}
+      <motion.div 
+        initial={{ width: 0 }}
+        whileInView={{ width: "5rem" }}
+        transition={{ duration: 0.8, delay: 0.6 }}
+        viewport={{ once: true }}
+        className="h-1 bg-gradient-to-r from-urbana-gold to-urbana-gold/50 mx-auto mt-8 rounded-full"
+      />
+    </motion.div>
   );
 };
 

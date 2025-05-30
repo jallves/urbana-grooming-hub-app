@@ -3,7 +3,7 @@ import React from 'react';
 import GalleryHeader from './gallery/GalleryHeader';
 import LoadingState from './gallery/LoadingState';
 import LightboxModal from './gallery/LightboxModal';
-import CarouselSection from './gallery/CarouselSection';
+import ModernGalleryGrid from './gallery/ModernGalleryGrid';
 import GalleryFooter from './gallery/GalleryFooter';
 import { useGalleryImages } from '@/hooks/useGalleryImages';
 import { useLightbox } from '@/hooks/useLightbox';
@@ -26,11 +26,11 @@ const Gallery: React.FC = () => {
   const handleShowPrevious = () => showPrevious(images.length);
 
   return (
-    <section id="gallery" className="urbana-section py-24">
+    <section id="gallery" className="urbana-section py-24 bg-gradient-to-b from-urbana-gray/20 to-white">
       <div className="urbana-container">
         <GalleryHeader />
         
-        <CarouselSection 
+        <ModernGalleryGrid 
           images={images} 
           onSelectImage={setSelectedImage} 
         />

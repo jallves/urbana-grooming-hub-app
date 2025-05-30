@@ -21,6 +21,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
+interface StaffPerformance {
+  staff: string;
+  total: number;
+  completed: number;
+  rate: number;
+}
+
 const AppointmentReports: React.FC = () => {
   // Fetch appointments data
   const { data: appointmentsData, isLoading: isLoadingAppointments } = useQuery({
@@ -95,10 +102,10 @@ const AppointmentReports: React.FC = () => {
   }, [appointmentsData]);
 
   // Process staff performance
-  const staffData = React.useMemo(() => {
+  const staffData = React.useMemo((): StaffPerformance[] => {
     if (!appointmentsData) return [];
     
-    const staffStats = {};
+    const staffStats: Record<string, { total: number; completed: number }> = {};
     
     appointmentsData.forEach(apt => {
       const staffName = apt.staff?.name || 'Não Definido';
