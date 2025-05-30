@@ -344,7 +344,7 @@ export function useClientAppointmentForm(clientId: string) {
       setAppliedCoupon({
         code: coupon.code,
         discountAmount,
-        discountType: coupon.discount_type,
+        discountType: coupon.discount_type as 'percentage' | 'fixed',
         discountValue: coupon.discount_value,
       });
 
@@ -412,10 +412,16 @@ export function useClientAppointmentForm(clientId: string) {
 
       // Se houver cupom aplicado, incrementar o uso
       if (appliedCoupon) {
+        const { data: couponData } = await supabase
+          .from('discount_coupons')
+          .select('current_uses')
+          .eq('code', appliedCoupon.code)
+          .single();
+
         await supabase
           .from('discount_coupons')
           .update({ 
-            current_uses: supabase.raw('current_uses + 1')
+            current_uses: (couponData?.current_uses || 0) + 1
           })
           .eq('code', appliedCoupon.code);
 
