@@ -52,13 +52,6 @@ const CarouselSection: React.FC<CarouselSectionProps> = ({ images, onSelectImage
           <CarouselNext className="static translate-y-0 bg-urbana-gold hover:bg-urbana-gold/80 text-white border-urbana-gold" />
         </div>
       </Carousel>
-      
-      <div className="text-center mt-6">
-        <p className="text-sm text-gray-500">
-          {images.length} {images.length === 1 ? 'foto disponível' : 'fotos disponíveis'} 
-          {images.length > 3 && ' • Navegação automática ativa'}
-        </p>
-      </div>
     </div>
   );
 };
