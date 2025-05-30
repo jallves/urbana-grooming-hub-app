@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ export function CouponField({
 }: CouponFieldProps) {
   const [couponCode, setCouponCode] = useState('');
 
-  const validateAndApplyCoupon = async () => {
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
       toast({
         title: "Código necessário",
@@ -41,7 +41,7 @@ export function CouponField({
       return;
     }
 
-    console.log('Validando cupom:', couponCode);
+    console.log('Iniciando validação do cupom:', couponCode);
 
     try {
       // Buscar cupom no banco de dados
@@ -49,10 +49,20 @@ export function CouponField({
         .from('discount_coupons')
         .select('*')
         .eq('code', couponCode.trim().toUpperCase())
-        .single();
+        .maybeSingle();
 
-      if (error || !coupon) {
-        console.log('Cupom não encontrado:', error);
+      if (error) {
+        console.error('Erro ao buscar cupom:', error);
+        toast({
+          title: "Erro ao validar cupom",
+          description: "Erro interno ao verificar o cupom. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!coupon) {
+        console.log('Cupom não encontrado');
         toast({
           title: "Cupom inválido",
           description: "O cupom informado não foi encontrado em nosso sistema.",
@@ -104,50 +114,14 @@ export function CouponField({
         return;
       }
 
-      // Calcular desconto
-      let discountAmount = 0;
+      console.log('Cupom válido, aplicando...');
       
-      if (coupon.discount_type === 'percentage') {
-        discountAmount = servicePrice * (coupon.discount_value / 100);
-        // Validar se a porcentagem não é maior que 100%
-        if (coupon.discount_value > 100) {
-          toast({
-            title: "Erro no cupom",
-            description: "Este cupom possui uma configuração inválida.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else {
-        discountAmount = coupon.discount_value;
-      }
-
-      // Garantir que o desconto não seja maior que o preço do serviço
-      discountAmount = Math.min(discountAmount, servicePrice);
-
-      // Garantir que o desconto não seja negativo
-      if (discountAmount <= 0) {
-        toast({
-          title: "Cupom inválido",
-          description: "Este cupom não oferece desconto válido para este serviço.",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Aplicar cupom através da função callback
       await onApplyCoupon(couponCode.trim().toUpperCase());
       setCouponCode('');
 
-      console.log('Cupom aplicado com sucesso:', {
-        code: coupon.code,
-        discountAmount,
-        originalPrice: servicePrice,
-        finalPrice: servicePrice - discountAmount
-      });
-
     } catch (error) {
-      console.error('Erro ao validar cupom:', error);
+      console.error('Erro inesperado ao validar cupom:', error);
       toast({
         title: "Erro ao validar cupom",
         description: "Não foi possível validar o cupom. Tente novamente.",
@@ -204,14 +178,14 @@ export function CouponField({
           onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              validateAndApplyCoupon();
+              handleApplyCoupon();
             }
           }}
         />
         <Button
           type="button"
           variant="outline"
-          onClick={validateAndApplyCoupon}
+          onClick={handleApplyCoupon}
           disabled={!couponCode.trim() || isApplyingCoupon}
         >
           {isApplyingCoupon && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
