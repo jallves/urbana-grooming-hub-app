@@ -24,11 +24,11 @@ export const useGalleryImages = () => {
     const fetchGalleryImages = async () => {
       try {
         setLoading(true);
-        console.log('Tentando buscar imagens da galeria');
+        console.log('Tentando buscar imagens da galeria do Supabase');
         
         // Set a timeout to ensure we don't wait too long for the database
         const timeoutPromise = new Promise<null>((resolve) => {
-          setTimeout(() => resolve(null), 3000); // 3 seconds timeout
+          setTimeout(() => resolve(null), 5000); // 5 seconds timeout
         });
         
         const fetchPromise = supabase
@@ -44,7 +44,7 @@ export const useGalleryImages = () => {
         ]);
         
         if (result === null) {
-          console.log('Timeout ao buscar galeria, usando fallback');
+          console.log('Timeout ao buscar galeria, usando imagens padrão');
           throw new Error('Timeout ao buscar galeria');
         }
         
@@ -56,15 +56,16 @@ export const useGalleryImages = () => {
         }
 
         if (data && data.length > 0) {
-          console.log('Imagens da galeria encontradas:', data.length);
+          console.log('Imagens da galeria encontradas no Supabase:', data.length);
           const formattedData: GalleryImageType[] = data.map(item => ({
             id: parseInt(item.id.toString().substring(0, 8), 16),
             src: item.src,
             alt: item.alt
           }));
           setImages(formattedData);
+          console.log('Imagens formatadas e carregadas:', formattedData);
         } else {
-          console.log('Nenhuma imagem da galeria encontrada, usando fallback');
+          console.log('Nenhuma imagem da galeria encontrada no Supabase, usando padrão');
           // Fallback to default images if no data is available
           setImages(defaultImages);
         }
@@ -72,12 +73,16 @@ export const useGalleryImages = () => {
         console.error('Error loading gallery images:', error);
         // Fallback to default images if there's an error
         setImages(defaultImages);
+        console.log('Usando imagens padrão devido ao erro');
         
-        toast({
-          title: "Usando imagens padrão",
-          description: "Não foi possível carregar as imagens da galeria do banco de dados",
-          variant: "default",
-        });
+        // Only show toast if it's not a timeout error
+        if (error instanceof Error && !error.message.includes('Timeout')) {
+          toast({
+            title: "Aviso",
+            description: "Usando galeria padrão. Verifique sua conexão.",
+            variant: "default",
+          });
+        }
       } finally {
         setLoading(false);
       }

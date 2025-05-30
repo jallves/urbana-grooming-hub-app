@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Plus, X, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, X } from "lucide-react";
+import { GalleryImage } from '@/types/settings';
 
 interface ModernGalleryUploadProps {
-  onUpload: (imageData: { alt: string }, file: File) => Promise<boolean>;
+  onUpload: (imageData: { alt: string }, file?: File) => Promise<boolean>;
   uploading: boolean;
 }
 
@@ -15,62 +16,66 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
   onUpload,
   uploading
 }) => {
+  const [newImage, setNewImage] = useState({ alt: '' });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [altText, setAltText] = useState('');
-  const [dragOver, setDragOver] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor, selecione apenas arquivos de imagem');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('O arquivo deve ter no máximo 5MB');
+        return;
+      }
+
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelect(e.target.files[0]);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0 && files[0].type.startsWith('image/')) {
-      handleFileSelect(files[0]);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-  };
-
-  const clearSelection = () => {
-    setSelectedFile(null);
-    setPreviewUrl('');
-    setAltText('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      
+      // Auto-generate alt text from filename if empty
+      if (!newImage.alt) {
+        const fileName = file.name.split('.')[0];
+        setNewImage(prev => ({ 
+          ...prev, 
+          alt: fileName.replace(/[_-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        }));
+      }
     }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !altText.trim()) return;
-    
-    const success = await onUpload({ alt: altText.trim() }, selectedFile);
+    if (!selectedFile || !newImage.alt.trim()) {
+      alert('Por favor, selecione uma imagem e adicione uma descrição');
+      return;
+    }
+
+    const success = await onUpload(newImage, selectedFile);
     
     if (success) {
-      clearSelection();
+      // Reset form
+      setNewImage({ alt: '' });
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setNewImage({ alt: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -78,108 +83,99 @@ const ModernGalleryUpload: React.FC<ModernGalleryUploadProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Plus className="h-5 w-5" />
+          <Upload className="h-5 w-5" />
           Adicionar Nova Imagem
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {/* File Upload Area */}
-        <div
-          className={`
-            border-2 border-dashed rounded-lg p-8 text-center transition-colors
-            ${dragOver ? 'border-primary bg-primary/5' : 'border-gray-300'}
-            ${selectedFile ? 'border-green-500 bg-green-50' : ''}
-          `}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-        >
-          {previewUrl ? (
-            <div className="relative">
-              <img 
-                src={previewUrl} 
-                alt="Preview" 
-                className="max-w-full max-h-64 mx-auto rounded-lg shadow-md"
-              />
+        <div className="space-y-2">
+          <Label htmlFor="image-upload">Selecionar Imagem</Label>
+          <div className="flex items-center gap-4">
+            <Input
+              id="image-upload"
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+            />
+            {selectedFile && (
               <Button
-                variant="destructive"
+                type="button"
+                variant="outline"
                 size="sm"
-                className="absolute -top-2 -right-2"
                 onClick={clearSelection}
               >
                 <X className="h-4 w-4" />
               </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                <ImageIcon className="h-8 w-8 text-gray-400" />
-              </div>
-              <div>
-                <p className="text-lg font-medium">
-                  Arraste uma imagem aqui ou{' '}
-                  <button
-                    type="button"
-                    className="text-primary hover:underline"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    clique para selecionar
-                  </button>
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Formatos suportados: JPG, PNG, WEBP (máx. 10MB)
-                </p>
-              </div>
-            </div>
-          )}
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
+            )}
+          </div>
         </div>
 
-        {/* Alt Text Input */}
-        {selectedFile && (
+        {/* Preview */}
+        {previewUrl && (
           <div className="space-y-2">
-            <Label htmlFor="altText">Descrição da Imagem *</Label>
-            <Input
-              id="altText"
-              value={altText}
-              onChange={(e) => setAltText(e.target.value)}
-              placeholder="Ex: Corte masculino moderno, Ambiente da barbearia..."
-              className="w-full"
-            />
-            <p className="text-xs text-gray-500">
-              Esta descrição será usada para acessibilidade e busca.
-            </p>
+            <Label>Preview da Imagem</Label>
+            <div className="relative w-full max-w-xs">
+              <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="w-full h-48 object-cover rounded-md border"
+              />
+            </div>
           </div>
         )}
 
+        {/* Alt Text Input */}
+        <div className="space-y-2">
+          <Label htmlFor="alt-text">Descrição da Imagem *</Label>
+          <Input
+            id="alt-text"
+            value={newImage.alt}
+            onChange={(e) => setNewImage(prev => ({ ...prev, alt: e.target.value }))}
+            placeholder="Ex: Corte de cabelo moderno, Ambiente da barbearia..."
+            required
+          />
+          <p className="text-xs text-gray-500">
+            Esta descrição aparecerá quando a imagem for exibida na galeria
+          </p>
+        </div>
+
         {/* Upload Button */}
-        {selectedFile && (
-          <Button
-            onClick={handleUpload}
-            disabled={uploading || !altText.trim()}
-            className="w-full"
-            size="lg"
-          >
-            {uploading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Adicionar à Galeria
-              </>
-            )}
-          </Button>
-        )}
+        <Button 
+          onClick={handleUpload}
+          disabled={!selectedFile || !newImage.alt.trim() || uploading}
+          className="w-full"
+        >
+          {uploading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              Enviando...
+            </>
+          ) : (
+            <>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Adicionar à Galeria
+            </>
+          )}
+        </Button>
+
+        {/* Instructions */}
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <div className="flex items-start gap-2">
+            <ImageIcon className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-blue-700">
+              <p className="font-medium mb-1">💡 Dicas para melhores resultados:</p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Use imagens de alta qualidade (mínimo 800x600px)</li>
+                <li>Formato recomendado: JPG ou PNG</li>
+                <li>Tamanho máximo: 5MB</li>
+                <li>Escolha descrições claras e descritivas</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
