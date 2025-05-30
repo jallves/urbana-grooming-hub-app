@@ -44,16 +44,72 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({
   const onSubmit = async (data: BarberLoginForm) => {
     setLoading(true);
     try {
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
+      console.log('🔐 Attempting barber login for:', data.email);
+      
+      // STEP 1: Check if user is an active staff member BEFORE attempting login
+      const { data: staffMember, error: staffError } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('email', data.email)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (staffError) {
+        console.error('❌ Error checking staff member:', staffError);
+        throw new Error('Erro ao verificar status no sistema');
+      }
+      
+      if (!staffMember) {
+        console.log('❌ Email not found in active staff - BLOCKING LOGIN');
+        toast({
+          title: "Acesso Negado",
+          description: "Este email não está cadastrado como barbeiro ativo no sistema. Apenas barbeiros cadastrados pelo administrador podem acessar este painel.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('✅ User is confirmed active staff member:', staffMember);
+      
+      // STEP 2: Now attempt the actual login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
-      if (error) {
-        throw error;
+      if (authError) {
+        console.error('❌ Authentication error:', authError);
+        throw authError;
       }
 
-      console.log('Barber login successful:', authData.user?.email);
+      console.log('✅ Authentication successful for:', authData.user?.email);
+      
+      // STEP 3: Final verification - check if user has barber role
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', authData.user.id)
+        .eq('role', 'barber');
+      
+      if (rolesError) {
+        console.error('❌ Error checking barber role:', rolesError);
+        // Force logout and block access
+        await supabase.auth.signOut();
+        throw new Error('Erro ao verificar permissões');
+      }
+      
+      if (!roles || roles.length === 0) {
+        console.log('❌ User authenticated but does NOT have barber role - BLOCKING ACCESS');
+        await supabase.auth.signOut();
+        toast({
+          title: "Acesso Negado",
+          description: "Você não possui permissão de barbeiro. Entre em contato com o administrador para obter acesso.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('✅ All checks passed - User has barber role and is active staff');
       
       toast({
         title: "Login realizado com sucesso!",
@@ -72,6 +128,8 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({
         errorMessage = "Email ou senha incorretos. Tente novamente.";
       } else if (error.message?.includes('Email not confirmed')) {
         errorMessage = "Por favor, confirme seu email antes de fazer login.";
+      } else if (error.message?.includes('verificar')) {
+        errorMessage = error.message;
       }
       
       toast({

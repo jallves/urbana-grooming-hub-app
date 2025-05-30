@@ -33,18 +33,60 @@ const BarberAuth: React.FC = () => {
     }
   }, [user, authLoading]);
 
-  // Redirect if already authenticated and has proper access
+  // STRICT ACCESS CONTROL: Check user access and force logout if unauthorized
   useEffect(() => {
-    if (!authLoading && user) {
-      if (isAdmin || isBarber) {
-        console.log('BarberAuth - User already authenticated with proper access, redirecting to dashboard');
+    const checkUserAccess = async () => {
+      if (!authLoading && user) {
+        console.log('🔍 BarberAuth - Checking user access:', user.email);
+        
+        // Double-check: verify user is both admin OR (active staff + has barber role)
+        if (isAdmin) {
+          console.log('✅ Admin user detected - allowing access');
+          navigate('/barbeiro');
+          return;
+        }
+        
+        if (!isBarber) {
+          console.log('❌ User is NOT a barber - BLOCKING ACCESS and forcing logout');
+          
+          // Additional verification by checking staff table directly
+          const { data: staffMember } = await supabase
+            .from('staff')
+            .select('*')
+            .eq('email', user.email)
+            .eq('is_active', true)
+            .maybeSingle();
+          
+          if (!staffMember) {
+            console.log('❌ User is NOT in active staff table - FORCING LOGOUT');
+            await signOut();
+            navigate('/barbeiro/login');
+            return;
+          }
+          
+          // Check barber role in database
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('role', 'barber');
+          
+          if (!roles || roles.length === 0) {
+            console.log('❌ User has no barber role - FORCING LOGOUT');
+            await signOut();
+            navigate('/barbeiro/login');
+            return;
+          }
+        }
+        
+        // If all checks pass, redirect to dashboard
+        console.log('✅ All access checks passed - redirecting to dashboard');
         navigate('/barbeiro');
-      } else {
-        console.log('BarberAuth - User authenticated but lacks barbeiro access');
-        // Don't redirect, let them see the access denied message
       }
-    }
-  }, [user, authLoading, isBarber, isAdmin, navigate]);
+    };
+
+    checkUserAccess();
+  }, [user, authLoading, isBarber, isAdmin, navigate, signOut]);
 
   const handleLoginSuccess = async (userId: string) => {
     // After successful login, simply redirect to dashboard
@@ -73,6 +115,9 @@ const BarberAuth: React.FC = () => {
               </p>
               <p className="text-red-300 text-xs mb-2">
                 Usuários que se cadastraram pelo formulário de agendamento <strong>NÃO</strong> têm acesso a esta área.
+              </p>
+              <p className="text-red-300 text-xs mb-2">
+                Email detectado: <strong>{user.email}</strong>
               </p>
               <p className="text-red-300 text-xs">
                 Se você é barbeiro, entre em contato com o administrador para ser cadastrado no sistema.
