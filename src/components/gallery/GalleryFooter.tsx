@@ -5,7 +5,7 @@ const GalleryFooter: React.FC = () => {
   return (
     <div className="mt-12 text-center">
       <a 
-        href="https://instagram.com" 
+        href="https://www.instagram.com/costaurbanavv?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" 
         target="_blank" 
         rel="noopener noreferrer"
         className="inline-flex items-center text-urbana-brown hover:text-urbana-gold transition-colors"
