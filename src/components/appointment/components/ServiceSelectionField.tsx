@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Scissors } from 'lucide-react';
 import { Service } from '@/types/appointment';
 import { Control } from 'react-hook-form';
-import { FormData } from '../hooks/useClientAppointmentForm';
+import { FormData } from '../hooks/types';
 
 interface ServiceSelectionFieldProps {
   control: Control<FormData>;

@@ -1,11 +1,10 @@
-
 import React, { useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { User, Loader2 } from 'lucide-react';
 import { Control } from 'react-hook-form';
-import { FormData, BarberAvailabilityInfo } from '../hooks/useClientAppointmentForm';
+import { FormData, BarberAvailabilityInfo } from '../hooks/types';
 import { StaffMember } from '@/types/appointment';
 
 interface BarberSelectionFieldProps {
