@@ -1,213 +1,171 @@
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Appointment } from '@/types/appointment';
 
-export const useBarberAppointments = () => {
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [stats, setStats] = useState({
-    total: 0,
-    completed: 0,
-    upcoming: 0,
-    revenue: 0,
-  });
-  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-  const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
-  const { user } = useAuth();
+interface AppointmentWithDetails extends Appointment {
+  client_name: string;
+  service_name: string;
+}
 
-  const fetchAppointments = useCallback(async () => {
-    if (!user) return;
-    
+export const useBarberAppointments = (barberId: string) => {
+  const { toast } = useToast();
+  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAppointments = async () => {
+    setLoading(true);
     try {
-      console.log('Fetching appointments for user:', user.email);
-      
-      // First try to find the staff record corresponding to the user's email
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
-        .select('id')
-        .eq('email', user.email)
-        .maybeSingle();
-        
-      if (staffError) {
-        console.error('Erro ao buscar dados do profissional:', staffError);
-        setLoading(false);
-        return;
-      }
-      
-      if (!staffData) {
-        console.log('Nenhum registro de profissional encontrado para este usuário');
-        setLoading(false);
-        return;
-      }
-      
-      // Fetch appointments for this barber
-      const { data: appointmentsData, error: appointmentsError } = await supabase
+      const { data, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          services:service_id (*),
-          clients:client_id (*)
+          clients (name),
+          services (name)
         `)
-        .eq('staff_id', staffData.id)
+        .eq('staff_id', barberId)
         .order('start_time', { ascending: true });
-        
-      if (appointmentsError) {
-        console.error('Erro ao buscar agendamentos:', appointmentsError);
-      } else {
-        console.log('Agendamentos encontrados:', appointmentsData?.length || 0);
-        
-        // Calculate appointment stats
-        const now = new Date();
-        const completed = appointmentsData?.filter(a => a.status === 'completed') || [];
-        const upcoming = appointmentsData?.filter(a => 
-          a.status !== 'completed' && 
-          a.status !== 'cancelled' && 
-          new Date(a.start_time) > now
-        ) || [];
-        
-        // Calculate revenue from completed appointments
-        const revenue = completed.reduce((sum, app) => sum + Number(app.services?.price || 0), 0);
-        
-        setStats({
-          total: appointmentsData?.length || 0,
-          completed: completed.length,
-          upcoming: upcoming.length,
-          revenue: revenue
+
+      if (error) {
+        console.error('Erro ao buscar agendamentos:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os agendamentos.",
+          variant: "destructive",
         });
-        
-        setAppointments(appointmentsData || []);
+        setLoading(false);
+        return;
+      }
+
+      if (data) {
+        const appointmentsWithDetails = data.map(appointment => ({
+          ...appointment,
+          client_name: (appointment.clients as any)?.name || 'Cliente Desconhecido',
+          service_name: (appointment.services as any)?.name || 'Serviço Desconhecido',
+        })) as AppointmentWithDetails[];
+        setAppointments(appointmentsWithDetails);
       }
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+      console.error('Erro ao buscar agendamentos:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os agendamentos.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  };
 
   useEffect(() => {
-    fetchAppointments();
+    if (barberId) {
+      fetchAppointments();
+    }
+  }, [barberId]);
 
-    // Set up a subscription for real-time updates with cleanup
-    const channel = supabase
-      .channel('appointments-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        (payload) => {
-          console.log('Appointment data changed:', payload);
-          fetchAppointments();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('Cleaning up appointments subscription');
-      supabase.removeChannel(channel);
-    };
-  }, [fetchAppointments]);
-
-  const handleCompleteAppointment = useCallback(async (appointmentId: string) => {
+  const handleCompleteAppointment = async (appointmentId: string, startTime: string) => {
     try {
-      setUpdatingId(appointmentId);
-      
-      // Get appointment details before updating
-      const { data: appointmentDetails } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          services:service_id (name),
-          clients:client_id (name)
-        `)
-        .eq('id', appointmentId)
-        .single();
+      // Convert string to Date for internal processing
+      const appointmentDate = new Date(startTime);
       
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'completed' })
         .eq('id', appointmentId);
-        
-      if (error) throw error;
-      
-      const appointmentDate = appointmentDetails 
-        ? format(new Date(appointmentDetails.start_time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-        : '';
-      
-      toast.success(`✅ Agendamento finalizado! ${appointmentDetails?.services?.name || 'Serviço'} com ${appointmentDetails?.clients?.name || 'cliente'} ${appointmentDate ? `em ${appointmentDate}` : ''} foi concluído.`);
+
+      if (error) {
+        console.error('Erro ao marcar agendamento como concluído:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível marcar o agendamento como concluído.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "✅ Agendamento Concluído!",
+        description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.`,
+        duration: 4000,
+      });
+
       fetchAppointments();
     } catch (error) {
-      console.error('Erro ao atualizar agendamento:', error);
-      toast.error('Não foi possível atualizar o agendamento');
-    } finally {
-      setUpdatingId(null);
+      console.error('Erro ao marcar agendamento como concluído:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar o agendamento como concluído.",
+        variant: "destructive",
+      });
     }
-  }, [fetchAppointments]);
+  };
 
-  const handleEditAppointment = useCallback((appointmentId: string, appointmentDate: Date) => {
-    setSelectedAppointmentId(appointmentId);
-    setSelectedAppointmentDate(appointmentDate);
-    setIsEditModalOpen(true);
-  }, []);
-
-  const handleCancelAppointment = useCallback(async (appointmentId: string) => {
+  const handleCancelAppointment = async (appointmentId: string, startTime: string) => {
     try {
-      setUpdatingId(appointmentId);
-      
-      // Get appointment details before updating
-      const { data: appointmentDetails } = await supabase
-        .from('appointments')
-        .select(`
-          *,
-          services:service_id (name),
-          clients:client_id (name)
-        `)
-        .eq('id', appointmentId)
-        .single();
+      // Convert string to Date for internal processing
+      const appointmentDate = new Date(startTime);
       
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
         .eq('id', appointmentId);
-        
-      if (error) throw error;
-      
-      const appointmentDate = appointmentDetails 
-        ? format(new Date(appointmentDetails.start_time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-        : '';
-      
-      toast.success(`❌ Agendamento cancelado! ${appointmentDetails?.services?.name || 'Serviço'} com ${appointmentDetails?.clients?.name || 'cliente'} ${appointmentDate ? `em ${appointmentDate}` : ''} foi cancelado.`);
+
+      if (error) {
+        console.error('Erro ao cancelar agendamento:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível cancelar o agendamento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "❌ Agendamento Cancelado",
+        description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi cancelado.`,
+        duration: 4000,
+      });
+
       fetchAppointments();
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
-      toast.error('Não foi possível cancelar o agendamento');
-    } finally {
-      setUpdatingId(null);
+      toast({
+        title: "Erro",
+        description: "Não foi possível cancelar o agendamento.",
+        variant: "destructive",
+      });
     }
-  }, [fetchAppointments]);
+  };
 
-  const closeEditModal = useCallback(() => {
-    setIsEditModalOpen(false);
-    setSelectedAppointmentId(null);
-    setSelectedAppointmentDate(null);
-  }, []);
+  const handleEditAppointment = async (appointmentId: string, startTime: string) => {
+    try {
+      // Convert string to Date for internal processing
+      const appointmentDate = new Date(startTime);
+      
+      // For now, just show a toast - implement edit functionality later
+      toast({
+        title: "Editar Agendamento",
+        description: `Funcionalidade de edição será implementada em breve para o agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Erro ao editar agendamento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível editar o agendamento.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return {
     appointments,
     loading,
-    stats,
-    updatingId,
-    isEditModalOpen,
-    selectedAppointmentId,
-    selectedAppointmentDate,
+    fetchAppointments,
     handleCompleteAppointment,
-    handleEditAppointment,
     handleCancelAppointment,
-    closeEditModal,
-    fetchAppointments
+    handleEditAppointment,
   };
 };

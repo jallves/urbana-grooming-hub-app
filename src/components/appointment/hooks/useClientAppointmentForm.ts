@@ -1,50 +1,18 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Service, StaffMember } from '@/types/appointment';
-import { useAppointmentConfirmation } from '@/hooks/useAppointmentConfirmation';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
-const appointmentSchema = z.object({
-  service_id: z.string().min(1, "Selecione um serviço"),
-  date: z.date({
-    required_error: "Selecione uma data",
-  }),
-  time: z.string().min(1, "Selecione um horário"),
-  staff_id: z.string().optional(),
-  notes: z.string().optional(),
-  couponCode: z.string().optional(),
-  discountAmount: z.number().optional(),
-});
-
-export type FormData = z.infer<typeof appointmentSchema>;
-
-export interface BarberAvailabilityInfo {
-  id: string;
-  name: string;
-  available: boolean;
-}
+import { Service } from '@/types/appointment';
+import { appointmentSchema, FormData } from './types';
+import { useAppointmentData } from './useAppointmentData';
+import { useAvailability } from './useAvailability';
+import { useCoupons } from './useCoupons';
+import { useDisabledDays } from './useDisabledDays';
+import { useAppointmentSubmit } from './useAppointmentSubmit';
 
 export const useClientAppointmentForm = (clientId: string) => {
-  const { toast } = useToast();
-  const { sendConfirmation, isSending } = useAppointmentConfirmation();
-  const [loading, setLoading] = useState(false);
-  const [services, setServices] = useState<Service[]>([]);
-  const [barbers, setBarbers] = useState<StaffMember[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [barberAvailability, setBarberAvailability] = useState<BarberAvailabilityInfo[]>([]);
-  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
-  const [disabledDays, setDisabledDays] = useState<Date[]>([]);
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [finalServicePrice, setFinalServicePrice] = useState(0);
-
+  
   const form = useForm<FormData>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
@@ -58,373 +26,44 @@ export const useClientAppointmentForm = (clientId: string) => {
     },
   });
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('services')
-          .select('*')
-          .order('name', { ascending: true });
-
-        if (error) {
-          console.error("Erro ao buscar serviços:", error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os serviços.",
-            variant: "destructive",
-          });
-        }
-
-        if (data) {
-          setServices(data);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar serviços:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os serviços.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchServices();
-  }, [toast]);
-
-  useEffect(() => {
-    const fetchBarbers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('staff')
-          .select('*')
-          .eq('role', 'barber')
-          .order('name', { ascending: true });
-
-        if (error) {
-          console.error("Erro ao buscar barbeiros:", error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os barbeiros.",
-            variant: "destructive",
-          });
-        }
-
-        if (data) {
-          setBarbers(data);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar barbeiros:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os barbeiros.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchBarbers();
-  }, [toast]);
-
-  const fetchAvailableTimes = useCallback(async (date: Date, serviceId: string) => {
-    if (!date || !serviceId) return;
-
-    setIsCheckingAvailability(true);
-    try {
-      const selectedDate = new Date(date);
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-
-      const { data, error } = await supabase.functions.invoke('get-available-times', {
-        body: {
-          date: formattedDate,
-          service_id: serviceId
-        }
-      });
-
-      if (error) {
-        console.error("Erro ao buscar horários disponíveis:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os horários disponíveis.",
-          variant: "destructive",
-        });
-        setAvailableTimes([]);
-      }
-
-      if (data) {
-        setAvailableTimes(data);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar horários disponíveis:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os horários disponíveis.",
-        variant: "destructive",
-      });
-      setAvailableTimes([]);
-    } finally {
-      setIsCheckingAvailability(false);
+  const { services, barbers } = useAppointmentData();
+  
+  const {
+    availableTimes,
+    barberAvailability,
+    isCheckingAvailability,
+    fetchAvailableTimes,
+    checkBarberAvailability,
+  } = useAvailability();
+  
+  const {
+    appliedCoupon,
+    isApplyingCoupon,
+    finalServicePrice,
+    setFinalServicePrice,
+    applyCoupon,
+    removeCoupon,
+  } = useCoupons(selectedService);
+  
+  const { disabledDays } = useDisabledDays();
+  
+  const {
+    loading,
+    isSending,
+    onSubmit,
+  } = useAppointmentSubmit(
+    clientId,
+    selectedService,
+    appliedCoupon,
+    form,
+    setSelectedService,
+    (coupon) => {
+      // We need to handle the coupon removal in the main form
+      form.setValue('couponCode', '');
+      form.setValue('discountAmount', 0);
+      removeCoupon();
     }
-  }, [toast]);
-
-  const checkBarberAvailability = useCallback(async (date: Date, time: string, serviceId: string, staffId: string) => {
-    if (!date || !time || !serviceId || !staffId) {
-      setBarberAvailability([]);
-      return;
-    }
-
-    setIsCheckingAvailability(true);
-    try {
-      const selectedDate = new Date(date);
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-
-      const { data, error } = await supabase.functions.invoke('check-barber-availability', {
-        body: {
-          date: formattedDate,
-          time: time,
-          service_id: serviceId,
-          staff_id: staffId
-        }
-      });
-
-      if (error) {
-        console.error("Erro ao verificar disponibilidade do barbeiro:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível verificar a disponibilidade do barbeiro.",
-          variant: "destructive",
-        });
-        setBarberAvailability([]);
-      }
-
-      if (data) {
-        setBarberAvailability(data.barbers || []);
-      }
-    } catch (error) {
-      console.error("Erro ao verificar disponibilidade do barbeiro:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível verificar a disponibilidade do barbeiro.",
-        variant: "destructive",
-      });
-      setBarberAvailability([]);
-    } finally {
-      setIsCheckingAvailability(false);
-    }
-  }, [toast]);
-
-  const applyCoupon = useCallback(async (couponCode: string) => {
-    if (!couponCode || !selectedService) return;
-
-    setIsApplyingCoupon(true);
-    try {
-      const { data, error } = await supabase
-        .from('discount_coupons')
-        .select('*')
-        .eq('code', couponCode)
-        .single();
-
-      if (error) {
-        console.error("Erro ao buscar cupom:", error);
-        toast({
-          title: "Cupom inválido",
-          description: "Cupom não encontrado ou inválido.",
-          variant: "destructive",
-        });
-        setAppliedCoupon(null);
-        setFinalServicePrice(selectedService.price);
-        return;
-      }
-
-      if (data) {
-        // Check if the coupon is expired
-        if (data.valid_until && new Date(data.valid_until) < new Date()) {
-          toast({
-            title: "Cupom expirado",
-            description: "Este cupom expirou.",
-            variant: "destructive",
-          });
-          setAppliedCoupon(null);
-          setFinalServicePrice(selectedService.price);
-          return;
-        }
-
-        setAppliedCoupon({ code: data.code, discountAmount: data.discount_value });
-        setFinalServicePrice(selectedService.price - data.discount_value);
-        toast({
-          title: "Cupom aplicado",
-          description: `Cupom ${data.code} aplicado com sucesso!`,
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao buscar cupom:", error);
-      toast({
-        title: "Cupom inválido",
-        description: "Cupom não encontrado ou inválido.",
-        variant: "destructive",
-      });
-      setAppliedCoupon(null);
-      setFinalServicePrice(selectedService?.price || 0);
-    } finally {
-      setIsApplyingCoupon(false);
-    }
-  }, [selectedService, toast]);
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    setFinalServicePrice(selectedService?.price || 0);
-    form.setValue('couponCode', '');
-    form.setValue('discountAmount', 0);
-    toast({
-      title: "Cupom removido",
-      description: "Cupom removido com sucesso!",
-    });
-  };
-
-  useEffect(() => {
-    const fetchDisabledDays = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('appointments')
-          .select('start_time');
-
-        if (error) {
-          console.error("Erro ao buscar datas agendadas:", error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar as datas agendadas.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (data) {
-          const disabledDates = data.map(item => {
-            const date = new Date(item.start_time);
-            date.setHours(0, 0, 0, 0); // Reset time to midnight
-            return date;
-          });
-          setDisabledDays(disabledDates);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar datas agendadas:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar as datas agendadas.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchDisabledDays();
-  }, [toast]);
-
-  const onSubmit = async (data: FormData) => {
-    if (!selectedService) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione um serviço.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!data.date || !data.time) {
-      toast({
-        title: "Erro", 
-        description: "Por favor, selecione uma data e horário.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const [hours, minutes] = data.time.split(':').map(Number);
-      const selectedDate = new Date(data.date);
-      selectedDate.setHours(hours, minutes, 0, 0);
-
-      const appointmentData = {
-        client_id: clientId,
-        service_id: data.service_id,
-        staff_id: data.staff_id || null,
-        start_time: selectedDate.toISOString(),
-        end_time: new Date(selectedDate.getTime() + selectedService.duration * 60000).toISOString(),
-        notes: data.notes || null,
-        coupon_code: data.couponCode || null,
-        discount_amount: appliedCoupon ? appliedCoupon.discountAmount : 0,
-        status: 'scheduled',
-      };
-
-      const { error } = await supabase
-        .from('appointments')
-        .insert([appointmentData]);
-
-      if (error) {
-        console.error("Erro ao criar agendamento:", error);
-        throw new Error(error.message || "Não foi possível criar o agendamento.");
-      }
-
-      // Show success message
-      toast({
-        title: "🎉 Agendamento Confirmado!",
-        description: `Seu agendamento de ${selectedService.name} foi confirmado com sucesso para ${format(new Date(data.date), "dd/MM/yyyy", { locale: ptBR })} às ${data.time}.`,
-        duration: 6000,
-      });
-
-      // Send confirmation email/WhatsApp
-      try {
-        await sendConfirmation({
-          clientName: 'Nome do Cliente', // Replace with actual client name
-          clientEmail: 'email@example.com', // Replace with actual client email
-          serviceName: selectedService.name,
-          staffName: 'Nome do Barbeiro', // Replace with actual staff name
-          appointmentDate: selectedDate,
-          servicePrice: selectedService.price.toString(),
-          serviceDuration: selectedService.duration,
-          preferredMethod: 'email', // You might want to get this from the user
-        });
-      } catch (confirmationError) {
-        console.error("Erro ao enviar confirmação:", confirmationError);
-        toast({
-          title: "Erro ao enviar confirmação",
-          description: "O agendamento foi criado, mas houve um problema ao enviar a confirmação.",
-          variant: "destructive",
-        });
-      }
-
-      // Reset form after successful submission
-      form.reset({
-        service_id: '',
-        date: undefined,
-        time: '',
-        staff_id: '',
-        notes: '',
-        couponCode: '',
-        discountAmount: 0,
-      });
-
-      // Clear selected service and applied coupon
-      setSelectedService(null);
-      setAppliedCoupon(null);
-
-    } catch (error: any) {
-      console.error('Erro ao criar agendamento:', error);
-      toast({
-        title: "Erro ao agendar",
-        description: error.message || "Não foi possível criar o agendamento. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  );
 
   return {
     form,
@@ -446,6 +85,13 @@ export const useClientAppointmentForm = (clientId: string) => {
     fetchAvailableTimes,
     checkBarberAvailability,
     applyCoupon,
-    removeCoupon,
+    removeCoupon: () => {
+      form.setValue('couponCode', '');
+      form.setValue('discountAmount', 0);
+      removeCoupon();
+    },
   };
 };
+
+// Export types for other components
+export type { FormData, BarberAvailabilityInfo } from './types';

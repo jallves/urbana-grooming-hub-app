@@ -21,6 +21,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     services,
     barbers,
     selectedService,
+    setSelectedService,
     availableTimes,
     barberAvailability,
     isCheckingAvailability,
@@ -42,13 +43,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       : selectedService.price
     : 0;
 
-  // Create disabled days function
-  const isDisabledDay = (date: Date) => {
-    return disabledDays.some(disabledDate => 
-      disabledDate.getTime() === date.getTime()
-    );
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -64,7 +58,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           control={form.control}
           selectedService={selectedService}
           availableTimes={availableTimes}
-          disabledDays={isDisabledDay}
+          disabledDays={disabledDays}
           getFieldValue={form.getValues}
           fetchAvailableTimes={fetchAvailableTimes}
         />
