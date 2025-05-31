@@ -112,7 +112,7 @@ export const useBarberAppointments = () => {
     const revenue = appointments
       .filter(a => a.status === 'completed')
       .reduce((acc, appointment) => {
-        const servicePrice = appointments.find(a => a.id === appointment.id)?.services?.price || 0;
+        const servicePrice = (appointment.service as any)?.price || 0;
         return acc + Number(servicePrice);
       }, 0);
 
