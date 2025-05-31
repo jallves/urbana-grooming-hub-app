@@ -1,459 +1,444 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { useToast } from '@/hooks/use-toast';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Service, StaffMember } from '@/types/appointment';
-import { sanitizeInput } from '@/lib/security';
+import { useAppointmentConfirmation } from '@/hooks/useAppointmentConfirmation';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-export interface ClientAppointmentFormData {
-  name: string;
-  phone: string;
-  email?: string;
-  serviceId: string;
-  barberId: string;
-  date: Date;
-  time: string;
-  notes?: string;
-}
+const appointmentSchema = z.object({
+  service_id: z.string().min(1, "Selecione um serviço"),
+  date: z.date({
+    required_error: "Selecione uma data",
+  }),
+  time: z.string().min(1, "Selecione um horário"),
+  staff_id: z.string().optional(),
+  notes: z.string().optional(),
+  couponCode: z.string().optional(),
+  discountAmount: z.number().optional(),
+});
 
-interface BarberAvailabilityInfo {
-  id: string;
-  name: string;
-  available: boolean;
-}
+type FormData = z.infer<typeof appointmentSchema>;
 
 export const useClientAppointmentForm = (clientId: string) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const { toast } = useToast();
+  const { sendConfirmation, isSending } = useAppointmentConfirmation();
+  const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<Service[]>([]);
   const [barbers, setBarbers] = useState<StaffMember[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [barberAvailability, setBarberAvailability] = useState<BarberAvailabilityInfo[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [barberAvailability, setBarberAvailability] = useState<boolean>(true);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [disabledDays, setDisabledDays] = useState<Date[]>([]);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const { toast } = useToast();
+  const [finalServicePrice, setFinalServicePrice] = useState(0);
 
-  const form = useForm<ClientAppointmentFormData>({
+  const form = useForm<FormData>({
+    resolver: zodResolver(appointmentSchema),
     defaultValues: {
-      serviceId: '',
-      barberId: '',
+      service_id: '',
       date: undefined,
       time: '',
-      notes: ''
-    }
+      staff_id: '',
+      notes: '',
+      couponCode: '',
+      discountAmount: 0,
+    },
   });
 
-  // Load services and barbers on mount - only once
   useEffect(() => {
-    loadServices();
-    loadBarbers();
-  }, []);
+    const fetchServices = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('services')
+          .select('*')
+          .order('name', { ascending: true });
 
-  // Watch form values with proper dependencies
-  const watchedServiceId = form.watch('serviceId');
-  const watchedDate = form.watch('date');
-  const watchedTime = form.watch('time');
-
-  // Handle service selection changes
-  useEffect(() => {
-    if (watchedServiceId && services.length > 0) {
-      const service = services.find(s => s.id === watchedServiceId);
-      setSelectedService(service || null);
-      
-      // Reset dependent fields when service changes
-      form.setValue('time', '');
-      form.setValue('barberId', '');
-      setAvailableTimes([]);
-      setBarberAvailability([]);
-    }
-  }, [watchedServiceId, services, form]);
-
-  // Handle date changes
-  useEffect(() => {
-    if (watchedDate && watchedServiceId && selectedService) {
-      fetchAvailableTimes(watchedDate, watchedServiceId, '');
-      form.setValue('time', '');
-      form.setValue('barberId', '');
-    }
-  }, [watchedDate, watchedServiceId, selectedService]);
-
-  // Handle time changes for barber availability
-  useEffect(() => {
-    if (watchedDate && watchedTime && watchedServiceId) {
-      checkBarberAvailability(watchedDate, watchedTime, watchedServiceId);
-    }
-  }, [watchedDate, watchedTime, watchedServiceId]);
-
-  const loadServices = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setServices(data || []);
-    } catch (error) {
-      console.error('Error loading services:', error);
-      toast({
-        title: 'Erro ao carregar serviços',
-        description: 'Não foi possível carregar os serviços disponíveis.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  const loadBarbers = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setBarbers(data || []);
-    } catch (error) {
-      console.error('Error loading barbers:', error);
-      toast({
-        title: 'Erro ao carregar barbeiros',
-        description: 'Não foi possível carregar a lista de barbeiros.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  const fetchAvailableTimes = useCallback(async (date: Date, serviceId: string, staffId: string = '') => {
-    try {
-      const day = date.toISOString().split('T')[0];
-      
-      // Get service duration
-      const service = services.find(s => s.id === serviceId);
-      if (!service) return;
-
-      // Generate time slots from 8:00 to 18:00 in 30-minute intervals
-      const businessHours = [];
-      for (let hour = 8; hour < 18; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          businessHours.push(timeString);
+        if (error) {
+          console.error("Erro ao buscar serviços:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os serviços.",
+            variant: "destructive",
+          });
         }
+
+        if (data) {
+          setServices(data);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar serviços:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os serviços.",
+          variant: "destructive",
+        });
       }
+    };
 
-      // If no specific staff, show all times (they'll be filtered by availability later)
-      if (!staffId) {
-        setAvailableTimes(businessHours);
-        return;
+    fetchServices();
+  }, [toast]);
+
+  useEffect(() => {
+    const fetchBarbers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('role', 'barber')
+          .order('name', { ascending: true });
+
+        if (error) {
+          console.error("Erro ao buscar barbeiros:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os barbeiros.",
+            variant: "destructive",
+          });
+        }
+
+        if (data) {
+          setBarbers(data);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar barbeiros:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os barbeiros.",
+          variant: "destructive",
+        });
       }
+    };
 
-      // Fetch appointments for the specific day and staff
-      const { data: appointments, error } = await supabase
-        .from('appointments')
-        .select('start_time, end_time')
-        .eq('staff_id', staffId)
-        .gte('start_time', `${day}T00:00:00`)
-        .lt('start_time', `${day}T23:59:59`)
-        .eq('status', 'scheduled');
+    fetchBarbers();
+  }, [toast]);
 
-      if (error) throw error;
+  const fetchAvailableTimes = useCallback(async (date: Date, serviceId: string) => {
+    if (!date || !serviceId) return;
 
-      // Filter out booked times
-      const bookedTimes = appointments?.map(apt => {
-        const startTime = new Date(apt.start_time);
-        return startTime.toTimeString().slice(0, 5);
-      }) || [];
-
-      const availableSlots = businessHours.filter(time => !bookedTimes.includes(time));
-      setAvailableTimes(availableSlots);
-    } catch (error: any) {
-      console.error('Error fetching available times:', error);
-      toast({
-        title: 'Erro ao buscar horários',
-        description: 'Não foi possível carregar os horários disponíveis.',
-        variant: 'destructive',
-      });
-      setAvailableTimes([]);
-    }
-  }, [services, toast]);
-
-  const checkBarberAvailability = useCallback(async (date: Date, time: string, serviceId: string) => {
     setIsCheckingAvailability(true);
     try {
-      const service = services.find(s => s.id === serviceId);
-      if (!service) return;
+      const selectedDate = new Date(date);
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
 
-      const day = date.toISOString().split('T')[0];
-      const [hours, minutes] = time.split(':').map(Number);
-      const startTime = new Date(date);
-      startTime.setHours(hours, minutes, 0, 0);
-      
-      const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + service.duration);
+      const { data, error } = await supabase.functions.invoke('get-available-times', {
+        body: {
+          date: formattedDate,
+          service_id: serviceId
+        }
+      });
 
-      console.log('Checking availability for:', startTime.toISOString(), 'to', endTime.toISOString());
+      if (error) {
+        console.error("Erro ao buscar horários disponíveis:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os horários disponíveis.",
+          variant: "destructive",
+        });
+        setAvailableTimes([]);
+      }
 
-      const availability = await Promise.all(
-        barbers.map(async (barber) => {
-          const { data: conflicts, error } = await supabase
-            .from('appointments')
-            .select('id')
-            .eq('staff_id', barber.id)
-            .eq('status', 'scheduled')
-            .or(`and(start_time.lte.${startTime.toISOString()},end_time.gt.${startTime.toISOString()}),and(start_time.lt.${endTime.toISOString()},end_time.gte.${endTime.toISOString()}),and(start_time.gte.${startTime.toISOString()},end_time.lte.${endTime.toISOString()})`);
-
-          if (error) {
-            console.error('Error checking availability for barber:', barber.name, error);
-            return {
-              id: barber.id,
-              name: barber.name,
-              available: false
-            };
-          }
-
-          return {
-            id: barber.id,
-            name: barber.name,
-            available: !conflicts || conflicts.length === 0
-          };
-        })
-      );
-
-      setBarberAvailability(availability);
+      if (data) {
+        setAvailableTimes(data);
+      }
     } catch (error) {
-      console.error('Error checking barber availability:', error);
+      console.error("Erro ao buscar horários disponíveis:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os horários disponíveis.",
+        variant: "destructive",
+      });
+      setAvailableTimes([]);
     } finally {
       setIsCheckingAvailability(false);
     }
-  }, [services, barbers]);
+  }, [supabase, toast]);
 
-  const onApplyCoupon = useCallback(async (code: string) => {
+  const checkBarberAvailability = useCallback(async (date: Date, time: string, serviceId: string, staffId: string) => {
+    if (!date || !time || !serviceId || !staffId) {
+      setBarberAvailability(true);
+      return;
+    }
+
+    setIsCheckingAvailability(true);
+    try {
+      const selectedDate = new Date(date);
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+
+      const { data, error } = await supabase.functions.invoke('check-barber-availability', {
+        body: {
+          date: formattedDate,
+          time: time,
+          service_id: serviceId,
+          staff_id: staffId
+        }
+      });
+
+      if (error) {
+        console.error("Erro ao verificar disponibilidade do barbeiro:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível verificar a disponibilidade do barbeiro.",
+          variant: "destructive",
+        });
+        setBarberAvailability(false);
+      }
+
+      if (data) {
+        setBarberAvailability(data.available);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar disponibilidade do barbeiro:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível verificar a disponibilidade do barbeiro.",
+        variant: "destructive",
+      });
+      setBarberAvailability(false);
+    } finally {
+      setIsCheckingAvailability(false);
+    }
+  }, [supabase, toast]);
+
+  const applyCoupon = useCallback(async (couponCode: string, servicePrice: number) => {
+    if (!couponCode) return;
+
     setIsApplyingCoupon(true);
     try {
-      console.log('Validating coupon:', code);
-
-      const { data: coupon, error } = await supabase
-        .from('discount_coupons')
+      const { data, error } = await supabase
+        .from('coupons')
         .select('*')
-        .eq('code', code.toUpperCase())
+        .eq('code', couponCode)
         .single();
 
-      if (error || !coupon) {
+      if (error) {
+        console.error("Erro ao buscar cupom:", error);
         toast({
-          title: 'Cupom inválido',
-          description: 'O cupom informado não foi encontrado.',
-          variant: 'destructive',
+          title: "Cupom inválido",
+          description: "Cupom não encontrado ou inválido.",
+          variant: "destructive",
         });
+        setAppliedCoupon(null);
+        setFinalServicePrice(servicePrice);
         return;
       }
 
-      // Verify coupon is active and valid
-      if (!coupon.is_active) {
+      if (data) {
+        // Check if the coupon is expired
+        if (data.expires_at && new Date(data.expires_at) < new Date()) {
+          toast({
+            title: "Cupom expirado",
+            description: "Este cupom expirou.",
+            variant: "destructive",
+          });
+          setAppliedCoupon(null);
+          setFinalServicePrice(servicePrice);
+          return;
+        }
+
+        setAppliedCoupon({ code: data.code, discountAmount: data.discount_amount });
+        setFinalServicePrice(servicePrice - data.discount_amount);
         toast({
-          title: 'Cupom inativo',
-          description: 'Este cupom não está mais ativo.',
-          variant: 'destructive',
+          title: "Cupom aplicado",
+          description: `Cupom ${data.code} aplicado com sucesso!`,
         });
-        return;
       }
-
-      const today = new Date().toISOString().split('T')[0];
-      if (coupon.valid_from > today) {
-        toast({
-          title: 'Cupom ainda não válido',
-          description: 'Este cupom ainda não pode ser usado.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (coupon.valid_until && coupon.valid_until < today) {
-        toast({
-          title: 'Cupom expirado',
-          description: 'Este cupom já expirou.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
-        toast({
-          title: 'Cupom esgotado',
-          description: 'Este cupom já atingiu o limite de usos.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Calculate discount
-      let discountAmount = 0;
-      const price = selectedService?.price || 0;
-      
-      if (coupon.discount_type === 'percentage') {
-        discountAmount = price * (coupon.discount_value / 100);
-      } else {
-        discountAmount = coupon.discount_value;
-      }
-
-      discountAmount = Math.min(discountAmount, price);
-
-      setAppliedCoupon({
-        code: coupon.code,
-        discountType: coupon.discount_type,
-        discountValue: coupon.discount_value,
-        discountAmount: discountAmount
-      });
-
+    } catch (error) {
+      console.error("Erro ao buscar cupom:", error);
       toast({
-        title: 'Cupom aplicado!',
-        description: `Desconto de R$ ${discountAmount.toFixed(2)} aplicado com sucesso.`,
+        title: "Cupom inválido",
+        description: "Cupom não encontrado ou inválido.",
+        variant: "destructive",
       });
-    } catch (error: any) {
-      console.error('Error applying coupon:', error);
-      toast({
-        title: 'Erro ao aplicar cupom',
-        description: 'Não foi possível validar o cupom.',
-        variant: 'destructive',
-      });
+      setAppliedCoupon(null);
+      setFinalServicePrice(servicePrice);
     } finally {
       setIsApplyingCoupon(false);
     }
-  }, [selectedService?.price, toast]);
+  }, [supabase, toast]);
 
-  const onRemoveCoupon = useCallback(() => {
+  const removeCoupon = () => {
     setAppliedCoupon(null);
+    setFinalServicePrice(selectedService?.price || 0);
+    form.setValue('couponCode', '');
+    form.setValue('discountAmount', 0);
     toast({
-      title: 'Cupom removido',
-      description: 'O cupom foi removido do agendamento.',
+      title: "Cupom removido",
+      description: "Cupom removido com sucesso!",
     });
+  };
+
+  useEffect(() => {
+    const fetchDisabledDays = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('appointments')
+          .select('start_time');
+
+        if (error) {
+          console.error("Erro ao buscar datas agendadas:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar as datas agendadas.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data) {
+          const disabledDates = data.map(item => {
+            const date = new Date(item.start_time);
+            date.setHours(0, 0, 0, 0); // Reset time to midnight
+            return date;
+          });
+          setDisabledDays(disabledDates);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar datas agendadas:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as datas agendadas.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchDisabledDays();
   }, [toast]);
 
-  const onSubmit = useCallback(async (data: ClientAppointmentFormData) => {
-    setIsSubmitting(true);
-    setError(null);
-    
+  const onSubmit = async (data: FormData) => {
+    if (!selectedService) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione um serviço.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.date || !data.time) {
+      toast({
+        title: "Erro", 
+        description: "Por favor, selecione uma data e horário.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      console.log('Form data being submitted:', data);
-      
-      // Sanitize all text inputs
-      const sanitizedData = {
-        ...data,
-        notes: data.notes ? sanitizeInput(data.notes) : undefined,
-      };
-      
-      if (!sanitizedData.serviceId || !sanitizedData.barberId || !sanitizedData.date || !sanitizedData.time) {
-        throw new Error('Por favor, preencha todos os campos obrigatórios');
-      }
+      setLoading(true);
 
-      const startTime = new Date(sanitizedData.date);
-      const [hours, minutes] = sanitizedData.time.split(':').map(Number);
-      startTime.setHours(hours, minutes, 0, 0);
+      const [hours, minutes] = data.time.split(':').map(Number);
+      const selectedDate = new Date(data.date);
+      selectedDate.setHours(hours, minutes, 0, 0);
 
-      const service = services.find(s => s.id === sanitizedData.serviceId);
-      if (!service) {
-        throw new Error('Serviço não encontrado');
-      }
-
-      const endTime = new Date(startTime.getTime() + service.duration * 60000);
-
-      // Create appointment
       const appointmentData = {
         client_id: clientId,
-        service_id: sanitizedData.serviceId,
-        staff_id: sanitizedData.barberId,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
+        service_id: data.service_id,
+        staff_id: data.staff_id || null,
+        start_time: selectedDate.toISOString(),
+        end_time: new Date(selectedDate.getTime() + selectedService.duration * 60000).toISOString(),
+        notes: data.notes || null,
+        coupon_code: data.couponCode || null,
+        discount_amount: appliedCoupon ? appliedCoupon.discountAmount : 0,
         status: 'scheduled',
-        notes: sanitizedData.notes || null,
-        coupon_code: appliedCoupon?.code || null,
-        discount_amount: appliedCoupon?.discountAmount || 0
       };
 
-      const { data: appointmentResult, error: appointmentError } = await supabase
+      const { error } = await supabase
         .from('appointments')
-        .insert(appointmentData)
-        .select()
-        .single();
+        .insert([appointmentData]);
 
-      if (appointmentError) {
-        console.error('Error creating appointment:', appointmentError);
-        throw new Error('Erro ao agendar. Tente novamente.');
+      if (error) {
+        console.error("Erro ao criar agendamento:", error);
+        throw new Error(error.message || "Não foi possível criar o agendamento.");
       }
 
-      // If coupon was applied, update its usage count manually
-      if (appliedCoupon) {
-        const { data: currentCoupon } = await supabase
-          .from('discount_coupons')
-          .select('current_uses')
-          .eq('code', appliedCoupon.code)
-          .single();
-
-        if (currentCoupon) {
-          const { error: couponError } = await supabase
-            .from('discount_coupons')
-            .update({ 
-              current_uses: (currentCoupon.current_uses || 0) + 1
-            })
-            .eq('code', appliedCoupon.code);
-
-          if (couponError) {
-            console.error('Error updating coupon usage:', couponError);
-          }
-        }
-      }
-
+      // Show success message
       toast({
-        title: 'Agendamento realizado com sucesso!',
-        description: 'Seu agendamento foi realizado com sucesso.',
+        title: "🎉 Agendamento Confirmado!",
+        description: `Seu agendamento de ${selectedService.name} foi confirmado com sucesso para ${format(new Date(data.date), "dd/MM/yyyy", { locale: ptBR })} às ${data.time}.`,
+        duration: 6000,
       });
 
-      // Reset form
-      form.reset();
+      // Send confirmation email/WhatsApp
+      try {
+        await sendConfirmation({
+          clientName: 'Nome do Cliente', // Replace with actual client name
+          clientEmail: 'email@example.com', // Replace with actual client email
+          serviceName: selectedService.name,
+          staffName: 'Nome do Barbeiro', // Replace with actual staff name
+          appointmentDate: selectedDate,
+          servicePrice: selectedService.price.toString(),
+          serviceDuration: selectedService.duration,
+          preferredMethod: 'email', // You might want to get this from the user
+        });
+      } catch (confirmationError) {
+        console.error("Erro ao enviar confirmação:", confirmationError);
+        toast({
+          title: "Erro ao enviar confirmação",
+          description: "O agendamento foi criado, mas houve um problema ao enviar a confirmação.",
+          variant: "destructive",
+        });
+      }
+
+      // Reset form after successful submission
+      form.reset({
+        service_id: '',
+        date: undefined,
+        time: '',
+        staff_id: '',
+        notes: '',
+        couponCode: '',
+        discountAmount: 0,
+      });
+
+      // Clear selected service and applied coupon
+      setSelectedService(null);
       setAppliedCoupon(null);
-      setAvailableTimes([]);
-      setBarberAvailability([]);
+
     } catch (error: any) {
-      console.error('Error submitting appointment:', error);
-      setError(error.message || 'Erro ao agendar. Tente novamente.');
+      console.error('Erro ao criar agendamento:', error);
       toast({
-        title: 'Erro ao agendar',
-        description: error.message || 'Erro ao agendar. Tente novamente.',
-        variant: 'destructive',
+        title: "Erro ao agendar",
+        description: error.message || "Não foi possível criar o agendamento. Tente novamente.",
+        variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
-  }, [clientId, services, appliedCoupon, toast, form]);
-
-  // Helper function for disabled days
-  const disabledDays = useCallback((date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return date < today || date.getDay() === 0; // Disable past dates and Sundays
-  }, []);
+  };
 
   return {
     form,
-    loading: isSubmitting,
+    loading,
     services,
     barbers,
     selectedService,
+    setSelectedService,
     availableTimes,
     barberAvailability,
     isCheckingAvailability,
-    isSending: isSubmitting,
+    isSending,
     disabledDays,
     appliedCoupon,
     isApplyingCoupon,
-    finalServicePrice: selectedService?.price || 0,
-    isSubmitting,
-    error,
+    finalServicePrice,
+    setFinalServicePrice,
     onSubmit,
-    onApplyCoupon,
-    onRemoveCoupon,
     fetchAvailableTimes,
+    checkBarberAvailability,
+    applyCoupon,
+    removeCoupon,
   };
 };

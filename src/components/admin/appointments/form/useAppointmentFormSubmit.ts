@@ -4,6 +4,8 @@ import { FormValues } from './useAppointmentFormData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Service } from '@/types/appointment';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface UseAppointmentFormSubmitProps {
   appointmentId?: string;
@@ -63,8 +65,9 @@ export const useAppointmentFormSubmit = ({
         if (error) throw error;
         
         toast({
-          title: "Sucesso",
-          description: "Agendamento atualizado com sucesso.",
+          title: "✅ Agendamento Atualizado!",
+          description: `Agendamento de ${selectedService.name} atualizado para ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
+          duration: 5000,
         });
       } else {
         const { error } = await supabase
@@ -74,8 +77,9 @@ export const useAppointmentFormSubmit = ({
         if (error) throw error;
         
         toast({
-          title: "Sucesso",
-          description: "Agendamento criado com sucesso.",
+          title: "🎉 Agendamento Criado!",
+          description: `Novo agendamento de ${selectedService.name} criado para ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
+          duration: 5000,
         });
       }
       

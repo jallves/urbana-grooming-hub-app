@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const useBarberAppointments = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -114,6 +116,17 @@ export const useBarberAppointments = () => {
     try {
       setUpdatingId(appointmentId);
       
+      // Get appointment details before updating
+      const { data: appointmentDetails } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          services:service_id (name),
+          clients:client_id (name)
+        `)
+        .eq('id', appointmentId)
+        .single();
+      
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'completed' })
@@ -121,7 +134,11 @@ export const useBarberAppointments = () => {
         
       if (error) throw error;
       
-      toast.success('Agendamento finalizado com sucesso!');
+      const appointmentDate = appointmentDetails 
+        ? format(new Date(appointmentDetails.start_time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+        : '';
+      
+      toast.success(`✅ Agendamento finalizado! ${appointmentDetails?.services?.name || 'Serviço'} com ${appointmentDetails?.clients?.name || 'cliente'} ${appointmentDate ? `em ${appointmentDate}` : ''} foi concluído.`);
       fetchAppointments();
     } catch (error) {
       console.error('Erro ao atualizar agendamento:', error);
@@ -131,15 +148,20 @@ export const useBarberAppointments = () => {
     }
   }, [fetchAppointments]);
 
-  const handleEditAppointment = useCallback((appointmentId: string, startTime: string) => {
-    setSelectedAppointmentId(appointmentId);
-    setSelectedAppointmentDate(new Date(startTime));
-    setIsEditModalOpen(true);
-  }, []);
-
   const handleCancelAppointment = useCallback(async (appointmentId: string) => {
     try {
       setUpdatingId(appointmentId);
+      
+      // Get appointment details before updating
+      const { data: appointmentDetails } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          services:service_id (name),
+          clients:client_id (name)
+        `)
+        .eq('id', appointmentId)
+        .single();
       
       const { error } = await supabase
         .from('appointments')
@@ -148,7 +170,11 @@ export const useBarberAppointments = () => {
         
       if (error) throw error;
       
-      toast.success('Agendamento cancelado com sucesso!');
+      const appointmentDate = appointmentDetails 
+        ? format(new Date(appointmentDetails.start_time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+        : '';
+      
+      toast.success(`❌ Agendamento cancelado! ${appointmentDetails?.services?.name || 'Serviço'} com ${appointmentDetails?.clients?.name || 'cliente'} ${appointmentDate ? `em ${appointmentDate}` : ''} foi cancelado.`);
       fetchAppointments();
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
