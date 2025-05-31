@@ -58,7 +58,6 @@ export const useClientAppointmentForm = (clientId: string) => {
     form,
     setSelectedService,
     (coupon) => {
-      // We need to handle the coupon removal in the main form
       form.setValue('couponCode', '');
       form.setValue('discountAmount', 0);
       removeCoupon();
@@ -92,6 +91,3 @@ export const useClientAppointmentForm = (clientId: string) => {
     },
   };
 };
-
-// Export types for other components
-export type { FormData, BarberAvailabilityInfo } from './types';
