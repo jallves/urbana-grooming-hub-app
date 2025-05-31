@@ -63,64 +63,54 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({
 
       console.log('✅ Authentication successful for:', authData.user.email);
       
-      // STEP 2: Check if user has admin role (admins can always access)
-      const { data: adminRoles, error: adminRoleError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', authData.user.id)
-        .eq('role', 'admin');
-      
-      if (adminRoleError) {
-        console.error('❌ Error checking admin role:', adminRoleError);
-      }
-      
-      const isAdmin = adminRoles && adminRoles.length > 0;
-      
-      if (isAdmin) {
-        console.log('✅ User is admin - access granted');
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo ao painel do barbeiro (Admin)!",
-        });
-        onLoginSuccess(authData.user.id);
-        return;
-      }
-      
-      // STEP 3: Check if user has barber role
-      const { data: barberRoles, error: barberRoleError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', authData.user.id)
-        .eq('role', 'barber');
-      
-      if (barberRoleError) {
-        console.error('❌ Error checking barber role:', barberRoleError);
-        await supabase.auth.signOut();
-        throw new Error('Erro ao verificar permissões de barbeiro');
-      }
-      
-      const hasBarberRole = barberRoles && barberRoles.length > 0;
-      
-      if (!hasBarberRole) {
-        console.log('❌ User does NOT have barber role - access denied');
-        await supabase.auth.signOut();
-        toast({
-          title: "Acesso Negado",
-          description: "Você não possui permissão de barbeiro. Entre em contato com o administrador.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // STEP 4: Allow access for all users with barber role
-      console.log('✅ User has barber role - access granted');
-      
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo ao painel do barbeiro!",
-      });
+      // Give the AuthContext time to update the user roles
+      setTimeout(async () => {
+        try {
+          // Check if user has barber or admin role
+          const { data: roles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', authData.user.id);
+          
+          if (rolesError) {
+            console.error('❌ Error checking roles:', rolesError);
+            await supabase.auth.signOut();
+            throw new Error('Erro ao verificar permissões');
+          }
+          
+          const userRoles = roles?.map(r => r.role) || [];
+          const hasAccess = userRoles.includes('admin') || userRoles.includes('barber');
+          
+          console.log('User roles:', userRoles, 'Has access:', hasAccess);
+          
+          if (!hasAccess) {
+            console.log('❌ User does NOT have barber or admin role - access denied');
+            await supabase.auth.signOut();
+            toast({
+              title: "Acesso Negado",
+              description: "Você não possui permissão de barbeiro. Entre em contato com o administrador.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          console.log('✅ User has proper access - login successful');
+          toast({
+            title: "Login realizado com sucesso!",
+            description: "Bem-vindo ao painel do barbeiro!",
+          });
 
-      onLoginSuccess(authData.user.id);
+          onLoginSuccess(authData.user.id);
+          
+        } catch (error: any) {
+          console.error('Error in role check:', error);
+          toast({
+            title: "Erro na verificação",
+            description: error.message || "Erro ao verificar permissões",
+            variant: "destructive",
+          });
+        }
+      }, 1000); // Wait 1 second for AuthContext to update
       
     } catch (error: any) {
       console.error('Erro no login do barbeiro:', error);
@@ -140,7 +130,6 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
