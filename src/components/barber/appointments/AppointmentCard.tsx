@@ -48,7 +48,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
       <CardContent className="p-4">
         <div className="grid gap-2">
           <div className="flex justify-between">
-            <p className="font-medium">{appointment.clients?.name || 'Cliente não identificado'}</p>
+            <p className="font-medium">{appointment.clients?.name || appointment.client_name || 'Cliente não identificado'}</p>
             <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(appointment.status)}`}>
               {getStatusText(appointment.status)}
             </span>
@@ -57,7 +57,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
             {formatDate(appointment.start_time)}
           </p>
           <div className="flex justify-between items-center">
-            <p className="font-medium">{appointment.services?.name || 'Serviço não especificado'}</p>
+            <p className="font-medium">{appointment.services?.name || appointment.service_name || 'Serviço não especificado'}</p>
             <p className="font-medium text-right">
               R$ {Number(appointment.services?.price || 0).toFixed(2).replace('.', ',')}
             </p>

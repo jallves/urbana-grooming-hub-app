@@ -1,21 +1,55 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Appointment } from '@/types/appointment';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AppointmentWithDetails extends Appointment {
   client_name: string;
   service_name: string;
 }
 
-export const useBarberAppointments = (barberId: string) => {
+export const useBarberAppointments = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
+
+  // Get barber ID from user's staff record
+  const [barberId, setBarberId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBarberId = async () => {
+      if (!user?.email) return;
+      
+      try {
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+        
+        if (staffData) {
+          setBarberId(staffData.id);
+        }
+      } catch (error) {
+        console.error('Error fetching barber ID:', error);
+      }
+    };
+
+    fetchBarberId();
+  }, [user?.email]);
 
   const fetchAppointments = async () => {
+    if (!barberId) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -23,7 +57,7 @@ export const useBarberAppointments = (barberId: string) => {
         .select(`
           *,
           clients (name),
-          services (name)
+          services (name, price)
         `)
         .eq('staff_id', barberId)
         .order('start_time', { ascending: true });
@@ -65,10 +99,33 @@ export const useBarberAppointments = (barberId: string) => {
     }
   }, [barberId]);
 
-  const handleCompleteAppointment = async (appointmentId: string, startTime: string) => {
+  // Calculate stats
+  const stats = useMemo(() => {
+    const total = appointments.length;
+    const completed = appointments.filter(a => a.status === 'completed').length;
+    const upcoming = appointments.filter(a => 
+      a.status !== 'completed' && 
+      a.status !== 'cancelled' && 
+      new Date(a.start_time) > new Date()
+    ).length;
+    
+    const revenue = appointments
+      .filter(a => a.status === 'completed')
+      .reduce((acc, appointment) => {
+        const servicePrice = appointments.find(a => a.id === appointment.id)?.services?.price || 0;
+        return acc + Number(servicePrice);
+      }, 0);
+
+    return { total, completed, upcoming, revenue };
+  }, [appointments]);
+
+  const handleCompleteAppointment = async (appointmentId: string) => {
     try {
-      // Convert string to Date for internal processing
-      const appointmentDate = new Date(startTime);
+      setUpdatingId(appointmentId);
+      const appointment = appointments.find(a => a.id === appointmentId);
+      if (!appointment) return;
+
+      const appointmentDate = new Date(appointment.start_time);
       
       const { error } = await supabase
         .from('appointments')
@@ -99,13 +156,18 @@ export const useBarberAppointments = (barberId: string) => {
         description: "Não foi possível marcar o agendamento como concluído.",
         variant: "destructive",
       });
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  const handleCancelAppointment = async (appointmentId: string, startTime: string) => {
+  const handleCancelAppointment = async (appointmentId: string) => {
     try {
-      // Convert string to Date for internal processing
-      const appointmentDate = new Date(startTime);
+      setUpdatingId(appointmentId);
+      const appointment = appointments.find(a => a.id === appointmentId);
+      if (!appointment) return;
+
+      const appointmentDate = new Date(appointment.start_time);
       
       const { error } = await supabase
         .from('appointments')
@@ -136,20 +198,17 @@ export const useBarberAppointments = (barberId: string) => {
         description: "Não foi possível cancelar o agendamento.",
         variant: "destructive",
       });
+    } finally {
+      setUpdatingId(null);
     }
   };
 
   const handleEditAppointment = async (appointmentId: string, startTime: string) => {
     try {
-      // Convert string to Date for internal processing
       const appointmentDate = new Date(startTime);
-      
-      // For now, just show a toast - implement edit functionality later
-      toast({
-        title: "Editar Agendamento",
-        description: `Funcionalidade de edição será implementada em breve para o agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
-        duration: 3000,
-      });
+      setSelectedAppointmentId(appointmentId);
+      setSelectedAppointmentDate(appointmentDate);
+      setIsEditModalOpen(true);
     } catch (error) {
       console.error('Erro ao editar agendamento:', error);
       toast({
@@ -160,12 +219,24 @@ export const useBarberAppointments = (barberId: string) => {
     }
   };
 
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedAppointmentId(null);
+    setSelectedAppointmentDate(null);
+  };
+
   return {
     appointments,
     loading,
+    stats,
+    updatingId,
+    isEditModalOpen,
+    selectedAppointmentId,
+    selectedAppointmentDate,
     fetchAppointments,
     handleCompleteAppointment,
     handleCancelAppointment,
     handleEditAppointment,
+    closeEditModal,
   };
 };

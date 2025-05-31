@@ -45,7 +45,7 @@ const BarberAppointmentsComponent: React.FC = () => {
             loading={loading}
             updatingId={updatingId}
             onComplete={handleCompleteAppointment}
-            onEdit={handleEditAppointment}
+            onEdit={(id, startTime) => handleEditAppointment(id, startTime)}
             onCancel={handleCancelAppointment}
           />
         </TabsContent>
@@ -56,7 +56,7 @@ const BarberAppointmentsComponent: React.FC = () => {
             loading={loading}
             updatingId={updatingId}
             onComplete={handleCompleteAppointment}
-            onEdit={handleEditAppointment}
+            onEdit={(id, startTime) => handleEditAppointment(id, startTime)}
             onCancel={handleCancelAppointment}
           />
         </TabsContent>
@@ -67,7 +67,7 @@ const BarberAppointmentsComponent: React.FC = () => {
             loading={loading}
             updatingId={updatingId}
             onComplete={handleCompleteAppointment}
-            onEdit={handleEditAppointment}
+            onEdit={(id, startTime) => handleEditAppointment(id, startTime)}
             onCancel={handleCancelAppointment}
           />
         </TabsContent>
