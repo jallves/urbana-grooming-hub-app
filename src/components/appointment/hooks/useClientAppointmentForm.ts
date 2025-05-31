@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +22,13 @@ const appointmentSchema = z.object({
   discountAmount: z.number().optional(),
 });
 
-type FormData = z.infer<typeof appointmentSchema>;
+export type FormData = z.infer<typeof appointmentSchema>;
+
+export interface BarberAvailabilityInfo {
+  id: string;
+  name: string;
+  available: boolean;
+}
 
 export const useClientAppointmentForm = (clientId: string) => {
   const { toast } = useToast();
@@ -31,7 +38,7 @@ export const useClientAppointmentForm = (clientId: string) => {
   const [barbers, setBarbers] = useState<StaffMember[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [barberAvailability, setBarberAvailability] = useState<boolean>(true);
+  const [barberAvailability, setBarberAvailability] = useState<BarberAvailabilityInfo[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [disabledDays, setDisabledDays] = useState<Date[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
@@ -160,11 +167,11 @@ export const useClientAppointmentForm = (clientId: string) => {
     } finally {
       setIsCheckingAvailability(false);
     }
-  }, [supabase, toast]);
+  }, [toast]);
 
   const checkBarberAvailability = useCallback(async (date: Date, time: string, serviceId: string, staffId: string) => {
     if (!date || !time || !serviceId || !staffId) {
-      setBarberAvailability(true);
+      setBarberAvailability([]);
       return;
     }
 
@@ -192,11 +199,11 @@ export const useClientAppointmentForm = (clientId: string) => {
           description: "Não foi possível verificar a disponibilidade do barbeiro.",
           variant: "destructive",
         });
-        setBarberAvailability(false);
+        setBarberAvailability([]);
       }
 
       if (data) {
-        setBarberAvailability(data.available);
+        setBarberAvailability(data.barbers || []);
       }
     } catch (error) {
       console.error("Erro ao verificar disponibilidade do barbeiro:", error);
@@ -205,19 +212,19 @@ export const useClientAppointmentForm = (clientId: string) => {
         description: "Não foi possível verificar a disponibilidade do barbeiro.",
         variant: "destructive",
       });
-      setBarberAvailability(false);
+      setBarberAvailability([]);
     } finally {
       setIsCheckingAvailability(false);
     }
-  }, [supabase, toast]);
+  }, [toast]);
 
-  const applyCoupon = useCallback(async (couponCode: string, servicePrice: number) => {
-    if (!couponCode) return;
+  const applyCoupon = useCallback(async (couponCode: string) => {
+    if (!couponCode || !selectedService) return;
 
     setIsApplyingCoupon(true);
     try {
       const { data, error } = await supabase
-        .from('coupons')
+        .from('discount_coupons')
         .select('*')
         .eq('code', couponCode)
         .single();
@@ -230,25 +237,25 @@ export const useClientAppointmentForm = (clientId: string) => {
           variant: "destructive",
         });
         setAppliedCoupon(null);
-        setFinalServicePrice(servicePrice);
+        setFinalServicePrice(selectedService.price);
         return;
       }
 
       if (data) {
         // Check if the coupon is expired
-        if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        if (data.valid_until && new Date(data.valid_until) < new Date()) {
           toast({
             title: "Cupom expirado",
             description: "Este cupom expirou.",
             variant: "destructive",
           });
           setAppliedCoupon(null);
-          setFinalServicePrice(servicePrice);
+          setFinalServicePrice(selectedService.price);
           return;
         }
 
-        setAppliedCoupon({ code: data.code, discountAmount: data.discount_amount });
-        setFinalServicePrice(servicePrice - data.discount_amount);
+        setAppliedCoupon({ code: data.code, discountAmount: data.discount_value });
+        setFinalServicePrice(selectedService.price - data.discount_value);
         toast({
           title: "Cupom aplicado",
           description: `Cupom ${data.code} aplicado com sucesso!`,
@@ -262,11 +269,11 @@ export const useClientAppointmentForm = (clientId: string) => {
         variant: "destructive",
       });
       setAppliedCoupon(null);
-      setFinalServicePrice(servicePrice);
+      setFinalServicePrice(selectedService?.price || 0);
     } finally {
       setIsApplyingCoupon(false);
     }
-  }, [supabase, toast]);
+  }, [selectedService, toast]);
 
   const removeCoupon = () => {
     setAppliedCoupon(null);

@@ -5,21 +5,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { User, Loader2 } from 'lucide-react';
 import { Control } from 'react-hook-form';
-import { ClientAppointmentFormData } from '../hooks/useClientAppointmentForm';
+import { FormData, BarberAvailabilityInfo } from '../hooks/useClientAppointmentForm';
 import { StaffMember } from '@/types/appointment';
 
-interface BarberAvailabilityInfo {
-  id: string;
-  name: string;
-  available: boolean;
-}
-
 interface BarberSelectionFieldProps {
-  control: Control<ClientAppointmentFormData>;
+  control: Control<FormData>;
   barbers: StaffMember[];
   barberAvailability: BarberAvailabilityInfo[];
   isCheckingAvailability: boolean;
-  getFieldValue: (field: keyof ClientAppointmentFormData) => any;
+  getFieldValue: (field: keyof FormData) => any;
 }
 
 export function BarberSelectionField({ 
@@ -41,7 +35,7 @@ export function BarberSelectionField({
   return (
     <FormField
       control={control}
-      name="barberId"
+      name="staff_id"
       render={({ field }) => (
         <FormItem>
           <FormLabel className="flex items-center gap-2">

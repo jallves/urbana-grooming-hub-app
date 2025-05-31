@@ -10,16 +10,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Control } from 'react-hook-form';
-import { ClientAppointmentFormData } from '../hooks/useClientAppointmentForm';
+import { FormData } from '../hooks/useClientAppointmentForm';
 import { Service } from '@/types/appointment';
 
 interface DateTimeSelectionFieldsProps {
-  control: Control<ClientAppointmentFormData>;
+  control: Control<FormData>;
   selectedService: Service | null;
   availableTimes: string[];
   disabledDays: (date: Date) => boolean;
-  getFieldValue: (field: keyof ClientAppointmentFormData) => any;
-  fetchAvailableTimes: (date: Date, serviceId: string, staffId: string) => Promise<void>;
+  getFieldValue: (field: keyof FormData) => any;
+  fetchAvailableTimes: (date: Date, serviceId: string) => Promise<void>;
 }
 
 export function DateTimeSelectionFields({ 
@@ -34,12 +34,12 @@ export function DateTimeSelectionFields({
   // Watch for date changes to refresh available times
   useEffect(() => {
     const date = getFieldValue('date');
-    const serviceId = getFieldValue('serviceId');
+    const serviceId = getFieldValue('service_id');
     
     if (date && serviceId) {
-      fetchAvailableTimes(date, serviceId, '');
+      fetchAvailableTimes(date, serviceId);
     }
-  }, [getFieldValue('date'), getFieldValue('serviceId'), fetchAvailableTimes]);
+  }, [getFieldValue('date'), getFieldValue('service_id'), fetchAvailableTimes]);
 
   return (
     <>

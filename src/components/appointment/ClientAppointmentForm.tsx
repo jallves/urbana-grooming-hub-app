@@ -30,8 +30,8 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     isApplyingCoupon,
     finalServicePrice,
     onSubmit,
-    onApplyCoupon,
-    onRemoveCoupon,
+    applyCoupon,
+    removeCoupon,
     fetchAvailableTimes,
   } = useClientAppointmentForm(clientId);
 
@@ -42,18 +42,29 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       : selectedService.price
     : 0;
 
+  // Create disabled days function
+  const isDisabledDay = (date: Date) => {
+    return disabledDays.some(disabledDate => 
+      disabledDate.getTime() === date.getTime()
+    );
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Service Selection */}
-        <ServiceSelectionField control={form.control} services={services} />
+        <ServiceSelectionField 
+          control={form.control} 
+          services={services}
+          onServiceSelect={setSelectedService}
+        />
 
         {/* Date and Time Selection */}
         <DateTimeSelectionFields
           control={form.control}
           selectedService={selectedService}
           availableTimes={availableTimes}
-          disabledDays={disabledDays}
+          disabledDays={isDisabledDay}
           getFieldValue={form.getValues}
           fetchAvailableTimes={fetchAvailableTimes}
         />
@@ -75,8 +86,8 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
             appliedCoupon={appliedCoupon}
             isApplyingCoupon={isApplyingCoupon}
             finalPrice={finalPrice}
-            onApplyCoupon={onApplyCoupon}
-            onRemoveCoupon={onRemoveCoupon}
+            onApplyCoupon={applyCoupon}
+            onRemoveCoupon={removeCoupon}
           />
         )}
 

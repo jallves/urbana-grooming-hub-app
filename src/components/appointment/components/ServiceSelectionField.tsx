@@ -5,22 +5,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Scissors } from 'lucide-react';
 import { Service } from '@/types/appointment';
 import { Control } from 'react-hook-form';
-import { ClientAppointmentFormData } from '../hooks/useClientAppointmentForm';
+import { FormData } from '../hooks/useClientAppointmentForm';
 
 interface ServiceSelectionFieldProps {
-  control: Control<ClientAppointmentFormData>;
+  control: Control<FormData>;
   services: Service[];
+  onServiceSelect?: (service: Service | null) => void;
 }
 
-export function ServiceSelectionField({ control, services }: ServiceSelectionFieldProps) {
+export function ServiceSelectionField({ control, services, onServiceSelect }: ServiceSelectionFieldProps) {
   return (
     <FormField
       control={control}
-      name="serviceId"
+      name="service_id"
       render={({ field }) => (
         <FormItem>
           <FormLabel>Serviço</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select 
+            onValueChange={(value) => {
+              field.onChange(value);
+              const selectedService = services.find(s => s.id === value) || null;
+              onServiceSelect?.(selectedService);
+            }} 
+            defaultValue={field.value}
+          >
             <FormControl>
               <SelectTrigger className="relative flex items-center">
                 <Scissors className="mr-2 h-4 w-4" />

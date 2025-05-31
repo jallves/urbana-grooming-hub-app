@@ -148,6 +148,12 @@ export const useBarberAppointments = () => {
     }
   }, [fetchAppointments]);
 
+  const handleEditAppointment = useCallback((appointmentId: string, appointmentDate: Date) => {
+    setSelectedAppointmentId(appointmentId);
+    setSelectedAppointmentDate(appointmentDate);
+    setIsEditModalOpen(true);
+  }, []);
+
   const handleCancelAppointment = useCallback(async (appointmentId: string) => {
     try {
       setUpdatingId(appointmentId);
