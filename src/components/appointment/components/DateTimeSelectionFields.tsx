@@ -34,12 +34,12 @@ export function DateTimeSelectionFields({
   // Watch for date changes to refresh available times
   useEffect(() => {
     const date = getFieldValue('date');
-    const serviceId = getFieldValue('service_id');
+    const serviceId = selectedService?.id;
     
     if (date && serviceId) {
       fetchAvailableTimes(date, serviceId);
     }
-  }, [getFieldValue('date'), getFieldValue('service_id'), fetchAvailableTimes]);
+  }, [getFieldValue('date'), selectedService?.id, fetchAvailableTimes]);
 
   return (
     <>
@@ -77,7 +77,7 @@ export function DateTimeSelectionFields({
                   onSelect={field.onChange}
                   disabled={disabledDays}
                   initialFocus
-                  className="pointer-events-auto"
+                  className="p-3 pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
@@ -118,17 +118,12 @@ export function DateTimeSelectionFields({
                   ))
                 ) : (
                   <div className="px-2 py-1 text-sm text-muted-foreground">
-                    {!getFieldValue('date') ? 'Selecione uma data primeiro' : 'Nenhum horário disponível'}
+                    {!getFieldValue('date') ? 'Selecione uma data primeiro' : 'Carregando horários...'}
                   </div>
                 )}
               </SelectContent>
             </Select>
             <FormMessage />
-            {getFieldValue('date') && availableTimes.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Carregando horários disponíveis...
-              </p>
-            )}
           </FormItem>
         )}
       />

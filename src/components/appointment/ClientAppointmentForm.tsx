@@ -34,6 +34,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     applyCoupon,
     removeCoupon,
     fetchAvailableTimes,
+    checkBarberAvailability,
   } = useClientAppointmentForm(clientId);
 
   // Calculate final price correctly
@@ -70,6 +71,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
           barberAvailability={barberAvailability}
           isCheckingAvailability={isCheckingAvailability}
           getFieldValue={form.getValues}
+          checkBarberAvailability={checkBarberAvailability}
         />
 
         {/* Coupon Field */}

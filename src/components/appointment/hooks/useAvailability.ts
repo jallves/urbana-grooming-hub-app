@@ -11,36 +11,26 @@ export const useAvailability = () => {
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
   const fetchAvailableTimes = useCallback(async (date: Date, serviceId: string) => {
-    if (!date || !serviceId) return;
+    if (!date || !serviceId) {
+      setAvailableTimes([]);
+      return;
+    }
 
     setIsCheckingAvailability(true);
     try {
-      const selectedDate = new Date(date);
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-
-      const { data, error } = await supabase.functions.invoke('get-available-times', {
-        body: {
-          date: formattedDate,
-          service_id: serviceId
+      // Generate time slots from 8:00 to 20:00 in 30-minute intervals
+      const timeSlots = [];
+      for (let hour = 8; hour < 20; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const formattedHour = hour.toString().padStart(2, '0');
+          const formattedMinute = minute.toString().padStart(2, '0');
+          timeSlots.push(`${formattedHour}:${formattedMinute}`);
         }
-      });
-
-      if (error) {
-        console.error("Erro ao buscar horários disponíveis:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os horários disponíveis.",
-          variant: "destructive",
-        });
-        setAvailableTimes([]);
       }
 
-      if (data) {
-        setAvailableTimes(data);
-      }
+      // For now, return all time slots
+      // In the future, this could be enhanced to check actual availability
+      setAvailableTimes(timeSlots);
     } catch (error) {
       console.error("Erro ao buscar horários disponíveis:", error);
       toast({
@@ -54,42 +44,45 @@ export const useAvailability = () => {
     }
   }, [toast]);
 
-  const checkBarberAvailability = useCallback(async (date: Date, time: string, serviceId: string, staffId: string) => {
-    if (!date || !time || !serviceId || !staffId) {
+  const checkBarberAvailability = useCallback(async (date: Date, time: string, serviceId: string) => {
+    if (!date || !time || !serviceId) {
       setBarberAvailability([]);
       return;
     }
 
     setIsCheckingAvailability(true);
     try {
-      const selectedDate = new Date(date);
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const formattedDate = `${year}-${month}-${day}`;
-
-      const { data, error } = await supabase.functions.invoke('check-barber-availability', {
-        body: {
-          date: formattedDate,
-          time: time,
-          service_id: serviceId,
-          staff_id: staffId
-        }
-      });
+      // Get all active staff members
+      const { data: staffMembers, error } = await supabase
+        .from('staff')
+        .select('id, name, is_active')
+        .eq('is_active', true);
 
       if (error) {
-        console.error("Erro ao verificar disponibilidade do barbeiro:", error);
+        console.error("Erro ao buscar barbeiros:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível verificar a disponibilidade do barbeiro.",
+          description: "Não foi possível verificar a disponibilidade dos barbeiros.",
           variant: "destructive",
         });
         setBarberAvailability([]);
+        return;
       }
 
-      if (data) {
-        setBarberAvailability(data.barbers || []);
+      if (!staffMembers) {
+        setBarberAvailability([]);
+        return;
       }
+
+      // For now, mark all barbeiros as available
+      // In the future, this could check actual availability against appointments
+      const availability = staffMembers.map(staff => ({
+        id: staff.id,
+        name: staff.name,
+        available: true
+      }));
+
+      setBarberAvailability(availability);
     } catch (error) {
       console.error("Erro ao verificar disponibilidade do barbeiro:", error);
       toast({

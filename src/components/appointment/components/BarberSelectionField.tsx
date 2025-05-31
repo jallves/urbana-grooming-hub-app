@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -14,6 +14,7 @@ interface BarberSelectionFieldProps {
   barberAvailability: BarberAvailabilityInfo[];
   isCheckingAvailability: boolean;
   getFieldValue: (field: keyof FormData) => any;
+  checkBarberAvailability?: (date: Date, time: string, serviceId: string) => Promise<void>;
 }
 
 export function BarberSelectionField({ 
@@ -21,10 +22,19 @@ export function BarberSelectionField({
   barbers, 
   barberAvailability, 
   isCheckingAvailability,
-  getFieldValue 
+  getFieldValue,
+  checkBarberAvailability
 }: BarberSelectionFieldProps) {
   const selectedDate = getFieldValue('date');
   const selectedTime = getFieldValue('time');
+  const selectedServiceId = getFieldValue('service_id');
+  
+  // Check barber availability when date, time, or service changes
+  useEffect(() => {
+    if (selectedDate && selectedTime && selectedServiceId && checkBarberAvailability) {
+      checkBarberAvailability(selectedDate, selectedTime, selectedServiceId);
+    }
+  }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability]);
   
   const availableBarbers = barberAvailability.filter(barber => barber.available);
   const unavailableBarbers = barberAvailability.filter(barber => !barber.available);
