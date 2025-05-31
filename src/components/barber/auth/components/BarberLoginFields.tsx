@@ -1,14 +1,9 @@
-
 import React from 'react';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Control } from 'react-hook-form';
 import PasswordToggle from './PasswordToggle';
-
-interface BarberLoginForm {
-  email: string;
-  password: string;
-}
+import { BarberLoginForm } from '../hooks/useBarberLogin';
 
 interface BarberLoginFieldsProps {
   control: Control<BarberLoginForm>;

@@ -10,7 +10,7 @@ const barberLoginSchema = z.object({
   password: z.string().min(1, 'A senha é obrigatória'),
 });
 
-type BarberLoginForm = z.infer<typeof barberLoginSchema>;
+export type BarberLoginForm = z.infer<typeof barberLoginSchema>;
 
 interface UseBarberLoginProps {
   loading: boolean;
