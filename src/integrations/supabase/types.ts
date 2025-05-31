@@ -215,6 +215,44 @@ export type Database = {
           },
         ]
       }
+      appointment_history: {
+        Row: {
+          action: string
+          appointment_id: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+        }
+        Insert: {
+          action: string
+          appointment_id: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Update: {
+          action?: string
+          appointment_id?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_history_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           client_id: string
@@ -621,6 +659,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          birth_date: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -629,6 +668,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          birth_date?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -637,6 +677,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          birth_date?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -2331,6 +2372,26 @@ export type Database = {
       apply_coupon_to_appointment: {
         Args: { p_appointment_id: string; p_coupon_code: string }
         Returns: Json
+      }
+      check_appointment_conflict: {
+        Args: {
+          p_staff_id: string
+          p_start_time: string
+          p_end_time: string
+          p_exclude_appointment_id?: string
+        }
+        Returns: boolean
+      }
+      get_birthday_clients: {
+        Args: { target_month?: number }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          phone: string
+          birth_date: string
+          age: number
+        }[]
       }
       get_staff_module_access: {
         Args: { staff_id_param: string }
