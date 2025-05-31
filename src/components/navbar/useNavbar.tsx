@@ -6,7 +6,7 @@ import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export const useNavbar = () => {
-  const { user, isAdmin, isBarber, signOut } = useAuth();
+  const { user: adminUser, isAdmin, isBarber, signOut: adminSignOut } = useAuth();
   const { user: clientUser, signOut: clientSignOut } = useClientAuth();
   const { toast } = useToast();
   const [scrolled, setScrolled] = useState(false);
@@ -34,12 +34,13 @@ export const useNavbar = () => {
           description: "Você foi desconectado da área do cliente.",
         });
         navigate('/');
-      } else if (user) {
-        await signOut();
+      } else if (adminUser) {
+        await adminSignOut();
         toast({
           title: "Logout realizado com sucesso",
           description: "Você foi desconectado do sistema.",
         });
+        navigate('/');
       }
     } catch (error) {
       toast({
@@ -58,20 +59,17 @@ export const useNavbar = () => {
     } else if (isAdmin) {
       navigate('/admin');
     } else if (isBarber) {
-      navigate('/barbeiro/dashboard');
-    } else {
-      // If no user is logged in, show both options
-      navigate('/auth');
+      navigate('/barber');
     }
   };
 
-  // Return the current user (either admin/barber or client)
-  const currentUser = user || clientUser;
+  // Return the appropriate user for display
+  const currentUser = adminUser || clientUser;
 
   return {
     user: currentUser,
     clientUser,
-    adminUser: user,
+    adminUser,
     isAdmin,
     isBarber,
     scrolled,
