@@ -15,7 +15,7 @@ export const useAppointmentSubmit = (
   appliedCoupon: { code: string; discountAmount: number } | null,
   form: UseFormReturn<FormData>,
   setSelectedService: (service: Service | null) => void,
-  onCouponRemove: (coupon: { code: string; discountAmount: number } | null) => void
+  setAppliedCoupon: (coupon: { code: string; discountAmount: number } | null) => void
 ) => {
   const { toast } = useToast();
   const { sendConfirmation, isSending } = useAppointmentConfirmation();
@@ -75,6 +75,27 @@ export const useAppointmentSubmit = (
         duration: 6000,
       });
 
+      // Send confirmation email/WhatsApp
+      try {
+        await sendConfirmation({
+          clientName: 'Nome do Cliente', // Replace with actual client name
+          clientEmail: 'email@example.com', // Replace with actual client email
+          serviceName: selectedService.name,
+          staffName: 'Nome do Barbeiro', // Replace with actual staff name
+          appointmentDate: selectedDate,
+          servicePrice: selectedService.price.toString(),
+          serviceDuration: selectedService.duration,
+          preferredMethod: 'email', // You might want to get this from the user
+        });
+      } catch (confirmationError) {
+        console.error("Erro ao enviar confirmação:", confirmationError);
+        toast({
+          title: "Erro ao enviar confirmação",
+          description: "O agendamento foi criado, mas houve um problema ao enviar a confirmação.",
+          variant: "destructive",
+        });
+      }
+
       // Reset form after successful submission
       form.reset({
         service_id: '',
@@ -88,7 +109,7 @@ export const useAppointmentSubmit = (
 
       // Clear selected service and applied coupon
       setSelectedService(null);
-      onCouponRemove(null);
+      setAppliedCoupon(null);
 
     } catch (error: any) {
       console.error('Erro ao criar agendamento:', error);

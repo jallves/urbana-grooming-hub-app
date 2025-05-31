@@ -12,10 +12,25 @@ import { Home } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [redirectTimer, setRedirectTimer] = useState(10);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, isAdmin, isBarber, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
+  
+  // Auto redirect timer
+  useEffect(() => {
+    if (!user && !authLoading && redirectTimer > 0) {
+      const timer = setTimeout(() => {
+        setRedirectTimer(prev => prev - 1);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    } else if (!user && !authLoading && redirectTimer === 0) {
+      console.log('Auto-redirecting to home after timer');
+      navigate('/');
+    }
+  }, [redirectTimer, user, authLoading, navigate]);
   
   // Get redirect path
   const from = location.state?.from || "/";
@@ -24,25 +39,21 @@ const Auth: React.FC = () => {
   // Handle authenticated user redirect
   useEffect(() => {
     if (!authLoading && user) {
-      console.log("Auth: User authenticated, redirecting", { isAdmin, isBarber, from });
+      console.log("Auth: User authenticated, redirecting", { isAdmin, from });
       
       // Determine redirect destination
       let redirectPath = '/';
       
       if (from.startsWith('/admin') && isAdmin) {
         redirectPath = from;
-      } else if (from.startsWith('/barber') && isBarber) {
-        redirectPath = from;
       } else if (isAdmin) {
         redirectPath = '/admin';
-      } else if (isBarber) {
-        redirectPath = '/barber';
       }
       
       console.log('Auth: Redirecting to:', redirectPath);
       navigate(redirectPath, { replace: true });
     }
-  }, [user, isAdmin, isBarber, navigate, authLoading, from]);
+  }, [user, isAdmin, navigate, authLoading, from]);
 
   // Create specific admin user if needed
   useEffect(() => {
@@ -139,6 +150,22 @@ const Auth: React.FC = () => {
             </TabsContent>
           </Tabs>
         </div>
+
+        {!user && redirectTimer > 0 && (
+          <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-700 text-sm">
+              Redirecionando para a página inicial em {redirectTimer} segundos
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="mt-2"
+            >
+              Ir agora
+            </Button>
+          </div>
+        )}
 
         <div className="flex justify-center">
           <Button 

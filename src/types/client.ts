@@ -12,5 +12,4 @@ export interface ClientFormData {
   name: string;
   email: string | null;
   phone: string;
-  birth_date?: string | null;
 }

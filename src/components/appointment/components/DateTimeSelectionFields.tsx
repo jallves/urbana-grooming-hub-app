@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Control } from 'react-hook-form';
-import { FormData } from '../hooks/types';
+import { FormData } from '../hooks/useClientAppointmentForm';
 import { Service } from '@/types/appointment';
 
 interface DateTimeSelectionFieldsProps {

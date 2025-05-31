@@ -29,6 +29,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     disabledDays,
     appliedCoupon,
     isApplyingCoupon,
+    finalServicePrice,
     onSubmit,
     applyCoupon,
     removeCoupon,

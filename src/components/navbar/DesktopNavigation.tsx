@@ -1,59 +1,108 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { User, LogOut, Calendar } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Shield, Scissors, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
 
 interface DesktopNavigationProps {
   user: any;
   handlePanelClick: (e: React.MouseEvent) => void;
-  handleSignOut: () => void;
+  handleSignOut: () => Promise<void>;
 }
 
-const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
-  user,
-  handlePanelClick,
-  handleSignOut,
+const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ 
+  user, 
+  handlePanelClick, 
+  handleSignOut 
 }) => {
   return (
-    <div className="hidden lg:flex items-center space-x-4">
-      {!user && (
-        <>
-          <Button
-            onClick={() => window.location.href = '/client-auth'}
-            variant="outline"
-            className="border-urbana-gold/50 text-urbana-gold hover:bg-urbana-gold hover:text-white"
+    <NavigationMenu className="hidden md:flex">
+      <NavigationMenuList className="gap-1">
+        <NavigationMenuItem>
+          <Link 
+            to="/" 
+            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
           >
-            <User className="h-4 w-4 mr-2" />
-            Área do Cliente
-          </Button>
-          <Button
-            onClick={() => window.location.href = '/auth'}
-            className="bg-urbana-gold hover:bg-urbana-gold/90 text-white"
+            Home
+          </Link>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <a 
+            href="#services" 
+            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
           >
-            Área Administrativa
-          </Button>
-        </>
-      )}
-      
-      {user && (
-        <div className="flex items-center space-x-3">
-          <Button
-            onClick={handlePanelClick}
-            className="bg-urbana-gold hover:bg-urbana-gold/90 text-white"
+            Serviços
+          </a>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <a 
+            href="#team" 
+            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
           >
-            <Calendar className="h-4 w-4 mr-2" />
-            Painel
-          </Button>
-          <Button
-            onClick={handleSignOut}
-            variant="outline"
-            className="border-urbana-gold/50 text-urbana-gold hover:bg-urbana-gold hover:text-white"
+            Equipe
+          </a>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link 
+            to="/agendar"
+            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
           >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-    </div>
+            <Calendar size={18} className="inline-block mr-1 text-urbana-gold" />
+            Agendamento
+          </Link>
+        </NavigationMenuItem>
+        {user ? (
+          <>
+            <NavigationMenuItem>
+              <Button
+                variant="ghost"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                onClick={handlePanelClick}
+              >
+                <Shield size={18} className="inline-block mr-1" />
+                Painel
+              </Button>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSignOut}
+                className="border-urbana-gold text-urbana-gold hover:bg-urbana-gold/20"
+              >
+                Sair
+              </Button>
+            </NavigationMenuItem>
+          </>
+        ) : (
+          <>
+            <NavigationMenuItem>
+              <Link 
+                to="/auth" 
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+                title="Admin"
+              >
+                <Shield size={18} />
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link 
+                to="/barbeiro/login" 
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+                title="Área do Barbeiro"
+              >
+                <Scissors size={18} className="text-urbana-gold" />
+              </Link>
+            </NavigationMenuItem>
+          </>
+        )}
+      </NavigationMenuList>
+    </NavigationMenu>
   );
 };
 
