@@ -19,6 +19,28 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   const location = useLocation();
   const { toast } = useToast();
   
+  // Always call all hooks first - this must happen on every render
+  useEffect(() => {
+    // Only show toast messages when we have a clear access denial
+    if (!loading) {
+      if (!user) {
+        console.log('AdminRoute: Redirecting to /auth (not authenticated)');
+        toast({
+          title: 'Acesso Restrito',
+          description: 'Você precisa estar logado para acessar esta página',
+          variant: 'destructive',
+        });
+      } else if (!isAdmin && !(allowBarber && isBarber)) {
+        console.log(`AdminRoute: Access denied, redirecting user to appropriate page`);
+        toast({
+          title: 'Acesso Restrito',
+          description: 'Você não tem permissão para acessar o painel administrativo',
+          variant: 'destructive',
+        });
+      }
+    }
+  }, [loading, user, isAdmin, isBarber, allowBarber, toast]);
+  
   // If still loading, show spinner
   if (loading) {
     return (
@@ -32,16 +54,6 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   // If not authenticated, redirect to login
   if (!user) {
     console.log('AdminRoute: Redirecting to /auth (not authenticated)');
-    
-    // Use useEffect to show toast after redirect to prevent render loop
-    useEffect(() => {
-      toast({
-        title: 'Acesso Restrito',
-        description: 'Você precisa estar logado para acessar esta página',
-        variant: 'destructive',
-      });
-    }, [toast]);
-    
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
   
@@ -59,17 +71,6 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   
   // Default: No access, redirect to appropriate location
   console.log(`AdminRoute: Access denied, redirecting user to appropriate page`);
-  
-  // Use useEffect to show toast after redirect to prevent render loop
-  useEffect(() => {
-    toast({
-      title: 'Acesso Restrito',
-      description: 'Você não tem permissão para acessar o painel administrativo',
-      variant: 'destructive',
-    });
-  }, [toast]);
-  
-  // Redirect regular users to home
   return <Navigate to="/" replace />;
 };
 
