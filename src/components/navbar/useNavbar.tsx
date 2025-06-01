@@ -40,8 +40,11 @@ export const useNavbar = () => {
     }
   };
 
-  const handlePanelClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent default action
+  const handlePanelClick = (e?: React.MouseEvent) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    
     if (isAdmin) {
       navigate('/admin');
     } else if (isBarber) {

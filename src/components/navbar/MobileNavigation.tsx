@@ -7,7 +7,7 @@ import { Shield, Scissors, Calendar, Menu, Home, Users } from "lucide-react";
 
 interface MobileNavigationProps {
   user: any;
-  handlePanelClick: (e: React.MouseEvent) => void;
+  handlePanelClick: (e?: React.MouseEvent) => void;
   handleSignOut: () => Promise<void>;
 }
 
@@ -23,6 +23,11 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const handleItemClick = (callback?: () => void) => {
     closeSheet();
     if (callback) callback();
+  };
+
+  const handlePanelClickMobile = () => {
+    closeSheet();
+    handlePanelClick();
   };
 
   return (
@@ -77,7 +82,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                   <Button
                     variant="ghost"
                     className="w-full justify-start text-white hover:text-urbana-gold hover:bg-urbana-gold/10 text-lg py-3 h-auto"
-                    onClick={() => handleItemClick(() => handlePanelClick({} as React.MouseEvent))}
+                    onClick={handlePanelClickMobile}
                   >
                     <Shield size={20} className="mr-3" />
                     Painel Administrativo
