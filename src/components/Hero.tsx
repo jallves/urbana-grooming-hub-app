@@ -5,6 +5,7 @@ import BannerSlide from './hero/BannerSlide';
 import HeroContent from './hero/HeroContent';
 import NavigationArrows from './hero/NavigationArrows';
 import SlideIndicators from './hero/SlideIndicators';
+import VintageOverlay from './hero/VintageOverlay';
 import { useBannerImages } from './hero/useBannerImages';
 import { useSlideController } from './hero/useSlideController';
 import { useShopSettings } from '@/hooks/useShopSettings';
@@ -14,25 +15,12 @@ const Hero: React.FC = () => {
   const { currentSlide, setCurrentSlide, nextSlide, prevSlide } = useSlideController(bannerImages.length);
   const { shopSettings } = useShopSettings();
   
-  if (loading) {
+  if (loading || bannerImages.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-urbana-black via-urbana-brown to-urbana-black">
         <div className="text-white text-center">
           <div className="w-20 h-20 border-4 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
           <p className="text-xl font-playfair">Carregando experiência premium...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Ensure we have at least one banner
-  if (bannerImages.length === 0) {
-    console.error('Nenhum banner disponível');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-urbana-black via-urbana-brown to-urbana-black">
-        <div className="text-white text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Barbearia Premium</h1>
-          <p className="text-xl mb-6">Tradição e estilo em cada corte</p>
         </div>
       </div>
     );
@@ -59,10 +47,8 @@ const Hero: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-urbana-black/40 via-transparent to-urbana-black/60 z-10"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)] z-10"></div>
         
-        {/* Navigation Arrows - only show if multiple banners */}
-        {bannerImages.length > 1 && (
-          <NavigationArrows onPrev={prevSlide} onNext={nextSlide} />
-        )}
+        {/* Navigation Arrows */}
+        <NavigationArrows onPrev={prevSlide} onNext={nextSlide} />
       </div>
       
       {/* Content */}
@@ -76,14 +62,12 @@ const Hero: React.FC = () => {
             />
           </AnimatePresence>
           
-          {/* Modern Slide Indicators - only show if multiple banners */}
-          {bannerImages.length > 1 && (
-            <SlideIndicators 
-              count={bannerImages.length}
-              currentSlide={currentSlide}
-              setCurrentSlide={setCurrentSlide}
-            />
-          )}
+          {/* Modern Slide Indicators */}
+          <SlideIndicators 
+            count={bannerImages.length}
+            currentSlide={currentSlide}
+            setCurrentSlide={setCurrentSlide}
+          />
         </div>
       </div>
 

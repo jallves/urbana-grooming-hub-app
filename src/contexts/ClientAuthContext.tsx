@@ -64,94 +64,78 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (error) {
         console.error('Erro ao buscar perfil do cliente:', error);
-        return null;
+        return;
       }
 
       if (data) {
         console.log('Perfil do cliente encontrado:', data);
-        return data;
+        setClient(data);
       } else {
-        console.log('Perfil do cliente não encontrado para ID:', userId);
-        return null;
+        console.log('Perfil do cliente não encontrado');
+        setClient(null);
       }
     } catch (error) {
       console.error('Erro na busca do perfil do cliente:', error);
-      return null;
     }
   };
 
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
-      try {
-        console.log('Inicializando autenticação do cliente...');
+    // Configurar listener de mudanças de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
         
-        // Set up auth state listener first
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
-            console.log('Auth event:', event, newSession?.user?.email);
-            
-            if (!mounted) return;
-            
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            
-            if (newSession?.user && event !== 'SIGNED_OUT') {
-              // Fetch client profile in background
-              const clientData = await fetchClientProfile(newSession.user.id);
-              if (mounted) {
-                setClient(clientData);
-              }
-            } else {
-              setClient(null);
-            }
-            
-            if (mounted) {
-              setLoading(false);
-            }
-          }
-        );
+        console.log('Estado de auth mudou:', event, session?.user?.email);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          await fetchClientProfile(session.user.id);
+        } else {
+          setClient(null);
+        }
+        
+        setLoading(false);
+      }
+    );
 
-        // Get initial session
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+    // Verificar sessão existente
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Erro ao verificar sessão inicial:', error);
+          console.error('Erro ao verificar sessão:', error);
+          setLoading(false);
+          return;
         }
 
-        console.log('Sessão inicial:', initialSession?.user?.email || 'nenhuma');
-
         if (mounted) {
-          setSession(initialSession);
-          setUser(initialSession?.user ?? null);
+          setSession(session);
+          setUser(session?.user ?? null);
           
-          if (initialSession?.user) {
-            const clientData = await fetchClientProfile(initialSession.user.id);
-            if (mounted) {
-              setClient(clientData);
-            }
+          if (session?.user) {
+            await fetchClientProfile(session.user.id);
           }
           
           setLoading(false);
         }
-
-        return () => {
-          mounted = false;
-          subscription.unsubscribe();
-        };
       } catch (error) {
-        console.error('Erro na inicialização da auth:', error);
+        console.error('Erro ao verificar sessão existente:', error);
         if (mounted) {
           setLoading(false);
         }
       }
     };
 
-    initializeAuth();
+    checkExistingSession();
 
     return () => {
       mounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -229,23 +213,18 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     try {
       const sanitizedEmail = sanitizeInput(data.email);
 
-      console.log('Tentativa de login para:', sanitizedEmail);
-
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: sanitizedEmail,
         password: data.password,
       });
 
       if (authError) {
-        console.error('Erro de autenticação:', authError);
         return { error: 'Email ou senha incorretos' };
       }
 
       if (!authData.user) {
         return { error: 'Falha na autenticação' };
       }
-
-      console.log('Login bem-sucedido para:', authData.user.email);
 
       toast({
         title: "Login realizado com sucesso!",
