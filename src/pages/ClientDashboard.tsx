@@ -64,7 +64,7 @@ export default function ClientDashboard() {
 
       if (error) {
         console.error('Erro ao buscar agendamentos:', error);
-        setError('Não foi possível carregar seus agendamentos. Verifique sua conexão.');
+        setError('Não foi possível carregar seus agendamentos.');
         toast({
           title: "Erro",
           description: "Não foi possível carregar seus agendamentos.",
@@ -84,14 +84,11 @@ export default function ClientDashboard() {
   };
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        console.log('Usuário não autenticado, redirecionando para login');
-        navigate('/cliente/login');
-        return;
-      }
-      
+    if (!authLoading && user) {
       fetchAppointments();
+    } else if (!authLoading && !user) {
+      console.log('Usuário não autenticado, redirecionando para login');
+      navigate('/cliente/login');
     }
   }, [user, authLoading, navigate]);
 
@@ -139,6 +136,17 @@ export default function ClientDashboard() {
     return appointment.service.price - (appointment.discount_amount || 0);
   };
 
+  // Display client name or fallback to email
+  const getClientDisplayName = () => {
+    if (client?.name) {
+      return client.name;
+    }
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    return user?.email || 'Usuário';
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -179,7 +187,7 @@ export default function ClientDashboard() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 space-y-4 sm:space-y-0">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Painel do Cliente</h1>
-              <p className="text-gray-600 text-sm sm:text-base">Bem-vindo, {client?.name || user.email}</p>
+              <p className="text-gray-600 text-sm sm:text-base">Bem-vindo, {getClientDisplayName()}</p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
               <Button
