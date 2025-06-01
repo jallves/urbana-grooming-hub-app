@@ -52,7 +52,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profileLoaded, setProfileLoaded] = useState(false);
   const { toast } = useToast();
 
   // Set up auth state listener and check for existing session
@@ -69,14 +68,10 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && event !== 'SIGNED_OUT') {
-          // Only fetch profile if we haven't loaded it yet or if it's a new session
-          if (!profileLoaded || event === 'SIGNED_IN') {
-            await fetchOrCreateClientProfile(session.user);
-          }
+        if (session?.user) {
+          await fetchOrCreateClientProfile(session.user);
         } else {
           setClient(null);
-          setProfileLoaded(false);
         }
         
         setLoading(false);
@@ -94,9 +89,9 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
           setSession(initialSession);
           setUser(initialSession.user);
           await fetchOrCreateClientProfile(initialSession.user);
-        } else {
-          setLoading(false);
         }
+        
+        setLoading(false);
       } catch (error) {
         console.error('Error getting initial session:', error);
         if (isMounted) {
@@ -111,7 +106,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Remove profileLoaded from dependencies to prevent infinite loop
+  }, []);
 
   const fetchOrCreateClientProfile = async (authUser: User) => {
     try {
@@ -124,16 +119,14 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         .eq('id', authUser.id)
         .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         console.error('Error fetching client profile:', fetchError);
-        setProfileLoaded(true);
         return;
       }
 
       if (existingClient) {
         console.log('Existing client found:', existingClient);
         setClient(existingClient);
-        setProfileLoaded(true);
       } else {
         // Create client profile from auth user metadata
         console.log('Creating new client profile from auth user');
@@ -165,17 +158,14 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
               setClient(retryClient);
             }
           }
-          setProfileLoaded(true);
           return;
         }
 
         console.log('New client profile created:', newClient);
         setClient(newClient);
-        setProfileLoaded(true);
       }
     } catch (error) {
       console.error('Error in fetchOrCreateClientProfile:', error);
-      setProfileLoaded(true);
     }
   };
 
@@ -302,7 +292,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       setClient(null);
       setUser(null);
       setSession(null);
-      setProfileLoaded(false);
       
       toast({
         title: "Logout realizado",

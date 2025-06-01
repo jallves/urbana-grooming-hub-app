@@ -33,10 +33,9 @@ export default function ClientDashboard() {
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
-  const [appointmentsFetched, setAppointmentsFetched] = useState(false);
 
   const fetchAppointments = useCallback(async () => {
-    if (!client || appointmentsFetched) return;
+    if (!client) return;
 
     try {
       setLoading(true);
@@ -68,13 +67,17 @@ export default function ClientDashboard() {
 
       console.log('Appointments fetched:', data);
       setAppointments(data || []);
-      setAppointmentsFetched(true);
     } catch (error) {
       console.error('Error fetching appointments:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar seus agendamentos.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [client, appointmentsFetched, toast]);
+  }, [client, toast]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -82,10 +85,10 @@ export default function ClientDashboard() {
       return;
     }
 
-    if (client && !appointmentsFetched) {
+    if (client) {
       fetchAppointments();
     }
-  }, [client, user, authLoading, navigate, fetchAppointments, appointmentsFetched]);
+  }, [client, user, authLoading, navigate, fetchAppointments]);
 
   const handleSignOut = async () => {
     try {
@@ -132,7 +135,7 @@ export default function ClientDashboard() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Redirecionando...</p>
+          <p className="text-gray-600">Redirecionando para login...</p>
         </div>
       </div>
     );
