@@ -17,6 +17,18 @@ import BarberAuth from '@/pages/BarberAuth';
 import BarberDashboard from '@/pages/BarberDashboard';
 import NotFound from '@/pages/NotFound';
 
+// Admin Pages
+import AdminAppointments from '@/pages/AdminAppointments';
+import AdminStaff from '@/pages/AdminStaff';
+import AdminBarbers from '@/pages/AdminBarbers';
+import AdminClients from '@/pages/AdminClients';
+import AdminProducts from '@/pages/AdminProducts';
+import AdminFinance from '@/pages/AdminFinance';
+import AdminMarketing from '@/pages/AdminMarketing';
+import AdminAnalytics from '@/pages/AdminAnalytics';
+import AdminSupport from '@/pages/AdminSupport';
+import AdminSettings from '@/pages/AdminSettings';
+
 import { ClientAuthProvider } from '@/contexts/ClientAuthContext';
 import ClientRegister from '@/pages/ClientRegister';
 import ClientLogin from '@/pages/ClientLogin';
@@ -43,14 +55,75 @@ function App() {
                 <Route path="/cliente/dashboard" element={<ClientDashboard />} />
                 <Route path="/cliente/novo-agendamento" element={<ClientNewBooking />} />
                 
-                {/* Admin Routes */}
+                {/* Admin Authentication Routes */}
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/register" element={<RegisterAuth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 
+                {/* Admin Routes */}
                 <Route path="/admin" element={
                   <AdminRoute>
                     <Admin />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/agendamentos" element={
+                  <AdminRoute>
+                    <AdminAppointments />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/profissionais" element={
+                  <AdminRoute>
+                    <AdminStaff />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/barbeiros" element={
+                  <AdminRoute>
+                    <AdminBarbers />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/clientes" element={
+                  <AdminRoute>
+                    <AdminClients />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/produtos" element={
+                  <AdminRoute>
+                    <AdminProducts />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/financeiro" element={
+                  <AdminRoute>
+                    <AdminFinance />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/marketing" element={
+                  <AdminRoute>
+                    <AdminMarketing />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/relatorios" element={
+                  <AdminRoute>
+                    <AdminAnalytics />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/suporte" element={
+                  <AdminRoute>
+                    <AdminSupport />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/configuracoes" element={
+                  <AdminRoute>
+                    <AdminSettings />
                   </AdminRoute>
                 } />
                 
