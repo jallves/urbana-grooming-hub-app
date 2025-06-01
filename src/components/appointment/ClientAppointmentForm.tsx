@@ -50,6 +50,9 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     : 0;
 
   const onSubmit = async (data: any) => {
+    console.log('Iniciando criação de agendamento com dados:', data);
+    console.log('Client ID:', clientId);
+    
     if (!selectedService) {
       toast({
         title: "Erro",
@@ -85,14 +88,24 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         status: 'scheduled',
       };
 
-      const { error } = await supabase
+      console.log('Dados do agendamento para inserir:', appointmentData);
+
+      const { data: insertedData, error } = await supabase
         .from('appointments')
-        .insert([appointmentData]);
+        .insert([appointmentData])
+        .select();
 
       if (error) {
         console.error("Erro ao criar agendamento:", error);
-        throw new Error(error.message || "Não foi possível criar o agendamento.");
+        toast({
+          title: "Erro ao agendar",
+          description: error.message || "Não foi possível criar o agendamento. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
       }
+
+      console.log('Agendamento criado com sucesso:', insertedData);
 
       // Saudação de confirmação personalizada
       const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
@@ -113,7 +126,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       console.error('Erro ao criar agendamento:', error);
       toast({
         title: "Erro ao agendar",
-        description: error.message || "Não foi possível criar o agendamento. Tente novamente.",
+        description: "Não foi possível criar o agendamento. Tente novamente.",
         variant: "destructive",
       });
     }

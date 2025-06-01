@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -71,7 +70,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         console.log('Perfil do cliente encontrado:', data);
         setClient(data);
       } else {
-        console.log('Perfil do cliente não encontrado');
+        console.log('Perfil do cliente não encontrado para ID:', userId);
         setClient(null);
       }
     } catch (error) {
@@ -82,56 +81,65 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   useEffect(() => {
     let mounted = true;
 
-    // Configurar listener de mudanças de auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        
-        console.log('Estado de auth mudou:', event, session?.user?.email);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchClientProfile(session.user.id);
-        } else {
-          setClient(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Verificar sessão existente
-    const checkExistingSession = async () => {
+    const initializeAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Inicializando autenticação do cliente...');
+        
+        // Get initial session
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Erro ao verificar sessão:', error);
-          setLoading(false);
+          console.error('Erro ao verificar sessão inicial:', error);
+          if (mounted) {
+            setLoading(false);
+          }
           return;
         }
 
+        console.log('Sessão inicial:', initialSession?.user?.email || 'nenhuma');
+
         if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
+          setSession(initialSession);
+          setUser(initialSession?.user ?? null);
           
-          if (session?.user) {
-            await fetchClientProfile(session.user.id);
+          if (initialSession?.user) {
+            await fetchClientProfile(initialSession.user.id);
           }
           
           setLoading(false);
         }
       } catch (error) {
-        console.error('Erro ao verificar sessão existente:', error);
+        console.error('Erro na inicialização da auth:', error);
         if (mounted) {
           setLoading(false);
         }
       }
     };
 
-    checkExistingSession();
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        if (!mounted) return;
+        
+        console.log('Estado de auth mudou:', event, newSession?.user?.email);
+        
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        if (newSession?.user && event !== 'SIGNED_OUT') {
+          await fetchClientProfile(newSession.user.id);
+        } else {
+          setClient(null);
+        }
+        
+        if (event === 'INITIAL_SESSION') {
+          setLoading(false);
+        }
+      }
+    );
+
+    // Initialize
+    initializeAuth();
 
     return () => {
       mounted = false;
@@ -213,18 +221,23 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     try {
       const sanitizedEmail = sanitizeInput(data.email);
 
+      console.log('Tentativa de login para:', sanitizedEmail);
+
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: sanitizedEmail,
         password: data.password,
       });
 
       if (authError) {
+        console.error('Erro de autenticação:', authError);
         return { error: 'Email ou senha incorretos' };
       }
 
       if (!authData.user) {
         return { error: 'Falha na autenticação' };
       }
+
+      console.log('Login bem-sucedido para:', authData.user.email);
 
       toast({
         title: "Login realizado com sucesso!",
