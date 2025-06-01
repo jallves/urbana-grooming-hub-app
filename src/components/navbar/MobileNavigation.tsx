@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Shield, Scissors, Calendar, Menu, Home, Users } from "lucide-react";
+import { Shield, Scissors, Calendar, Menu, Home, Users, X } from "lucide-react";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileNavigationProps {
   user: any;
@@ -16,110 +16,138 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   handlePanelClick, 
   handleSignOut 
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
-  const closeSheet = () => setIsOpen(false);
+  const closeMenu = () => setIsMobileMenuOpen(false);
 
   const handleItemClick = (callback?: () => void) => {
-    closeSheet();
+    closeMenu();
     if (callback) callback();
   };
 
   const handlePanelClickMobile = () => {
-    closeSheet();
+    closeMenu();
     handlePanelClick();
   };
 
-  return (
-    <div className="flex md:hidden">
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-white hover:text-urbana-gold">
-            <Menu size={24} />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="right" className="w-[280px] bg-urbana-black border-l border-urbana-gold/20">
-          <div className="flex flex-col space-y-4 mt-8">
-            <Link 
-              to="/" 
-              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-              onClick={() => handleItemClick()}
-            >
-              <Home size={20} />
-              <span className="text-lg">Home</span>
-            </Link>
-            
-            <a 
-              href="#services" 
-              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-              onClick={() => handleItemClick()}
-            >
-              <Scissors size={20} />
-              <span className="text-lg">Serviços</span>
-            </a>
-            
-            <a 
-              href="#team" 
-              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-              onClick={() => handleItemClick()}
-            >
-              <Users size={20} />
-              <span className="text-lg">Equipe</span>
-            </a>
-            
-            <Link 
-              to="/agendar"
-              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-              onClick={() => handleItemClick()}
-            >
-              <Calendar size={20} className="text-urbana-gold" />
-              <span className="text-lg">Agendamento</span>
-            </Link>
+  if (!isMobile) return null;
 
-            <div className="border-t border-urbana-gold/20 pt-4 mt-6">
-              {user ? (
-                <div className="space-y-3">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-white hover:text-urbana-gold hover:bg-urbana-gold/10 text-lg py-3 h-auto"
-                    onClick={handlePanelClickMobile}
-                  >
-                    <Shield size={20} className="mr-3" />
-                    Painel Administrativo
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-urbana-gold text-urbana-gold hover:bg-urbana-gold hover:text-black transition-all text-lg py-3 h-auto"
-                    onClick={() => handleItemClick(handleSignOut)}
-                  >
-                    Sair
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Link 
-                    to="/auth" 
-                    className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10 w-full"
-                    onClick={() => handleItemClick()}
-                  >
-                    <Shield size={20} />
-                    <span className="text-lg">Admin</span>
-                  </Link>
-                  <Link 
-                    to="/barbeiro/login" 
-                    className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10 w-full"
-                    onClick={() => handleItemClick()}
-                  >
-                    <Scissors size={20} className="text-urbana-gold" />
-                    <span className="text-lg">Área do Barbeiro</span>
-                  </Link>
-                </div>
-              )}
-            </div>
+  return (
+    <>
+      {/* Mobile Menu Button */}
+      <div className="flex md:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="text-white hover:text-urbana-gold"
+        >
+          <Menu size={24} />
+        </Button>
+      </div>
+
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 md:hidden" onClick={closeMenu} />
+      )}
+
+      {/* Mobile Sidebar */}
+      <div className={`fixed inset-y-0 right-0 z-50 w-[280px] bg-urbana-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/20 ${
+        isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex items-center justify-between p-4 border-b border-urbana-gold/20">
+          <h2 className="text-lg font-semibold text-urbana-gold">Menu</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={closeMenu}
+            className="text-urbana-gold hover:bg-urbana-gold hover:text-urbana-black"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
+
+        <div className="flex flex-col space-y-2 p-4 overflow-y-auto h-full">
+          <Link 
+            to="/" 
+            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+            onClick={() => handleItemClick()}
+          >
+            <Home size={20} />
+            <span className="text-lg">Home</span>
+          </Link>
+          
+          <a 
+            href="#services" 
+            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+            onClick={() => handleItemClick()}
+          >
+            <Scissors size={20} />
+            <span className="text-lg">Serviços</span>
+          </a>
+          
+          <a 
+            href="#team" 
+            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+            onClick={() => handleItemClick()}
+          >
+            <Users size={20} />
+            <span className="text-lg">Equipe</span>
+          </a>
+          
+          <Link 
+            to="/agendar"
+            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+            onClick={() => handleItemClick()}
+          >
+            <Calendar size={20} className="text-urbana-gold" />
+            <span className="text-lg">Agendamento</span>
+          </Link>
+
+          <div className="border-t border-urbana-gold/20 pt-4 mt-6">
+            {user ? (
+              <div className="space-y-3">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:text-urbana-gold hover:bg-urbana-gold/10 text-lg py-3 h-auto"
+                  onClick={handlePanelClickMobile}
+                >
+                  <Shield size={20} className="mr-3" />
+                  Painel Administrativo
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-urbana-gold text-urbana-gold hover:bg-urbana-gold hover:text-black transition-all text-lg py-3 h-auto"
+                  onClick={() => handleItemClick(handleSignOut)}
+                >
+                  Sair
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Link 
+                  to="/auth" 
+                  className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10 w-full"
+                  onClick={() => handleItemClick()}
+                >
+                  <Shield size={20} />
+                  <span className="text-lg">Admin</span>
+                </Link>
+                <Link 
+                  to="/barbeiro/login" 
+                  className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10 w-full"
+                  onClick={() => handleItemClick()}
+                >
+                  <Scissors size={20} className="text-urbana-gold" />
+                  <span className="text-lg">Área do Barbeiro</span>
+                </Link>
+              </div>
+            )}
           </div>
-        </SheetContent>
-      </Sheet>
-    </div>
+        </div>
+      </div>
+    </>
   );
 };
 
