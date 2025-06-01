@@ -4,17 +4,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Calendar, Star } from 'lucide-react';
-
-interface BannerImage {
-  id: string;
-  title: string;
-  subtitle: string;
-  image_url: string;
-  button_text: string;
-  button_link: string;
-  is_active: boolean;
-  display_order: number;
-}
+import { BannerImage } from "@/types/settings";
 
 interface HeroContentProps {
   slide: BannerImage;
@@ -25,6 +15,7 @@ const HeroContent: React.FC<HeroContentProps> = ({ slide, shopName }) => {
   const displayTitle = slide?.title || shopName || 'Barbearia Premium';
   const displaySubtitle = slide?.subtitle || 'Tradição e estilo em cada corte';
   const displayButtonText = slide?.button_text || 'Agendar Agora';
+  const buttonLink = slide?.button_link || '/cliente/login';
 
   return (
     <motion.div
@@ -60,7 +51,7 @@ const HeroContent: React.FC<HeroContentProps> = ({ slide, shopName }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.8 }}
       >
-        <Link to="/cliente/login">
+        <Link to={buttonLink}>
           <Button 
             size="lg" 
             className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold px-8 py-4 text-lg rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-urbana-gold hover:border-white"

@@ -39,7 +39,7 @@ const BannerSlide: React.FC<BannerSlideProps> = ({ slide, isActive }) => {
             isLoaded ? 'opacity-100' : 'opacity-0'
           }`}
           style={{
-            backgroundImage: `url('${slide.imageUrl}')`,
+            backgroundImage: `url('${slide.image_url}')`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundBlendMode: 'normal',
@@ -52,7 +52,7 @@ const BannerSlide: React.FC<BannerSlideProps> = ({ slide, isActive }) => {
       
       {/* Preload image */}
       <img 
-        src={slide.imageUrl}
+        src={slide.image_url}
         alt=""
         className="hidden"
         onLoad={() => setIsLoaded(true)}

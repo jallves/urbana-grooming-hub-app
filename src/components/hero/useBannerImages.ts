@@ -12,25 +12,34 @@ export const useBannerImages = () => {
   // Define default banners outside the effect for easier access
   const defaultBanners: BannerImage[] = [
     {
-      id: 1,
-      imageUrl: '/hero-background.jpg',
+      id: '1',
       title: 'Experiência Premium',
       subtitle: 'em Barbearia',
-      description: 'A arte da barbearia tradicional com sofisticação moderna'
+      image_url: '/hero-background.jpg',
+      button_text: 'Agendar Agora',
+      button_link: '/cliente/login',
+      is_active: true,
+      display_order: 1
     },
     {
-      id: 2,
-      imageUrl: '/banner-2.jpg',
+      id: '2',
       title: 'Estilo & Precisão',
       subtitle: 'para Cavalheiros',
-      description: 'Cortes clássicos com um toque contemporâneo'
+      image_url: '/banner-2.jpg',
+      button_text: 'Agendar Agora',
+      button_link: '/cliente/login',
+      is_active: true,
+      display_order: 2
     },
     {
-      id: 3,
-      imageUrl: '/banner-3.jpg',
+      id: '3',
       title: 'Ambiente Exclusivo',
       subtitle: 'para Relaxar',
-      description: 'Um espaço onde tradição e conforto se encontram'
+      image_url: '/banner-3.jpg',
+      button_text: 'Agendar Agora',
+      button_link: '/cliente/login',
+      is_active: true,
+      display_order: 3
     }
   ];
 
@@ -71,14 +80,7 @@ export const useBannerImages = () => {
 
         if (data && data.length > 0) {
           console.log('Banners encontrados:', data.length);
-          const formattedData: BannerImage[] = data.map(item => ({
-            id: parseInt(item.id.toString().substring(0, 8), 16),
-            imageUrl: item.image_url,
-            title: item.title,
-            subtitle: item.subtitle,
-            description: item.description || ''
-          }));
-          setBannerImages(formattedData);
+          setBannerImages(data);
         } else {
           console.log('Nenhum banner encontrado, usando fallback');
           // Fallback to default banners if no data is available
