@@ -1,11 +1,11 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, Phone, Mail, LogOut, Plus, Eye } from 'lucide-react';
+import { Calendar, Clock, User, Phone, Mail, LogOut, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -32,24 +32,16 @@ export default function ClientDashboard() {
   const { client, user, signOut, loading: authLoading } = useClientAuth();
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [appointmentsFetched, setAppointmentsFetched] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/cliente/login');
-      return;
-    }
-
-    if (client) {
-      fetchAppointments();
-    }
-  }, [client, user, authLoading, navigate]);
-
-  const fetchAppointments = async () => {
-    if (!client) return;
+  const fetchAppointments = useCallback(async () => {
+    if (!client || appointmentsFetched) return;
 
     try {
       setLoading(true);
+      console.log('Fetching appointments for client:', client.id);
+      
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -74,13 +66,26 @@ export default function ClientDashboard() {
         return;
       }
 
+      console.log('Appointments fetched:', data);
       setAppointments(data || []);
+      setAppointmentsFetched(true);
     } catch (error) {
       console.error('Error fetching appointments:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [client, appointmentsFetched, toast]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/cliente/login');
+      return;
+    }
+
+    if (client && !appointmentsFetched) {
+      fetchAppointments();
+    }
+  }, [client, user, authLoading, navigate, fetchAppointments, appointmentsFetched]);
 
   const handleSignOut = async () => {
     try {
@@ -111,7 +116,7 @@ export default function ClientDashboard() {
   };
 
   // Loading state
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -222,7 +227,12 @@ export default function ClientDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {appointments.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Carregando agendamentos...</p>
+                  </div>
+                ) : appointments.length === 0 ? (
                   <div className="text-center py-8">
                     <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600 mb-4">Você ainda não tem agendamentos</p>

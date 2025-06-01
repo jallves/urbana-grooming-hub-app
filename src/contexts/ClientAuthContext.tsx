@@ -52,13 +52,14 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const { toast } = useToast();
 
   // Set up auth state listener and check for existing session
   useEffect(() => {
     let isMounted = true;
 
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
@@ -68,39 +69,49 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Fetch/create client profile when user is authenticated
-          setTimeout(async () => {
-            if (isMounted) {
-              await fetchOrCreateClientProfile(session.user);
-            }
-          }, 0);
+        if (session?.user && event !== 'SIGNED_OUT') {
+          // Only fetch profile if we haven't loaded it yet or if it's a new session
+          if (!profileLoaded || event === 'SIGNED_IN') {
+            await fetchOrCreateClientProfile(session.user);
+          }
         } else {
           setClient(null);
+          setProfileLoaded(false);
         }
         
         setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted) return;
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchOrCreateClientProfile(session.user);
-      } else {
-        setLoading(false);
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (initialSession?.user) {
+          setSession(initialSession);
+          setUser(initialSession.user);
+          await fetchOrCreateClientProfile(initialSession.user);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-    });
+    };
+
+    getInitialSession();
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Remove profileLoaded from dependencies to prevent infinite loop
 
   const fetchOrCreateClientProfile = async (authUser: User) => {
     try {
@@ -115,12 +126,14 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (fetchError && fetchError.code !== 'PGRST116') {
         console.error('Error fetching client profile:', fetchError);
+        setProfileLoaded(true);
         return;
       }
 
       if (existingClient) {
         console.log('Existing client found:', existingClient);
         setClient(existingClient);
+        setProfileLoaded(true);
       } else {
         // Create client profile from auth user metadata
         console.log('Creating new client profile from auth user');
@@ -140,14 +153,29 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
         if (createError) {
           console.error('Error creating client profile:', createError);
+          // If it's a duplicate key error, try to fetch the existing profile
+          if (createError.code === '23505') {
+            const { data: retryClient } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('id', authUser.id)
+              .maybeSingle();
+            
+            if (retryClient) {
+              setClient(retryClient);
+            }
+          }
+          setProfileLoaded(true);
           return;
         }
 
         console.log('New client profile created:', newClient);
         setClient(newClient);
+        setProfileLoaded(true);
       }
     } catch (error) {
       console.error('Error in fetchOrCreateClientProfile:', error);
+      setProfileLoaded(true);
     }
   };
 
@@ -274,6 +302,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       setClient(null);
       setUser(null);
       setSession(null);
+      setProfileLoaded(false);
       
       toast({
         title: "Logout realizado",
