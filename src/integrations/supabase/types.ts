@@ -705,6 +705,7 @@ export type Database = {
           password_hash: string | null
           phone: string
           updated_at: string | null
+          whatsapp: string | null
         }
         Insert: {
           birth_date?: string | null
@@ -718,6 +719,7 @@ export type Database = {
           password_hash?: string | null
           phone: string
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Update: {
           birth_date?: string | null
@@ -731,6 +733,7 @@ export type Database = {
           password_hash?: string | null
           phone?: string
           updated_at?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -2450,6 +2453,7 @@ export type Database = {
           email: string
           phone: string
           birth_date: string
+          whatsapp: string
           age: number
         }[]
       }

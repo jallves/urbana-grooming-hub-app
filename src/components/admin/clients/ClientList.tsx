@@ -72,6 +72,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
       'Nome': client.name,
       'E-mail': client.email || '-',
       'Telefone': client.phone,
+      'WhatsApp': client.whatsapp || '-',
       'Data de Nascimento': client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy') : '-',
       'Data de Cadastro': format(new Date(client.created_at || ''), 'dd/MM/yyyy HH:mm')
     }));
@@ -85,6 +86,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
       { wch: 25 }, // Nome
       { wch: 30 }, // E-mail
       { wch: 15 }, // Telefone
+      { wch: 15 }, // WhatsApp
       { wch: 18 }, // Data de Nascimento
       { wch: 20 }  // Data de Cadastro
     ];
@@ -143,6 +145,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
                   <TableHead>Nome</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Telefone</TableHead>
+                  <TableHead>WhatsApp</TableHead>
                   <TableHead>Data de Nascimento</TableHead>
                   <TableHead>Data de Cadastro</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -167,6 +170,16 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
                         <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-sm">{client.phone}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {client.whatsapp ? (
+                        <div className="flex items-center space-x-1">
+                          <Phone className="h-3.5 w-3.5 text-green-600" />
+                          <span className="text-sm">{client.whatsapp}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {client.birth_date ? (

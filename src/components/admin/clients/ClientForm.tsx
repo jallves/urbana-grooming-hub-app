@@ -1,173 +1,214 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+
+const clientSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos'),
+  whatsapp: z.string().optional(),
+  birth_date: z.string().optional(),
+});
+
+type ClientFormData = z.infer<typeof clientSchema>;
 
 interface ClientFormProps {
-  clientId: string | null;
+  clientId?: string | null;
   onCancel: () => void;
   onSuccess: () => void;
 }
 
-const clientFormSchema = z.object({
-  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres' }),
-  email: z.string().email({ message: 'E-mail inválido' }).nullable().optional(),
-  phone: z.string().min(10, { message: 'Telefone inválido' }),
-});
-
-type ClientFormValues = z.infer<typeof clientFormSchema>;
-
 const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }) => {
-  const isEditing = !!clientId;
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(!!clientId);
 
-  const { data: clientData, isLoading: isLoadingClient } = useQuery({
-    queryKey: ['client', clientId],
-    queryFn: async () => {
-      if (!clientId) return null;
-      
+  const form = useForm<ClientFormData>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      whatsapp: '',
+      birth_date: '',
+    },
+  });
+
+  useEffect(() => {
+    if (clientId) {
+      loadClientData();
+    }
+  }, [clientId]);
+
+  const loadClientData = async () => {
+    try {
+      setIsLoadingData(true);
       const { data, error } = await supabase
         .from('clients')
         .select('*')
         .eq('id', clientId)
         .single();
-      
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: isEditing,
-  });
 
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-    },
-    values: clientData || undefined,
-  });
-  
-  const { formState } = form;
-  const { isSubmitting } = formState;
+      if (error) throw error;
 
-  const onSubmit = async (values: ClientFormValues) => {
+      if (data) {
+        form.reset({
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          whatsapp: data.whatsapp || '',
+          birth_date: data.birth_date || '',
+        });
+      }
+    } catch (error) {
+      toast.error('Erro ao carregar dados do cliente', {
+        description: (error as Error).message
+      });
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const onSubmit = async (data: ClientFormData) => {
     try {
-      if (isEditing) {
+      setIsLoading(true);
+      
+      const clientData = {
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone,
+        whatsapp: data.whatsapp || null,
+        birth_date: data.birth_date || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (clientId) {
         const { error } = await supabase
           .from('clients')
-          .update(values)
+          .update(clientData)
           .eq('id', clientId);
 
         if (error) throw error;
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        // Ensure that the required fields are present in the object
-        const clientData = {
-          name: values.name,
-          phone: values.phone,
-          email: values.email || null,
-        };
-
         const { error } = await supabase
           .from('clients')
-          .insert([clientData]);
+          .insert(clientData);
 
         if (error) throw error;
         toast.success('Cliente criado com sucesso!');
       }
-      
+
       onSuccess();
     } catch (error) {
-      toast.error('Erro ao salvar cliente', {
+      toast.error(clientId ? 'Erro ao atualizar cliente' : 'Erro ao criar cliente', {
         description: (error as Error).message
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isEditing && isLoadingClient) {
-    return <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isLoadingData) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome *</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome do cliente" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome *</Label>
+          <Input
+            id="name"
+            placeholder="Nome completo"
+            {...form.register('name')}
+          />
+          {form.formState.errors.name && (
+            <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
           )}
-        />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="(00) 00000-0000" 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>E-mail</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="email@exemplo.com" 
-                    {...field} 
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
-        
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isEditing ? 'Salvar Alterações' : 'Criar Cliente'}
-          </Button>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">E-mail</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="email@exemplo.com"
+            {...form.register('email')}
+          />
+          {form.formState.errors.email && (
+            <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
+          )}
         </div>
-      </form>
-    </Form>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">Telefone *</Label>
+          <Input
+            id="phone"
+            placeholder="(11) 99999-9999"
+            {...form.register('phone')}
+          />
+          {form.formState.errors.phone && (
+            <p className="text-sm text-red-500">{form.formState.errors.phone.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="whatsapp">WhatsApp</Label>
+          <Input
+            id="whatsapp"
+            placeholder="(11) 99999-9999"
+            {...form.register('whatsapp')}
+          />
+          {form.formState.errors.whatsapp && (
+            <p className="text-sm text-red-500">{form.formState.errors.whatsapp.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="birth_date">Data de Nascimento</Label>
+          <Input
+            id="birth_date"
+            type="date"
+            {...form.register('birth_date')}
+          />
+          {form.formState.errors.birth_date && (
+            <p className="text-sm text-red-500">{form.formState.errors.birth_date.message}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-4">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              {clientId ? 'Atualizando...' : 'Criando...'}
+            </>
+          ) : (
+            clientId ? 'Atualizar Cliente' : 'Criar Cliente'
+          )}
+        </Button>
+      </div>
+    </form>
   );
 };
 

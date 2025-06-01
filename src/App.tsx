@@ -22,6 +22,7 @@ import AdminAppointments from '@/pages/AdminAppointments';
 import AdminStaff from '@/pages/AdminStaff';
 import AdminBarbers from '@/pages/AdminBarbers';
 import AdminClients from '@/pages/AdminClients';
+import AdminBirthdays from '@/pages/AdminBirthdays';
 import AdminProducts from '@/pages/AdminProducts';
 import AdminFinance from '@/pages/AdminFinance';
 import AdminMarketing from '@/pages/AdminMarketing';
@@ -96,6 +97,12 @@ function App() {
                 <Route path="/admin/clientes" element={
                   <AdminRoute>
                     <AdminClients />
+                  </AdminRoute>
+                } />
+                
+                <Route path="/admin/aniversariantes" element={
+                  <AdminRoute>
+                    <AdminBirthdays />
                   </AdminRoute>
                 } />
                 
