@@ -8,15 +8,18 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function ClientNewBooking() {
   const navigate = useNavigate();
-  const { client } = useClientAuth();
+  const { client, user, loading } = useClientAuth();
+
+  console.log('ClientNewBooking - client:', client, 'user:', user?.email, 'loading:', loading);
 
   useEffect(() => {
-    if (!client) {
+    if (!loading && !user) {
+      console.log('ClientNewBooking - Redirecionando para login');
       navigate('/cliente/login');
     }
-  }, [client, navigate]);
+  }, [user, loading, navigate]);
 
-  if (!client) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -25,6 +28,10 @@ export default function ClientNewBooking() {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
@@ -52,7 +59,7 @@ export default function ClientNewBooking() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <ClientAppointmentForm clientId={client.id} />
+          <ClientAppointmentForm clientId={user.id} />
         </div>
       </div>
     </div>

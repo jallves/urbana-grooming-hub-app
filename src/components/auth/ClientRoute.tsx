@@ -10,6 +10,8 @@ interface ClientRouteProps {
 export default function ClientRoute({ children }: ClientRouteProps) {
   const { user, loading } = useClientAuth();
 
+  console.log('ClientRoute - user:', user?.email, 'loading:', loading);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -22,6 +24,7 @@ export default function ClientRoute({ children }: ClientRouteProps) {
   }
 
   if (!user) {
+    console.log('ClientRoute - Redirecionando para login, usuário não autenticado');
     return <Navigate to="/cliente/login" replace />;
   }
 
