@@ -68,44 +68,46 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
           </Button>
         </div>
 
-        <div className="flex flex-col space-y-2 p-4 overflow-y-auto h-full">
-          <Link 
-            to="/" 
-            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-            onClick={() => handleItemClick()}
-          >
-            <Home size={20} />
-            <span className="text-lg">Home</span>
-          </Link>
-          
-          <a 
-            href="#services" 
-            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-            onClick={() => handleItemClick()}
-          >
-            <Scissors size={20} />
-            <span className="text-lg">Serviços</span>
-          </a>
-          
-          <a 
-            href="#team" 
-            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-            onClick={() => handleItemClick()}
-          >
-            <Users size={20} />
-            <span className="text-lg">Equipe</span>
-          </a>
-          
-          <Link 
-            to="/agendar"
-            className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
-            onClick={() => handleItemClick()}
-          >
-            <Calendar size={20} className="text-urbana-gold" />
-            <span className="text-lg">Agendamento</span>
-          </Link>
+        <div className="flex flex-col p-4 h-full">
+          <div className="flex flex-col space-y-3 flex-1">
+            <Link 
+              to="/" 
+              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+              onClick={() => handleItemClick()}
+            >
+              <Home size={20} />
+              <span className="text-lg">Home</span>
+            </Link>
+            
+            <a 
+              href="#services" 
+              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+              onClick={() => handleItemClick()}
+            >
+              <Scissors size={20} />
+              <span className="text-lg">Serviços</span>
+            </a>
+            
+            <a 
+              href="#team" 
+              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+              onClick={() => handleItemClick()}
+            >
+              <Users size={20} />
+              <span className="text-lg">Equipe</span>
+            </a>
+            
+            <Link 
+              to="/agendar"
+              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/10"
+              onClick={() => handleItemClick()}
+            >
+              <Calendar size={20} className="text-urbana-gold" />
+              <span className="text-lg">Agendamento</span>
+            </Link>
+          </div>
 
-          <div className="border-t border-urbana-gold/20 pt-4 mt-6">
+          <div className="border-t border-urbana-gold/20 pt-4 mt-auto">
             {user ? (
               <div className="space-y-3">
                 <Button
