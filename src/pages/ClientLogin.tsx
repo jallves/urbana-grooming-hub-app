@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { ClientLoginData } from '@/types/client';
 import { Loader2, LogIn } from 'lucide-react';
+import { sanitizeInput } from '@/lib/security';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
-  const { signIn } = useClientAuth();
+  const { signIn, user, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ClientLoginData>({
     email: '',
@@ -19,11 +20,20 @@ export default function ClientLogin() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/cliente/dashboard');
+    }
+  }, [user, authLoading, navigate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Sanitize input as user types
+    const sanitizedValue = name === 'email' || name === 'password' ? sanitizeInput(value) : value;
+    setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
     
-    // Limpar erro quando o usuário começar a digitar
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -58,15 +68,26 @@ export default function ClientLogin() {
       
       if (error) {
         setErrors({ general: error });
-      } else {
-        navigate('/cliente/dashboard');
       }
+      // Navigation will be handled by the auth context
     } catch (error) {
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading screen while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-urbana-gold mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -98,6 +119,7 @@ export default function ClientLogin() {
                 onChange={handleChange}
                 className={errors.email ? 'border-red-500' : ''}
                 placeholder="seu@email.com"
+                maxLength={100}
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
@@ -112,6 +134,7 @@ export default function ClientLogin() {
                 onChange={handleChange}
                 className={errors.password ? 'border-red-500' : ''}
                 placeholder="Sua senha"
+                maxLength={100}
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>

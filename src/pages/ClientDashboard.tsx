@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,21 +29,23 @@ interface Appointment {
 
 export default function ClientDashboard() {
   const navigate = useNavigate();
-  const { client, signOut } = useClientAuth();
+  const { client, user, signOut, loading: authLoading } = useClientAuth();
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!client) {
+    if (!authLoading && !user) {
       navigate('/cliente/login');
       return;
     }
-    fetchAppointments();
-  }, [client, navigate]);
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user, authLoading, navigate]);
 
   const fetchAppointments = async () => {
-    if (!client) return;
+    if (!user) return;
 
     try {
       const { data, error } = await supabase
@@ -60,7 +61,7 @@ export default function ClientDashboard() {
           service:services(name, price),
           staff:staff(name)
         `)
-        .eq('client_id', client.id)
+        .eq('client_id', user.id)
         .order('start_time', { ascending: false });
 
       if (error) {
@@ -81,11 +82,14 @@ export default function ClientDashboard() {
   };
 
   const handleCancelAppointment = async (appointmentId: string) => {
+    if (!user) return;
+
     try {
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
-        .eq('id', appointmentId);
+        .eq('id', appointmentId)
+        .eq('client_id', user.id); // Ensure user can only cancel their own appointments
 
       if (error) {
         toast({
@@ -121,7 +125,7 @@ export default function ClientDashboard() {
     return appointment.service.price - (appointment.discount_amount || 0);
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
@@ -132,6 +136,10 @@ export default function ClientDashboard() {
     );
   }
 
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -140,7 +148,7 @@ export default function ClientDashboard() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 sm:py-6 space-y-4 sm:space-y-0">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Painel do Cliente</h1>
-              <p className="text-gray-600 text-sm sm:text-base">Bem-vindo, {client?.name}</p>
+              <p className="text-gray-600 text-sm sm:text-base">Bem-vindo, {client?.name || user.email}</p>
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
               <Button

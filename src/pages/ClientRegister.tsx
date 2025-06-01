@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { ClientFormData } from '@/types/client';
 import { Loader2, UserPlus } from 'lucide-react';
+import { validatePasswordStrength, sanitizeInput } from '@/lib/security';
 
 export default function ClientRegister() {
   const navigate = useNavigate();
-  const { signUp } = useClientAuth();
+  const { signUp, user, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -23,11 +24,20 @@ export default function ClientRegister() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/cliente/dashboard');
+    }
+  }, [user, authLoading, navigate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    // Sanitize input as user types (except passwords)
+    const sanitizedValue = name === 'password' || name === 'confirmPassword' ? value : sanitizeInput(value);
+    setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
     
-    // Limpar erro quando o usuário começar a digitar
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -52,8 +62,11 @@ export default function ClientRegister() {
 
     if (!formData.password) {
       newErrors.password = 'Senha é obrigatória';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+    } else {
+      const passwordValidation = validatePasswordStrength(formData.password);
+      if (!passwordValidation.isValid) {
+        newErrors.password = passwordValidation.errors[0] || 'Senha não atende aos critérios de segurança';
+      }
     }
 
     if (!formData.confirmPassword) {
@@ -88,15 +101,26 @@ export default function ClientRegister() {
       
       if (error) {
         setErrors({ general: error });
-      } else {
-        navigate('/cliente/dashboard');
       }
+      // Navigation will be handled by the auth context after email confirmation
     } catch (error) {
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);
     }
   };
+
+  // Show loading screen while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-urbana-gold mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -128,6 +152,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={errors.name ? 'border-red-500' : ''}
                 placeholder="Seu nome completo"
+                maxLength={100}
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
@@ -142,6 +167,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={errors.email ? 'border-red-500' : ''}
                 placeholder="seu@email.com"
+                maxLength={100}
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
@@ -156,6 +182,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={errors.phone ? 'border-red-500' : ''}
                 placeholder="(11) 99999-9999"
+                maxLength={20}
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
@@ -182,7 +209,8 @@ export default function ClientRegister() {
                 value={formData.password}
                 onChange={handleChange}
                 className={errors.password ? 'border-red-500' : ''}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mínimo 12 caracteres com letras, números e símbolos"
+                maxLength={100}
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
@@ -197,6 +225,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={errors.confirmPassword ? 'border-red-500' : ''}
                 placeholder="Confirme sua senha"
+                maxLength={100}
               />
               {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>

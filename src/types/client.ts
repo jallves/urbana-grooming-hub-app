@@ -1,9 +1,16 @@
 
 import { Database } from '@/integrations/supabase/types';
 
-// Define o tipo para clientes
-export type Client = Database['public']['Tables']['clients']['Row'] & {
+// Define o tipo para clientes - now using auth.users id as primary key
+export type Client = {
+  id: string; // This will be the auth.users.id
+  name: string;
+  email: string;
+  phone: string;
+  birth_date?: string | null;
   whatsapp?: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 // Define um tipo para novos clientes (sem id e timestamps)
@@ -12,7 +19,7 @@ export type NewClient = Omit<Client, 'id' | 'created_at' | 'updated_at'>;
 // Define um tipo para o formulário de clientes
 export interface ClientFormData {
   name: string;
-  email: string | null;
+  email: string;
   phone: string;
   whatsapp?: string;
   birth_date?: string;
@@ -24,14 +31,4 @@ export interface ClientFormData {
 export interface ClientLoginData {
   email: string;
   password: string;
-}
-
-// Define um tipo para sessão do cliente
-export interface ClientSession {
-  id: string;
-  client_id: string;
-  token_hash: string;
-  expires_at: string;
-  created_at: string;
-  last_used_at: string;
 }

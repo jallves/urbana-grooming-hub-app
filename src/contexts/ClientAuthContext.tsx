@@ -1,16 +1,34 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Client, ClientLoginData, ClientFormData } from '@/types/client';
+import { User, Session } from '@supabase/supabase-js';
+import { Client } from '@/types/client';
 import { useToast } from '@/hooks/use-toast';
+import { sanitizeInput } from '@/lib/security';
 
 interface ClientAuthContextType {
   client: Client | null;
+  user: User | null;
+  session: Session | null;
   loading: boolean;
-  signUp: (data: ClientFormData) => Promise<{ error: string | null }>;
+  signUp: (data: ClientSignUpData) => Promise<{ error: string | null }>;
   signIn: (data: ClientLoginData) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updateClient: (data: Partial<Client>) => Promise<{ error: string | null }>;
+}
+
+interface ClientSignUpData {
+  name: string;
+  email: string;
+  phone: string;
+  birth_date?: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface ClientLoginData {
+  email: string;
+  password: string;
 }
 
 const ClientAuthContext = createContext<ClientAuthContextType | undefined>(undefined);
@@ -29,52 +47,84 @@ interface ClientAuthProviderProps {
 
 export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [client, setClient] = useState<Client | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Verificar sessão existente ao carregar
+  // Set up auth state listener and check for existing session
   useEffect(() => {
-    checkSession();
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch client profile when user is authenticated
+          setTimeout(async () => {
+            await fetchClientProfile(session.user.id);
+          }, 0);
+        } else {
+          setClient(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchClientProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const checkSession = async () => {
+  const fetchClientProfile = async (userId: string) => {
     try {
-      const token = localStorage.getItem('client_token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      // Verificar se o cliente ainda existe no banco
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('id', token)
+        .eq('id', userId)
         .single();
 
-      if (error) {
-        // Se houver erro, mas não for "not found", manter o token
-        if (error.code !== 'PGRST116') {
-          console.error('Erro ao verificar sessão:', error);
-        } else {
-          // Só remove o token se o cliente realmente não existir
-          localStorage.removeItem('client_token');
-        }
-        setClient(null);
-      } else if (data) {
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching client profile:', error);
+        return;
+      }
+
+      if (data) {
         setClient(data);
       }
     } catch (error) {
-      console.error('Erro ao verificar sessão:', error);
-      // Não remover o token em caso de erro de conexão
-    } finally {
-      setLoading(false);
+      console.error('Error fetching client profile:', error);
     }
   };
 
-  const signUp = async (data: ClientFormData): Promise<{ error: string | null }> => {
+  const signUp = async (data: ClientSignUpData): Promise<{ error: string | null }> => {
     try {
-      // Validar idade mínima
+      // Sanitize input data
+      const sanitizedData = {
+        name: sanitizeInput(data.name),
+        email: sanitizeInput(data.email),
+        phone: sanitizeInput(data.phone),
+        birth_date: data.birth_date ? sanitizeInput(data.birth_date) : undefined,
+      };
+
+      // Validate passwords match
+      if (data.password !== data.confirmPassword) {
+        return { error: 'As senhas não coincidem' };
+      }
+
+      // Validate age if birth date provided
       if (data.birth_date) {
         const birthDate = new Date(data.birth_date);
         const today = new Date();
@@ -85,50 +135,47 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         }
       }
 
-      // Verificar se senhas coincidem
-      if (data.password !== data.confirmPassword) {
-        return { error: 'As senhas não coincidem' };
+      // Create auth user first
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: sanitizedData.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: sanitizedData.name,
+            phone: sanitizedData.phone,
+          },
+          emailRedirectTo: `${window.location.origin}/cliente/dashboard`
+        }
+      });
+
+      if (authError) {
+        return { error: authError.message };
       }
 
-      // Verificar se email já existe
-      const { data: existingClient } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('email', data.email)
-        .single();
-
-      if (existingClient) {
-        return { error: 'Email já está em uso' };
+      if (!authData.user) {
+        return { error: 'Falha ao criar usuário' };
       }
 
-      // Hash da senha (simulado - em produção usar bcrypt no backend)
-      const passwordHash = btoa(data.password); // Base64 para simulação
-
-      // Criar cliente
-      const { data: newClient, error } = await supabase
+      // Create client profile
+      const { error: clientError } = await supabase
         .from('clients')
         .insert({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          birth_date: data.birth_date || null,
-          password_hash: passwordHash,
-          email_verified: false
-        })
-        .select()
-        .single();
+          id: authData.user.id,
+          name: sanitizedData.name,
+          email: sanitizedData.email,
+          phone: sanitizedData.phone,
+          birth_date: sanitizedData.birth_date || null,
+        });
 
-      if (error) {
-        return { error: error.message };
+      if (clientError) {
+        // If client creation fails, we should clean up the auth user
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        return { error: 'Erro ao criar perfil do cliente' };
       }
-
-      // Armazenar token
-      localStorage.setItem('client_token', newClient.id);
-      setClient(newClient);
 
       toast({
         title: "Conta criada com sucesso!",
-        description: "Bem-vindo à nossa barbearia.",
+        description: "Verifique seu email para confirmar a conta.",
       });
 
       return { error: null };
@@ -140,24 +187,20 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const signIn = async (data: ClientLoginData): Promise<{ error: string | null }> => {
     try {
-      // Hash da senha para comparação
-      const passwordHash = btoa(data.password);
+      const sanitizedEmail = sanitizeInput(data.email);
 
-      // Buscar cliente
-      const { data: clientData, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('email', data.email)
-        .eq('password_hash', passwordHash)
-        .single();
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: sanitizedEmail,
+        password: data.password,
+      });
 
-      if (error || !clientData) {
+      if (authError) {
         return { error: 'Email ou senha incorretos' };
       }
 
-      // Armazenar token
-      localStorage.setItem('client_token', clientData.id);
-      setClient(clientData);
+      if (!authData.user) {
+        return { error: 'Falha na autenticação' };
+      }
 
       toast({
         title: "Login realizado com sucesso!",
@@ -172,23 +215,39 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   };
 
   const signOut = async (): Promise<void> => {
-    localStorage.removeItem('client_token');
-    setClient(null);
-    
-    toast({
-      title: "Logout realizado",
-      description: "Até a próxima!",
-    });
+    try {
+      await supabase.auth.signOut();
+      setClient(null);
+      setUser(null);
+      setSession(null);
+      
+      toast({
+        title: "Logout realizado",
+        description: "Até a próxima!",
+      });
+    } catch (error) {
+      console.error('Erro no logout:', error);
+    }
   };
 
   const updateClient = async (data: Partial<Client>): Promise<{ error: string | null }> => {
-    if (!client) return { error: 'Cliente não autenticado' };
+    if (!user) return { error: 'Usuário não autenticado' };
 
     try {
+      // Sanitize input data
+      const sanitizedData = Object.entries(data).reduce((acc, [key, value]) => {
+        if (typeof value === 'string') {
+          acc[key] = sanitizeInput(value);
+        } else {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
       const { data: updatedClient, error } = await supabase
         .from('clients')
-        .update(data)
-        .eq('id', client.id)
+        .update(sanitizedData)
+        .eq('id', user.id)
         .select()
         .single();
 
@@ -206,6 +265,8 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const value = {
     client,
+    user,
+    session,
     loading,
     signUp,
     signIn,
