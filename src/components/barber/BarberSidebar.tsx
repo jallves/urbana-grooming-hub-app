@@ -53,6 +53,7 @@ const BarberSidebar: React.FC = () => {
                     : 'hover:bg-urbana-gray/20 text-white'
                 }`
               }
+              end={item.href === '/barbeiro'}
             >
               {item.icon}
               <span className="ml-3">{item.name}</span>

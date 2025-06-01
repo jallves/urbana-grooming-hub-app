@@ -56,6 +56,11 @@ function App() {
                 
                 {/* Barber Routes */}
                 <Route path="/barbeiro/login" element={<BarberAuth />} />
+                <Route path="/barbeiro" element={
+                  <BarberRoute>
+                    <BarberDashboard />
+                  </BarberRoute>
+                } />
                 <Route path="/barbeiro/dashboard" element={
                   <BarberRoute>
                     <BarberDashboard />
