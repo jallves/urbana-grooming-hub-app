@@ -17,13 +17,17 @@ export interface ShopSettingsFormData {
   social_twitter: string | null;
 }
 
-// Define tipos para as configurações do banner rotativo
+// Define tipos para as configurações do banner rotativo - updated to match database
 export interface BannerImage {
-  id: number;
-  imageUrl: string;
+  id: string;
+  image_url: string;
   title: string;
   subtitle: string;
-  description: string;
+  description?: string;
+  button_text?: string;
+  button_link?: string;
+  is_active: boolean;
+  display_order: number;
 }
 
 // Define tipos para as imagens da galeria
