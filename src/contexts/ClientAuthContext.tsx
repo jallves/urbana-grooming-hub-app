@@ -52,21 +52,14 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         .eq('id', token)
         .single();
 
-      if (error) {
-        // Se houver erro, mas não for "not found", manter o token
-        if (error.code !== 'PGRST116') {
-          console.error('Erro ao verificar sessão:', error);
-        } else {
-          // Só remove o token se o cliente realmente não existir
-          localStorage.removeItem('client_token');
-        }
+      if (error || !data) {
+        localStorage.removeItem('client_token');
         setClient(null);
-      } else if (data) {
+      } else {
         setClient(data);
       }
     } catch (error) {
       console.error('Erro ao verificar sessão:', error);
-      // Não remover o token em caso de erro de conexão
     } finally {
       setLoading(false);
     }
@@ -74,7 +67,41 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const signUp = async (data: ClientFormData): Promise<{ error: string | null }> => {
     try {
-      // Validar idade mínima
+      console.log('Iniciando cadastro de cliente:', data);
+
+      // Validações básicas
+      if (!data.name?.trim()) {
+        return { error: 'Nome é obrigatório' };
+      }
+
+      if (!data.email?.trim()) {
+        return { error: 'Email é obrigatório' };
+      }
+
+      if (!data.phone?.trim()) {
+        return { error: 'Telefone é obrigatório' };
+      }
+
+      if (!data.password || data.password.length < 6) {
+        return { error: 'Senha deve ter pelo menos 6 caracteres' };
+      }
+
+      if (data.password !== data.confirmPassword) {
+        return { error: 'As senhas não coincidem' };
+      }
+
+      // Verificar se email já existe
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle();
+
+      if (existingClient) {
+        return { error: 'Email já está em uso' };
+      }
+
+      // Validar idade mínima se fornecida
       if (data.birth_date) {
         const birthDate = new Date(data.birth_date);
         const today = new Date();
@@ -85,44 +112,32 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         }
       }
 
-      // Verificar se senhas coincidem
-      if (data.password !== data.confirmPassword) {
-        return { error: 'As senhas não coincidem' };
-      }
-
-      // Verificar se email já existe
-      const { data: existingClient } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('email', data.email)
-        .single();
-
-      if (existingClient) {
-        return { error: 'Email já está em uso' };
-      }
-
-      // Hash da senha (simulado - em produção usar bcrypt no backend)
-      const passwordHash = btoa(data.password); // Base64 para simulação
+      // Hash simples da senha (em produção usar bcrypt no backend)
+      const passwordHash = btoa(data.password);
 
       // Criar cliente
       const { data: newClient, error } = await supabase
         .from('clients')
         .insert({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
+          name: data.name.trim(),
+          email: data.email.trim().toLowerCase(),
+          phone: data.phone.trim(),
           birth_date: data.birth_date || null,
           password_hash: passwordHash,
-          email_verified: false
+          email_verified: false,
+          whatsapp: data.whatsapp?.trim() || null
         })
         .select()
         .single();
 
       if (error) {
-        return { error: error.message };
+        console.error('Erro ao criar cliente:', error);
+        return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      // Armazenar token
+      console.log('Cliente criado com sucesso:', newClient);
+
+      // Armazenar token e definir cliente
       localStorage.setItem('client_token', newClient.id);
       setClient(newClient);
 
@@ -134,12 +149,18 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       return { error: null };
     } catch (error) {
       console.error('Erro no registro:', error);
-      return { error: 'Erro interno do servidor' };
+      return { error: 'Erro inesperado. Tente novamente.' };
     }
   };
 
   const signIn = async (data: ClientLoginData): Promise<{ error: string | null }> => {
     try {
+      console.log('Tentando fazer login:', data.email);
+
+      if (!data.email?.trim() || !data.password) {
+        return { error: 'Email e senha são obrigatórios' };
+      }
+
       // Hash da senha para comparação
       const passwordHash = btoa(data.password);
 
@@ -147,15 +168,22 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       const { data: clientData, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('email', data.email)
+        .eq('email', data.email.trim().toLowerCase())
         .eq('password_hash', passwordHash)
-        .single();
+        .maybeSingle();
 
-      if (error || !clientData) {
+      if (error) {
+        console.error('Erro na consulta:', error);
+        return { error: 'Erro interno do servidor' };
+      }
+
+      if (!clientData) {
         return { error: 'Email ou senha incorretos' };
       }
 
-      // Armazenar token
+      console.log('Login realizado com sucesso:', clientData);
+
+      // Armazenar token e definir cliente
       localStorage.setItem('client_token', clientData.id);
       setClient(clientData);
 
@@ -167,7 +195,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       return { error: null };
     } catch (error) {
       console.error('Erro no login:', error);
-      return { error: 'Erro interno do servidor' };
+      return { error: 'Erro inesperado. Tente novamente.' };
     }
   };
 

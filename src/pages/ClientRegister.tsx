@@ -8,10 +8,12 @@ import { Label } from '@/components/ui/label';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { ClientFormData } from '@/types/client';
 import { Loader2, UserPlus } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function ClientRegister() {
   const navigate = useNavigate();
   const { signUp } = useClientAuth();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -99,111 +101,111 @@ export default function ClientRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-black flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Card className={`bg-gray-900 border-gray-700 ${isMobile ? 'w-full max-w-sm' : 'w-full max-w-md'}`}>
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <UserPlus className="h-12 w-12 text-urbana-gold" />
           </div>
-          <CardTitle className="text-2xl font-bold">Criar Conta</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-bold text-white">Criar Conta</CardTitle>
+          <CardDescription className="text-gray-300">
             Crie sua conta para agendar seus horários
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.general && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+              <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-md text-sm">
                 {errors.general}
               </div>
             )}
 
             <div>
-              <Label htmlFor="name">Nome completo *</Label>
+              <Label htmlFor="name" className="text-white">Nome completo *</Label>
               <Input
                 id="name"
                 name="name"
                 type="text"
                 value={formData.name}
                 onChange={handleChange}
-                className={errors.name ? 'border-red-500' : ''}
+                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.name ? 'border-red-500' : ''}`}
                 placeholder="Seu nome completo"
               />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
             </div>
 
             <div>
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email" className="text-white">Email *</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 value={formData.email || ''}
                 onChange={handleChange}
-                className={errors.email ? 'border-red-500' : ''}
+                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="seu@email.com"
               />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+              {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
-              <Label htmlFor="phone">Telefone *</Label>
+              <Label htmlFor="phone" className="text-white">Telefone *</Label>
               <Input
                 id="phone"
                 name="phone"
                 type="tel"
                 value={formData.phone}
                 onChange={handleChange}
-                className={errors.phone ? 'border-red-500' : ''}
+                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.phone ? 'border-red-500' : ''}`}
                 placeholder="(11) 99999-9999"
               />
-              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+              {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
             </div>
 
             <div>
-              <Label htmlFor="birth_date">Data de nascimento</Label>
+              <Label htmlFor="birth_date" className="text-white">Data de nascimento</Label>
               <Input
                 id="birth_date"
                 name="birth_date"
                 type="date"
                 value={formData.birth_date}
                 onChange={handleChange}
-                className={errors.birth_date ? 'border-red-500' : ''}
+                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.birth_date ? 'border-red-500' : ''}`}
               />
-              {errors.birth_date && <p className="text-red-500 text-sm mt-1">{errors.birth_date}</p>}
+              {errors.birth_date && <p className="text-red-400 text-sm mt-1">{errors.birth_date}</p>}
             </div>
 
             <div>
-              <Label htmlFor="password">Senha *</Label>
+              <Label htmlFor="password" className="text-white">Senha *</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={errors.password ? 'border-red-500' : ''}
+                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.password ? 'border-red-500' : ''}`}
                 placeholder="Mínimo 6 caracteres"
               />
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword">Confirmar senha *</Label>
+              <Label htmlFor="confirmPassword" className="text-white">Confirmar senha *</Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className={errors.confirmPassword ? 'border-red-500' : ''}
+                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                 placeholder="Confirme sua senha"
               />
-              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+              {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-urbana-gold hover:bg-urbana-gold/90"
+              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black"
               disabled={loading}
             >
               {loading ? (
@@ -216,11 +218,18 @@ export default function ClientRegister() {
               )}
             </Button>
 
-            <div className="text-center text-sm">
-              <span className="text-gray-600">Já tem uma conta? </span>
-              <Link to="/cliente/login" className="text-urbana-gold hover:underline">
-                Fazer login
-              </Link>
+            <div className="text-center text-sm space-y-2">
+              <div>
+                <span className="text-gray-300">Já tem uma conta? </span>
+                <Link to="/cliente/login" className="text-urbana-gold hover:underline">
+                  Fazer login
+                </Link>
+              </div>
+              <div>
+                <Link to="/" className="text-gray-400 hover:underline">
+                  Voltar ao início
+                </Link>
+              </div>
             </div>
           </form>
         </CardContent>
