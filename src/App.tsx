@@ -16,7 +16,6 @@ import Admin from '@/pages/Admin';
 import BarberAuth from '@/pages/BarberAuth';
 import BarberDashboard from '@/pages/BarberDashboard';
 import NotFound from '@/pages/NotFound';
-import AppointmentBooking from '@/pages/AppointmentBooking';
 
 import { ClientAuthProvider } from '@/contexts/ClientAuthContext';
 import ClientRegister from '@/pages/ClientRegister';
@@ -37,7 +36,6 @@ function App() {
               <Toaster />
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/agendar" element={<AppointmentBooking />} />
                 
                 {/* Client Routes */}
                 <Route path="/cliente/registro" element={<ClientRegister />} />

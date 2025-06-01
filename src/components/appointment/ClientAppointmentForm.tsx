@@ -10,6 +10,10 @@ import { DateTimeSelectionFields } from './components/DateTimeSelectionFields';
 import { BarberSelectionField } from './components/BarberSelectionField';
 import { AppointmentSummary } from './components/AppointmentSummary';
 import { CouponField } from './components/CouponField';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface ClientAppointmentFormProps {
   clientId: string;
@@ -17,6 +21,7 @@ interface ClientAppointmentFormProps {
 
 export default function ClientAppointmentForm({ clientId }: ClientAppointmentFormProps) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     form,
     loading,
@@ -31,7 +36,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     disabledDays,
     appliedCoupon,
     isApplyingCoupon,
-    finalServicePrice,
     applyCoupon,
     removeCoupon,
     fetchAvailableTimes,
@@ -46,12 +50,72 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     : 0;
 
   const onSubmit = async (data: any) => {
+    if (!selectedService) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione um serviço.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.date || !data.time) {
+      toast({
+        title: "Erro", 
+        description: "Por favor, selecione uma data e horário.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Here we would call the appointment creation function
-      // For now, just navigate back to dashboard
-      navigate('/cliente/dashboard');
-    } catch (error) {
+      const [hours, minutes] = data.time.split(':').map(Number);
+      const selectedDate = new Date(data.date);
+      selectedDate.setHours(hours, minutes, 0, 0);
+
+      const appointmentData = {
+        client_id: clientId,
+        service_id: data.service_id,
+        staff_id: data.staff_id || null,
+        start_time: selectedDate.toISOString(),
+        end_time: new Date(selectedDate.getTime() + selectedService.duration * 60000).toISOString(),
+        notes: data.notes || null,
+        coupon_code: data.couponCode || null,
+        discount_amount: appliedCoupon ? appliedCoupon.discountAmount : 0,
+        status: 'scheduled',
+      };
+
+      const { error } = await supabase
+        .from('appointments')
+        .insert([appointmentData]);
+
+      if (error) {
+        console.error("Erro ao criar agendamento:", error);
+        throw new Error(error.message || "Não foi possível criar o agendamento.");
+      }
+
+      // Saudação de confirmação personalizada
+      const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+      const formattedTime = format(selectedDate, "HH:mm", { locale: ptBR });
+      
+      toast({
+        title: "🎉 Parabéns! Agendamento Confirmado",
+        description: `Seu agendamento de ${selectedService.name} foi confirmado com sucesso para ${formattedDate} às ${formattedTime}. Nos vemos em breve!`,
+        duration: 8000,
+      });
+
+      // Navigate back to dashboard after successful submission
+      setTimeout(() => {
+        navigate('/cliente/dashboard');
+      }, 2000);
+
+    } catch (error: any) {
       console.error('Erro ao criar agendamento:', error);
+      toast({
+        title: "Erro ao agendar",
+        description: error.message || "Não foi possível criar o agendamento. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
