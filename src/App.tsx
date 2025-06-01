@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/components/theme/theme-provider';
@@ -27,6 +28,12 @@ import AdminMarketing from '@/pages/AdminMarketing';
 import AdminAnalytics from '@/pages/AdminAnalytics';
 import AdminSupport from '@/pages/AdminSupport';
 import AdminSettings from '@/pages/AdminSettings';
+
+// Barber Pages
+import BarberAppointments from '@/pages/BarberAppointments';
+import BarberCommissions from '@/pages/BarberCommissions';
+import BarberClients from '@/pages/BarberClients';
+import BarberProfile from '@/pages/BarberProfile';
 
 import { ClientAuthProvider } from '@/contexts/ClientAuthContext';
 import ClientRegister from '@/pages/ClientRegister';
@@ -138,6 +145,26 @@ function App() {
                 <Route path="/barbeiro/dashboard" element={
                   <BarberRoute>
                     <BarberDashboard />
+                  </BarberRoute>
+                } />
+                <Route path="/barbeiro/agendamentos" element={
+                  <BarberRoute>
+                    <BarberAppointments />
+                  </BarberRoute>
+                } />
+                <Route path="/barbeiro/clientes" element={
+                  <BarberRoute>
+                    <BarberClients />
+                  </BarberRoute>
+                } />
+                <Route path="/barbeiro/comissoes" element={
+                  <BarberRoute>
+                    <BarberCommissions />
+                  </BarberRoute>
+                } />
+                <Route path="/barbeiro/perfil" element={
+                  <BarberRoute>
+                    <BarberProfile />
                   </BarberRoute>
                 } />
                 
