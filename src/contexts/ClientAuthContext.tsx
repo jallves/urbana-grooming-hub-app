@@ -52,20 +52,48 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Set up auth state listener and check for existing session
+  const fetchClientProfile = async (userId: string) => {
+    try {
+      console.log('Buscando perfil do cliente para:', userId);
+      
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao buscar perfil do cliente:', error);
+        return;
+      }
+
+      if (data) {
+        console.log('Perfil do cliente encontrado:', data);
+        setClient(data);
+      } else {
+        console.log('Perfil do cliente não encontrado');
+        setClient(null);
+      }
+    } catch (error) {
+      console.error('Erro na busca do perfil do cliente:', error);
+    }
+  };
+
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let mounted = true;
+
+    // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        if (!mounted) return;
+        
+        console.log('Estado de auth mudou:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch client profile when user is authenticated
-          setTimeout(async () => {
-            await fetchClientProfile(session.user.id);
-          }, 0);
+          await fetchClientProfile(session.user.id);
         } else {
           setClient(null);
         }
@@ -74,44 +102,45 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchClientProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
+    // Verificar sessão existente
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Erro ao verificar sessão:', error);
+          setLoading(false);
+          return;
+        }
 
-    return () => subscription.unsubscribe();
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            await fetchClientProfile(session.user.id);
+          }
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar sessão existente:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    checkExistingSession();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
-
-  const fetchClientProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching client profile:', error);
-        return;
-      }
-
-      if (data) {
-        setClient(data);
-      }
-    } catch (error) {
-      console.error('Error fetching client profile:', error);
-    }
-  };
 
   const signUp = async (data: ClientSignUpData): Promise<{ error: string | null }> => {
     try {
-      // Sanitize input data
       const sanitizedData = {
         name: sanitizeInput(data.name),
         email: sanitizeInput(data.email),
@@ -119,12 +148,10 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         birth_date: data.birth_date ? sanitizeInput(data.birth_date) : undefined,
       };
 
-      // Validate passwords match
       if (data.password !== data.confirmPassword) {
         return { error: 'As senhas não coincidem' };
       }
 
-      // Validate age if birth date provided
       if (data.birth_date) {
         const birthDate = new Date(data.birth_date);
         const today = new Date();
@@ -135,7 +162,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         }
       }
 
-      // Create auth user first
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: sanitizedData.email,
         password: data.password,
@@ -156,7 +182,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         return { error: 'Falha ao criar usuário' };
       }
 
-      // Create client profile
       const { error: clientError } = await supabase
         .from('clients')
         .insert({
@@ -168,8 +193,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         });
 
       if (clientError) {
-        // If client creation fails, we should clean up the auth user
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        console.error('Erro ao criar perfil do cliente:', clientError);
         return { error: 'Erro ao criar perfil do cliente' };
       }
 
@@ -234,7 +258,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     if (!user) return { error: 'Usuário não autenticado' };
 
     try {
-      // Sanitize input data
       const sanitizedData = Object.entries(data).reduce((acc, [key, value]) => {
         if (typeof value === 'string') {
           acc[key] = sanitizeInput(value);

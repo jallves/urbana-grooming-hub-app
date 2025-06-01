@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/components/theme/theme-provider';
@@ -6,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
 import AdminRoute from '@/components/auth/AdminRoute';
 import BarberRoute from '@/components/auth/BarberRoute';
+import ClientRoute from '@/components/auth/ClientRoute';
 
 // Pages
 import Index from '@/pages/Index';
@@ -60,9 +60,21 @@ function App() {
                 {/* Client Routes */}
                 <Route path="/cliente/registro" element={<ClientRegister />} />
                 <Route path="/cliente/login" element={<ClientLogin />} />
-                <Route path="/cliente/dashboard" element={<ClientDashboard />} />
-                <Route path="/cliente/novo-agendamento" element={<ClientNewBooking />} />
-                <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
+                <Route path="/cliente/dashboard" element={
+                  <ClientRoute>
+                    <ClientDashboard />
+                  </ClientRoute>
+                } />
+                <Route path="/cliente/novo-agendamento" element={
+                  <ClientRoute>
+                    <ClientNewBooking />
+                  </ClientRoute>
+                } />
+                <Route path="/cliente/agendamento/:id/editar" element={
+                  <ClientRoute>
+                    <ClientEditAppointment />
+                  </ClientRoute>
+                } />
                 
                 {/* Admin Authentication Routes */}
                 <Route path="/auth" element={<Auth />} />

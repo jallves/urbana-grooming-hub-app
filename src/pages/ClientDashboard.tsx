@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,21 +34,18 @@ export default function ClientDashboard() {
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/cliente/login');
-      return;
-    }
-    if (user) {
-      fetchAppointments();
-    }
-  }, [user, authLoading, navigate]);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchAppointments = async () => {
-    if (!user) return;
+    if (!user?.id) {
+      console.log('Usuário não autenticado para buscar agendamentos');
+      setLoading(false);
+      return;
+    }
 
     try {
+      console.log('Buscando agendamentos para cliente:', user.id);
+      
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -58,7 +56,7 @@ export default function ClientDashboard() {
           notes,
           coupon_code,
           discount_amount,
-          service:services(name, price),
+          service:services!inner(name, price),
           staff:staff(name)
         `)
         .eq('client_id', user.id)
@@ -66,20 +64,36 @@ export default function ClientDashboard() {
 
       if (error) {
         console.error('Erro ao buscar agendamentos:', error);
+        setError('Não foi possível carregar seus agendamentos. Verifique sua conexão.');
         toast({
           title: "Erro",
           description: "Não foi possível carregar seus agendamentos.",
           variant: "destructive",
         });
       } else {
+        console.log('Agendamentos encontrados:', data?.length || 0);
         setAppointments(data || []);
+        setError(null);
       }
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
+      setError('Erro inesperado ao carregar agendamentos.');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        console.log('Usuário não autenticado, redirecionando para login');
+        navigate('/cliente/login');
+        return;
+      }
+      
+      fetchAppointments();
+    }
+  }, [user, authLoading, navigate]);
 
   const handleCancelAppointment = async (appointmentId: string) => {
     if (!user) return;
@@ -89,7 +103,7 @@ export default function ClientDashboard() {
         .from('appointments')
         .update({ status: 'cancelled' })
         .eq('id', appointmentId)
-        .eq('client_id', user.id); // Ensure user can only cancel their own appointments
+        .eq('client_id', user.id);
 
       if (error) {
         toast({
@@ -137,7 +151,24 @@ export default function ClientDashboard() {
   }
 
   if (!user) {
-    return null; // Will redirect to login
+    return null;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Tentar novamente
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
