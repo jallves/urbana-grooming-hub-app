@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -32,16 +32,19 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   // If not authenticated, redirect to login
   if (!user) {
     console.log('AdminRoute: Redirecting to /auth (not authenticated)');
-    toast({
-      title: 'Acesso Restrito',
-      description: 'Você precisa estar logado para acessar esta página',
-      variant: 'destructive',
-    });
+    
+    // Use useEffect to show toast after redirect to prevent render loop
+    useEffect(() => {
+      toast({
+        title: 'Acesso Restrito',
+        description: 'Você precisa estar logado para acessar esta página',
+        variant: 'destructive',
+      });
+    }, [toast]);
+    
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
   
-  // REMOVED HARDCODED EMAIL CHECKS - Now only using database roles
-
   // Admin always has access
   if (isAdmin) {
     console.log('AdminRoute: Allowing access for admin');
@@ -56,11 +59,15 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   
   // Default: No access, redirect to appropriate location
   console.log(`AdminRoute: Access denied, redirecting user to appropriate page`);
-  toast({
-    title: 'Acesso Restrito',
-    description: 'Você não tem permissão para acessar o painel administrativo',
-    variant: 'destructive',
-  });
+  
+  // Use useEffect to show toast after redirect to prevent render loop
+  useEffect(() => {
+    toast({
+      title: 'Acesso Restrito',
+      description: 'Você não tem permissão para acessar o painel administrativo',
+      variant: 'destructive',
+    });
+  }, [toast]);
   
   // Redirect regular users to home
   return <Navigate to="/" replace />;
