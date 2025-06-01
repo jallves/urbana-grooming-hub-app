@@ -35,11 +35,31 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(false);
 
   const fetchAppointments = useCallback(async () => {
-    if (!client) return;
+    if (!client) {
+      console.log('No client found, skipping appointment fetch');
+      return;
+    }
 
     try {
       setLoading(true);
       console.log('Fetching appointments for client:', client.id);
+      
+      // Test database connection first
+      const { data: testData, error: testError } = await supabase
+        .from('appointments')
+        .select('count', { count: 'exact', head: true });
+
+      if (testError) {
+        console.error('Database connection test failed:', testError);
+        toast({
+          title: "Erro de Conexão",
+          description: "Não foi possível conectar ao banco de dados.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Database connection OK, fetching appointments...');
       
       const { data, error } = await supabase
         .from('appointments')
@@ -59,19 +79,19 @@ export default function ClientDashboard() {
         console.error('Error fetching appointments:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar seus agendamentos.",
+          description: `Erro ao carregar agendamentos: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
 
-      console.log('Appointments fetched:', data);
+      console.log('Appointments fetched successfully:', data?.length || 0, 'appointments');
       setAppointments(data || []);
     } catch (error) {
-      console.error('Error fetching appointments:', error);
+      console.error('Unexpected error fetching appointments:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar seus agendamentos.",
+        description: "Erro inesperado ao carregar agendamentos.",
         variant: "destructive",
       });
     } finally {
@@ -80,12 +100,16 @@ export default function ClientDashboard() {
   }, [client, toast]);
 
   useEffect(() => {
+    console.log('Dashboard useEffect - authLoading:', authLoading, 'user:', !!user, 'client:', !!client);
+    
     if (!authLoading && !user) {
+      console.log('No user found, redirecting to login');
       navigate('/cliente/login');
       return;
     }
 
-    if (client) {
+    if (client && !authLoading) {
+      console.log('Client found, fetching appointments');
       fetchAppointments();
     }
   }, [client, user, authLoading, navigate, fetchAppointments]);
@@ -135,7 +159,16 @@ export default function ClientDashboard() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600">Redirecionando para login...</p>
+          <div className="mb-4">
+            <p className="text-gray-600">
+              {!user ? 'Usuário não autenticado.' : 'Carregando perfil do cliente...'}
+            </p>
+          </div>
+          {!user && (
+            <Button onClick={() => navigate('/cliente/login')}>
+              Fazer Login
+            </Button>
+          )}
         </div>
       </div>
     );

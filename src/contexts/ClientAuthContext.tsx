@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -54,41 +53,82 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Test database connection on component mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log('Testing Supabase connection...');
+        const { data, error } = await supabase.from('clients').select('count', { count: 'exact', head: true });
+        if (error) {
+          console.error('Database connection test failed:', error);
+          toast({
+            title: "Erro de Conexão",
+            description: "Não foi possível conectar ao banco de dados. Verifique sua conexão.",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Database connection successful');
+        }
+      } catch (error) {
+        console.error('Connection test error:', error);
+      }
+    };
+
+    testConnection();
+  }, [toast]);
+
   // Set up auth state listener and check for existing session
   useEffect(() => {
     let isMounted = true;
+    console.log('Setting up auth state listener...');
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('Auth state changed:', event, 'Session exists:', !!session);
         
         if (!isMounted) return;
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchOrCreateClientProfile(session.user);
-        } else {
-          setClient(null);
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            console.log('User authenticated, fetching profile...');
+            await fetchOrCreateClientProfile(session.user);
+          } else {
+            console.log('No user session, clearing client data');
+            setClient(null);
+          }
+        } catch (error) {
+          console.error('Error in auth state change handler:', error);
+        } finally {
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log('Getting initial session...');
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting initial session:', error);
+          setLoading(false);
+          return;
+        }
         
         if (!isMounted) return;
         
         if (initialSession?.user) {
+          console.log('Initial session found for user:', initialSession.user.email);
           setSession(initialSession);
           setUser(initialSession.user);
           await fetchOrCreateClientProfile(initialSession.user);
+        } else {
+          console.log('No initial session found');
         }
         
         setLoading(false);
@@ -103,6 +143,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     getInitialSession();
 
     return () => {
+      console.log('Cleaning up auth listener');
       isMounted = false;
       subscription.unsubscribe();
     };
@@ -121,6 +162,11 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (fetchError) {
         console.error('Error fetching client profile:', fetchError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar o perfil do cliente.",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -138,6 +184,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
           birth_date: authUser.user_metadata?.birth_date || null,
         };
 
+        console.log('Inserting client data:', clientData);
         const { data: newClient, error: createError } = await supabase
           .from('clients')
           .insert(clientData)
@@ -157,6 +204,12 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
             if (retryClient) {
               setClient(retryClient);
             }
+          } else {
+            toast({
+              title: "Erro",
+              description: "Não foi possível criar o perfil do cliente.",
+              variant: "destructive",
+            });
           }
           return;
         }
@@ -166,6 +219,11 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       }
     } catch (error) {
       console.error('Error in fetchOrCreateClientProfile:', error);
+      toast({
+        title: "Erro",
+        description: "Erro interno ao carregar perfil.",
+        variant: "destructive",
+      });
     }
   };
 
