@@ -53,7 +53,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
       )}
 
       {/* Mobile Sidebar */}
-      <div className={`fixed inset-y-0 right-0 z-50 w-[280px] bg-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 ${
+      <div className={`fixed inset-y-0 right-0 z-50 w-[320px] bg-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 ${
         isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-4 border-b border-urbana-gold/30 bg-black">
@@ -62,7 +62,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             variant="ghost"
             size="icon"
             onClick={closeMenu}
-            className="text-urbana-gold hover:bg-urbana-gold hover:text-urbana-black"
+            className="text-urbana-gold hover:bg-urbana-gold hover:text-black"
           >
             <X className="h-6 w-6" />
           </Button>
