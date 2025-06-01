@@ -16,11 +16,14 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Edit, MoreHorizontal, Trash2, Phone, Mail } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, Phone, Mail, Download } from 'lucide-react';
 import { Client } from '@/types/client';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
+import * as XLSX from 'xlsx';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface ClientListProps {
   clients: Client[];
@@ -64,6 +67,33 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
     setDeleteDialogOpen(true);
   };
 
+  const exportToExcel = () => {
+    const excelData = clients.map(client => ({
+      'Nome': client.name,
+      'E-mail': client.email || '-',
+      'Telefone': client.phone,
+      'Data de Nascimento': client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy') : '-',
+      'Data de Cadastro': format(new Date(client.created_at || ''), 'dd/MM/yyyy HH:mm')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Clientes');
+    
+    // Ajustar largura das colunas
+    const colWidths = [
+      { wch: 25 }, // Nome
+      { wch: 30 }, // E-mail
+      { wch: 15 }, // Telefone
+      { wch: 18 }, // Data de Nascimento
+      { wch: 20 }  // Data de Cadastro
+    ];
+    worksheet['!cols'] = colWidths;
+
+    XLSX.writeFile(workbook, `clientes_${format(new Date(), 'dd-MM-yyyy')}.xlsx`);
+    toast.success('Arquivo Excel gerado com sucesso!');
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -98,58 +128,84 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
     <>
       <Card>
         <CardContent className="p-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{client.phone}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {client.email ? (
-                      <div className="flex items-center space-x-1">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span>{client.email}</span>
-                      </div>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(client.id)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => confirmDelete(client)} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Lista de Clientes ({clients.length})</h3>
+            <Button onClick={exportToExcel} variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </Button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Data de Nascimento</TableHead>
+                  <TableHead>Data de Cadastro</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {clients.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">{client.name}</TableCell>
+                    <TableCell>
+                      {client.email ? (
+                        <div className="flex items-center space-x-1">
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-sm">{client.email}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-1">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm">{client.phone}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {client.birth_date ? (
+                        <span className="text-sm">
+                          {format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">
+                        {format(new Date(client.created_at || ''), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(client.id)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => confirmDelete(client)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
       
