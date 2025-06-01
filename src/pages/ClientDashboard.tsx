@@ -84,11 +84,16 @@ export default function ClientDashboard() {
   };
 
   useEffect(() => {
-    if (!authLoading && user) {
-      fetchAppointments();
-    } else if (!authLoading && !user) {
+    // Only redirect if auth is loaded and user is not authenticated
+    if (!authLoading && !user) {
       console.log('Usuário não autenticado, redirecionando para login');
       navigate('/cliente/login');
+      return;
+    }
+
+    // Only fetch appointments if user is authenticated
+    if (!authLoading && user) {
+      fetchAppointments();
     }
   }, [user, authLoading, navigate]);
 
@@ -152,7 +157,24 @@ export default function ClientDashboard() {
     return user?.email || 'Usuário';
   };
 
-  if (authLoading || loading) {
+  // Show loading screen while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-urbana-gold mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if user is not authenticated (redirect will happen)
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
@@ -161,10 +183,6 @@ export default function ClientDashboard() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   if (error) {

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -63,18 +64,19 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (error) {
         console.error('Erro ao buscar perfil do cliente:', error);
-        return;
+        return null;
       }
 
       if (data) {
         console.log('Perfil do cliente encontrado:', data);
-        setClient(data);
+        return data;
       } else {
         console.log('Perfil do cliente não encontrado para ID:', userId);
-        setClient(null);
+        return null;
       }
     } catch (error) {
       console.error('Erro na busca do perfil do cliente:', error);
+      return null;
     }
   };
 
@@ -85,15 +87,37 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       try {
         console.log('Inicializando autenticação do cliente...');
         
+        // Set up auth state listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, newSession) => {
+            console.log('Auth event:', event, newSession?.user?.email);
+            
+            if (!mounted) return;
+            
+            setSession(newSession);
+            setUser(newSession?.user ?? null);
+            
+            if (newSession?.user && event !== 'SIGNED_OUT') {
+              // Fetch client profile in background
+              const clientData = await fetchClientProfile(newSession.user.id);
+              if (mounted) {
+                setClient(clientData);
+              }
+            } else {
+              setClient(null);
+            }
+            
+            if (mounted) {
+              setLoading(false);
+            }
+          }
+        );
+
         // Get initial session
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Erro ao verificar sessão inicial:', error);
-          if (mounted) {
-            setLoading(false);
-          }
-          return;
         }
 
         console.log('Sessão inicial:', initialSession?.user?.email || 'nenhuma');
@@ -103,11 +127,19 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
           setUser(initialSession?.user ?? null);
           
           if (initialSession?.user) {
-            await fetchClientProfile(initialSession.user.id);
+            const clientData = await fetchClientProfile(initialSession.user.id);
+            if (mounted) {
+              setClient(clientData);
+            }
           }
           
           setLoading(false);
         }
+
+        return () => {
+          mounted = false;
+          subscription.unsubscribe();
+        };
       } catch (error) {
         console.error('Erro na inicialização da auth:', error);
         if (mounted) {
@@ -116,34 +148,10 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       }
     };
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        if (!mounted) return;
-        
-        console.log('Estado de auth mudou:', event, newSession?.user?.email);
-        
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
-        if (newSession?.user && event !== 'SIGNED_OUT') {
-          await fetchClientProfile(newSession.user.id);
-        } else {
-          setClient(null);
-        }
-        
-        if (event === 'INITIAL_SESSION') {
-          setLoading(false);
-        }
-      }
-    );
-
-    // Initialize
     initializeAuth();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
   }, []);
 
