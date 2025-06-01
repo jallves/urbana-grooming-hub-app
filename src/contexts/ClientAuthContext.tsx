@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -84,6 +83,8 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
     const initializeAuth = async () => {
       try {
+        console.log('Inicializando autenticação do cliente...');
+        
         // Get initial session
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
@@ -94,6 +95,8 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
           }
           return;
         }
+
+        console.log('Sessão inicial:', initialSession?.user?.email || 'nenhuma');
 
         if (mounted) {
           setSession(initialSession);
@@ -218,18 +221,23 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     try {
       const sanitizedEmail = sanitizeInput(data.email);
 
+      console.log('Tentativa de login para:', sanitizedEmail);
+
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: sanitizedEmail,
         password: data.password,
       });
 
       if (authError) {
+        console.error('Erro de autenticação:', authError);
         return { error: 'Email ou senha incorretos' };
       }
 
       if (!authData.user) {
         return { error: 'Falha na autenticação' };
       }
+
+      console.log('Login bem-sucedido para:', authData.user.email);
 
       toast({
         title: "Login realizado com sucesso!",

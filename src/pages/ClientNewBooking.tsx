@@ -30,7 +30,7 @@ export default function ClientNewBooking() {
     );
   }
 
-  if (!user) {
+  if (!user || !client) {
     return null;
   }
 
@@ -59,7 +59,7 @@ export default function ClientNewBooking() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <ClientAppointmentForm clientId={user.id} />
+          <ClientAppointmentForm clientId={client.id} />
         </div>
       </div>
     </div>
