@@ -37,10 +37,10 @@ const BannerForm: React.FC<BannerFormProps> = ({
       const previewUrl = URL.createObjectURL(file);
       setBannerUpload({ file, previewUrl });
       
-      // Update the imageUrl in newBanner
+      // Update the image_url in newBanner
       setNewBanner({
         ...newBanner,
-        imageUrl: previewUrl
+        image_url: previewUrl
       });
     }
   };
@@ -65,10 +65,10 @@ const BannerForm: React.FC<BannerFormProps> = ({
           <div className="flex flex-col space-y-2">
             <Label htmlFor="bannerImage">Imagem do Banner</Label>
             <ImageUploader
-              imageUrl={newBanner.imageUrl}
+              imageUrl={newBanner.image_url}
               setImageUrl={(url) => setNewBanner({
                 ...newBanner,
-                imageUrl: url
+                image_url: url
               })}
               upload={bannerUpload}
               setUpload={setBannerUpload}
@@ -109,7 +109,7 @@ const BannerForm: React.FC<BannerFormProps> = ({
           <Label htmlFor="newDescription">Descrição</Label>
           <Input 
             id="newDescription" 
-            value={newBanner.description}
+            value={newBanner.description || ''}
             onChange={(e) => setNewBanner({
               ...newBanner,
               description: e.target.value

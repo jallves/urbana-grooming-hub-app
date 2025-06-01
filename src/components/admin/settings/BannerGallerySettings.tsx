@@ -15,25 +15,37 @@ import DatabaseGalleryManager from './media/components/DatabaseGalleryManager';
 const BannerGallerySettings: React.FC = () => {
   const [bannerImages, setBannerImages] = useState<BannerImage[]>([
     {
-      id: 1,
-      imageUrl: '/hero-background.jpg',
+      id: '1',
+      image_url: '/hero-background.jpg',
       title: 'Experiência Premium',
       subtitle: 'em Barbearia',
-      description: 'A arte da barbearia tradicional com sofisticação moderna'
+      description: 'A arte da barbearia tradicional com sofisticação moderna',
+      button_text: 'Agendar Agora',
+      button_link: '/cliente/login',
+      is_active: true,
+      display_order: 1
     },
     {
-      id: 2,
-      imageUrl: '/banner-2.jpg',
+      id: '2',
+      image_url: '/banner-2.jpg',
       title: 'Estilo & Precisão',
       subtitle: 'para Cavalheiros',
-      description: 'Cortes clássicos com um toque contemporâneo'
+      description: 'Cortes clássicos com um toque contemporâneo',
+      button_text: 'Agendar Agora',
+      button_link: '/cliente/login',
+      is_active: true,
+      display_order: 2
     },
     {
-      id: 3,
-      imageUrl: '/banner-3.jpg',
+      id: '3',
+      image_url: '/banner-3.jpg',
       title: 'Ambiente Exclusivo',
       subtitle: 'para Relaxar',
-      description: 'Um espaço onde tradição e conforto se encontram'
+      description: 'Um espaço onde tradição e conforto se encontram',
+      button_text: 'Agendar Agora',
+      button_link: '/cliente/login',
+      is_active: true,
+      display_order: 3
     }
   ]);
 

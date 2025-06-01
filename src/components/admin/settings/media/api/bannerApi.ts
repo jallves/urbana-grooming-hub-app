@@ -12,11 +12,15 @@ export const fetchBannerImages = async () => {
   
   if (data) {
     return data.map(item => ({
-      id: parseInt(item.id.toString().replace(/-/g, '').substring(0, 8), 16),
-      imageUrl: item.image_url,
+      id: item.id,
+      image_url: item.image_url,
       title: item.title,
       subtitle: item.subtitle,
-      description: item.description || ''
+      description: item.description || '',
+      button_text: item.button_text || 'Agendar Agora',
+      button_link: item.button_link || '/cliente/login',
+      is_active: item.is_active,
+      display_order: item.display_order
     }));
   }
   

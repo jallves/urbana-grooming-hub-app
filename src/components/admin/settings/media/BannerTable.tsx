@@ -9,7 +9,7 @@ import BannerEditDialog from './BannerEditDialog';
 interface BannerTableProps {
   bannerImages: BannerImage[];
   isLoading: boolean;
-  onDelete: (id: number) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   onEdit: (banner: BannerImage) => void;
   editingBanner: BannerImage | null;
   setEditingBanner: React.Dispatch<React.SetStateAction<BannerImage | null>>;
@@ -49,7 +49,7 @@ const BannerTable: React.FC<BannerTableProps> = ({
             <TableCell>
               <div className="relative h-14 w-24 rounded overflow-hidden">
                 <img 
-                  src={banner.imageUrl} 
+                  src={banner.image_url} 
                   alt={banner.title}
                   className="absolute inset-0 w-full h-full object-cover"
                 />

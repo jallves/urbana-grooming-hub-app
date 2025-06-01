@@ -40,10 +40,10 @@ export const useBannerOperations = (
 
   const handleAddBanner = async (newBanner: Omit<BannerImage, 'id'>, bannerUpload: { file: File, previewUrl: string } | null) => {
     // Validate input
-    if (!validateBanner(newBanner.title, newBanner.imageUrl)) return false;
+    if (!validateBanner(newBanner.title, newBanner.image_url)) return false;
     
     try {
-      let imageUrl = newBanner.imageUrl;
+      let imageUrl = newBanner.image_url;
       
       // Upload file if provided
       if (bannerUpload) {
@@ -68,11 +68,15 @@ export const useBannerOperations = (
       
       if (data && data[0]) {
         const newBannerWithId: BannerImage = {
-          id: parseInt(data[0].id.toString().replace(/-/g, '').substring(0, 8), 16),
-          imageUrl: data[0].image_url,
+          id: data[0].id,
+          image_url: data[0].image_url,
           title: data[0].title,
           subtitle: data[0].subtitle,
-          description: data[0].description || ''
+          description: data[0].description || '',
+          button_text: data[0].button_text || 'Agendar Agora',
+          button_link: data[0].button_link || '/cliente/login',
+          is_active: data[0].is_active,
+          display_order: data[0].display_order
         };
         
         setBannerImages([...bannerImages, newBannerWithId]);
@@ -94,7 +98,7 @@ export const useBannerOperations = (
     }
   };
 
-  const handleDeleteBanner = async (id: number) => {
+  const handleDeleteBanner = async (id: string) => {
     if (bannerImages.length <= 1) {
       toast({
         title: "Operação não permitida",
@@ -109,8 +113,8 @@ export const useBannerOperations = (
       const bannerToDelete = bannerImages.find(img => img.id === id);
       if (!bannerToDelete) return;
       
-      // Delete from Supabase using the imageUrl
-      await deleteBanner(bannerToDelete.imageUrl);
+      // Delete from Supabase using the image_url
+      await deleteBanner(bannerToDelete.image_url);
       
       setBannerImages(bannerImages.filter(img => img.id !== id));
       toast({
@@ -133,7 +137,7 @@ export const useBannerOperations = (
     try {
       // Update the banner in Supabase
       await updateBanner({
-        image_url: editingBanner.imageUrl,
+        image_url: editingBanner.image_url,
         title: editingBanner.title,
         subtitle: editingBanner.subtitle,
         description: editingBanner.description

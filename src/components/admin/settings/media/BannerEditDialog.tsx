@@ -49,13 +49,13 @@ const BannerEditDialog: React.FC<BannerEditDialogProps> = ({
         {editingBanner && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">URL da Imagem</Label>
+              <Label htmlFor="image_url">URL da Imagem</Label>
               <Input 
-                id="imageUrl" 
-                value={editingBanner.imageUrl}
+                id="image_url" 
+                value={editingBanner.image_url}
                 onChange={(e) => setEditingBanner({
                   ...editingBanner,
-                  imageUrl: e.target.value
+                  image_url: e.target.value
                 })}
               />
             </div>
@@ -85,7 +85,7 @@ const BannerEditDialog: React.FC<BannerEditDialogProps> = ({
               <Label htmlFor="description">Descrição</Label>
               <Textarea 
                 id="description" 
-                value={editingBanner.description}
+                value={editingBanner.description || ''}
                 onChange={(e) => setEditingBanner({
                   ...editingBanner,
                   description: e.target.value

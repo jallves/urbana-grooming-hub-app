@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { BannerFormProps, ImageUpload } from './types';
 import { useBannerOperations } from './useBannerOperations';
@@ -21,10 +22,14 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
   const [uploadError, setUploadError] = useState<string | null>(null);
   
   const [newBanner, setNewBanner] = useState<Omit<BannerImage, 'id'>>({
-    imageUrl: '',
+    image_url: '',
     title: '',
     subtitle: '',
-    description: ''
+    description: '',
+    button_text: 'Agendar Agora',
+    button_link: '/cliente/login',
+    is_active: true,
+    display_order: 0
   });
 
   const handleAddBanner = async () => {
@@ -35,10 +40,14 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
       
       if (success) {
         setNewBanner({
-          imageUrl: '',
+          image_url: '',
           title: '',
           subtitle: '',
-          description: ''
+          description: '',
+          button_text: 'Agendar Agora',
+          button_link: '/cliente/login',
+          is_active: true,
+          display_order: 0
         });
         
         setBannerUpload(null);
