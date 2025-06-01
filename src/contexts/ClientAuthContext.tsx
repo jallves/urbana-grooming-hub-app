@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -53,177 +54,60 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Test database connection on component mount
-  useEffect(() => {
-    const testConnection = async () => {
-      try {
-        console.log('Testing Supabase connection...');
-        const { data, error } = await supabase.from('clients').select('count', { count: 'exact', head: true });
-        if (error) {
-          console.error('Database connection test failed:', error);
-          toast({
-            title: "Erro de Conexão",
-            description: "Não foi possível conectar ao banco de dados. Verifique sua conexão.",
-            variant: "destructive",
-          });
-        } else {
-          console.log('Database connection successful');
-        }
-      } catch (error) {
-        console.error('Connection test error:', error);
-      }
-    };
-
-    testConnection();
-  }, [toast]);
-
   // Set up auth state listener and check for existing session
   useEffect(() => {
-    let isMounted = true;
-    console.log('Setting up auth state listener...');
-
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, 'Session exists:', !!session);
+        console.log('Auth state changed:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
         
-        if (!isMounted) return;
-        
-        try {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          if (session?.user) {
-            console.log('User authenticated, fetching profile...');
-            await fetchOrCreateClientProfile(session.user);
-          } else {
-            console.log('No user session, clearing client data');
-            setClient(null);
-          }
-        } catch (error) {
-          console.error('Error in auth state change handler:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    );
-
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        console.log('Getting initial session...');
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting initial session:', error);
-          setLoading(false);
-          return;
-        }
-        
-        if (!isMounted) return;
-        
-        if (initialSession?.user) {
-          console.log('Initial session found for user:', initialSession.user.email);
-          setSession(initialSession);
-          setUser(initialSession.user);
-          await fetchOrCreateClientProfile(initialSession.user);
+        if (session?.user) {
+          // Fetch client profile when user is authenticated
+          setTimeout(async () => {
+            await fetchClientProfile(session.user.id);
+          }, 0);
         } else {
-          console.log('No initial session found');
+          setClient(null);
         }
         
         setLoading(false);
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-        if (isMounted) {
-          setLoading(false);
-        }
       }
-    };
+    );
 
-    getInitialSession();
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchClientProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
 
-    return () => {
-      console.log('Cleaning up auth listener');
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const fetchOrCreateClientProfile = async (authUser: User) => {
+  const fetchClientProfile = async (userId: string) => {
     try {
-      console.log('Fetching client profile for user:', authUser.id);
-      
-      // Try to fetch existing client profile
-      const { data: existingClient, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle();
+        .eq('id', userId)
+        .single();
 
-      if (fetchError) {
-        console.error('Error fetching client profile:', fetchError);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar o perfil do cliente.",
-          variant: "destructive",
-        });
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching client profile:', error);
         return;
       }
 
-      if (existingClient) {
-        console.log('Existing client found:', existingClient);
-        setClient(existingClient);
-      } else {
-        // Create client profile from auth user metadata
-        console.log('Creating new client profile from auth user');
-        const clientData = {
-          id: authUser.id,
-          name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Cliente',
-          email: authUser.email || '',
-          phone: authUser.user_metadata?.phone || '',
-          birth_date: authUser.user_metadata?.birth_date || null,
-        };
-
-        console.log('Inserting client data:', clientData);
-        const { data: newClient, error: createError } = await supabase
-          .from('clients')
-          .insert(clientData)
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('Error creating client profile:', createError);
-          // If it's a duplicate key error, try to fetch the existing profile
-          if (createError.code === '23505') {
-            const { data: retryClient } = await supabase
-              .from('clients')
-              .select('*')
-              .eq('id', authUser.id)
-              .maybeSingle();
-            
-            if (retryClient) {
-              setClient(retryClient);
-            }
-          } else {
-            toast({
-              title: "Erro",
-              description: "Não foi possível criar o perfil do cliente.",
-              variant: "destructive",
-            });
-          }
-          return;
-        }
-
-        console.log('New client profile created:', newClient);
-        setClient(newClient);
+      if (data) {
+        setClient(data);
       }
     } catch (error) {
-      console.error('Error in fetchOrCreateClientProfile:', error);
-      toast({
-        title: "Erro",
-        description: "Erro interno ao carregar perfil.",
-        variant: "destructive",
-      });
+      console.error('Error fetching client profile:', error);
     }
   };
 
@@ -266,7 +150,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
           data: {
             full_name: sanitizedData.name,
             phone: sanitizedData.phone,
-            birth_date: sanitizedData.birth_date,
           },
           emailRedirectTo: `${window.location.origin}/cliente/dashboard`
         }
@@ -279,6 +162,24 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (!authData.user) {
         return { error: 'Falha ao criar usuário' };
+      }
+
+      // Create client profile
+      const { error: clientError } = await supabase
+        .from('clients')
+        .insert({
+          id: authData.user.id,
+          name: sanitizedData.name,
+          email: sanitizedData.email,
+          phone: sanitizedData.phone,
+          birth_date: sanitizedData.birth_date || null,
+        });
+
+      if (clientError) {
+        console.error('Client creation error:', clientError);
+        // If client creation fails, we should clean up the auth user
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        return { error: 'Erro ao criar perfil do cliente' };
       }
 
       // Reset rate limit on success

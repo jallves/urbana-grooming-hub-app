@@ -69,10 +69,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     }
 
     try {
-      console.log('Creating appointment for client:', clientId);
-      console.log('Form data:', data);
-      console.log('Selected service:', selectedService);
-
       const [hours, minutes] = data.time.split(':').map(Number);
       const selectedDate = new Date(data.date);
       selectedDate.setHours(hours, minutes, 0, 0);
@@ -88,8 +84,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         discount_amount: appliedCoupon ? appliedCoupon.discountAmount : 0,
         status: 'scheduled',
       };
-
-      console.log('Appointment data to insert:', appointmentData);
 
       const { error } = await supabase
         .from('appointments')
@@ -124,14 +118,6 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       });
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
-      </div>
-    );
-  }
 
   return (
     <Form {...form}>
