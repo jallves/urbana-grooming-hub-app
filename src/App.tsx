@@ -1,10 +1,11 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient } from '@tanstack/react-query';
-import { ThemeProvider } from '@/components/theme-provider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { AdminRoute } from '@/components/auth/AdminRoute';
-import { BarberRoute } from '@/components/auth/BarberRoute';
+import AdminRoute from '@/components/auth/AdminRoute';
+import BarberRoute from '@/components/auth/BarberRoute';
 
 // Pages
 import Index from '@/pages/Index';
@@ -31,7 +32,7 @@ function App() {
     <Router>
       <AuthProvider>
         <ClientAuthProvider>
-          <QueryClient client={queryClient}>
+          <QueryClientProvider client={queryClient}>
             <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
               <Toaster />
               <Routes>
@@ -66,7 +67,7 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </ThemeProvider>
-          </QueryClient>
+          </QueryClientProvider>
         </ClientAuthProvider>
       </AuthProvider>
     </Router>
