@@ -215,6 +215,44 @@ export type Database = {
           },
         ]
       }
+      appointment_history: {
+        Row: {
+          action: string
+          appointment_id: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+        }
+        Insert: {
+          action: string
+          appointment_id: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Update: {
+          action?: string
+          appointment_id?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_history_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           client_id: string
@@ -619,28 +657,78 @@ export type Database = {
           },
         ]
       }
+      client_sessions: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
+          birth_date: string | null
           created_at: string | null
           email: string | null
+          email_verification_expires: string | null
+          email_verification_token: string | null
+          email_verified: boolean | null
           id: string
           name: string
+          password_hash: string | null
           phone: string
           updated_at: string | null
         }
         Insert: {
+          birth_date?: string | null
           created_at?: string | null
           email?: string | null
+          email_verification_expires?: string | null
+          email_verification_token?: string | null
+          email_verified?: boolean | null
           id?: string
           name: string
+          password_hash?: string | null
           phone: string
           updated_at?: string | null
         }
         Update: {
+          birth_date?: string | null
           created_at?: string | null
           email?: string | null
+          email_verification_expires?: string | null
+          email_verification_token?: string | null
+          email_verified?: boolean | null
           id?: string
           name?: string
+          password_hash?: string | null
           phone?: string
           updated_at?: string | null
         }
@@ -2332,6 +2420,39 @@ export type Database = {
         Args: { p_appointment_id: string; p_coupon_code: string }
         Returns: Json
       }
+      check_appointment_conflict: {
+        Args: {
+          p_staff_id: string
+          p_start_time: string
+          p_end_time: string
+          p_exclude_appointment_id?: string
+        }
+        Returns: boolean
+      }
+      check_client_appointment_conflict: {
+        Args: {
+          p_client_id: string
+          p_start_time: string
+          p_end_time: string
+          p_exclude_appointment_id?: string
+        }
+        Returns: boolean
+      }
+      clean_expired_client_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      get_birthday_clients: {
+        Args: { target_month?: number }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          phone: string
+          birth_date: string
+          age: number
+        }[]
+      }
       get_staff_module_access: {
         Args: { staff_id_param: string }
         Returns: string[]
@@ -2345,6 +2466,10 @@ export type Database = {
       update_staff_module_access: {
         Args: { staff_id_param: string; module_ids_param: string[] }
         Returns: undefined
+      }
+      validate_client_age: {
+        Args: { birth_date: string }
+        Returns: boolean
       }
     }
     Enums: {
