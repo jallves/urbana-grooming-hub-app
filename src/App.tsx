@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/components/theme/theme-provider';
@@ -34,6 +33,7 @@ import ClientRegister from '@/pages/ClientRegister';
 import ClientLogin from '@/pages/ClientLogin';
 import ClientDashboard from '@/pages/ClientDashboard';
 import ClientNewBooking from '@/pages/ClientNewBooking';
+import ClientEditAppointment from '@/pages/ClientEditAppointment';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -54,6 +54,7 @@ function App() {
                 <Route path="/cliente/login" element={<ClientLogin />} />
                 <Route path="/cliente/dashboard" element={<ClientDashboard />} />
                 <Route path="/cliente/novo-agendamento" element={<ClientNewBooking />} />
+                <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
                 
                 {/* Admin Authentication Routes */}
                 <Route path="/auth" element={<Auth />} />

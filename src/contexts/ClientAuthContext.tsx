@@ -45,23 +45,28 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         return;
       }
 
-      // Verificar token no backend
+      // Verificar se o cliente ainda existe no banco
       const { data, error } = await supabase
         .from('clients')
         .select('*')
         .eq('id', token)
         .single();
 
-      if (error || !data) {
-        localStorage.removeItem('client_token');
+      if (error) {
+        // Se houver erro, mas não for "not found", manter o token
+        if (error.code !== 'PGRST116') {
+          console.error('Erro ao verificar sessão:', error);
+        } else {
+          // Só remove o token se o cliente realmente não existir
+          localStorage.removeItem('client_token');
+        }
         setClient(null);
-      } else {
+      } else if (data) {
         setClient(data);
       }
     } catch (error) {
       console.error('Erro ao verificar sessão:', error);
-      localStorage.removeItem('client_token');
-      setClient(null);
+      // Não remover o token em caso de erro de conexão
     } finally {
       setLoading(false);
     }
