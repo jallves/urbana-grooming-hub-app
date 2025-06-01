@@ -60,6 +60,8 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       }
     } catch (error) {
       console.error('Erro ao verificar sessão:', error);
+      localStorage.removeItem('client_token');
+      setClient(null);
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const signUp = async (data: ClientFormData): Promise<{ error: string | null }> => {
     try {
-      console.log('Iniciando cadastro de cliente:', data);
+      console.log('Iniciando cadastro de cliente:', { ...data, password: '[HIDDEN]' });
 
       // Validações básicas
       if (!data.name?.trim()) {
@@ -91,14 +93,19 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       }
 
       // Verificar se email já existe
-      const { data: existingClient } = await supabase
+      const { data: existingClient, error: checkError } = await supabase
         .from('clients')
         .select('id')
-        .eq('email', data.email)
+        .eq('email', data.email.trim().toLowerCase())
         .maybeSingle();
 
+      if (checkError) {
+        console.error('Erro ao verificar email existente:', checkError);
+        return { error: 'Erro ao verificar dados. Tente novamente.' };
+      }
+
       if (existingClient) {
-        return { error: 'Email já está em uso' };
+        return { error: 'Este email já está cadastrado' };
       }
 
       // Validar idade mínima se fornecida
@@ -112,26 +119,40 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         }
       }
 
-      // Hash simples da senha (em produção usar bcrypt no backend)
+      // Hash simples da senha
       const passwordHash = btoa(data.password);
 
       // Criar cliente
+      const clientData = {
+        name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
+        phone: data.phone.trim(),
+        birth_date: data.birth_date || null,
+        password_hash: passwordHash,
+        email_verified: false,
+        whatsapp: data.whatsapp?.trim() || null
+      };
+
+      console.log('Dados para inserção:', clientData);
+
       const { data: newClient, error } = await supabase
         .from('clients')
-        .insert({
-          name: data.name.trim(),
-          email: data.email.trim().toLowerCase(),
-          phone: data.phone.trim(),
-          birth_date: data.birth_date || null,
-          password_hash: passwordHash,
-          email_verified: false,
-          whatsapp: data.whatsapp?.trim() || null
-        })
+        .insert(clientData)
         .select()
         .single();
 
       if (error) {
         console.error('Erro ao criar cliente:', error);
+        
+        // Tratar erros específicos
+        if (error.code === '23505') { // Duplicate key
+          return { error: 'Este email já está cadastrado' };
+        }
+        
+        return { error: 'Erro ao criar conta. Verifique os dados e tente novamente.' };
+      }
+
+      if (!newClient) {
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 

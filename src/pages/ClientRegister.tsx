@@ -33,6 +33,11 @@ export default function ClientRegister() {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+    
+    // Limpar erro geral
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: '' }));
+    }
   };
 
   const validateForm = (): boolean => {
@@ -84,16 +89,21 @@ export default function ClientRegister() {
     if (!validateForm()) return;
 
     setLoading(true);
+    setErrors({});
     
     try {
+      console.log('Submetendo formulário de cadastro...');
       const { error } = await signUp(formData);
       
       if (error) {
+        console.error('Erro no cadastro:', error);
         setErrors({ general: error });
       } else {
+        console.log('Cadastro realizado com sucesso, redirecionando...');
         navigate('/cliente/dashboard');
       }
     } catch (error) {
+      console.error('Erro inesperado:', error);
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);
@@ -130,6 +140,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.name ? 'border-red-500' : ''}`}
                 placeholder="Seu nome completo"
+                required
               />
               {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
             </div>
@@ -144,6 +155,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="seu@email.com"
+                required
               />
               {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
             </div>
@@ -158,6 +170,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.phone ? 'border-red-500' : ''}`}
                 placeholder="(11) 99999-9999"
+                required
               />
               {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
             </div>
@@ -185,6 +198,7 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.password ? 'border-red-500' : ''}`}
                 placeholder="Mínimo 6 caracteres"
+                required
               />
               {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
             </div>
@@ -199,13 +213,14 @@ export default function ClientRegister() {
                 onChange={handleChange}
                 className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                 placeholder="Confirme sua senha"
+                required
               />
               {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black"
+              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold"
               disabled={loading}
             >
               {loading ? (
