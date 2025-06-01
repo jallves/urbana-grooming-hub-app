@@ -42,16 +42,19 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
   };
 
   const handleWhatsAppClick = (client: BirthdayClient) => {
-    if (!client.whatsapp) {
-      toast.error('Cliente não possui WhatsApp cadastrado');
+    // Use WhatsApp number if available, otherwise use phone number
+    const phoneNumber = client.whatsapp || client.phone;
+    
+    if (!phoneNumber) {
+      toast.error('Cliente não possui número de telefone cadastrado');
       return;
     }
 
-    const phoneNumber = client.whatsapp.replace(/\D/g, '');
+    const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
     const message = encodeURIComponent(
       `Olá ${client.name}! 🎉 Feliz aniversário da equipe Urbana Barbearia! 🎂✨ Desejamos um dia repleto de alegria e realizações!`
     );
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+    const whatsappUrl = `https://wa.me/${cleanPhoneNumber}?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
 
@@ -65,7 +68,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
       'Nome': client.name,
       'E-mail': client.email || '-',
       'Telefone': client.phone,
-      'WhatsApp': client.whatsapp || '-',
+      'WhatsApp': client.whatsapp || client.phone,
       'Data de Nascimento': client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy') : '-',
       'Idade': `${client.age} anos`
     }));
@@ -149,61 +152,60 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
               </TableRow>
             </TableHeader>
             <TableBody>
-              {clients.map((client) => (
-                <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
-                  <TableCell>
-                    {client.email ? (
+              {clients.map((client) => {
+                const whatsappNumber = client.whatsapp || client.phone;
+                
+                return (
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">{client.name}</TableCell>
+                    <TableCell>
+                      {client.email ? (
+                        <div className="flex items-center space-x-1">
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-sm">{client.email}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center space-x-1">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{client.email}</span>
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm">{client.phone}</span>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm">{client.phone}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {client.whatsapp ? (
+                    </TableCell>
+                    <TableCell>
                       <Badge variant="secondary" className="text-green-600">
-                        {client.whatsapp}
+                        {whatsappNumber}
                       </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">Não informado</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {client.birth_date ? (
-                      <span className="text-sm">
-                        {format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {client.age} anos
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      onClick={() => handleWhatsAppClick(client)}
-                      disabled={!client.whatsapp}
-                      size="sm"
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Felicitar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      {client.birth_date ? (
+                        <span className="text-sm">
+                          {format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {client.age} anos
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        onClick={() => handleWhatsAppClick(client)}
+                        size="sm"
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Felicitar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
