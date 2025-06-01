@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { ClientLoginData } from '@/types/client';
-import { Loader2, LogIn } from 'lucide-react';
+import { Loader2, LogIn, AlertCircle } from 'lucide-react';
 import { sanitizeInput } from '@/lib/security';
+import { validateClientLogin } from '@/lib/inputValidation';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
@@ -29,31 +30,40 @@ export default function ClientLogin() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Sanitize input as user types
-    const sanitizedValue = name === 'email' || name === 'password' ? sanitizeInput(value) : value;
+    // Sanitize input as user types (except passwords for real-time validation)
+    const sanitizedValue = name === 'password' ? value : sanitizeInput(value);
     setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
     
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+
+    // Clear general error when user modifies any field
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: '' }));
+    }
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.email) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+    const validation = validateClientLogin(formData);
+    
+    if (!validation.isValid) {
+      const newErrors: Record<string, string> = {};
+      validation.errors.forEach((error) => {
+        if (error.includes('Email')) {
+          newErrors.email = error;
+        } else if (error.includes('Senha')) {
+          newErrors.password = error;
+        } else {
+          newErrors.general = error;
+        }
+      });
+      setErrors(newErrors);
+      return false;
     }
 
-    if (!formData.password) {
-      newErrors.password = 'Senha é obrigatória';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,7 +77,11 @@ export default function ClientLogin() {
       const { error } = await signIn(formData);
       
       if (error) {
-        setErrors({ general: error });
+        if (error.includes('Muitas tentativas')) {
+          setErrors({ general: error });
+        } else {
+          setErrors({ general: 'Email ou senha incorretos. Verifique suas credenciais.' });
+        }
       }
       // Navigation will be handled by the auth context
     } catch (error) {
@@ -104,8 +118,9 @@ export default function ClientLogin() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.general && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {errors.general}
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{errors.general}</span>
               </div>
             )}
 
@@ -120,6 +135,7 @@ export default function ClientLogin() {
                 className={errors.email ? 'border-red-500' : ''}
                 placeholder="seu@email.com"
                 maxLength={100}
+                autoComplete="email"
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
@@ -135,6 +151,7 @@ export default function ClientLogin() {
                 className={errors.password ? 'border-red-500' : ''}
                 placeholder="Sua senha"
                 maxLength={100}
+                autoComplete="current-password"
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>

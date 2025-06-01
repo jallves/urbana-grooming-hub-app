@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { ClientFormData } from '@/types/client';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
 import { validatePasswordStrength, sanitizeInput } from '@/lib/security';
+import { validateClientRegistration } from '@/lib/inputValidation';
 
 export default function ClientRegister() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function ClientRegister() {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passwordStrength, setPasswordStrength] = useState<{ isValid: boolean; errors: string[] }>({ isValid: false, errors: [] });
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function ClientRegister() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Sanitize input as user types (except passwords)
+    // Sanitize input as user types (except passwords for real-time validation)
     const sanitizedValue = name === 'password' || name === 'confirmPassword' ? value : sanitizeInput(value);
     setFormData(prev => ({ ...prev, [name]: sanitizedValue }));
     
@@ -41,52 +43,50 @@ export default function ClientRegister() {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+
+    // Clear general error when user modifies any field
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: '' }));
+    }
+
+    // Real-time password strength validation
+    if (name === 'password') {
+      const strength = validatePasswordStrength(value);
+      setPasswordStrength(strength);
+    }
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Nome é obrigatório';
+    const validation = validateClientRegistration(formData);
+    
+    if (!validation.isValid) {
+      const newErrors: Record<string, string> = {};
+      validation.errors.forEach((error) => {
+        if (error.includes('Nome')) {
+          newErrors.name = error;
+        } else if (error.includes('Email')) {
+          newErrors.email = error;
+        } else if (error.includes('Telefone')) {
+          newErrors.phone = error;
+        } else if (error.includes('Idade') || error.includes('Data')) {
+          newErrors.birth_date = error;
+        } else if (error.includes('Senhas não coincidem')) {
+          newErrors.confirmPassword = error;
+        } else {
+          newErrors.general = error;
+        }
+      });
+      setErrors(newErrors);
+      return false;
     }
 
-    if (!formData.email) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email inválido';
+    // Additional password strength validation
+    if (!passwordStrength.isValid) {
+      setErrors(prev => ({ ...prev, password: passwordStrength.errors[0] }));
+      return false;
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Telefone é obrigatório';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Senha é obrigatória';
-    } else {
-      const passwordValidation = validatePasswordStrength(formData.password);
-      if (!passwordValidation.isValid) {
-        newErrors.password = passwordValidation.errors[0] || 'Senha não atende aos critérios de segurança';
-      }
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Confirmação de senha é obrigatória';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Senhas não coincidem';
-    }
-
-    if (formData.birth_date) {
-      const birthDate = new Date(formData.birth_date);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      
-      if (age < 14) {
-        newErrors.birth_date = 'Idade mínima é de 14 anos';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,7 +100,11 @@ export default function ClientRegister() {
       const { error } = await signUp(formData);
       
       if (error) {
-        setErrors({ general: error });
+        if (error.includes('Muitas tentativas')) {
+          setErrors({ general: error });
+        } else {
+          setErrors({ general: error });
+        }
       }
       // Navigation will be handled by the auth context after email confirmation
     } catch (error) {
@@ -137,8 +141,9 @@ export default function ClientRegister() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.general && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {errors.general}
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{errors.general}</span>
               </div>
             )}
 
@@ -153,6 +158,7 @@ export default function ClientRegister() {
                 className={errors.name ? 'border-red-500' : ''}
                 placeholder="Seu nome completo"
                 maxLength={100}
+                autoComplete="name"
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
@@ -168,6 +174,7 @@ export default function ClientRegister() {
                 className={errors.email ? 'border-red-500' : ''}
                 placeholder="seu@email.com"
                 maxLength={100}
+                autoComplete="email"
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
@@ -183,6 +190,7 @@ export default function ClientRegister() {
                 className={errors.phone ? 'border-red-500' : ''}
                 placeholder="(11) 99999-9999"
                 maxLength={20}
+                autoComplete="tel"
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
@@ -196,6 +204,7 @@ export default function ClientRegister() {
                 value={formData.birth_date}
                 onChange={handleChange}
                 className={errors.birth_date ? 'border-red-500' : ''}
+                max={new Date(new Date().setFullYear(new Date().getFullYear() - 14)).toISOString().split('T')[0]}
               />
               {errors.birth_date && <p className="text-red-500 text-sm mt-1">{errors.birth_date}</p>}
             </div>
@@ -211,8 +220,32 @@ export default function ClientRegister() {
                 className={errors.password ? 'border-red-500' : ''}
                 placeholder="Mínimo 12 caracteres com letras, números e símbolos"
                 maxLength={100}
+                autoComplete="new-password"
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              
+              {/* Password strength indicator */}
+              {formData.password && (
+                <div className="mt-2 space-y-1">
+                  {passwordStrength.isValid ? (
+                    <div className="flex items-center gap-2 text-green-600 text-sm">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Senha forte</span>
+                    </div>
+                  ) : (
+                    passwordStrength.errors.length > 0 && (
+                      <div className="text-red-500 text-xs space-y-1">
+                        {passwordStrength.errors.map((error, index) => (
+                          <div key={index} className="flex items-center gap-1">
+                            <span>•</span>
+                            <span>{error}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -226,6 +259,7 @@ export default function ClientRegister() {
                 className={errors.confirmPassword ? 'border-red-500' : ''}
                 placeholder="Confirme sua senha"
                 maxLength={100}
+                autoComplete="new-password"
               />
               {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
