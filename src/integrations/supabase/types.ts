@@ -2467,14 +2467,6 @@ export type Database = {
           | { role_name: string }
         Returns: boolean
       }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      is_staff_member: {
-        Args: { user_email: string }
-        Returns: boolean
-      }
       update_staff_module_access: {
         Args: { staff_id_param: string; module_ids_param: string[] }
         Returns: undefined
