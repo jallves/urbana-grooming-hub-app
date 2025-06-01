@@ -56,17 +56,24 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   // Set up auth state listener and check for existing session
   useEffect(() => {
+    let isMounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        
+        if (!isMounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch client profile when user is authenticated
+          // Fetch/create client profile when user is authenticated
           setTimeout(async () => {
-            await fetchClientProfile(session.user.id);
+            if (isMounted) {
+              await fetchOrCreateClientProfile(session.user);
+            }
           }, 0);
         } else {
           setClient(null);
@@ -78,36 +85,69 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchClientProfile(session.user.id);
+        fetchOrCreateClientProfile(session.user);
       } else {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const fetchClientProfile = async (userId: string) => {
+  const fetchOrCreateClientProfile = async (authUser: User) => {
     try {
-      const { data, error } = await supabase
+      console.log('Fetching client profile for user:', authUser.id);
+      
+      // Try to fetch existing client profile
+      const { data: existingClient, error: fetchError } = await supabase
         .from('clients')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('id', authUser.id)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching client profile:', error);
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching client profile:', fetchError);
         return;
       }
 
-      if (data) {
-        setClient(data);
+      if (existingClient) {
+        console.log('Existing client found:', existingClient);
+        setClient(existingClient);
+      } else {
+        // Create client profile from auth user metadata
+        console.log('Creating new client profile from auth user');
+        const clientData = {
+          id: authUser.id,
+          name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Cliente',
+          email: authUser.email || '',
+          phone: authUser.user_metadata?.phone || '',
+          birth_date: authUser.user_metadata?.birth_date || null,
+        };
+
+        const { data: newClient, error: createError } = await supabase
+          .from('clients')
+          .insert(clientData)
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating client profile:', createError);
+          return;
+        }
+
+        console.log('New client profile created:', newClient);
+        setClient(newClient);
       }
     } catch (error) {
-      console.error('Error fetching client profile:', error);
+      console.error('Error in fetchOrCreateClientProfile:', error);
     }
   };
 
@@ -150,6 +190,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
           data: {
             full_name: sanitizedData.name,
             phone: sanitizedData.phone,
+            birth_date: sanitizedData.birth_date,
           },
           emailRedirectTo: `${window.location.origin}/cliente/dashboard`
         }
@@ -162,24 +203,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (!authData.user) {
         return { error: 'Falha ao criar usuário' };
-      }
-
-      // Create client profile
-      const { error: clientError } = await supabase
-        .from('clients')
-        .insert({
-          id: authData.user.id,
-          name: sanitizedData.name,
-          email: sanitizedData.email,
-          phone: sanitizedData.phone,
-          birth_date: sanitizedData.birth_date || null,
-        });
-
-      if (clientError) {
-        console.error('Client creation error:', clientError);
-        // If client creation fails, we should clean up the auth user
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        return { error: 'Erro ao criar perfil do cliente' };
       }
 
       // Reset rate limit on success
