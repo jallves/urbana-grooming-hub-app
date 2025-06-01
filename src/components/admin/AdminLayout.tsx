@@ -6,6 +6,7 @@ import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ interface AdminLayoutProps {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     try {
@@ -28,8 +30,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-black overflow-x-hidden">
         <AdminSidebar />
-        <div className="flex-1 p-3 md:p-6 overflow-auto">
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-3">
+        <div className={`flex-1 overflow-auto ${isMobile ? 'pl-0' : 'md:pl-0'}`}>
+          <header className={`flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-3 p-4 md:p-6 ${isMobile ? 'pt-16' : ''}`}>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-white">Painel Administrativo</h1>
               <p className="text-sm text-gray-400">Urbana Barbearia</p>
@@ -56,7 +58,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               </div>
             </div>
           </header>
-          <main className="overflow-x-auto">{children}</main>
+          <main className="px-4 md:px-6 pb-6 overflow-x-auto">{children}</main>
         </div>
       </div>
     </SidebarProvider>
