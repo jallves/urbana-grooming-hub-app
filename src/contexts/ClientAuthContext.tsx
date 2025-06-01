@@ -4,9 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { Client } from '@/types/client';
 import { useToast } from '@/hooks/use-toast';
-import { sanitizeInput, validatePasswordStrength } from '@/lib/security';
-import { checkRateLimit, resetRateLimit, formatLockoutTime } from '@/lib/rateLimiting';
-import { validateClientRegistration, validateClientLogin } from '@/lib/inputValidation';
+import { sanitizeInput } from '@/lib/security';
 
 interface ClientAuthContextType {
   client: Client | null;
@@ -113,21 +111,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const signUp = async (data: ClientSignUpData): Promise<{ error: string | null }> => {
     try {
-      // Rate limiting check
-      const rateCheck = checkRateLimit(data.email, 'registration');
-      if (!rateCheck.allowed) {
-        const lockoutTime = rateCheck.lockoutUntil ? formatLockoutTime(rateCheck.lockoutUntil) : '';
-        return { 
-          error: `Muitas tentativas de registro. Tente novamente em ${lockoutTime}.` 
-        };
-      }
-
-      // Enhanced input validation
-      const validation = validateClientRegistration(data);
-      if (!validation.isValid) {
-        return { error: validation.errors[0] };
-      }
-
       // Sanitize input data
       const sanitizedData = {
         name: sanitizeInput(data.name),
@@ -136,10 +119,20 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         birth_date: data.birth_date ? sanitizeInput(data.birth_date) : undefined,
       };
 
-      // Enhanced password validation
-      const passwordValidation = validatePasswordStrength(data.password);
-      if (!passwordValidation.isValid) {
-        return { error: passwordValidation.errors[0] };
+      // Validate passwords match
+      if (data.password !== data.confirmPassword) {
+        return { error: 'As senhas não coincidem' };
+      }
+
+      // Validate age if birth date provided
+      if (data.birth_date) {
+        const birthDate = new Date(data.birth_date);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        
+        if (age < 14) {
+          return { error: 'Idade mínima é de 14 anos' };
+        }
       }
 
       // Create auth user first
@@ -156,8 +149,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       });
 
       if (authError) {
-        console.error('Auth error:', authError);
-        return { error: 'Erro ao criar conta: ' + authError.message };
+        return { error: authError.message };
       }
 
       if (!authData.user) {
@@ -176,14 +168,10 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         });
 
       if (clientError) {
-        console.error('Client creation error:', clientError);
         // If client creation fails, we should clean up the auth user
         await supabase.auth.admin.deleteUser(authData.user.id);
         return { error: 'Erro ao criar perfil do cliente' };
       }
-
-      // Reset rate limit on success
-      resetRateLimit(data.email, 'registration');
 
       toast({
         title: "Conta criada com sucesso!",
@@ -199,21 +187,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const signIn = async (data: ClientLoginData): Promise<{ error: string | null }> => {
     try {
-      // Rate limiting check
-      const rateCheck = checkRateLimit(data.email, 'login');
-      if (!rateCheck.allowed) {
-        const lockoutTime = rateCheck.lockoutUntil ? formatLockoutTime(rateCheck.lockoutUntil) : '';
-        return { 
-          error: `Muitas tentativas de login. Tente novamente em ${lockoutTime}.` 
-        };
-      }
-
-      // Enhanced input validation
-      const validation = validateClientLogin(data);
-      if (!validation.isValid) {
-        return { error: validation.errors[0] };
-      }
-
       const sanitizedEmail = sanitizeInput(data.email);
 
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -222,16 +195,12 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       });
 
       if (authError) {
-        console.error('Login error:', authError);
         return { error: 'Email ou senha incorretos' };
       }
 
       if (!authData.user) {
         return { error: 'Falha na autenticação' };
       }
-
-      // Reset rate limit on successful login
-      resetRateLimit(data.email, 'login');
 
       toast({
         title: "Login realizado com sucesso!",
@@ -283,7 +252,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         .single();
 
       if (error) {
-        console.error('Update client error:', error);
         return { error: error.message };
       }
 
