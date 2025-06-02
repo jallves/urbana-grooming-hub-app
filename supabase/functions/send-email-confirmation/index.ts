@@ -1,6 +1,6 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import { isEmail } from "https://deno.land/x/isemail@v1.0.1/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -16,70 +16,17 @@ interface EmailConfirmationRequest {
   staffName: string;
   appointmentDate: string;
   appointmentTime: string;
-  servicePrice: number;
+  servicePrice: string;
   serviceDuration: string;
 }
 
-const validateRequestBody = (body: any): body is EmailConfirmationRequest => {
-  const requiredFields: (keyof EmailConfirmationRequest)[] = [
-    'clientName',
-    'clientEmail',
-    'serviceName',
-    'staffName',
-    'appointmentDate',
-    'appointmentTime',
-    'servicePrice',
-    'serviceDuration'
-  ];
-
-  return requiredFields.every(field => 
-    body[field] !== undefined && 
-    body[field] !== null && 
-    body[field] !== ''
-  );
-};
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        "Access-Control-Allow-Methods": "POST, OPTIONS"
-      } 
-    });
-  }
-
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { 
-        status: 405, 
-        headers: { 
-          "Content-Type": "application/json", 
-          ...corsHeaders 
-        } 
-      }
-    );
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json();
-    
-    // Validação dos campos obrigatórios
-    if (!validateRequestBody(body)) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        { 
-          status: 400, 
-          headers: { 
-            "Content-Type": "application/json", 
-            ...corsHeaders 
-          } 
-        }
-      );
-    }
-
-    const { 
+    const {
       clientName,
       clientEmail,
       serviceName,
@@ -88,39 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
       appointmentTime,
       servicePrice,
       serviceDuration
-    } = body;
-
-    // Validação de e-mail
-    if (!isEmail(clientEmail)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid email format" }),
-        { 
-          status: 400, 
-          headers: { 
-            "Content-Type": "application/json", 
-            ...corsHeaders 
-          } 
-        }
-      );
-    }
-
-    // Validação de data/hora
-    const appointmentDateTime = new Date(`${appointmentDate}T${appointmentTime}`);
-    if (isNaN(appointmentDateTime.getTime())) {
-      return new Response(
-        JSON.stringify({ error: "Invalid date/time format" }),
-        { 
-          status: 400, 
-          headers: { 
-            "Content-Type": "application/json", 
-            ...corsHeaders 
-          } 
-        }
-      );
-    }
-
-    // Formatação do preço
-    const formattedPrice = servicePrice.toFixed(2).replace('.', ',');
+    }: EmailConfirmationRequest = await req.json();
 
     const emailResponse = await resend.emails.send({
       from: "Urbana Barbearia <onboarding@resend.dev>",
@@ -162,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #555; font-weight: bold;">💰 Valor:</td>
-                  <td style="padding: 8px 0; color: #333;">R$ ${formattedPrice}</td>
+                  <td style="padding: 8px 0; color: #333;">R$ ${servicePrice}</td>
                 </tr>
               </table>
             </div>
@@ -187,12 +102,9 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log(`Email confirmation sent successfully to: ${clientEmail}`);
+    console.log("Email confirmation sent successfully:", emailResponse);
 
-    return new Response(JSON.stringify({ 
-      message: "Email sent successfully",
-      emailId: emailResponse.id
-    }), {
+    return new Response(JSON.stringify(emailResponse), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -200,18 +112,12 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error sending confirmation email:", error);
+    console.error("Error in send-email-confirmation function:", error);
     return new Response(
-      JSON.stringify({ 
-        error: "Internal server error",
-        details: error.message 
-      }),
+      JSON.stringify({ error: error.message }),
       {
         status: 500,
-        headers: { 
-          "Content-Type": "application/json", 
-          ...corsHeaders 
-        },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }
