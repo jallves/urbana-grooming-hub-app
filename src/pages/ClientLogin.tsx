@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function ClientLogin() {
   const navigate = useNavigate();
-  const { signIn } = useClientAuth();
+  const { signIn, client } = useClientAuth();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ClientLoginData>({
@@ -20,6 +20,14 @@ export default function ClientLogin() {
     password: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (client) {
+      console.log('Cliente já logado, redirecionando para dashboard');
+      navigate('/cliente/dashboard');
+    }
+  }, [client, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -51,19 +59,29 @@ export default function ClientLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    console.log('Tentativa de login iniciada');
+    
+    if (!validateForm()) {
+      console.log('Validação do formulário falhou');
+      return;
+    }
 
     setLoading(true);
+    setErrors({});
     
     try {
+      console.log('Chamando signIn...');
       const { error } = await signIn(formData);
       
       if (error) {
+        console.error('Erro no login:', error);
         setErrors({ general: error });
       } else {
+        console.log('Login bem-sucedido, redirecionando...');
         navigate('/cliente/dashboard');
       }
     } catch (error) {
+      console.error('Erro inesperado no login:', error);
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function ClientRegister() {
   const navigate = useNavigate();
-  const { signUp } = useClientAuth();
+  const { signUp, client } = useClientAuth();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ClientFormData>({
@@ -24,6 +24,14 @@ export default function ClientRegister() {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (client) {
+      console.log('Cliente já logado, redirecionando para dashboard');
+      navigate('/cliente/dashboard');
+    }
+  }, [client, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -86,24 +94,29 @@ export default function ClientRegister() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    console.log('Tentativa de cadastro iniciada');
+    
+    if (!validateForm()) {
+      console.log('Validação do formulário falhou');
+      return;
+    }
 
     setLoading(true);
     setErrors({});
     
     try {
-      console.log('Submetendo formulário de cadastro...');
+      console.log('Chamando signUp...');
       const { error } = await signUp(formData);
       
       if (error) {
         console.error('Erro no cadastro:', error);
         setErrors({ general: error });
       } else {
-        console.log('Cadastro realizado com sucesso, redirecionando...');
+        console.log('Cadastro bem-sucedido, redirecionando...');
         navigate('/cliente/dashboard');
       }
     } catch (error) {
-      console.error('Erro inesperado:', error);
+      console.error('Erro inesperado no cadastro:', error);
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);

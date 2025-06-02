@@ -30,29 +30,36 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
           </div>
         </div>
       </div>
-      <h3 className="text-xl font-bold text-urbana-black">{name}</h3>
+      <h3 className="text-xl font-bold text-white">{name}</h3>
       <p className="text-urbana-gold font-medium">{role}</p>
     </div>
   );
 };
 
 const Team: React.FC = () => {
-  // Fetch staff members from Supabase
-  const { data: staffMembers, isLoading } = useQuery({
+  // Buscar barbeiros ativos do banco de dados
+  const { data: staffMembers, isLoading, error } = useQuery({
     queryKey: ['team-staff'],
     queryFn: async () => {
+      console.log('Buscando barbeiros na homepage...');
+      
       const { data, error } = await supabase
         .from('staff')
         .select('*')
         .eq('is_active', true)
         .order('name');
         
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('Erro ao buscar barbeiros:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('Barbeiros encontrados:', data);
       return data;
     },
   });
 
-  // Use fallback team members if there's no data from the database
+  // Barbeiros de fallback para caso não haja dados no banco
   const fallbackTeamMembers = [
     {
       id: '1',
@@ -84,15 +91,45 @@ const Team: React.FC = () => {
     }
   ];
 
-  // Display database staff if available, otherwise use fallback
+  if (isLoading) {
+    return (
+      <section id="team" className="urbana-section bg-black">
+        <div className="urbana-container">
+          <div className="text-center mb-16">
+            <h2 className="urbana-heading text-white">Nossa Equipe</h2>
+            <p className="urbana-subheading text-gray-300">Carregando nossa equipe...</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square bg-gray-700 rounded-lg mb-4"></div>
+                <div className="h-4 bg-gray-700 rounded mb-2"></div>
+                <div className="h-3 bg-gray-700 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    console.error('Erro ao carregar equipe:', error);
+  }
+
+  // Usar dados do banco se disponíveis, senão usar fallback
   const teamToDisplay = staffMembers?.length ? staffMembers : fallbackTeamMembers;
 
+  console.log('Exibindo equipe:', teamToDisplay);
+
   return (
-    <section id="team" className="urbana-section">
+    <section id="team" className="urbana-section bg-black">
       <div className="urbana-container">
         <div className="text-center mb-16">
-          <h2 className="urbana-heading">Nossa Equipe</h2>
-          <p className="urbana-subheading">Nossos barbeiros qualificados estão dedicados a proporcionar a melhor experiência de cuidado</p>
+          <h2 className="urbana-heading text-white">Nossa Equipe</h2>
+          <p className="urbana-subheading text-gray-300">
+            Nossos barbeiros qualificados estão dedicados a proporcionar a melhor experiência de cuidado
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -100,12 +137,20 @@ const Team: React.FC = () => {
             <TeamMember
               key={member.id}
               name={member.name}
-              role={member.role || 'Barbeiro'}
+              role={member.role || 'Barbeiro Profissional'}
               experience={member.experience || '+5 anos'}
               image={member.image_url}
             />
           ))}
         </div>
+        
+        {staffMembers?.length === 0 && (
+          <div className="text-center mt-8">
+            <p className="text-gray-400">
+              {error ? 'Erro ao carregar equipe. Mostrando equipe padrão.' : 'Nenhum barbeiro cadastrado. Mostrando equipe padrão.'}
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );
