@@ -15,17 +15,17 @@ const Index = () => {
       <main>
         <Hero />
         
-        {/* Seção de Serviços com background */}
-        <section className="relative py-16 overflow-hidden">
+        {/* Seção de Serviços com background - CORRIGIDO */}
+        <section className="relative py-16">
           <div 
-            className="absolute inset-0 bg-urbana-gray/10 transform skew-y-3 origin-top-left"
+            className="absolute inset-0 bg-gray-100 transform -skew-y-3 origin-top-left"
             style={{ 
               height: '140%',
               top: '-20%',
               zIndex: 0
             }}
           />
-          <div className="relative z-10">
+          <div className="container relative z-10 mx-auto px-4">
             <Services />
           </div>
         </section>
