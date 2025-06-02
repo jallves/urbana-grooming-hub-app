@@ -25,10 +25,8 @@ export default function ClientRegister() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Redirecionar se já estiver logado
   useEffect(() => {
     if (client) {
-      console.log('Cliente já logado, redirecionando para dashboard');
       navigate('/cliente/dashboard');
     }
   }, [client, navigate]);
@@ -37,12 +35,10 @@ export default function ClientRegister() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Limpar erro quando o usuário começar a digitar
+    // Limpar erros ao digitar
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
-    
-    // Limpar erro geral
     if (errors.general) {
       setErrors(prev => ({ ...prev, general: '' }));
     }
@@ -77,16 +73,6 @@ export default function ClientRegister() {
       newErrors.confirmPassword = 'Senhas não coincidem';
     }
 
-    if (formData.birth_date) {
-      const birthDate = new Date(formData.birth_date);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      
-      if (age < 14) {
-        newErrors.birth_date = 'Idade mínima é de 14 anos';
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -94,10 +80,7 @@ export default function ClientRegister() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Tentativa de cadastro iniciada');
-    
     if (!validateForm()) {
-      console.log('Validação do formulário falhou');
       return;
     }
 
@@ -105,14 +88,11 @@ export default function ClientRegister() {
     setErrors({});
     
     try {
-      console.log('Chamando signUp...');
       const { error } = await signUp(formData);
       
       if (error) {
-        console.error('Erro no cadastro:', error);
         setErrors({ general: error });
       } else {
-        console.log('Cadastro bem-sucedido, redirecionando...');
         navigate('/cliente/dashboard');
       }
     } catch (error) {
@@ -164,7 +144,7 @@ export default function ClientRegister() {
                 id="email"
                 name="email"
                 type="email"
-                value={formData.email || ''}
+                value={formData.email}
                 onChange={handleChange}
                 className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="seu@email.com"
@@ -196,9 +176,8 @@ export default function ClientRegister() {
                 type="date"
                 value={formData.birth_date}
                 onChange={handleChange}
-                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.birth_date ? 'border-red-500' : ''}`}
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
               />
-              {errors.birth_date && <p className="text-red-400 text-sm mt-1">{errors.birth_date}</p>}
             </div>
 
             <div>

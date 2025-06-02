@@ -32,7 +32,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Verificar sessão existente ao carregar
   useEffect(() => {
     checkSession();
   }, []);
@@ -40,33 +39,22 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const checkSession = async () => {
     try {
       const token = localStorage.getItem('client_token');
-      console.log('Verificando token:', token);
       
       if (!token) {
-        console.log('Nenhum token encontrado');
         setLoading(false);
         return;
       }
 
-      // Verificar se o cliente ainda existe no banco
       const { data, error } = await supabase
         .from('clients')
         .select('*')
         .eq('id', token)
         .maybeSingle();
 
-      console.log('Dados do cliente:', data, 'Erro:', error);
-
-      if (error) {
-        console.error('Erro ao buscar cliente:', error);
-        localStorage.removeItem('client_token');
-        setClient(null);
-      } else if (!data) {
-        console.log('Cliente não encontrado, removendo token');
+      if (error || !data) {
         localStorage.removeItem('client_token');
         setClient(null);
       } else {
-        console.log('Cliente encontrado:', data);
         setClient(data);
       }
     } catch (error) {
@@ -80,8 +68,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const signUp = async (data: ClientFormData): Promise<{ error: string | null }> => {
     try {
-      console.log('Iniciando cadastro de cliente:', { ...data, password: '[HIDDEN]' });
-
       // Validações básicas
       if (!data.name?.trim()) {
         return { error: 'Nome é obrigatório' };
@@ -89,6 +75,11 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (!data.email?.trim()) {
         return { error: 'Email é obrigatório' };
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(data.email.trim())) {
+        return { error: 'Email inválido' };
       }
 
       if (!data.phone?.trim()) {
@@ -104,22 +95,17 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       }
 
       // Verificar se email já existe
-      const { data: existingClient, error: checkError } = await supabase
+      const { data: existingClient } = await supabase
         .from('clients')
         .select('id')
         .eq('email', data.email.trim().toLowerCase())
         .maybeSingle();
 
-      if (checkError) {
-        console.error('Erro ao verificar email existente:', checkError);
-        return { error: 'Erro ao verificar dados. Tente novamente.' };
-      }
-
       if (existingClient) {
         return { error: 'Este email já está cadastrado' };
       }
 
-      // Validar idade mínima se fornecida
+      // Validar data de nascimento se fornecida
       if (data.birth_date) {
         const birthDate = new Date(data.birth_date);
         const today = new Date();
@@ -130,21 +116,16 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         }
       }
 
-      // Hash simples da senha (base64)
-      const passwordHash = btoa(data.password);
-
       // Criar cliente
       const clientData = {
         name: data.name.trim(),
         email: data.email.trim().toLowerCase(),
         phone: data.phone.trim(),
         birth_date: data.birth_date || null,
-        password_hash: passwordHash,
+        password_hash: btoa(data.password), // Hash simples para demo
         email_verified: false,
         whatsapp: data.whatsapp?.trim() || null
       };
-
-      console.log('Inserindo cliente no banco:', clientData);
 
       const { data: newClient, error } = await supabase
         .from('clients')
@@ -154,21 +135,17 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (error) {
         console.error('Erro ao criar cliente:', error);
-        
         if (error.code === '23505') {
           return { error: 'Este email já está cadastrado' };
         }
-        
-        return { error: 'Erro ao criar conta. Verifique os dados e tente novamente.' };
+        return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
       if (!newClient) {
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      console.log('Cliente criado com sucesso:', newClient);
-
-      // Armazenar token e definir cliente
+      // Fazer login automático após cadastro
       localStorage.setItem('client_token', newClient.id);
       setClient(newClient);
 
@@ -179,24 +156,19 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       return { error: null };
     } catch (error) {
-      console.error('Erro no registro:', error);
+      console.error('Erro no cadastro:', error);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
   };
 
   const signIn = async (data: ClientLoginData): Promise<{ error: string | null }> => {
     try {
-      console.log('Tentando fazer login com:', data.email);
-
       if (!data.email?.trim() || !data.password) {
         return { error: 'Email e senha são obrigatórios' };
       }
 
-      // Hash da senha para comparação
       const passwordHash = btoa(data.password);
-      console.log('Hash da senha gerado para login');
 
-      // Buscar cliente no banco
       const { data: clientData, error } = await supabase
         .from('clients')
         .select('*')
@@ -204,21 +176,15 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         .eq('password_hash', passwordHash)
         .maybeSingle();
 
-      console.log('Resultado da busca:', { found: !!clientData, error });
-
       if (error) {
         console.error('Erro na consulta:', error);
         return { error: 'Erro interno do servidor' };
       }
 
       if (!clientData) {
-        console.log('Cliente não encontrado com essas credenciais');
         return { error: 'Email ou senha incorretos' };
       }
 
-      console.log('Login realizado com sucesso para:', clientData.email);
-
-      // Armazenar token e definir cliente
       localStorage.setItem('client_token', clientData.id);
       setClient(clientData);
 
@@ -235,7 +201,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   };
 
   const signOut = async (): Promise<void> => {
-    console.log('Fazendo logout do cliente');
     localStorage.removeItem('client_token');
     setClient(null);
     

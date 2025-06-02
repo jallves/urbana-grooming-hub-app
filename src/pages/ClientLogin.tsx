@@ -21,10 +21,8 @@ export default function ClientLogin() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Redirecionar se já estiver logado
   useEffect(() => {
     if (client) {
-      console.log('Cliente já logado, redirecionando para dashboard');
       navigate('/cliente/dashboard');
     }
   }, [client, navigate]);
@@ -33,9 +31,12 @@ export default function ClientLogin() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Limpar erro quando o usuário começar a digitar
+    // Limpar erros ao digitar
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    if (errors.general) {
+      setErrors(prev => ({ ...prev, general: '' }));
     }
   };
 
@@ -59,10 +60,7 @@ export default function ClientLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Tentativa de login iniciada');
-    
     if (!validateForm()) {
-      console.log('Validação do formulário falhou');
       return;
     }
 
@@ -70,14 +68,11 @@ export default function ClientLogin() {
     setErrors({});
     
     try {
-      console.log('Chamando signIn...');
       const { error } = await signIn(formData);
       
       if (error) {
-        console.error('Erro no login:', error);
         setErrors({ general: error });
       } else {
-        console.log('Login bem-sucedido, redirecionando...');
         navigate('/cliente/dashboard');
       }
     } catch (error) {
