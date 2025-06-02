@@ -37,61 +37,84 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
 };
 
 const Team: React.FC = () => {
+  console.log('Team component rendering...');
+  
   // Buscar barbeiros ativos do banco de dados
   const { data: staffMembers, isLoading, error } = useQuery({
     queryKey: ['team-staff'],
     queryFn: async () => {
-      console.log('Buscando barbeiros na homepage...');
+      console.log('Iniciando busca de barbeiros...');
       
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
+      try {
+        const { data, error } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('is_active', true)
+          .order('name');
+          
+        console.log('Resultado da query staff:', { data, error });
         
-      if (error) {
-        console.error('Erro ao buscar barbeiros:', error);
-        throw new Error(error.message);
+        if (error) {
+          console.error('Erro na query staff:', error);
+          throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
+        }
+        
+        console.log('Barbeiros encontrados no banco:', data?.length || 0, data);
+        return data || [];
+      } catch (err) {
+        console.error('Erro na função queryFn:', err);
+        throw err;
       }
-      
-      console.log('Barbeiros encontrados:', data);
-      return data;
     },
+    retry: 3,
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
-  // Barbeiros de fallback para caso não haja dados no banco
+  // Barbeiros de fallback APENAS se não houver dados no banco
   const fallbackTeamMembers = [
     {
       id: '1',
       name: "Rafael Costa",
       role: "Barbeiro Master & Fundador",
       experience: "+15 anos",
-      image_url: "/team-1.jpg"
+      image_url: "/team-1.jpg",
+      is_active: true
     },
     {
       id: '2',
-      name: "Lucas Oliveira",
+      name: "Lucas Oliveira", 
       role: "Estilista Sênior",
       experience: "+8 anos",
-      image_url: "/team-2.jpg"
+      image_url: "/team-2.jpg",
+      is_active: true
     },
     {
       id: '3',
       name: "Gabriel Santos",
       role: "Especialista em Barba",
       experience: "+6 anos",
-      image_url: "/team-3.jpg"
+      image_url: "/team-3.jpg",
+      is_active: true
     },
     {
       id: '4',
       name: "Mateus Silva",
-      role: "Especialista em Coloração",
+      role: "Especialista em Coloração", 
       experience: "+7 anos",
-      image_url: "/team-4.jpg"
+      image_url: "/team-4.jpg",
+      is_active: true
     }
   ];
 
+  console.log('Estado atual:', { 
+    isLoading, 
+    error: error?.message, 
+    staffCount: staffMembers?.length || 0,
+    staff: staffMembers 
+  });
+
   if (isLoading) {
+    console.log('Mostrando estado de loading...');
     return (
       <section id="team" className="urbana-section bg-black">
         <div className="urbana-container">
@@ -117,10 +140,18 @@ const Team: React.FC = () => {
     console.error('Erro ao carregar equipe:', error);
   }
 
-  // Usar dados do banco se disponíveis, senão usar fallback
-  const teamToDisplay = staffMembers?.length ? staffMembers : fallbackTeamMembers;
+  // Determinar qual equipe exibir
+  let teamToDisplay;
+  
+  if (staffMembers && staffMembers.length > 0) {
+    console.log('Usando barbeiros do banco de dados:', staffMembers.length);
+    teamToDisplay = staffMembers;
+  } else {
+    console.log('Usando barbeiros de fallback');
+    teamToDisplay = fallbackTeamMembers;
+  }
 
-  console.log('Exibindo equipe:', teamToDisplay);
+  console.log('Equipe final a ser exibida:', teamToDisplay);
 
   return (
     <section id="team" className="urbana-section bg-black">
@@ -144,13 +175,16 @@ const Team: React.FC = () => {
           ))}
         </div>
         
-        {staffMembers?.length === 0 && (
-          <div className="text-center mt-8">
-            <p className="text-gray-400">
-              {error ? 'Erro ao carregar equipe. Mostrando equipe padrão.' : 'Nenhum barbeiro cadastrado. Mostrando equipe padrão.'}
-            </p>
-          </div>
-        )}
+        <div className="text-center mt-8">
+          <p className="text-gray-400 text-sm">
+            {staffMembers && staffMembers.length > 0 
+              ? `Exibindo ${staffMembers.length} barbeiro(s) cadastrado(s)`
+              : error 
+                ? 'Erro ao carregar equipe do banco. Exibindo equipe padrão.' 
+                : 'Nenhum barbeiro cadastrado. Exibindo equipe padrão.'
+            }
+          </p>
+        </div>
       </div>
     </section>
   );
