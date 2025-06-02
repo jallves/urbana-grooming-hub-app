@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Client, ClientLoginData, ClientFormData } from '@/types/client';
@@ -33,50 +34,12 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   useEffect(() => {
     checkSession();
-    
-    // Configura listener para mudanças de autenticação
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          await fetchClientProfile(session.user.id);
-        } else if (event === 'SIGNED_OUT') {
-          setClient(null);
-          localStorage.removeItem('client_token');
-        }
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
   }, []);
-
-  const fetchClientProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error || !data) {
-        throw error || new Error('Client profile not found');
-      }
-
-      setClient(data);
-      localStorage.setItem('client_token', data.id);
-    } catch (error) {
-      console.error('Error fetching client profile:', error);
-      setClient(null);
-      localStorage.removeItem('client_token');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const checkSession = async () => {
     try {
       const token = localStorage.getItem('client_token');
+      
       if (!token) {
         setLoading(false);
         return;
@@ -86,17 +49,18 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         .from('clients')
         .select('*')
         .eq('id', token)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
-        throw error || new Error('Session expired');
+        localStorage.removeItem('client_token');
+        setClient(null);
+      } else {
+        setClient(data);
       }
-
-      setClient(data);
     } catch (error) {
-      console.error('Session check error:', error);
-      setClient(null);
+      console.error('Erro ao verificar sessão:', error);
       localStorage.removeItem('client_token');
+      setClient(null);
     } finally {
       setLoading(false);
     }
@@ -104,66 +68,90 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   const signUp = async (data: ClientFormData): Promise<{ error: string | null }> => {
     try {
-      // Validação melhorada
-      if (!data.name?.trim()) return { error: 'Nome é obrigatório' };
-      if (!data.email?.trim()) return { error: 'Email é obrigatório' };
-      if (!data.phone?.trim()) return { error: 'Telefone é obrigatório' };
+      console.log('Iniciando cadastro com dados:', { ...data, password: '[HIDDEN]' });
+
+      // Validar se todos os campos obrigatórios estão preenchidos
+      if (!data.name?.trim()) {
+        return { error: 'Nome é obrigatório' };
+      }
+
+      if (!data.email?.trim()) {
+        return { error: 'Email é obrigatório' };
+      }
+
+      if (!data.phone?.trim()) {
+        return { error: 'Telefone é obrigatório' };
+      }
+
       if (!data.password || data.password.length < 6) {
         return { error: 'Senha deve ter pelo menos 6 caracteres' };
       }
+
       if (data.password !== data.confirmPassword) {
         return { error: 'As senhas não coincidem' };
       }
 
-      // Verificação de email existente
-      const { data: existingClient, error: emailError } = await supabase
+      // Verificar se email já existe
+      console.log('Verificando se email já existe:', data.email);
+      const { data: existingClient, error: checkError } = await supabase
         .from('clients')
         .select('id')
         .eq('email', data.email.trim().toLowerCase())
         .maybeSingle();
 
-      if (emailError) throw emailError;
-      if (existingClient) return { error: 'Este email já está cadastrado' };
+      if (checkError) {
+        console.error('Erro ao verificar email existente:', checkError);
+        return { error: 'Erro interno. Tente novamente.' };
+      }
 
-      // Criação de usuário com Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            name: data.name,
-            phone: data.phone,
-            role: 'client'
-          }
-        }
-      });
+      if (existingClient) {
+        console.log('Email já existe no banco');
+        return { error: 'Este email já está cadastrado' };
+      }
 
-      if (authError) throw authError;
-      if (!authData.user) return { error: 'Erro ao criar usuário' };
+      // Criar hash simples da senha
+      const passwordHash = btoa(data.password);
 
-      // Criação do perfil do cliente
+      // Preparar dados do cliente
       const clientData = {
-        id: authData.user.id,
         name: data.name.trim(),
         email: data.email.trim().toLowerCase(),
         phone: data.phone.trim(),
         birth_date: data.birth_date || null,
+        password_hash: passwordHash,
+        email_verified: false,
         whatsapp: data.whatsapp?.trim() || null
       };
 
-      const { error: insertError } = await supabase
+      console.log('Inserindo cliente no banco:', { ...clientData, password_hash: '[HIDDEN]' });
+
+      // Inserir cliente no banco
+      const { data: newClient, error: insertError } = await supabase
         .from('clients')
-        .insert(clientData);
+        .insert([clientData])
+        .select()
+        .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Erro ao inserir cliente:', insertError);
+        
+        if (insertError.code === '23505') {
+          return { error: 'Este email já está cadastrado' };
+        }
+        
+        return { error: `Erro ao criar conta: ${insertError.message}` };
+      }
 
-      // Login automático após cadastro
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password
-      });
+      if (!newClient) {
+        console.error('Cliente não retornado após inserção');
+        return { error: 'Erro ao criar conta. Tente novamente.' };
+      }
 
-      if (signInError) throw signInError;
+      console.log('Cliente criado com sucesso:', newClient.id);
+
+      // Fazer login automático
+      localStorage.setItem('client_token', newClient.id);
+      setClient(newClient);
 
       toast({
         title: "Conta criada com sucesso!",
@@ -172,28 +160,43 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       return { error: null };
 
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      return { error: error.message || 'Erro ao criar conta' };
+    } catch (error) {
+      console.error('Erro inesperado no cadastro:', error);
+      return { error: 'Erro inesperado. Tente novamente.' };
     }
   };
 
   const signIn = async (data: ClientLoginData): Promise<{ error: string | null }> => {
     try {
+      console.log('Tentando fazer login com email:', data.email);
+
       if (!data.email?.trim() || !data.password) {
         return { error: 'Email e senha são obrigatórios' };
       }
 
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password
-      });
+      const passwordHash = btoa(data.password);
 
-      if (authError) throw authError;
-      if (!authData.user) return { error: 'Usuário não encontrado' };
+      const { data: clientData, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('email', data.email.trim().toLowerCase())
+        .eq('password_hash', passwordHash)
+        .maybeSingle();
 
-      // Busca perfil do cliente
-      await fetchClientProfile(authData.user.id);
+      if (error) {
+        console.error('Erro na consulta de login:', error);
+        return { error: 'Erro interno do servidor' };
+      }
+
+      if (!clientData) {
+        console.log('Cliente não encontrado ou senha incorreta');
+        return { error: 'Email ou senha incorretos' };
+      }
+
+      console.log('Login realizado com sucesso para:', clientData.email);
+
+      localStorage.setItem('client_token', clientData.id);
+      setClient(clientData);
 
       toast({
         title: "Login realizado com sucesso!",
@@ -201,62 +204,42 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       });
 
       return { error: null };
-    } catch (error: any) {
-      console.error('Login error:', error);
-      return { error: error.message || 'Credenciais inválidas' };
+    } catch (error) {
+      console.error('Erro inesperado no login:', error);
+      return { error: 'Erro inesperado. Tente novamente.' };
     }
   };
 
   const signOut = async (): Promise<void> => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Logout error:', error);
-    } else {
-      setClient(null);
-      localStorage.removeItem('client_token');
-      toast({
-        title: "Logout realizado",
-        description: "Até a próxima!",
-      });
-    }
+    localStorage.removeItem('client_token');
+    setClient(null);
+    
+    toast({
+      title: "Logout realizado",
+      description: "Até a próxima!",
+    });
   };
 
   const updateClient = async (data: Partial<Client>): Promise<{ error: string | null }> => {
     if (!client) return { error: 'Cliente não autenticado' };
 
     try {
-      const updates = {
-        ...data,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error } = await supabase
+      const { data: updatedClient, error } = await supabase
         .from('clients')
-        .update(updates)
-        .eq('id', client.id);
+        .update(data)
+        .eq('id', client.id)
+        .select()
+        .single();
 
-      if (error) throw error;
-
-      // Atualiza estado local
-      setClient(prev => ({ ...prev, ...updates } as Client));
-
-      // Se email foi alterado, atualiza no Auth
-      if (data.email) {
-        const { error: updateError } = await supabase.auth.updateUser({
-          email: data.email
-        });
-        if (updateError) throw updateError;
+      if (error) {
+        return { error: error.message };
       }
 
-      toast({
-        title: "Perfil atualizado!",
-        description: "Seus dados foram salvos com sucesso.",
-      });
-
+      setClient(updatedClient);
       return { error: null };
-    } catch (error: any) {
-      console.error('Update error:', error);
-      return { error: error.message || 'Erro ao atualizar perfil' };
+    } catch (error) {
+      console.error('Erro ao atualizar cliente:', error);
+      return { error: 'Erro interno do servidor' };
     }
   };
 
@@ -271,7 +254,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   return (
     <ClientAuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </ClientAuthContext.Provider>
   );
 }
