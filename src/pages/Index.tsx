@@ -9,16 +9,16 @@ import WhatsAppButton from '../components/WhatsAppButton';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-amber-50 text-amber-900 overflow-x-hidden">
       <Navbar />
       
       <main>
         <Hero />
         
-        {/* Seção de Serviços com background - CORRIGIDO */}
+        {/* Seção de Serviços com fundo amarelo suave */}
         <section className="relative py-16">
           <div 
-            className="absolute inset-0 bg-gray-100 transform -skew-y-3 origin-top-left"
+            className="absolute inset-0 bg-amber-100 transform -skew-y-3 origin-top-left"
             style={{ 
               height: '140%',
               top: '-20%',
@@ -40,4 +40,5 @@ const Index = () => {
   );
 };
 
+export default Index;
 export default Index;
