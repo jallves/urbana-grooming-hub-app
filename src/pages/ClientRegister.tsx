@@ -51,7 +51,7 @@ export default function ClientRegister() {
       newErrors.name = 'Nome é obrigatório';
     }
 
-    if (!formData.email) {
+    if (!formData.email.trim()) {
       newErrors.email = 'Email é obrigatório';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email inválido';
@@ -80,7 +80,10 @@ export default function ClientRegister() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Formulário submetido com dados:', { ...formData, password: '[HIDDEN]', confirmPassword: '[HIDDEN]' });
+    
     if (!validateForm()) {
+      console.log('Validação falhou:', errors);
       return;
     }
 
@@ -88,15 +91,18 @@ export default function ClientRegister() {
     setErrors({});
     
     try {
+      console.log('Chamando signUp...');
       const { error } = await signUp(formData);
       
       if (error) {
+        console.log('Erro retornado do signUp:', error);
         setErrors({ general: error });
       } else {
+        console.log('Cadastro realizado com sucesso, redirecionando...');
         navigate('/cliente/dashboard');
       }
     } catch (error) {
-      console.error('Erro inesperado no cadastro:', error);
+      console.error('Erro inesperado no handleSubmit:', error);
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);
