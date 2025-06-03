@@ -99,7 +99,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         .eq('email', data.email.trim().toLowerCase())
         .maybeSingle();
 
-      if (checkError) {
+      if (checkError && checkError.code !== 'PGRST116') {
         console.error('Erro ao verificar email existente:', checkError);
         return { error: 'Erro interno. Tente novamente.' };
       }
@@ -125,7 +125,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       console.log('Inserindo cliente no banco:', { ...clientData, password_hash: '[HIDDEN]' });
 
-      // Inserir cliente no banco
+      // Inserir cliente no banco usando conexão anônima
       const { data: newClient, error: insertError } = await supabase
         .from('clients')
         .insert([clientData])
@@ -183,7 +183,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         .eq('password_hash', passwordHash)
         .maybeSingle();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Erro na consulta de login:', error);
         return { error: 'Erro interno do servidor' };
       }

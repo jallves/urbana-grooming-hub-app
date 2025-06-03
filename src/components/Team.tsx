@@ -46,6 +46,7 @@ const Team: React.FC = () => {
       console.log('Iniciando busca de barbeiros...');
       
       try {
+        // Fazer a consulta sem autenticação usando anon role
         const { data, error } = await supabase
           .from('staff')
           .select('*')
