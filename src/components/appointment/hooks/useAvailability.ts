@@ -28,8 +28,6 @@ export const useAvailability = () => {
         }
       }
 
-      // For now, return all time slots
-      // In the future, this could be enhanced to check actual availability
       setAvailableTimes(timeSlots);
     } catch (error) {
       console.error("Erro ao buscar horários disponíveis:", error);
@@ -52,7 +50,9 @@ export const useAvailability = () => {
 
     setIsCheckingAvailability(true);
     try {
-      // Get all active staff members
+      console.log('Verificando disponibilidade dos barbeiros...');
+      
+      // Get all active staff members using public access
       const { data: staffMembers, error } = await supabase
         .from('staff')
         .select('id, name, is_active')
@@ -69,10 +69,13 @@ export const useAvailability = () => {
         return;
       }
 
-      if (!staffMembers) {
+      if (!staffMembers || staffMembers.length === 0) {
+        console.log('Nenhum barbeiro ativo encontrado');
         setBarberAvailability([]);
         return;
       }
+
+      console.log('Barbeiros encontrados:', staffMembers);
 
       // For now, mark all barbeiros as available
       // In the future, this could check actual availability against appointments
@@ -82,6 +85,7 @@ export const useAvailability = () => {
         available: true
       }));
 
+      console.log('Disponibilidade dos barbeiros:', availability);
       setBarberAvailability(availability);
     } catch (error) {
       console.error("Erro ao verificar disponibilidade do barbeiro:", error);
