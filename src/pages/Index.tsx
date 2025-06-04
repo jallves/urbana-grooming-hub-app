@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
@@ -12,12 +11,12 @@ const Index = () => {
   console.log('Rendering Index page');
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-screen bg-amber-50 text-gray-900 overflow-x-hidden font-sans">
       <Navbar />
       <div>
         <Hero />
         <div className="relative">
-          <div className="absolute inset-0 bg-urbana-gray/10 skew-y-3 -z-10 -mt-16 h-[120vh]"></div>
+          <div className="absolute inset-0 bg-amber-100/30 skew-y-3 -z-10 -mt-16 h-[120vh]"></div>
           <Services />
         </div>
         <Gallery />
