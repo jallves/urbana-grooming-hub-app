@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Home } from 'lucide-react';
+import { Home, Scissors } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -23,44 +23,32 @@ const Auth: React.FC = () => {
       const timer = setTimeout(() => {
         setRedirectTimer(prev => prev - 1);
       }, 1000);
-
       return () => clearTimeout(timer);
     } else if (!user && !authLoading && redirectTimer === 0) {
-      console.log('Auto-redirecting to home after timer');
       navigate('/');
     }
   }, [redirectTimer, user, authLoading, navigate]);
   
-  // Get redirect path
-  const from = location.state?.from || "/";
-  console.log('Auth: from path:', from);
-  
   // Handle authenticated user redirect
+  const from = location.state?.from || "/";
+  
   useEffect(() => {
     if (!authLoading && user) {
-      console.log("Auth: User authenticated, redirecting", { isAdmin, from });
-      
-      // Determine redirect destination
-      let redirectPath = '/';
-      
-      if (from.startsWith('/admin') && isAdmin) {
-        redirectPath = from;
-      } else if (isAdmin) {
-        redirectPath = '/admin';
-      }
-      
-      console.log('Auth: Redirecting to:', redirectPath);
+      const redirectPath = from.startsWith('/admin') && isAdmin 
+        ? from 
+        : isAdmin 
+          ? '/admin' 
+          : '/';
       navigate(redirectPath, { replace: true });
     }
   }, [user, isAdmin, navigate, authLoading, from]);
 
-  // Create specific admin user if needed
+  // Create admin user if needed
   useEffect(() => {
     const createAdminUser = async () => {
       if (authLoading || user) return;
       
       try {
-        console.log("Checking for admin user...");
         const { data: existingUser } = await supabase
           .from('profiles')
           .select('email')
@@ -68,41 +56,22 @@ const Auth: React.FC = () => {
           .single();
         
         if (!existingUser) {
-          console.log("Creating admin user...");
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: 'joao.colimoides@gmail.com',
             password: 'Jb74872701@',
-            options: {
-              data: {
-                full_name: 'João alves Da silva',
-              },
-            }
+            options: { data: { full_name: 'João alves Da silva' } }
           });
 
-          if (signUpError) {
-            console.error('Error creating admin user:', signUpError);
-            return;
-          }
-          
-          if (signUpData.user) {
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert([
-                { 
-                  user_id: signUpData.user.id,
-                  role: 'admin'
-                }
-              ]);
-              
-            if (roleError) {
-              console.error('Error adding admin role:', roleError);
-            } else {
-              console.log('Admin user created successfully');
-              toast({
-                title: "Usuário administrador criado",
-                description: "Use joao.colimoides@gmail.com para login de admin",
-              });
-            }
+          if (signUpData?.user) {
+            await supabase.from('user_roles').insert([{ 
+              user_id: signUpData.user.id,
+              role: 'admin'
+            }]);
+            
+            toast({
+              title: "Usuário administrador criado",
+              description: "Use joao.colimoides@gmail.com para login de admin",
+            });
           }
         }
       } catch (error) {
@@ -113,67 +82,83 @@ const Auth: React.FC = () => {
     createAdminUser();
   }, [authLoading, user, toast]);
 
-  // Show loading screen while checking authentication
   if (authLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
-        <p className="text-muted-foreground">Verificando autenticação...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"></div>
+        <p className="text-gray-400">Verificando autenticação...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background px-4">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 px-4 py-8">
       <div className="w-full max-w-md space-y-8">
+        {/* Header with barber theme */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-primary">Costa Urbana</h1>
-          <p className="mt-2 text-muted-foreground">
-            Acesso ao painel administrativo
+          <div className="flex justify-center mb-4">
+            <Scissors className="h-10 w-10 text-amber-500" />
+          </div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">URBANA BARBEARIA</h1>
+          <p className="mt-2 text-amber-400/80">
+            Painel administrativo
           </p>
         </div>
         
-        <div className="bg-card shadow-lg rounded-lg p-6 border">
+        {/* Auth card with glass effect */}
+        <div className="bg-gray-800/70 backdrop-blur-sm shadow-xl rounded-lg p-6 border border-gray-700">
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Cadastro</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-700">
+              <TabsTrigger 
+                value="login"
+                className="data-[state=active]:bg-amber-500 data-[state=active]:text-gray-900"
+              >
+                Login
+              </TabsTrigger>
+              <TabsTrigger 
+                value="register"
+                className="data-[state=active]:bg-amber-500 data-[state=active]:text-gray-900"
+              >
+                Cadastro
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="login" className="mt-0">
-              <LoginForm loading={loading} setLoading={setLoading} />
+              <LoginForm loading={loading} setLoading={setLoading} theme="dark" />
             </TabsContent>
             
             <TabsContent value="register" className="mt-0">
-              <RegisterForm loading={loading} setLoading={setLoading} />
+              <RegisterForm loading={loading} setLoading={setLoading} theme="dark" />
             </TabsContent>
           </Tabs>
         </div>
 
+        {/* Redirect notice */}
         {!user && redirectTimer > 0 && (
-          <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-700 text-sm">
-              Redirecionando para a página inicial em {redirectTimer} segundos
+          <div className="text-center p-4 bg-amber-900/20 border border-amber-800/50 rounded-lg">
+            <p className="text-amber-400 text-sm">
+              Redirecionando em {redirectTimer} segundos
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate('/')}
-              className="mt-2"
+              className="mt-2 border-amber-500 text-amber-400 hover:bg-amber-900/30 hover:text-amber-300"
             >
               Ir agora
             </Button>
           </div>
         )}
 
+        {/* Back to site button */}
         <div className="flex justify-center">
           <Button 
             variant="outline" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
             onClick={() => navigate('/')}
           >
             <Home size={16} />
-            Ver Site
+            Voltar ao site
           </Button>
         </div>
       </div>

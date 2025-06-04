@@ -1,8 +1,7 @@
-// src/pages/client/new-booking.tsx
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
-import { BarberProvider } from '@/pages/admin/barbers';
+import ClientAppointmentForm from '@/components/appointment/ClientAppointmentForm';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Scissors } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -13,13 +12,11 @@ import {
   CardDescription, 
   CardContent 
 } from '@/components/ui/card';
-import BarberSelection from '@/components/appointment/BarberSelection';
 
-const ClientNewBooking: React.FC = () => {
+export default function ClientNewBooking() {
   const navigate = useNavigate();
   const { client } = useClientAuth();
   const isMobile = useIsMobile();
-  const { barbers } = useContext(BarberProvider);
 
   useEffect(() => {
     if (!client) {
@@ -79,16 +76,11 @@ const ClientNewBooking: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              <BarberSelection 
-                barbers={barbers} 
-                clientId={client.id} 
-              />
+              <ClientAppointmentForm clientId={client.id} />
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
   );
-};
-
-export default ClientNewBooking;
+}
