@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import LoginForm from '@/components/auth/LoginForm';
-import RegisterForm from '@/components/auth/RegisterForm';
+import { LoginForm, LoginFormProps } from '@/components/auth/LoginForm';
+import { RegisterForm, RegisterFormProps } from '@/components/auth/RegisterForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Home, Scissors } from 'lucide-react';
+
+// Adicionando as tipagens estendidas para incluir a prop theme
+interface ExtendedLoginFormProps extends LoginFormProps {
+  theme?: 'light' | 'dark';
+}
+
+interface ExtendedRegisterFormProps extends RegisterFormProps {
+  theme?: 'light' | 'dark';
+}
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -99,7 +108,7 @@ const Auth: React.FC = () => {
           <div className="flex justify-center mb-4">
             <Scissors className="h-10 w-10 text-amber-500" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">URBANA BARBEARIA</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Coata Urbana</h1>
           <p className="mt-2 text-amber-400/80">
             Painel administrativo
           </p>
@@ -124,11 +133,19 @@ const Auth: React.FC = () => {
             </TabsList>
             
             <TabsContent value="login" className="mt-0">
-              <LoginForm loading={loading} setLoading={setLoading} theme="dark" />
+              <LoginForm 
+                loading={loading} 
+                setLoading={setLoading} 
+                theme="dark" 
+              />
             </TabsContent>
             
             <TabsContent value="register" className="mt-0">
-              <RegisterForm loading={loading} setLoading={setLoading} theme="dark" />
+              <RegisterForm 
+                loading={loading} 
+                setLoading={setLoading} 
+                theme="dark" 
+              />
             </TabsContent>
           </Tabs>
         </div>
