@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,11 @@ export default function ClientLogin() {
     
     // Limpar erros ao digitar
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
     if (errors.general) {
       setErrors(prev => ({ ...prev, general: '' }));
@@ -84,15 +87,15 @@ export default function ClientLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Card className={`bg-zinc-900 border-zinc-700 ${isMobile ? 'w-full max-w-sm' : 'w-full max-w-md'}`}>
+    <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Card className={`bg-stone-800 border-stone-600 ${isMobile ? 'w-full max-w-sm' : 'w-full max-w-md'}`}>
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <LogIn className="h-12 w-12 text-urbana-gold" />
+            <LogIn className="h-12 w-12 text-amber-600" />
           </div>
-          <CardTitle className="text-2xl font-bold text-white">Entrar</CardTitle>
-          <CardDescription className="text-zinc-300">
-            Acesse sua conta para gerenciar seus agendamentos
+          <CardTitle className="text-2xl font-bold text-white">Entrar na Barbearia</CardTitle>
+          <CardDescription className="text-stone-300">
+            Acesse sua conta para agendar seu corte
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,28 +107,28 @@ export default function ClientLogin() {
             )}
 
             <div>
-              <Label htmlFor="email" className="text-white">Email</Label>
+              <Label htmlFor="email" className="text-stone-100">Email</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`bg-zinc-800 border-zinc-600 text-white placeholder-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20 ${errors.email ? 'border-red-500' : ''}`}
+                className={`bg-stone-700 border-stone-600 text-white placeholder-stone-400 focus:border-amber-600 focus:ring-amber-600/20 ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="seu@email.com"
               />
               {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-white">Senha</Label>
+              <Label htmlFor="password" className="text-stone-100">Senha</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`bg-zinc-800 border-zinc-600 text-white placeholder-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20 ${errors.password ? 'border-red-500' : ''}`}
+                className={`bg-stone-700 border-stone-600 text-white placeholder-stone-400 focus:border-amber-600 focus:ring-amber-600/20 ${errors.password ? 'border-red-500' : ''}`}
                 placeholder="Sua senha"
               />
               {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
@@ -133,7 +136,7 @@ export default function ClientLogin() {
 
             <Button
               type="submit"
-              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold"
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold"
               disabled={loading}
             >
               {loading ? (
@@ -148,13 +151,13 @@ export default function ClientLogin() {
 
             <div className="text-center text-sm space-y-2">
               <div>
-                <span className="text-zinc-300">Não tem uma conta? </span>
-                <Link to="/cliente/registro" className="text-urbana-gold hover:underline">
+                <span className="text-stone-300">Não tem uma conta? </span>
+                <Link to="/cliente/registro" className="text-amber-500 hover:underline hover:text-amber-400">
                   Criar conta
                 </Link>
               </div>
               <div>
-                <Link to="/" className="text-zinc-400 hover:underline">
+                <Link to="/" className="text-stone-400 hover:underline hover:text-stone-300">
                   Voltar ao início
                 </Link>
               </div>
