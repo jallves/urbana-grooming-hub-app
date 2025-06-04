@@ -16,9 +16,9 @@ import {
   LogOut, 
   Settings, 
   History,
-  Star,
   MapPin,
-  Phone
+  Phone,
+  Scissors
 } from 'lucide-react';
 
 const ClientDashboard = () => {
@@ -49,7 +49,7 @@ const ClientDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white text-lg">Carregando...</p>
@@ -74,9 +74,9 @@ const ClientDashboard = () => {
     switch (status) {
       case 'scheduled': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       case 'confirmed': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'completed': return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'completed': return 'bg-stone-500/20 text-stone-400 border-stone-500/30';
       case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      default: return 'bg-stone-500/20 text-stone-400 border-stone-500/30';
     }
   };
 
@@ -91,27 +91,28 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800">
       {/* Header */}
-      <div className="bg-black/50 backdrop-blur-sm border-b border-white/10">
+      <div className="bg-stone-900/80 backdrop-blur-sm border-b border-stone-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full flex items-center justify-center">
-                <User className="h-6 w-6 text-black" />
+                <Scissors className="h-5 w-5 text-black" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-white">
                   Olá, {client.name}!
                 </h1>
-                <p className="text-sm text-gray-400">Bem-vindo ao seu painel</p>
+                <p className="text-sm text-stone-400">Bem-vindo à sua barbearia</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <Button 
                 variant="outline" 
                 size="sm"
-                className="bg-transparent border-white/20 text-white hover:bg-white/10"
+                className="bg-stone-800 border-stone-600 text-white hover:bg-stone-700"
+                onClick={() => navigate('/cliente/perfil')}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Perfil
@@ -120,7 +121,7 @@ const ClientDashboard = () => {
                 variant="outline" 
                 size="sm"
                 onClick={signOut}
-                className="bg-transparent border-red-400/20 text-red-400 hover:bg-red-400/10"
+                className="bg-stone-800 border-red-400/30 text-red-400 hover:bg-red-400/10"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
@@ -133,14 +134,14 @@ const ClientDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border-amber-500/20 hover:shadow-lg hover:shadow-amber-500/10 transition-all">
+          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/10 transition-all">
             <CardHeader className="pb-3">
               <CardTitle className="text-white flex items-center gap-2">
                 <Plus className="h-5 w-5" />
-                Novo Agendamento
+                Novo Corte
               </CardTitle>
-              <CardDescription className="text-gray-300">
-                Reserve seu próximo horário
+              <CardDescription className="text-stone-300">
+                Agende seu próximo serviço
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,33 +154,33 @@ const ClientDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/5 border-white/10">
+          <Card className="bg-stone-800 border-stone-700">
             <CardHeader className="pb-3">
               <CardTitle className="text-white flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Próximos Agendamentos
+                Próximos Cortes
               </CardTitle>
-              <CardDescription className="text-gray-300">
-                Seus horários confirmados
+              <CardDescription className="text-stone-300">
+                Seus agendamentos confirmados
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-white mb-1">
                 {upcomingAppointments.length}
               </div>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-stone-400">
                 {upcomingAppointments.length === 1 ? 'agendamento' : 'agendamentos'}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/5 border-white/10">
+          <Card className="bg-stone-800 border-stone-700">
             <CardHeader className="pb-3">
               <CardTitle className="text-white flex items-center gap-2">
                 <History className="h-5 w-5" />
                 Histórico
               </CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-stone-300">
                 Serviços realizados
               </CardDescription>
             </CardHeader>
@@ -187,8 +188,8 @@ const ClientDashboard = () => {
               <div className="text-2xl font-bold text-white mb-1">
                 {pastAppointments.length}
               </div>
-              <p className="text-sm text-gray-400">
-                {pastAppointments.length === 1 ? 'serviço' : 'serviços'} realizados
+              <p className="text-sm text-stone-400">
+                {pastAppointments.length === 1 ? 'corte' : 'cortes'} realizados
               </p>
             </CardContent>
           </Card>
@@ -204,12 +205,12 @@ const ClientDashboard = () => {
           {appointmentsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2].map((i) => (
-                <Card key={i} className="bg-white/5 border-white/10">
+                <Card key={i} className="bg-stone-800 border-stone-700">
                   <CardContent className="p-6">
                     <div className="animate-pulse space-y-3">
-                      <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                      <div className="h-3 bg-white/10 rounded w-1/2"></div>
-                      <div className="h-3 bg-white/10 rounded w-2/3"></div>
+                      <div className="h-4 bg-stone-700 rounded w-3/4"></div>
+                      <div className="h-3 bg-stone-700 rounded w-1/2"></div>
+                      <div className="h-3 bg-stone-700 rounded w-2/3"></div>
                     </div>
                   </CardContent>
                 </Card>
@@ -218,7 +219,7 @@ const ClientDashboard = () => {
           ) : upcomingAppointments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {upcomingAppointments.map((appointment) => (
-                <Card key={appointment.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors">
+                <Card key={appointment.id} className="bg-stone-800 border-stone-700 hover:bg-stone-700/50 transition-colors">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -241,7 +242,7 @@ const ClientDashboard = () => {
                       </div>
                     </div>
                     
-                    <div className="space-y-2 text-gray-300">
+                    <div className="space-y-2 text-stone-300">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span className="text-sm">
@@ -267,20 +268,20 @@ const ClientDashboard = () => {
               ))}
             </div>
           ) : (
-            <Card className="bg-white/5 border-white/10">
+            <Card className="bg-stone-800 border-stone-700">
               <CardContent className="p-8 text-center">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <Scissors className="h-12 w-12 text-stone-500 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-white mb-2">
-                  Nenhum agendamento próximo
+                  Nenhum corte agendado
                 </h3>
-                <p className="text-gray-400 mb-4">
-                  Que tal agendar um horário para cuidar de você?
+                <p className="text-stone-400 mb-4">
+                  Está na hora de marcar seu próximo corte!
                 </p>
                 <Button 
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold"
                   onClick={() => navigate('/cliente/novo-agendamento')}
                 >
-                  Agendar Agora
+                  Agendar Corte
                 </Button>
               </CardContent>
             </Card>
@@ -288,11 +289,11 @@ const ClientDashboard = () => {
         </div>
 
         {/* Contact Information */}
-        <Card className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border-white/10">
+        <Card className="bg-stone-800 border-stone-700">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Informações de Contato
+              <MapPin className="h-5 w-5 text-amber-500" />
+              Nossa Barbearia
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -302,7 +303,7 @@ const ClientDashboard = () => {
               </div>
               <div>
                 <p className="text-white font-medium">Telefone</p>
-                <p className="text-gray-300">(11) 99999-9999</p>
+                <p className="text-stone-300">(11) 99999-9999</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -311,7 +312,7 @@ const ClientDashboard = () => {
               </div>
               <div>
                 <p className="text-white font-medium">Endereço</p>
-                <p className="text-gray-300">Rua Example, 123 - Centro</p>
+                <p className="text-stone-300">Rua Example, 123 - Centro</p>
               </div>
             </div>
           </CardContent>
