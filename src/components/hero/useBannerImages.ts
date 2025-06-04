@@ -49,29 +49,12 @@ export const useBannerImages = () => {
         setLoading(true);
         console.log('Tentando buscar imagens do banner');
         
-        // Set a timeout to ensure we don't wait too long for the database
-        const timeoutPromise = new Promise<null>((resolve) => {
-          setTimeout(() => resolve(null), 3000); // 3 seconds timeout
-        });
-        
-        const fetchPromise = supabase
+        // Improved Supabase query with proper error handling
+        const { data, error } = await supabase
           .from('banner_images')
           .select('*')
           .order('display_order', { ascending: true })
           .eq('is_active', true);
-          
-        // Race between the fetch and timeout
-        const result = await Promise.race([
-          fetchPromise,
-          timeoutPromise
-        ]);
-        
-        if (result === null) {
-          console.log('Timeout ao buscar banners, usando fallback');
-          throw new Error('Timeout ao buscar banners');
-        }
-        
-        const { data, error } = result;
         
         if (error) {
           console.error('Erro ao buscar banners:', error);

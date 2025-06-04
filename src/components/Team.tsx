@@ -39,39 +39,34 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
 const Team: React.FC = () => {
   console.log('Team component rendering...');
   
-  // Buscar barbeiros ativos do banco de dados
+  // Improved query to fetch active barbers from the database with better error handling
   const { data: staffMembers, isLoading, error } = useQuery({
     queryKey: ['team-staff'],
     queryFn: async () => {
       console.log('Iniciando busca de barbeiros...');
       
       try {
-        // Fazer a consulta sem autenticação usando anon role
         const { data, error } = await supabase
           .from('staff')
           .select('*')
           .eq('is_active', true)
           .order('name');
-          
-        console.log('Resultado da query staff:', { data, error });
         
         if (error) {
           console.error('Erro na query staff:', error);
           throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
         }
         
-        console.log('Barbeiros encontrados no banco:', data?.length || 0, data);
+        console.log('Barbeiros encontrados:', data?.length || 0);
         return data || [];
       } catch (err) {
-        console.error('Erro na função queryFn:', err);
+        console.error('Erro ao buscar barbeiros:', err);
         throw err;
       }
     },
-    retry: 3,
-    staleTime: 1000 * 60 * 5, // 5 minutos
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Barbeiros de fallback APENAS se não houver dados no banco
   const fallbackTeamMembers = [
     {
       id: '1',
@@ -107,15 +102,8 @@ const Team: React.FC = () => {
     }
   ];
 
-  console.log('Estado atual:', { 
-    isLoading, 
-    error: error?.message, 
-    staffCount: staffMembers?.length || 0,
-    staff: staffMembers 
-  });
-
+  // Show loading state while fetching data
   if (isLoading) {
-    console.log('Mostrando estado de loading...');
     return (
       <section id="team" className="urbana-section bg-black">
         <div className="urbana-container">
@@ -137,22 +125,12 @@ const Team: React.FC = () => {
     );
   }
 
-  if (error) {
-    console.error('Erro ao carregar equipe:', error);
-  }
+  // Determine which team to display - use fallback if needed
+  const teamToDisplay = staffMembers && staffMembers.length > 0
+    ? staffMembers
+    : fallbackTeamMembers;
 
-  // Determinar qual equipe exibir
-  let teamToDisplay;
-  
-  if (staffMembers && staffMembers.length > 0) {
-    console.log('Usando barbeiros do banco de dados:', staffMembers.length);
-    teamToDisplay = staffMembers;
-  } else {
-    console.log('Usando barbeiros de fallback');
-    teamToDisplay = fallbackTeamMembers;
-  }
-
-  console.log('Equipe final a ser exibida:', teamToDisplay);
+  console.log('Exibindo equipe:', teamToDisplay);
 
   return (
     <section id="team" className="urbana-section bg-black">
@@ -176,16 +154,13 @@ const Team: React.FC = () => {
           ))}
         </div>
         
-        <div className="text-center mt-8">
-          <p className="text-gray-400 text-sm">
-            {staffMembers && staffMembers.length > 0 
-              ? `Exibindo ${staffMembers.length} barbeiro(s) cadastrado(s)`
-              : error 
-                ? 'Erro ao carregar equipe do banco. Exibindo equipe padrão.' 
-                : 'Nenhum barbeiro cadastrado. Exibindo equipe padrão.'
-            }
-          </p>
-        </div>
+        {error && (
+          <div className="text-center mt-4">
+            <p className="text-red-400 text-sm">
+              Erro ao carregar a equipe. Exibindo equipe padrão.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

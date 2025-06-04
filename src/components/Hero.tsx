@@ -12,15 +12,29 @@ import { useShopSettings } from '@/hooks/useShopSettings';
 
 const Hero: React.FC = () => {
   const { bannerImages, loading } = useBannerImages();
-  const { currentSlide, setCurrentSlide, nextSlide, prevSlide } = useSlideController(bannerImages.length);
   const { shopSettings } = useShopSettings();
+  const { currentSlide, setCurrentSlide, nextSlide, prevSlide } = useSlideController(
+    bannerImages?.length || 0
+  );
   
-  if (loading || bannerImages.length === 0) {
+  console.log('Hero component rendering with', bannerImages?.length || 0, 'banners');
+  
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-urbana-black via-urbana-brown to-urbana-black">
         <div className="text-white text-center">
           <div className="w-20 h-20 border-4 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
           <p className="text-xl font-playfair">Carregando experiência premium...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bannerImages || bannerImages.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-urbana-black via-urbana-brown to-urbana-black">
+        <div className="text-white text-center">
+          <p className="text-xl font-playfair">Nenhum banner disponível</p>
         </div>
       </div>
     );
