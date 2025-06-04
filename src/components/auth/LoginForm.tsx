@@ -110,13 +110,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className="text-white">Email</FormLabel>
               <FormControl>
                 <Input
                   type="email"
                   placeholder="seu@email.com"
                   {...field}
                   disabled={loading}
+                  className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20"
                 />
               </FormControl>
               <FormMessage />
@@ -129,7 +130,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Senha</FormLabel>
+              <FormLabel className="text-white">Senha</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
@@ -137,12 +138,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     placeholder="Sua senha"
                     {...field}
                     disabled={loading}
+                    className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-zinc-400 hover:text-white"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -161,7 +163,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <div className="space-y-3">
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold" 
             disabled={loading}
           >
             {loading ? "Entrando..." : "Entrar"}
@@ -170,7 +172,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           <Button 
             type="button"
             variant="ghost" 
-            className="w-full text-sm"
+            className="w-full text-sm text-zinc-400 hover:text-white hover:bg-zinc-800"
             onClick={() => setShowForgotPassword(true)}
           >
             Esqueceu sua senha?

@@ -84,14 +84,14 @@ export default function ClientLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <Card className={`bg-gray-900 border-gray-700 ${isMobile ? 'w-full max-w-sm' : 'w-full max-w-md'}`}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Card className={`bg-zinc-900 border-zinc-700 ${isMobile ? 'w-full max-w-sm' : 'w-full max-w-md'}`}>
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <LogIn className="h-12 w-12 text-urbana-gold" />
           </div>
           <CardTitle className="text-2xl font-bold text-white">Entrar</CardTitle>
-          <CardDescription className="text-gray-300">
+          <CardDescription className="text-zinc-300">
             Acesse sua conta para gerenciar seus agendamentos
           </CardDescription>
         </CardHeader>
@@ -111,7 +111,7 @@ export default function ClientLogin() {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.email ? 'border-red-500' : ''}`}
+                className={`bg-zinc-800 border-zinc-600 text-white placeholder-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20 ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="seu@email.com"
               />
               {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
@@ -125,7 +125,7 @@ export default function ClientLogin() {
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`bg-gray-800 border-gray-600 text-white placeholder-gray-400 ${errors.password ? 'border-red-500' : ''}`}
+                className={`bg-zinc-800 border-zinc-600 text-white placeholder-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20 ${errors.password ? 'border-red-500' : ''}`}
                 placeholder="Sua senha"
               />
               {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
@@ -133,7 +133,7 @@ export default function ClientLogin() {
 
             <Button
               type="submit"
-              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black"
+              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold"
               disabled={loading}
             >
               {loading ? (
@@ -148,13 +148,13 @@ export default function ClientLogin() {
 
             <div className="text-center text-sm space-y-2">
               <div>
-                <span className="text-gray-300">Não tem uma conta? </span>
+                <span className="text-zinc-300">Não tem uma conta? </span>
                 <Link to="/cliente/registro" className="text-urbana-gold hover:underline">
                   Criar conta
                 </Link>
               </div>
               <div>
-                <Link to="/" className="text-gray-400 hover:underline">
+                <Link to="/" className="text-zinc-400 hover:underline">
                   Voltar ao início
                 </Link>
               </div>
