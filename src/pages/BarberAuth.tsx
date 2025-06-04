@@ -84,7 +84,7 @@ const BarberAuth: React.FC = () => {
     <div className="flex items-center justify-center min-h-screen bg-black px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-white">Urbana Barbearia</h1>
+          <h1 className="text-4xl font-bold text-white"> Costa Urbana</h1>
           <p className="mt-2 text-gray-400">
             Acesso para barbeiros cadastrados
           </p>
