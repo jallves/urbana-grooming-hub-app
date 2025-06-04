@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,7 +10,7 @@ import { StaffMember } from '@/types/appointment';
 interface BarberSelectionFieldProps {
   control: Control<FormData>;
   barbers: StaffMember[];
-  barberAvailability: BarberAvailabilityInfo[];
+  barberAvailability?: BarberAvailabilityInfo[];
   isCheckingAvailability: boolean;
   getFieldValue: (field: keyof FormData) => any;
   checkBarberAvailability?: (date: Date, time: string, serviceId: string) => Promise<void>;
@@ -19,8 +18,8 @@ interface BarberSelectionFieldProps {
 
 export function BarberSelectionField({ 
   control, 
-  barbers, 
-  barberAvailability, 
+  barbers = [], 
+  barberAvailability = [], 
   isCheckingAvailability,
   getFieldValue,
   checkBarberAvailability
@@ -31,15 +30,20 @@ export function BarberSelectionField({
   
   // Check barber availability when date, time, or service changes
   useEffect(() => {
-    if (selectedDate && selectedTime && selectedServiceId && checkBarberAvailability) {
-      checkBarberAvailability(selectedDate, selectedTime, selectedServiceId);
+    if (selectedDate && selectedTime && selectedServiceId) {
+      checkBarberAvailability?.(selectedDate, selectedTime, selectedServiceId);
     }
-  }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability]);
-  
-  const availableBarbers = barberAvailability.filter(barber => barber.available);
-  const unavailableBarbers = barberAvailability.filter(barber => !barber.available);
+  }, [selectedDate, selectedTime, selectedServiceId]);
 
-  // If no availability check has been done yet, show all active barbers
+  // Filter only active barbers
+  const activeBarbers = barbers.filter(barber => barber.is_active);
+  
+  const availableBarbers = barberAvailability
+    .filter(barber => barber.available && activeBarbers.some(b => b.id === barber.id));
+
+  const unavailableBarbers = barberAvailability
+    .filter(barber => !barber.available && activeBarbers.some(b => b.id === barber.id));
+
   const showAllBarbers = !selectedDate || !selectedTime || barberAvailability.length === 0;
 
   return (
@@ -47,7 +51,7 @@ export function BarberSelectionField({
       control={control}
       name="staff_id"
       render={({ field }) => (
-        <FormItem>
+        <FormItem className="relative">
           <FormLabel className="flex items-center gap-2 text-white">
             Barbeiro
             {isCheckingAvailability && (
@@ -57,6 +61,7 @@ export function BarberSelectionField({
               </div>
             )}
           </FormLabel>
+          
           <Select 
             onValueChange={field.onChange} 
             value={field.value || ""} 
@@ -68,49 +73,57 @@ export function BarberSelectionField({
                 <SelectValue placeholder="Selecione um barbeiro" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent className="bg-zinc-800 border-zinc-600">
+            
+            <SelectContent className="bg-zinc-800 border-zinc-600 max-h-60 overflow-y-auto">
               {showAllBarbers ? (
-                // Show all active barbers when no availability check is done
-                barbers
-                  .filter(barber => barber.is_active)
-                  .map(barber => (
-                    <SelectItem 
-                      key={barber.id} 
-                      value={barber.id}
-                      className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
-                    >
-                      {barber.name}
-                    </SelectItem>
-                  ))
+                activeBarbers.map(barber => (
+                  <SelectItem 
+                    key={`all-${barber.id}`}
+                    value={barber.id}
+                    className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
+                  >
+                    {barber.name}
+                  </SelectItem>
+                ))
               ) : (
                 <>
-                  {/* Available barbers first */}
+                  {/* Available barbers */}
+                  {availableBarbers.length > 0 && (
+                    <div className="px-2 py-1 text-xs text-green-400">
+                      Disponível neste horário
+                    </div>
+                  )}
+                  
                   {availableBarbers.map(barber => (
                     <SelectItem 
-                      key={barber.id} 
+                      key={`available-${barber.id}`}
                       value={barber.id}
                       className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-green-500">✅</span>
+                        <span className="text-green-500">✓</span>
                         {barber.name}
-                        <span className="text-sm text-zinc-400">Disponível</span>
                       </div>
                     </SelectItem>
                   ))}
-                  
+
                   {/* Unavailable barbers */}
+                  {unavailableBarbers.length > 0 && (
+                    <div className="px-2 py-1 text-xs text-red-400 mt-2">
+                      Indisponível neste horário
+                    </div>
+                  )}
+                  
                   {unavailableBarbers.map(barber => (
                     <SelectItem 
-                      key={barber.id} 
-                      value={barber.id} 
+                      key={`unavailable-${barber.id}`}
+                      value={barber.id}
                       disabled
-                      className="text-zinc-500 opacity-50"
+                      className="text-zinc-500 opacity-70 cursor-not-allowed"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-red-500">❌</span>
+                        <span className="text-red-500">✗</span>
                         {barber.name}
-                        <span className="text-sm text-zinc-500">Indisponível</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -124,6 +137,7 @@ export function BarberSelectionField({
               )}
             </SelectContent>
           </Select>
+          
           <FormMessage />
           
           {!selectedTime && (
