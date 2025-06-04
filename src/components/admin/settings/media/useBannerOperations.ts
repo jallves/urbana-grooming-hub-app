@@ -49,7 +49,8 @@ export const useBannerOperations = (
       if (bannerUpload) {
         try {
           console.log("Uploading banner image to Supabase Storage");
-          imageUrl = await uploadFile(bannerUpload.file, 'banners', 'images');
+          // Use 'banners' bucket for banner uploads
+          imageUrl = await uploadFile(bannerUpload.file, 'uploads', 'banners');
           console.log("Banner image upload successful, URL:", imageUrl);
         } catch (uploadError: any) {
           console.error("Banner upload error:", uploadError);

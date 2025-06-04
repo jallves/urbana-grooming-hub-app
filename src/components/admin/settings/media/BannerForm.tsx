@@ -34,6 +34,21 @@ const BannerForm: React.FC<BannerFormProps> = ({
     setLocalError(null);
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setLocalError('Tipo de arquivo não suportado. Use: JPG, PNG, GIF ou WebP');
+        return;
+      }
+
+      // Validate file size (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        setLocalError('Arquivo muito grande. Tamanho máximo: 10MB');
+        return;
+      }
+
       const previewUrl = URL.createObjectURL(file);
       setBannerUpload({ file, previewUrl });
       
@@ -47,6 +62,22 @@ const BannerForm: React.FC<BannerFormProps> = ({
   
   const handleAddBannerWithErrorHandling = async () => {
     setLocalError(null);
+    
+    if (!newBanner.title.trim()) {
+      setLocalError('Título é obrigatório');
+      return;
+    }
+    
+    if (!newBanner.subtitle.trim()) {
+      setLocalError('Subtítulo é obrigatório');
+      return;
+    }
+    
+    if (!bannerUpload && !newBanner.image_url) {
+      setLocalError('Imagem é obrigatória');
+      return;
+    }
+    
     try {
       await handleAddBanner();
     } catch (error) {
@@ -75,13 +106,14 @@ const BannerForm: React.FC<BannerFormProps> = ({
               fileInputRef={bannerFileInputRef}
               handleFileChange={handleBannerFileChange}
               uploadError={displayError}
+              placeholder="URL da imagem ou faça upload (JPG, PNG, GIF, WebP - máx 10MB)"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="newTitle">Título</Label>
+            <Label htmlFor="newTitle">Título *</Label>
             <Input 
               id="newTitle" 
               value={newBanner.title}
@@ -90,10 +122,11 @@ const BannerForm: React.FC<BannerFormProps> = ({
                 title: e.target.value
               })}
               placeholder="Título do Banner"
+              required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="newSubtitle">Subtítulo</Label>
+            <Label htmlFor="newSubtitle">Subtítulo *</Label>
             <Input 
               id="newSubtitle" 
               value={newBanner.subtitle}
@@ -102,6 +135,7 @@ const BannerForm: React.FC<BannerFormProps> = ({
                 subtitle: e.target.value
               })}
               placeholder="Subtítulo do Banner"
+              required
             />
           </div>
         </div>
@@ -114,7 +148,7 @@ const BannerForm: React.FC<BannerFormProps> = ({
               ...newBanner,
               description: e.target.value
             })}
-            placeholder="Descrição breve"
+            placeholder="Descrição breve (opcional)"
           />
         </div>
         <Button 

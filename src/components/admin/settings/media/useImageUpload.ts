@@ -13,7 +13,7 @@ export const useImageUpload = () => {
     try {
       setUploading(true);
       
-      console.log(`🚀 Iniciando upload para bucket: ${bucketName}`);
+      console.log(`🚀 Iniciando upload para bucket: ${bucketName}, pasta: ${folder}`);
       
       // Generate unique filename
       const fileExt = file.name.split('.').pop();
@@ -21,12 +21,25 @@ export const useImageUpload = () => {
       
       console.log(`📁 Nome do arquivo: ${fileName}`);
       
-      // Try to upload directly without checking bucket existence
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Tipo de arquivo não suportado. Use: JPG, PNG, GIF ou WebP');
+      }
+
+      // Validate file size (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        throw new Error('Arquivo muito grande. Tamanho máximo: 10MB');
+      }
+      
+      // Upload the file
       const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: file.type
         });
 
       if (error) {
