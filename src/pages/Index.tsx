@@ -7,16 +7,9 @@ import Team from '../components/Team';
 import Footer from '../components/Footer';
 import Gallery from '../components/Gallery';
 import WhatsAppButton from '../components/WhatsAppButton';
-import { useEffect, useState } from 'react';
-import BarberSelectionField from '../components/BarberSelectionField';
-import { fetchBarbers, checkAvailability } from '../services/appointmentService';
 
 const Index = () => {
   console.log('Rendering Index page');
-  const HomePage = () => {
-  const [barbers, setBarbers] = useState<StaffMember[]>([]);
-  const [availability, setAvailability] = useState<BarberAvailabilityInfo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
