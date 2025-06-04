@@ -5,6 +5,13 @@ import ClientAppointmentForm from '@/components/appointment/ClientAppointmentFor
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Scissors } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  Card, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardContent 
+} from '@/components/ui/card';
 
 export default function ClientNewBooking() {
   const navigate = useNavigate();
