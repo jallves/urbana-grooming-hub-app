@@ -50,6 +50,45 @@ export type Database = {
           },
         ]
       }
+      admin_activity_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       admin_metrics: {
         Row: {
           created_at: string
@@ -737,6 +776,33 @@ export type Database = {
         }
         Relationships: []
       }
+      configuration_backups: {
+        Row: {
+          backup_data: Json
+          backup_name: string
+          backup_type: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+        }
+        Insert: {
+          backup_data: Json
+          backup_name: string
+          backup_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+        }
+        Update: {
+          backup_data?: Json
+          backup_name?: string
+          backup_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -800,6 +866,129 @@ export type Database = {
           postal_code?: string | null
           state?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      custom_reports: {
+        Row: {
+          chart_config: Json | null
+          created_at: string
+          created_by: string | null
+          filters: Json | null
+          id: string
+          is_public: boolean | null
+          query_config: Json
+          report_description: string | null
+          report_name: string
+          updated_at: string
+        }
+        Insert: {
+          chart_config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          filters?: Json | null
+          id?: string
+          is_public?: boolean | null
+          query_config: Json
+          report_description?: string | null
+          report_name: string
+          updated_at?: string
+        }
+        Update: {
+          chart_config?: Json | null
+          created_at?: string
+          created_by?: string | null
+          filters?: Json | null
+          id?: string
+          is_public?: boolean | null
+          query_config?: Json
+          report_description?: string | null
+          report_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dashboard_metrics: {
+        Row: {
+          additional_data: Json | null
+          created_at: string
+          id: string
+          metric_name: string
+          metric_type: string
+          metric_unit: string | null
+          metric_value: number
+          period_date: string
+          period_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          additional_data?: Json | null
+          created_at?: string
+          id?: string
+          metric_name: string
+          metric_type: string
+          metric_unit?: string | null
+          metric_value?: number
+          period_date?: string
+          period_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          additional_data?: Json | null
+          created_at?: string
+          id?: string
+          metric_name?: string
+          metric_type?: string
+          metric_unit?: string | null
+          metric_value?: number
+          period_date?: string
+          period_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dashboard_widgets: {
+        Row: {
+          created_at: string
+          height: number | null
+          id: string
+          is_active: boolean | null
+          position_x: number | null
+          position_y: number | null
+          updated_at: string
+          user_id: string | null
+          widget_config: Json
+          widget_name: string
+          widget_type: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          is_active?: boolean | null
+          position_x?: number | null
+          position_y?: number | null
+          updated_at?: string
+          user_id?: string | null
+          widget_config: Json
+          widget_name: string
+          widget_type: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          is_active?: boolean | null
+          position_x?: number | null
+          position_y?: number | null
+          updated_at?: string
+          user_id?: string | null
+          widget_config?: Json
+          widget_name?: string
+          widget_type?: string
+          width?: number | null
         }
         Relationships: []
       }
@@ -1243,6 +1432,42 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_sections: {
+        Row: {
+          content: Json | null
+          created_at: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          section_name: string
+          subtitle: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section_name: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section_name?: string
+          subtitle?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       instructors: {
         Row: {
           active: boolean | null
@@ -1389,6 +1614,92 @@ export type Database = {
           start_date?: string
           status?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      navigation_menu: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          parent_id: string | null
+          permission_required: string | null
+          target: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          parent_id?: string | null
+          permission_required?: string | null
+          target?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          parent_id?: string | null
+          permission_required?: string | null
+          target?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "navigation_menu_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "navigation_menu"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_settings: {
+        Row: {
+          created_at: string
+          frequency: string | null
+          id: string
+          is_enabled: boolean | null
+          notification_type: string
+          recipients: Json | null
+          template_body: string | null
+          template_subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          notification_type: string
+          recipients?: Json | null
+          template_body?: string | null
+          template_subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          notification_type?: string
+          recipients?: Json | null
+          template_body?: string | null
+          template_subject?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1767,6 +2078,45 @@ export type Database = {
         }
         Relationships: []
       }
+      promotional_videos: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          section: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
           created_at: string
@@ -1821,6 +2171,45 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      scheduled_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_run: string | null
+          next_run: string | null
+          parameters: Json | null
+          schedule_cron: string
+          task_name: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_run?: string | null
+          next_run?: string | null
+          parameters?: Json | null
+          schedule_cron: string
+          task_name: string
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_run?: string | null
+          next_run?: string | null
+          parameters?: Json | null
+          schedule_cron?: string
+          task_name?: string
+          task_type?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1950,6 +2339,36 @@ export type Database = {
           social_twitter?: string | null
           updated_at?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
