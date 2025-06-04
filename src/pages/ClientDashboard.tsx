@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +23,7 @@ import {
 
 const ClientDashboard = () => {
   const { client, signOut, loading } = useClientAuth();
+  const navigate = useNavigate();
 
   // Fetch client appointments
   const { data: appointments, isLoading: appointmentsLoading } = useQuery({
@@ -146,7 +146,7 @@ const ClientDashboard = () => {
             <CardContent>
               <Button 
                 className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold"
-                onClick={() => window.location.href = '/cliente/novo-agendamento'}
+                onClick={() => navigate('/cliente/novo-agendamento')}
               >
                 Agendar Agora
               </Button>
@@ -278,7 +278,7 @@ const ClientDashboard = () => {
                 </p>
                 <Button 
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold"
-                  onClick={() => window.location.href = '/cliente/novo-agendamento'}
+                  onClick={() => navigate('/cliente/novo-agendamento')}
                 >
                   Agendar Agora
                 </Button>

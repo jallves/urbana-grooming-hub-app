@@ -86,6 +86,8 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
         status: 'scheduled',
       };
 
+      console.log('Enviando dados do agendamento:', appointmentData);
+
       const { error } = await supabase
         .from('appointments')
         .insert([appointmentData]);
@@ -120,150 +122,159 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white">Carregando formulário...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 font-playfair">
-            Agendar Horário
-          </h1>
-          <p className="text-gray-300 text-lg">
-            Reserve seu momento de cuidado pessoal
-          </p>
-        </div>
+    <div className="w-full max-w-4xl mx-auto p-6">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 font-playfair">
+          Agendar Horário
+        </h1>
+        <p className="text-gray-300 text-lg">
+          Reserve seu momento de cuidado pessoal
+        </p>
+      </div>
 
-        {/* Modern Form Card */}
-        <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Service Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-amber-500/20 rounded-lg">
-                    <Scissors className="h-5 w-5 text-amber-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Escolha seu Serviço</h3>
+      {/* Form Card */}
+      <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6 md:p-8 shadow-2xl">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Service Selection */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <Scissors className="h-5 w-5 text-amber-400" />
                 </div>
-                <ServiceSelectionField 
-                  control={form.control} 
-                  services={services}
-                  onServiceSelect={setSelectedService}
-                />
+                <h3 className="text-xl font-semibold text-white">Escolha seu Serviço</h3>
               </div>
+              <ServiceSelectionField 
+                control={form.control} 
+                services={services}
+                onServiceSelect={setSelectedService}
+              />
+            </div>
 
-              {/* Date and Time Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <Calendar className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Data e Horário</h3>
+            {/* Date and Time Selection */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-500/20 rounded-lg">
+                  <Calendar className="h-5 w-5 text-blue-400" />
                 </div>
-                <DateTimeSelectionFields
-                  control={form.control}
-                  selectedService={selectedService}
-                  availableTimes={availableTimes}
-                  disabledDays={disabledDays}
-                  getFieldValue={form.getValues}
-                  fetchAvailableTimes={fetchAvailableTimes}
-                />
+                <h3 className="text-xl font-semibold text-white">Data e Horário</h3>
               </div>
+              <DateTimeSelectionFields
+                control={form.control}
+                selectedService={selectedService}
+                availableTimes={availableTimes}
+                disabledDays={disabledDays}
+                getFieldValue={form.getValues}
+                fetchAvailableTimes={fetchAvailableTimes}
+              />
+            </div>
 
-              {/* Barber Selection */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-green-500/20 rounded-lg">
-                    <User className="h-5 w-5 text-green-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white">Escolha seu Barbeiro</h3>
+            {/* Barber Selection */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-green-500/20 rounded-lg">
+                  <User className="h-5 w-5 text-green-400" />
                 </div>
-                <BarberSelectionField
-                  control={form.control}
-                  barbers={barbers}
-                  barberAvailability={barberAvailability}
-                  isCheckingAvailability={isCheckingAvailability}
-                  getFieldValue={form.getValues}
-                  checkBarberAvailability={checkBarberAvailability}
-                />
+                <h3 className="text-xl font-semibold text-white">Escolha seu Barbeiro</h3>
               </div>
+              <BarberSelectionField
+                control={form.control}
+                barbers={barbers}
+                barberAvailability={barberAvailability}
+                isCheckingAvailability={isCheckingAvailability}
+                getFieldValue={form.getValues}
+                checkBarberAvailability={checkBarberAvailability}
+              />
+            </div>
 
-              {/* Coupon Field */}
-              {selectedService && (
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white">Cupom de Desconto</h3>
-                  <CouponField
-                    form={form}
-                    servicePrice={selectedService.price}
-                    appliedCoupon={appliedCoupon}
-                    isApplyingCoupon={isApplyingCoupon}
-                    finalPrice={finalPrice}
-                    onApplyCoupon={applyCoupon}
-                    onRemoveCoupon={removeCoupon}
-                  />
-                </div>
-              )}
-
-              {/* Notes */}
+            {/* Coupon Field */}
+            {selectedService && (
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-white">Observações</h3>
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Informe detalhes adicionais sobre o seu agendamento (opcional)" 
-                          className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-amber-400 focus:ring-amber-400/20 resize-none min-h-[100px]" 
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Appointment Summary */}
-              <div className="bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/20 rounded-xl p-6">
-                <AppointmentSummary
-                  selectedService={selectedService}
-                  selectedDate={form.getValues('date')}
-                  selectedTime={form.getValues('time')}
+                <h3 className="text-xl font-semibold text-white">Cupom de Desconto</h3>
+                <CouponField
+                  form={form}
+                  servicePrice={selectedService.price}
                   appliedCoupon={appliedCoupon}
+                  isApplyingCoupon={isApplyingCoupon}
                   finalPrice={finalPrice}
+                  onApplyCoupon={applyCoupon}
+                  onRemoveCoupon={removeCoupon}
                 />
               </div>
+            )}
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate('/cliente/dashboard')}
-                  className="flex-1 bg-transparent border-white/20 text-white hover:bg-white/10 hover:border-white/30 h-12"
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold h-12 shadow-lg shadow-amber-500/25"
-                  disabled={loading || isSending || !form.formState.isValid}
-                >
-                  {loading || isSending ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
-                      Agendando...
-                    </div>
-                  ) : (
-                    "Confirmar Agendamento"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
+            {/* Notes */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-white">Observações</h3>
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Informe detalhes adicionais sobre o seu agendamento (opcional)" 
+                        className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-amber-400 focus:ring-amber-400/20 resize-none min-h-[100px]" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Appointment Summary */}
+            <div className="bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/20 rounded-xl p-6">
+              <AppointmentSummary
+                selectedService={selectedService}
+                selectedDate={form.getValues('date')}
+                selectedTime={form.getValues('time')}
+                appliedCoupon={appliedCoupon}
+                finalPrice={finalPrice}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 pt-6">
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/cliente/dashboard')}
+                className="flex-1 bg-transparent border-white/20 text-white hover:bg-white/10 hover:border-white/30 h-12"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold h-12 shadow-lg shadow-amber-500/25"
+                disabled={loading || isSending || !form.formState.isValid}
+              >
+                {loading || isSending ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
+                    Agendando...
+                  </div>
+                ) : (
+                  "Confirmar Agendamento"
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </div>
     </div>
   );

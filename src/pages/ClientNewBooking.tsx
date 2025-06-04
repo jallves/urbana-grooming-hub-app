@@ -14,15 +14,16 @@ export default function ClientNewBooking() {
 
   useEffect(() => {
     if (!client) {
+      console.log('Cliente não autenticado, redirecionando para login');
       navigate('/cliente/login');
     }
   }, [client, navigate]);
 
   if (!client) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-urbana-gold mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto"></div>
           <p className="mt-4 text-gray-300">Carregando...</p>
         </div>
       </div>
@@ -30,15 +31,15 @@ export default function ClientNewBooking() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Header */}
-      <div className="bg-black border-b border-gray-700">
+      <div className="bg-black/50 backdrop-blur-sm border-b border-white/10">
         <div className={`${isMobile ? 'px-4' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'}`}>
           <div className={`flex items-center ${isMobile ? 'py-4' : 'py-6'}`}>
             <Button
               variant="ghost"
               onClick={() => navigate('/cliente/dashboard')}
-              className="mr-4 text-white hover:bg-gray-800"
+              className="mr-4 text-white hover:bg-white/10"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
@@ -52,10 +53,8 @@ export default function ClientNewBooking() {
       </div>
 
       {/* Content */}
-      <div className={`${isMobile ? 'px-4 py-6' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8'} bg-black`}>
-        <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-sm p-6">
-          <ClientAppointmentForm clientId={client.id} />
-        </div>
+      <div className="flex justify-center items-start min-h-[calc(100vh-120px)] py-8">
+        <ClientAppointmentForm clientId={client.id} />
       </div>
     </div>
   );
