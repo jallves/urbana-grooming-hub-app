@@ -105,7 +105,7 @@ export default function RegisterAuth() {
           <div className="flex justify-center mb-2">
             <Scissors className="h-8 w-8 text-amber-400" />
           </div>
-          <CardTitle className="text-2xl font-bold text-white">Barbearia Urbana</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white">Costa Urbana</CardTitle>
           <CardDescription className="text-gray-400">
             {activeTab === "register" 
               ? "Crie sua conta para agendar" 
