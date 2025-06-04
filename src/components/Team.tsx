@@ -1,8 +1,16 @@
-
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
+interface StaffMember {
+  id: string;
+  name: string;
+  role: string;
+  experience: string;
+  image_url: string | null;
+  is_active: boolean;
+}
 
 interface TeamMemberProps {
   name: string;
@@ -17,7 +25,11 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
       <div className="relative mb-5 overflow-hidden rounded-lg">
         <div className="aspect-square w-full overflow-hidden">
           <Avatar className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
-            <AvatarImage src={image || ''} alt={name} className="object-cover object-center h-full w-full" />
+            <AvatarImage 
+              src={image || ''} 
+              alt={name} 
+              className="object-cover object-center h-full w-full" 
+            />
             <AvatarFallback className="text-2xl bg-urbana-gold text-white h-full w-full">
               {name.split(' ').map(n => n[0]).join('')}
             </AvatarFallback>
@@ -36,38 +48,23 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
   );
 };
 
-const Team: React.FC = () => {
-  console.log('Team component rendering...');
-  
-  // Improved query to fetch active barbers from the database with better error handling
-  const { data: staffMembers, isLoading, error } = useQuery({
+export const Team: React.FC = () => {
+  const { data: staffMembers = [], isLoading, error } = useQuery<StaffMember[]>({
     queryKey: ['team-staff'],
     queryFn: async () => {
-      console.log('Iniciando busca de barbeiros...');
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
       
-      try {
-        const { data, error } = await supabase
-          .from('staff')
-          .select('*')
-          .eq('is_active', true)
-          .order('name');
-        
-        if (error) {
-          console.error('Erro na query staff:', error);
-          throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
-        }
-        
-        console.log('Barbeiros encontrados:', data?.length || 0);
-        return data || [];
-      } catch (err) {
-        console.error('Erro ao buscar barbeiros:', err);
-        throw err;
-      }
+      if (error) throw error;
+      return data || [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const fallbackTeamMembers = [
+  const fallbackTeamMembers: StaffMember[] = [
     {
       id: '1',
       name: "Rafael Costa",
@@ -102,7 +99,6 @@ const Team: React.FC = () => {
     }
   ];
 
-  // Show loading state while fetching data
   if (isLoading) {
     return (
       <section id="team" className="urbana-section bg-black">
@@ -112,7 +108,7 @@ const Team: React.FC = () => {
             <p className="urbana-subheading text-gray-300">Carregando nossa equipe...</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[1, 2, 3, 4].map((i) => (
+            {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="aspect-square bg-gray-700 rounded-lg mb-4"></div>
                 <div className="h-4 bg-gray-700 rounded mb-2"></div>
@@ -125,12 +121,7 @@ const Team: React.FC = () => {
     );
   }
 
-  // Determine which team to display - use fallback if needed
-  const teamToDisplay = staffMembers && staffMembers.length > 0
-    ? staffMembers
-    : fallbackTeamMembers;
-
-  console.log('Exibindo equipe:', teamToDisplay);
+  const teamToDisplay = staffMembers.length > 0 ? staffMembers : fallbackTeamMembers;
 
   return (
     <section id="team" className="urbana-section bg-black">
@@ -147,8 +138,8 @@ const Team: React.FC = () => {
             <TeamMember
               key={member.id}
               name={member.name}
-              role={member.role || 'Barbeiro Profissional'}
-              experience={member.experience || '+5 anos'}
+              role={member.role}
+              experience={member.experience}
               image={member.image_url}
             />
           ))}
