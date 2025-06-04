@@ -108,7 +108,7 @@ const Auth: React.FC = () => {
           <div className="flex justify-center mb-4">
             <Scissors className="h-10 w-10 text-amber-500" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Coata Urbana</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Costa Urbana</h1>
           <p className="mt-2 text-amber-400/80">
             Painel administrativo
           </p>
