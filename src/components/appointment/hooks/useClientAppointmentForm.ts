@@ -1,4 +1,3 @@
-// src/components/appointment/hooks/useClientAppointmentForm.ts
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -59,8 +58,40 @@ export const useClientAppointmentForm = (clientId: string) => {
     form,
     setSelectedService,
     (coupon) => {
+      // We need to handle the coupon removal in the main form
       form.setValue('couponCode', '');
-      form.setValue('discountAmount
-::contentReference[oaicite:15]{index=15}
- 
+      form.setValue('discountAmount', 0);
+      removeCoupon();
+    }
+  );
 
+  return {
+    form,
+    loading,
+    services,
+    barbers,
+    selectedService,
+    setSelectedService,
+    availableTimes,
+    barberAvailability,
+    isCheckingAvailability,
+    isSending,
+    disabledDays,
+    appliedCoupon,
+    isApplyingCoupon,
+    finalServicePrice,
+    setFinalServicePrice,
+    onSubmit,
+    fetchAvailableTimes,
+    checkBarberAvailability,
+    applyCoupon,
+    removeCoupon: () => {
+      form.setValue('couponCode', '');
+      form.setValue('discountAmount', 0);
+      removeCoupon();
+    },
+  };
+};
+
+// Export types for other components
+export type { FormData, BarberAvailabilityInfo } from './types';
