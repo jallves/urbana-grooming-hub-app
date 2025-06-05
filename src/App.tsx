@@ -42,7 +42,6 @@ import ClientLogin from '@/pages/ClientLogin';
 import ClientDashboard from '@/pages/ClientDashboard';
 import ClientNewBooking from '@/pages/ClientNewBooking';
 import ClientEditAppointment from '@/pages/ClientEditAppointment';
-import ClientProfile from '@/pages/ClientProfile';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -64,7 +63,6 @@ function App() {
                 <Route path="/cliente/dashboard" element={<ClientDashboard />} />
                 <Route path="/cliente/novo-agendamento" element={<ClientNewBooking />} />
                 <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
-                <Route path="/cliente/perfil" element={<ClientProfile />} />
                 
                 {/* Admin Authentication Routes */}
                 <Route path="/auth" element={<Auth />} />
