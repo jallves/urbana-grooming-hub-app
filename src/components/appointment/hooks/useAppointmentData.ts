@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+mport { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Service, StaffMember } from '@/types/appointment';
@@ -95,3 +95,4 @@ export const useAppointmentData = () => {
     barbers,
   };
 };
+
