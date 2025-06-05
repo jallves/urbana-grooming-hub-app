@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,20 +31,12 @@ interface Appointment {
   } | null;
 }
 
-interface Barber {
-  id: string;
-  name: string;
-  email: string;
-  avatar_url: string | null;
-}
-
 export default function ClientEditAppointment() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { client } = useClientAuth();
   const { toast } = useToast();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
-  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,7 +51,6 @@ export default function ClientEditAppointment() {
     }
 
     fetchAppointment();
-    fetchBarbers();
   }, [client, id, navigate]);
 
   const fetchAppointment = async () => {
@@ -93,6 +85,7 @@ export default function ClientEditAppointment() {
         return;
       }
 
+      // Verificar se o agendamento pode ser editado
       const appointmentDate = new Date(data.start_time);
       const now = new Date();
       
@@ -115,35 +108,6 @@ export default function ClientEditAppointment() {
         variant: "destructive",
       });
       navigate('/cliente/dashboard');
-    }
-  };
-
-  const fetchBarbers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('id, name, email, avatar_url')
-        .eq('is_active', true)
-        .order('name', { ascending: true });
-
-      if (error) {
-        console.error('Erro ao buscar barbeiros:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar a lista de barbeiros.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setBarbers(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar barbeiros:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao carregar os barbeiros.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
@@ -276,18 +240,7 @@ export default function ClientEditAppointment() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {client && (
-                <ClientAppointmentForm 
-                  clientId={client.id} 
-                  barbers={barbers}
-                  initialData={{
-                    serviceId: appointment.service.id,
-                    staffId: appointment.staff?.id,
-                    date: new Date(appointment.start_time),
-                    notes: appointment.notes || ''
-                  }}
-                />
-              )}
+              {client && <ClientAppointmentForm clientId={client.id} />}
             </CardContent>
           </Card>
         </div>
