@@ -39,11 +39,11 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
 const Team: React.FC = () => {
   console.log('Team component rendering...');
   
-  // Improved query to fetch active barbers from the database with better error handling
+  // Query to fetch active staff members from the database
   const { data: staffMembers, isLoading, error } = useQuery({
     queryKey: ['team-staff'],
     queryFn: async () => {
-      console.log('Iniciando busca de barbeiros...');
+      console.log('Buscando barbeiros ativos para a equipe...');
       
       try {
         const { data, error } = await supabase
@@ -57,10 +57,10 @@ const Team: React.FC = () => {
           throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
         }
         
-        console.log('Barbeiros encontrados:', data?.length || 0);
+        console.log('Barbeiros ativos encontrados para equipe:', data?.length || 0, data);
         return data || [];
       } catch (err) {
-        console.error('Erro ao buscar barbeiros:', err);
+        console.error('Erro ao buscar barbeiros para equipe:', err);
         throw err;
       }
     },
@@ -125,12 +125,12 @@ const Team: React.FC = () => {
     );
   }
 
-  // Determine which team to display - use fallback if needed
+  // Determine which team to display - use database data if available, otherwise fallback
   const teamToDisplay = staffMembers && staffMembers.length > 0
     ? staffMembers
     : fallbackTeamMembers;
 
-  console.log('Exibindo equipe:', teamToDisplay);
+  console.log('Exibindo equipe na homepage:', teamToDisplay);
 
   return (
     <section id="team" className="urbana-section bg-black">
@@ -158,6 +158,14 @@ const Team: React.FC = () => {
           <div className="text-center mt-4">
             <p className="text-red-400 text-sm">
               Erro ao carregar a equipe. Exibindo equipe padrão.
+            </p>
+          </div>
+        )}
+
+        {staffMembers && staffMembers.length === 0 && (
+          <div className="text-center mt-4">
+            <p className="text-yellow-400 text-sm">
+              Nenhum barbeiro ativo encontrado. Certifique-se de que há barbeiros ativos cadastrados no sistema.
             </p>
           </div>
         )}

@@ -50,9 +50,9 @@ export const useAvailability = () => {
 
     setIsCheckingAvailability(true);
     try {
-      console.log('Verificando disponibilidade dos barbeiros...');
+      console.log('Verificando disponibilidade dos barbeiros ativos...');
       
-      // Buscar todos os barbeiros ativos da tabela staff
+      // Buscar apenas barbeiros ativos da tabela staff
       const { data: staffMembers, error } = await supabase
         .from('staff')
         .select('id, name, is_active')
@@ -60,7 +60,7 @@ export const useAvailability = () => {
         .order('name', { ascending: true });
 
       if (error) {
-        console.error("Erro ao buscar barbeiros:", error);
+        console.error("Erro ao buscar barbeiros ativos:", error);
         toast({
           title: "Erro",
           description: "Não foi possível verificar a disponibilidade dos barbeiros.",
@@ -71,14 +71,14 @@ export const useAvailability = () => {
       }
 
       if (!staffMembers || staffMembers.length === 0) {
-        console.log('Nenhum barbeiro ativo encontrado');
+        console.log('Nenhum barbeiro ativo encontrado para verificação de disponibilidade');
         setBarberAvailability([]);
         return;
       }
 
-      console.log('Barbeiros encontrados:', staffMembers);
+      console.log('Barbeiros ativos encontrados para verificação:', staffMembers);
 
-      // Por enquanto, marcar todos os barbeiros como disponíveis
+      // Por enquanto, marcar todos os barbeiros ativos como disponíveis
       // No futuro, isso poderia verificar a disponibilidade real contra agendamentos
       const availability = staffMembers.map(staff => ({
         id: staff.id,
@@ -86,7 +86,7 @@ export const useAvailability = () => {
         available: true
       }));
 
-      console.log('Disponibilidade dos barbeiros:', availability);
+      console.log('Disponibilidade dos barbeiros ativos:', availability);
       setBarberAvailability(availability);
     } catch (error) {
       console.error("Erro ao verificar disponibilidade do barbeiro:", error);

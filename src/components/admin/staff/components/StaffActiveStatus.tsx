@@ -19,7 +19,7 @@ const StaffActiveStatus: React.FC<StaffActiveStatusProps> = ({ form }) => {
           <div className="space-y-0.5">
             <FormLabel className="text-base">Ativo</FormLabel>
             <FormDescription>
-              Profissional disponível para agendamentos
+              Profissional disponível para agendamentos e exibição na equipe
             </FormDescription>
           </div>
           <FormControl>

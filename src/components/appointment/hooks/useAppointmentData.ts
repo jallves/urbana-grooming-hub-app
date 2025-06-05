@@ -45,21 +45,8 @@ export const useAppointmentData = () => {
   useEffect(() => {
     const fetchBarbers = async () => {
       try {
-        console.log('Buscando barbeiros...');
+        console.log('Buscando barbeiros ativos para formulário de agendamento...');
         
-        // Primeiro, vamos buscar TODOS os registros da tabela staff para debug
-        const { data: allStaff, error: allError } = await supabase
-          .from('staff')
-          .select('*');
-
-        if (allError) {
-          console.error("Erro ao buscar todos os barbeiros:", allError);
-        } else {
-          console.log('Todos os barbeiros na base:', allStaff);
-          console.log('Barbeiros ativos:', allStaff?.filter(s => s.is_active));
-        }
-
-        // Agora buscar apenas os ativos
         const { data, error } = await supabase
           .from('staff')
           .select('*')
@@ -76,16 +63,13 @@ export const useAppointmentData = () => {
           return;
         }
 
-        console.log('Barbeiros ativos encontrados:', data);
+        console.log('Barbeiros ativos encontrados para agendamento:', data?.length || 0, data);
         
         if (data && data.length > 0) {
           setBarbers(data);
-          toast({
-            title: "Barbeiros carregados",
-            description: `${data.length} barbeiro(s) encontrado(s).`,
-          });
+          console.log(`${data.length} barbeiro(s) ativo(s) carregado(s) com sucesso`);
         } else {
-          console.log('Nenhum barbeiro ativo encontrado');
+          console.log('Nenhum barbeiro ativo encontrado no banco de dados');
           setBarbers([]);
           toast({
             title: "Aviso",
