@@ -49,10 +49,10 @@ const ClientDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800 flex items-center justify-center">
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg">Carregando...</p>
+          <div className="w-16 h-16 border-4 border-amber-200 border-t-amber-400 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-amber-800 text-lg">Carregando...</p>
         </div>
       </div>
     );
@@ -72,11 +72,11 @@ const ClientDashboard = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'confirmed': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'completed': return 'bg-stone-500/20 text-stone-400 border-stone-500/30';
-      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-stone-500/20 text-stone-400 border-stone-500/30';
+      case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'completed': return 'bg-stone-100 text-stone-800 border-stone-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-stone-100 text-stone-800 border-stone-200';
     }
   };
 
@@ -91,27 +91,27 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800">
+    <div className="min-h-screen bg-amber-50">
       {/* Header */}
-      <div className="bg-stone-900/80 backdrop-blur-sm border-b border-stone-700">
+      <div className="bg-white shadow-sm border-b border-amber-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full flex items-center justify-center">
-                <Scissors className="h-5 w-5 text-black" />
+              <div className="w-10 h-10 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full flex items-center justify-center">
+                <Scissors className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-white">
+                <h1 className="text-xl font-semibold text-amber-900">
                   Olá, {client.name}!
                 </h1>
-                <p className="text-sm text-stone-400">Bem-vindo à sua barbearia</p>
+                <p className="text-sm text-amber-600">Bem-vindo à sua barbearia</p>
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <Button 
                 variant="outline" 
                 size="sm"
-                className="bg-stone-800 border-stone-600 text-white hover:bg-stone-700"
+                className="bg-white border-amber-300 text-amber-700 hover:bg-amber-50"
                 onClick={() => navigate('/cliente/perfil')}
               >
                 <Settings className="h-4 w-4 mr-2" />
@@ -121,7 +121,7 @@ const ClientDashboard = () => {
                 variant="outline" 
                 size="sm"
                 onClick={signOut}
-                className="bg-stone-800 border-red-400/30 text-red-400 hover:bg-red-400/10"
+                className="bg-white border-red-300 text-red-600 hover:bg-red-50"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair
@@ -134,19 +134,19 @@ const ClientDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/10 border-amber-500/30 hover:shadow-lg hover:shadow-amber-500/10 transition-all">
+          <Card className="bg-gradient-to-br from-amber-100 to-amber-200 border-amber-200 hover:shadow-lg hover:shadow-amber-200/50 transition-all">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-amber-900 flex items-center gap-2">
                 <Plus className="h-5 w-5" />
                 Novo Corte
               </CardTitle>
-              <CardDescription className="text-stone-300">
+              <CardDescription className="text-amber-700">
                 Agende seu próximo serviço
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button 
-                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold"
+                className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-semibold"
                 onClick={() => navigate('/cliente/novo-agendamento')}
               >
                 Agendar Agora
@@ -154,41 +154,41 @@ const ClientDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-stone-800 border-stone-700">
+          <Card className="bg-white border-amber-100 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-amber-900 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 Próximos Cortes
               </CardTitle>
-              <CardDescription className="text-stone-300">
+              <CardDescription className="text-amber-700">
                 Seus agendamentos confirmados
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white mb-1">
+              <div className="text-2xl font-bold text-amber-900 mb-1">
                 {upcomingAppointments.length}
               </div>
-              <p className="text-sm text-stone-400">
+              <p className="text-sm text-amber-600">
                 {upcomingAppointments.length === 1 ? 'agendamento' : 'agendamentos'}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-stone-800 border-stone-700">
+          <Card className="bg-white border-amber-100 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-amber-900 flex items-center gap-2">
                 <History className="h-5 w-5" />
                 Histórico
               </CardTitle>
-              <CardDescription className="text-stone-300">
+              <CardDescription className="text-amber-700">
                 Serviços realizados
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white mb-1">
+              <div className="text-2xl font-bold text-amber-900 mb-1">
                 {pastAppointments.length}
               </div>
-              <p className="text-sm text-stone-400">
+              <p className="text-sm text-amber-600">
                 {pastAppointments.length === 1 ? 'corte' : 'cortes'} realizados
               </p>
             </CardContent>
@@ -197,7 +197,7 @@ const ClientDashboard = () => {
 
         {/* Upcoming Appointments */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-amber-900 mb-6 flex items-center gap-2">
             <Calendar className="h-6 w-6 text-amber-500" />
             Próximos Agendamentos
           </h2>
@@ -205,12 +205,12 @@ const ClientDashboard = () => {
           {appointmentsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2].map((i) => (
-                <Card key={i} className="bg-stone-800 border-stone-700">
+                <Card key={i} className="bg-white border-amber-100">
                   <CardContent className="p-6">
                     <div className="animate-pulse space-y-3">
-                      <div className="h-4 bg-stone-700 rounded w-3/4"></div>
-                      <div className="h-3 bg-stone-700 rounded w-1/2"></div>
-                      <div className="h-3 bg-stone-700 rounded w-2/3"></div>
+                      <div className="h-4 bg-amber-100 rounded w-3/4"></div>
+                      <div className="h-3 bg-amber-100 rounded w-1/2"></div>
+                      <div className="h-3 bg-amber-100 rounded w-2/3"></div>
                     </div>
                   </CardContent>
                 </Card>
@@ -219,11 +219,11 @@ const ClientDashboard = () => {
           ) : upcomingAppointments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {upcomingAppointments.map((appointment) => (
-                <Card key={appointment.id} className="bg-stone-800 border-stone-700 hover:bg-stone-700/50 transition-colors">
+                <Card key={appointment.id} className="bg-white border-amber-100 hover:bg-amber-50 transition-colors shadow-sm">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-white mb-1">
+                        <h3 className="text-lg font-semibold text-amber-900 mb-1">
                           {appointment.services?.name}
                         </h3>
                         <Badge className={`${getStatusColor(appointment.status)} border`}>
@@ -231,18 +231,18 @@ const ClientDashboard = () => {
                         </Badge>
                       </div>
                       <div className="text-right">
-                        <p className="text-white font-semibold">
+                        <p className="text-amber-900 font-semibold">
                           R$ {appointment.services?.price?.toFixed(2)}
                         </p>
                         {appointment.discount_amount > 0 && (
-                          <p className="text-green-400 text-sm">
+                          <p className="text-green-600 text-sm">
                             Desconto: R$ {appointment.discount_amount.toFixed(2)}
                           </p>
                         )}
                       </div>
                     </div>
                     
-                    <div className="space-y-2 text-stone-300">
+                    <div className="space-y-2 text-amber-800">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span className="text-sm">
@@ -268,17 +268,17 @@ const ClientDashboard = () => {
               ))}
             </div>
           ) : (
-            <Card className="bg-stone-800 border-stone-700">
+            <Card className="bg-white border-amber-100 shadow-sm">
               <CardContent className="p-8 text-center">
-                <Scissors className="h-12 w-12 text-stone-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">
+                <Scissors className="h-12 w-12 text-amber-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-amber-900 mb-2">
                   Nenhum corte agendado
                 </h3>
-                <p className="text-stone-400 mb-4">
+                <p className="text-amber-700 mb-4">
                   Está na hora de marcar seu próximo corte!
                 </p>
                 <Button 
-                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold"
+                  className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-white font-semibold"
                   onClick={() => navigate('/cliente/novo-agendamento')}
                 >
                   Agendar Corte
@@ -289,30 +289,30 @@ const ClientDashboard = () => {
         </div>
 
         {/* Contact Information */}
-        <Card className="bg-stone-800 border-stone-700">
+        <Card className="bg-white border-amber-100 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-amber-900 flex items-center gap-2">
               <MapPin className="h-5 w-5 text-amber-500" />
               Nossa Barbearia
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/20 rounded-lg">
-                <Phone className="h-5 w-5 text-amber-400" />
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Phone className="h-5 w-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-white font-medium">Telefone</p>
-                <p className="text-stone-300">(11) 99999-9999</p>
+                <p className="text-amber-900 font-medium">Telefone</p>
+                <p className="text-amber-700">(11) 99999-9999</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/20 rounded-lg">
-                <MapPin className="h-5 w-5 text-amber-400" />
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <MapPin className="h-5 w-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-white font-medium">Endereço</p>
-                <p className="text-stone-300">Rua Example, 123 - Centro</p>
+                <p className="text-amber-900 font-medium">Endereço</p>
+                <p className="text-amber-700">Rua Example, 123 - Centro</p>
               </div>
             </div>
           </CardContent>
