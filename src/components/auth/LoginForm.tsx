@@ -18,7 +18,7 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-interface LoginFormProps {
+export interface LoginFormProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
   onLoginSuccess?: () => void;
@@ -184,3 +184,4 @@ const LoginForm: React.FC<LoginFormProps> = ({
 };
 
 export default LoginForm;
+export type { LoginFormProps };

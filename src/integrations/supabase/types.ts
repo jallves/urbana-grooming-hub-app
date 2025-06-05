@@ -119,39 +119,6 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_modules: {
-        Row: {
-          created_at: string
-          description: string | null
-          display_order: number | null
-          icon: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          icon?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       admin_users: {
         Row: {
           created_at: string
@@ -179,39 +146,6 @@ export type Database = {
           name?: string
           role?: string
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      ai_models: {
-        Row: {
-          accuracy: number | null
-          configuration: Json | null
-          created_at: string
-          id: string
-          name: string
-          status: string
-          updated_at: string
-          version: string
-        }
-        Insert: {
-          accuracy?: number | null
-          configuration?: Json | null
-          created_at?: string
-          id?: string
-          name: string
-          status: string
-          updated_at?: string
-          version: string
-        }
-        Update: {
-          accuracy?: number | null
-          configuration?: Json | null
-          created_at?: string
-          id?: string
-          name?: string
-          status?: string
-          updated_at?: string
-          version?: string
         }
         Relationships: []
       }
@@ -869,45 +803,6 @@ export type Database = {
         }
         Relationships: []
       }
-      custom_reports: {
-        Row: {
-          chart_config: Json | null
-          created_at: string
-          created_by: string | null
-          filters: Json | null
-          id: string
-          is_public: boolean | null
-          query_config: Json
-          report_description: string | null
-          report_name: string
-          updated_at: string
-        }
-        Insert: {
-          chart_config?: Json | null
-          created_at?: string
-          created_by?: string | null
-          filters?: Json | null
-          id?: string
-          is_public?: boolean | null
-          query_config: Json
-          report_description?: string | null
-          report_name: string
-          updated_at?: string
-        }
-        Update: {
-          chart_config?: Json | null
-          created_at?: string
-          created_by?: string | null
-          filters?: Json | null
-          id?: string
-          is_public?: boolean | null
-          query_config?: Json
-          report_description?: string | null
-          report_name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       dashboard_metrics: {
         Row: {
           additional_data: Json | null
@@ -1041,78 +936,6 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "marketing_campaigns"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      employees: {
-        Row: {
-          certifications: string[] | null
-          commission_rate: number | null
-          created_at: string | null
-          emergency_contact: Json | null
-          employee_number: string | null
-          hire_date: string
-          id: string
-          job_role_id: string | null
-          notes: string | null
-          profile_id: string | null
-          salary: number | null
-          specializations: string[] | null
-          status: string | null
-          termination_date: string | null
-          updated_at: string | null
-          work_schedule: Json | null
-        }
-        Insert: {
-          certifications?: string[] | null
-          commission_rate?: number | null
-          created_at?: string | null
-          emergency_contact?: Json | null
-          employee_number?: string | null
-          hire_date: string
-          id?: string
-          job_role_id?: string | null
-          notes?: string | null
-          profile_id?: string | null
-          salary?: number | null
-          specializations?: string[] | null
-          status?: string | null
-          termination_date?: string | null
-          updated_at?: string | null
-          work_schedule?: Json | null
-        }
-        Update: {
-          certifications?: string[] | null
-          commission_rate?: number | null
-          created_at?: string | null
-          emergency_contact?: Json | null
-          employee_number?: string | null
-          hire_date?: string
-          id?: string
-          job_role_id?: string | null
-          notes?: string | null
-          profile_id?: string | null
-          salary?: number | null
-          specializations?: string[] | null
-          status?: string | null
-          termination_date?: string | null
-          updated_at?: string | null
-          work_schedule?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "employees_job_role_id_fkey"
-            columns: ["job_role_id"]
-            isOneToOne: false
-            referencedRelation: "job_roles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "employees_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1251,121 +1074,6 @@ export type Database = {
         }
         Relationships: []
       }
-      food_database: {
-        Row: {
-          calories: number
-          carbs: number
-          created_at: string
-          created_by: string | null
-          fat: number
-          fiber: number | null
-          health_score: number | null
-          id: string
-          name: string
-          protein: number
-          updated_at: string
-        }
-        Insert: {
-          calories: number
-          carbs: number
-          created_at?: string
-          created_by?: string | null
-          fat: number
-          fiber?: number | null
-          health_score?: number | null
-          id?: string
-          name: string
-          protein: number
-          updated_at?: string
-        }
-        Update: {
-          calories?: number
-          carbs?: number
-          created_at?: string
-          created_by?: string | null
-          fat?: number
-          fiber?: number | null
-          health_score?: number | null
-          id?: string
-          name?: string
-          protein?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      food_insights: {
-        Row: {
-          created_at: string
-          description: string
-          food_analysis_id: string
-          id: string
-          insight_type: string
-        }
-        Insert: {
-          created_at?: string
-          description: string
-          food_analysis_id: string
-          id?: string
-          insight_type: string
-        }
-        Update: {
-          created_at?: string
-          description?: string
-          food_analysis_id?: string
-          id?: string
-          insight_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "food_insights_food_analysis_id_fkey"
-            columns: ["food_analysis_id"]
-            isOneToOne: false
-            referencedRelation: "food_analysis"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      food_vitamins: {
-        Row: {
-          calcium: number | null
-          created_at: string
-          food_analysis_id: string
-          id: string
-          iron: number | null
-          vitamin_a: number | null
-          vitamin_c: number | null
-          vitamin_d: number | null
-        }
-        Insert: {
-          calcium?: number | null
-          created_at?: string
-          food_analysis_id: string
-          id?: string
-          iron?: number | null
-          vitamin_a?: number | null
-          vitamin_c?: number | null
-          vitamin_d?: number | null
-        }
-        Update: {
-          calcium?: number | null
-          created_at?: string
-          food_analysis_id?: string
-          id?: string
-          iron?: number | null
-          vitamin_a?: number | null
-          vitamin_c?: number | null
-          vitamin_d?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "food_vitamins_food_analysis_id_fkey"
-            columns: ["food_analysis_id"]
-            isOneToOne: false
-            referencedRelation: "food_analysis"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       gallery_images: {
         Row: {
           alt: string
@@ -1432,42 +1140,6 @@ export type Database = {
         }
         Relationships: []
       }
-      homepage_sections: {
-        Row: {
-          content: Json | null
-          created_at: string
-          display_order: number | null
-          id: string
-          is_active: boolean | null
-          section_name: string
-          subtitle: string | null
-          title: string | null
-          updated_at: string
-        }
-        Insert: {
-          content?: Json | null
-          created_at?: string
-          display_order?: number | null
-          id?: string
-          is_active?: boolean | null
-          section_name: string
-          subtitle?: string | null
-          title?: string | null
-          updated_at?: string
-        }
-        Update: {
-          content?: Json | null
-          created_at?: string
-          display_order?: number | null
-          id?: string
-          is_active?: boolean | null
-          section_name?: string
-          subtitle?: string | null
-          title?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       instructors: {
         Row: {
           active: boolean | null
@@ -1511,45 +1183,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      internet_plans: {
-        Row: {
-          created_at: string
-          description: string | null
-          features: Json | null
-          id: string
-          is_active: boolean | null
-          is_popular: boolean | null
-          name: string
-          price: number
-          speed: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          features?: Json | null
-          id?: string
-          is_active?: boolean | null
-          is_popular?: boolean | null
-          name: string
-          price: number
-          speed: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          features?: Json | null
-          id?: string
-          is_active?: boolean | null
-          is_popular?: boolean | null
-          name?: string
-          price?: number
-          speed?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       job_roles: {
         Row: {
@@ -1666,42 +1299,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      notification_settings: {
-        Row: {
-          created_at: string
-          frequency: string | null
-          id: string
-          is_enabled: boolean | null
-          notification_type: string
-          recipients: Json | null
-          template_body: string | null
-          template_subject: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          frequency?: string | null
-          id?: string
-          is_enabled?: boolean | null
-          notification_type: string
-          recipients?: Json | null
-          template_body?: string | null
-          template_subject?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          frequency?: string | null
-          id?: string
-          is_enabled?: boolean | null
-          notification_type?: string
-          recipients?: Json | null
-          template_body?: string | null
-          template_subject?: string | null
-          updated_at?: string
-        }
-        Relationships: []
       }
       notifications: {
         Row: {
@@ -2078,45 +1675,6 @@ export type Database = {
         }
         Relationships: []
       }
-      promotional_videos: {
-        Row: {
-          created_at: string
-          description: string | null
-          display_order: number | null
-          id: string
-          is_active: boolean | null
-          section: string | null
-          thumbnail_url: string | null
-          title: string
-          updated_at: string
-          video_url: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          id?: string
-          is_active?: boolean | null
-          section?: string | null
-          thumbnail_url?: string | null
-          title: string
-          updated_at?: string
-          video_url: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          display_order?: number | null
-          id?: string
-          is_active?: boolean | null
-          section?: string | null
-          thumbnail_url?: string | null
-          title?: string
-          updated_at?: string
-          video_url?: string
-        }
-        Relationships: []
-      }
       recipes: {
         Row: {
           created_at: string
@@ -2339,36 +1897,6 @@ export type Database = {
           social_twitter?: string | null
           updated_at?: string | null
           website?: string | null
-        }
-        Relationships: []
-      }
-      site_settings: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          id: string
-          key: string
-          updated_at: string
-          value: Json
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          key: string
-          updated_at?: string
-          value: Json
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          key?: string
-          updated_at?: string
-          value?: Json
         }
         Relationships: []
       }

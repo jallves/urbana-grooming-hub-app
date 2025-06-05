@@ -1,22 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LoginForm, LoginFormProps } from '@/components/auth/LoginForm';
-import { RegisterForm, RegisterFormProps } from '@/components/auth/RegisterForm';
+import LoginForm from '@/components/auth/LoginForm';
+import RegisterForm from '@/components/auth/RegisterForm';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Home, Scissors } from 'lucide-react';
-
-// Adicionando as tipagens estendidas para incluir a prop theme
-interface ExtendedLoginFormProps extends LoginFormProps {
-  theme?: 'light' | 'dark';
-}
-
-interface ExtendedRegisterFormProps extends RegisterFormProps {
-  theme?: 'light' | 'dark';
-}
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -135,16 +126,14 @@ const Auth: React.FC = () => {
             <TabsContent value="login" className="mt-0">
               <LoginForm 
                 loading={loading} 
-                setLoading={setLoading} 
-                theme="dark" 
+                setLoading={setLoading}
               />
             </TabsContent>
             
             <TabsContent value="register" className="mt-0">
               <RegisterForm 
                 loading={loading} 
-                setLoading={setLoading} 
-                theme="dark" 
+                setLoading={setLoading}
               />
             </TabsContent>
           </Tabs>

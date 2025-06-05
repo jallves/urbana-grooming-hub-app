@@ -212,8 +212,7 @@ export default function RegisterAuth() {
               <LoginForm 
                 loading={loading} 
                 setLoading={setLoading} 
-                onLoginSuccess={handleLoginSuccess} 
-                theme="dark"
+                onLoginSuccess={handleLoginSuccess}
               />
             </TabsContent>
           </Tabs>

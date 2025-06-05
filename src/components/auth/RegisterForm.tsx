@@ -37,7 +37,7 @@ const registerSchema = z.object({
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
-interface RegisterFormProps {
+export interface RegisterFormProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
 }
@@ -271,3 +271,4 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
 };
 
 export default RegisterForm;
+export type { RegisterFormProps };
