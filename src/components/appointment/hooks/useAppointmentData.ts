@@ -45,9 +45,21 @@ export const useAppointmentData = () => {
   useEffect(() => {
     const fetchBarbers = async () => {
       try {
-        console.log('Buscando barbeiros ativos...');
+        console.log('Buscando barbeiros...');
         
-        // Buscar apenas barbeiros ativos da tabela staff
+        // Primeiro, vamos buscar TODOS os registros da tabela staff para debug
+        const { data: allStaff, error: allError } = await supabase
+          .from('staff')
+          .select('*');
+
+        if (allError) {
+          console.error("Erro ao buscar todos os barbeiros:", allError);
+        } else {
+          console.log('Todos os barbeiros na base:', allStaff);
+          console.log('Barbeiros ativos:', allStaff?.filter(s => s.is_active));
+        }
+
+        // Agora buscar apenas os ativos
         const { data, error } = await supabase
           .from('staff')
           .select('*')
@@ -55,7 +67,7 @@ export const useAppointmentData = () => {
           .order('name', { ascending: true });
 
         if (error) {
-          console.error("Erro ao buscar barbeiros:", error);
+          console.error("Erro ao buscar barbeiros ativos:", error);
           toast({
             title: "Erro",
             description: "Não foi possível carregar os barbeiros.",
@@ -64,12 +76,22 @@ export const useAppointmentData = () => {
           return;
         }
 
-        if (data) {
-          console.log('Barbeiros encontrados:', data);
+        console.log('Barbeiros ativos encontrados:', data);
+        
+        if (data && data.length > 0) {
           setBarbers(data);
+          toast({
+            title: "Barbeiros carregados",
+            description: `${data.length} barbeiro(s) encontrado(s).`,
+          });
         } else {
-          console.log('Nenhum barbeiro encontrado');
+          console.log('Nenhum barbeiro ativo encontrado');
           setBarbers([]);
+          toast({
+            title: "Aviso",
+            description: "Nenhum barbeiro ativo encontrado. Verifique se há barbeiros cadastrados e ativos no sistema.",
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);

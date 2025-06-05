@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { User, Loader2 } from 'lucide-react';
+import { User, Loader2, AlertTriangle } from 'lucide-react';
 import { Control } from 'react-hook-form';
 import { FormData, BarberAvailabilityInfo } from '../hooks/useClientAppointmentForm';
 import { StaffMember } from '@/types/appointment';
@@ -42,6 +42,10 @@ export function BarberSelectionField({
   // If no availability check has been done yet, show all active barbers
   const showAllBarbers = !selectedDate || !selectedTime || barberAvailability.length === 0;
 
+  console.log('BarberSelectionField - barbers:', barbers);
+  console.log('BarberSelectionField - showAllBarbers:', showAllBarbers);
+  console.log('BarberSelectionField - availableBarbers:', availableBarbers);
+
   return (
     <FormField
       control={control}
@@ -57,15 +61,26 @@ export function BarberSelectionField({
               </div>
             )}
           </FormLabel>
+          
+          {barbers.length === 0 && (
+            <Alert className="mt-2 bg-yellow-900/20 border-yellow-700">
+              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+              <AlertTitle className="text-yellow-400">Nenhum barbeiro disponível</AlertTitle>
+              <AlertDescription className="text-yellow-300">
+                Não há barbeiros ativos cadastrados no sistema. Entre em contato com o estabelecimento.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Select 
             onValueChange={field.onChange} 
             value={field.value || ""} 
-            disabled={!selectedTime || isCheckingAvailability}
+            disabled={!selectedTime || isCheckingAvailability || barbers.length === 0}
           >
             <FormControl>
               <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white focus:border-urbana-gold focus:ring-urbana-gold/20">
                 <User className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Selecione um barbeiro" />
+                <SelectValue placeholder={barbers.length === 0 ? "Nenhum barbeiro disponível" : "Selecione um barbeiro"} />
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-zinc-800 border-zinc-600">
@@ -117,7 +132,7 @@ export function BarberSelectionField({
                 </>
               )}
               
-              {!showAllBarbers && availableBarbers.length === 0 && (
+              {!showAllBarbers && availableBarbers.length === 0 && barbers.length > 0 && (
                 <div className="px-2 py-1 text-sm text-red-400">
                   Nenhum barbeiro disponível neste horário
                 </div>
@@ -126,13 +141,13 @@ export function BarberSelectionField({
           </Select>
           <FormMessage />
           
-          {!selectedTime && (
+          {!selectedTime && barbers.length > 0 && (
             <p className="text-sm text-zinc-400">
               Selecione um horário primeiro
             </p>
           )}
           
-          {selectedTime && !showAllBarbers && availableBarbers.length === 0 && (
+          {selectedTime && !showAllBarbers && availableBarbers.length === 0 && barbers.length > 0 && (
             <Alert className="mt-2 bg-red-900/20 border-red-700" variant="destructive">
               <AlertTitle className="text-red-400">Nenhum barbeiro disponível</AlertTitle>
               <AlertDescription className="text-red-300">
