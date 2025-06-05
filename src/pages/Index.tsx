@@ -19,7 +19,6 @@ const Index = () => {
           <Services />
         </div>
         <Gallery />
-        <Team />
         <Footer />
       </div>
       <WhatsAppButton />
