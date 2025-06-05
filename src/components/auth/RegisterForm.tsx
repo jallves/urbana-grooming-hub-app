@@ -271,4 +271,3 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
 };
 
 export default RegisterForm;
-export type { RegisterFormProps };
