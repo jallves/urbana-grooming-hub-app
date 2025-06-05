@@ -52,11 +52,12 @@ export const useAvailability = () => {
     try {
       console.log('Verificando disponibilidade dos barbeiros...');
       
-      // Get all active staff members using public access
+      // Buscar todos os barbeiros ativos da tabela staff
       const { data: staffMembers, error } = await supabase
         .from('staff')
         .select('id, name, is_active')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('name', { ascending: true });
 
       if (error) {
         console.error("Erro ao buscar barbeiros:", error);
@@ -77,8 +78,8 @@ export const useAvailability = () => {
 
       console.log('Barbeiros encontrados:', staffMembers);
 
-      // For now, mark all barbeiros as available
-      // In the future, this could check actual availability against appointments
+      // Por enquanto, marcar todos os barbeiros como disponíveis
+      // No futuro, isso poderia verificar a disponibilidade real contra agendamentos
       const availability = staffMembers.map(staff => ({
         id: staff.id,
         name: staff.name,

@@ -45,10 +45,13 @@ export const useAppointmentData = () => {
   useEffect(() => {
     const fetchBarbers = async () => {
       try {
+        console.log('Buscando barbeiros ativos...');
+        
+        // Buscar apenas barbeiros ativos da tabela staff
         const { data, error } = await supabase
           .from('staff')
           .select('*')
-          .eq('role', 'barber')
+          .eq('is_active', true)
           .order('name', { ascending: true });
 
         if (error) {
@@ -58,10 +61,15 @@ export const useAppointmentData = () => {
             description: "Não foi possível carregar os barbeiros.",
             variant: "destructive",
           });
+          return;
         }
 
         if (data) {
+          console.log('Barbeiros encontrados:', data);
           setBarbers(data);
+        } else {
+          console.log('Nenhum barbeiro encontrado');
+          setBarbers([]);
         }
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);
@@ -70,6 +78,7 @@ export const useAppointmentData = () => {
           description: "Não foi possível carregar os barbeiros.",
           variant: "destructive",
         });
+        setBarbers([]);
       }
     };
 
