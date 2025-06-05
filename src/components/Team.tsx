@@ -45,23 +45,26 @@ const Team: React.FC = () => {
     queryFn: async () => {
       console.log('Buscando barbeiros ativos para a equipe...');
       
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-      
-      if (error) {
-        console.error('Erro na query staff:', error);
-        throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
+      try {
+        const { data, error } = await supabase
+          .from('staff')
+          .select('*')
+          .eq('is_active', true)
+          .order('name');
+        
+        if (error) {
+          console.error('Erro na query staff:', error);
+          throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
+        }
+        
+        console.log('Barbeiros ativos encontrados para equipe:', data?.length || 0, data);
+        return data || [];
+      } catch (err) {
+        console.error('Erro ao buscar barbeiros para equipe:', err);
+        throw err;
       }
-      
-      console.log('Barbeiros ativos encontrados para equipe:', data?.length || 0, data);
-      return data || [];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const fallbackTeamMembers = [
@@ -122,12 +125,7 @@ const Team: React.FC = () => {
     );
   }
 
-  // Handle error state
-  if (error) {
-    console.error('Erro ao carregar equipe:', error);
-  }
-
-  // Determine which team to display - use database data if available and not empty, otherwise fallback
+  // Determine which team to display - use database data if available, otherwise fallback
   const teamToDisplay = staffMembers && staffMembers.length > 0
     ? staffMembers
     : fallbackTeamMembers;
@@ -159,15 +157,15 @@ const Team: React.FC = () => {
         {error && (
           <div className="text-center mt-4">
             <p className="text-red-400 text-sm">
-              Erro ao carregar a equipe do banco de dados. Exibindo equipe padrão.
+              Erro ao carregar a equipe. Exibindo equipe padrão.
             </p>
           </div>
         )}
 
-        {(!staffMembers || staffMembers.length === 0) && !error && (
+        {staffMembers && staffMembers.length === 0 && (
           <div className="text-center mt-4">
             <p className="text-yellow-400 text-sm">
-              Nenhum barbeiro ativo encontrado no banco de dados. Exibindo equipe padrão.
+              Nenhum barbeiro ativo encontrado. Certifique-se de que há barbeiros ativos cadastrados no sistema.
             </p>
           </div>
         )}
