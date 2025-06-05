@@ -2,7 +2,6 @@ import React from 'react';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Services from '../components/Services';
-import Footer from '../components/Footer';
 import Gallery from '../components/Gallery';
 import WhatsAppButton from '../components/WhatsAppButton';
 
