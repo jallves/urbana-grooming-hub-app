@@ -153,7 +153,7 @@ export default function ClientEditAppointment() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-urbana-gold mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 animate-spin text-blue-400 mx-auto mb-4" />
           <p className="text-gray-600">Carregando agendamento...</p>
         </div>
       </div>
@@ -163,17 +163,17 @@ export default function ClientEditAppointment() {
   if (!appointment) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md bg-white shadow-sm">
           <CardHeader className="text-center">
-            <CardTitle>Agendamento não encontrado</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-gray-800">Agendamento não encontrado</CardTitle>
+            <CardDescription className="text-gray-500">
               O agendamento que você está tentando editar não foi encontrado.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button 
               onClick={() => navigate('/cliente/dashboard')}
-              className="w-full"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
             >
               Voltar ao Dashboard
             </Button>
@@ -186,20 +186,20 @@ export default function ClientEditAppointment() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Button
               variant="ghost"
               onClick={() => navigate('/cliente/dashboard')}
-              className="mr-4"
+              className="mr-4 text-blue-500 hover:bg-blue-50"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Editar Agendamento</h1>
-              <p className="text-gray-600">Modifique os detalhes do seu agendamento</p>
+              <h1 className="text-2xl font-bold text-gray-800">Editar Agendamento</h1>
+              <p className="text-gray-500">Modifique os detalhes do seu agendamento</p>
             </div>
           </div>
         </div>
@@ -209,10 +209,10 @@ export default function ClientEditAppointment() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Current Appointment Info */}
-          <Card>
+          <Card className="bg-white shadow-sm border border-gray-200">
             <CardHeader>
-              <CardTitle>Agendamento Atual</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-800">Agendamento Atual</CardTitle>
+              <CardDescription className="text-gray-500">
                 Informações do agendamento que será modificado
               </CardDescription>
             </CardHeader>
@@ -220,8 +220,8 @@ export default function ClientEditAppointment() {
               <div className="flex items-center space-x-3">
                 <User className="h-5 w-5 text-gray-400" />
                 <div>
-                  <p className="font-medium">{appointment.service.name}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="font-medium text-gray-800">{appointment.service.name}</p>
+                  <p className="text-sm text-gray-500">
                     R$ {appointment.service.price.toFixed(2)} - {appointment.service.duration} min
                   </p>
                 </div>
@@ -230,10 +230,10 @@ export default function ClientEditAppointment() {
               <div className="flex items-center space-x-3">
                 <Calendar className="h-5 w-5 text-gray-400" />
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-gray-800">
                     {format(new Date(appointment.start_time), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-500">
                     {format(new Date(appointment.start_time), "EEEE", { locale: ptBR })}
                   </p>
                 </div>
@@ -242,7 +242,7 @@ export default function ClientEditAppointment() {
               <div className="flex items-center space-x-3">
                 <Clock className="h-5 w-5 text-gray-400" />
                 <div>
-                  <p className="font-medium">
+                  <p className="font-medium text-gray-800">
                     {format(new Date(appointment.start_time), "HH:mm")} - {format(new Date(appointment.end_time), "HH:mm")}
                   </p>
                 </div>
@@ -252,26 +252,26 @@ export default function ClientEditAppointment() {
                 <div className="flex items-center space-x-3">
                   <User className="h-5 w-5 text-gray-400" />
                   <div>
-                    <p className="font-medium">Profissional</p>
-                    <p className="text-sm text-gray-600">{appointment.staff.name}</p>
+                    <p className="font-medium text-gray-800">Profissional</p>
+                    <p className="text-sm text-gray-500">{appointment.staff.name}</p>
                   </div>
                 </div>
               )}
 
               {appointment.notes && (
                 <div>
-                  <p className="font-medium mb-1">Observações</p>
-                  <p className="text-sm text-gray-600">{appointment.notes}</p>
+                  <p className="font-medium mb-1 text-gray-800">Observações</p>
+                  <p className="text-sm text-gray-500">{appointment.notes}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Edit Form */}
-          <Card>
+          <Card className="bg-white shadow-sm border border-gray-200">
             <CardHeader>
-              <CardTitle>Novo Agendamento</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-800">Novo Agendamento</CardTitle>
+              <CardDescription className="text-gray-500">
                 Selecione as novas informações para seu agendamento
               </CardDescription>
             </CardHeader>
