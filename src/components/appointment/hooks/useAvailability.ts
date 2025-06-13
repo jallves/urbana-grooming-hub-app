@@ -52,7 +52,7 @@ export const useAvailability = () => {
     try {
       console.log('Verificando disponibilidade dos barbeiros para:', { date, time, serviceId });
       
-      // Buscar todos os barbeiros ativos
+      // Buscar todos os barbeiros ativos - usando apenas a tabela staff
       const { data: staffMembers, error: staffError } = await supabase
         .from('staff')
         .select('id, name, is_active')
@@ -85,12 +85,12 @@ export const useAvailability = () => {
         .eq('id', serviceId)
         .single();
 
+      let serviceDuration = 60; // Default duration
       if (serviceError || !serviceData) {
         console.error("Erro ao buscar duração do serviço:", serviceError);
-        // Se não conseguir buscar a duração, usar 60 minutos como padrão
-        var serviceDuration = 60;
+        console.log("Usando duração padrão de 60 minutos");
       } else {
-        var serviceDuration = serviceData.duration;
+        serviceDuration = serviceData.duration;
       }
 
       // Calcular horário de início e fim do agendamento
@@ -107,12 +107,18 @@ export const useAvailability = () => {
       const availability = await Promise.all(staffMembers.map(async (staff) => {
         try {
           // Buscar agendamentos do barbeiro no mesmo dia
+          const startOfDay = new Date(startTime);
+          startOfDay.setHours(0, 0, 0, 0);
+          
+          const endOfDay = new Date(startTime);
+          endOfDay.setHours(23, 59, 59, 999);
+
           const { data: appointments, error: appointmentError } = await supabase
             .from('appointments')
             .select('id, start_time, end_time, status')
             .eq('staff_id', staff.id)
-            .gte('start_time', startTime.toISOString().split('T')[0] + 'T00:00:00.000Z')
-            .lt('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T00:00:00.000Z')
+            .gte('start_time', startOfDay.toISOString())
+            .lte('start_time', endOfDay.toISOString())
             .in('status', ['scheduled', 'confirmed']);
 
           if (appointmentError) {
@@ -133,8 +139,9 @@ export const useAvailability = () => {
               const appStart = new Date(appointment.start_time);
               const appEnd = new Date(appointment.end_time);
               
-              // Verificar sobreposição
-              const conflict = startTime < appEnd && endTime > appStart;
+              // Verificar sobreposição: o novo agendamento não pode começar antes do fim de um existente
+              // nem terminar depois do início de um existente
+              const conflict = (startTime < appEnd && endTime > appStart);
               
               if (conflict) {
                 console.log(`Conflito encontrado para ${staff.name}:`, {

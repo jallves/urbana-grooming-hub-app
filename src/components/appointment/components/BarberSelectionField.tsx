@@ -42,13 +42,18 @@ export function BarberSelectionField({
 
   // Se não foi feita verificação de disponibilidade ainda, mostrar todos os barbeiros ativos
   const shouldShowAllBarbers = !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
+  
+  // Filtrar apenas barbeiros ativos
+  const activeBarbers = barbers.filter(barber => barber.is_active);
 
   console.log('BarberSelectionField - Estado atual:', {
     totalBarbers: barbers.length,
+    activeBarbers: activeBarbers.length,
     shouldShowAllBarbers,
     availableBarbers: availableBarbers.length,
     unavailableBarbers: unavailableBarbers.length,
-    isCheckingAvailability
+    isCheckingAvailability,
+    barberAvailability
   });
 
   return (
@@ -67,7 +72,7 @@ export function BarberSelectionField({
             )}
           </FormLabel>
           
-          {barbers.length === 0 && (
+          {activeBarbers.length === 0 && (
             <Alert className="mt-2 bg-yellow-900/20 border-yellow-700">
               <AlertTriangle className="h-4 w-4 text-yellow-400" />
               <AlertTitle className="text-yellow-400">Nenhum barbeiro cadastrado</AlertTitle>
@@ -80,13 +85,13 @@ export function BarberSelectionField({
           <Select 
             onValueChange={field.onChange} 
             value={field.value || ""} 
-            disabled={!selectedTime || isCheckingAvailability || barbers.length === 0}
+            disabled={!selectedTime || isCheckingAvailability || activeBarbers.length === 0}
           >
             <FormControl>
               <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white focus:border-urbana-gold focus:ring-urbana-gold/20">
                 <User className="mr-2 h-4 w-4" />
                 <SelectValue placeholder={
-                  barbers.length === 0 
+                  activeBarbers.length === 0 
                     ? "Entre em contato conosco" 
                     : isCheckingAvailability
                     ? "Verificando disponibilidade..."
@@ -97,7 +102,7 @@ export function BarberSelectionField({
             <SelectContent className="bg-zinc-800 border-zinc-600">
               {shouldShowAllBarbers ? (
                 // Mostrar todos os barbeiros ativos quando não há verificação de disponibilidade
-                barbers.filter(barber => barber.is_active).map(barber => (
+                activeBarbers.map(barber => (
                   <SelectItem 
                     key={barber.id} 
                     value={barber.id}
@@ -144,7 +149,7 @@ export function BarberSelectionField({
                 </>
               )}
               
-              {!shouldShowAllBarbers && availableBarbers.length === 0 && barbers.length > 0 && (
+              {!shouldShowAllBarbers && availableBarbers.length === 0 && activeBarbers.length > 0 && (
                 <div className="px-2 py-1 text-sm text-red-400">
                   Nenhum barbeiro disponível neste horário
                 </div>
@@ -153,13 +158,13 @@ export function BarberSelectionField({
           </Select>
           <FormMessage />
           
-          {!selectedTime && barbers.length > 0 && (
+          {!selectedTime && activeBarbers.length > 0 && (
             <p className="text-sm text-zinc-400">
               Selecione um horário primeiro para verificar disponibilidade
             </p>
           )}
           
-          {selectedTime && !shouldShowAllBarbers && availableBarbers.length === 0 && barbers.length > 0 && (
+          {selectedTime && !shouldShowAllBarbers && availableBarbers.length === 0 && activeBarbers.length > 0 && (
             <Alert className="mt-2 bg-red-900/20 border-red-700" variant="destructive">
               <AlertTitle className="text-red-400">Nenhum barbeiro disponível</AlertTitle>
               <AlertDescription className="text-red-300">

@@ -8,6 +8,7 @@ import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
 import { ServiceSelectionField } from './components/ServiceSelectionField';
 import { DateTimeSelectionFields } from './components/DateTimeSelectionFields';
 import { BarberSelectionField } from './components/BarberSelectionField';
+import { BarberDebugInfo } from './components/BarberDebugInfo';
 import { AppointmentSummary } from './components/AppointmentSummary';
 import { CouponField } from './components/CouponField';
 import { useToast } from '@/hooks/use-toast';
@@ -220,6 +221,13 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
                 isCheckingAvailability={isCheckingAvailability}
                 getFieldValue={form.getValues}
                 checkBarberAvailability={checkBarberAvailability}
+              />
+              
+              {/* Debug Info - só aparece em desenvolvimento */}
+              <BarberDebugInfo 
+                barbers={barbers}
+                barberAvailability={barberAvailability}
+                isCheckingAvailability={isCheckingAvailability}
               />
             </div>
 

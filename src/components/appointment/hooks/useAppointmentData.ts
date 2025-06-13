@@ -15,6 +15,7 @@ export const useAppointmentData = () => {
         const { data, error } = await supabase
           .from('services')
           .select('*')
+          .eq('is_active', true)
           .order('name', { ascending: true });
 
         if (error) {
@@ -45,11 +46,12 @@ export const useAppointmentData = () => {
   useEffect(() => {
     const fetchBarbers = async () => {
       try {
-        console.log('Buscando todos os barbeiros para formulário de agendamento...');
+        console.log('Buscando barbeiros ativos...');
         
         const { data, error } = await supabase
           .from('staff')
-          .select('*')
+          .select('id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at')
+          .eq('is_active', true)
           .order('name', { ascending: true });
 
         if (error) {
@@ -62,13 +64,13 @@ export const useAppointmentData = () => {
           return;
         }
 
-        console.log('Todos os barbeiros encontrados:', data?.length || 0, data);
+        console.log('Barbeiros encontrados:', data?.length || 0, data);
         
         if (data && data.length > 0) {
           setBarbers(data);
-          console.log(`${data.length} barbeiro(s) carregado(s) com sucesso`);
+          console.log(`${data.length} barbeiro(s) ativo(s) carregado(s) com sucesso`);
         } else {
-          console.log('Nenhum barbeiro encontrado no banco de dados');
+          console.log('Nenhum barbeiro ativo encontrado no banco de dados');
           setBarbers([]);
         }
       } catch (error) {
