@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Form } from '@/components/ui/form';
 import { supabase } from '@/integrations/supabase/client';
 import { useStaffForm } from '../staff/hooks/useStaffForm';
 import StaffProfileImage from '../staff/components/StaffProfileImage';
@@ -15,7 +14,7 @@ import { BarberModuleAccess } from './BarberModuleAccess';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Shield, Settings, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 
 interface BarberFormProps {
   barberId: string | null;
@@ -41,70 +40,71 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   
+  // Ensure the role is set to 'barber' when form loads
+  useEffect(() => {
+    if (!barberId) {
+      form.setValue('role', 'barber');
+    }
+  }, [barberId, form]);
+  
   // Extended onSubmit function that also creates or updates the auth user
   const onSubmit = async (data: any) => {
     setIsSubmitting(true);
     
     try {
+      // Ensure role is barber
+      data.role = 'barber';
+      
       // Save barber data first (using the original onSubmit)
       await originalOnSubmit(data);
       
       // If we have an email, create or update the auth user
-      if (data.email) {
-        // Check if user already exists
-        const { data: existingUsers, error: searchError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('email', data.email)
-          .maybeSingle();
-          
-        // For new barbers with no existing user account, create one
-        if (!existingUsers && !barberId && password) {
-          if (password !== confirmPassword) {
-            toast.error('As senhas não correspondem');
-            setIsSubmitting(false);
-            return;
+      if (data.email && !barberId && password) {
+        if (password !== confirmPassword) {
+          toast.error('As senhas não correspondem');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        if (password.length < 6) {
+          toast.error('A senha deve ter pelo menos 6 caracteres');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Register the user
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password: password,
+          options: {
+            data: {
+              full_name: data.name,
+            },
+            emailRedirectTo: `${window.location.origin}/auth`
           }
-          
-          if (password.length < 6) {
-            toast.error('A senha deve ter pelo menos 6 caracteres');
-            setIsSubmitting(false);
-            return;
-          }
-          
-          // Register the user
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: data.email,
-            password: password,
-            options: {
-              data: {
-                full_name: data.name,
-              },
-            }
-          });
+        });
 
-          if (signUpError) {
-            console.error('Erro ao criar conta de usuário para o barbeiro:', signUpError);
-            toast.error('Erro ao criar conta de usuário', {
-              description: signUpError.message
+        if (signUpError) {
+          console.error('Erro ao criar conta de usuário para o barbeiro:', signUpError);
+          toast.error('Erro ao criar conta de usuário', {
+            description: signUpError.message
+          });
+        } else if (signUpData.user) {
+          // Add barber role
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert([{ 
+              user_id: signUpData.user.id,
+              role: 'barber'
+            }]);
+            
+          if (roleError) {
+            console.error('Erro ao adicionar role de barbeiro:', roleError);
+            toast.error('Erro ao configurar permissões de barbeiro');
+          } else {
+            toast.success('Conta de usuário criada para o barbeiro', {
+              description: 'O barbeiro já pode acessar o painel admin'
             });
-          } else if (signUpData.user) {
-            // Add barber role
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert([{ 
-                user_id: signUpData.user.id,
-                role: 'barber'
-              }]);
-              
-            if (roleError) {
-              console.error('Erro ao adicionar role de barbeiro:', roleError);
-              toast.error('Erro ao configurar permissões de barbeiro');
-            } else {
-              toast.success('Conta de usuário criada para o barbeiro', {
-                description: 'O barbeiro já pode acessar o painel admin'
-              });
-            }
           }
         }
       }

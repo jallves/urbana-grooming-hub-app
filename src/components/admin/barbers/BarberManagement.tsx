@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import BarberList from './BarberList';
 import BarberForm from './BarberForm';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 const BarberManagement: React.FC = () => {
   const [isAddingBarber, setIsAddingBarber] = useState(false);
   const [editingBarber, setEditingBarber] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: barbers, isLoading, error, refetch } = useQuery({
     queryKey: ['barbers'],
@@ -30,6 +31,32 @@ const BarberManagement: React.FC = () => {
       return data;
     }
   });
+
+  // Set up real-time subscription for staff changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('barber-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'staff',
+          filter: 'role=eq.barber'
+        },
+        (payload) => {
+          console.log('Barber data changed:', payload);
+          toast.info('Dados de barbeiros atualizados');
+          refetch();
+          queryClient.invalidateQueries({ queryKey: ['barbers'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch, queryClient]);
 
   if (error) {
     toast.error('Erro ao carregar barbeiros', {
@@ -56,12 +83,20 @@ const BarberManagement: React.FC = () => {
     refetch();
     setIsAddingBarber(false);
     setEditingBarber(null);
+    
+    // Invalidate related queries
+    queryClient.invalidateQueries({ queryKey: ['barbers'] });
+    queryClient.invalidateQueries({ queryKey: ['staff'] });
+    queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
+          <p className="text-muted-foreground">Gerencie os barbeiros e suas permissões no sistema</p>
+        </div>
         {!isAddingBarber && !editingBarber && (
           <Button onClick={handleAddBarber}>
             <Plus className="mr-2 h-4 w-4" /> Novo Barbeiro

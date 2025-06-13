@@ -13,8 +13,10 @@ const AdminBarbers: React.FC = () => {
     <AdminRoute>
       <AdminLayout>
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
-          <p className="text-gray-500">Gerencie os barbeiros e suas permissões no sistema</p>
+          <div>
+            <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
+            <p className="text-gray-500">Gerencie os barbeiros e suas permissões no sistema</p>
+          </div>
 
           <Tabs defaultValue="barbers" className="space-y-4">
             <TabsList>
@@ -29,11 +31,7 @@ const AdminBarbers: React.FC = () => {
             </TabsList>
             
             <TabsContent value="barbers">
-              <Card>
-                <CardContent className="pt-6">
-                  <BarberManagement />
-                </CardContent>
-              </Card>
+              <BarberManagement />
             </TabsContent>
             
             <TabsContent value="roles">

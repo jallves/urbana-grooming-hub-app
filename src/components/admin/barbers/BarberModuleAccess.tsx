@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { CheckIcon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
-import { supabaseRPC } from '@/types/supabase-rpc';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BarberModuleAccessProps {
   barberId: string;
@@ -24,7 +23,6 @@ export function BarberModuleAccess({ barberId, onSuccess }: BarberModuleAccessPr
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Load current module access
   useEffect(() => {
@@ -34,18 +32,23 @@ export function BarberModuleAccess({ barberId, onSuccess }: BarberModuleAccessPr
       setLoading(true);
       try {
         console.log("Fetching module access for barber ID:", barberId);
-        const response = await supabaseRPC.getStaffModuleAccess(barberId);
         
-        if (response.error) {
-          console.error('Error loading module access:', response.error);
+        const { data, error } = await supabase
+          .from('staff_module_access')
+          .select('module_id')
+          .eq('staff_id', barberId);
+        
+        if (error) {
+          console.error('Error loading module access:', error);
           toast({
             title: "Erro ao carregar permissões",
             description: "Não foi possível carregar as permissões de acesso",
             variant: "destructive"
           });
         } else {
-          console.log("Module access data received:", response.data);
-          setSelectedModules(response.data || []);
+          console.log("Module access data received:", data);
+          const modules = data?.map(item => item.module_id) || [];
+          setSelectedModules(modules);
         }
       } catch (error) {
         console.error('Error in fetchModuleAccess:', error);
@@ -56,7 +59,6 @@ export function BarberModuleAccess({ barberId, onSuccess }: BarberModuleAccessPr
         });
       } finally {
         setLoading(false);
-        setInitialLoaded(true);
       }
     };
 
@@ -81,23 +83,40 @@ export function BarberModuleAccess({ barberId, onSuccess }: BarberModuleAccessPr
     setSaving(true);
     try {
       console.log("Saving module access for barber ID:", barberId, "modules:", selectedModules);
-      const response = await supabaseRPC.updateStaffModuleAccess(barberId, selectedModules);
       
-      if (response.error) {
-        console.error('Error saving module access:', response.error);
-        toast({
-          title: "Erro ao salvar permissões",
-          description: "Não foi possível atualizar as permissões de acesso",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Permissões atualizadas",
-          description: "As permissões de acesso foram atualizadas com sucesso",
-          variant: "default"
-        });
-        if (onSuccess) onSuccess();
+      // Delete existing access first
+      const { error: deleteError } = await supabase
+        .from('staff_module_access')
+        .delete()
+        .eq('staff_id', barberId);
+        
+      if (deleteError) {
+        throw deleteError;
       }
+      
+      // Insert new access if there are selected modules
+      if (selectedModules.length > 0) {
+        const accessData = selectedModules.map(moduleId => ({
+          staff_id: barberId,
+          module_id: moduleId
+        }));
+        
+        const { error: insertError } = await supabase
+          .from('staff_module_access')
+          .insert(accessData);
+          
+        if (insertError) {
+          throw insertError;
+        }
+      }
+      
+      toast({
+        title: "Permissões atualizadas",
+        description: "As permissões de acesso foram atualizadas com sucesso",
+        variant: "default"
+      });
+      
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error('Error in saveModuleAccess:', error);
       toast({
@@ -110,7 +129,7 @@ export function BarberModuleAccess({ barberId, onSuccess }: BarberModuleAccessPr
     }
   };
 
-  if (loading && !initialLoaded) {
+  if (loading) {
     return (
       <div className="flex justify-center py-8">
         <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
