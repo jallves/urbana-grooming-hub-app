@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,43 +5,52 @@ import BarberList from './BarberList';
 import BarberForm from './BarberForm';
 import { Button } from '@/components/ui/button';
 import { Plus, Shield, Info } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card, CardContent, CardHeader, CardTitle, CardDescription
+} from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
+// ---- MODE ENUM ----
+type Mode = 'viewing' | 'adding' | 'editing';
+
+const fetchBarbers = async () => {
+  const { data, error } = await supabase
+    .from('staff')
+    .select('*')
+    .eq('role', 'barber')
+    .order('name');
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const BarberManagement: React.FC = () => {
-  const [isAddingBarber, setIsAddingBarber] = useState(false);
-  const [editingBarber, setEditingBarber] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>('viewing');
+  const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: barbers, isLoading, error, refetch } = useQuery({
+  const {
+    data: barbers,
+    isLoading,
+    error,
+    refetch
+  } = useQuery({
     queryKey: ['barbers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('role', 'barber')
-        .order('name');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
-      return data;
-    }
+    queryFn: fetchBarbers,
   });
 
-  // Set up real-time subscription for staff changes
+  // Real-time updates via Supabase channel
   useEffect(() => {
     const channel = supabase
       .channel('barber-changes')
       .on(
         'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
+        {
+          event: '*',
+          schema: 'public',
           table: 'staff',
-          filter: 'role=eq.barber'
+          filter: 'role=eq.barber',
         },
         (payload) => {
           console.log('Barber data changed:', payload);
@@ -58,59 +66,65 @@ const BarberManagement: React.FC = () => {
     };
   }, [refetch, queryClient]);
 
-  if (error) {
-    toast.error('Erro ao carregar barbeiros', {
-      description: (error as Error).message
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast.error('Erro ao carregar barbeiros', {
+        description: (error as Error).message,
+      });
+    }
+  }, [error]);
 
   const handleAddBarber = () => {
-    setEditingBarber(null);
-    setIsAddingBarber(true);
+    setEditingBarberId(null);
+    setMode('adding');
   };
 
   const handleEditBarber = (id: string) => {
-    setIsAddingBarber(false);
-    setEditingBarber(id);
+    setEditingBarberId(id);
+    setMode('editing');
   };
 
   const handleCancelForm = () => {
-    setIsAddingBarber(false);
-    setEditingBarber(null);
+    setMode('viewing');
+    setEditingBarberId(null);
   };
 
   const handleSuccess = () => {
+    setMode('viewing');
+    setEditingBarberId(null);
     refetch();
-    setIsAddingBarber(false);
-    setEditingBarber(null);
-    
-    // Invalidate related queries
     queryClient.invalidateQueries({ queryKey: ['barbers'] });
     queryClient.invalidateQueries({ queryKey: ['staff'] });
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
+
+  const isFormVisible = mode === 'adding' || mode === 'editing';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
-          <p className="text-muted-foreground">Gerencie os barbeiros e suas permissões no sistema</p>
+          <p className="text-muted-foreground">
+            Gerencie os barbeiros e suas permissões no sistema
+          </p>
         </div>
-        {!isAddingBarber && !editingBarber && (
+
+        {mode === 'viewing' && (
           <Button onClick={handleAddBarber}>
-            <Plus className="mr-2 h-4 w-4" /> Novo Barbeiro
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Barbeiro
           </Button>
         )}
       </div>
 
-      {!isAddingBarber && !editingBarber && (
+      {mode === 'viewing' && (
         <>
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" no módulo de profissionais. 
-              Para adicionar um novo barbeiro, você pode usar o botão "Novo Barbeiro" aqui ou ir ao módulo de profissionais e criar um profissional com categoria "Barbeiro".
+              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" no módulo de profissionais.
+              Para adicionar um novo barbeiro, use o botão "Novo Barbeiro" ou vá ao módulo de profissionais e crie um com categoria "Barbeiro".
             </AlertDescription>
           </Alert>
 
@@ -129,19 +143,19 @@ const BarberManagement: React.FC = () => {
         </>
       )}
 
-      {(isAddingBarber || editingBarber) && (
+      {isFormVisible && (
         <Card>
           <CardHeader>
-            <CardTitle>{editingBarber ? 'Editar Barbeiro' : 'Novo Barbeiro'}</CardTitle>
+            <CardTitle>{mode === 'editing' ? 'Editar Barbeiro' : 'Novo Barbeiro'}</CardTitle>
             <CardDescription>
-              {editingBarber 
-                ? 'Edite as informações e permissões do barbeiro' 
+              {mode === 'editing'
+                ? 'Edite as informações e permissões do barbeiro'
                 : 'Preencha as informações para cadastrar um novo barbeiro no sistema. A categoria será automaticamente definida como "Barbeiro".'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <BarberForm 
-              barberId={editingBarber}
+            <BarberForm
+              barberId={editingBarberId}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
             />
@@ -149,7 +163,7 @@ const BarberManagement: React.FC = () => {
         </Card>
       )}
 
-      <BarberList 
+      <BarberList
         barbers={barbers || []}
         isLoading={isLoading}
         onEdit={handleEditBarber}
