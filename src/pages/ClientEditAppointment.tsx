@@ -179,6 +179,7 @@ export default function ClientEditAppointment() {
             <CardContent className="pt-6">
               <ClientAppointmentForm 
                 clientId={client.id}
+                appointmentId={id}
                 initialData={{
                   serviceId: appointment.service_id,
                   staffId: appointment.staff_id,

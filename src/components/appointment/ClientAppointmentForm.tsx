@@ -16,11 +16,20 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar, Clock, Scissors, User } from 'lucide-react';
 
-interface ClientAppointmentFormProps {
-  clientId: string;
+interface InitialAppointmentData {
+  serviceId: string;
+  staffId: string;
+  date: Date;
+  notes: string;
 }
 
-export default function ClientAppointmentForm({ clientId }: ClientAppointmentFormProps) {
+interface ClientAppointmentFormProps {
+  clientId: string;
+  initialData?: InitialAppointmentData;
+  appointmentId?: string;
+}
+
+export default function ClientAppointmentForm({ clientId, initialData, appointmentId }: ClientAppointmentFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const {
@@ -41,7 +50,7 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
     removeCoupon,
     fetchAvailableTimes,
     checkBarberAvailability,
-  } = useClientAppointmentForm(clientId);
+  } = useClientAppointmentForm(clientId, initialData);
 
   // Calculate final price correctly
   const finalPrice = selectedService 
@@ -88,22 +97,36 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
 
       console.log('Enviando dados do agendamento:', appointmentData);
 
-      const { error } = await supabase
-        .from('appointments')
-        .insert([appointmentData]);
+      let result;
+      if (appointmentId) {
+        // Update existing appointment
+        result = await supabase
+          .from('appointments')
+          .update(appointmentData)
+          .eq('id', appointmentId);
+      } else {
+        // Create new appointment
+        result = await supabase
+          .from('appointments')
+          .insert([appointmentData]);
+      }
 
-      if (error) {
-        console.error("Erro ao criar agendamento:", error);
-        throw new Error(error.message || "Não foi possível criar o agendamento.");
+      if (result.error) {
+        console.error("Erro ao salvar agendamento:", result.error);
+        throw new Error(result.error.message || "Não foi possível salvar o agendamento.");
       }
 
       // Saudação de confirmação personalizada
       const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
       const formattedTime = format(selectedDate, "HH:mm", { locale: ptBR });
       
+      const successMessage = appointmentId 
+        ? `Seu agendamento de ${selectedService.name} foi atualizado com sucesso para ${formattedDate} às ${formattedTime}.`
+        : `Seu agendamento de ${selectedService.name} foi confirmado com sucesso para ${formattedDate} às ${formattedTime}. Nos vemos em breve!`;
+
       toast({
-        title: "🎉 Parabéns! Agendamento Confirmado",
-        description: `Seu agendamento de ${selectedService.name} foi confirmado com sucesso para ${formattedDate} às ${formattedTime}. Nos vemos em breve!`,
+        title: appointmentId ? "🎉 Agendamento Atualizado!" : "🎉 Parabéns! Agendamento Confirmado",
+        description: successMessage,
         duration: 8000,
       });
 
@@ -113,10 +136,10 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       }, 2000);
 
     } catch (error: any) {
-      console.error('Erro ao criar agendamento:', error);
+      console.error('Erro ao salvar agendamento:', error);
       toast({
         title: "Erro ao agendar",
-        description: error.message || "Não foi possível criar o agendamento. Tente novamente.",
+        description: error.message || "Não foi possível salvar o agendamento. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -138,10 +161,10 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 font-playfair">
-          Agendar Horário
+          {appointmentId ? 'Editar Agendamento' : 'Agendar Horário'}
         </h1>
         <p className="text-gray-300 text-lg">
-          Reserve seu momento de cuidado pessoal
+          {appointmentId ? 'Modifique os detalhes do seu agendamento' : 'Reserve seu momento de cuidado pessoal'}
         </p>
       </div>
 
@@ -266,10 +289,10 @@ export default function ClientAppointmentForm({ clientId }: ClientAppointmentFor
                 {loading || isSending ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
-                    Agendando...
+                    {appointmentId ? 'Atualizando...' : 'Agendando...'}
                   </div>
                 ) : (
-                  "Confirmar Agendamento"
+                  appointmentId ? "Atualizar Agendamento" : "Confirmar Agendamento"
                 )}
               </Button>
             </div>
