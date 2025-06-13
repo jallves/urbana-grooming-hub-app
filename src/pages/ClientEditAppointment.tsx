@@ -1,293 +1,191 @@
+
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Calendar, Loader2 } from 'lucide-react';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Calendar, Clock, User, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import ClientAppointmentForm from '@/components/appointment/ClientAppointmentForm';
 
 interface Appointment {
   id: string;
+  service_id: string;
+  staff_id: string;
   start_time: string;
-  end_time: string;
-  status: string;
-  notes: string | null;
-  coupon_code: string | null;
-  discount_amount: number;
-  service: {
-    id: string;
+  notes?: string;
+  services: {
     name: string;
     price: number;
-    duration: number;
   };
   staff: {
-    id: string;
     name: string;
-  } | null;
-}
-
-interface Barber {
-  id: string;
-  name: string;
-  email: string;
-  avatar_url: string | null;
+  };
 }
 
 export default function ClientEditAppointment() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { client } = useClientAuth();
   const { toast } = useToast();
   const [appointment, setAppointment] = useState<Appointment | null>(null);
-  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!client) {
-      navigate('/cliente/login');
-      return;
-    }
-    
-    if (!id) {
-      navigate('/cliente/dashboard');
-      return;
-    }
+    const fetchAppointment = async () => {
+      if (!client?.id || !id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            services (name, price),
+            staff (name)
+          `)
+          .eq('id', id)
+          .eq('client_id', client.id)
+          .single();
+
+        if (error) {
+          console.error('Erro ao buscar agendamento:', error);
+          setError('Agendamento não encontrado');
+          return;
+        }
+
+        if (data) {
+          setAppointment(data);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar agendamento:', err);
+        setError('Erro ao carregar agendamento');
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchAppointment();
-    fetchBarbers();
-  }, [client, id, navigate]);
+  }, [client?.id, id]);
 
-  const fetchAppointment = async () => {
-    if (!client || !id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          id,
-          start_time,
-          end_time,
-          status,
-          notes,
-          coupon_code,
-          discount_amount,
-          service:services(id, name, price, duration),
-          staff:staff(id, name)
-        `)
-        .eq('id', id)
-        .eq('client_id', client.id)
-        .single();
-
-      if (error) {
-        console.error('Erro ao buscar agendamento:', error);
-        toast({
-          title: "Erro",
-          description: "Agendamento não encontrado.",
-          variant: "destructive",
-        });
-        navigate('/cliente/dashboard');
-        return;
-      }
-
-      const appointmentDate = new Date(data.start_time);
-      const now = new Date();
-      
-      if (appointmentDate <= now || data.status !== 'scheduled') {
-        toast({
-          title: "Não é possível editar",
-          description: "Este agendamento não pode mais ser editado.",
-          variant: "destructive",
-        });
-        navigate('/cliente/dashboard');
-        return;
-      }
-
-      setAppointment(data);
-    } catch (error) {
-      console.error('Erro ao buscar agendamento:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar o agendamento.",
-        variant: "destructive",
-      });
-      navigate('/cliente/dashboard');
-    }
-  };
-
-  const fetchBarbers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('id, name, email, avatar_url')
-        .eq('is_active', true)
-        .order('name', { ascending: true });
-
-      if (error) {
-        console.error('Erro ao buscar barbeiros:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar a lista de barbeiros.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setBarbers(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar barbeiros:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao carregar os barbeiros.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (!client) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-urbana-gold mx-auto mb-4" />
-          <p className="text-gray-600">Carregando agendamento...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mx-auto"></div>
+          <p className="mt-4 text-stone-300">Carregando...</p>
         </div>
       </div>
     );
   }
 
-  if (!appointment) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Agendamento não encontrado</CardTitle>
-            <CardDescription>
-              O agendamento que você está tentando editar não foi encontrado.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => navigate('/cliente/dashboard')}
-              className="w-full"
-            >
-              Voltar ao Dashboard
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-amber-500 mx-auto" />
+          <p className="mt-4 text-stone-300 text-lg">Carregando agendamento...</p>
+        </div>
       </div>
     );
   }
 
+  if (error || !appointment) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800">
+        <div className="bg-stone-900/80 backdrop-blur-sm border-b border-stone-700">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center py-6">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/cliente/dashboard')}
+                className="mr-4 text-stone-100 hover:bg-stone-700/50 hover:text-white"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-center px-6 py-16">
+          <Card className="bg-red-900/20 border border-red-700 max-w-md w-full">
+            <CardContent className="pt-6 text-center">
+              <div className="text-red-400 text-4xl mb-4">⚠</div>
+              <h3 className="text-xl font-semibold text-red-400 mb-2">
+                {error || 'Agendamento não encontrado'}
+              </h3>
+              <p className="text-red-300 mb-4">
+                Não foi possível carregar o agendamento solicitado.
+              </p>
+              <Button 
+                onClick={() => navigate('/cliente/dashboard')}
+                className="bg-amber-500 hover:bg-amber-600 text-black"
+              >
+                Voltar ao Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const appointmentDate = new Date(appointment.start_time);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-stone-900/80 backdrop-blur-sm border-b border-stone-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center py-6">
             <Button
               variant="ghost"
               onClick={() => navigate('/cliente/dashboard')}
-              className="mr-4"
+              className="mr-4 text-stone-100 hover:bg-stone-700/50 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Editar Agendamento</h1>
-              <p className="text-gray-600">Modifique os detalhes do seu agendamento</p>
+            <div className="flex items-center gap-3">
+              <Calendar className="h-6 w-6 text-amber-500" />
+              <div>
+                <h1 className="text-2xl font-bold text-white">
+                  Editar Agendamento
+                </h1>
+                <p className="text-stone-300">
+                  {appointment.services?.name} - {appointment.staff?.name}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Current Appointment Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Agendamento Atual</CardTitle>
-              <CardDescription>
-                Informações do agendamento que será modificado
+      <div className="flex justify-center px-6 py-8">
+        <div className="w-full max-w-4xl">
+          <Card className="bg-stone-800/50 border border-stone-700 rounded-lg">
+            <CardHeader className="border-b border-stone-700">
+              <CardTitle className="text-white flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-amber-500" />
+                Modificar seu agendamento
+              </CardTitle>
+              <CardDescription className="text-stone-400">
+                Altere os detalhes do seu agendamento conforme necessário
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <User className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="font-medium">{appointment.service.name}</p>
-                  <p className="text-sm text-gray-600">
-                    R$ {appointment.service.price.toFixed(2)} - {appointment.service.duration} min
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="font-medium">
-                    {format(new Date(appointment.start_time), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {format(new Date(appointment.start_time), "EEEE", { locale: ptBR })}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <Clock className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="font-medium">
-                    {format(new Date(appointment.start_time), "HH:mm")} - {format(new Date(appointment.end_time), "HH:mm")}
-                  </p>
-                </div>
-              </div>
-
-              {appointment.staff && (
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium">Profissional</p>
-                    <p className="text-sm text-gray-600">{appointment.staff.name}</p>
-                  </div>
-                </div>
-              )}
-
-              {appointment.notes && (
-                <div>
-                  <p className="font-medium mb-1">Observações</p>
-                  <p className="text-sm text-gray-600">{appointment.notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Edit Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Novo Agendamento</CardTitle>
-              <CardDescription>
-                Selecione as novas informações para seu agendamento
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {client && (
-                <ClientAppointmentForm 
-                  clientId={client.id} 
-                  barbers={barbers}
-                  initialData={{
-                    serviceId: appointment.service.id,
-                    staffId: appointment.staff?.id,
-                    date: new Date(appointment.start_time),
-                    notes: appointment.notes || ''
-                  }}
-                />
-              )}
+            <CardContent className="pt-6">
+              <ClientAppointmentForm 
+                clientId={client.id}
+                initialData={{
+                  serviceId: appointment.service_id,
+                  staffId: appointment.staff_id,
+                  date: appointmentDate,
+                  notes: appointment.notes || '',
+                }}
+              />
             </CardContent>
           </Card>
         </div>

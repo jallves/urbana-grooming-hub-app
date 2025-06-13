@@ -69,9 +69,9 @@ export function BarberSelectionField({
           {activeBarbers.length === 0 && (
             <Alert className="mt-2 bg-yellow-900/20 border-yellow-700">
               <AlertTriangle className="h-4 w-4 text-yellow-400" />
-              <AlertTitle className="text-yellow-400">Nenhum barbeiro disponível</AlertTitle>
+              <AlertTitle className="text-yellow-400">Sistema em configuração</AlertTitle>
               <AlertDescription className="text-yellow-300">
-                Não há barbeiros ativos cadastrados no sistema. Entre em contato com o estabelecimento ou verifique se há barbeiros ativos no painel administrativo.
+                Os barbeiros estão sendo configurados no sistema. Por favor, entre em contato conosco pelo WhatsApp para agendar seu horário ou tente novamente mais tarde.
               </AlertDescription>
             </Alert>
           )}
@@ -84,7 +84,11 @@ export function BarberSelectionField({
             <FormControl>
               <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white focus:border-urbana-gold focus:ring-urbana-gold/20">
                 <User className="mr-2 h-4 w-4" />
-                <SelectValue placeholder={activeBarbers.length === 0 ? "Nenhum barbeiro ativo disponível" : "Selecione um barbeiro"} />
+                <SelectValue placeholder={
+                  activeBarbers.length === 0 
+                    ? "Entre em contato conosco" 
+                    : "Selecione um barbeiro"
+                } />
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-zinc-800 border-zinc-600">
