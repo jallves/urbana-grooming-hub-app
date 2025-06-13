@@ -50,17 +50,16 @@ export const useAvailability = () => {
 
     setIsCheckingAvailability(true);
     try {
-      console.log('Verificando disponibilidade dos barbeiros ativos...');
+      console.log('Verificando disponibilidade dos barbeiros...');
       
-      // Buscar apenas barbeiros ativos da tabela staff
+      // Buscar todos os barbeiros da tabela staff
       const { data: staffMembers, error } = await supabase
         .from('staff')
         .select('id, name, is_active')
-        .eq('is_active', true)
         .order('name', { ascending: true });
 
       if (error) {
-        console.error("Erro ao buscar barbeiros ativos:", error);
+        console.error("Erro ao buscar barbeiros:", error);
         toast({
           title: "Erro",
           description: "Não foi possível verificar a disponibilidade dos barbeiros.",
@@ -71,22 +70,22 @@ export const useAvailability = () => {
       }
 
       if (!staffMembers || staffMembers.length === 0) {
-        console.log('Nenhum barbeiro ativo encontrado para verificação de disponibilidade');
+        console.log('Nenhum barbeiro encontrado para verificação de disponibilidade');
         setBarberAvailability([]);
         return;
       }
 
-      console.log('Barbeiros ativos encontrados para verificação:', staffMembers);
+      console.log('Barbeiros encontrados para verificação:', staffMembers);
 
-      // Por enquanto, marcar todos os barbeiros ativos como disponíveis
-      // No futuro, isso poderia verificar a disponibilidade real contra agendamentos
+      // Marcar todos os barbeiros como disponíveis por enquanto
+      // Verificação real de conflitos seria implementada aqui
       const availability = staffMembers.map(staff => ({
         id: staff.id,
         name: staff.name,
-        available: true
+        available: staff.is_active || false
       }));
 
-      console.log('Disponibilidade dos barbeiros ativos:', availability);
+      console.log('Disponibilidade dos barbeiros:', availability);
       setBarberAvailability(availability);
     } catch (error) {
       console.error("Erro ao verificar disponibilidade do barbeiro:", error);

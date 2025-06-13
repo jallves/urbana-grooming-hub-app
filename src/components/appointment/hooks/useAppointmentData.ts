@@ -45,16 +45,15 @@ export const useAppointmentData = () => {
   useEffect(() => {
     const fetchBarbers = async () => {
       try {
-        console.log('Buscando barbeiros ativos para formulário de agendamento...');
+        console.log('Buscando todos os barbeiros para formulário de agendamento...');
         
         const { data, error } = await supabase
           .from('staff')
           .select('*')
-          .eq('is_active', true)
           .order('name', { ascending: true });
 
         if (error) {
-          console.error("Erro ao buscar barbeiros ativos:", error);
+          console.error("Erro ao buscar barbeiros:", error);
           toast({
             title: "Erro",
             description: "Não foi possível carregar os barbeiros.",
@@ -63,19 +62,14 @@ export const useAppointmentData = () => {
           return;
         }
 
-        console.log('Barbeiros ativos encontrados para agendamento:', data?.length || 0, data);
+        console.log('Todos os barbeiros encontrados:', data?.length || 0, data);
         
         if (data && data.length > 0) {
           setBarbers(data);
-          console.log(`${data.length} barbeiro(s) ativo(s) carregado(s) com sucesso`);
+          console.log(`${data.length} barbeiro(s) carregado(s) com sucesso`);
         } else {
-          console.log('Nenhum barbeiro ativo encontrado no banco de dados');
+          console.log('Nenhum barbeiro encontrado no banco de dados');
           setBarbers([]);
-          toast({
-            title: "Aviso",
-            description: "Nenhum barbeiro ativo encontrado. Verifique se há barbeiros cadastrados e ativos no sistema.",
-            variant: "destructive",
-          });
         }
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);
