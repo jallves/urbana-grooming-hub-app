@@ -50,16 +50,17 @@ export const useAvailability = () => {
 
     setIsCheckingAvailability(true);
     try {
-      console.log('Verificando disponibilidade dos barbeiros...');
+      console.log('Verificando disponibilidade dos barbeiros para:', { date, time, serviceId });
       
-      // Buscar todos os barbeiros da tabela staff
-      const { data: staffMembers, error } = await supabase
+      // Buscar todos os barbeiros ativos
+      const { data: staffMembers, error: staffError } = await supabase
         .from('staff')
         .select('id, name, is_active')
+        .eq('is_active', true)
         .order('name', { ascending: true });
 
-      if (error) {
-        console.error("Erro ao buscar barbeiros:", error);
+      if (staffError) {
+        console.error("Erro ao buscar barbeiros:", staffError);
         toast({
           title: "Erro",
           description: "Não foi possível verificar a disponibilidade dos barbeiros.",
@@ -70,28 +71,108 @@ export const useAvailability = () => {
       }
 
       if (!staffMembers || staffMembers.length === 0) {
-        console.log('Nenhum barbeiro encontrado para verificação de disponibilidade');
+        console.log('Nenhum barbeiro ativo encontrado');
         setBarberAvailability([]);
         return;
       }
 
-      console.log('Barbeiros encontrados para verificação:', staffMembers);
+      console.log('Barbeiros ativos encontrados:', staffMembers);
 
-      // Marcar todos os barbeiros como disponíveis por enquanto
-      // Verificação real de conflitos seria implementada aqui
-      const availability = staffMembers.map(staff => ({
-        id: staff.id,
-        name: staff.name,
-        available: staff.is_active || false
+      // Buscar duração do serviço
+      const { data: serviceData, error: serviceError } = await supabase
+        .from('services')
+        .select('duration')
+        .eq('id', serviceId)
+        .single();
+
+      if (serviceError || !serviceData) {
+        console.error("Erro ao buscar duração do serviço:", serviceError);
+        // Se não conseguir buscar a duração, usar 60 minutos como padrão
+        var serviceDuration = 60;
+      } else {
+        var serviceDuration = serviceData.duration;
+      }
+
+      // Calcular horário de início e fim do agendamento
+      const [hours, minutes] = time.split(':').map(Number);
+      const startTime = new Date(date);
+      startTime.setHours(hours, minutes, 0, 0);
+      
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + serviceDuration);
+
+      console.log(`Verificando conflitos entre ${startTime.toISOString()} e ${endTime.toISOString()}`);
+
+      // Verificar disponibilidade para cada barbeiro
+      const availability = await Promise.all(staffMembers.map(async (staff) => {
+        try {
+          // Buscar agendamentos do barbeiro no mesmo dia
+          const { data: appointments, error: appointmentError } = await supabase
+            .from('appointments')
+            .select('id, start_time, end_time, status')
+            .eq('staff_id', staff.id)
+            .gte('start_time', startTime.toISOString().split('T')[0] + 'T00:00:00.000Z')
+            .lt('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T00:00:00.000Z')
+            .in('status', ['scheduled', 'confirmed']);
+
+          if (appointmentError) {
+            console.error(`Erro ao verificar agendamentos para ${staff.name}:`, appointmentError);
+            return {
+              id: staff.id,
+              name: staff.name,
+              available: false
+            };
+          }
+
+          console.log(`Agendamentos encontrados para ${staff.name}:`, appointments);
+
+          // Verificar se há conflito de horário
+          let hasConflict = false;
+          if (appointments && appointments.length > 0) {
+            hasConflict = appointments.some(appointment => {
+              const appStart = new Date(appointment.start_time);
+              const appEnd = new Date(appointment.end_time);
+              
+              // Verificar sobreposição
+              const conflict = startTime < appEnd && endTime > appStart;
+              
+              if (conflict) {
+                console.log(`Conflito encontrado para ${staff.name}:`, {
+                  existente: `${appStart.toISOString()} - ${appEnd.toISOString()}`,
+                  novo: `${startTime.toISOString()} - ${endTime.toISOString()}`
+                });
+              }
+              
+              return conflict;
+            });
+          }
+
+          const isAvailable = !hasConflict;
+          console.log(`${staff.name} está ${isAvailable ? 'disponível' : 'indisponível'}`);
+
+          return {
+            id: staff.id,
+            name: staff.name,
+            available: isAvailable
+          };
+        } catch (error) {
+          console.error(`Erro ao verificar disponibilidade para ${staff.name}:`, error);
+          return {
+            id: staff.id,
+            name: staff.name,
+            available: false
+          };
+        }
       }));
 
-      console.log('Disponibilidade dos barbeiros:', availability);
+      console.log('Resultado final da verificação de disponibilidade:', availability);
       setBarberAvailability(availability);
+
     } catch (error) {
-      console.error("Erro ao verificar disponibilidade do barbeiro:", error);
+      console.error("Erro ao verificar disponibilidade dos barbeiros:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível verificar a disponibilidade do barbeiro.",
+        description: "Não foi possível verificar a disponibilidade dos barbeiros.",
         variant: "destructive",
       });
       setBarberAvailability([]);
