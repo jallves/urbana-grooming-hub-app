@@ -23,7 +23,7 @@ import { Control } from 'react-hook-form';
 import {
   FormData,
   BarberAvailabilityInfo,
-} from '@/hooks/useClientAppointmentForm';
+} from 'src/components/appointment/hooks/useClientAppointmentForm.ts';
 import { StaffMember } from '@/types/appointment';
 
 interface BarberSelectionFieldProps {
