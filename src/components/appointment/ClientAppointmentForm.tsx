@@ -2,22 +2,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { useClientAppointmentForm } from '@/hooks/useClientAppointmentForm';
-import { ServiceSelectionField } from '@/components/ServiceSelectionField';
-import { DateTimeSelectionFields } from '@/components/DateTimeSelectionFields';
-import { BarberSelectionField } from '@/components/BarberSelectionField';
-import { BarberDebugInfo } from '@/components/BarberDebugInfo';
-import { AppointmentSummary } from '@/components/AppointmentSummary';
-import { CouponField } from '@/components/CouponField';
+import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
+import { ServiceSelectionField } from './components/ServiceSelectionField';
+import { DateTimeSelectionFields } from './components/DateTimeSelectionFields';
+import { BarberSelectionField } from './components/BarberSelectionField';
+import { BarberDebugInfo } from './components/BarberDebugInfo';
+import { AppointmentSummary } from './components/AppointmentSummary';
+import { CouponField } from './components/CouponField';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -60,31 +53,28 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
-  const { control, getValues, handleSubmit, formState } = form;
-  const selectedDate = getValues('date');
-  const selectedTime = getValues('time');
-
+  // Calculate final price correctly
   const finalPrice = selectedService 
     ? appliedCoupon 
-      ? Math.max(0, selectedService.price - appliedCoupon.discountAmount)
+      ? selectedService.price - appliedCoupon.discountAmount
       : selectedService.price
     : 0;
 
   const onSubmit = async (data: any) => {
     if (!selectedService) {
       toast({
-        title: 'Erro',
-        description: 'Por favor, selecione um serviço.',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Por favor, selecione um serviço.",
+        variant: "destructive",
       });
       return;
     }
 
     if (!data.date || !data.time) {
       toast({
-        title: 'Erro',
-        description: 'Por favor, selecione uma data e horário.',
-        variant: 'destructive',
+        title: "Erro", 
+        description: "Por favor, selecione uma data e horário.",
+        variant: "destructive",
       });
       return;
     }
@@ -106,35 +96,52 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
         status: 'scheduled',
       };
 
+      console.log('Enviando dados do agendamento:', appointmentData);
+
       let result;
       if (appointmentId) {
-        result = await supabase.from('appointments').update(appointmentData).eq('id', appointmentId);
+        // Update existing appointment
+        result = await supabase
+          .from('appointments')
+          .update(appointmentData)
+          .eq('id', appointmentId);
       } else {
-        result = await supabase.from('appointments').insert([appointmentData]);
+        // Create new appointment
+        result = await supabase
+          .from('appointments')
+          .insert([appointmentData]);
       }
 
       if (result.error) {
-        const detailed = result.error.details || result.error.message;
-        throw new Error(detailed || 'Não foi possível salvar o agendamento.');
+        console.error("Erro ao salvar agendamento:", result.error);
+        throw new Error(result.error.message || "Não foi possível salvar o agendamento.");
       }
 
+      // Saudação de confirmação personalizada
       const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-      const formattedTime = format(selectedDate, 'HH:mm', { locale: ptBR });
+      const formattedTime = format(selectedDate, "HH:mm", { locale: ptBR });
+      
+      const successMessage = appointmentId 
+        ? `Seu agendamento de ${selectedService.name} foi atualizado com sucesso para ${formattedDate} às ${formattedTime}.`
+        : `Seu agendamento de ${selectedService.name} foi confirmado com sucesso para ${formattedDate} às ${formattedTime}. Nos vemos em breve!`;
 
       toast({
-        title: appointmentId ? '🎉 Agendamento Atualizado!' : '🎉 Parabéns! Agendamento Confirmado',
-        description: `${appointmentId ? 'Seu agendamento de' : 'Seu agendamento de'} ${selectedService.name} foi ${appointmentId ? 'atualizado' : 'confirmado'} com sucesso para ${formattedDate} às ${formattedTime}. Nos vemos em breve!`,
+        title: appointmentId ? "🎉 Agendamento Atualizado!" : "🎉 Parabéns! Agendamento Confirmado",
+        description: successMessage,
         duration: 8000,
       });
 
+      // Navigate back to dashboard after successful submission
       setTimeout(() => {
         navigate('/cliente/dashboard');
       }, 2000);
+
     } catch (error: any) {
+      console.error('Erro ao salvar agendamento:', error);
       toast({
-        title: 'Erro ao agendar',
-        description: error.message || 'Não foi possível salvar o agendamento. Tente novamente.',
-        variant: 'destructive',
+        title: "Erro ao agendar",
+        description: error.message || "Não foi possível salvar o agendamento. Tente novamente.",
+        variant: "destructive",
       });
     }
   };
@@ -152,6 +159,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
+      {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 font-playfair">
           {appointmentId ? 'Editar Agendamento' : 'Agendar Horário'}
@@ -161,9 +169,11 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
         </p>
       </div>
 
+      {/* Form Card */}
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 md:p-8 shadow-2xl">
         <Form {...form}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Service Selection */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-urbana-gold/20 rounded-lg">
@@ -171,9 +181,14 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
                 </div>
                 <h3 className="text-xl font-semibold text-white">Escolha seu Serviço</h3>
               </div>
-              <ServiceSelectionField control={control} services={services} onServiceSelect={setSelectedService} />
+              <ServiceSelectionField 
+                control={form.control} 
+                services={services}
+                onServiceSelect={setSelectedService}
+              />
             </div>
 
+            {/* Date and Time Selection */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -182,15 +197,16 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
                 <h3 className="text-xl font-semibold text-white">Data e Horário</h3>
               </div>
               <DateTimeSelectionFields
-                control={control}
+                control={form.control}
                 selectedService={selectedService}
                 availableTimes={availableTimes}
                 disabledDays={disabledDays}
-                getFieldValue={getValues}
+                getFieldValue={form.getValues}
                 fetchAvailableTimes={fetchAvailableTimes}
               />
             </div>
 
+            {/* Barber Selection */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-green-500/20 rounded-lg">
@@ -199,16 +215,23 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
                 <h3 className="text-xl font-semibold text-white">Escolha seu Barbeiro</h3>
               </div>
               <BarberSelectionField
-                control={control}
+                control={form.control}
                 barbers={barbers}
                 barberAvailability={barberAvailability}
                 isCheckingAvailability={isCheckingAvailability}
-                getFieldValue={getValues}
+                getFieldValue={form.getValues}
                 checkBarberAvailability={checkBarberAvailability}
               />
-              <BarberDebugInfo barbers={barbers} barberAvailability={barberAvailability} isCheckingAvailability={isCheckingAvailability} />
+              
+              {/* Debug Info - só aparece em desenvolvimento */}
+              <BarberDebugInfo 
+                barbers={barbers}
+                barberAvailability={barberAvailability}
+                isCheckingAvailability={isCheckingAvailability}
+              />
             </div>
 
+            {/* Coupon Field */}
             {selectedService && (
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-white">Cupom de Desconto</h3>
@@ -224,18 +247,18 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
               </div>
             )}
 
+            {/* Notes */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-white">Observações</h3>
               <FormField
-                control={control}
+                control={form.control}
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
-                      <Textarea
-                        placeholder="Informe detalhes adicionais sobre o seu agendamento (opcional)"
-                        className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20 resize-none min-h-[100px]"
-                        aria-describedby="notes-description"
+                      <Textarea 
+                        placeholder="Informe detalhes adicionais sobre o seu agendamento (opcional)" 
+                        className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20 resize-none min-h-[100px]" 
                         {...field}
                       />
                     </FormControl>
@@ -245,23 +268,20 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
               />
             </div>
 
+            {/* Appointment Summary */}
             <div className="bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/20 border border-urbana-gold/30 rounded-xl p-6">
               <AppointmentSummary
                 selectedService={selectedService}
-                selectedDate={selectedDate}
-                selectedTime={selectedTime}
+                selectedDate={form.getValues('date')}
+                selectedTime={form.getValues('time')}
                 appliedCoupon={appliedCoupon}
                 finalPrice={finalPrice}
               />
-              {selectedService && (
-                <p className="text-zinc-300 mt-2">
-                  Duração estimada: <strong>{selectedService.duration} minutos</strong>
-                </p>
-              )}
             </div>
 
+            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-6">
-              <Button
+              <Button 
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/cliente/dashboard')}
@@ -269,11 +289,10 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                aria-label={appointmentId ? 'Atualizar agendamento' : 'Confirmar agendamento'}
+              <Button 
+                type="submit" 
                 className="flex-1 bg-gradient-to-r from-urbana-gold to-urbana-gold/90 hover:from-urbana-gold/90 hover:to-urbana-gold text-black font-semibold h-12 shadow-lg shadow-urbana-gold/25"
-                disabled={loading || isSending || !formState.isValid || formState.isSubmitting}
+                disabled={loading || isSending || !form.formState.isValid}
               >
                 {loading || isSending ? (
                   <div className="flex items-center gap-2">
@@ -281,7 +300,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
                     {appointmentId ? 'Atualizando...' : 'Agendando...'}
                   </div>
                 ) : (
-                  appointmentId ? 'Atualizar Agendamento' : 'Confirmar Agendamento'
+                  appointmentId ? "Atualizar Agendamento" : "Confirmar Agendamento"
                 )}
               </Button>
             </div>
