@@ -1,9 +1,7 @@
 
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useStaffForm } from './hooks/useStaffForm';
 import StaffProfileImage from './components/StaffProfileImage';
@@ -12,7 +10,9 @@ import StaffProfessionalInfo from './components/StaffProfessionalInfo';
 import StaffActiveStatus from './components/StaffActiveStatus';
 import { StaffModuleAccess } from './components/StaffModuleAccess';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Shield, Settings } from 'lucide-react';
+import { User, Shield, Settings, Lock } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface StaffFormProps {
   staffId: string | null;
@@ -24,7 +24,7 @@ interface StaffFormProps {
 const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, defaultRole }) => {
   const { 
     form,
-    onSubmit,
+    onSubmit: originalOnSubmit,
     isEditing,
     isLoadingStaff,
     handleFileChange,
@@ -34,18 +34,74 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
     isSubmitting
   } = useStaffForm(staffId, onSuccess, defaultRole);
 
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
   useEffect(() => {
     if (staffId) {
       // Fetch staff data for editing is handled by useStaffForm hook
     } else if (defaultRole && !staffId) {
-      // Set default role for new staff if provided
       form.setValue('role', defaultRole);
     }
   }, [staffId, defaultRole, form]);
 
+  // Novo submit: cria usuário no auth + role se e-mail/senha definidos e novo
+  const handleSubmit = async (data: any) => {
+    try {
+      if (!isEditing && data.email && password) {
+        if (password !== confirmPassword) {
+          toast.error('As senhas não correspondem');
+          return;
+        }
+        if (password.length < 6) {
+          toast.error('A senha deve ter pelo menos 6 caracteres');
+          return;
+        }
+        // Cadastro Supabase Auth
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: data.email,
+          password,
+          options: {
+            data: {
+              full_name: data.name,
+            },
+            emailRedirectTo: `${window.location.origin}/auth`
+          }
+        });
+        if (signUpError) {
+          toast.error('Erro ao criar conta de usuário', {
+            description: signUpError.message
+          });
+          return;
+        } else if (signUpData.user) {
+          // Vincula role na tabela user_roles
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert([{ 
+              user_id: signUpData.user.id,
+              role: data.role ?? 'attendant'
+            }]);
+          if (roleError) {
+            toast.error('Erro ao adicionar role', { description: roleError.message });
+            return;
+          } else {
+            toast.success('Conta criada e permissão atribuída');
+          }
+        }
+      }
+      // Cadastro/atualização no staff
+      await originalOnSubmit(data);
+      onSuccess();
+    } catch (error) {
+      toast.error('Erro ao salvar profissional');
+      // ... loga erro no console
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Tabs defaultValue="personal" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="personal" className="flex items-center gap-2">
@@ -56,6 +112,12 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
               <Settings className="h-4 w-4" />
               Informações Profissionais
             </TabsTrigger>
+            {!staffId && (
+              <TabsTrigger value="account" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Conta de Acesso
+              </TabsTrigger>
+            )}
             {staffId && (
               <TabsTrigger value="access" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -83,7 +145,59 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
             <StaffProfessionalInfo form={form} />
             <StaffActiveStatus form={form} />
           </TabsContent>
-          
+
+          <TabsContent value="account" className="space-y-4">
+            <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-md border border-yellow-200 dark:border-yellow-800 mb-4">
+              <h3 className="font-medium text-yellow-800 dark:text-yellow-300 mb-1">
+                Criação de Conta de Acesso
+              </h3>
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                Essas credenciais permitirão que o profissional acesse o painel administrativo.
+                A senha deve ter pelo menos 6 caracteres.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Senha
+                  </label>
+                  <Input 
+                    id="password"
+                    type={passwordVisible ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Digite uma senha"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="confirm-password" className="text-sm font-medium">
+                    Confirmar Senha
+                  </label>
+                  <Input 
+                    id="confirm-password"
+                    type={passwordVisible ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirme a senha"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="show-password"
+                    checked={passwordVisible}
+                    onChange={() => setPasswordVisible(!passwordVisible)}
+                    className="rounded border-gray-300"
+                  />
+                  <label htmlFor="show-password" className="text-sm">
+                    Mostrar senha
+                  </label>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
           {staffId && (
             <TabsContent value="access" className="space-y-6">
               <StaffModuleAccess staffId={staffId} onSuccess={() => {}} />
@@ -95,7 +209,6 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Salvando...' : staffId ? 'Atualizar' : 'Salvar'}
           </Button>
