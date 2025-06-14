@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export async function createBarber(staffId: string, userId?: string) {
@@ -28,4 +27,27 @@ export async function logBarberAction(barberId: string, action: string, performe
   if (error) throw error;
 }
 
-// Pode criar funções de busca/edição caso necessário...
+// Nova função para deletar barbeiro (exclui da tabela barbers e staff)
+export async function deleteBarber(barberId: string): Promise<void> {
+  // Primeiro, buscamos o registro para pegar staff_id
+  const { data, error } = await supabase
+    .from("barbers")
+    .select("id,staff_id")
+    .eq("id", barberId)
+    .single();
+
+  if (error) throw error;
+  const staffId = data.staff_id;
+
+  // Remove da tabela barbers
+  const { error: deleteBarberError } = await supabase
+    .from("barbers")
+    .delete()
+    .eq("id", barberId);
+
+  if (deleteBarberError) throw deleteBarberError;
+
+  // Opcional: remove do staff, se desejar excluir completamente o profissional
+  // Descomente esta linha se deseja remover do staff
+  // await supabase.from("staff").delete().eq("id", staffId);
+}

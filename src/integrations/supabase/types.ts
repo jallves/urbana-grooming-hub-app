@@ -2152,61 +2152,6 @@ export type Database = {
           },
         ]
       }
-      student_attendance: {
-        Row: {
-          attendance_date: string | null
-          attended: boolean | null
-          booking_id: string | null
-          class_id: string | null
-          created_at: string | null
-          id: string
-          notes: string | null
-          student_id: string | null
-        }
-        Insert: {
-          attendance_date?: string | null
-          attended?: boolean | null
-          booking_id?: string | null
-          class_id?: string | null
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          student_id?: string | null
-        }
-        Update: {
-          attendance_date?: string | null
-          attended?: boolean | null
-          booking_id?: string | null
-          class_id?: string | null
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          student_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "student_attendance_booking_id_fkey"
-            columns: ["booking_id"]
-            isOneToOne: false
-            referencedRelation: "class_bookings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_attendance_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_attendance_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       student_communications: {
         Row: {
           created_at: string | null

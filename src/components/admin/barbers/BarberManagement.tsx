@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { deleteBarber } from '@/services/barberService';
 
 // ---- MODE ENUM ----
 type Mode = 'viewing' | 'adding' | 'editing';
@@ -99,6 +99,25 @@ const BarberManagement: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
+  const handleDeleteBarber = async (barberId: string) => {
+    if (
+      window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
+    ) {
+      try {
+        await deleteBarber(barberId);
+        toast.success('Barbeiro excluído com sucesso.');
+        refetch();
+        queryClient.invalidateQueries({ queryKey: ['barbers'] });
+        queryClient.invalidateQueries({ queryKey: ['staff'] });
+        queryClient.invalidateQueries({ queryKey: ['team-staff'] });
+      } catch (err) {
+        toast.error('Erro ao excluir barbeiro.', {
+          description: (err as Error).message,
+        });
+      }
+    }
+  };
+
   const isFormVisible = mode === 'adding' || mode === 'editing';
 
   return (
@@ -168,7 +187,7 @@ const BarberManagement: React.FC = () => {
         barbers={barbers || []}
         isLoading={isLoading}
         onEdit={handleEditBarber}
-        onDelete={() => refetch()}
+        onDelete={handleDeleteBarber}
       />
     </div>
   );

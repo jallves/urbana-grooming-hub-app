@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2, UserCog } from 'lucide-react';
+import { Loader2, UserCog, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Barber } from '@/types/barber';
@@ -9,7 +9,7 @@ interface BarberListProps {
   barbers: Barber[];
   isLoading: boolean;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (barberId: string) => void;
 }
 
 const BarberList: React.FC<BarberListProps> = ({
@@ -65,9 +65,17 @@ const BarberList: React.FC<BarberListProps> = ({
                   </td>
                   <td className="px-4 py-2 space-x-2">
                     <Button variant="outline" size="sm" onClick={() => onEdit(barber.id)}>
+                      <Pencil className="h-4 w-4 mr-1" />
                       Editar
                     </Button>
-                    {/* Botão de deletar pode ser adicionado se necessário */}
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onDelete(barber.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Excluir
+                    </Button>
                   </td>
                 </tr>
               ))
@@ -80,4 +88,3 @@ const BarberList: React.FC<BarberListProps> = ({
 };
 
 export default BarberList;
-
