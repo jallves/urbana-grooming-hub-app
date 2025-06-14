@@ -21,7 +21,7 @@ interface StaffFormProps {
 }
 
 const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, defaultRole }) => {
-  const { 
+  const {
     form,
     onSubmit: originalOnSubmit,
     isEditing,
@@ -37,15 +37,18 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
 
+  // NOVO: Estado local para controlar o valor do cargo se necessário
+  // Remove após garantir que o campo do form funcione direito
+
   useEffect(() => {
     if (staffId) {
-      // Fetch staff data for editing is handled by useStaffForm hook
+      // Carregamento já tratado no hook
     } else if (defaultRole && !staffId) {
       form.setValue('role', defaultRole);
     }
   }, [staffId, defaultRole, form]);
 
-  // Novos logs para depuração
+  // Função para enviar imagem e aguardar upload antes de chamar onSubmit do hook
   const handleSubmit = async (data: any) => {
     console.log('[DEBUG] Submit chamado. Dados recebidos:', data);
     try {
@@ -58,6 +61,25 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
         toast.error('Selecione um cargo para o profissional');
         console.log('[DEBUG] Falhou: cargo não selecionado');
         return;
+      }
+
+      // -- UPLOAD DE IMAGEM: se arquivo foi selecionado, faz upload e atualiza no form --
+      if (selectedFile) {
+        // useImageUpload retorna uploading true durante upload
+        try {
+          toast.info('Enviando foto...');
+          const { uploadFile } = await import('@/components/admin/settings/media/useImageUpload');
+          const url = await uploadFile(selectedFile, 'staff-photos', 'profiles');
+          if (url) {
+            data.image_url = url;
+            form.setValue('image_url', url);
+            toast.success('Imagem enviada com sucesso!');
+          }
+        } catch (err: any) {
+          console.error('[DEBUG] Falha ao fazer upload da imagem:', err);
+          toast.error('Falha ao enviar imagem', { description: err?.message });
+          return; // Não prossegue
+        }
       }
 
       // Cadastro Auth se email/senha definidos e não for edição
@@ -91,7 +113,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
         } else if (signUpData.user) {
           const { error: roleError } = await supabase
             .from('user_roles')
-            .insert([{ 
+            .insert([{
               user_id: signUpData.user.id,
               role: data.role ?? 'attendant'
             }]);
@@ -104,8 +126,10 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
           }
         }
       }
-      // Chama originalOnSubmit normalmente, qualquer erro será capturado no catch
-      await originalOnSubmit(data);
+
+      // Submit final dos dados
+      await originalOnSubmit({ ...data });
+
       toast.success("Profissional salvo com sucesso!");
       console.log('[DEBUG] Cadastro/atualização finalizado');
       onSuccess();
@@ -118,8 +142,8 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
 
   return (
     <Form {...form}>
-      <form 
-        onSubmit={form.handleSubmit(handleSubmit)} 
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
         className="space-y-6"
       >
         <Tabs defaultValue="personal" className="w-full">
@@ -145,22 +169,21 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
               </TabsTrigger>
             )}
           </TabsList>
-          
+
           <TabsContent value="personal" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="col-span-1">
-                <StaffProfileImage 
+                <StaffProfileImage
                   form={form}
                   handleFileChange={handleFileChange}
                 />
               </div>
-              
               <div className="col-span-1 md:col-span-2">
                 <StaffPersonalInfo form={form} />
               </div>
             </div>
           </TabsContent>
-          
+
           <TabsContent value="professional" className="space-y-6">
             <StaffProfessionalInfo form={form} />
             <StaffActiveStatus form={form} />
@@ -182,7 +205,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
                   <label htmlFor="password" className="text-sm font-medium">
                     Senha
                   </label>
-                  <Input 
+                  <Input
                     id="password"
                     type={passwordVisible ? "text" : "password"}
                     value={password}
@@ -194,7 +217,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
                   <label htmlFor="confirm-password" className="text-sm font-medium">
                     Confirmar Senha
                   </label>
-                  <Input 
+                  <Input
                     id="confirm-password"
                     type={passwordVisible ? "text" : "password"}
                     value={confirmPassword}
@@ -217,10 +240,9 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
               </div>
             </div>
           </TabsContent>
-
           {staffId && (
             <TabsContent value="access" className="space-y-6">
-              <StaffModuleAccess staffId={staffId} onSuccess={() => {}} />
+              <StaffModuleAccess staffId={staffId} onSuccess={() => { }} />
             </TabsContent>
           )}
         </Tabs>
