@@ -15,7 +15,7 @@ export const barberSchema = z.object({
   experience: z.string().optional(),
   commission_rate: z.number().nullable().optional(),
   is_active: z.boolean().default(true),
-  role: z.string().default('barber'),
+  // 'role' pode ser omitido do formulário, pois sempre setamos abaixo
 });
 
 export type BarberFormValues = z.infer<typeof barberSchema>;
@@ -32,7 +32,6 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
       experience: '',
       commission_rate: null,
       is_active: true,
-      role: 'barber',
     },
   });
 
@@ -43,7 +42,9 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     if (barberId) {
       supabase.from('staff').select('*').eq('id', barberId).single().then(({ data, error }) => {
         if (data) {
-          form.reset(data);
+          // Remove 'role' do data recebido
+          const { role, ...rest } = data;
+          form.reset(rest);
         }
       });
     }
@@ -57,21 +58,12 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     if (barberId) {
       resp = await supabase.from('staff').update({
         ...data,
-        role: 'barber',
+        role: 'barber', // Sempre força o cargo de barbeiro
       }).eq('id', barberId);
     } else {
-      // Guarantee required fields and correct shape:
       resp = await supabase.from('staff').insert([{
         ...data,
-        name: data.name, // ensure name present, required by schema
-        role: 'barber',
-        commission_rate: data.commission_rate ?? null,
-        is_active: data.is_active,
-        email: data.email || null,
-        phone: data.phone || null,
-        image_url: data.image_url || null,
-        specialties: data.specialties || null,
-        experience: data.experience || null,
+        role: 'barber', // Sempre força o cargo de barbeiro
       }]);
     }
 
@@ -91,4 +83,3 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     onSubmit
   };
 }
-
