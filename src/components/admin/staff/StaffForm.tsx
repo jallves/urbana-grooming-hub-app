@@ -45,10 +45,9 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
     }
   }, [staffId, defaultRole, form]);
 
-  // Novo submit: cria usuário no auth + role se e-mail/senha definidos e novo
+  // Submit conserto: não compara retorno de void/boolean (erro TS2367)
   const handleSubmit = async (data: any) => {
     try {
-      // Verifica se todos os campos obrigatórios foram preenchidos
       if (!data.name || data.name.trim().length < 3) {
         toast.error('Nome é obrigatório e deve ter pelo menos 3 caracteres');
         return;
@@ -68,7 +67,6 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
           toast.error('A senha deve ter pelo menos 6 caracteres');
           return;
         }
-        // Cadastro Supabase Auth
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
           password,
@@ -85,7 +83,6 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
           });
           return;
         } else if (signUpData.user) {
-          // Vincula role na tabela user_roles
           const { error: roleError } = await supabase
             .from('user_roles')
             .insert([{ 
@@ -100,8 +97,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
           }
         }
       }
-      // Cadastro/atualização no staff
-      // originalOnSubmit lança erro se falhar, então só chamar onSuccess após
+      // Chama originalOnSubmit normalmente, qualquer erro será capturado no catch
       await originalOnSubmit(data);
       onSuccess();
     } catch (error: any) {
