@@ -45,15 +45,18 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
     }
   }, [staffId, defaultRole, form]);
 
-  // Submit conserto: não compara retorno de void/boolean (erro TS2367)
+  // Novos logs para depuração
   const handleSubmit = async (data: any) => {
+    console.log('[DEBUG] Submit chamado. Dados recebidos:', data);
     try {
       if (!data.name || data.name.trim().length < 3) {
         toast.error('Nome é obrigatório e deve ter pelo menos 3 caracteres');
+        console.log('[DEBUG] Falhou: nome inválido');
         return;
       }
       if (!data.role || data.role.trim() === '') {
         toast.error('Selecione um cargo para o profissional');
+        console.log('[DEBUG] Falhou: cargo não selecionado');
         return;
       }
 
@@ -61,10 +64,12 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
       if (!isEditing && data.email && password) {
         if (password !== confirmPassword) {
           toast.error('As senhas não correspondem');
+          console.log('[DEBUG] Falhou: senhas não conferem');
           return;
         }
         if (password.length < 6) {
           toast.error('A senha deve ter pelo menos 6 caracteres');
+          console.log('[DEBUG] Falhou: senha curta');
           return;
         }
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -81,6 +86,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
           toast.error('Erro ao criar conta de usuário', {
             description: signUpError.message
           });
+          console.log('[DEBUG] Erro no signUp:', signUpError);
           return;
         } else if (signUpData.user) {
           const { error: roleError } = await supabase
@@ -91,6 +97,7 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
             }]);
           if (roleError) {
             toast.error('Erro ao adicionar role', { description: roleError.message });
+            console.log('[DEBUG] Erro ao inserir role:', roleError);
             return;
           } else {
             toast.success('Conta criada e permissão atribuída');
@@ -99,17 +106,22 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
       }
       // Chama originalOnSubmit normalmente, qualquer erro será capturado no catch
       await originalOnSubmit(data);
+      toast.success("Profissional salvo com sucesso!");
+      console.log('[DEBUG] Cadastro/atualização finalizado');
       onSuccess();
     } catch (error: any) {
       let desc = error?.message ? String(error.message) : 'Erro desconhecido';
       toast.error('Erro ao salvar profissional', { description: desc });
-      console.error(error);
+      console.error('[DEBUG] Erro inesperado no submit:', error);
     }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form 
+        onSubmit={form.handleSubmit(handleSubmit)} 
+        className="space-y-6"
+      >
         <Tabs defaultValue="personal" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="personal" className="flex items-center gap-2">
