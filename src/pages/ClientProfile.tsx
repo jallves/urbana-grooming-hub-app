@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,6 @@ import {
   Save,
   Edit
 } from 'lucide-react';
-import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -36,10 +34,10 @@ const ClientProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-stone-900 via-black to-stone-800 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg">Carregando...</p>
+          <p className="text-white text-lg font-sans">Carregando...</p>
         </div>
       </div>
     );
@@ -68,57 +66,55 @@ const ClientProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800">
+    <div className="min-h-screen bg-gradient-to-br from-stone-900 via-black to-stone-800 font-sans">
+      
       {/* Header */}
-      <div className="bg-stone-900/80 backdrop-blur-sm border-b border-stone-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('/cliente/dashboard')}
-                className="text-white hover:bg-stone-700"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
-              <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full flex items-center justify-center">
-                <Scissors className="h-5 w-5 text-black" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-white">
-                  Meu Perfil
-                </h1>
-                <p className="text-sm text-stone-400">Gerencie suas informações pessoais</p>
-              </div>
+      <header className="bg-black/80 backdrop-blur-md border-b border-stone-700 shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => navigate('/cliente/dashboard')}
+              className="text-white hover:bg-stone-700"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full flex items-center justify-center shadow-md">
+              <Scissors className="h-5 w-5 text-black" />
             </div>
-            <div className="flex items-center space-x-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={signOut}
-                className="bg-stone-800 border-red-400/30 text-red-400 hover:bg-red-400/10"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
+            <div>
+              <h1 className="text-xl font-serif text-white font-semibold">
+                Meu Perfil
+              </h1>
+              <p className="text-sm text-stone-400">Gerencie suas informações pessoais</p>
             </div>
           </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={signOut}
+            className="bg-stone-800 border-red-400/30 text-red-400 hover:bg-red-500/10"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="bg-stone-800 border-stone-700">
+      {/* Conteúdo */}
+      <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+        <Card className="bg-gradient-to-b from-stone-800 to-stone-900 border border-stone-700 shadow-xl rounded-2xl">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-white flex items-center gap-2">
+                <CardTitle className="text-white flex items-center gap-2 font-serif">
                   <User className="h-5 w-5 text-amber-500" />
                   Informações Pessoais
                 </CardTitle>
                 <CardDescription className="text-stone-300">
-                  Mantenha seus dados atualizados para uma melhor experiência
+                  Mantenha seus dados atualizados para uma melhor experiência.
                 </CardDescription>
               </div>
               <Button
@@ -126,17 +122,17 @@ const ClientProfile = () => {
                 onClick={() => isEditing ? handleCancel() : setIsEditing(true)}
                 className={isEditing ? 
                   "border-stone-600 text-stone-300 hover:bg-stone-700" : 
-                  "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black"
+                  "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black shadow-md"
                 }
               >
-                {isEditing ? 'Cancelar' : <Edit className="h-4 w-4 mr-2" />}
-                {isEditing ? '' : 'Editar'}
+                {isEditing ? 'Cancelar' : <><Edit className="h-4 w-4 mr-2" />Editar</>}
               </Button>
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Nome */}
               <div className="space-y-2">
                 <Label className="text-white">Nome Completo</Label>
                 {isEditing ? (
@@ -152,6 +148,7 @@ const ClientProfile = () => {
                 )}
               </div>
 
+              {/* Email */}
               <div className="space-y-2">
                 <Label className="text-white">Email</Label>
                 {isEditing ? (
@@ -169,6 +166,7 @@ const ClientProfile = () => {
                 )}
               </div>
 
+              {/* Telefone */}
               <div className="space-y-2">
                 <Label className="text-white">Telefone</Label>
                 {isEditing ? (
@@ -186,6 +184,7 @@ const ClientProfile = () => {
                 )}
               </div>
 
+              {/* WhatsApp */}
               <div className="space-y-2">
                 <Label className="text-white">WhatsApp</Label>
                 {isEditing ? (
@@ -202,6 +201,7 @@ const ClientProfile = () => {
                 )}
               </div>
 
+              {/* Data de Nascimento */}
               <div className="space-y-2">
                 <Label className="text-white">Data de Nascimento</Label>
                 {isEditing ? (
@@ -222,6 +222,7 @@ const ClientProfile = () => {
                 )}
               </div>
 
+              {/* Membro desde */}
               <div className="space-y-2">
                 <Label className="text-white">Membro desde</Label>
                 <div className="p-3 bg-stone-700/50 rounded-md text-white">
@@ -243,7 +244,7 @@ const ClientProfile = () => {
                   </Button>
                   <Button 
                     onClick={handleSave}
-                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black"
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black shadow-md"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     Salvar Alterações
@@ -254,13 +255,15 @@ const ClientProfile = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-stone-800 border-stone-700 hover:bg-stone-700/50 transition-colors cursor-pointer"
-                onClick={() => navigate('/cliente/novo-agendamento')}>
+        {/* Ações rápidas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card 
+            className="bg-gradient-to-b from-stone-800 to-stone-900 border border-stone-700 hover:scale-[1.02] transition-transform cursor-pointer shadow-lg rounded-2xl"
+            onClick={() => navigate('/cliente/novo-agendamento')}
+          >
             <CardContent className="p-6 text-center">
               <Scissors className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">
+              <h3 className="text-lg font-serif text-white mb-2">
                 Agendar Corte
               </h3>
               <p className="text-stone-400">
@@ -269,11 +272,13 @@ const ClientProfile = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-stone-800 border-stone-700 hover:bg-stone-700/50 transition-colors cursor-pointer"
-                onClick={() => navigate('/cliente/dashboard')}>
+          <Card 
+            className="bg-gradient-to-b from-stone-800 to-stone-900 border border-stone-700 hover:scale-[1.02] transition-transform cursor-pointer shadow-lg rounded-2xl"
+            onClick={() => navigate('/cliente/dashboard')}
+          >
             <CardContent className="p-6 text-center">
               <Calendar className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">
+              <h3 className="text-lg font-serif text-white mb-2">
                 Meus Agendamentos
               </h3>
               <p className="text-stone-400">
@@ -282,7 +287,7 @@ const ClientProfile = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
