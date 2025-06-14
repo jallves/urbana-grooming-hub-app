@@ -1,10 +1,8 @@
+
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from "@/components/ui/button";
-import { MessageCirclePlus, UserPlus2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 interface TeamMemberProps {
   name: string;
@@ -104,8 +102,6 @@ const Team: React.FC = () => {
     }
   ];
 
-  const navigate = useNavigate();
-
   // Show loading state while fetching data
   if (isLoading) {
     return (
@@ -129,10 +125,12 @@ const Team: React.FC = () => {
     );
   }
 
-  // Decide which team will be shown
+  // Determine which team to display - use database data if available, otherwise fallback
   const teamToDisplay = staffMembers && staffMembers.length > 0
     ? staffMembers
     : fallbackTeamMembers;
+
+  console.log('Exibindo equipe na homepage:', teamToDisplay);
 
   return (
     <section id="team" className="urbana-section bg-black">
@@ -144,63 +142,30 @@ const Team: React.FC = () => {
           </p>
         </div>
 
-        {(staffMembers && staffMembers.length === 0) ? (
-          <div className="flex flex-col items-center justify-center mb-8 space-y-5">
-            <div className="text-center">
-              <h3 className="font-bold text-lg text-white mb-1">
-                Nenhum barbeiro cadastrado
-              </h3>
-              <p className="text-gray-300 mb-4">
-                Não há barbeiros ativos cadastrados no sistema.<br />
-                Entre em contato conosco pelo WhatsApp para agendar seu horário<br />
-                Ou cadastre seu primeiro barbeiro no painel admin abaixo:
-              </p>
-            </div>
-            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto justify-center">
-              <a
-                href="https://wa.me/5581988888888"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full md:w-auto"
-              >
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="w-full md:w-auto flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <MessageCirclePlus className="h-5 w-5" />
-                  Falar no WhatsApp
-                </Button>
-              </a>
-              <Button
-                size="lg"
-                variant="default"
-                className="w-full md:w-auto flex items-center gap-2"
-                onClick={() => navigate('/admin/barbeiros')}
-              >
-                <UserPlus2 className="h-5 w-5" />
-                Acessar Painel Admin
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamToDisplay.map((member) => (
-              <TeamMember
-                key={member.id}
-                name={member.name}
-                role={member.role || 'Barbeiro Profissional'}
-                experience={member.experience || '+5 anos'}
-                image={member.image_url}
-              />
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {teamToDisplay.map((member) => (
+            <TeamMember
+              key={member.id}
+              name={member.name}
+              role={member.role || 'Barbeiro Profissional'}
+              experience={member.experience || '+5 anos'}
+              image={member.image_url}
+            />
+          ))}
+        </div>
         
         {error && (
           <div className="text-center mt-4">
             <p className="text-red-400 text-sm">
               Erro ao carregar a equipe. Exibindo equipe padrão.
+            </p>
+          </div>
+        )}
+
+        {staffMembers && staffMembers.length === 0 && (
+          <div className="text-center mt-4">
+            <p className="text-yellow-400 text-sm">
+              Nenhum barbeiro ativo encontrado. Certifique-se de que há barbeiros ativos cadastrados no sistema.
             </p>
           </div>
         )}
