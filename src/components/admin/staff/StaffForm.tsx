@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
@@ -102,12 +101,9 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
         }
       }
       // Cadastro/atualização no staff
-      // Importante: passar todos os dados obrigatórios — o hook faz a lógica
-      const result = await originalOnSubmit(data);
-      // Só chamar onSuccess se realmente salvou
-      if (result !== false) {
-        onSuccess();
-      }
+      // originalOnSubmit lança erro se falhar, então só chamar onSuccess após
+      await originalOnSubmit(data);
+      onSuccess();
     } catch (error: any) {
       let desc = error?.message ? String(error.message) : 'Erro desconhecido';
       toast.error('Erro ao salvar profissional', { description: desc });
@@ -235,4 +231,3 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
 };
 
 export default StaffForm;
-
