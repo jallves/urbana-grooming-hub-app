@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import {
   FormField,
@@ -35,6 +36,10 @@ interface BarberSelectionFieldProps {
   checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>;
 }
 
+// Utilitário para buscar barbeiro por ID (evita código repetido)
+const getBarberById = (barbers: StaffMember[], id: string) =>
+  barbers.find((b) => b.id === id);
+
 export function BarberSelectionField({
   control,
   barbers,
@@ -49,6 +54,7 @@ export function BarberSelectionField({
 
   // Atualiza a disponibilidade ao mudar data/hora/serviço
   useEffect(() => {
+    // Certifique-se que checkBarberAvailability está memoizado no hook original
     if (selectedDate && selectedTime && selectedServiceId) {
       checkBarberAvailability(selectedDate, selectedTime, selectedServiceId);
     }
@@ -67,13 +73,22 @@ export function BarberSelectionField({
 
   // Só mostra barbeiros ativos, role=barber, vindo do banco
   const activeBarbers = Array.isArray(barbers)
-    ? barbers.filter((b) => !!b && b.is_active === true && b.role === "barber")
+    ? barbers.filter(
+        (b) => !!b && b.is_active === true && b.role === 'barber'
+      )
     : [];
 
   // Função para abrir o admin no painel de profissionais (nova aba)
   const redirectToAdminStaff = () => {
     window.open('/admin/barbeiros', '_blank');
   };
+
+  // Skeleton simples para loading opcional (pode-se aprimorar visual depois)
+  const SkeletonBarberItem = () => (
+    <div className="px-4 py-2">
+      <div className="w-36 h-5 bg-zinc-700 rounded animate-pulse mb-1"></div>
+    </div>
+  );
 
   return (
     <FormField
@@ -116,7 +131,9 @@ export function BarberSelectionField({
             onValueChange={field.onChange}
             value={field.value || ''}
             disabled={
-              !selectedTime || isCheckingAvailability || activeBarbers.length === 0
+              !selectedTime ||
+              isCheckingAvailability ||
+              activeBarbers.length === 0
             }
           >
             <FormControl>
@@ -124,17 +141,26 @@ export function BarberSelectionField({
                 <User className="mr-2 h-4 w-4" />
                 <SelectValue
                   placeholder={
-                    activeBarbers.length === 0
-                      ? 'Entre em contato conosco'
+                    !selectedTime
+                      ? 'Selecione um horário primeiro'
                       : isCheckingAvailability
                       ? 'Verificando disponibilidade...'
+                      : activeBarbers.length === 0
+                      ? 'Entre em contato conosco'
                       : 'Selecione um barbeiro'
                   }
                 />
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-zinc-800 border-zinc-600">
-              {shouldShowAllBarbers ? (
+              {isCheckingAvailability ? (
+                // Apresenta skeletons enquanto carrega disponibilidade
+                <>
+                  {[1, 2, 3].map((k) => (
+                    <SkeletonBarberItem key={k} />
+                  ))}
+                </>
+              ) : shouldShowAllBarbers ? (
                 activeBarbers.map((barber) => (
                   <SelectItem
                     key={barber.id}
@@ -151,11 +177,11 @@ export function BarberSelectionField({
                 <>
                   {availableBarbers
                     .filter((b) => {
-                      const barberObj = barbers.find((barb) => barb.id === b.id);
-                      return barberObj && barberObj.is_active === true && barberObj.role === "barber";
+                      const barberObj = getBarberById(barbers, b.id);
+                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
                     })
                     .map((barber) => {
-                      const barberObj = barbers.find((barb) => barb.id === barber.id);
+                      const barberObj = getBarberById(barbers, barber.id);
                       if (!barberObj) return null;
                       return (
                         <SelectItem
@@ -174,11 +200,11 @@ export function BarberSelectionField({
 
                   {unavailableBarbers
                     .filter((b) => {
-                      const barberObj = barbers.find((barb) => barb.id === b.id);
-                      return barberObj && barberObj.is_active === true && barberObj.role === "barber";
+                      const barberObj = getBarberById(barbers, b.id);
+                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
                     })
                     .map((barber) => {
-                      const barberObj = barbers.find((barb) => barb.id === barber.id);
+                      const barberObj = getBarberById(barbers, barber.id);
                       if (!barberObj) return null;
                       return (
                         <SelectItem
@@ -199,6 +225,7 @@ export function BarberSelectionField({
               )}
 
               {!shouldShowAllBarbers &&
+                !isCheckingAvailability &&
                 availableBarbers.length === 0 &&
                 activeBarbers.length > 0 && (
                   <div className="px-2 py-1 text-sm text-red-400">
@@ -219,7 +246,8 @@ export function BarberSelectionField({
           {selectedTime &&
             !shouldShowAllBarbers &&
             availableBarbers.length === 0 &&
-            activeBarbers.length > 0 && (
+            activeBarbers.length > 0 &&
+            !isCheckingAvailability && (
               <Alert
                 className="mt-2 bg-red-900/20 border-red-700"
                 variant="destructive"
@@ -235,3 +263,5 @@ export function BarberSelectionField({
     />
   );
 }
+
+// Arquivo está ficando longo! Recomendo que você peça um refactor para dividir esse componente em arquivos menores.
