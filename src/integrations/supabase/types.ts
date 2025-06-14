@@ -368,6 +368,41 @@ export type Database = {
         }
         Relationships: []
       }
+      barber_audit_log: {
+        Row: {
+          action: string
+          barber_id: string | null
+          description: string | null
+          id: string
+          performed_by: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          action: string
+          barber_id?: string | null
+          description?: string | null
+          id?: string
+          performed_by?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          action?: string
+          barber_id?: string | null
+          description?: string | null
+          id?: string
+          performed_by?: string | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_audit_log_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barber_commissions: {
         Row: {
           amount: number
@@ -414,6 +449,38 @@ export type Database = {
             foreignKeyName: "barber_commissions_barber_id_fkey"
             columns: ["barber_id"]
             isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      barbers: {
+        Row: {
+          created_at: string | null
+          id: string
+          staff_id: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          staff_id: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          staff_id?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barbers_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
