@@ -55,16 +55,17 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     setIsSubmitting(true);
     let resp;
 
+    const payload = {
+      ...data,
+      role: 'barber', // Sempre força o cargo de barbeiro
+      name: data.name ?? '', // garantir string obrigatória
+    };
+
     if (barberId) {
-      resp = await supabase.from('staff').update({
-        ...data,
-        role: 'barber', // Sempre força o cargo de barbeiro
-      }).eq('id', barberId);
+      resp = await supabase.from('staff').update(payload).eq('id', barberId);
     } else {
-      resp = await supabase.from('staff').insert([{
-        ...data,
-        role: 'barber', // Sempre força o cargo de barbeiro
-      }]);
+      // precisa ser array de objetos completos e name obrigatório
+      resp = await supabase.from('staff').insert([payload]);
     }
 
     if (resp.error) {

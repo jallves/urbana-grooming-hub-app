@@ -14,32 +14,7 @@ const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) =
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Categoria Profissional</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || "barber"}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="barber">Barbeiro</SelectItem>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="attendant">Atendente</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Barbeiros aparecerão automaticamente no módulo de barbeiros
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
+        {/* Removido o campo de categoria/cargo ("role") */}
         <FormField
           control={form.control}
           name="experience"
@@ -70,7 +45,7 @@ const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) =
                   type="number" 
                   placeholder="Ex: 60" 
                   {...field} 
-                  value={field.value === null ? '' : field.value}
+                  value={field.value === null ? '' : String(field.value)}
                   onChange={(e) => {
                     const value = e.target.value === '' ? null : Number(e.target.value);
                     field.onChange(value);
