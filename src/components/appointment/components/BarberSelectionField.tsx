@@ -14,12 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Alert,
-  AlertTitle,
-  AlertDescription,
-} from '@/components/ui/alert';
-import { User, Loader2, AlertTriangle } from 'lucide-react';
+// Removido import dos alerts e AlertTriangle pois não usaremos mais
+import { User, Loader2 } from 'lucide-react';
 import { Control } from 'react-hook-form';
 import {
   FormData,
@@ -36,7 +32,7 @@ interface BarberSelectionFieldProps {
   checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>;
 }
 
-// Utilitário para buscar barbeiro por ID (evita código repetido)
+// Utilitário para buscar barbeiro por ID
 const getBarberById = (barbers: StaffMember[], id: string) =>
   barbers.find((b) => b.id === id);
 
@@ -52,9 +48,7 @@ export function BarberSelectionField({
   const selectedTime = getFieldValue('time');
   const selectedServiceId = getFieldValue('service_id');
 
-  // Atualiza a disponibilidade ao mudar data/hora/serviço
   useEffect(() => {
-    // Certifique-se que checkBarberAvailability está memoizado no hook original
     if (selectedDate && selectedTime && selectedServiceId) {
       checkBarberAvailability(selectedDate, selectedTime, selectedServiceId);
     }
@@ -78,18 +72,6 @@ export function BarberSelectionField({
       )
     : [];
 
-  // Função para abrir o admin no painel de profissionais (nova aba)
-  const redirectToAdminStaff = () => {
-    window.open('/admin/barbeiros', '_blank');
-  };
-
-  // Skeleton simples para loading opcional (pode-se aprimorar visual depois)
-  const SkeletonBarberItem = () => (
-    <div className="px-4 py-2">
-      <div className="w-36 h-5 bg-zinc-700 rounded animate-pulse mb-1"></div>
-    </div>
-  );
-
   return (
     <FormField
       control={control}
@@ -106,34 +88,13 @@ export function BarberSelectionField({
             )}
           </FormLabel>
 
-          {activeBarbers.length === 0 && (
-            <Alert className="mt-2 bg-yellow-900/20 border-yellow-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <AlertTriangle className="h-4 w-4 text-yellow-400 mb-1" />
-                <AlertTitle className="text-yellow-400">Nenhum barbeiro cadastrado</AlertTitle>
-                <AlertDescription className="text-yellow-300">
-                  Não há barbeiros ativos cadastrados no sistema.<br />
-                  Entre em contato conosco pelo WhatsApp para agendar seu horário.<br />
-                  <span className="block mt-2">Ou cadastre seu primeiro barbeiro no painel admin abaixo:</span>
-                </AlertDescription>
-              </div>
-              <button
-                type="button"
-                className="bg-urbana-gold text-black px-4 py-2 rounded-lg mt-2 sm:mt-0 hover:bg-urbana-gold/90 font-semibold transition"
-                onClick={redirectToAdminStaff}
-              >
-                Cadastrar primeiro barbeiro
-              </button>
-            </Alert>
-          )}
-
+          {/* Removido o alerta "Nenhum barbeiro cadastrado" */}
+          
           <Select
             onValueChange={field.onChange}
             value={field.value || ''}
             disabled={
-              !selectedTime ||
-              isCheckingAvailability ||
-              activeBarbers.length === 0
+              !selectedTime || isCheckingAvailability || activeBarbers.length === 0
             }
           >
             <FormControl>
@@ -146,21 +107,14 @@ export function BarberSelectionField({
                       : isCheckingAvailability
                       ? 'Verificando disponibilidade...'
                       : activeBarbers.length === 0
-                      ? 'Entre em contato conosco'
+                      ? 'Sem barbeiros disponíveis'
                       : 'Selecione um barbeiro'
                   }
                 />
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-zinc-800 border-zinc-600">
-              {isCheckingAvailability ? (
-                // Apresenta skeletons enquanto carrega disponibilidade
-                <>
-                  {[1, 2, 3].map((k) => (
-                    <SkeletonBarberItem key={k} />
-                  ))}
-                </>
-              ) : shouldShowAllBarbers ? (
+              {shouldShowAllBarbers ? (
                 activeBarbers.map((barber) => (
                   <SelectItem
                     key={barber.id}
@@ -248,15 +202,14 @@ export function BarberSelectionField({
             availableBarbers.length === 0 &&
             activeBarbers.length > 0 &&
             !isCheckingAvailability && (
-              <Alert
-                className="mt-2 bg-red-900/20 border-red-700"
-                variant="destructive"
+              <div
+                className="mt-2 bg-red-900/20 border-red-700 border rounded-lg p-3"
               >
-                <AlertTitle className="text-red-400">Nenhum barbeiro disponível</AlertTitle>
-                <AlertDescription className="text-red-300">
+                <span className="text-red-400 font-semibold">Nenhum barbeiro disponível</span>
+                <div className="text-red-300">
                   Não há barbeiros disponíveis para o horário selecionado. Por favor, escolha outro horário.
-                </AlertDescription>
-              </Alert>
+                </div>
+              </div>
             )}
         </FormItem>
       )}
