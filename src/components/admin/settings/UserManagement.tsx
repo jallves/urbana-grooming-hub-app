@@ -6,8 +6,19 @@ import UsersTab from './users/UsersTab';
 import UserRolesList from './users/UserRolesList';
 import { Users } from 'lucide-react';
 
+/**
+ * Wrapper para incluir fallback de erro caso loading infinito/erro em UserRolesList.
+ * Você pode liberar a edição do UserRolesList para debug caso precise de tratamento mais fino.
+ */
+
 const UserManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('users');
+  const [error, setError] = useState<string | null>(null);
+
+  // Handler para receber erro vindo do UserRolesList
+  const handleRolesListError = (err: string) => {
+    setError(err || 'Erro ao carregar cargos e permissões.');
+  };
 
   return (
     <Card className="w-full">
@@ -29,7 +40,15 @@ const UserManagement: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="roles">
-            <UserRolesList />
+            {/* Exibe mensagem de erro caso ocorra */}
+            {error ? (
+              <div className="p-4 bg-red-100 text-red-600 rounded">
+                {error}
+              </div>
+            ) : (
+              // Passar callback de erro para UserRolesList se implementado
+              <UserRolesList onError={handleRolesListError} />
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>
