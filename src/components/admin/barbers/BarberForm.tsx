@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,42 +40,39 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   
-  // Ensure the role is set to 'barber' when form loads
+  // Garantir o role sempre
   useEffect(() => {
-    if (!barberId) {
-      form.setValue('role', 'barber');
-    }
-  }, [barberId, form]);
+    form.setValue('role', 'barber');
+  }, [form]);
   
   // Extended onSubmit function that also creates or updates the auth user
   const onSubmit = async (data: any) => {
     setIsSubmitting(true);
-    
     try {
-      // Ensure role is barber
+      // Sempre garantir o role está correto
       data.role = 'barber';
-      
-      // Save barber data first (using the original onSubmit)
+
+      // Salvar os dados do barbeiro no banco de dados staff
       await originalOnSubmit(data);
-      
-      // If we have an email, create or update the auth user
+
+      // Criação de conta auth caso não exista (novo registro)
       if (data.email && !barberId && password) {
         if (password !== confirmPassword) {
           toast.error('As senhas não correspondem');
           setIsSubmitting(false);
           return;
         }
-        
+
         if (password.length < 6) {
           toast.error('A senha deve ter pelo menos 6 caracteres');
           setIsSubmitting(false);
           return;
         }
-        
-        // Register the user
+
+        // Register the user no Supabase Auth
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
-          password: password,
+          password,
           options: {
             data: {
               full_name: data.name,
@@ -91,14 +87,14 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
             description: signUpError.message
           });
         } else if (signUpData.user) {
-          // Add barber role
+          // Adiciona o role barber
           const { error: roleError } = await supabase
             .from('user_roles')
             .insert([{ 
               user_id: signUpData.user.id,
               role: 'barber'
             }]);
-            
+
           if (roleError) {
             console.error('Erro ao adicionar role de barbeiro:', roleError);
             toast.error('Erro ao configurar permissões de barbeiro');
@@ -109,8 +105,6 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
           }
         }
       }
-      
-      // Call the original success handler
       onSuccess();
     } catch (error) {
       console.error('Erro ao salvar barbeiro:', error);
