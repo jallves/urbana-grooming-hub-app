@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,16 +20,20 @@ const BarberProfileInfo: React.FC = () => {
       }
 
       try {
+        // CORREÇÃO: busca no staff, não "barber", e role = 'barber'
         const { data, error } = await supabase
-          .from('barber')
+          .from('staff')
           .select('*')
           .eq('email', user.email)
+          .eq('role', 'barber')
           .maybeSingle();
 
         if (error) {
           console.error('Erro ao buscar informações do barbeiro:', error);
         } else if (data) {
           setBarberInfo(data as Barber);
+        } else {
+          setBarberInfo(null);
         }
       } catch (error) {
         console.error('Erro ao buscar informações do barbeiro:', error);
@@ -118,3 +123,4 @@ const BarberProfileInfo: React.FC = () => {
 };
 
 export default BarberProfileInfo;
+
