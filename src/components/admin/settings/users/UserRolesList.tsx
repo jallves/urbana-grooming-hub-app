@@ -9,7 +9,11 @@ import UserRoleDialog from './UserRoleDialog';
 import UserTable from './UserTable';
 import { UserWithRole } from './types';
 
-const UserRolesList: React.FC = () => {
+interface UserRolesListProps {
+  onError?: (err: string) => void;
+}
+
+const UserRolesList: React.FC<UserRolesListProps> = ({ onError }) => {
   const { 
     users, 
     loading, 
@@ -18,7 +22,8 @@ const UserRolesList: React.FC = () => {
     syncLoading, 
     handleDeleteUser, 
     handleSyncStaff,
-    fetchUsers
+    fetchUsers,
+    error, // <-- If error is exposed from useUserManagement
   } = useUserManagement();
   
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
@@ -28,15 +33,20 @@ const UserRolesList: React.FC = () => {
   useEffect(() => {
     // Initial fetch
     fetchUsers();
-    
     // Set up an interval to refresh users every minute
     const intervalId = setInterval(() => {
       console.log('Refreshing user list...');
       fetchUsers();
     }, 60000); // every minute
-    
     return () => clearInterval(intervalId);
   }, [fetchUsers]);
+
+  // Error dispatcher effect
+  useEffect(() => {
+    if (onError && typeof error === 'string' && error) {
+      onError(error);
+    }
+  }, [error, onError]);
 
   const handleUpdateRole = (user: UserWithRole) => {
     setSelectedUser(user);
@@ -136,3 +146,4 @@ const UserRolesList: React.FC = () => {
 };
 
 export default UserRolesList;
+
