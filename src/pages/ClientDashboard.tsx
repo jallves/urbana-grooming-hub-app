@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -26,12 +25,10 @@ const ClientDashboard = () => {
   const { client, signOut, loading } = useClientAuth();
   const navigate = useNavigate();
 
-  // Fetch client appointments
   const { data: appointments, isLoading: appointmentsLoading } = useQuery({
     queryKey: ['client-appointments', client?.id],
     queryFn: async () => {
       if (!client?.id) return [];
-      
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -41,7 +38,7 @@ const ClientDashboard = () => {
         `)
         .eq('client_id', client.id)
         .order('start_time', { ascending: true });
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -137,11 +134,11 @@ const ClientDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 border-urbana-gold/30 hover:shadow-lg hover:shadow-urbana-gold/20 transition-all">
             <CardHeader className="pb-3">
-              <CardTitle className="text-black night flex items-center gap-2 font-playfair">
+              <CardTitle className="text-black flex items-center gap-2 font-playfair">
                 <Plus className="h-5 w-5" />
                 Novo Corte
               </CardTitle>
-              <CardDescription className="text-black night-300">
+              <CardDescription className="text-black">
                 Agende seu próximo serviço
               </CardDescription>
             </CardHeader>
@@ -202,7 +199,7 @@ const ClientDashboard = () => {
             <Calendar className="h-6 w-6 text-urbana-gold" />
             Próximos Agendamentos
           </h2>
-          
+
           {appointmentsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2].map((i) => (
@@ -289,7 +286,7 @@ const ClientDashboard = () => {
           )}
         </div>
 
-        {/* Nossa Barbearia - Contact Information */}
+        {/* Nossa Barbearia - Contato e Rota */}
         <Card className="bg-gray-900 border-gray-700 shadow-lg">
           <CardHeader>
             <CardTitle className="text-urbana-gold flex items-center gap-2 font-playfair text-xl">
@@ -313,8 +310,24 @@ const ClientDashboard = () => {
               </div>
               <div>
                 <p className="text-urbana-gold font-medium">Endereço</p>
-                <p className="text-gray-300">Rua Castelo Branco , 483 - 29101-480 Praia da Costa - Vila Velha/ES</p>
+                <p className="text-gray-300">
+                  Rua Castelo Branco, 483 - Praia da Costa, Vila Velha - ES, 29101-480
+                </p>
               </div>
+            </div>
+            <div className="md:col-span-2">
+              <Button
+                className="w-full bg-gradient-to-r from-urbana-gold to-urbana-gold/90 hover:from-urbana-gold/90 hover:to-urbana-gold text-urbana-black font-semibold"
+                onClick={() =>
+                  window.open(
+                    'https://www.google.com/maps/dir/?api=1&destination=Rua+Castelo+Branco,+483+-+Praia+da+Costa,+Vila+Velha+-+ES,+29101-480',
+                    '_blank'
+                  )
+                }
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Rota
+              </Button>
             </div>
           </CardContent>
         </Card>
