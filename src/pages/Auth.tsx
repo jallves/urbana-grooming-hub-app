@@ -16,22 +16,22 @@ const Auth: React.FC = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
-  
-  // Auto redirect timer
+
+  const from = location.state?.from || "/";
+
+  // Timer de redirecionamento
   useEffect(() => {
     if (!user && !authLoading && redirectTimer > 0) {
       const timer = setTimeout(() => {
-        setRedirectTimer(prev => prev - 1);
+        setRedirectTimer((prev) => prev - 1);
       }, 1000);
       return () => clearTimeout(timer);
     } else if (!user && !authLoading && redirectTimer === 0) {
       navigate('/');
     }
   }, [redirectTimer, user, authLoading, navigate]);
-  
-  // Handle authenticated user redirect
-  const from = location.state?.from || "/";
-  
+
+  // Redireciona se autenticado
   useEffect(() => {
     if (!authLoading && user) {
       const redirectPath = from.startsWith('/admin') && isAdmin 
@@ -43,23 +43,23 @@ const Auth: React.FC = () => {
     }
   }, [user, isAdmin, navigate, authLoading, from]);
 
-  // Create admin user if needed
+  // Cria admin se não existir
   useEffect(() => {
     const createAdminUser = async () => {
       if (authLoading || user) return;
-      
+
       try {
         const { data: existingUser } = await supabase
           .from('profiles')
           .select('email')
           .eq('email', 'joao.colimoides@gmail.com')
           .single();
-        
+
         if (!existingUser) {
           const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: 'joao.colimoides@gmail.com',
             password: 'Jb74872701@',
-            options: { data: { full_name: 'João alves Da silva' } }
+            options: { data: { full_name: 'João Alves Da Silva' } }
           });
 
           if (signUpData?.user) {
@@ -67,7 +67,7 @@ const Auth: React.FC = () => {
               user_id: signUpData.user.id,
               role: 'admin'
             }]);
-            
+
             toast({
               title: "Usuário administrador criado",
               description: "Use joao.colimoides@gmail.com para login de admin",
@@ -75,92 +75,89 @@ const Auth: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('Error checking/creating admin user:', error);
+        console.error('Erro ao criar admin:', error);
       }
     };
-    
+
     createAdminUser();
   }, [authLoading, user, toast]);
 
   if (authLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-4"></div>
-        <p className="text-gray-400">Verificando autenticação...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
+        <p className="text-zinc-400">Verificando autenticação...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 px-4 py-8">
+    <div className="flex items-center justify-center min-h-screen bg-black px-4 py-8">
       <div className="w-full max-w-md space-y-8">
-        {/* Header with barber theme */}
+        {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <Scissors className="h-10 w-10 text-amber-500" />
+            <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
+              <Scissors className="h-6 w-6 text-black" />
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Costa Urbana</h1>
-          <p className="mt-2 text-amber-400/80">
-            Painel administrativo
+          <h1 className="text-3xl font-serif font-bold text-white">
+            Costa Urbana
+          </h1>
+          <p className="mt-1 text-yellow-400/80">
+            Painel Administrativo
           </p>
         </div>
-        
-        {/* Auth card with glass effect */}
-        <div className="bg-gray-800/70 backdrop-blur-sm shadow-xl rounded-lg p-6 border border-gray-700">
+
+        {/* Card */}
+        <div className="bg-[#0c1423] border border-[#1f2a3c] rounded-xl shadow-xl p-6">
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-700">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-[#1f2a3c]">
               <TabsTrigger 
                 value="login"
-                className="data-[state=active]:bg-amber-500 data-[state=active]:text-gray-900"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
               >
                 Login
               </TabsTrigger>
               <TabsTrigger 
                 value="register"
-                className="data-[state=active]:bg-amber-500 data-[state=active]:text-gray-900"
+                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
               >
                 Cadastro
               </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="login" className="mt-0">
-              <LoginForm 
-                loading={loading} 
-                setLoading={setLoading}
-              />
+
+            <TabsContent value="login">
+              <LoginForm loading={loading} setLoading={setLoading} />
             </TabsContent>
-            
-            <TabsContent value="register" className="mt-0">
-              <RegisterForm 
-                loading={loading} 
-                setLoading={setLoading}
-              />
+            <TabsContent value="register">
+              <RegisterForm loading={loading} setLoading={setLoading} />
             </TabsContent>
           </Tabs>
         </div>
 
-        {/* Redirect notice */}
+        {/* Aviso de redirecionamento */}
         {!user && redirectTimer > 0 && (
-          <div className="text-center p-4 bg-amber-900/20 border border-amber-800/50 rounded-lg">
-            <p className="text-amber-400 text-sm">
+          <div className="text-center p-4 bg-yellow-900/20 border border-yellow-800/50 rounded-lg">
+            <p className="text-yellow-400 text-sm">
               Redirecionando em {redirectTimer} segundos
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate('/')}
-              className="mt-2 border-amber-500 text-amber-400 hover:bg-amber-900/30 hover:text-amber-300"
+              className="mt-2 border-yellow-500 text-yellow-400 hover:bg-yellow-900/30 hover:text-yellow-300"
             >
               Ir agora
             </Button>
           </div>
         )}
 
-        {/* Back to site button */}
+        {/* Voltar */}
         <div className="flex justify-center">
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2 border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 border-[#334155] text-zinc-300 hover:bg-[#1f2a3c] hover:text-white"
             onClick={() => navigate('/')}
           >
             <Home size={16} />
