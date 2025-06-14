@@ -9,6 +9,7 @@ export const useUserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -17,6 +18,7 @@ export const useUserManagement = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Fetch users from admin_users view with more detailed logging
       console.log("Fetching users from admin_users table...");
@@ -26,6 +28,7 @@ export const useUserManagement = () => {
 
       if (authError) {
         console.error("Error fetching from admin_users:", authError);
+        setError(authError.message || 'Erro ao buscar usuários');
         throw authError;
       }
       
@@ -44,6 +47,7 @@ export const useUserManagement = () => {
       setUsers(usersWithRoles);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
+      setError((error as Error).message);
       toast.error('Erro ao carregar usuários', { 
         description: (error as Error).message 
       });
@@ -55,17 +59,21 @@ export const useUserManagement = () => {
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Tem certeza que deseja remover este usuário?')) {
       try {
+        setError(null);
         const { error } = await supabase
           .from('admin_users')
           .delete()
           .eq('id', userId);
 
-        if (error) throw error;
+        if (error) {
+          setError(error.message || 'Erro ao remover usuário');
+          throw error;
+        }
 
         toast.success('Usuário removido com sucesso');
         fetchUsers();
       } catch (error) {
-        console.error('Erro ao remover usuário:', error);
+        setError((error as Error).message);
         toast.error('Erro ao remover usuário', { 
           description: (error as Error).message 
         });
@@ -76,6 +84,7 @@ export const useUserManagement = () => {
   const handleSyncStaff = async () => {
     try {
       setSyncLoading(true);
+      setError(null);
       
       // Fetch all active staff members
       const { data: staffMembers, error: staffError } = await supabase
@@ -83,7 +92,10 @@ export const useUserManagement = () => {
         .select('*')
         .eq('is_active', true);
         
-      if (staffError) throw staffError;
+      if (staffError) {
+        setError(staffError.message || 'Erro ao buscar profissionais');
+        throw staffError;
+      }
       
       if (!staffMembers || staffMembers.length === 0) {
         toast.info('Não há profissionais ativos para sincronizar');
@@ -99,7 +111,10 @@ export const useUserManagement = () => {
         .from('admin_users')
         .select('email');
         
-      if (usersError) throw usersError;
+      if (usersError) {
+        setError(usersError.message || 'Erro ao buscar usuários existentes');
+        throw usersError;
+      }
       
       const existingEmails = new Set((existingUsers || []).map(user => 
         user.email?.toLowerCase()).filter(Boolean));
@@ -140,26 +155,26 @@ export const useUserManagement = () => {
           );
 
           if (rpcError) {
-            console.error('Erro ao adicionar barbeiro:', rpcError);
             errors++;
+            setError(rpcError.message || 'Erro ao adicionar barbeiro');
           } else {
-            console.log('Barbeiro adicionado com sucesso:', data);
             addedCount++;
           }
         } catch (e) {
-          console.error('Exception ao adicionar barbeiro:', e);
           errors++;
+          setError((e as Error).message);
         }
       }
       
       if (addedCount > 0) {
         toast.success(`${addedCount} profissionais foram adicionados como usuários`);
         fetchUsers(); // Refresh the list after adding new users
+        setError(null);
       } else if (errors > 0) {
         toast.error(`Não foi possível adicionar os profissionais. Verifique os logs para mais detalhes.`);
       }
     } catch (error) {
-      console.error('Erro ao sincronizar profissionais:', error);
+      setError((error as Error).message);
       toast.error('Erro ao sincronizar profissionais', { 
         description: (error as Error).message 
       });
@@ -180,6 +195,7 @@ export const useUserManagement = () => {
     syncLoading,
     fetchUsers,
     handleDeleteUser,
-    handleSyncStaff
+    handleSyncStaff,
+    error,
   };
 };
