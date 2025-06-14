@@ -49,6 +49,17 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
   // Novo submit: cria usuário no auth + role se e-mail/senha definidos e novo
   const handleSubmit = async (data: any) => {
     try {
+      // Verifica se todos os campos obrigatórios foram preenchidos
+      if (!data.name || data.name.trim().length < 3) {
+        toast.error('Nome é obrigatório e deve ter pelo menos 3 caracteres');
+        return;
+      }
+      if (!data.role || data.role.trim() === '') {
+        toast.error('Selecione um cargo para o profissional');
+        return;
+      }
+
+      // Cadastro Auth se email/senha definidos e não for edição
       if (!isEditing && data.email && password) {
         if (password !== confirmPassword) {
           toast.error('As senhas não correspondem');
@@ -91,11 +102,16 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
         }
       }
       // Cadastro/atualização no staff
-      await originalOnSubmit(data);
-      onSuccess();
-    } catch (error) {
-      toast.error('Erro ao salvar profissional');
-      // ... loga erro no console
+      // Importante: passar todos os dados obrigatórios — o hook faz a lógica
+      const result = await originalOnSubmit(data);
+      // Só chamar onSuccess se realmente salvou
+      if (result !== false) {
+        onSuccess();
+      }
+    } catch (error: any) {
+      let desc = error?.message ? String(error.message) : 'Erro desconhecido';
+      toast.error('Erro ao salvar profissional', { description: desc });
+      console.error(error);
     }
   };
 
@@ -219,3 +235,4 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
 };
 
 export default StaffForm;
+
