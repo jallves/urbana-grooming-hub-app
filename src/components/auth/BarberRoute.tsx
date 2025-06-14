@@ -16,6 +16,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
 
   // Show loading screen while checking authentication
   if (loading) {
+    console.log('BarberRoute: loading...');
     return <AuthLoadingScreen message="Verificando acesso..." />;
   }
 
@@ -25,37 +26,36 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
+  // Only run the access logic ONCE per user status change:
   // Allow access if user is admin OR has barber role
   const hasAccess = isAdmin || isBarber;
-  
+
   if (!hasAccess) {
-    console.log('BarberRoute - Access DENIED. User roles:', {
-      email: user.email,
-      isAdmin,
-      isBarber
-    });
-    
-    // Don't show toast if we're already on the login page
+    // Para evitar loop infinito de toast + redirect:
     if (location.pathname !== '/barbeiro/login') {
+      console.log('BarberRoute - Access DENIED. User:', {
+        email: user.email,
+        isAdmin,
+        isBarber
+      });
       toast({
         title: 'Acesso Negado',
         description: 'Você não tem permissão para acessar esta área. Verifique se você possui o papel de barbeiro.',
         variant: 'destructive',
       });
     }
-    
-    // Redirect to login
+    // Redirecionamento único
     return <Navigate to="/barbeiro/login" replace />;
   }
 
-  // If authenticated and has proper access, render the protected content
   console.log('BarberRoute - Access GRANTED for:', {
     email: user.email,
     isAdmin,
     isBarber
   });
-  
+
   return <>{children}</>;
 };
 
 export default BarberRoute;
+
