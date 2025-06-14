@@ -169,6 +169,15 @@ function App() {
 
                 {/* Barber routes */}
                 <Route path="/barbeiro/login" element={<BarberAuth />} />
+                {/* 👇 ADICIONA a rota raiz do painel barbeiro */}
+                <Route
+                  path="/barbeiro"
+                  element={
+                    <BarberRoute>
+                      <BarberDashboard />
+                    </BarberRoute>
+                  }
+                />
                 <Route
                   path="/barbeiro/dashboard"
                   element={
