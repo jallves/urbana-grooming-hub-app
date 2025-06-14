@@ -13,12 +13,21 @@ export const barberSchema = z.object({
   image_url: z.string().optional(),
   specialties: z.string().optional(),
   experience: z.string().optional(),
-  commission_rate: z.number().nullable().optional(),
+  commission_rate: z.union([z.number(), z.null()]).optional(),
   is_active: z.boolean().default(true),
   // 'role' pode ser omitido do formulário, pois sempre setamos abaixo
 });
 
 export type BarberFormValues = z.infer<typeof barberSchema>;
+
+// Helper para limpar undefined antes de enviar ao supabase
+function cleanPayload<T extends object>(payload: T) {
+  const newObj: any = {};
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value !== undefined) newObj[key] = value;
+  });
+  return newObj;
+}
 
 export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   const form = useForm<BarberFormValues>({
@@ -40,32 +49,44 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
   useEffect(() => {
     if (barberId) {
-      supabase.from('staff').select('*').eq('id', barberId).single().then(({ data, error }) => {
-        if (data) {
-          // Remove 'role' do data recebido
-          const { role, ...rest } = data;
-          form.reset(rest);
-        }
-      });
+      supabase
+        .from('staff')
+        .select('*')
+        .eq('id', barberId)
+        .single()
+        .then(({ data, error }) => {
+          if (data) {
+            // Remove 'role' do data recebido
+            const { role, ...rest } = data;
+            form.reset(rest);
+          }
+        });
     }
     // eslint-disable-next-line
   }, [barberId]);
   
   const onSubmit = async (data: BarberFormValues) => {
     setIsSubmitting(true);
+
+    // FORÇA campos obrigatórios como 'name', define role e limpa undefineds
+    const basePayload = {
+      ...data,
+      role: 'barber',
+      name: data.name ?? '',
+    };
+    const payload = cleanPayload(basePayload);
+
     let resp;
 
-    const payload = {
-      ...data,
-      role: 'barber', // Sempre força o cargo de barbeiro
-      name: data.name ?? '', // garantir string obrigatória
-    };
-
     if (barberId) {
-      resp = await supabase.from('staff').update(payload).eq('id', barberId);
+      resp = await supabase
+        .from('staff')
+        .update(payload)
+        .eq('id', barberId);
     } else {
-      // precisa ser array de objetos completos e name obrigatório
-      resp = await supabase.from('staff').insert([payload]);
+      resp = await supabase
+        .from('staff')
+        .insert([payload]);
     }
 
     if (resp.error) {
@@ -81,6 +102,6 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     form,
     isEditing,
     isSubmitting,
-    onSubmit
+    onSubmit,
   };
 }

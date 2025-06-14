@@ -41,12 +41,12 @@ const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) =
             <FormItem>
               <FormLabel>Taxa de Comissão (%)</FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  placeholder="Ex: 60" 
-                  {...field} 
-                  value={field.value === null ? '' : String(field.value)}
-                  onChange={(e) => {
+                <Input
+                  type="number"
+                  placeholder="Ex: 60"
+                  {...field}
+                  value={field.value === null || field.value === undefined ? '' : String(field.value)}
+                  onChange={e => {
                     const value = e.target.value === '' ? null : Number(e.target.value);
                     field.onChange(value);
                   }}
@@ -67,9 +67,9 @@ const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) =
             <FormItem>
               <FormLabel>Especialidades</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder="Ex: barba, corte degradê, etc (separados por vírgula)" 
-                  {...field} 
+                <Textarea
+                  placeholder="Ex: barba, corte degradê, etc (separados por vírgula)"
+                  {...field}
                   value={field.value || ''}
                   className="resize-none"
                 />
