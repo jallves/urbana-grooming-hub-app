@@ -137,11 +137,11 @@ const ClientDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 border-urbana-gold/30 hover:shadow-lg hover:shadow-urbana-gold/20 transition-all">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white flex items-center gap-2 font-playfair">
+              <CardTitle className="text-black night flex items-center gap-2 font-playfair">
                 <Plus className="h-5 w-5" />
                 Novo Corte
               </CardTitle>
-              <CardDescription className="text-gray-300">
+              <CardDescription className="text-black night-300">
                 Agende seu próximo serviço
               </CardDescription>
             </CardHeader>
@@ -294,7 +294,7 @@ const ClientDashboard = () => {
           <CardHeader>
             <CardTitle className="text-urbana-gold flex items-center gap-2 font-playfair text-xl">
               <MapPin className="h-5 w-5" />
-              Nossa Barbearia
+              Costa Urbana
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -304,7 +304,7 @@ const ClientDashboard = () => {
               </div>
               <div>
                 <p className="text-urbana-gold font-medium">Telefone</p>
-                <p className="text-gray-300">(11) 99999-9999</p>
+                <p className="text-gray-300">2799778-0137</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -313,7 +313,7 @@ const ClientDashboard = () => {
               </div>
               <div>
                 <p className="text-urbana-gold font-medium">Endereço</p>
-                <p className="text-gray-300">Rua Example, 123 - Centro</p>
+                <p className="text-gray-300">Rua Castelo Branco , 483 - 29101-480 Praia da Costa - Vila Velha/ES</p>
               </div>
             </div>
           </CardContent>
