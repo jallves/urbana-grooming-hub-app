@@ -30,7 +30,8 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
     selectedFile,
     uploading,
     uploadProgress,
-    isSubmitting
+    isSubmitting,
+    uploadFile
   } = useStaffForm(staffId, onSuccess, defaultRole);
 
   const [password, setPassword] = useState('');
@@ -65,10 +66,9 @@ const StaffForm: React.FC<StaffFormProps> = ({ staffId, onCancel, onSuccess, def
 
       // -- UPLOAD DE IMAGEM: se arquivo foi selecionado, faz upload e atualiza no form --
       if (selectedFile) {
-        // useImageUpload retorna uploading true durante upload
         try {
           toast.info('Enviando foto...');
-          const { uploadFile } = await import('@/components/admin/settings/media/useImageUpload');
+          // Use uploadFile from the hook, not a dynamic import
           const url = await uploadFile(selectedFile, 'staff-photos', 'profiles');
           if (url) {
             data.image_url = url;
