@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -77,16 +76,16 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     },
   });
 
-  // Fetch staff
+  // Fetch staff (agora só barbeiros)
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['staff'],
+    queryKey: ['barbers'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('staff')
         .select('*')
         .eq('is_active', true)
+        .eq('role', 'barber')
         .order('name');
-      
       if (error) throw new Error(error.message);
       return data as StaffMember[];
     },

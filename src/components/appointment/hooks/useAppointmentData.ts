@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -48,40 +47,25 @@ export const useAppointmentData = () => {
     const fetchBarbers = async () => {
       setLoadingBarbers(true);
       try {
-        // BUSCA E EXPLICAÇÃO: Só mostrar staff com role "barber" E is_active = true
+        // Só mostrar staff com role "barber" e is_active = true
         const { data, error } = await supabase
           .from('staff')
-          .select(
-            'id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at'
-          )
+          .select('id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at')
           .eq('is_active', true)
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
         if (error) {
-          console.error("Erro ao buscar barbeiros:", error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os barbeiros.",
-            variant: "destructive",
-          });
           setBarbers([]);
           return;
         }
 
         if (data && data.length > 0) {
           setBarbers(data);
-          console.log("Barbeiros carregados:", data.map(b => ({ id: b.id, nome: b.name, role: b.role, ativo: b.is_active })));
         } else {
           setBarbers([]);
         }
       } catch (error) {
-        console.error("Erro ao buscar barbeiros:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os barbeiros.",
-          variant: "destructive",
-        });
         setBarbers([]);
       } finally {
         setLoadingBarbers(false);

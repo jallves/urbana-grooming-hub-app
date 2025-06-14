@@ -28,7 +28,6 @@ const AdminSidebar: React.FC = () => {
   const navItems = [
     { name: 'Dashboard', href: '/admin', icon: <Home className="h-5 w-5" /> },
     { name: 'Agendamentos', href: '/admin/agendamentos', icon: <Calendar className="h-5 w-5" /> },
-    { name: 'Profissionais', href: '/admin/profissionais', icon: <User className="h-5 w-5" /> },
     { name: 'Barbeiros', href: '/admin/barbeiros', icon: <UserCheck className="h-5 w-5" /> },
     { name: 'Clientes', href: '/admin/clientes', icon: <Users className="h-5 w-5" /> },
     { name: 'Aniversariantes', href: '/admin/aniversariantes', icon: <Cake className="h-5 w-5" /> },
