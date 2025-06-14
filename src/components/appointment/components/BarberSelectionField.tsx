@@ -65,14 +65,14 @@ export function BarberSelectionField({
   const shouldShowAllBarbers =
     !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
 
-  // Filtro reforçado: só mostra profissionais realmente ativos!
+  // Só mostra barbeiros ativos, role=barber, vindo do banco
   const activeBarbers = Array.isArray(barbers)
-    ? barbers.filter((b) => !!b && b.is_active && b.role === "barber")
+    ? barbers.filter((b) => !!b && b.is_active === true && b.role === "barber")
     : [];
 
   // Função para abrir o admin no painel de profissionais (nova aba)
   const redirectToAdminStaff = () => {
-    window.open('/admin/profissionais', '_blank');
+    window.open('/admin/barbeiros', '_blank');
   };
 
   return (
@@ -97,9 +97,8 @@ export function BarberSelectionField({
                 <AlertTriangle className="h-4 w-4 text-yellow-400 mb-1" />
                 <AlertTitle className="text-yellow-400">Nenhum barbeiro cadastrado</AlertTitle>
                 <AlertDescription className="text-yellow-300">
-                  Não há barbeiros ativos cadastrados no sistema. 
-                  Entre em contato conosco pelo WhatsApp para agendar seu horário
-                  <br />
+                  Não há barbeiros ativos cadastrados no sistema.<br />
+                  Entre em contato conosco pelo WhatsApp para agendar seu horário.<br />
                   <span className="block mt-2">Ou cadastre seu primeiro barbeiro no painel admin abaixo:</span>
                 </AlertDescription>
               </div>
@@ -150,34 +149,52 @@ export function BarberSelectionField({
                 ))
               ) : (
                 <>
-                  {availableBarbers.map((barber) => (
-                    <SelectItem
-                      key={barber.id}
-                      value={barber.id}
-                      className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-500">✅</span>
-                        {barber.name}
-                        <span className="text-sm text-zinc-400">Disponível</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {availableBarbers
+                    .filter((b) => {
+                      const barberObj = barbers.find((barb) => barb.id === b.id);
+                      return barberObj && barberObj.is_active === true && barberObj.role === "barber";
+                    })
+                    .map((barber) => {
+                      const barberObj = barbers.find((barb) => barb.id === barber.id);
+                      if (!barberObj) return null;
+                      return (
+                        <SelectItem
+                          key={barber.id}
+                          value={barber.id}
+                          className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-500">✅</span>
+                            {barberObj.name}
+                            <span className="text-sm text-zinc-400">Disponível</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
 
-                  {unavailableBarbers.map((barber) => (
-                    <SelectItem
-                      key={barber.id}
-                      value={barber.id}
-                      disabled
-                      className="text-zinc-500 opacity-50"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-red-500">❌</span>
-                        {barber.name}
-                        <span className="text-sm text-zinc-500">Indisponível</span>
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {unavailableBarbers
+                    .filter((b) => {
+                      const barberObj = barbers.find((barb) => barb.id === b.id);
+                      return barberObj && barberObj.is_active === true && barberObj.role === "barber";
+                    })
+                    .map((barber) => {
+                      const barberObj = barbers.find((barb) => barb.id === barber.id);
+                      if (!barberObj) return null;
+                      return (
+                        <SelectItem
+                          key={barber.id}
+                          value={barber.id}
+                          disabled
+                          className="text-zinc-500 opacity-50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-500">❌</span>
+                            {barberObj.name}
+                            <span className="text-sm text-zinc-500">Indisponível</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                 </>
               )}
 
