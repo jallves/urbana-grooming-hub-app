@@ -62,6 +62,11 @@ export function BarberSelectionField({
 
   const activeBarbers = barbers.filter((b) => b.is_active);
 
+  // Função para abrir o admin no painel de profissionais (nova aba)
+  const redirectToAdminStaff = () => {
+    window.open('/admin/profissionais', '_blank');
+  };
+
   return (
     <FormField
       control={control}
@@ -79,13 +84,24 @@ export function BarberSelectionField({
           </FormLabel>
 
           {activeBarbers.length === 0 && (
-            <Alert className="mt-2 bg-yellow-900/20 border-yellow-700">
-              <AlertTriangle className="h-4 w-4 text-yellow-400" />
-              <AlertTitle className="text-yellow-400">Nenhum barbeiro cadastrado</AlertTitle>
-              <AlertDescription className="text-yellow-300">
-                Não há barbeiros ativos cadastrados no sistema. Entre em contato conosco pelo WhatsApp
-                para agendar seu horário.
-              </AlertDescription>
+            <Alert className="mt-2 bg-yellow-900/20 border-yellow-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <AlertTriangle className="h-4 w-4 text-yellow-400 mb-1" />
+                <AlertTitle className="text-yellow-400">Nenhum barbeiro cadastrado</AlertTitle>
+                <AlertDescription className="text-yellow-300">
+                  Não há barbeiros ativos cadastrados no sistema. 
+                  Entre em contato conosco pelo WhatsApp para agendar seu horário
+                  <br />
+                  <span className="block mt-2">Ou cadastre seu primeiro barbeiro no painel admin abaixo:</span>
+                </AlertDescription>
+              </div>
+              <button
+                type="button"
+                className="bg-urbana-gold text-black px-4 py-2 rounded-lg mt-2 sm:mt-0 hover:bg-urbana-gold/90 font-semibold transition"
+                onClick={redirectToAdminStaff}
+              >
+                Cadastrar primeiro barbeiro
+              </button>
             </Alert>
           )}
 
