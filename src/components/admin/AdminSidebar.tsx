@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -16,7 +15,8 @@ import {
   UserCheck,
   Cake,
   Menu,
-  X
+  X,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -34,6 +34,7 @@ const AdminSidebar: React.FC = () => {
     { name: 'Aniversariantes', href: '/admin/aniversariantes', icon: <Cake className="h-5 w-5" /> },
     { name: 'Produtos e Serviços', href: '/admin/produtos', icon: <Package className="h-5 w-5" /> },
     { name: 'Financeiro', href: '/admin/financeiro', icon: <DollarSign className="h-5 w-5" /> },
+    { name: 'Fluxo de Caixa', href: '/admin/fluxo-caixa', icon: <TrendingUp className="h-5 w-5" /> },
     { name: 'Marketing', href: '/admin/marketing', icon: <Tag className="h-5 w-5" /> },
     { name: 'Relatórios', href: '/admin/relatorios', icon: <BarChart2 className="h-5 w-5" /> },
     { name: 'Suporte', href: '/admin/suporte', icon: <MessageSquare className="h-5 w-5" /> },
