@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { StaffMember } from '@/types/staff';
+import { Barber } from '@/types/barber';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Phone, Mail, User } from 'lucide-react';
@@ -19,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface BarberListProps {
-  barbers: StaffMember[];
+  barbers: Barber[];
   isLoading: boolean;
   onEdit: (id: string) => void;
   onDelete: () => void;

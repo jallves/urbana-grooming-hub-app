@@ -1,12 +1,11 @@
-
 import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { UseFormReturn } from 'react-hook-form';
-import { StaffFormValues } from '../hooks/useStaffForm';
+import { BarberFormValues } from '@/components/admin/barbers/hooks/useBarberForm';
 
 interface StaffPersonalInfoProps {
-  form: UseFormReturn<StaffFormValues>;
+  form: UseFormReturn<BarberFormValues>;
 }
 
 const StaffPersonalInfo: React.FC<StaffPersonalInfoProps> = ({ form }) => {

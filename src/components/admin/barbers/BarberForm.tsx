@@ -1,11 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { supabase } from '@/integrations/supabase/client';
-import { useStaffForm } from '../staff/hooks/useStaffForm';
+import { useBarberForm } from './hooks/useBarberForm';
 import StaffProfileImage from '../staff/components/StaffProfileImage';
 import StaffPersonalInfo from '../staff/components/StaffPersonalInfo';
 import StaffProfessionalInfo from '../staff/components/StaffProfessionalInfo';
@@ -13,7 +10,6 @@ import StaffActiveStatus from '../staff/components/StaffActiveStatus';
 import { BarberModuleAccess } from './BarberModuleAccess';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Shield, Settings, Lock } from 'lucide-react';
-import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 
 interface BarberFormProps {
@@ -25,94 +21,13 @@ interface BarberFormProps {
 const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }) => {
   const { 
     form,
-    onSubmit: originalOnSubmit,
     isEditing,
-    isLoadingStaff,
-    handleFileChange,
-    selectedFile,
-    uploading,
-    uploadProgress,
-    isSubmitting: originalIsSubmitting
-  } = useStaffForm(barberId, onSuccess, 'barber');
-  
-  const [isSubmitting, setIsSubmitting] = useState(originalIsSubmitting);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  
-  // Garantir o role sempre
-  useEffect(() => {
-    form.setValue('role', 'barber');
-  }, [form]);
-  
-  // Extended onSubmit function that also creates or updates the auth user
-  const onSubmit = async (data: any) => {
-    setIsSubmitting(true);
-    try {
-      // Sempre garantir o role está correto
-      data.role = 'barber';
+    isSubmitting,
+    onSubmit
+  } = useBarberForm(barberId, onSuccess);
 
-      // Salvar os dados do barbeiro no banco de dados staff
-      await originalOnSubmit(data);
-
-      // Criação de conta auth caso não exista (novo registro)
-      if (data.email && !barberId && password) {
-        if (password !== confirmPassword) {
-          toast.error('As senhas não correspondem');
-          setIsSubmitting(false);
-          return;
-        }
-
-        if (password.length < 6) {
-          toast.error('A senha deve ter pelo menos 6 caracteres');
-          setIsSubmitting(false);
-          return;
-        }
-
-        // Register the user no Supabase Auth
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: data.email,
-          password,
-          options: {
-            data: {
-              full_name: data.name,
-            },
-            emailRedirectTo: `${window.location.origin}/auth`
-          }
-        });
-
-        if (signUpError) {
-          console.error('Erro ao criar conta de usuário para o barbeiro:', signUpError);
-          toast.error('Erro ao criar conta de usuário', {
-            description: signUpError.message
-          });
-        } else if (signUpData.user) {
-          // Adiciona o role barber
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert([{ 
-              user_id: signUpData.user.id,
-              role: 'barber'
-            }]);
-
-          if (roleError) {
-            console.error('Erro ao adicionar role de barbeiro:', roleError);
-            toast.error('Erro ao configurar permissões de barbeiro');
-          } else {
-            toast.success('Conta de usuário criada para o barbeiro', {
-              description: 'O barbeiro já pode acessar o painel admin'
-            });
-          }
-        }
-      }
-      onSuccess();
-    } catch (error) {
-      console.error('Erro ao salvar barbeiro:', error);
-      toast.error('Erro ao salvar barbeiro');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // upload de imagem pode ser adicionado aqui se necessário...
+  // const handleFileChange = ...
 
   return (
     <Form {...form}>
@@ -127,12 +42,6 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
               <Settings className="h-4 w-4" />
               Informações Profissionais
             </TabsTrigger>
-            {!barberId && (
-              <TabsTrigger value="account" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                Conta de Acesso
-              </TabsTrigger>
-            )}
             {barberId && (
               <TabsTrigger value="access" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -146,7 +55,7 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
               <div className="col-span-1">
                 <StaffProfileImage 
                   form={form}
-                  handleFileChange={handleFileChange}
+                  handleFileChange={() => {}} // Para manter a assinatura
                 />
               </div>
               
@@ -159,61 +68,6 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
           <TabsContent value="professional" className="space-y-6">
             <StaffProfessionalInfo form={form} />
             <StaffActiveStatus form={form} />
-          </TabsContent>
-          
-          <TabsContent value="account" className="space-y-4">
-            <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-md border border-yellow-200 dark:border-yellow-800 mb-4">
-              <h3 className="font-medium text-yellow-800 dark:text-yellow-300 mb-1">
-                Criação de Conta de Acesso
-              </h3>
-              <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                Estas credenciais permitirão que o barbeiro acesse o painel administrativo.
-                A senha deve ter pelo menos 6 caracteres.
-              </p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="password" className="text-sm font-medium">
-                    Senha
-                  </label>
-                  <Input 
-                    id="password"
-                    type={passwordVisible ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Digite uma senha"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="confirm-password" className="text-sm font-medium">
-                    Confirmar Senha
-                  </label>
-                  <Input 
-                    id="confirm-password"
-                    type={passwordVisible ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirme a senha"
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="show-password"
-                    checked={passwordVisible}
-                    onChange={() => setPasswordVisible(!passwordVisible)}
-                    className="rounded border-gray-300"
-                  />
-                  <label htmlFor="show-password" className="text-sm">
-                    Mostrar senha
-                  </label>
-                </div>
-              </div>
-            </div>
           </TabsContent>
           
           {barberId && (

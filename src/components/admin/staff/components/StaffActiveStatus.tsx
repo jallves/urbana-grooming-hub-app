@@ -3,10 +3,10 @@ import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { UseFormReturn } from 'react-hook-form';
-import { StaffFormValues } from '../hooks/useStaffForm';
+import { BarberFormValues } from '@/components/admin/barbers/hooks/useBarberForm';
 
 interface StaffActiveStatusProps {
-  form: UseFormReturn<StaffFormValues>;
+  form: UseFormReturn<BarberFormValues>;
 }
 
 const StaffActiveStatus: React.FC<StaffActiveStatusProps> = ({ form }) => {

@@ -1,15 +1,14 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Staff } from '@/types/staff';
+import { Barber } from '@/types/barber';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const BarberProfileInfo: React.FC = () => {
   const { user } = useAuth();
-  const [barberInfo, setBarberInfo] = useState<Staff | null>(null);
+  const [barberInfo, setBarberInfo] = useState<Barber | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -21,7 +20,7 @@ const BarberProfileInfo: React.FC = () => {
 
       try {
         const { data, error } = await supabase
-          .from('staff')
+          .from('barber')
           .select('*')
           .eq('email', user.email)
           .maybeSingle();
@@ -29,7 +28,7 @@ const BarberProfileInfo: React.FC = () => {
         if (error) {
           console.error('Erro ao buscar informações do barbeiro:', error);
         } else if (data) {
-          setBarberInfo(data as Staff);
+          setBarberInfo(data as Barber);
         }
       } catch (error) {
         console.error('Erro ao buscar informações do barbeiro:', error);

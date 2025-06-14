@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -21,7 +20,6 @@ import AdminRoute from '@/components/auth/AdminRoute';
 import Admin from '@/pages/Admin';
 import AdminAppointments from '@/pages/AdminAppointments';
 import AdminClients from '@/pages/AdminClients';
-import AdminStaff from '@/pages/AdminStaff';
 import AdminBarbers from '@/pages/AdminBarbers';
 import AdminBirthdays from '@/pages/AdminBirthdays';
 import AdminProducts from '@/pages/AdminProducts';
@@ -93,14 +91,6 @@ function App() {
                   element={
                     <AdminRoute>
                       <AdminClients />
-                    </AdminRoute>
-                  }
-                />
-                <Route
-                  path="/admin/profissionais"
-                  element={
-                    <AdminRoute>
-                      <AdminStaff />
                     </AdminRoute>
                   }
                 />

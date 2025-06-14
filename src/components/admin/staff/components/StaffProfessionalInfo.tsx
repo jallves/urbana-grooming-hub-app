@@ -1,14 +1,13 @@
-
 import React from 'react';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UseFormReturn } from 'react-hook-form';
-import { StaffFormValues } from '../hooks/useStaffForm';
+import { BarberFormValues } from '@/components/admin/barbers/hooks/useBarberForm';
 
 interface StaffProfessionalInfoProps {
-  form: UseFormReturn<StaffFormValues>;
+  form: UseFormReturn<BarberFormValues>;
 }
 
 const StaffProfessionalInfo: React.FC<StaffProfessionalInfoProps> = ({ form }) => {
