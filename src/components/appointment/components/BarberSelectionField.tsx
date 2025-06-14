@@ -54,13 +54,21 @@ export function BarberSelectionField({
     }
   }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability]);
 
+  // LOG extra para depuração
+  React.useEffect(() => {
+    console.log('Barbeiros recebidos para seleção:', barbers);
+  }, [barbers]);
+
   const availableBarbers = barberAvailability.filter((b) => b.available);
   const unavailableBarbers = barberAvailability.filter((b) => !b.available);
 
   const shouldShowAllBarbers =
     !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
 
-  const activeBarbers = barbers.filter((b) => b.is_active);
+  // Filtro reforçado: só mostra profissionais realmente ativos!
+  const activeBarbers = Array.isArray(barbers)
+    ? barbers.filter((b) => !!b && b.is_active && b.role === "barber")
+    : [];
 
   // Função para abrir o admin no painel de profissionais (nova aba)
   const redirectToAdminStaff = () => {

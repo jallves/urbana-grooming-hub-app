@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -7,6 +8,7 @@ export const useAppointmentData = () => {
   const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
   const [barbers, setBarbers] = useState<StaffMember[]>([]);
+  const [loadingBarbers, setLoadingBarbers] = useState(false);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -44,11 +46,14 @@ export const useAppointmentData = () => {
 
   useEffect(() => {
     const fetchBarbers = async () => {
+      setLoadingBarbers(true);
       try {
-        console.log('Buscando barbeiros ativos...');
+        // BUSCA E EXPLICAÇÃO: Só mostrar staff com role "barber" E is_active = true
         const { data, error } = await supabase
           .from('staff')
-          .select('id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at')
+          .select(
+            'id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at'
+          )
           .eq('is_active', true)
           .eq('role', 'barber')
           .order('name', { ascending: true });
@@ -60,12 +65,13 @@ export const useAppointmentData = () => {
             description: "Não foi possível carregar os barbeiros.",
             variant: "destructive",
           });
+          setBarbers([]);
           return;
         }
 
         if (data && data.length > 0) {
           setBarbers(data);
-          console.log(`${data.length} barbeiro(s) ativo(s) carregado(s) com sucesso`);
+          console.log("Barbeiros carregados:", data.map(b => ({ id: b.id, nome: b.name, role: b.role, ativo: b.is_active })));
         } else {
           setBarbers([]);
         }
@@ -77,6 +83,8 @@ export const useAppointmentData = () => {
           variant: "destructive",
         });
         setBarbers([]);
+      } finally {
+        setLoadingBarbers(false);
       }
     };
 
@@ -86,5 +94,6 @@ export const useAppointmentData = () => {
   return {
     services,
     barbers,
+    loadingBarbers
   };
 };
