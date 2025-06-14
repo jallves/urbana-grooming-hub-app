@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +48,7 @@ export const useAppointmentData = () => {
     const fetchBarbers = async () => {
       setLoadingBarbers(true);
       try {
-        // Só mostrar staff com role "barber" e is_active = true
+        // BUSCA APENAS STAFF ATIVO E ROLE "barber" DO BANCO
         const { data, error } = await supabase
           .from('staff')
           .select('id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at')
@@ -77,7 +78,7 @@ export const useAppointmentData = () => {
 
   return {
     services,
-    barbers,
+    barbers, // este array já vem filtrado da base de dados
     loadingBarbers
   };
 };
