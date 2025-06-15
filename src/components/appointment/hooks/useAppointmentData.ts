@@ -56,6 +56,8 @@ export const useAppointmentData = () => {
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
+        console.log('Barbeiros retornados de staff:', data, 'Erro:', error);
+
         if (error) {
           setBarbers([]);
           return;
