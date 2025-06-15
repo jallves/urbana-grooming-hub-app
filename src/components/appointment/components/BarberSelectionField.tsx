@@ -20,11 +20,11 @@ import {
   FormData,
   BarberAvailabilityInfo,
 } from 'src/components/appointment/hooks/useClientAppointmentForm.ts';
-import { StaffMember } from '@/types/appointment';
+import { Barber } from '@/types/barber';
 
 interface BarberSelectionFieldProps {
   control: Control<FormData>;
-  barbers: StaffMember[];
+  barbers: Barber[];
   barberAvailability: BarberAvailabilityInfo[];
   isCheckingAvailability: boolean;
   getFieldValue: (field: keyof FormData) => any;
@@ -44,34 +44,27 @@ export function BarberSelectionField({
   const selectedServiceId = getFieldValue('service_id');
 
   useEffect(() => {
-    if (selectedDate && selectedTime && selectedServiceId) {
-      checkBarberAvailability(selectedDate, selectedTime, selectedServiceId);
-    }
-  }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability]);
-
-  useEffect(() => {
-    console.log('[BarberSelectionField] Props recebidas:', {
+    console.log('[BarberSelectionField] Props atualizadas:', {
       barbersCount: barbers?.length || 0,
       barbers: barbers,
       barberAvailabilityCount: barberAvailability?.length || 0,
-      barberAvailability: barberAvailability,
       selectedDate,
       selectedTime,
       selectedServiceId,
     });
   }, [barbers, barberAvailability, selectedDate, selectedTime, selectedServiceId]);
 
-  // Filtrar barbeiros ativos
-  const activeBarbers = Array.isArray(barbers)
-    ? barbers.filter(
-        (b) =>
-          !!b &&
-          b.is_active === true &&
-          b.role === 'barber'
-      )
-    : [];
+  useEffect(() => {
+    if (selectedDate && selectedTime && selectedServiceId && barbers.length > 0) {
+      console.log('[BarberSelectionField] Iniciando verificação de disponibilidade...');
+      checkBarberAvailability(selectedDate, selectedTime, selectedServiceId);
+    }
+  }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability, barbers.length]);
 
-  console.log('[BarberSelectionField] Barbeiros ativos encontrados:', activeBarbers);
+  // Validar se barbers é um array válido
+  const validBarbers = Array.isArray(barbers) ? barbers.filter(b => b && b.id && b.name) : [];
+  
+  console.log('[BarberSelectionField] Barbeiros válidos:', validBarbers);
 
   const availableBarbers = barberAvailability.filter((b) => b.available);
   const unavailableBarbers = barberAvailability.filter((b) => !b.available);
@@ -106,23 +99,24 @@ export function BarberSelectionField({
                   placeholder={
                     isCheckingAvailability
                       ? 'Verificando disponibilidade...'
-                      : activeBarbers.length === 0
-                      ? 'Nenhum barbeiro cadastrado'
+                      : validBarbers.length === 0
+                      ? 'Nenhum barbeiro encontrado'
                       : 'Selecione um barbeiro'
                   }
                 />
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-zinc-800 border-zinc-600">
-              {activeBarbers.length === 0 ? (
+              {validBarbers.length === 0 ? (
                 <div className="px-2 py-4 text-center text-zinc-400">
-                  Nenhum barbeiro encontrado na base de dados.
-                  <br />
-                  <span className="text-xs">Verifique se há barbeiros cadastrados e ativos.</span>
+                  <div className="mb-2">❌ Nenhum barbeiro encontrado</div>
+                  <div className="text-xs">
+                    Verifique se há barbeiros cadastrados e ativos no sistema.
+                  </div>
                 </div>
               ) : shouldShowAllBarbers ? (
                 // Mostrar todos os barbeiros quando não há filtro de disponibilidade
-                activeBarbers.map((barber) => (
+                validBarbers.map((barber) => (
                   <SelectItem
                     key={barber.id}
                     value={barber.id}
@@ -131,6 +125,9 @@ export function BarberSelectionField({
                     <div className="flex items-center gap-2">
                       <span className="text-blue-400">👨‍💼</span>
                       {barber.name}
+                      {barber.specialties && (
+                        <span className="text-xs text-zinc-400">({barber.specialties})</span>
+                      )}
                     </div>
                   </SelectItem>
                 ))
@@ -139,13 +136,10 @@ export function BarberSelectionField({
                   {/* Barbeiros disponíveis */}
                   {availableBarbers.length > 0 &&
                     availableBarbers
-                      .filter((b) => {
-                        const barberObj = activeBarbers.find(x => x.id === b.id);
-                        return !!barberObj;
-                      })
-                      .map((barber) => {
-                        const barberObj = activeBarbers.find(x => x.id === barber.id);
-                        if (!barberObj) return null;
+                      .map((barberAvailability) => {
+                        const barber = validBarbers.find(b => b.id === barberAvailability.id);
+                        if (!barber) return null;
+                        
                         return (
                           <SelectItem
                             key={barber.id}
@@ -154,7 +148,7 @@ export function BarberSelectionField({
                           >
                             <div className="flex items-center gap-2">
                               <span className="text-green-500">✅</span>
-                              {barberObj.name}
+                              {barber.name}
                               <span className="text-sm text-zinc-400">Disponível</span>
                             </div>
                           </SelectItem>
@@ -164,13 +158,10 @@ export function BarberSelectionField({
                   {/* Barbeiros indisponíveis */}
                   {unavailableBarbers.length > 0 &&
                     unavailableBarbers
-                      .filter((b) => {
-                        const barberObj = activeBarbers.find(x => x.id === b.id);
-                        return !!barberObj;
-                      })
-                      .map((barber) => {
-                        const barberObj = activeBarbers.find(x => x.id === barber.id);
-                        if (!barberObj) return null;
+                      .map((barberAvailability) => {
+                        const barber = validBarbers.find(b => b.id === barberAvailability.id);
+                        if (!barber) return null;
+                        
                         return (
                           <SelectItem
                             key={barber.id}
@@ -180,7 +171,7 @@ export function BarberSelectionField({
                           >
                             <div className="flex items-center gap-2">
                               <span className="text-red-500">❌</span>
-                              {barberObj.name}
+                              {barber.name}
                               <span className="text-sm text-zinc-500">Indisponível</span>
                             </div>
                           </SelectItem>
@@ -190,7 +181,7 @@ export function BarberSelectionField({
                   {/* Aviso se nenhum barbeiro disponível */}
                   {!isCheckingAvailability &&
                     availableBarbers.length === 0 &&
-                    activeBarbers.length > 0 && (
+                    validBarbers.length > 0 && (
                       <div className="px-2 py-1 text-sm text-red-400">
                         Nenhum barbeiro disponível neste horário
                       </div>
@@ -202,22 +193,22 @@ export function BarberSelectionField({
 
           <FormMessage />
 
-          {/* Alertas informativos */}
-          {!selectedTime && activeBarbers.length > 0 && (
+          {/* Informações de status */}
+          {!selectedTime && validBarbers.length > 0 && (
             <p className="text-sm text-zinc-400">
-              Selecione um horário primeiro para verificar disponibilidade
+              ℹ️ Selecione data e horário para verificar disponibilidade
             </p>
           )}
 
           {selectedTime &&
             !shouldShowAllBarbers &&
             availableBarbers.length === 0 &&
-            activeBarbers.length > 0 &&
+            validBarbers.length > 0 &&
             !isCheckingAvailability && (
               <div className="mt-2 bg-red-900/20 border-red-700 border rounded-lg p-3">
-                <span className="text-red-400 font-semibold">Nenhum barbeiro disponível</span>
-                <div className="text-red-300">
-                  Não há barbeiros disponíveis para o horário selecionado. Por favor, escolha outro horário.
+                <span className="text-red-400 font-semibold">⚠️ Nenhum barbeiro disponível</span>
+                <div className="text-red-300 text-sm mt-1">
+                  Não há barbeiros disponíveis para o horário selecionado. Escolha outro horário ou selecione um barbeiro indisponível (sujeito a confirmação).
                 </div>
               </div>
             )}

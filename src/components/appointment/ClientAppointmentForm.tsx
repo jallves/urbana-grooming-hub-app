@@ -51,16 +51,25 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
-  // Log de debug para verificar os dados dos barbeiros
+  // Debug logs melhorados
   React.useEffect(() => {
-    console.log('[ClientAppointmentForm] Estado atual:', {
+    console.log('[ClientAppointmentForm] Estado atual completo:', {
       loading,
-      barbersCount: barbers?.length || 0,
-      barbers: barbers,
-      servicesCount: services?.length || 0,
       clientId,
+      servicesCount: services?.length || 0,
+      services,
+      barbersCount: barbers?.length || 0,
+      barbers,
+      barberAvailability,
+      isCheckingAvailability,
     });
-  }, [loading, barbers, services, clientId]);
+
+    if (barbers?.length === 0) {
+      console.error('[ClientAppointmentForm] 🚨 PROBLEMA: Nenhum barbeiro carregado!');
+    } else {
+      console.log('[ClientAppointmentForm] ✅ Barbeiros carregados com sucesso:', barbers);
+    }
+  }, [loading, barbers, services, clientId, barberAvailability, isCheckingAvailability]);
 
   const finalPrice = selectedService
     ? appliedCoupon
@@ -138,6 +147,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-white">Carregando formulário...</p>
+          <p className="text-zinc-400 text-sm mt-2">Buscando serviços e barbeiros...</p>
         </div>
       </div>
     );
@@ -145,11 +155,17 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 
   return (
     <div className="max-w-3xl mx-auto bg-zinc-900/90 border border-zinc-700 rounded-2xl p-5 md:p-8 shadow-2xl">
-      {/* Debug info em desenvolvimento */}
+      {/* Status de debug sempre visível em desenvolvimento */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mb-4 p-3 bg-gray-800 rounded border text-xs text-gray-300">
-          <strong>Debug:</strong> {barbers?.length || 0} barbeiros carregados
-          {barbers?.length === 0 && <span className="text-red-400"> - Verifique a tabela staff!</span>}
+          <div className="font-bold mb-2">🔧 Debug Status:</div>
+          <div>📋 Serviços: {services?.length || 0}</div>
+          <div className={`${barbers?.length === 0 ? 'text-red-400 font-bold' : 'text-green-400'}`}>
+            👨‍💼 Barbeiros: {barbers?.length || 0} 
+            {barbers?.length === 0 && ' ⚠️ PROBLEMA DETECTADO!'}
+          </div>
+          <div>🔄 Verificando disponibilidade: {isCheckingAvailability ? 'Sim' : 'Não'}</div>
+          <div>📊 Disponibilidade: {barberAvailability?.length || 0} barbeiros verificados</div>
         </div>
       )}
 
@@ -188,12 +204,15 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
             />
           </section>
 
-          {/* Barber selection section */}
+          {/* Passo 3: Escolha do Barbeiro */}
           <section className="space-y-1 pb-4 border-b border-zinc-700">
             <div className="flex items-center gap-2 mb-1">
               <User className="h-4 w-4 text-green-400" />
               <h3 className="font-semibold text-lg text-white">Escolha o Barbeiro</h3>
             </div>
+            <p className="text-zinc-400 text-sm mb-2">
+              Selecione seu barbeiro preferido ou deixe em branco para qualquer disponível.
+            </p>
             <BarberSelectionField
               control={form.control}
               barbers={barbers}
