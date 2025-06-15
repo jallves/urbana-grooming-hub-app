@@ -45,10 +45,10 @@ export const useAppointmentData = () => {
   }, [toast]);
 
   useEffect(() => {
-    const fetchBarbers = async () => {
+    const fetchBarbersWithFallback = async () => {
       setLoadingBarbers(true);
       try {
-        // BUSCA APENAS BARBEIROS ATIVOS DA TABELA barbers FAZENDO JOIN COM staff
+        // Primeiro tenta buscar da tabela barbers + staff
         const { data, error } = await supabase
           .from('barbers')
           .select(`
@@ -70,14 +70,7 @@ export const useAppointmentData = () => {
           `)
           .order('created_at', { ascending: true });
 
-        if (error) {
-          console.error('Erro ao buscar barbeiros:', error);
-          setBarbers([]);
-          return;
-        }
-
-        // Filtra apenas os barbeiros cuja staff está ativa
-        const filtered = Array.isArray(data)
+        let filtered = Array.isArray(data)
           ? data
               .filter((b) => b.staff && b.staff.is_active && b.staff.role === 'barber')
               .map((b) => ({
@@ -86,8 +79,33 @@ export const useAppointmentData = () => {
               }))
           : [];
 
+        // Fallback: se não encontrar barbeiros na tabela barbers, busca direto em staff
+        if (filtered.length === 0) {
+          console.warn(
+            "[FALLBACK] Nenhum barbeiro encontrado via tabela barbers. Buscando barbeiros ativos diretamente na tabela staff."
+          );
+          const { data: staffBarbers, error: staffError } = await supabase
+            .from('staff')
+            .select(
+              'id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at'
+            )
+            .eq('is_active', true)
+            .eq('role', 'barber')
+            .order('name', { ascending: true });
+
+          if (staffError) {
+            console.error('Erro ao buscar barbeiros ativos do staff:', staffError);
+            setBarbers([]);
+            return;
+          }
+          filtered = Array.isArray(staffBarbers) ? staffBarbers : [];
+        }
+
         setBarbers(filtered);
-        console.log('Barbeiros buscados de barbers+staff:', filtered);
+        console.log(
+          '[useAppointmentData] Barbeiros retornados:',
+          filtered
+        );
       } catch (error) {
         console.error('Erro ao buscar barbeiros:', error);
         setBarbers([]);
@@ -96,7 +114,7 @@ export const useAppointmentData = () => {
       }
     };
 
-    fetchBarbers();
+    fetchBarbersWithFallback();
   }, [toast]);
 
   return {
