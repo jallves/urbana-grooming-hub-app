@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +15,7 @@ export const barberSchema = z.object({
   experience: z.string().optional(),
   commission_rate: z.union([z.number(), z.null()]).optional(),
   is_active: z.boolean().default(true),
-  role: z.string().default('barber')
+  role: z.string().default('barber'),
 });
 
 export type BarberFormValues = z.infer<typeof barberSchema>;
@@ -39,7 +40,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
       experience: '',
       commission_rate: null,
       is_active: true,
-      role: 'barber'
+      role: 'barber',
     },
   });
 
@@ -62,7 +63,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     }
     // eslint-disable-next-line
   }, [barberId]);
-  
+
   const onSubmit = async (data: BarberFormValues) => {
     setIsSubmitting(true);
 
@@ -70,14 +71,9 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
     let resp;
     if (barberId) {
-      resp = await supabase
-        .from('staff')
-        .update(payload)
-        .eq('id', barberId);
+      resp = await supabase.from('staff').update(payload).eq('id', barberId);
     } else {
-      resp = await supabase
-        .from('staff')
-        .insert([payload]);
+      resp = await supabase.from('staff').insert([payload]);
     }
 
     if (resp.error) {
@@ -100,15 +96,14 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
     let response;
     if (isEditing) {
-      // Procurar usuário com filtro por e-mail correto
-      // Veja: https://supabase.com/docs/reference/javascript/auth-admin-listusers#filter
-      const { data, error: listError } = await supabase.auth.admin.listUsers({ filter: `email:${email}` });
+      // Buscar usuário pelo e-mail: listUsers + local find
+      const { data, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000, page: 1 });
       if (listError) {
-        toast.error('Erro ao buscar usuário pelo e-mail', { description: listError.message });
+        toast.error('Erro ao buscar usuários', { description: listError.message });
         setIsPasswordLoading(false);
         return;
       }
-      const user = data?.users?.[0];
+      const user = data?.users?.find((u: any) => u.email === email);
       if (!user) {
         toast.error('Usuário não encontrado para esse e-mail');
         setIsPasswordLoading(false);
@@ -126,7 +121,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
       response = await supabase.auth.admin.createUser({
         email,
         password,
-        email_confirm: true
+        email_confirm: true,
       });
       if (response.error) {
         toast.error('Erro ao criar usuário no Auth', { description: response.error.message });
