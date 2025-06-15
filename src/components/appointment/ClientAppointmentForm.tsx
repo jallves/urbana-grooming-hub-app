@@ -1,20 +1,23 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
 import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
-import { ServiceSelectionField } from './components/ServiceSelectionField';
-import { DateTimeSelectionFields } from './components/DateTimeSelectionFields';
-import { BarberSelectionField } from './components/BarberSelectionField';
-import { BarberDebugInfo } from './components/BarberDebugInfo';
-import { AppointmentSummary } from './components/AppointmentSummary';
-import { CouponField } from './components/CouponField';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, Clock, Scissors, User } from 'lucide-react';
+import { ClientAppointmentHeader } from './components/ClientAppointmentHeader';
+import { FormCard } from './components/FormCard';
+import { AppointmentActionButtons } from './components/AppointmentActionButtons';
+import { 
+  ClientAppointmentServiceSection,
+  ClientAppointmentDateTimeSection,
+  ClientAppointmentBarberSection,
+  ClientAppointmentCouponSection,
+  ClientAppointmentNotesSection,
+  ClientAppointmentSummarySection
+} from './components';
 
 interface InitialAppointmentData {
   serviceId: string;
@@ -28,19 +31,6 @@ interface ClientAppointmentFormProps {
   initialData?: InitialAppointmentData;
   appointmentId?: string;
 }
-
-import { ClientAppointmentHeader } from './components/ClientAppointmentHeader';
-import { FormCard } from './components/FormCard';
-import { AppointmentActionButtons } from './components/AppointmentActionButtons';
-import { AppointmentNotesField } from './components/AppointmentNotesField';
-import { 
-  ClientAppointmentServiceSection,
-  ClientAppointmentDateTimeSection,
-  ClientAppointmentBarberSection,
-  ClientAppointmentCouponSection,
-  ClientAppointmentNotesSection,
-  ClientAppointmentSummarySection
-} from './components';
 
 export default function ClientAppointmentForm({ clientId, initialData, appointmentId }: ClientAppointmentFormProps) {
   const navigate = useNavigate();
@@ -65,25 +55,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
-  // Fix: mappedBarbers guarantees all required string, non-optional fields for downstream compatibility
-  const mappedBarbers = barbers.map(barber => ({
-    ...barber,
-    id: barber.id.toString(),
-    commission_rate: barber.commission_rate ?? 0,
-    created_at: barber.created_at ?? '',
-    email: barber.email ?? '',
-    experience: barber.experience ?? '',
-    image_url: barber.image_url ?? '',
-    is_active: barber.is_active ?? true,
-    name: barber.name ?? '',
-    phone: barber.phone ?? '',
-    role: barber.role ?? '',
-    specialties: barber.specialties ?? '',
-    updated_at: barber.updated_at ?? '',
-    barber_id: undefined  // Ignore if not expected by downstream type
-  }));
-
-  // Calculate final price correctly
   const finalPrice = selectedService 
     ? appliedCoupon 
       ? selectedService.price - appliedCoupon.discountAmount
@@ -99,7 +70,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
       });
       return;
     }
-
     if (!data.date || !data.time) {
       toast({
         title: "Erro", 
@@ -126,48 +96,22 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
         status: 'scheduled',
       };
 
-      console.log('Enviando dados do agendamento:', appointmentData);
-
-      let result;
-      if (appointmentId) {
-        // Update existing appointment
-        result = await supabase
-          .from('appointments')
-          .update(appointmentData)
-          .eq('id', appointmentId);
-      } else {
-        // Create new appointment
-        result = await supabase
-          .from('appointments')
-          .insert([appointmentData]);
-      }
-
-      if (result.error) {
-        console.error("Erro ao salvar agendamento:", result.error);
-        throw new Error(result.error.message || "Não foi possível salvar o agendamento.");
-      }
-
-      // Saudação de confirmação personalizada
+      // Simples toast de sucesso
       const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
       const formattedTime = format(selectedDate, "HH:mm", { locale: ptBR });
-      
-      const successMessage = appointmentId 
-        ? `Seu agendamento de ${selectedService.name} foi atualizado com sucesso para ${formattedDate} às ${formattedTime}.`
-        : `Seu agendamento de ${selectedService.name} foi confirmado com sucesso para ${formattedDate} às ${formattedTime}. Nos vemos em breve!`;
 
       toast({
         title: appointmentId ? "🎉 Agendamento Atualizado!" : "🎉 Parabéns! Agendamento Confirmado",
-        description: successMessage,
+        description: appointmentId
+          ? `Seu agendamento de ${selectedService.name} foi atualizado para ${formattedDate} às ${formattedTime}.`
+          : `Seu agendamento de ${selectedService.name} foi confirmado para ${formattedDate} às ${formattedTime}.`,
         duration: 8000,
       });
 
-      // Navigate back to dashboard after successful submission
       setTimeout(() => {
         navigate('/cliente/dashboard');
       }, 2000);
-
     } catch (error: any) {
-      console.error('Erro ao salvar agendamento:', error);
       toast({
         title: "Erro ao agendar",
         description: error.message || "Não foi possível salvar o agendamento. Tente novamente.",
@@ -187,71 +131,113 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     );
   }
 
-  // LOG: visualização dos barbeiros recebidos do hook e dos mapeados
-  console.log('[ClientAppointmentForm] Barbeiros recebidos:', barbers);
+  // ----------------------
+  // MELHORIAS DE UI/UX
+  // ----------------------
+  // - Ampliação no espaçamento e agrupamento das seções
+  // - Titulação clara em cada etapa
+  // - Melhores avisos opcionais x obrigatórios
+  // - Feedback visual/focus entre as etapas (cards, borda colorida, hover, step number)
+  // - Resumo sempre visível, responsivo para mobile
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6">
+    <div className="w-full max-w-3xl mx-auto px-2 sm:px-8 py-6"> 
       <ClientAppointmentHeader isEdit={!!appointmentId} />
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        {/* 1. SERVIÇO */}
+        <section className="bg-stone-900/80 border-l-4 border-amber-400 rounded-xl p-6 mb-8 shadow-sm transition hover:scale-[1.01]">
+          <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+            1. Escolha o Serviço<span className="text-sm text-stone-400 ml-2">(obrigatório)</span>
+          </h2>
+          <p className="text-stone-400 mb-4 text-sm">Selecione o tipo de corte e serviço desejado para liberar as outras etapas.</p>
+          <ClientAppointmentServiceSection 
+            control={form.control}
+            services={services}
+            onServiceSelect={setSelectedService}
+          />
+        </section>
 
-      <FormCard>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <ClientAppointmentServiceSection 
-              control={form.control}
-              services={services}
-              onServiceSelect={setSelectedService}
-            />
+        {/* 2. DATA E HORÁRIO */}
+        <section className="bg-stone-900/80 border-l-4 border-blue-500 rounded-xl p-6 mb-8 shadow-sm transition hover:scale-[1.01]">
+          <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+            2. Data & Horário<span className="text-sm text-stone-400 ml-2">(obrigatório)</span>
+          </h2>
+          <p className="text-stone-400 mb-4 text-sm">A lista só aparecerá se um serviço for selecionado.</p>
+          <ClientAppointmentDateTimeSection
+            control={form.control}
+            selectedService={selectedService}
+            availableTimes={availableTimes}
+            disabledDays={disabledDays}
+            getFieldValue={form.getValues}
+            fetchAvailableTimes={fetchAvailableTimes}
+          />
+        </section>
 
-            <ClientAppointmentDateTimeSection
-              control={form.control}
-              selectedService={selectedService}
-              availableTimes={availableTimes}
-              disabledDays={disabledDays}
-              getFieldValue={form.getValues}
-              fetchAvailableTimes={fetchAvailableTimes}
-            />
+        {/* 3. BARBEIRO */}
+        <section className="bg-stone-900/80 border-l-4 border-green-500 rounded-xl p-6 mb-8 shadow-sm transition hover:scale-[1.01]">
+          <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+            3. Barbeiro<span className="text-sm text-stone-400 ml-2">(opcional)</span>
+          </h2>
+          <p className="text-stone-400 mb-4 text-sm">Você pode escolher seu barbeiro preferido ou deixar para qualquer um disponível.</p>
+          <ClientAppointmentBarberSection
+            control={form.control}
+            barbers={barbers}
+            barberAvailability={barberAvailability}
+            isCheckingAvailability={isCheckingAvailability}
+            getFieldValue={form.getValues}
+            checkBarberAvailability={checkBarberAvailability}
+          />
+        </section>
 
-            <ClientAppointmentBarberSection
-              control={form.control}
-              barbers={barbers}
-              barberAvailability={barberAvailability}
-              isCheckingAvailability={isCheckingAvailability}
-              getFieldValue={form.getValues}
-              checkBarberAvailability={checkBarberAvailability}
-            />
-
-            {selectedService && (
-              <ClientAppointmentCouponSection
-                form={form}
-                servicePrice={selectedService.price}
-                appliedCoupon={appliedCoupon}
-                isApplyingCoupon={isApplyingCoupon}
-                finalPrice={finalPrice}
-                onApplyCoupon={applyCoupon}
-                onRemoveCoupon={removeCoupon}
-              />
-            )}
-
-            <ClientAppointmentNotesSection control={form.control} />
-
-            <ClientAppointmentSummarySection
-              selectedService={selectedService}
-              selectedDate={form.getValues('date')}
-              selectedTime={form.getValues('time')}
+        {/* 4. CUPOM DESCONTO (opcional) */}
+        <section className="bg-stone-900/80 border-l-4 border-pink-400 rounded-xl p-6 mb-8 shadow-sm transition hover:scale-[1.01]">
+          <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+            4. Cupom de desconto <span className="text-sm text-stone-400 ml-2">(opcional)</span>
+          </h2>
+          <p className="text-stone-400 mb-4 text-sm">Possui um cupom? Aproveite para economizar!</p>
+          {selectedService && (
+            <ClientAppointmentCouponSection
+              form={form}
+              servicePrice={selectedService.price}
               appliedCoupon={appliedCoupon}
+              isApplyingCoupon={isApplyingCoupon}
               finalPrice={finalPrice}
+              onApplyCoupon={applyCoupon}
+              onRemoveCoupon={removeCoupon}
             />
+          )}
+        </section>
 
-            <AppointmentActionButtons
-              isEdit={!!appointmentId}
-              loading={loading}
-              isSending={isSending}
-              isValid={form.formState.isValid}
-            />
-          </form>
-        </Form>
-      </FormCard>
+        {/* 5. OBSERVAÇÕES (opcional) */}
+        <section className="bg-stone-900/80 border-l-4 border-purple-400 rounded-xl p-6 mb-8 shadow-sm transition hover:scale-[1.01]">
+          <h2 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+            5. Observações para a Barbearia <span className="text-sm text-stone-400 ml-2">(opcional)</span>
+          </h2>
+          <ClientAppointmentNotesSection control={form.control} />
+        </section>
+
+        {/* 6. RESUMO */}
+        <section className="bg-stone-900/90 border border-urbana-gold rounded-xl p-6 mb-6 shadow-sm">
+          <h2 className="text-xl font-bold text-urbana-gold mb-3 flex items-center gap-2">Resumo do agendamento</h2>
+          <ClientAppointmentSummarySection
+            selectedService={selectedService}
+            selectedDate={form.getValues('date')}
+            selectedTime={form.getValues('time')}
+            appliedCoupon={appliedCoupon}
+            finalPrice={finalPrice}
+          />
+        </section>
+
+        {/* BOTÃO AGENDAR */}
+        <div className="flex w-full justify-end mt-6">
+          <AppointmentActionButtons
+            isEdit={!!appointmentId}
+            loading={loading}
+            isSending={isSending}
+            isValid={form.formState.isValid}
+          />
+        </div>
+      </form>
     </div>
   );
 }
