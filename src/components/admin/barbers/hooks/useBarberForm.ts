@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -92,15 +91,30 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
   // Função para cadastrar/redefinir senha do barbeiro (via e-mail)
   const handlePasswordChange = async (password: string) => {
-    if (!form.getValues('email')) {
+    const email = form.getValues('email');
+    if (!email) {
       toast.error('Insira o e-mail do barbeiro no formulário');
       return;
     }
     setIsPasswordLoading(true);
+
     let response;
     if (isEditing) {
-      // Redefine password (só funciona se já é usuário no auth)
-      response = await supabase.auth.admin.updateUserByEmail(form.getValues('email'), { password });
+      // Buscar o usuário pelo email (Supabase Auth)
+      const { data, error: listError } = await supabase.auth.admin.listUsers({ email });
+      if (listError) {
+        toast.error('Erro ao buscar usuário pelo e-mail', { description: listError.message });
+        setIsPasswordLoading(false);
+        return;
+      }
+      const user = data?.users?.[0];
+      if (!user) {
+        toast.error('Usuário não encontrado para esse e-mail');
+        setIsPasswordLoading(false);
+        return;
+      }
+
+      response = await supabase.auth.admin.updateUserById(user.id, { password });
       if (response.error) {
         toast.error('Erro ao redefinir senha', { description: response.error.message });
       } else {
@@ -109,7 +123,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     } else {
       // Cadastro de novo usuário (envia e-mail, se não existir)
       response = await supabase.auth.admin.createUser({
-        email: form.getValues('email'),
+        email,
         password,
         email_confirm: true
       });
