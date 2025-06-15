@@ -1,3 +1,4 @@
+
 import React from "react";
 import { User } from "lucide-react";
 import { BarberSelectionField } from "./BarberSelectionField";
@@ -36,11 +37,13 @@ export function ClientAppointmentBarberSection({
         getFieldValue={getFieldValue}
         checkBarberAvailability={checkBarberAvailability}
       />
-      <BarberDebugInfo 
-        barbers={barbers}
-        barberAvailability={barberAvailability}
-        isCheckingAvailability={isCheckingAvailability}
-      />
+      <div className="md:hidden">
+        <BarberDebugInfo 
+          barbers={barbers}
+          barberAvailability={barberAvailability}
+          isCheckingAvailability={isCheckingAvailability}
+        />
+      </div>
     </div>
   );
 }
