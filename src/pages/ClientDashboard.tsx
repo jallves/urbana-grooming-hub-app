@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -21,9 +22,13 @@ import {
   Scissors
 } from 'lucide-react';
 
+// IMPORTAR hook mobile para ajustar colunas e espaçamento
+import { useIsMobile } from '@/hooks/use-mobile';
+
 const ClientDashboard = () => {
   const { client, signOut, loading } = useClientAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const { data: appointments, isLoading: appointmentsLoading } = useQuery({
     queryKey: ['client-appointments', client?.id],
@@ -88,12 +93,13 @@ const ClientDashboard = () => {
     }
   };
 
+  // -------- RESPONSIVO/MOBILE: usar colunas únicas, menos espaço e rolagem facilitada
   return (
     <div className="min-h-screen bg-urbana-black">
       {/* Header */}
-      <div className="bg-urbana-black border-b border-gray-700">
+      <div className="bg-urbana-black border-b border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className={`flex ${isMobile ? 'flex-col gap-2 py-4' : 'justify-between items-center h-16'}`}>
             <div className="flex items-center space-x-4">
               <div className="w-10 h-10 bg-gradient-to-r from-urbana-gold to-urbana-gold/80 rounded-full flex items-center justify-center">
                 <Scissors className="h-5 w-5 text-urbana-black" />
@@ -105,7 +111,7 @@ const ClientDashboard = () => {
                 <p className="text-sm text-gray-400">Bem-vindo à sua barbearia</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className={`flex items-center gap-2 ${isMobile ? 'mt-2' : ''}`}>
               <Button 
                 variant="outline" 
                 size="sm"
@@ -129,18 +135,21 @@ const ClientDashboard = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* DASHBOARDS: grade responsiva/móbile → col-1 */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4">
+        <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-3 gap-6'} mb-5`}>
+          {/* Novo corte */}
           <Card className="bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 border-urbana-gold/30 hover:shadow-lg hover:shadow-urbana-gold/20 transition-all">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-black flex items-center gap-2 font-playfair">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-black flex items-center gap-2 font-playfair text-base md:text-lg">
                 <Plus className="h-5 w-5" />
                 Novo Corte
               </CardTitle>
-              <CardDescription className="text-black">
-                Agende seu próximo serviço
-              </CardDescription>
+              {!isMobile && (
+                <CardDescription className="text-black">
+                  Agende seu próximo serviço
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent>
               <Button 
@@ -151,19 +160,21 @@ const ClientDashboard = () => {
               </Button>
             </CardContent>
           </Card>
-
-          <Card className="bg-gray-900 border-gray-700 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-white flex items-center gap-2 font-playfair">
+          {/* Próximos Cortes */}
+          <Card className="bg-gray-900 border-gray-700 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white flex items-center gap-2 font-playfair text-base md:text-lg">
                 <Calendar className="h-5 w-5" />
                 Próximos Cortes
               </CardTitle>
-              <CardDescription className="text-gray-400">
-                Seus agendamentos confirmados
-              </CardDescription>
+              {!isMobile && (
+                <CardDescription className="text-gray-400">
+                  Seus agendamentos confirmados
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-urbana-gold mb-1">
+              <div className="text-2xl md:text-3xl font-bold text-urbana-gold mb-1">
                 {upcomingAppointments.length}
               </div>
               <p className="text-sm text-gray-400">
@@ -171,19 +182,21 @@ const ClientDashboard = () => {
               </p>
             </CardContent>
           </Card>
-
-          <Card className="bg-gray-900 border-gray-700 shadow-lg">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-white flex items-center gap-2 font-playfair">
+          {/* Histórico */}
+          <Card className="bg-gray-900 border-gray-700 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white flex items-center gap-2 font-playfair text-base md:text-lg">
                 <History className="h-5 w-5" />
                 Histórico
               </CardTitle>
-              <CardDescription className="text-gray-400">
-                Serviços realizados
-              </CardDescription>
+              {!isMobile && (
+                <CardDescription className="text-gray-400">
+                  Serviços realizados
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-urbana-gold mb-1">
+              <div className="text-2xl md:text-3xl font-bold text-urbana-gold mb-1">
                 {pastAppointments.length}
               </div>
               <p className="text-sm text-gray-400">
@@ -193,18 +206,18 @@ const ClientDashboard = () => {
           </Card>
         </div>
 
-        {/* Upcoming Appointments */}
+        {/* Próximos Agendamentos */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2 font-playfair">
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-4 flex items-center gap-2 font-playfair">
             <Calendar className="h-6 w-6 text-urbana-gold" />
             Próximos Agendamentos
           </h2>
 
           {appointmentsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`grid ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-1 md:grid-cols-2 gap-4'}`}>
               {[1, 2].map((i) => (
                 <Card key={i} className="bg-gray-900 border-gray-700">
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 md:p-6">
                     <div className="animate-pulse space-y-3">
                       <div className="h-4 bg-gray-700 rounded w-3/4"></div>
                       <div className="h-3 bg-gray-700 rounded w-1/2"></div>
@@ -215,20 +228,20 @@ const ClientDashboard = () => {
               ))}
             </div>
           ) : upcomingAppointments.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-1 md:grid-cols-2 gap-4'}`}>
               {upcomingAppointments.map((appointment) => (
-                <Card key={appointment.id} className="bg-gray-900 border-gray-700 hover:bg-gray-800 transition-colors shadow-lg">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
+                <Card key={appointment.id} className="bg-gray-900 border-gray-700 hover:bg-gray-800 transition-colors shadow-sm md:shadow-lg">
+                  <CardContent className="p-4 md:p-6">
+                    <div className={`${isMobile ? "flex flex-col gap-1" : "flex justify-between items-start mb-4"}`}>
                       <div>
-                        <h3 className="text-lg font-semibold text-white mb-1 font-playfair">
+                        <h3 className="text-base md:text-lg font-semibold text-white mb-1 font-playfair">
                           {appointment.services?.name}
                         </h3>
                         <Badge className={`${getStatusColor(appointment.status)} border`}>
                           {getStatusText(appointment.status)}
                         </Badge>
                       </div>
-                      <div className="text-right">
+                      <div className={`${isMobile ? "mt-2" : "text-right"}`}>
                         <p className="text-urbana-gold font-semibold">
                           R$ {appointment.services?.price?.toFixed(2)}
                         </p>
@@ -240,7 +253,7 @@ const ClientDashboard = () => {
                       </div>
                     </div>
                     
-                    <div className="space-y-2 text-gray-300">
+                    <div className="space-y-1 mt-2 text-gray-300">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span className="text-sm">
@@ -266,10 +279,10 @@ const ClientDashboard = () => {
               ))}
             </div>
           ) : (
-            <Card className="bg-gray-900 border-gray-700 shadow-lg">
-              <CardContent className="p-8 text-center">
-                <Scissors className="h-12 w-12 text-urbana-gold/50 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2 font-playfair">
+            <Card className="bg-gray-900 border-gray-700 shadow-md">
+              <CardContent className="p-6 md:p-8 text-center">
+                <Scissors className="h-10 w-10 md:h-12 md:w-12 text-urbana-gold/50 mx-auto mb-4" />
+                <h3 className="text-base md:text-lg font-semibold text-white mb-2 font-playfair">
                   Nenhum corte agendado
                 </h3>
                 <p className="text-gray-400 mb-4">
@@ -286,15 +299,15 @@ const ClientDashboard = () => {
           )}
         </div>
 
-        {/* Nossa Barbearia - Contato e Rota */}
-        <Card className="bg-gray-900 border-gray-700 shadow-lg">
+        {/* Nuestra Barbearia */}
+        <Card className="bg-gray-900 border-gray-700 shadow-md">
           <CardHeader>
-            <CardTitle className="text-urbana-gold flex items-center gap-2 font-playfair text-xl">
+            <CardTitle className="text-urbana-gold flex items-center gap-2 font-playfair text-lg md:text-xl">
               <MapPin className="h-5 w-5" />
               Costa Urbana
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent className={`grid ${isMobile ? "grid-cols-1 gap-3" : "grid-cols-1 md:grid-cols-2 gap-6"}`}>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-urbana-gold/20 rounded-lg">
                 <Phone className="h-5 w-5 text-urbana-gold" />
