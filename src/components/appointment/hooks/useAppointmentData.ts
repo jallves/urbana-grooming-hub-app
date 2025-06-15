@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -55,10 +56,11 @@ export const useAppointmentData = () => {
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
+        // Corrigir: Usar UUID para id do barbeiro!
         let filtered: Barber[] =
           Array.isArray(data)
             ? data.map((b) => ({
-                id: Number(b.id),
+                id: b.uuid_id ? b.uuid_id : b.id, // id = uuid_id (UUID) como string!
                 uuid_id: b.uuid_id ?? undefined,
                 name: b.name ?? '',
                 email: b.email ?? undefined,
@@ -74,7 +76,7 @@ export const useAppointmentData = () => {
               }))
             : [];
 
-        setBarbers(filtered); // fixed: use Barber[] (matches state type)
+        setBarbers(filtered);
         console.log('[useAppointmentData] (staff_sequencial) Barbeiros retornados:', filtered);
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);

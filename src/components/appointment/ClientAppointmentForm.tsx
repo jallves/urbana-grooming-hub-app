@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -51,24 +50,9 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
-  // Garantir que barbeiros estejam padronizados como string
-  const mappedBarbers = barbers.map(barber => ({
-    ...barber,
-    id: barber.id.toString(),
-    commission_rate: barber.commission_rate ?? 0,
-    created_at: barber.created_at ?? '',
-    email: barber.email ?? '',
-    experience: barber.experience ?? '',
-    image_url: barber.image_url ?? '',
-    is_active: barber.is_active ?? true,
-    name: barber.name ?? '',
-    phone: barber.phone ?? '',
-    role: barber.role ?? '',
-    specialties: barber.specialties ?? '',
-    updated_at: barber.updated_at ?? '',
-    uuid_id: barber.uuid_id ?? '',
-    barber_id: undefined,
-  }));
+  // Agora: barbeiros possuem id (UUID, string), então sem necessidade de mapeamento extra.
+  // Removi a conversão detalhada (pois já é feita no hook).
+  const mappedBarbers = barbers;
 
   const finalPrice = selectedService
     ? appliedCoupon
@@ -287,4 +271,3 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 }
 
 // O arquivo está ficando extenso! Considere pedir um refactor para dividi-lo em subcomponentes se quiser facilitar futuras manutenções.
-
