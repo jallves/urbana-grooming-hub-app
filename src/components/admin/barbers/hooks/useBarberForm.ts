@@ -1,26 +1,24 @@
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { supabase } from '@/integrations/supabase/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export const barberSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
-  email: z.string().optional(),
+  email: z.string().email('Email inválido').or(z.literal('')).optional(),
   phone: z.string().optional(),
   image_url: z.string().optional(),
   specialties: z.string().optional(),
   experience: z.string().optional(),
   commission_rate: z.union([z.number(), z.null()]).optional(),
   is_active: z.boolean().default(true),
-  // 'role' pode ser omitido do formulário, pois sempre setamos abaixo
 });
 
 export type BarberFormValues = z.infer<typeof barberSchema>;
 
-// Helper para limpar undefined antes de enviar ao supabase
 function cleanPayload<T extends object>(payload: T) {
   const newObj: any = {};
   Object.entries(payload).forEach(([key, value]) => {
@@ -49,6 +47,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
   useEffect(() => {
     if (barberId) {
+      // Buscar dados na staff (não barbers)
       supabase
         .from('staff')
         .select('*')
@@ -56,7 +55,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
         .single()
         .then(({ data, error }) => {
           if (data) {
-            // Remove 'role' do data recebido
+            // Remover role (vai ser fixo)
             const { role, ...rest } = data;
             form.reset(rest);
           }
@@ -68,7 +67,6 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   const onSubmit = async (data: BarberFormValues) => {
     setIsSubmitting(true);
 
-    // FORÇA campos obrigatórios como 'name', define role e limpa undefineds
     const basePayload = {
       ...data,
       role: 'barber',
@@ -77,7 +75,6 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     const payload = cleanPayload(basePayload);
 
     let resp;
-
     if (barberId) {
       resp = await supabase
         .from('staff')

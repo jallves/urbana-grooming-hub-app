@@ -7,9 +7,9 @@ import StaffProfileImage from '../staff/components/StaffProfileImage';
 import StaffPersonalInfo from '../staff/components/StaffPersonalInfo';
 import StaffProfessionalInfo from '../staff/components/StaffProfessionalInfo';
 import StaffActiveStatus from '../staff/components/StaffActiveStatus';
-import { BarberModuleAccess } from './BarberModuleAccess';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Shield, Settings } from 'lucide-react';
+import { BarberModuleAccess } from './BarberModuleAccess';
 
 interface BarberFormProps {
   barberId: string | null;
@@ -25,7 +25,6 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
     onSubmit
   } = useBarberForm(barberId, onSuccess);
 
-  // Não permite edição de cargo – sempre 'barber'
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -52,13 +51,11 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
               <div className="col-span-1">
                 <StaffProfileImage 
                   form={form}
-                  handleFileChange={() => {}} // Não implementado upload ainda
+                  handleFileChange={() => {}} // Upload não implementado
                 />
               </div>
-              
               <div className="col-span-1 md:col-span-2">
                 <StaffPersonalInfo form={form} />
-                {/* Exibe cargo fixo */}
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-muted-foreground mb-1">Cargo</label>
                   <div className="text-base font-semibold text-zinc-700 cursor-not-allowed bg-zinc-100 px-3 py-2 rounded-md w-fit select-none">
@@ -80,7 +77,6 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
             </TabsContent>
           )}
         </Tabs>
-
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar

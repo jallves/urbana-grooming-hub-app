@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +16,7 @@ import { deleteBarber } from '@/services/barberService';
 // ---- MODE ENUM ----
 type Mode = 'viewing' | 'adding' | 'editing';
 
+// Buscar barbeiros com o cargo barber no staff
 const fetchBarbers = async () => {
   const { data, error } = await supabase
     .from('staff')
@@ -40,32 +42,6 @@ const BarberManagement: React.FC = () => {
     queryKey: ['barbers'],
     queryFn: fetchBarbers,
   });
-
-  // Real-time updates via Supabase channel
-  useEffect(() => {
-    const channel = supabase
-      .channel('barber-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'staff',
-          filter: 'role=eq.barber',
-        },
-        (payload) => {
-          console.log('Barber data changed:', payload);
-          toast.info('Dados de barbeiros atualizados');
-          refetch();
-          queryClient.invalidateQueries({ queryKey: ['barbers'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch, queryClient]);
 
   useEffect(() => {
     if (error) {
@@ -147,7 +123,6 @@ const BarberManagement: React.FC = () => {
               Para adicionar um novo barbeiro, use o botão "Novo Barbeiro" ou vá ao módulo de profissionais e crie um com categoria "Barbeiro".
             </AlertDescription>
           </Alert>
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
