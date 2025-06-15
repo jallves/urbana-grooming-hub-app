@@ -100,8 +100,9 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
     let response;
     if (isEditing) {
-      // Buscar o usuário pelo email (Supabase Auth)
-      const { data, error: listError } = await supabase.auth.admin.listUsers({ email });
+      // Procurar usuário com filtro por e-mail correto
+      // Veja: https://supabase.com/docs/reference/javascript/auth-admin-listusers#filter
+      const { data, error: listError } = await supabase.auth.admin.listUsers({ filter: `email:${email}` });
       if (listError) {
         toast.error('Erro ao buscar usuário pelo e-mail', { description: listError.message });
         setIsPasswordLoading(false);
