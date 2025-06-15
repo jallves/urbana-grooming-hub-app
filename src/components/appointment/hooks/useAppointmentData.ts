@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -72,11 +71,11 @@ export const useAppointmentData = () => {
                 role: b.role ?? '',
                 created_at: b.created_at ?? '',
                 updated_at: b.updated_at ?? '',
-                uuid_id: b.uuid_id ?? '', // pode não existir
+                // REMOVE uuid_id reference
               }))
             : [];
 
-        setBarbers(filtered); // Garantido StaffMember[] com id = uuid (string)
+        setBarbers(filtered);
         console.log('[useAppointmentData] (staff) Barbeiros retornados:', filtered);
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);
@@ -95,4 +94,3 @@ export const useAppointmentData = () => {
     loadingBarbers
   };
 };
-

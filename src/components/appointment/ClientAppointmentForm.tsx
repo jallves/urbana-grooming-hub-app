@@ -80,8 +80,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     role: barber.role ?? '',
     specialties: barber.specialties ?? '',
     updated_at: barber.updated_at ?? '',
-    uuid_id: barber.uuid_id ?? '',
-    barber_id: undefined,  // Ignore if not expected by downstream type
+    barber_id: undefined  // Ignore if not expected by downstream type
   }));
 
   // Calculate final price correctly
