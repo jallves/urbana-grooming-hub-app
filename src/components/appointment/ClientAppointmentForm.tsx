@@ -33,6 +33,14 @@ import { ClientAppointmentHeader } from './components/ClientAppointmentHeader';
 import { FormCard } from './components/FormCard';
 import { AppointmentActionButtons } from './components/AppointmentActionButtons';
 import { AppointmentNotesField } from './components/AppointmentNotesField';
+import { 
+  ClientAppointmentServiceSection,
+  ClientAppointmentDateTimeSection,
+  ClientAppointmentBarberSection,
+  ClientAppointmentCouponSection,
+  ClientAppointmentNotesSection,
+  ClientAppointmentSummarySection
+} from './components';
 
 export default function ClientAppointmentForm({ clientId, initialData, appointmentId }: ClientAppointmentFormProps) {
   const navigate = useNavigate();
@@ -182,109 +190,60 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 
   // LOG: visualização dos barbeiros recebidos do hook e dos mapeados
   console.log('[ClientAppointmentForm] Barbeiros recebidos:', barbers);
-  console.log('[ClientAppointmentForm] mappedBarbers:', mappedBarbers);
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
-      {/* Header - extraído */}
       <ClientAppointmentHeader isEdit={!!appointmentId} />
 
-      {/* Form Card extraído */}
       <FormCard>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            {/* Service Selection */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-urbana-gold/20 rounded-lg">
-                  <Scissors className="h-5 w-5 text-urbana-gold" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Escolha seu Serviço</h3>
-              </div>
-              <ServiceSelectionField 
-                control={form.control} 
-                services={services}
-                onServiceSelect={setSelectedService}
-              />
-            </div>
+            <ClientAppointmentServiceSection 
+              control={form.control}
+              services={services}
+              onServiceSelect={setSelectedService}
+            />
 
-            {/* Date and Time Selection */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Data e Horário</h3>
-              </div>
-              <DateTimeSelectionFields
-                control={form.control}
-                selectedService={selectedService}
-                availableTimes={availableTimes}
-                disabledDays={disabledDays}
-                getFieldValue={form.getValues}
-                fetchAvailableTimes={fetchAvailableTimes}
-              />
-            </div>
+            <ClientAppointmentDateTimeSection
+              control={form.control}
+              selectedService={selectedService}
+              availableTimes={availableTimes}
+              disabledDays={disabledDays}
+              getFieldValue={form.getValues}
+              fetchAvailableTimes={fetchAvailableTimes}
+            />
 
-            {/* Barber Selection */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-green-500/20 rounded-lg">
-                  <User className="h-5 w-5 text-green-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Escolha seu Barbeiro</h3>
-              </div>
-              <BarberSelectionField
-                control={form.control}
-                barbers={mappedBarbers}
-                barberAvailability={barberAvailability}
-                isCheckingAvailability={isCheckingAvailability}
-                getFieldValue={form.getValues}
-                checkBarberAvailability={checkBarberAvailability}
-              />
+            <ClientAppointmentBarberSection
+              control={form.control}
+              barbers={barbers}
+              barberAvailability={barberAvailability}
+              isCheckingAvailability={isCheckingAvailability}
+              getFieldValue={form.getValues}
+              checkBarberAvailability={checkBarberAvailability}
+            />
 
-              {/* Debug Info */}
-              <BarberDebugInfo 
-                barbers={mappedBarbers}
-                barberAvailability={barberAvailability}
-                isCheckingAvailability={isCheckingAvailability}
-              />
-            </div>
-
-            {/* Coupon Field */}
             {selectedService && (
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-white">Cupom de Desconto</h3>
-                <CouponField
-                  form={form}
-                  servicePrice={selectedService.price}
-                  appliedCoupon={appliedCoupon}
-                  isApplyingCoupon={isApplyingCoupon}
-                  finalPrice={finalPrice}
-                  onApplyCoupon={applyCoupon}
-                  onRemoveCoupon={removeCoupon}
-                />
-              </div>
+              <ClientAppointmentCouponSection
+                form={form}
+                servicePrice={selectedService.price}
+                appliedCoupon={appliedCoupon}
+                isApplyingCoupon={isApplyingCoupon}
+                finalPrice={finalPrice}
+                onApplyCoupon={applyCoupon}
+                onRemoveCoupon={removeCoupon}
+              />
             )}
 
-            {/* Notes -> FIELD extraído */}
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-white">Observações</h3>
-              <AppointmentNotesField control={form.control} />
-            </div>
+            <ClientAppointmentNotesSection control={form.control} />
 
-            {/* Appointment Summary */}
-            <div className="bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/20 border border-urbana-gold/30 rounded-xl p-6">
-              <AppointmentSummary
-                selectedService={selectedService}
-                selectedDate={form.getValues('date')}
-                selectedTime={form.getValues('time')}
-                appliedCoupon={appliedCoupon}
-                finalPrice={finalPrice}
-              />
-            </div>
+            <ClientAppointmentSummarySection
+              selectedService={selectedService}
+              selectedDate={form.getValues('date')}
+              selectedTime={form.getValues('time')}
+              appliedCoupon={appliedCoupon}
+              finalPrice={finalPrice}
+            />
 
-            {/* Actions -> extraídos */}
             <AppointmentActionButtons
               isEdit={!!appointmentId}
               loading={loading}
@@ -297,3 +256,13 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     </div>
   );
 }
+
+// Exporta todos os novos componentes para facilitar os imports acima
+export {
+  ClientAppointmentServiceSection,
+  ClientAppointmentDateTimeSection,
+  ClientAppointmentBarberSection,
+  ClientAppointmentCouponSection,
+  ClientAppointmentNotesSection,
+  ClientAppointmentSummarySection,
+};
