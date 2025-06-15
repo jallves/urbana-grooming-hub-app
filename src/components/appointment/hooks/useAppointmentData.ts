@@ -56,12 +56,12 @@ export const useAppointmentData = () => {
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
-        // Map ids to string for UI/state
+        // Return array as id: number
         let filtered =
           Array.isArray(data)
             ? data.map((b) => ({
-                id: b.id?.toString() ?? '',
-                barber_id: b.id?.toString() ?? '',
+                id: Number(b.id),
+                barber_id: Number(b.id),
                 commission_rate: b.commission_rate ?? 0,
                 created_at: b.created_at ?? '',
                 email: b.email ?? '',
@@ -77,7 +77,7 @@ export const useAppointmentData = () => {
               }))
             : [];
 
-        setBarbers(filtered); // id is string!
+        setBarbers(filtered); // id is number!
         console.log('[useAppointmentData] (staff_sequencial) Barbeiros retornados:', filtered);
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);

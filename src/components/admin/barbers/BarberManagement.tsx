@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +14,7 @@ import { deleteBarber } from '@/services/barberService';
 
 type Mode = 'viewing' | 'adding' | 'editing';
 
-// Get barbers from staff_sequencial (id: string now, for consistency with selects)
+// Fetch barbers as Barber[] (id: number)
 const fetchBarbers = async () => {
   const { data, error } = await supabase
     .from('staff_sequencial')
@@ -28,7 +27,7 @@ const fetchBarbers = async () => {
     Array.isArray(data)
       ? data.map((b) => ({
           ...b,
-          id: b.id?.toString() ?? '',
+          id: Number(b.id), // ensure number
         }))
       : []
   );
@@ -36,8 +35,7 @@ const fetchBarbers = async () => {
 
 const BarberManagement: React.FC = () => {
   const [mode, setMode] = useState<Mode>('viewing');
-  // Now string
-  const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
+  const [editingBarberId, setEditingBarberId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -63,8 +61,7 @@ const BarberManagement: React.FC = () => {
     setMode('adding');
   };
 
-  // Always use string for id
-  const handleEditBarber = (id: string) => {
+  const handleEditBarber = (id: number) => {
     setEditingBarberId(id);
     setMode('editing');
   };
@@ -83,13 +80,13 @@ const BarberManagement: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
-  // Accept string id for UI, convert to number for backend
-  const handleDeleteBarber = async (barberId: string) => {
+  // Accept number id for UI, convert to string for backend
+  const handleDeleteBarber = async (barberId: number) => {
     if (
       window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
     ) {
       try {
-        await deleteBarber(Number(barberId));
+        await deleteBarber(String(barberId)); // deleteBarber expects string
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
@@ -165,12 +162,11 @@ const BarberManagement: React.FC = () => {
         </Card>
       )}
 
-      {/* Pass string ids everywhere */}
       <BarberList
         barbers={barbers || []}
         isLoading={isLoading}
-        onEdit={handleEditBarber}
-        onDelete={handleDeleteBarber}
+        onEdit={handleEditBarber} // type: (id: number) => void
+        onDelete={handleDeleteBarber} // type: (barberId: number) => void
       />
     </div>
   );
