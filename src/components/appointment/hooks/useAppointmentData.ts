@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -48,74 +47,25 @@ export const useAppointmentData = () => {
     const fetchBarbersWithFallback = async () => {
       setLoadingBarbers(true);
       try {
-        // Tentar buscar da tabela barbers + staff com join para garantir consistência
+        // AGORA Buscamos direto da staff_sequencial
         const { data, error } = await supabase
-          .from('barbers')
-          .select(`
-            id,
-            staff:staff_id (
-              id,
-              name,
-              email,
-              phone,
-              role,
-              is_active,
-              image_url,
-              experience,
-              specialties,
-              commission_rate,
-              created_at,
-              updated_at
-            )
-          `)
-          .order('created_at', { ascending: true });
+          .from('staff_sequencial')
+          .select('*')
+          .eq('is_active', true)
+          .eq('role', 'barber')
+          .order('name', { ascending: true });
 
-        let filtered: any[] =
+        let filtered =
           Array.isArray(data)
-            ? data
-                .filter(
-                  (b) =>
-                    b.staff &&
-                    b.staff.is_active &&
-                    b.staff.role === "barber"
-                )
-                .map((b) => ({
-                  ...b.staff,
-                  barber_id: b.id, // id do registro em barbers
-                }))
-            : [];
-
-        // Fallback: se não encontrar barbeiros na tabela barbers, busca direto em staff
-        if (filtered.length === 0) {
-          console.warn(
-            "[FALLBACK] Nenhum barbeiro encontrado via tabela barbers. Buscando barbeiros ativos diretamente na tabela staff."
-          );
-          const { data: staffBarbers, error: staffError } = await supabase
-            .from("staff")
-            .select(
-              "id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at"
-            )
-            .eq("is_active", true)
-            .eq("role", "barber")
-            .order("name", { ascending: true });
-
-          if (staffError) {
-            console.error("Erro ao buscar barbeiros ativos do staff:", staffError);
-            setBarbers([]);
-            setLoadingBarbers(false);
-            return;
-          }
-          filtered = Array.isArray(staffBarbers)
-            ? staffBarbers.map((staff) => ({
-                ...staff,
-                barber_id: staff.id,
+            ? data.map((b) => ({
+                ...b,
+                barber_id: b.id, // id sequencial
               }))
             : [];
-        }
 
         setBarbers(filtered);
         console.log(
-          '[useAppointmentData] Barbeiros retornados (prontos para seleção):',
+          '[useAppointmentData] (staff_sequencial) Barbeiros retornados (prontos para seleção):',
           filtered
         );
       } catch (error) {

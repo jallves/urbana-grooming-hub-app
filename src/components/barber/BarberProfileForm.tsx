@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -57,21 +56,20 @@ const BarberProfileForm: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user?.email) return;
-      
+
       try {
         const { data, error } = await supabase
-          .from('staff')
+          .from('staff_sequencial')
           .select('*')
           .eq('email', user.email)
           .maybeSingle();
-        
+
         if (error) {
           console.error('Erro ao buscar dados do perfil:', error);
           return;
         }
-        
+
         if (data) {
-          // Set form values from fetched data
           form.reset({
             name: data.name || '',
             phone: data.phone || '',
@@ -80,8 +78,7 @@ const BarberProfileForm: React.FC = () => {
             specialties: data.specialties || '',
             commission_rate: data.commission_rate || 0
           });
-          
-          // Set image URL if available
+
           if (data.image_url) {
             setImageUrl(data.image_url);
           }
@@ -90,18 +87,18 @@ const BarberProfileForm: React.FC = () => {
         console.error('Erro ao buscar dados do perfil:', error);
       }
     };
-    
+
     fetchProfile();
   }, [user, form]);
   
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user?.email) return;
-    
+
     try {
       setLoading(true);
-      
+
       const { error } = await supabase
-        .from('staff')
+        .from('staff_sequencial')
         .update({
           name: values.name,
           phone: values.phone,
@@ -111,11 +108,11 @@ const BarberProfileForm: React.FC = () => {
           commission_rate: values.commission_rate
         })
         .eq('email', user.email);
-      
+
       if (error) {
         throw error;
       }
-      
+
       toast({
         title: 'Perfil atualizado',
         description: 'Suas informações foram salvas com sucesso.',

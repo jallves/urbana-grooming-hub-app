@@ -1,6 +1,7 @@
 
 export interface Barber {
-  id: string;
+  id: number; // Agora ID é sequencial (number), não UUID
+  uuid_id?: string; // UUID original (opcional, para referência/migração)
   name: string;
   email?: string;
   phone?: string;

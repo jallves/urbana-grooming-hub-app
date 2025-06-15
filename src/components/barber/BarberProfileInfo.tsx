@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,9 +19,9 @@ const BarberProfileInfo: React.FC = () => {
       }
 
       try {
-        // CORREÇÃO: busca no staff, não "barber", e role = 'barber'
+        // Agora busca em staff_sequencial
         const { data, error } = await supabase
-          .from('staff')
+          .from('staff_sequencial')
           .select('*')
           .eq('email', user.email)
           .eq('role', 'barber')
@@ -123,4 +122,3 @@ const BarberProfileInfo: React.FC = () => {
 };
 
 export default BarberProfileInfo;
-

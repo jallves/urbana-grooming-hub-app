@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,22 +21,22 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
 
-  // Get barber ID from user's staff record
-  const [barberId, setBarberId] = useState<string | null>(null);
+  // Get barber ID from user's staff_sequencial
+  const [barberId, setBarberId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchBarberId = async () => {
       if (!user?.email) return;
-      
+
       try {
-        const { data: staffData } = await supabase
-          .from('staff')
+        const { data } = await supabase
+          .from('staff_sequencial')
           .select('id')
           .eq('email', user.email)
-          .single();
-        
-        if (staffData) {
-          setBarberId(staffData.id);
+          .maybeSingle();
+
+        if (data) {
+          setBarberId(data.id);
         }
       } catch (error) {
         console.error('Error fetching barber ID:', error);

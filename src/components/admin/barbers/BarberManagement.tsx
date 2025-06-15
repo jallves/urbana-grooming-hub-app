@@ -16,12 +16,14 @@ import { deleteBarber } from '@/services/barberService';
 // ---- MODE ENUM ----
 type Mode = 'viewing' | 'adding' | 'editing';
 
-// Buscar barbeiros com o cargo barber no staff
+// Buscar barbeiros com o cargo barber no staff_sequencial
 const fetchBarbers = async () => {
+  // Traz todos os barbeiros ativos da staff_sequencial
   const { data, error } = await supabase
-    .from('staff')
+    .from('staff_sequencial')
     .select('*')
     .eq('role', 'barber')
+    .eq('is_active', true)
     .order('name');
 
   if (error) throw new Error(error.message);
@@ -30,7 +32,7 @@ const fetchBarbers = async () => {
 
 const BarberManagement: React.FC = () => {
   const [mode, setMode] = useState<Mode>('viewing');
-  const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
+  const [editingBarberId, setEditingBarberId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -56,7 +58,7 @@ const BarberManagement: React.FC = () => {
     setMode('adding');
   };
 
-  const handleEditBarber = (id: string) => {
+  const handleEditBarber = (id: number) => {
     setEditingBarberId(id);
     setMode('editing');
   };
@@ -71,11 +73,11 @@ const BarberManagement: React.FC = () => {
     setEditingBarberId(null);
     refetch();
     queryClient.invalidateQueries({ queryKey: ['barbers'] });
-    queryClient.invalidateQueries({ queryKey: ['staff'] });
+    queryClient.invalidateQueries({ queryKey: ['staff_sequencial'] });
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
-  const handleDeleteBarber = async (barberId: string) => {
+  const handleDeleteBarber = async (barberId: number) => {
     if (
       window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
     ) {
@@ -84,7 +86,7 @@ const BarberManagement: React.FC = () => {
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
-        queryClient.invalidateQueries({ queryKey: ['staff'] });
+        queryClient.invalidateQueries({ queryKey: ['staff_sequencial'] });
         queryClient.invalidateQueries({ queryKey: ['team-staff'] });
       } catch (err) {
         toast.error('Erro ao excluir barbeiro.', {
@@ -119,8 +121,7 @@ const BarberManagement: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" no módulo de profissionais.
-              Para adicionar um novo barbeiro, use o botão "Novo Barbeiro" ou vá ao módulo de profissionais e crie um com categoria "Barbeiro".
+              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" em staff_sequencial.
             </AlertDescription>
           </Alert>
           <Card>
@@ -150,9 +151,10 @@ const BarberManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <BarberForm
-              barberId={editingBarberId}
+              barberId={editingBarberId as any} // cast provisório se necessário
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
+              tableName="staff_sequencial" // se o formulário permitir customizar a tabela
             />
           </CardContent>
         </Card>
