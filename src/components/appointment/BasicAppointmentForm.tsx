@@ -58,21 +58,21 @@ export default function BasicAppointmentForm() {
         setServices(data ?? []);
       });
 
-    // Buscar barbeiros ativos (staff_sequencial)
+    // Buscar barbeiros ativos da TABELA staff
     supabase
-      .from("staff_sequencial")
-      .select("uuid_id, name, is_active, role")
+      .from("staff")
+      .select("id, name, is_active, role")
       .eq("is_active", true)
       .eq("role", "barber")
       .then(({ data, error }) => {
-        console.log("[BasicAppointmentForm] Dados brutos staff_sequencial:", data, error);
-        // Só barbeiros válidos com uuid_id definido e nome
+        console.log("[BasicAppointmentForm] Dados brutos staff:", data, error);
+        // Só barbeiros válidos com id definido e nome
         const filtered =
           Array.isArray(data)
             ? data
-                .filter((b: any) => !!b.uuid_id && !!b.name)
+                .filter((b: any) => !!b.id && !!b.name)
                 .map((b: any) => ({
-                  id: b.uuid_id,
+                  id: b.id,
                   name: b.name,
                   is_active: b.is_active,
                   role: b.role,
