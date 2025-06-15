@@ -1,3 +1,4 @@
+
 // src/pages/cliente/ClientNewBooking.tsx
 
 import React, { useEffect, useState } from 'react';
@@ -71,14 +72,11 @@ export default function ClientNewBooking() {
                 Novo Agendamento
               </CardTitle>
               <CardDescription className="text-stone-400">
-                No momento, o agendamento online está desativado.
+                Preencha o formulário para agendar seu próximo corte!
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 flex justify-center items-center min-h-[180px]">
-              <div className="text-xl text-center text-stone-300 py-10">
-                O formulário de agendamento foi removido.<br />
-                Por favor, entre em contato pelo WhatsApp ou presencialmente para agendar um horário.
-              </div>
+            <CardContent className="pt-6">
+              <ClientAppointmentForm clientId={client.id} />
             </CardContent>
           </Card>
         </div>
