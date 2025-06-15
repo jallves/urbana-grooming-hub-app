@@ -48,27 +48,48 @@ export const useAppointmentData = () => {
     const fetchBarbers = async () => {
       setLoadingBarbers(true);
       try {
-        // BUSCA APENAS STAFF ATIVO E ROLE "barber" DO BANCO
+        // BUSCA APENAS BARBEIROS ATIVOS DA TABELA barbers FAZENDO JOIN COM staff
         const { data, error } = await supabase
-          .from('staff')
-          .select('id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at')
-          .eq('is_active', true)
-          .eq('role', 'barber')
-          .order('name', { ascending: true });
-
-        console.log('Barbeiros retornados de staff:', data, 'Erro:', error);
+          .from('barbers')
+          .select(`
+            id,
+            staff:staff_id (
+              id,
+              name,
+              email,
+              phone,
+              role,
+              is_active,
+              image_url,
+              experience,
+              specialties,
+              commission_rate,
+              created_at,
+              updated_at
+            )
+          `)
+          .order('created_at', { ascending: true });
 
         if (error) {
+          console.error('Erro ao buscar barbeiros:', error);
           setBarbers([]);
           return;
         }
 
-        if (data && data.length > 0) {
-          setBarbers(data);
-        } else {
-          setBarbers([]);
-        }
+        // Filtra apenas os barbeiros cuja staff está ativa
+        const filtered = Array.isArray(data)
+          ? data
+              .filter((b) => b.staff && b.staff.is_active && b.staff.role === 'barber')
+              .map((b) => ({
+                ...b.staff,
+                barber_id: b.id // vincula o id do registro em barbers, caso necessário em outros lugares
+              }))
+          : [];
+
+        setBarbers(filtered);
+        console.log('Barbeiros buscados de barbers+staff:', filtered);
       } catch (error) {
+        console.error('Erro ao buscar barbeiros:', error);
         setBarbers([]);
       } finally {
         setLoadingBarbers(false);
@@ -80,7 +101,7 @@ export const useAppointmentData = () => {
 
   return {
     services,
-    barbers, // este array já vem filtrado da base de dados
+    barbers, // já filtrado como barbeiro ativo
     loadingBarbers
   };
 };
