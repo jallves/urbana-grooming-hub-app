@@ -166,7 +166,7 @@ const BarberManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <BarberForm
-              barberId={editingBarberId ?? undefined}
+              barberId={editingBarberId !== null && editingBarberId !== undefined ? editingBarberId.toString() : undefined}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
             />
