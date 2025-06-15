@@ -98,7 +98,13 @@ export const useAppointmentData = () => {
             setBarbers([]);
             return;
           }
-          filtered = Array.isArray(staffBarbers) ? staffBarbers : [];
+          // Adiciona o campo barber_id em cada barbeiro vindo do staff
+          filtered = Array.isArray(staffBarbers)
+            ? staffBarbers.map((staff) => ({
+                ...staff,
+                barber_id: staff.id,
+              }))
+            : [];
         }
 
         setBarbers(filtered);
