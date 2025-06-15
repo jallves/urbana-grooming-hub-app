@@ -2152,6 +2152,54 @@ export type Database = {
           },
         ]
       }
+      staff_sequencial: {
+        Row: {
+          commission_rate: number | null
+          created_at: string | null
+          email: string | null
+          experience: string | null
+          id: number
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          role: string | null
+          specialties: string | null
+          updated_at: string | null
+          uuid_id: string | null
+        }
+        Insert: {
+          commission_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          experience?: string | null
+          id?: number
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          role?: string | null
+          specialties?: string | null
+          updated_at?: string | null
+          uuid_id?: string | null
+        }
+        Update: {
+          commission_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          experience?: string | null
+          id?: number
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          role?: string | null
+          specialties?: string | null
+          updated_at?: string | null
+          uuid_id?: string | null
+        }
+        Relationships: []
+      }
       student_communications: {
         Row: {
           created_at: string | null
