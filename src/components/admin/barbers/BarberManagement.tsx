@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,12 +13,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { deleteBarber } from '@/services/barberService';
 
-// ---- MODE ENUM ----
 type Mode = 'viewing' | 'adding' | 'editing';
 
-// Buscar barbeiros com o cargo barber no staff_sequencial
 const fetchBarbers = async () => {
-  // Barbers from staff_sequencial use id: number, so type accordingly
   const { data, error } = await supabase
     .from('staff_sequencial')
     .select('*')
@@ -56,6 +54,7 @@ const BarberManagement: React.FC = () => {
     setMode('adding');
   };
 
+  // Expect number id here
   const handleEditBarber = (id: number) => {
     setEditingBarberId(id);
     setMode('editing');
@@ -75,6 +74,7 @@ const BarberManagement: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
+  // Expect number barberId
   const handleDeleteBarber = async (barberId: number) => {
     if (
       window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
@@ -149,7 +149,6 @@ const BarberManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <BarberForm
-              // Here, pass barberId as number or undefined/null when creating
               barberId={editingBarberId !== null ? editingBarberId : undefined}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}

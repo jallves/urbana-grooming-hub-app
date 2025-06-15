@@ -4,10 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Service, StaffMember } from '@/types/appointment';
 
+// StaffMember should have id: number
 export const useAppointmentData = () => {
   const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
-  // IMPORTANT: StaffMember should have id: number
+  // Make sure StaffMember uses id: number
   const [barbers, setBarbers] = useState<StaffMember[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
 
@@ -60,12 +61,12 @@ export const useAppointmentData = () => {
           Array.isArray(data)
             ? data.map((b) => ({
                 ...b,
-                id: b.id, // already number
+                id: b.id, // Keep numeric type
                 barber_id: b.id,
               }))
             : [];
 
-        setBarbers(filtered as StaffMember[]);
+        setBarbers(filtered as StaffMember[]); // id: number!
         console.log(
           '[useAppointmentData] (staff_sequencial) Barbeiros retornados (prontos para seleção):',
           filtered
