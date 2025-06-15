@@ -19,9 +19,9 @@ const BarberProfileInfo: React.FC = () => {
       }
 
       try {
-        // Agora busca em staff_sequencial
+        // FIX: use 'staff'
         const { data, error } = await supabase
-          .from('staff_sequencial')
+          .from('staff')
           .select('*')
           .eq('email', user.email)
           .eq('role', 'barber')
@@ -30,10 +30,8 @@ const BarberProfileInfo: React.FC = () => {
         if (error) {
           console.error('Erro ao buscar informações do barbeiro:', error);
         } else if (data) {
-          // Adapta tipo para garantir que o id é string (uuid_id)
           setBarberInfo({
-            id: String(data.uuid_id),
-            uuid_id: data.uuid_id ?? '',
+            id: String(data.id), // use id as string
             name: data.name ?? '',
             email: data.email ?? '',
             phone: data.phone ?? '',

@@ -58,8 +58,9 @@ const BarberProfileForm: React.FC = () => {
       if (!user?.email) return;
 
       try {
+        // FIX: change to correct table
         const { data, error } = await supabase
-          .from('staff_sequencial')
+          .from('staff')
           .select('*')
           .eq('email', user.email)
           .maybeSingle();
@@ -76,7 +77,7 @@ const BarberProfileForm: React.FC = () => {
             email: data.email || user.email || '',
             experience: data.experience || '',
             specialties: data.specialties || '',
-            commission_rate: data.commission_rate || 0
+            commission_rate: data.commission_rate ?? 0
           });
 
           if (data.image_url) {
@@ -97,8 +98,9 @@ const BarberProfileForm: React.FC = () => {
     try {
       setLoading(true);
 
+      // FIX: correct table
       const { error } = await supabase
-        .from('staff_sequencial')
+        .from('staff')
         .update({
           name: values.name,
           phone: values.phone,
@@ -109,10 +111,7 @@ const BarberProfileForm: React.FC = () => {
         })
         .eq('email', user.email);
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       toast({
         title: 'Perfil atualizado',
         description: 'Suas informações foram salvas com sucesso.',
@@ -130,10 +129,8 @@ const BarberProfileForm: React.FC = () => {
   };
   
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files.length || !user?.email) {
-      return;
-    }
-    
+    if (!e.target.files || !e.target.files.length || !user?.email) return;
+
     const file = e.target.files[0];
     
     try {
