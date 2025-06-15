@@ -1,4 +1,3 @@
-
 import React from "react";
 import { User } from "lucide-react";
 import { BarberSelectionField } from "./BarberSelectionField";
@@ -10,7 +9,7 @@ interface Props {
   barberAvailability: any;
   isCheckingAvailability: boolean;
   getFieldValue: (field: string) => any;
-  checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>;
+  checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>; // must return Promise<void>
 }
 
 export function ClientAppointmentBarberSection({

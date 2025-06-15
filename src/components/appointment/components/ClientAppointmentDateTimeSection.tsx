@@ -9,9 +9,9 @@ interface Props {
   control: Control<any>;
   selectedService: Service | null;
   availableTimes: string[];
-  disabledDays: Date[]; // must match usage, NOT function
+  disabledDays: (date: Date) => boolean; // <-- must be a function (see useDisabledDays)
   getFieldValue: (field: string) => any;
-  fetchAvailableTimes: (date: Date, serviceId: string) => Promise<void>;
+  fetchAvailableTimes: (date: Date, serviceId: string) => Promise<void>; // must return Promise<void>
 }
 
 export function ClientAppointmentDateTimeSection({
