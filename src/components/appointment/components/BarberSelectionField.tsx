@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import {
   FormField,
@@ -13,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-// Removido import dos alerts e AlertTriangle pois não usaremos mais
 import { User, Loader2 } from 'lucide-react';
 import { Control } from 'react-hook-form';
 import {
@@ -31,11 +31,9 @@ interface BarberSelectionFieldProps {
   checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>;
 }
 
-// MODIFICADO Utilitário para buscar barbeiro por ID
+// Utilitário para buscar barbeiro por ID (aceita chefes com id/barber_id)
 const getBarberById = (barbers: any[], id: string) =>
   barbers.find((b) => (b?.id === id || b?.barber_id === id));
-
-// Ajustar props: barbers agora é o resultado do join barbers+staff com .id/.barber_id
 
 export function BarberSelectionField({
   control,
@@ -65,13 +63,13 @@ export function BarberSelectionField({
   const shouldShowAllBarbers =
     !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
 
-  // MODIFICADO: mostrar apenas barbeiros ativos e role barber (join barbers+staff)
+  // Corrigido: filtra só barbeiros ativos de acordo com a estrutura plana (join staff/barbers)
   const activeBarbers = Array.isArray(barbers)
     ? barbers.filter(
         (b) =>
           !!b &&
-          (b.is_active === true || b?.staff?.is_active === true) &&
-          (b.role === 'barber' || b?.staff?.role === 'barber')
+          b.is_active === true &&
+          (b.role === 'barber')
       )
     : [];
 
@@ -132,7 +130,7 @@ export function BarberSelectionField({
                   {availableBarbers
                     .filter((b) => {
                       const barberObj = getBarberById(barbers, b.id);
-                      return barberObj && (barberObj.is_active === true || barberObj?.staff?.is_active === true) && (barberObj.role === 'barber' || barberObj?.staff?.role === 'barber');
+                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
                     })
                     .map((barber) => {
                       const barberObj = getBarberById(barbers, barber.id);
@@ -155,7 +153,7 @@ export function BarberSelectionField({
                   {unavailableBarbers
                     .filter((b) => {
                       const barberObj = getBarberById(barbers, b.id);
-                      return barberObj && (barberObj.is_active === true || barberObj?.staff?.is_active === true) && (barberObj.role === 'barber' || barberObj?.staff?.role === 'barber');
+                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
                     })
                     .map((barber) => {
                       const barberObj = getBarberById(barbers, barber.id);
@@ -217,4 +215,5 @@ export function BarberSelectionField({
   );
 }
 
-// Arquivo está ficando longo! Recomendo que você peça um refactor para dividir esse componente em arquivos menores.
+// O componente está ficando grande. Recomendo que você peça um refactor para dividir esse componente em arquivos menores.
+
