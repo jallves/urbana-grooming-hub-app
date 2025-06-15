@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import {
   FormField,
@@ -55,7 +54,16 @@ export function BarberSelectionField({
 
   React.useEffect(() => {
     console.log('Barbeiros recebidos para seleção:', barbers);
-  }, [barbers]);
+    console.log('[BarberSelectionField] barberAvailability:', barberAvailability);
+    console.log('[BarberSelectionField] activeBarbers:', Array.isArray(barbers)
+      ? barbers.filter(b => !!b && b.is_active === true && b.role === 'barber')
+      : []);
+    console.log('[BarberSelectionField] Valores selecionados:', {
+      selectedDate: getFieldValue('date'),
+      selectedTime: getFieldValue('time'),
+      selectedServiceId: getFieldValue('service_id'),
+    });
+  }, [barbers, barberAvailability, getFieldValue]);
 
   const availableBarbers = barberAvailability.filter((b) => b.available);
   const unavailableBarbers = barberAvailability.filter((b) => !b.available);
@@ -216,4 +224,3 @@ export function BarberSelectionField({
 }
 
 // O componente está ficando grande. Recomendo que você peça um refactor para dividir esse componente em arquivos menores.
-

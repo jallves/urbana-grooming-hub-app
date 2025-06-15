@@ -175,6 +175,10 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     );
   }
 
+  // LOG: visualização dos barbeiros recebidos do hook e dos mapeados
+  console.log('[ClientAppointmentForm] Barbeiros recebidos:', barbers);
+  console.log('[ClientAppointmentForm] mappedBarbers:', mappedBarbers);
+
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
       {/* Header */}
