@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     form,
     loading,
     services,
-    barbers, // Agora tudo já tipado corretamente
+    barbers,
     selectedService,
     setSelectedService,
     availableTimes,
@@ -50,8 +51,16 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
-  // Não há mais necessidade de mapeamento extra
-  const mappedBarbers = barbers;
+  // Log de debug para verificar os dados dos barbeiros
+  React.useEffect(() => {
+    console.log('[ClientAppointmentForm] Estado atual:', {
+      loading,
+      barbersCount: barbers?.length || 0,
+      barbers: barbers,
+      servicesCount: services?.length || 0,
+      clientId,
+    });
+  }, [loading, barbers, services, clientId]);
 
   const finalPrice = selectedService
     ? appliedCoupon
@@ -82,7 +91,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
       const selectedDate = new Date(data.date);
       selectedDate.setHours(hours, minutes, 0, 0);
 
-      // Montar dados do agendamento
       const appointmentData = {
         client_id: clientId,
         service_id: data.service_id,
@@ -95,7 +103,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
         status: 'scheduled',
       };
 
-      // Supabase: criar novo agendamento
       const { error } = await (window as any).supabase
         .from('appointments')
         .insert([appointmentData]);
@@ -104,7 +111,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
         throw new Error(error.message || "Não foi possível salvar o agendamento.");
       }
 
-      // Mensagem de sucesso detalhada
       const formattedDate = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
       const formattedTime = format(selectedDate, "HH:mm", { locale: ptBR });
       toast({
@@ -139,6 +145,14 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 
   return (
     <div className="max-w-3xl mx-auto bg-zinc-900/90 border border-zinc-700 rounded-2xl p-5 md:p-8 shadow-2xl">
+      {/* Debug info em desenvolvimento */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-3 bg-gray-800 rounded border text-xs text-gray-300">
+          <strong>Debug:</strong> {barbers?.length || 0} barbeiros carregados
+          {barbers?.length === 0 && <span className="text-red-400"> - Verifique a tabela staff!</span>}
+        </div>
+      )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
@@ -174,7 +188,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
             />
           </section>
 
-          {/* Passo 3: Barbeiro */}
+          {/* Barber selection section */}
           <section className="space-y-1 pb-4 border-b border-zinc-700">
             <div className="flex items-center gap-2 mb-1">
               <User className="h-4 w-4 text-green-400" />
@@ -182,7 +196,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
             </div>
             <BarberSelectionField
               control={form.control}
-              barbers={mappedBarbers}
+              barbers={barbers}
               barberAvailability={barberAvailability}
               isCheckingAvailability={isCheckingAvailability}
               getFieldValue={form.getValues}
@@ -206,7 +220,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
             </section>
           )}
 
-          {/* Passo 5: Observação */}
           <section className="space-y-1">
             <h3 className="font-semibold text-lg text-white mb-1">Observação (Opcional)</h3>
             <FormField
@@ -227,7 +240,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
             />
           </section>
 
-          {/* Passo 6: Resumo */}
           <div className="bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/20 border border-urbana-gold/30 rounded-xl p-5 mt-4">
             <AppointmentSummary
               selectedService={selectedService}
@@ -238,7 +250,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
             />
           </div>
 
-          {/* Botões de ação */}
           <div className="flex flex-col md:flex-row gap-4 pt-6">
             <Button
               type="button"
@@ -268,5 +279,3 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     </div>
   );
 }
-
-// O arquivo está ficando extenso! Considere pedir um refactor para dividi-lo em subcomponentes se quiser facilitar futuras manutenções.

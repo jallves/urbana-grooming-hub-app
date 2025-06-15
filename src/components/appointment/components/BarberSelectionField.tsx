@@ -31,10 +31,6 @@ interface BarberSelectionFieldProps {
   checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>;
 }
 
-// Utilitário para buscar barbeiro por ID (aceita chefes com id/barber_id)
-const getBarberById = (barbers: any[], id: string) =>
-  barbers.find((b) => (b?.id === id || b?.barber_id === id));
-
 export function BarberSelectionField({
   control,
   barbers,
@@ -53,39 +49,35 @@ export function BarberSelectionField({
     }
   }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability]);
 
-  React.useEffect(() => {
-    console.log('Barbeiros recebidos para seleção:', barbers);
-    console.log('[BarberSelectionField] barberAvailability:', barberAvailability);
-    console.log('[BarberSelectionField] activeBarbers:', Array.isArray(barbers)
-      ? barbers.filter(b => !!b && b.is_active === true && b.role === 'barber')
-      : []);
-    console.log('[BarberSelectionField] Valores selecionados:', {
-      selectedDate: getFieldValue('date'),
-      selectedTime: getFieldValue('time'),
-      selectedServiceId: getFieldValue('service_id'),
+  useEffect(() => {
+    console.log('[BarberSelectionField] Props recebidas:', {
+      barbersCount: barbers?.length || 0,
+      barbers: barbers,
+      barberAvailabilityCount: barberAvailability?.length || 0,
+      barberAvailability: barberAvailability,
+      selectedDate,
+      selectedTime,
+      selectedServiceId,
     });
-    // Novo log para inspecionar logicamente quem deveria aparecer:
-    const availableBarbers = barberAvailability.filter((b) => b.available);
-    const unavailableBarbers = barberAvailability.filter((b) => !b.available);
-    console.log("Barbeiros disponíveis:", availableBarbers.map(b => b.id));
-    console.log("Barbeiros indisponíveis:", unavailableBarbers.map(b => b.id));
-  }, [barbers, barberAvailability, getFieldValue]);
+  }, [barbers, barberAvailability, selectedDate, selectedTime, selectedServiceId]);
 
-  const availableBarbers = barberAvailability.filter((b) => b.available);
-  const unavailableBarbers = barberAvailability.filter((b) => !b.available);
-
-  // novo: filtro explícito - garantir uso correto do array
-  const shouldShowAllBarbers =
-    !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
-
+  // Filtrar barbeiros ativos
   const activeBarbers = Array.isArray(barbers)
     ? barbers.filter(
         (b) =>
           !!b &&
           b.is_active === true &&
-          (b.role === 'barber')
+          b.role === 'barber'
       )
     : [];
+
+  console.log('[BarberSelectionField] Barbeiros ativos encontrados:', activeBarbers);
+
+  const availableBarbers = barberAvailability.filter((b) => b.available);
+  const unavailableBarbers = barberAvailability.filter((b) => !b.available);
+
+  const shouldShowAllBarbers =
+    !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
 
   return (
     <FormField
@@ -105,29 +97,31 @@ export function BarberSelectionField({
           <Select
             onValueChange={field.onChange}
             value={field.value || ''}
-            disabled={
-              !selectedTime || isCheckingAvailability || activeBarbers.length === 0
-            }
+            disabled={isCheckingAvailability}
           >
             <FormControl>
               <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white focus:border-urbana-gold focus:ring-urbana-gold/20">
                 <User className="mr-2 h-4 w-4" />
                 <SelectValue
                   placeholder={
-                    !selectedTime
-                      ? 'Selecione um horário primeiro'
-                      : isCheckingAvailability
+                    isCheckingAvailability
                       ? 'Verificando disponibilidade...'
                       : activeBarbers.length === 0
-                      ? 'Sem barbeiros disponíveis'
+                      ? 'Nenhum barbeiro cadastrado'
                       : 'Selecione um barbeiro'
                   }
                 />
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-zinc-800 border-zinc-600">
-              {shouldShowAllBarbers ? (
-                // Quando não filtrando por disponibilidade
+              {activeBarbers.length === 0 ? (
+                <div className="px-2 py-4 text-center text-zinc-400">
+                  Nenhum barbeiro encontrado na base de dados.
+                  <br />
+                  <span className="text-xs">Verifique se há barbeiros cadastrados e ativos.</span>
+                </div>
+              ) : shouldShowAllBarbers ? (
+                // Mostrar todos os barbeiros quando não há filtro de disponibilidade
                 activeBarbers.map((barber) => (
                   <SelectItem
                     key={barber.id}
@@ -135,22 +129,22 @@ export function BarberSelectionField({
                     className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-green-500">✅</span>
+                      <span className="text-blue-400">👨‍💼</span>
                       {barber.name}
                     </div>
                   </SelectItem>
                 ))
               ) : (
                 <>
-                  {/* Aqui garantimos que, se availableBarbers.length > 0, vamos mostrar! */}
+                  {/* Barbeiros disponíveis */}
                   {availableBarbers.length > 0 &&
                     availableBarbers
                       .filter((b) => {
-                        const barberObj = barbers.find(x => x.id === b.id);
-                        return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
+                        const barberObj = activeBarbers.find(x => x.id === b.id);
+                        return !!barberObj;
                       })
                       .map((barber) => {
-                        const barberObj = barbers.find(x => x.id === barber.id);
+                        const barberObj = activeBarbers.find(x => x.id === barber.id);
                         if (!barberObj) return null;
                         return (
                           <SelectItem
@@ -167,15 +161,15 @@ export function BarberSelectionField({
                         );
                       })}
 
-                  {/* Se houver indisponíveis, mostrar mas desabilitados */}
+                  {/* Barbeiros indisponíveis */}
                   {unavailableBarbers.length > 0 &&
                     unavailableBarbers
                       .filter((b) => {
-                        const barberObj = barbers.find(x => x.id === b.id);
-                        return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
+                        const barberObj = activeBarbers.find(x => x.id === b.id);
+                        return !!barberObj;
                       })
                       .map((barber) => {
-                        const barberObj = barbers.find(x => x.id === barber.id);
+                        const barberObj = activeBarbers.find(x => x.id === barber.id);
                         if (!barberObj) return null;
                         return (
                           <SelectItem
@@ -192,38 +186,35 @@ export function BarberSelectionField({
                           </SelectItem>
                         );
                       })}
+
+                  {/* Aviso se nenhum barbeiro disponível */}
+                  {!isCheckingAvailability &&
+                    availableBarbers.length === 0 &&
+                    activeBarbers.length > 0 && (
+                      <div className="px-2 py-1 text-sm text-red-400">
+                        Nenhum barbeiro disponível neste horário
+                      </div>
+                    )}
                 </>
               )}
-
-              {/* Só mostra o alerta se realmente ninguém estiver disponível! */}
-              {!shouldShowAllBarbers &&
-                !isCheckingAvailability &&
-                availableBarbers.length === 0 &&
-                activeBarbers.length > 0 && (
-                  <div className="px-2 py-1 text-sm text-red-400">
-                    Nenhum barbeiro disponível neste horário
-                  </div>
-                )}
             </SelectContent>
           </Select>
 
           <FormMessage />
 
+          {/* Alertas informativos */}
           {!selectedTime && activeBarbers.length > 0 && (
             <p className="text-sm text-zinc-400">
               Selecione um horário primeiro para verificar disponibilidade
             </p>
           )}
 
-          {/* Mostrar box só se realmente ninguém estiver disponível */}
           {selectedTime &&
             !shouldShowAllBarbers &&
             availableBarbers.length === 0 &&
             activeBarbers.length > 0 &&
             !isCheckingAvailability && (
-              <div
-                className="mt-2 bg-red-900/20 border-red-700 border rounded-lg p-3"
-              >
+              <div className="mt-2 bg-red-900/20 border-red-700 border rounded-lg p-3">
                 <span className="text-red-400 font-semibold">Nenhum barbeiro disponível</span>
                 <div className="text-red-300">
                   Não há barbeiros disponíveis para o horário selecionado. Por favor, escolha outro horário.
@@ -235,5 +226,3 @@ export function BarberSelectionField({
     />
   );
 }
-
-// O componente está ficando grande. Recomendo que você peça um refactor para dividir esse componente em arquivos menores.
