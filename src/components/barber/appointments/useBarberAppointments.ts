@@ -58,7 +58,7 @@ export const useBarberAppointments = () => {
           clients (name),
           services (name, price)
         `)
-        .eq('staff_id', barberId)
+        .eq('staff_id', barberId) // NOTE: numeric ID, column must match!
         .order('start_time', { ascending: true });
 
       if (error) {

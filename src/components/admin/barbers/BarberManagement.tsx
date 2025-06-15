@@ -157,6 +157,7 @@ const BarberManagement: React.FC = () => {
         </Card>
       )}
 
+      {/* Pass the correct types: id as number */}
       <BarberList
         barbers={barbers || []}
         isLoading={isLoading}
@@ -168,3 +169,4 @@ const BarberManagement: React.FC = () => {
 };
 
 export default BarberManagement;
+

@@ -57,17 +57,28 @@ export const useAppointmentData = () => {
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
-        // Map to StaffMember ensuring id: number (not string)
+        // Map to StaffMember using id: number, default to empty strings/defaults for nullables
         let filtered =
           Array.isArray(data)
             ? data.map((b) => ({
-                ...b,
-                id: b.id, // number!
+                id: b.id,
                 barber_id: b.id,
+                commission_rate: b.commission_rate ?? 0,
+                created_at: b.created_at ?? '',
+                email: b.email ?? '',
+                experience: b.experience ?? '',
+                image_url: b.image_url ?? '',
+                is_active: b.is_active ?? true,
+                name: b.name ?? '',
+                phone: b.phone ?? '',
+                role: b.role ?? '',
+                specialties: b.specialties ?? '',
+                updated_at: b.updated_at ?? '',
+                uuid_id: b.uuid_id ?? '', // only if your type allows
               }))
             : [];
 
-        setBarbers(filtered as StaffMember[]); // id: number!
+        setBarbers(filtered); // id: number!
         console.log(
           '[useAppointmentData] (staff_sequencial) Barbeiros retornados (prontos para seleção):',
           filtered
