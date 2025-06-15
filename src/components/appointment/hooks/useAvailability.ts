@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +17,7 @@ export const useAvailability = () => {
 
     setIsCheckingAvailability(true);
     try {
-      // Gerar horários em intervalos de 30 min das 8h às 20h
+      // Generate time slots from 8:00 to 20:00 in 30-minute intervals
       const timeSlots = [];
       for (let hour = 8; hour < 20; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
@@ -27,6 +26,7 @@ export const useAvailability = () => {
           timeSlots.push(`${formattedHour}:${formattedMinute}`);
         }
       }
+
       setAvailableTimes(timeSlots);
     } catch (error) {
       console.error("Erro ao buscar horários disponíveis:", error);
@@ -47,14 +47,23 @@ export const useAvailability = () => {
         setBarberAvailability([]);
         return;
       }
+
       setIsCheckingAvailability(true);
       try {
+        console.log("Verificando disponibilidade dos barbeiros para:", {
+          date,
+          time,
+          serviceId,
+          externalBarbers,
+        });
+
         let staffMembers: any[] = [];
 
         if (Array.isArray(externalBarbers) && externalBarbers.length > 0) {
           staffMembers = externalBarbers;
+          console.log("[useAvailability] Usando array externo de barbeiros:", staffMembers);
         } else {
-          // Busca direto do banco
+          // Fallback: busca direto do banco (já usado somente se não passar nada)
           const { data: dbStaff, error: staffError } = await supabase
             .from("staff")
             .select("id, name, is_active, role")
@@ -63,6 +72,7 @@ export const useAvailability = () => {
             .order("name", { ascending: true });
 
           if (staffError || !dbStaff || dbStaff.length === 0) {
+            console.error("Erro ao buscar barbeiros ativos no fallback:", staffError);
             toast({
               title: "Erro",
               description: "Não foi possível verificar a disponibilidade dos barbeiros.",
@@ -73,76 +83,73 @@ export const useAvailability = () => {
             return;
           }
           staffMembers = dbStaff;
+          console.log("[useAvailability] Usando array de barbeiros buscado do banco (fallback):", staffMembers);
         }
 
-        // Busca duração correta do serviço
+        // Buscar duração do serviço
         const { data: serviceData, error: serviceError } = await supabase
           .from("services")
           .select("duration")
           .eq("id", serviceId)
-          .maybeSingle();
+          .single();
 
         let serviceDuration = 60;
-        if (!serviceError && serviceData && serviceData.duration) {
-          serviceDuration = serviceData.duration;
-        }
+        if (!serviceError && serviceData) serviceDuration = serviceData.duration;
 
-        // Calcula hora início/fim da consulta (importante: UTC)
+        // Calcular horário de início e fim
         const [hours, minutes] = time.split(":").map(Number);
         const startTime = new Date(date);
         startTime.setHours(hours, minutes, 0, 0);
-        const endTime = new Date(startTime.getTime() + serviceDuration * 60000);
+        const endTime = new Date(startTime);
+        endTime.setMinutes(endTime.getMinutes() + serviceDuration);
 
-        // Itera todos barbeiros e verifica conflito
+        // Checar conflitos para cada barbeiro
         const availability = await Promise.all(
           staffMembers.map(async (staff) => {
-            // Caso use id numerico, converte pra string
-            const barberId = staff.id?.toString?.() ?? staff.id;
+            try {
+              const startOfDay = new Date(startTime);
+              startOfDay.setHours(0, 0, 0, 0);
+              const endOfDay = new Date(startTime);
+              endOfDay.setHours(23, 59, 59, 999);
 
-            // Busca todos agendamentos ativos do dia
-            const startOfDay = new Date(startTime);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(startTime);
-            endOfDay.setHours(23, 59, 59, 999);
+              const { data: appointments, error: appointmentError } = await supabase
+                .from("appointments")
+                .select("id, start_time, end_time, status")
+                .eq("staff_id", staff.id)
+                .gte("start_time", startOfDay.toISOString())
+                .lte("start_time", endOfDay.toISOString())
+                .in("status", ["scheduled", "confirmed"]);
 
-            const { data: appointments, error: appointmentError } = await supabase
-              .from("appointments")
-              .select("id, start_time, end_time, status")
-              .eq("staff_id", barberId)
-              .in("status", ["scheduled", "confirmed"])
-              .gte("start_time", startOfDay.toISOString())
-              .lte("start_time", endOfDay.toISOString());
+              if (appointmentError) {
+                console.error(`Erro ao verificar agendamentos para ${staff.name}:`, appointmentError);
+                return { id: staff.id, name: staff.name, available: false };
+              }
 
-            if (appointmentError) {
+              let hasConflict = false;
+              if (appointments && appointments.length > 0) {
+                hasConflict = appointments.some((appointment) => {
+                  const appStart = new Date(appointment.start_time);
+                  const appEnd = new Date(appointment.end_time);
+                  return startTime < appEnd && endTime > appStart;
+                });
+              }
+
               return {
-                id: barberId,
+                id: staff.id,
                 name: staff.name,
-                available: false,
+                available: !hasConflict,
               };
+            } catch (error) {
+              console.error(`Erro ao verificar disponibilidade para ${staff.name}:`, error);
+              return { id: staff.id, name: staff.name, available: false };
             }
-
-            // Checa se existe horário conflitante
-            let hasConflict = false;
-            if (appointments && appointments.length > 0) {
-              hasConflict = appointments.some((appointment) => {
-                const appStart = new Date(appointment.start_time);
-                const appEnd = new Date(appointment.end_time);
-                return (
-                  startTime < appEnd && endTime > appStart
-                );
-              });
-            }
-
-            return {
-              id: barberId,
-              name: staff.name,
-              available: !hasConflict,
-            };
           })
         );
 
         setBarberAvailability(availability);
+        console.log("[useAvailability] Resultado verificação:", availability);
       } catch (error) {
+        console.error("Erro ao verificar disponibilidade dos barbeiros:", error);
         toast({
           title: "Erro",
           description: "Não foi possível verificar a disponibilidade dos barbeiros.",

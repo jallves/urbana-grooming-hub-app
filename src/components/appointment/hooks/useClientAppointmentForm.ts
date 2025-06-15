@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,15 +37,7 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
   // Usar array corretamente já filtrado e padronizado
   const { services, barbers } = useAppointmentData();
 
-  // Novo array barbers sempre com id STRINGS
-  const barbersWithStringId = Array.isArray(barbers)
-    ? barbers.map(b => ({
-        ...b,
-        id: b.id?.toString?.() ?? '', // garante string mesmo se number/null/undefined
-      }))
-    : [];
-
-  // Passe barbers para useAvailability (não mudou)
+  // Passe barbers para useAvailability
   const {
     availableTimes,
     barberAvailability,
@@ -92,16 +85,15 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
 
   // Atualizar chamada de disponibilidade!
   const wrappedCheckBarberAvailability = async (date: Date, time: string, serviceId: string) => {
-    // Garante id string em todos os barbers!
-    await checkBarberAvailability(date, time, serviceId, barbersWithStringId);
+    // barbers já filtrado e formatado corretamente
+    await checkBarberAvailability(date, time, serviceId, barbers);
   };
 
   return {
     form,
     loading,
     services,
-    // << aqui garanti que usamos o array consistente para downstream
-    barbers: barbersWithStringId,
+    barbers,
     selectedService,
     setSelectedService,
     availableTimes,
@@ -127,3 +119,4 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
 };
 
 export type { FormData, BarberAvailabilityInfo } from './types';
+
