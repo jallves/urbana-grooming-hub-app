@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,7 +20,7 @@ interface InitialAppointmentData {
 
 export const useClientAppointmentForm = (clientId: string, initialData?: InitialAppointmentData) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  
+
   const form = useForm<FormData>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
@@ -33,9 +34,10 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     },
   });
 
-  // MODIFICADO: usar resultado de barbers do hook (que já faz join com staff)
+  // Usar array corretamente já filtrado e padronizado
   const { services, barbers } = useAppointmentData();
-  
+
+  // Passe barbers para useAvailability
   const {
     availableTimes,
     barberAvailability,
@@ -43,7 +45,7 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     fetchAvailableTimes,
     checkBarberAvailability,
   } = useAvailability();
-  
+
   const {
     appliedCoupon,
     isApplyingCoupon,
@@ -52,9 +54,9 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     applyCoupon,
     removeCoupon,
   } = useCoupons(selectedService);
-  
+
   const { disabledDays } = useDisabledDays();
-  
+
   const {
     loading,
     isSending,
@@ -66,14 +68,12 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     form,
     setSelectedService,
     (coupon) => {
-      // We need to handle the coupon removal in the main form
       form.setValue('couponCode', '');
       form.setValue('discountAmount', 0);
       removeCoupon();
     }
   );
 
-  // Set initial service when services are loaded and initial data exists
   useEffect(() => {
     if (initialData && services.length > 0 && !selectedService) {
       const service = services.find(s => s.id === initialData.serviceId);
@@ -83,12 +83,17 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     }
   }, [initialData, services, selectedService]);
 
+  // Atualizar chamada de disponibilidade!
+  const wrappedCheckBarberAvailability = async (date: Date, time: string, serviceId: string) => {
+    // barbers já filtrado e formatado corretamente
+    await checkBarberAvailability(date, time, serviceId, barbers);
+  };
+
   return {
     form,
     loading,
     services,
-    // >>> ALTERAÇÃO principal <<<
-    barbers, // Agora já vem certinho do barbers join staff, não espera mais por staff!
+    barbers,
     selectedService,
     setSelectedService,
     availableTimes,
@@ -102,7 +107,8 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     setFinalServicePrice,
     onSubmit,
     fetchAvailableTimes,
-    checkBarberAvailability,
+    // Atualiza o contexto usado no <BarberSelectionField>!
+    checkBarberAvailability: wrappedCheckBarberAvailability,
     applyCoupon,
     removeCoupon: () => {
       form.setValue('couponCode', '');
@@ -112,5 +118,5 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
   };
 };
 
-// Export types for other components
 export type { FormData, BarberAvailabilityInfo } from './types';
+
