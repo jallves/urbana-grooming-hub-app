@@ -21,8 +21,8 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
 
-  // Use <number | null> for the barber's ID, consistent everywhere
-  const [barberId, setBarberId] = useState<number | null>(null);
+  // Always keep UI ID as string, only convert for queries
+  const [barberId, setBarberId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBarberId = async () => {
@@ -35,8 +35,8 @@ export const useBarberAppointments = () => {
           .eq('email', user.email)
           .maybeSingle();
 
-        if (data) {
-          setBarberId(data.id as number);
+        if (data && data.id !== undefined && data.id !== null) {
+          setBarberId(data.id.toString());
         }
       } catch (error) {
         console.error('Error fetching barber ID:', error);
@@ -47,7 +47,7 @@ export const useBarberAppointments = () => {
   }, [user?.email]);
 
   const fetchAppointments = async () => {
-    // barberId is number; match column type in DB
+    // barberId is string, so convert to number for query
     if (!barberId) return;
     setLoading(true);
     try {
@@ -58,7 +58,7 @@ export const useBarberAppointments = () => {
           clients (name),
           services (name, price)
         `)
-        .eq('staff_id', barberId) // NOTE: numeric ID, column must match!
+        .eq('staff_id', Number(barberId)) // ensure number for query
         .order('start_time', { ascending: true });
 
       if (error) {

@@ -15,7 +15,7 @@ import { deleteBarber } from '@/services/barberService';
 
 type Mode = 'viewing' | 'adding' | 'editing';
 
-// Get barbers from staff_sequencial (id: number)
+// Get barbers from staff_sequencial (id: string now, for consistency with selects)
 const fetchBarbers = async () => {
   const { data, error } = await supabase
     .from('staff_sequencial')
@@ -24,12 +24,20 @@ const fetchBarbers = async () => {
     .eq('is_active', true)
     .order('name');
   if (error) throw new Error(error.message);
-  return data;
+  return (
+    Array.isArray(data)
+      ? data.map((b) => ({
+          ...b,
+          id: b.id?.toString() ?? '',
+        }))
+      : []
+  );
 };
 
 const BarberManagement: React.FC = () => {
   const [mode, setMode] = useState<Mode>('viewing');
-  const [editingBarberId, setEditingBarberId] = useState<number | null>(null);
+  // Now string
+  const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -55,8 +63,8 @@ const BarberManagement: React.FC = () => {
     setMode('adding');
   };
 
-  // Expect number id
-  const handleEditBarber = (id: number) => {
+  // Always use string for id
+  const handleEditBarber = (id: string) => {
     setEditingBarberId(id);
     setMode('editing');
   };
@@ -75,13 +83,13 @@ const BarberManagement: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
-  // Expect number barberId
-  const handleDeleteBarber = async (barberId: number) => {
+  // Accept string id for UI, convert to number for backend
+  const handleDeleteBarber = async (barberId: string) => {
     if (
       window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
     ) {
       try {
-        await deleteBarber(barberId);
+        await deleteBarber(Number(barberId));
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
@@ -149,7 +157,7 @@ const BarberManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <BarberForm
-              barberId={editingBarberId !== null ? editingBarberId : undefined}
+              barberId={editingBarberId ?? undefined}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
             />
@@ -157,7 +165,7 @@ const BarberManagement: React.FC = () => {
         </Card>
       )}
 
-      {/* Pass the correct types: id as number */}
+      {/* Pass string ids everywhere */}
       <BarberList
         barbers={barbers || []}
         isLoading={isLoading}
@@ -169,4 +177,3 @@ const BarberManagement: React.FC = () => {
 };
 
 export default BarberManagement;
-
