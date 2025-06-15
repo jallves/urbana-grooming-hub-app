@@ -23,11 +23,24 @@ const fetchBarbers = async () => {
     .eq('is_active', true)
     .order('name');
   if (error) throw new Error(error.message);
+
+  // Map only fields in Barber type
   return (
     Array.isArray(data)
       ? data.map((b) => ({
-          ...b,
-          id: Number(b.id), // ensure number
+          id: Number(b.id),
+          uuid_id: b.uuid_id ?? undefined,
+          name: b.name ?? '',
+          email: b.email ?? undefined,
+          phone: b.phone ?? undefined,
+          image_url: b.image_url ?? undefined,
+          specialties: b.specialties ?? undefined,
+          experience: b.experience ?? undefined,
+          commission_rate: b.commission_rate ?? null,
+          is_active: b.is_active ?? true,
+          role: b.role ?? undefined,
+          created_at: b.created_at ?? undefined,
+          updated_at: b.updated_at ?? undefined,
         }))
       : []
   );
@@ -80,13 +93,12 @@ const BarberManagement: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
-  // Accept number id for UI, convert to string for backend
   const handleDeleteBarber = async (barberId: number) => {
     if (
       window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
     ) {
       try {
-        await deleteBarber(String(barberId)); // deleteBarber expects string
+        await deleteBarber(String(barberId));
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
@@ -165,8 +177,8 @@ const BarberManagement: React.FC = () => {
       <BarberList
         barbers={barbers || []}
         isLoading={isLoading}
-        onEdit={handleEditBarber} // type: (id: number) => void
-        onDelete={handleDeleteBarber} // type: (barberId: number) => void
+        onEdit={handleEditBarber}
+        onDelete={handleDeleteBarber}
       />
     </div>
   );

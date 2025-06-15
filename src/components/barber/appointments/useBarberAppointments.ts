@@ -21,7 +21,7 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
 
-  // Always keep UI ID as string, only convert for queries
+  // Always keep UI ID as number, only convert for queries as needed
   const [barberId, setBarberId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -47,7 +47,6 @@ export const useBarberAppointments = () => {
   }, [user?.email]);
 
   const fetchAppointments = async () => {
-    // barberId is number, use directly for query
     if (!barberId) return;
     setLoading(true);
     try {

@@ -1,14 +1,14 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Service, StaffMember } from '@/types/appointment';
+import { Barber } from '@/types/barber';
 
-// StaffMember should have id: number
 export const useAppointmentData = () => {
   const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
-  // Make sure StaffMember uses id: number
-  const [barbers, setBarbers] = useState<StaffMember[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
 
   useEffect(() => {
@@ -56,24 +56,22 @@ export const useAppointmentData = () => {
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
-        // Return array as id: number
-        let filtered =
+        let filtered: Barber[] =
           Array.isArray(data)
             ? data.map((b) => ({
                 id: Number(b.id),
-                barber_id: Number(b.id),
-                commission_rate: b.commission_rate ?? 0,
-                created_at: b.created_at ?? '',
-                email: b.email ?? '',
-                experience: b.experience ?? '',
-                image_url: b.image_url ?? '',
-                is_active: b.is_active ?? true,
+                uuid_id: b.uuid_id ?? undefined,
                 name: b.name ?? '',
-                phone: b.phone ?? '',
-                role: b.role ?? '',
-                specialties: b.specialties ?? '',
-                updated_at: b.updated_at ?? '',
-                uuid_id: b.uuid_id ?? '',
+                email: b.email ?? undefined,
+                phone: b.phone ?? undefined,
+                image_url: b.image_url ?? undefined,
+                specialties: b.specialties ?? undefined,
+                experience: b.experience ?? undefined,
+                commission_rate: b.commission_rate ?? null,
+                is_active: b.is_active ?? true,
+                role: b.role ?? undefined,
+                created_at: b.created_at ?? undefined,
+                updated_at: b.updated_at ?? undefined,
               }))
             : [];
 
