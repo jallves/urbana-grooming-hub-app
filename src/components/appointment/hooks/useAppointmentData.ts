@@ -57,11 +57,12 @@ export const useAppointmentData = () => {
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
+        // Map to StaffMember ensuring id: number (not string)
         let filtered =
           Array.isArray(data)
             ? data.map((b) => ({
                 ...b,
-                id: b.id, // Keep numeric type
+                id: b.id, // number!
                 barber_id: b.id,
               }))
             : [];

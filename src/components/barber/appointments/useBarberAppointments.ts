@@ -47,9 +47,8 @@ export const useBarberAppointments = () => {
   }, [user?.email]);
 
   const fetchAppointments = async () => {
-    // barberId is a number; match column type in DB
+    // barberId is number; match column type in DB
     if (!barberId) return;
-    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -94,7 +93,7 @@ export const useBarberAppointments = () => {
   };
 
   useEffect(() => {
-    if (barberId) {
+    if (barberId !== null && barberId !== undefined) {
       fetchAppointments();
     }
   }, [barberId]);

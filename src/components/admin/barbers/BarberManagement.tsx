@@ -15,6 +15,7 @@ import { deleteBarber } from '@/services/barberService';
 
 type Mode = 'viewing' | 'adding' | 'editing';
 
+// Get barbers from staff_sequencial (id: number)
 const fetchBarbers = async () => {
   const { data, error } = await supabase
     .from('staff_sequencial')
@@ -54,7 +55,7 @@ const BarberManagement: React.FC = () => {
     setMode('adding');
   };
 
-  // Expect number id here
+  // Expect number id
   const handleEditBarber = (id: number) => {
     setEditingBarberId(id);
     setMode('editing');
@@ -105,7 +106,6 @@ const BarberManagement: React.FC = () => {
             Gerencie os barbeiros e suas permissões no sistema
           </p>
         </div>
-
         {mode === 'viewing' && (
           <Button onClick={handleAddBarber}>
             <Plus className="mr-2 h-4 w-4" />
