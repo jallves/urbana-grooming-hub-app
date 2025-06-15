@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import {
   FormField,
@@ -63,15 +64,20 @@ export function BarberSelectionField({
       selectedTime: getFieldValue('time'),
       selectedServiceId: getFieldValue('service_id'),
     });
+    // Novo log para inspecionar logicamente quem deveria aparecer:
+    const availableBarbers = barberAvailability.filter((b) => b.available);
+    const unavailableBarbers = barberAvailability.filter((b) => !b.available);
+    console.log("Barbeiros disponíveis:", availableBarbers.map(b => b.id));
+    console.log("Barbeiros indisponíveis:", unavailableBarbers.map(b => b.id));
   }, [barbers, barberAvailability, getFieldValue]);
 
   const availableBarbers = barberAvailability.filter((b) => b.available);
   const unavailableBarbers = barberAvailability.filter((b) => !b.available);
 
+  // novo: filtro explícito - garantir uso correto do array
   const shouldShowAllBarbers =
     !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
 
-  // Corrigido: filtra só barbeiros ativos de acordo com a estrutura plana (join staff/barbers)
   const activeBarbers = Array.isArray(barbers)
     ? barbers.filter(
         (b) =>
@@ -121,6 +127,7 @@ export function BarberSelectionField({
             </FormControl>
             <SelectContent className="bg-zinc-800 border-zinc-600">
               {shouldShowAllBarbers ? (
+                // Quando não filtrando por disponibilidade
                 activeBarbers.map((barber) => (
                   <SelectItem
                     key={barber.id}
@@ -135,55 +142,60 @@ export function BarberSelectionField({
                 ))
               ) : (
                 <>
-                  {availableBarbers
-                    .filter((b) => {
-                      const barberObj = getBarberById(barbers, b.id);
-                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
-                    })
-                    .map((barber) => {
-                      const barberObj = getBarberById(barbers, barber.id);
-                      if (!barberObj) return null;
-                      return (
-                        <SelectItem
-                          key={barber.id}
-                          value={barber.id}
-                          className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-green-500">✅</span>
-                            {barberObj.name}
-                            <span className="text-sm text-zinc-400">Disponível</span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                  {/* Aqui garantimos que, se availableBarbers.length > 0, vamos mostrar! */}
+                  {availableBarbers.length > 0 &&
+                    availableBarbers
+                      .filter((b) => {
+                        const barberObj = barbers.find(x => x.id === b.id);
+                        return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
+                      })
+                      .map((barber) => {
+                        const barberObj = barbers.find(x => x.id === barber.id);
+                        if (!barberObj) return null;
+                        return (
+                          <SelectItem
+                            key={barber.id}
+                            value={barber.id}
+                            className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-green-500">✅</span>
+                              {barberObj.name}
+                              <span className="text-sm text-zinc-400">Disponível</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
 
-                  {unavailableBarbers
-                    .filter((b) => {
-                      const barberObj = getBarberById(barbers, b.id);
-                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
-                    })
-                    .map((barber) => {
-                      const barberObj = getBarberById(barbers, barber.id);
-                      if (!barberObj) return null;
-                      return (
-                        <SelectItem
-                          key={barber.id}
-                          value={barber.id}
-                          disabled
-                          className="text-zinc-500 opacity-50"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-red-500">❌</span>
-                            {barberObj.name}
-                            <span className="text-sm text-zinc-500">Indisponível</span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                  {/* Se houver indisponíveis, mostrar mas desabilitados */}
+                  {unavailableBarbers.length > 0 &&
+                    unavailableBarbers
+                      .filter((b) => {
+                        const barberObj = barbers.find(x => x.id === b.id);
+                        return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
+                      })
+                      .map((barber) => {
+                        const barberObj = barbers.find(x => x.id === barber.id);
+                        if (!barberObj) return null;
+                        return (
+                          <SelectItem
+                            key={barber.id}
+                            value={barber.id}
+                            disabled
+                            className="text-zinc-500 opacity-50"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-red-500">❌</span>
+                              {barberObj.name}
+                              <span className="text-sm text-zinc-500">Indisponível</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                 </>
               )}
 
+              {/* Só mostra o alerta se realmente ninguém estiver disponível! */}
               {!shouldShowAllBarbers &&
                 !isCheckingAvailability &&
                 availableBarbers.length === 0 &&
@@ -203,6 +215,7 @@ export function BarberSelectionField({
             </p>
           )}
 
+          {/* Mostrar box só se realmente ninguém estiver disponível */}
           {selectedTime &&
             !shouldShowAllBarbers &&
             availableBarbers.length === 0 &&
