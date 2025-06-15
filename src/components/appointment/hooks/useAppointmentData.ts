@@ -1,13 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Service, StaffMember } from '@/types/appointment';
-import { Barber } from '@/types/barber';
 
 export const useAppointmentData = () => {
   const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
-  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [barbers, setBarbers] = useState<StaffMember[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
 
   useEffect(() => {
@@ -45,37 +45,39 @@ export const useAppointmentData = () => {
   }, [toast]);
 
   useEffect(() => {
-    const fetchBarbersWithFallback = async () => {
+    const fetchBarbers = async () => {
       setLoadingBarbers(true);
       try {
+        // Buscar barbeiros diretamente da tabela staff (UUID!)
         const { data, error } = await supabase
-          .from('staff_sequencial')
+          .from('staff')
           .select('*')
           .eq('is_active', true)
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
-        let filtered: Barber[] =
+        let filtered: StaffMember[] =
           Array.isArray(data)
             ? data.map((b) => ({
-                id: Number(b.id),
-                uuid_id: b.uuid_id ?? undefined,
+                ...b,
+                id: b.id?.toString?.() ?? '',
                 name: b.name ?? '',
-                email: b.email ?? undefined,
-                phone: b.phone ?? undefined,
-                image_url: b.image_url ?? undefined,
-                specialties: b.specialties ?? undefined,
-                experience: b.experience ?? undefined,
-                commission_rate: b.commission_rate ?? null,
+                email: b.email ?? '',
+                phone: b.phone ?? '',
+                image_url: b.image_url ?? '',
+                specialties: b.specialties ?? '',
+                experience: b.experience ?? '',
+                commission_rate: b.commission_rate ?? 0,
                 is_active: b.is_active ?? true,
-                role: b.role ?? undefined,
-                created_at: b.created_at ?? undefined,
-                updated_at: b.updated_at ?? undefined,
+                role: b.role ?? '',
+                created_at: b.created_at ?? '',
+                updated_at: b.updated_at ?? '',
+                uuid_id: b.uuid_id ?? '', // pode não existir
               }))
             : [];
 
-        setBarbers(filtered); // fixed: use Barber[] (matches state type)
-        console.log('[useAppointmentData] (staff_sequencial) Barbeiros retornados:', filtered);
+        setBarbers(filtered); // Garantido StaffMember[] com id = uuid (string)
+        console.log('[useAppointmentData] (staff) Barbeiros retornados:', filtered);
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);
         setBarbers([]);
@@ -84,7 +86,7 @@ export const useAppointmentData = () => {
       }
     };
 
-    fetchBarbersWithFallback();
+    fetchBarbers();
   }, [toast]);
 
   return {
@@ -93,3 +95,4 @@ export const useAppointmentData = () => {
     loadingBarbers
   };
 };
+
