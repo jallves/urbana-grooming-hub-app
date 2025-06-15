@@ -153,7 +153,7 @@ const ClientDashboard = () => {
             <CardContent>
               <Button 
                 className="w-full bg-gradient-to-r from-urbana-gold to-urbana-gold/90 hover:from-urbana-gold/90 hover:to-urbana-gold text-urbana-black font-semibold"
-                onClick={() => navigate('/booking-online')}
+                onClick={() => navigate('/cliente/novo-agendamento')}
               >
                 Agendar Agora
               </Button>
@@ -289,7 +289,7 @@ const ClientDashboard = () => {
                 </p>
                 <Button 
                   className="bg-gradient-to-r from-urbana-gold to-urbana-gold/90 hover:from-urbana-gold/90 hover:to-urbana-gold text-urbana-black font-semibold"
-                  onClick={() => navigate('/booking-online')}
+                  onClick={() => navigate('/cliente/novo-agendamento')}
                 >
                   Agendar Corte
                 </Button>
