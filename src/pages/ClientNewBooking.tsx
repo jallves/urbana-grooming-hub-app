@@ -1,7 +1,11 @@
+// src/pages/cliente/ClientNewBooking.tsx
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
+
 import ClientAppointmentForm from '@/components/appointment/ClientAppointmentForm';
+import { LoaderPage } from '@/components/ui/loader-page';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Scissors } from 'lucide-react';
 import { 
@@ -26,14 +30,7 @@ export default function ClientNewBooking() {
   }, [client, navigate]);
 
   if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-800 via-stone-900 to-stone-800 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mx-auto"></div>
-          <p className="mt-4 text-stone-300">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <LoaderPage />;
   }
 
   const containerClass = 'px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto';
@@ -43,11 +40,11 @@ export default function ClientNewBooking() {
       {/* Header */}
       <div className="bg-stone-900/80 backdrop-blur-sm border-b border-stone-700">
         <div className={containerClass}>
-          <div className="flex items-center py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-6">
             <Button
               variant="ghost"
               onClick={() => navigate('/cliente/dashboard')}
-              className="mr-4 text-stone-100 hover:bg-stone-700/50 hover:text-white"
+              className="text-stone-100 hover:bg-stone-700/50 hover:text-white transition hover:scale-105"
               aria-label="Voltar para o dashboard"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -67,7 +64,7 @@ export default function ClientNewBooking() {
       {/* Content */}
       <div className="py-8">
         <div className={containerClass}>
-          <Card className="bg-stone-800/50 border border-stone-700 rounded-lg">
+          <Card className="bg-stone-800/50 border border-stone-700 rounded-2xl hover:shadow-lg transition">
             <CardHeader className="border-b border-stone-700">
               <CardTitle className="text-white flex items-center gap-2">
                 <Scissors className="h-5 w-5 text-amber-500" />
