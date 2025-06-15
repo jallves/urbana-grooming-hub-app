@@ -13,37 +13,34 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { deleteBarber } from '@/services/barberService';
 
-// Mudança importante: id como string! (usando uuid_id)
+// Busca barbeiros na tabela staff
 const fetchBarbers = async () => {
   const { data, error } = await supabase
-    .from('staff_sequencial')
+    .from('staff')
     .select('*')
     .eq('role', 'barber')
     .eq('is_active', true)
     .order('name');
   if (error) throw new Error(error.message);
 
-  return (
-    Array.isArray(data)
-      ? data
-          .filter((b) => !!b.uuid_id && !!b.name)
-          .map((b) => ({
-            id: String(b.uuid_id), // ID como string (UUID)
-            uuid_id: b.uuid_id ?? '',
-            name: b.name ?? '',
-            email: b.email ?? '',
-            phone: b.phone ?? '',
-            image_url: b.image_url ?? '',
-            specialties: b.specialties ?? '',
-            experience: b.experience ?? '',
-            commission_rate: b.commission_rate ?? 0,
-            is_active: b.is_active ?? true,
-            role: b.role ?? 'barber',
-            created_at: b.created_at ?? '',
-            updated_at: b.updated_at ?? '',
-          }))
-      : []
-  );
+  // Garantir fields existam (para TS) e manter compatibilidade
+  return (data ?? [])
+    .filter((b: any) => !!b.id && !!b.name)
+    .map((b: any) => ({
+      id: String(b.id),
+      uuid_id: b.id ?? '',
+      name: b.name ?? '',
+      email: b.email ?? '',
+      phone: b.phone ?? '',
+      image_url: b.image_url ?? '',
+      specialties: b.specialties ?? '',
+      experience: b.experience ?? '',
+      commission_rate: b.commission_rate ?? 0,
+      is_active: b.is_active ?? true,
+      role: b.role ?? 'barber',
+      created_at: b.created_at ?? '',
+      updated_at: b.updated_at ?? '',
+    }));
 };
 
 const BarberManagement: React.FC = () => {
@@ -89,7 +86,7 @@ const BarberManagement: React.FC = () => {
     setEditingBarberId(null);
     refetch();
     queryClient.invalidateQueries({ queryKey: ['barbers'] });
-    queryClient.invalidateQueries({ queryKey: ['staff_sequencial'] });
+    queryClient.invalidateQueries({ queryKey: ['staff'] });
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
@@ -102,7 +99,7 @@ const BarberManagement: React.FC = () => {
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
-        queryClient.invalidateQueries({ queryKey: ['staff_sequencial'] });
+        queryClient.invalidateQueries({ queryKey: ['staff'] });
         queryClient.invalidateQueries({ queryKey: ['team-staff'] });
       } catch (err) {
         toast.error('Erro ao excluir barbeiro.', {
@@ -136,7 +133,7 @@ const BarberManagement: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" em staff_sequencial.
+              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" na tabela staff.
             </AlertDescription>
           </Alert>
           <Card>
@@ -185,3 +182,4 @@ const BarberManagement: React.FC = () => {
 };
 
 export default BarberManagement;
+
