@@ -4,9 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 type Service = {
   id: string;
@@ -23,7 +21,6 @@ type Barber = {
 };
 
 const generateTimeSlots = (duration: number) => {
-  // Horários de 8h às 20h, intervalos conforme duração do serviço
   const slots: string[] = [];
   for (let hour = 8; hour < 20; hour++) {
     for (let minute = 0; minute < 60; minute += duration) {
@@ -42,6 +39,7 @@ export default function BasicAppointmentForm() {
   const [loading, setLoading] = useState(false);
 
   // Form state
+  const [clientId, setClientId] = useState(""); // NOVO
   const [serviceId, setServiceId] = useState("");
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [date, setDate] = useState<Date | null>(null);
@@ -51,13 +49,11 @@ export default function BasicAppointmentForm() {
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
-    // Buscar serviços
     supabase
       .from("services")
       .select("*")
       .eq("is_active", true)
       .then(({ data }) => setServices(data ?? []));
-    // Buscar barbeiros ativos (staff_sequencial)
     supabase
       .from("staff_sequencial")
       .select("uuid_id, name, is_active, role")
@@ -76,7 +72,6 @@ export default function BasicAppointmentForm() {
   }, []);
 
   useEffect(() => {
-    // Quando muda o serviço, atualiza possíveis horários
     const selected = services.find((s) => s.id === serviceId);
     setSelectedService(selected ?? null);
     if (selected) {
@@ -88,7 +83,6 @@ export default function BasicAppointmentForm() {
   }, [serviceId, services]);
 
   async function hasBarberConflict(bid: string, selectedDate: Date, selectedTime: string, duration: number) {
-    // Busca todos os agendamentos do barbeiro no dia e confere conflito
     const [h, m] = selectedTime.split(":").map(Number);
     const start = new Date(selectedDate);
     start.setHours(h, m, 0, 0);
@@ -114,7 +108,9 @@ export default function BasicAppointmentForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!serviceId || !date || !time || !barberId) {
+    // Para teste: define um client_id fixo caso vazio (ajuste conforme produção)
+    const client_id = clientId || "00000000-0000-0000-0000-000000000000";
+    if (!client_id || !serviceId || !date || !time || !barberId) {
       toast({
         title: "Preencha todos os campos.",
         variant: "destructive",
@@ -136,22 +132,24 @@ export default function BasicAppointmentForm() {
       setLoading(false);
       return;
     }
-    // Simples: cria agendamento (pode adicionar campos extra como client_id depois)
+    // Monta payload correto
     const [hour, minute] = time.split(":").map(Number);
     const start_time = new Date(date);
     start_time.setHours(hour, minute, 0, 0);
     const end_time = new Date(start_time);
     end_time.setMinutes(end_time.getMinutes() + duration);
 
-    const { error } = await supabase.from("appointments").insert([
-      {
-        service_id: serviceId,
-        staff_id: barberId,
-        start_time: start_time.toISOString(),
-        end_time: end_time.toISOString(),
-        status: "scheduled",
-      }
-    ]);
+    const apptPayload = {
+      client_id,
+      service_id: serviceId,
+      staff_id: barberId,
+      start_time: start_time.toISOString(),
+      end_time: end_time.toISOString(),
+      status: "scheduled",
+    };
+
+    // Corrigido: payload precisa de todos os campos obrigatórios da tabela!
+    const { error } = await supabase.from("appointments").insert([apptPayload]);
 
     setLoading(false);
     if (error) {
@@ -166,11 +164,11 @@ export default function BasicAppointmentForm() {
         description: `Seu corte foi reservado para ${format(start_time, "dd/MM/yyyy")} às ${format(start_time, "HH:mm")}.`,
         duration: 7000,
       });
-      // Reset form (opcional)
       setServiceId("");
       setDate(null);
       setTime("");
       setBarberId("");
+      setClientId("");
     }
   }
 
@@ -178,6 +176,17 @@ export default function BasicAppointmentForm() {
     <Card className="max-w-lg mx-auto p-8 bg-zinc-900 text-white border-zinc-800">
       <form className="space-y-5" onSubmit={handleSubmit}>
         <h2 className="text-2xl font-bold mb-2">Novo Agendamento</h2>
+        {/* Cliente ID (visível só para teste) */}
+        <div>
+          <label className="block mb-1">ID do Cliente</label>
+          <input
+            className="w-full rounded bg-zinc-800 border-zinc-700 p-2"
+            type="text"
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            placeholder="Cole aqui o ID do cliente (para teste)"
+          />
+        </div>
         {/* Serviço */}
         <div>
           <label className="block mb-1">Serviço</label>
