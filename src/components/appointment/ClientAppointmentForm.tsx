@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar, Clock, Scissors, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InitialAppointmentData {
   serviceId: string;
@@ -51,25 +52,11 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
-  // Debug logs melhorados
-  React.useEffect(() => {
-    console.log('[ClientAppointmentForm] Estado atual completo:', {
-      loading,
-      clientId,
-      servicesCount: services?.length || 0,
-      services,
-      barbersCount: barbers?.length || 0,
-      barbers,
-      barberAvailability,
-      isCheckingAvailability,
-    });
-
-    if (barbers?.length === 0) {
-      console.error('[ClientAppointmentForm] 🚨 PROBLEMA: Nenhum barbeiro carregado!');
-    } else {
-      console.log('[ClientAppointmentForm] ✅ Barbeiros carregados com sucesso:', barbers);
-    }
-  }, [loading, barbers, services, clientId, barberAvailability, isCheckingAvailability]);
+  console.log('[ClientAppointmentForm] Estado:', {
+    loading,
+    servicesCount: services?.length || 0,
+    barbersCount: barbers?.length || 0,
+  });
 
   const finalPrice = selectedService
     ? appliedCoupon
@@ -78,7 +65,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     : 0;
 
   const onSubmit = async (data: any) => {
-    // Validação visual melhorada
     if (!selectedService) {
       toast({
         title: "Erro",
@@ -95,6 +81,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
       });
       return;
     }
+    
     try {
       const [hours, minutes] = data.time.split(':').map(Number);
       const selectedDate = new Date(data.date);
@@ -112,7 +99,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
         status: 'scheduled',
       };
 
-      const { error } = await (window as any).supabase
+      const { error } = await supabase
         .from('appointments')
         .insert([appointmentData]);
 
@@ -155,20 +142,6 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 
   return (
     <div className="max-w-3xl mx-auto bg-zinc-900/90 border border-zinc-700 rounded-2xl p-5 md:p-8 shadow-2xl">
-      {/* Status de debug sempre visível em desenvolvimento */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-3 bg-gray-800 rounded border text-xs text-gray-300">
-          <div className="font-bold mb-2">🔧 Debug Status:</div>
-          <div>📋 Serviços: {services?.length || 0}</div>
-          <div className={`${barbers?.length === 0 ? 'text-red-400 font-bold' : 'text-green-400'}`}>
-            👨‍💼 Barbeiros: {barbers?.length || 0} 
-            {barbers?.length === 0 && ' ⚠️ PROBLEMA DETECTADO!'}
-          </div>
-          <div>🔄 Verificando disponibilidade: {isCheckingAvailability ? 'Sim' : 'Não'}</div>
-          <div>📊 Disponibilidade: {barberAvailability?.length || 0} barbeiros verificados</div>
-        </div>
-      )}
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 

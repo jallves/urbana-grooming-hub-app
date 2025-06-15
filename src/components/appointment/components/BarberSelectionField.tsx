@@ -43,20 +43,17 @@ export function BarberSelectionField({
   const selectedTime = getFieldValue('time');
   const selectedServiceId = getFieldValue('service_id');
 
-  useEffect(() => {
-    console.log('[BarberSelectionField] Props atualizadas:', {
-      barbersCount: barbers?.length || 0,
-      barbers: barbers,
-      barberAvailabilityCount: barberAvailability?.length || 0,
-      selectedDate,
-      selectedTime,
-      selectedServiceId,
-    });
-  }, [barbers, barberAvailability, selectedDate, selectedTime, selectedServiceId]);
+  console.log('[BarberSelectionField] Props:', {
+    barbersCount: barbers?.length || 0,
+    barbers: barbers,
+    selectedDate,
+    selectedTime,
+    selectedServiceId,
+  });
 
   useEffect(() => {
     if (selectedDate && selectedTime && selectedServiceId && barbers.length > 0) {
-      console.log('[BarberSelectionField] Iniciando verificação de disponibilidade...');
+      console.log('[BarberSelectionField] Verificando disponibilidade...');
       checkBarberAvailability(selectedDate, selectedTime, selectedServiceId);
     }
   }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability, barbers.length]);
@@ -135,48 +132,46 @@ export function BarberSelectionField({
                 <>
                   {/* Barbeiros disponíveis */}
                   {availableBarbers.length > 0 &&
-                    availableBarbers
-                      .map((barberAvailability) => {
-                        const barber = validBarbers.find(b => b.id === barberAvailability.id);
-                        if (!barber) return null;
-                        
-                        return (
-                          <SelectItem
-                            key={barber.id}
-                            value={barber.id}
-                            className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-green-500">✅</span>
-                              {barber.name}
-                              <span className="text-sm text-zinc-400">Disponível</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
+                    availableBarbers.map((barberAvailability) => {
+                      const barber = validBarbers.find(b => b.id === barberAvailability.id);
+                      if (!barber) return null;
+                      
+                      return (
+                        <SelectItem
+                          key={barber.id}
+                          value={barber.id}
+                          className="text-white hover:bg-zinc-700 focus:bg-zinc-700"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-500">✅</span>
+                            {barber.name}
+                            <span className="text-sm text-zinc-400">Disponível</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
 
                   {/* Barbeiros indisponíveis */}
                   {unavailableBarbers.length > 0 &&
-                    unavailableBarbers
-                      .map((barberAvailability) => {
-                        const barber = validBarbers.find(b => b.id === barberAvailability.id);
-                        if (!barber) return null;
-                        
-                        return (
-                          <SelectItem
-                            key={barber.id}
-                            value={barber.id}
-                            disabled
-                            className="text-zinc-500 opacity-50"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="text-red-500">❌</span>
-                              {barber.name}
-                              <span className="text-sm text-zinc-500">Indisponível</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
+                    unavailableBarbers.map((barberAvailability) => {
+                      const barber = validBarbers.find(b => b.id === barberAvailability.id);
+                      if (!barber) return null;
+                      
+                      return (
+                        <SelectItem
+                          key={barber.id}
+                          value={barber.id}
+                          disabled
+                          className="text-zinc-500 opacity-50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-red-500">❌</span>
+                            {barber.name}
+                            <span className="text-sm text-zinc-500">Indisponível</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
 
                   {/* Aviso se nenhum barbeiro disponível */}
                   {!isCheckingAvailability &&

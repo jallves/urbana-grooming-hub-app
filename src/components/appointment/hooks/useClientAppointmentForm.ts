@@ -34,10 +34,17 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     },
   });
 
-  // Usar array corretamente já filtrado e padronizado
-  const { services, barbers } = useAppointmentData();
+  // Usar hook de dados corrigido
+  const { services, barbers, loading } = useAppointmentData();
 
-  // Passe barbers para useAvailability
+  console.log('[useClientAppointmentForm] Dados carregados:', {
+    servicesCount: services.length,
+    barbersCount: barbers.length,
+    barbers,
+    loading
+  });
+
+  // Usar hook de disponibilidade com barbeiros da tabela staff
   const {
     availableTimes,
     barberAvailability,
@@ -58,7 +65,7 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
   const { disabledDays } = useDisabledDays();
 
   const {
-    loading,
+    loading: submitLoading,
     isSending,
     onSubmit,
   } = useAppointmentSubmit(
@@ -83,15 +90,15 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     }
   }, [initialData, services, selectedService]);
 
-  // Atualizar chamada de disponibilidade!
+  // Wrapper para verificação de disponibilidade de barbeiros
   const wrappedCheckBarberAvailability = async (date: Date, time: string, serviceId: string) => {
-    // barbers já filtrado e formatado corretamente
+    console.log('[useClientAppointmentForm] Verificando disponibilidade com barbeiros:', barbers);
     await checkBarberAvailability(date, time, serviceId, barbers);
   };
 
   return {
     form,
-    loading,
+    loading: loading || submitLoading,
     services,
     barbers,
     selectedService,
@@ -107,7 +114,6 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     setFinalServicePrice,
     onSubmit,
     fetchAvailableTimes,
-    // Atualiza o contexto usado no <BarberSelectionField>!
     checkBarberAvailability: wrappedCheckBarberAvailability,
     applyCoupon,
     removeCoupon: () => {
@@ -119,4 +125,3 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
 };
 
 export type { FormData, BarberAvailabilityInfo } from './types';
-
