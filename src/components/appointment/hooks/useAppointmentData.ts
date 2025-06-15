@@ -47,7 +47,6 @@ export const useAppointmentData = () => {
     const fetchBarbersWithFallback = async () => {
       setLoadingBarbers(true);
       try {
-        // AGORA Buscamos direto da staff_sequencial
         const { data, error } = await supabase
           .from('staff_sequencial')
           .select('*')
@@ -59,11 +58,12 @@ export const useAppointmentData = () => {
           Array.isArray(data)
             ? data.map((b) => ({
                 ...b,
-                barber_id: b.id, // id sequencial
+                id: b.id, // id is now number
+                barber_id: b.id,
               }))
             : [];
 
-        setBarbers(filtered);
+        setBarbers(filtered as StaffMember[]);
         console.log(
           '[useAppointmentData] (staff_sequencial) Barbeiros retornados (prontos para seleção):',
           filtered
@@ -81,7 +81,7 @@ export const useAppointmentData = () => {
 
   return {
     services,
-    barbers, // barbeiros ativos e corretos
+    barbers,
     loadingBarbers
   };
 };

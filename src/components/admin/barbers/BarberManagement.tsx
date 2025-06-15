@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,10 +150,9 @@ const BarberManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <BarberForm
-              barberId={editingBarberId as any} // cast provisório se necessário
+              barberId={editingBarberId}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
-              tableName="staff_sequencial" // se o formulário permitir customizar a tabela
             />
           </CardContent>
         </Card>

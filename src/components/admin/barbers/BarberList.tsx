@@ -8,8 +8,8 @@ import { Barber } from '@/types/barber';
 interface BarberListProps {
   barbers: Barber[];
   isLoading: boolean;
-  onEdit: (id: string) => void;
-  onDelete: (barberId: string) => void;
+  onEdit: (id: number) => void;
+  onDelete: (barberId: number) => void;
 }
 
 const BarberList: React.FC<BarberListProps> = ({
