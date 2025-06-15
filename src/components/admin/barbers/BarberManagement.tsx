@@ -98,7 +98,7 @@ const BarberManagement: React.FC = () => {
       window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
     ) {
       try {
-        await deleteBarber(String(barberId));
+        await deleteBarber(barberId.toString());
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });

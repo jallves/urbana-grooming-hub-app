@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -75,7 +74,7 @@ export const useAppointmentData = () => {
               }))
             : [];
 
-        setBarbers(filtered); // id is number!
+        setBarbers(filtered); // fixed: use Barber[] (matches state type)
         console.log('[useAppointmentData] (staff_sequencial) Barbeiros retornados:', filtered);
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);

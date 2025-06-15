@@ -57,7 +57,7 @@ export const useBarberAppointments = () => {
           clients (name),
           services (name, price)
         `)
-        .eq('staff_id', barberId)
+        .eq('staff_id', barberId.toString()) // fix: always call toString() here
         .order('start_time', { ascending: true });
 
       if (error) {

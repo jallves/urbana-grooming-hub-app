@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -216,16 +215,16 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
               </div>
               <BarberSelectionField
                 control={form.control}
-                barbers={barbers}
+                barbers={barbers} // barbers is Barber[] (type matches Prop)
                 barberAvailability={barberAvailability}
                 isCheckingAvailability={isCheckingAvailability}
                 getFieldValue={form.getValues}
                 checkBarberAvailability={checkBarberAvailability}
               />
-              
-              {/* Debug Info - só aparece em desenvolvimento */}
+
+              {/* Debug Info */}
               <BarberDebugInfo 
-                barbers={barbers}
+                barbers={barbers}  // barbers is Barber[]
                 barberAvailability={barberAvailability}
                 isCheckingAvailability={isCheckingAvailability}
               />
