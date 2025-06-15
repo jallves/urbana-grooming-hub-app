@@ -48,7 +48,7 @@ export const useAppointmentData = () => {
     const fetchBarbersWithFallback = async () => {
       setLoadingBarbers(true);
       try {
-        // Primeiro tenta buscar da tabela barbers + staff
+        // Tentar buscar da tabela barbers + staff com join para garantir consistência
         const { data, error } = await supabase
           .from('barbers')
           .select(`
@@ -70,14 +70,20 @@ export const useAppointmentData = () => {
           `)
           .order('created_at', { ascending: true });
 
-        let filtered = Array.isArray(data)
-          ? data
-              .filter((b) => b.staff && b.staff.is_active && b.staff.role === 'barber')
-              .map((b) => ({
-                ...b.staff,
-                barber_id: b.id // vincula o id do registro em barbers, caso necessário em outros lugares
-              }))
-          : [];
+        let filtered: any[] =
+          Array.isArray(data)
+            ? data
+                .filter(
+                  (b) =>
+                    b.staff &&
+                    b.staff.is_active &&
+                    b.staff.role === "barber"
+                )
+                .map((b) => ({
+                  ...b.staff,
+                  barber_id: b.id, // id do registro em barbers
+                }))
+            : [];
 
         // Fallback: se não encontrar barbeiros na tabela barbers, busca direto em staff
         if (filtered.length === 0) {
@@ -85,20 +91,20 @@ export const useAppointmentData = () => {
             "[FALLBACK] Nenhum barbeiro encontrado via tabela barbers. Buscando barbeiros ativos diretamente na tabela staff."
           );
           const { data: staffBarbers, error: staffError } = await supabase
-            .from('staff')
+            .from("staff")
             .select(
-              'id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at'
+              "id, name, email, phone, role, is_active, image_url, experience, specialties, commission_rate, created_at, updated_at"
             )
-            .eq('is_active', true)
-            .eq('role', 'barber')
-            .order('name', { ascending: true });
+            .eq("is_active", true)
+            .eq("role", "barber")
+            .order("name", { ascending: true });
 
           if (staffError) {
-            console.error('Erro ao buscar barbeiros ativos do staff:', staffError);
+            console.error("Erro ao buscar barbeiros ativos do staff:", staffError);
             setBarbers([]);
+            setLoadingBarbers(false);
             return;
           }
-          // Adiciona o campo barber_id em cada barbeiro vindo do staff
           filtered = Array.isArray(staffBarbers)
             ? staffBarbers.map((staff) => ({
                 ...staff,
@@ -109,11 +115,11 @@ export const useAppointmentData = () => {
 
         setBarbers(filtered);
         console.log(
-          '[useAppointmentData] Barbeiros retornados:',
+          '[useAppointmentData] Barbeiros retornados (prontos para seleção):',
           filtered
         );
       } catch (error) {
-        console.error('Erro ao buscar barbeiros:', error);
+        console.error("Erro ao buscar barbeiros:", error);
         setBarbers([]);
       } finally {
         setLoadingBarbers(false);
@@ -125,7 +131,7 @@ export const useAppointmentData = () => {
 
   return {
     services,
-    barbers, // já filtrado como barbeiro ativo
+    barbers, // barbeiros ativos e corretos
     loadingBarbers
   };
 };
