@@ -10,7 +10,7 @@ interface Props {
   barberAvailability: any;
   isCheckingAvailability: boolean;
   getFieldValue: (field: string) => any;
-  checkBarberAvailability: (date: Date, time: string, serviceId: string) => void;
+  checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>;
 }
 
 export function ClientAppointmentBarberSection({
