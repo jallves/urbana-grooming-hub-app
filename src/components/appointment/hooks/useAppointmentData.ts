@@ -50,20 +50,19 @@ export const useAppointmentData = () => {
       setLoadingBarbers(true);
       try {
         const { data, error } = await supabase
-          .from('staff_sequencial')
+          .from('staff')
           .select('*')
           .eq('is_active', true)
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
-        // Retornar barbeiros APENAS COM UUID válido:
         let filtered: Barber[] =
           Array.isArray(data)
             ? data
-                .filter((b) => !!b.uuid_id && !!b.name)
+                .filter((b) => !!b.id && !!b.name)
                 .map((b) => ({
-                  id: String(b.uuid_id), // sempre string UUID
-                  uuid_id: b.uuid_id ?? '',
+                  id: String(b.id), // sempre string UUID
+                  uuid_id: (b as any).uuid_id ?? '', // allow 'barber' compatibility, fallback empty
                   name: b.name ?? '',
                   email: b.email ?? '',
                   phone: b.phone ?? '',
@@ -79,7 +78,7 @@ export const useAppointmentData = () => {
             : [];
 
         setBarbers(filtered);
-        console.log('[useAppointmentData] (staff_sequencial) Barbeiros retornados:', filtered);
+        console.log('[useAppointmentData] (staff) Barbeiros retornados:', filtered);
       } catch (error) {
         console.error("Erro ao buscar barbeiros:", error);
         setBarbers([]);
