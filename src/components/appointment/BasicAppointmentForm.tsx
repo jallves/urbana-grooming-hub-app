@@ -39,7 +39,7 @@ export default function BasicAppointmentForm() {
   const [loading, setLoading] = useState(false);
 
   // Form state
-  const [clientId, setClientId] = useState(""); // NOVO
+  const [clientId, setClientId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [date, setDate] = useState<Date | null>(null);
@@ -49,25 +49,38 @@ export default function BasicAppointmentForm() {
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
+    // Buscar serviços
     supabase
       .from("services")
       .select("*")
       .eq("is_active", true)
-      .then(({ data }) => setServices(data ?? []));
+      .then(({ data }) => {
+        console.log("[BasicAppointmentForm] Serviços encontrados:", data);
+        setServices(data ?? []);
+      });
+
+    // Buscar barbeiros ativos (staff_sequencial)
     supabase
       .from("staff_sequencial")
       .select("uuid_id, name, is_active, role")
       .eq("is_active", true)
       .eq("role", "barber")
-      .then(({ data }) => {
-        setBarbers(
-          (data ?? []).map((b: any) => ({
-            id: b.uuid_id,
-            name: b.name,
-            is_active: b.is_active,
-            role: b.role,
-          }))
-        );
+      .then(({ data, error }) => {
+        console.log("[BasicAppointmentForm] Dados brutos staff_sequencial:", data, error);
+        // Só barbeiros válidos com uuid_id definido e nome
+        const filtered =
+          Array.isArray(data)
+            ? data
+                .filter((b: any) => !!b.uuid_id && !!b.name)
+                .map((b: any) => ({
+                  id: b.uuid_id,
+                  name: b.name,
+                  is_active: b.is_active,
+                  role: b.role,
+                }))
+            : [];
+        console.log("[BasicAppointmentForm] Barbeiros filtrados:", filtered);
+        setBarbers(filtered);
       });
   }, []);
 
@@ -238,12 +251,18 @@ export default function BasicAppointmentForm() {
             className="w-full rounded bg-zinc-800 border-zinc-700 p-2"
             value={barberId}
             onChange={(e) => setBarberId(e.target.value)}
+            disabled={barbers.length === 0}
           >
             <option value="">Selecione</option>
             {barbers.map((b) => (
               <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
+          {barbers.length === 0 && (
+            <div className="mt-2 text-sm text-yellow-300 bg-yellow-900/40 rounded p-2">
+              Nenhum barbeiro ativo cadastrado disponível.
+            </div>
+          )}
         </div>
         <Button
           type="submit"
