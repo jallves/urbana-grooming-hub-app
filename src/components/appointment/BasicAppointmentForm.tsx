@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -102,21 +101,42 @@ export default function BasicAppointmentForm() {
     const end = new Date(start);
     end.setMinutes(end.getMinutes() + duration);
 
+    console.log("[hasBarberConflict] Checando conflitos com:", {
+      bid,
+      selectedDate,
+      selectedTime,
+      duration,
+      start: start.toISOString(),
+      end: end.toISOString(),
+    });
+
     const { data: appointments, error } = await supabase
       .from("appointments")
-      .select("id, start_time, end_time")
+      .select("id, start_time, end_time, staff_id, status")
       .eq("staff_id", bid)
       .in("status", ["scheduled", "confirmed"])
-      .gte("start_time", new Date(start).toISOString().split("T")[0])
-      .lte("start_time", new Date(start).toISOString().split("T")[0] + "T23:59:59.999Z");
+      .gte("start_time", start.toISOString().split("T")[0])
+      .lte("start_time", start.toISOString().split("T")[0] + "T23:59:59.999Z");
 
-    if (error || !appointments) return false;
+    console.log("[hasBarberConflict] Result appointments:", { error, appointments });
 
-    return appointments.some((appt: any) => {
+    if (error || !appointments) {
+      console.warn("[hasBarberConflict] Falha ao buscar appointments", error);
+      return false;
+    }
+
+    const conflict = appointments.some((appt: any) => {
       const appStart = new Date(appt.start_time);
       const appEnd = new Date(appt.end_time);
-      return start < appEnd && end > appStart;
+      const overlaps = start < appEnd && end > appStart;
+      console.log(
+        "[hasBarberConflict] Comparando agendamento:",
+        { appStart, appEnd, overlaps }
+      );
+      return overlaps;
     });
+
+    return conflict;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -255,7 +275,7 @@ export default function BasicAppointmentForm() {
           >
             <option value="">Selecione</option>
             {barbers.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>{b.name} ({b.id})</option>
             ))}
           </select>
           {barbers.length === 0 && (
