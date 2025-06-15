@@ -34,7 +34,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     form,
     loading,
     services,
-    barbers,
+    barbers, // Agora tudo já tipado corretamente
     selectedService,
     setSelectedService,
     availableTimes,
@@ -50,8 +50,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
-  // Agora: barbeiros possuem id (UUID, string), então sem necessidade de mapeamento extra.
-  // Removi a conversão detalhada (pois já é feita no hook).
+  // Não há mais necessidade de mapeamento extra
   const mappedBarbers = barbers;
 
   const finalPrice = selectedService

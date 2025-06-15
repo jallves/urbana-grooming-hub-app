@@ -56,24 +56,26 @@ export const useAppointmentData = () => {
           .eq('role', 'barber')
           .order('name', { ascending: true });
 
-        // Corrigir: Usar UUID para id do barbeiro!
+        // Retornar barbeiros APENAS COM UUID válido:
         let filtered: Barber[] =
           Array.isArray(data)
-            ? data.map((b) => ({
-                id: b.uuid_id ? b.uuid_id : b.id, // id = uuid_id (UUID) como string!
-                uuid_id: b.uuid_id ?? undefined,
-                name: b.name ?? '',
-                email: b.email ?? undefined,
-                phone: b.phone ?? undefined,
-                image_url: b.image_url ?? undefined,
-                specialties: b.specialties ?? undefined,
-                experience: b.experience ?? undefined,
-                commission_rate: b.commission_rate ?? null,
-                is_active: b.is_active ?? true,
-                role: b.role ?? undefined,
-                created_at: b.created_at ?? undefined,
-                updated_at: b.updated_at ?? undefined,
-              }))
+            ? data
+                .filter((b) => !!b.uuid_id && !!b.name)
+                .map((b) => ({
+                  id: String(b.uuid_id), // sempre string UUID
+                  uuid_id: b.uuid_id ?? '',
+                  name: b.name ?? '',
+                  email: b.email ?? '',
+                  phone: b.phone ?? '',
+                  image_url: b.image_url ?? '',
+                  specialties: b.specialties ?? '',
+                  experience: b.experience ?? '',
+                  commission_rate: b.commission_rate ?? 0,
+                  is_active: b.is_active ?? true,
+                  role: b.role ?? 'barber',
+                  created_at: b.created_at ?? '',
+                  updated_at: b.updated_at ?? '',
+                }))
             : [];
 
         setBarbers(filtered);
