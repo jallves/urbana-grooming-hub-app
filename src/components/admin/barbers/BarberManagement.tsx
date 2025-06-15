@@ -17,14 +17,13 @@ type Mode = 'viewing' | 'adding' | 'editing';
 
 // Buscar barbeiros com o cargo barber no staff_sequencial
 const fetchBarbers = async () => {
-  // Traz todos os barbeiros ativos da staff_sequencial
+  // Barbers from staff_sequencial use id: number, so type accordingly
   const { data, error } = await supabase
     .from('staff_sequencial')
     .select('*')
     .eq('role', 'barber')
     .eq('is_active', true)
     .order('name');
-
   if (error) throw new Error(error.message);
   return data;
 };
@@ -150,7 +149,8 @@ const BarberManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <BarberForm
-              barberId={editingBarberId}
+              // Here, pass barberId as number or undefined/null when creating
+              barberId={editingBarberId !== null ? editingBarberId : undefined}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
             />

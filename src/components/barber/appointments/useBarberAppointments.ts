@@ -21,7 +21,7 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
 
-  // Get barber ID from user's staff_sequencial
+  // Use <number | null> for the barber's ID, consistent everywhere
   const [barberId, setBarberId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ export const useBarberAppointments = () => {
           .maybeSingle();
 
         if (data) {
-          setBarberId(data.id);
+          setBarberId(data.id as number);
         }
       } catch (error) {
         console.error('Error fetching barber ID:', error);
@@ -47,6 +47,7 @@ export const useBarberAppointments = () => {
   }, [user?.email]);
 
   const fetchAppointments = async () => {
+    // barberId is a number; match column type in DB
     if (!barberId) return;
     
     setLoading(true);

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +7,7 @@ import { Service, StaffMember } from '@/types/appointment';
 export const useAppointmentData = () => {
   const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
+  // IMPORTANT: StaffMember should have id: number
   const [barbers, setBarbers] = useState<StaffMember[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
 
@@ -58,7 +60,7 @@ export const useAppointmentData = () => {
           Array.isArray(data)
             ? data.map((b) => ({
                 ...b,
-                id: b.id, // id is now number
+                id: b.id, // already number
                 barber_id: b.id,
               }))
             : [];
