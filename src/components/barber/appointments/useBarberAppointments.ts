@@ -29,8 +29,9 @@ export const useBarberAppointments = () => {
       if (!user?.email) return;
 
       try {
+        // FIX: use 'staff'
         const { data } = await supabase
-          .from('staff_sequencial')
+          .from('staff')
           .select('id')
           .eq('email', user.email)
           .maybeSingle();
