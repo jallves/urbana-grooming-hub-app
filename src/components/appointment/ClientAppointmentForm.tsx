@@ -29,6 +29,11 @@ interface ClientAppointmentFormProps {
   appointmentId?: string;
 }
 
+import { ClientAppointmentHeader } from './components/ClientAppointmentHeader';
+import { FormCard } from './components/FormCard';
+import { AppointmentActionButtons } from './components/AppointmentActionButtons';
+import { AppointmentNotesField } from './components/AppointmentNotesField';
+
 export default function ClientAppointmentForm({ clientId, initialData, appointmentId }: ClientAppointmentFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -181,18 +186,11 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 font-playfair">
-          {appointmentId ? 'Editar Agendamento' : 'Agendar Horário'}
-        </h1>
-        <p className="text-gray-300 text-lg">
-          {appointmentId ? 'Modifique os detalhes do seu agendamento' : 'Reserve seu momento de cuidado pessoal'}
-        </p>
-      </div>
+      {/* Header - extraído */}
+      <ClientAppointmentHeader isEdit={!!appointmentId} />
 
-      {/* Form Card */}
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 md:p-8 shadow-2xl">
+      {/* Form Card extraído */}
+      <FormCard>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* Service Selection */}
@@ -269,25 +267,10 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
               </div>
             )}
 
-            {/* Notes */}
+            {/* Notes -> FIELD extraído */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-white">Observações</h3>
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Informe detalhes adicionais sobre o seu agendamento (opcional)" 
-                        className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20 resize-none min-h-[100px]" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <AppointmentNotesField control={form.control} />
             </div>
 
             {/* Appointment Summary */}
@@ -301,34 +284,16 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
               />
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-6">
-              <Button 
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/cliente/dashboard')}
-                className="flex-1 bg-transparent border-zinc-600 text-white hover:bg-zinc-800 hover:border-zinc-500 h-12"
-              >
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                className="flex-1 bg-gradient-to-r from-urbana-gold to-urbana-gold/90 hover:from-urbana-gold/90 hover:to-urbana-gold text-black font-semibold h-12 shadow-lg shadow-urbana-gold/25"
-                disabled={loading || isSending || !form.formState.isValid}
-              >
-                {loading || isSending ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black/20 border-t-black animate-spin rounded-full" />
-                    {appointmentId ? 'Atualizando...' : 'Agendando...'}
-                  </div>
-                ) : (
-                  appointmentId ? "Atualizar Agendamento" : "Confirmar Agendamento"
-                )}
-              </Button>
-            </div>
+            {/* Actions -> extraídos */}
+            <AppointmentActionButtons
+              isEdit={!!appointmentId}
+              loading={loading}
+              isSending={isSending}
+              isValid={form.formState.isValid}
+            />
           </form>
         </Form>
-      </div>
+      </FormCard>
     </div>
   );
 }
