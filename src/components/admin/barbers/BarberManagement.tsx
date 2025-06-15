@@ -175,10 +175,10 @@ const BarberManagement: React.FC = () => {
       )}
 
       <BarberList
-        barbers={barbers || []}
+        barbers={(barbers || []).map(b => ({ ...b, id: b.id.toString() }))}
         isLoading={isLoading}
-        onEdit={handleEditBarber}
-        onDelete={handleDeleteBarber}
+        onEdit={(id: string) => handleEditBarber(Number(id))}
+        onDelete={(barberId: string) => handleDeleteBarber(Number(barberId))}
       />
     </div>
   );

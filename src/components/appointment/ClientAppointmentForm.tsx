@@ -52,6 +52,25 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
     checkBarberAvailability,
   } = useClientAppointmentForm(clientId, initialData);
 
+  // Fix: mappedBarbers guarantees all required string, non-optional fields for downstream compatibility
+  const mappedBarbers = barbers.map(barber => ({
+    ...barber,
+    id: barber.id.toString(),
+    commission_rate: barber.commission_rate ?? 0,
+    created_at: barber.created_at ?? '',
+    email: barber.email ?? '',
+    experience: barber.experience ?? '',
+    image_url: barber.image_url ?? '',
+    is_active: barber.is_active ?? true,
+    name: barber.name ?? '',
+    phone: barber.phone ?? '',
+    role: barber.role ?? '',
+    specialties: barber.specialties ?? '',
+    updated_at: barber.updated_at ?? '',
+    uuid_id: barber.uuid_id ?? '',
+    barber_id: undefined,  // Ignore if not expected by downstream type
+  }));
+
   // Calculate final price correctly
   const finalPrice = selectedService 
     ? appliedCoupon 
@@ -215,7 +234,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
               </div>
               <BarberSelectionField
                 control={form.control}
-                barbers={barbers} // barbers is Barber[] (type matches Prop)
+                barbers={mappedBarbers}
                 barberAvailability={barberAvailability}
                 isCheckingAvailability={isCheckingAvailability}
                 getFieldValue={form.getValues}
@@ -224,7 +243,7 @@ export default function ClientAppointmentForm({ clientId, initialData, appointme
 
               {/* Debug Info */}
               <BarberDebugInfo 
-                barbers={barbers}  // barbers is Barber[]
+                barbers={mappedBarbers}
                 barberAvailability={barberAvailability}
                 isCheckingAvailability={isCheckingAvailability}
               />
