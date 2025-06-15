@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import {
   FormField,
@@ -32,9 +31,11 @@ interface BarberSelectionFieldProps {
   checkBarberAvailability: (date: Date, time: string, serviceId: string) => Promise<void>;
 }
 
-// Utilitário para buscar barbeiro por ID
-const getBarberById = (barbers: StaffMember[], id: string) =>
-  barbers.find((b) => b.id === id);
+// MODIFICADO Utilitário para buscar barbeiro por ID
+const getBarberById = (barbers: any[], id: string) =>
+  barbers.find((b) => (b?.id === id || b?.barber_id === id));
+
+// Ajustar props: barbers agora é o resultado do join barbers+staff com .id/.barber_id
 
 export function BarberSelectionField({
   control,
@@ -54,7 +55,6 @@ export function BarberSelectionField({
     }
   }, [selectedDate, selectedTime, selectedServiceId, checkBarberAvailability]);
 
-  // LOG extra para depuração
   React.useEffect(() => {
     console.log('Barbeiros recebidos para seleção:', barbers);
   }, [barbers]);
@@ -65,10 +65,13 @@ export function BarberSelectionField({
   const shouldShowAllBarbers =
     !selectedDate || !selectedTime || !selectedServiceId || barberAvailability.length === 0;
 
-  // Só mostra barbeiros ativos, role=barber, vindo do banco
+  // MODIFICADO: mostrar apenas barbeiros ativos e role barber (join barbers+staff)
   const activeBarbers = Array.isArray(barbers)
     ? barbers.filter(
-        (b) => !!b && b.is_active === true && b.role === 'barber'
+        (b) =>
+          !!b &&
+          (b.is_active === true || b?.staff?.is_active === true) &&
+          (b.role === 'barber' || b?.staff?.role === 'barber')
       )
     : [];
 
@@ -87,9 +90,6 @@ export function BarberSelectionField({
               </div>
             )}
           </FormLabel>
-
-          {/* Removido o alerta "Nenhum barbeiro cadastrado" */}
-          
           <Select
             onValueChange={field.onChange}
             value={field.value || ''}
@@ -132,7 +132,7 @@ export function BarberSelectionField({
                   {availableBarbers
                     .filter((b) => {
                       const barberObj = getBarberById(barbers, b.id);
-                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
+                      return barberObj && (barberObj.is_active === true || barberObj?.staff?.is_active === true) && (barberObj.role === 'barber' || barberObj?.staff?.role === 'barber');
                     })
                     .map((barber) => {
                       const barberObj = getBarberById(barbers, barber.id);
@@ -155,7 +155,7 @@ export function BarberSelectionField({
                   {unavailableBarbers
                     .filter((b) => {
                       const barberObj = getBarberById(barbers, b.id);
-                      return barberObj && barberObj.is_active === true && barberObj.role === 'barber';
+                      return barberObj && (barberObj.is_active === true || barberObj?.staff?.is_active === true) && (barberObj.role === 'barber' || barberObj?.staff?.role === 'barber');
                     })
                     .map((barber) => {
                       const barberObj = getBarberById(barbers, barber.id);

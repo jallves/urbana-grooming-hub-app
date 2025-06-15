@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -34,6 +33,7 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     },
   });
 
+  // MODIFICADO: usar resultado de barbers do hook (que já faz join com staff)
   const { services, barbers } = useAppointmentData();
   
   const {
@@ -87,7 +87,8 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     form,
     loading,
     services,
-    barbers,
+    // >>> ALTERAÇÃO principal <<<
+    barbers, // Agora já vem certinho do barbers join staff, não espera mais por staff!
     selectedService,
     setSelectedService,
     availableTimes,
