@@ -68,14 +68,17 @@ export default function ClientNewBooking() {
             <CardHeader className="border-b border-stone-700">
               <CardTitle className="text-white flex items-center gap-2">
                 <Scissors className="h-5 w-5 text-amber-500" />
-                Escolha seu serviço
+                Novo Agendamento
               </CardTitle>
               <CardDescription className="text-stone-400">
-                Selecione o tipo de corte e horário disponível
+                No momento, o agendamento online está desativado.
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
-              <ClientAppointmentForm clientId={client.id} />
+            <CardContent className="pt-6 flex justify-center items-center min-h-[180px]">
+              <div className="text-xl text-center text-stone-300 py-10">
+                O formulário de agendamento foi removido.<br />
+                Por favor, entre em contato pelo WhatsApp ou presencialmente para agendar um horário.
+              </div>
             </CardContent>
           </Card>
         </div>
