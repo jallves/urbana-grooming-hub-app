@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -51,20 +52,24 @@ export const useAvailability = () => {
       setIsCheckingAvailability(true);
       try {
         console.log('Verificando disponibilidade dos barbeiros para:', { date, time, serviceId });
-
-        // Se tivemos um array de barbeiros externo, use ele, senão busque dos staff como fallback:
+        // Se recebemos barbers externos E o array tem pelo menos 1, usamos APENAS esse array!
+        // Nunca faz fetch do banco nesse caso!
         let staffMembers: any[] = [];
+
         if (Array.isArray(externalBarbers) && externalBarbers.length > 0) {
           staffMembers = externalBarbers;
+          console.log('[useAvailability] Usando array externo de barbeiros:', staffMembers);
         } else {
+          // Fallback: busca direto do banco
           const { data: dbStaff, error: staffError } = await supabase
             .from('staff')
             .select('id, name, is_active')
             .eq('is_active', true)
+            .eq('role', 'barber')
             .order('name', { ascending: true });
 
           if (staffError || !dbStaff || dbStaff.length === 0) {
-            console.error("Erro ao buscar barbeiros:", staffError);
+            console.error("Erro ao buscar barbeiros ativos no fallback:", staffError);
             toast({
               title: "Erro",
               description: "Não foi possível verificar a disponibilidade dos barbeiros.",
@@ -75,6 +80,7 @@ export const useAvailability = () => {
             return;
           }
           staffMembers = dbStaff;
+          console.log('[useAvailability] Usando array de barbeiros buscado do banco (fallback):', staffMembers);
         }
 
         // Buscar duração do serviço
