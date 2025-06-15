@@ -30,7 +30,22 @@ const BarberProfileInfo: React.FC = () => {
         if (error) {
           console.error('Erro ao buscar informações do barbeiro:', error);
         } else if (data) {
-          setBarberInfo(data as Barber);
+          // Adapta tipo para garantir que o id é string (uuid_id)
+          setBarberInfo({
+            id: String(data.uuid_id),
+            uuid_id: data.uuid_id ?? '',
+            name: data.name ?? '',
+            email: data.email ?? '',
+            phone: data.phone ?? '',
+            image_url: data.image_url ?? '',
+            specialties: data.specialties ?? '',
+            experience: data.experience ?? '',
+            commission_rate: data.commission_rate ?? 0,
+            is_active: data.is_active ?? true,
+            role: data.role ?? 'barber',
+            created_at: data.created_at ?? '',
+            updated_at: data.updated_at ?? '',
+          });
         } else {
           setBarberInfo(null);
         }

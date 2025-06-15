@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,9 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { deleteBarber } from '@/services/barberService';
 
-type Mode = 'viewing' | 'adding' | 'editing';
-
-// Fetch barbers as Barber[] (id: number)
+// Mudança importante: id como string! (usando uuid_id)
 const fetchBarbers = async () => {
   const { data, error } = await supabase
     .from('staff_sequencial')
@@ -24,31 +23,32 @@ const fetchBarbers = async () => {
     .order('name');
   if (error) throw new Error(error.message);
 
-  // Map only fields in Barber type
   return (
     Array.isArray(data)
-      ? data.map((b) => ({
-          id: Number(b.id),
-          uuid_id: b.uuid_id ?? undefined,
-          name: b.name ?? '',
-          email: b.email ?? undefined,
-          phone: b.phone ?? undefined,
-          image_url: b.image_url ?? undefined,
-          specialties: b.specialties ?? undefined,
-          experience: b.experience ?? undefined,
-          commission_rate: b.commission_rate ?? null,
-          is_active: b.is_active ?? true,
-          role: b.role ?? undefined,
-          created_at: b.created_at ?? undefined,
-          updated_at: b.updated_at ?? undefined,
-        }))
+      ? data
+          .filter((b) => !!b.uuid_id && !!b.name)
+          .map((b) => ({
+            id: String(b.uuid_id), // ID como string (UUID)
+            uuid_id: b.uuid_id ?? '',
+            name: b.name ?? '',
+            email: b.email ?? '',
+            phone: b.phone ?? '',
+            image_url: b.image_url ?? '',
+            specialties: b.specialties ?? '',
+            experience: b.experience ?? '',
+            commission_rate: b.commission_rate ?? 0,
+            is_active: b.is_active ?? true,
+            role: b.role ?? 'barber',
+            created_at: b.created_at ?? '',
+            updated_at: b.updated_at ?? '',
+          }))
       : []
   );
 };
 
 const BarberManagement: React.FC = () => {
-  const [mode, setMode] = useState<Mode>('viewing');
-  const [editingBarberId, setEditingBarberId] = useState<number | null>(null);
+  const [mode, setMode] = useState<'viewing' | 'adding' | 'editing'>('viewing');
+  const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -74,7 +74,7 @@ const BarberManagement: React.FC = () => {
     setMode('adding');
   };
 
-  const handleEditBarber = (id: number) => {
+  const handleEditBarber = (id: string) => {
     setEditingBarberId(id);
     setMode('editing');
   };
@@ -93,12 +93,12 @@ const BarberManagement: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
-  const handleDeleteBarber = async (barberId: number) => {
+  const handleDeleteBarber = async (barberId: string) => {
     if (
       window.confirm('Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.')
     ) {
       try {
-        await deleteBarber(barberId.toString());
+        await deleteBarber(barberId);
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
@@ -166,7 +166,7 @@ const BarberManagement: React.FC = () => {
           </CardHeader>
           <CardContent>
             <BarberForm
-              barberId={editingBarberId !== null && editingBarberId !== undefined ? editingBarberId.toString() : undefined}
+              barberId={editingBarberId || undefined}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
             />

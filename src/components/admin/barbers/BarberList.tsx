@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Loader2, UserCog, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,8 @@ import { Barber } from '@/types/barber';
 interface BarberListProps {
   barbers: Barber[];
   isLoading: boolean;
-  onEdit: (id: number) => void;
-  onDelete: (barberId: number) => void;
+  onEdit: (id: string) => void;
+  onDelete: (barberId: string) => void;
 }
 
 const BarberList: React.FC<BarberListProps> = ({
