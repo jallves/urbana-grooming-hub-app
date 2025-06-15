@@ -15,6 +15,7 @@ export const barberSchema = z.object({
   experience: z.string().optional(),
   commission_rate: z.union([z.number(), z.null()]).optional(),
   is_active: z.boolean().default(true),
+  role: z.string().default('barber')
 });
 
 export type BarberFormValues = z.infer<typeof barberSchema>;
@@ -39,15 +40,16 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
       experience: '',
       commission_rate: null,
       is_active: true,
+      role: 'barber'
     },
   });
 
   const [isEditing, setIsEditing] = useState(!!barberId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
 
   useEffect(() => {
     if (barberId) {
-      // Buscar dados na staff (não barbers)
       supabase
         .from('staff')
         .select('*')
@@ -55,9 +57,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
         .single()
         .then(({ data, error }) => {
           if (data) {
-            // Remover role (vai ser fixo)
-            const { role, ...rest } = data;
-            form.reset(rest);
+            form.reset(data);
           }
         });
     }
@@ -67,12 +67,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   const onSubmit = async (data: BarberFormValues) => {
     setIsSubmitting(true);
 
-    const basePayload = {
-      ...data,
-      role: 'barber',
-      name: data.name ?? '',
-    };
-    const payload = cleanPayload(basePayload);
+    const payload = cleanPayload(data);
 
     let resp;
     if (barberId) {
@@ -95,10 +90,44 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     setIsSubmitting(false);
   };
 
+  // Função para cadastrar/redefinir senha do barbeiro (via e-mail)
+  const handlePasswordChange = async (password: string) => {
+    if (!form.getValues('email')) {
+      toast.error('Insira o e-mail do barbeiro no formulário');
+      return;
+    }
+    setIsPasswordLoading(true);
+    let response;
+    if (isEditing) {
+      // Redefine password (só funciona se já é usuário no auth)
+      response = await supabase.auth.admin.updateUserByEmail(form.getValues('email'), { password });
+      if (response.error) {
+        toast.error('Erro ao redefinir senha', { description: response.error.message });
+      } else {
+        toast.success('Senha redefinida com sucesso!');
+      }
+    } else {
+      // Cadastro de novo usuário (envia e-mail, se não existir)
+      response = await supabase.auth.admin.createUser({
+        email: form.getValues('email'),
+        password,
+        email_confirm: true
+      });
+      if (response.error) {
+        toast.error('Erro ao criar usuário no Auth', { description: response.error.message });
+      } else {
+        toast.success('Senha cadastrada e e-mail enviado!');
+      }
+    }
+    setIsPasswordLoading(false);
+  };
+
   return {
     form,
     isEditing,
     isSubmitting,
     onSubmit,
+    handlePasswordChange,
+    isPasswordLoading,
   };
 }
