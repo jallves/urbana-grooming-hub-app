@@ -1,5 +1,5 @@
 // src/types/barber.ts
-export interface Barber {
+export interface Staff {
   id: string;
   name: string;
   email: string;
