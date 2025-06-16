@@ -47,40 +47,30 @@ export const useAppointmentData = () => {
 
         console.log('[useAppointmentData] Barbeiros encontrados:', barbersData?.length || 0);
 
+        // Sempre atualizar os estados com os dados recebidos (mesmo que seja array vazio)
+        setServices(servicesData || []);
+        setBarbers(barbersData || []);
+
         console.log('[useAppointmentData] Dados carregados com sucesso:', {
           services: servicesData?.length || 0,
           barbers: barbersData?.length || 0
         });
-
-        // Atualizar estados apenas se os dados foram carregados com sucesso
-        if (servicesData) {
-          setServices(servicesData);
-        }
-        if (barbersData) {
-          setBarbers(barbersData);
-        }
         
       } catch (error: any) {
         console.error('Erro ao carregar dados:', error);
         
-        // Tratamento específico para erro de permissão
-        if (error.message?.includes('permission denied')) {
-          toast({
-            title: "Erro de permissão",
-            description: "Não foi possível acessar os dados. Verifique se você está logado.",
-            variant: "destructive",
-          });
-        } else {
+        // Em caso de erro, ainda deixar arrays vazios para que o formulário apareça
+        setServices([]);
+        setBarbers([]);
+        
+        // Só mostrar toast para erros que não sejam de permissão (que são esperados)
+        if (!error.message?.includes('permission denied')) {
           toast({
             title: "Erro ao carregar dados",
             description: error.message || "Não foi possível carregar os dados necessários.",
             variant: "destructive",
           });
         }
-        
-        // Manter arrays vazios em caso de erro
-        setServices([]);
-        setBarbers([]);
       } finally {
         setLoading(false);
       }

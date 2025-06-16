@@ -74,19 +74,6 @@ export default function ClientAppointmentForm({
     );
   }
 
-  // Debug: Verificar se há serviços disponíveis
-  if (services.length === 0) {
-    console.warn('[ClientAppointmentForm] Nenhum serviço disponível!');
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-white text-center">
-          <p className="text-red-400">Nenhum serviço disponível no momento.</p>
-          <p className="text-sm text-stone-400 mt-2">Tente novamente mais tarde ou entre em contato conosco.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-3xl mx-auto">
       <Form {...form}>
@@ -100,6 +87,11 @@ export default function ClientAppointmentForm({
               setSelectedService={setSelectedService}
               setFinalServicePrice={setFinalServicePrice}
             />
+            {services.length === 0 && (
+              <p className="text-sm text-amber-400 mt-2">
+                Nenhum serviço disponível no momento. Entre em contato conosco.
+              </p>
+            )}
           </section>
 
           {/* Seção de Data e Horário */}
@@ -124,6 +116,11 @@ export default function ClientAppointmentForm({
               getFieldValue={form.getValues}
               checkBarberAvailability={checkBarberAvailability}
             />
+            {barbers.length === 0 && (
+              <p className="text-sm text-amber-400 mt-2">
+                Nenhum barbeiro disponível no momento. Entre em contato conosco.
+              </p>
+            )}
           </section>
 
           {/* Seção de Cupom */}
@@ -152,19 +149,21 @@ export default function ClientAppointmentForm({
           </section>
 
           {/* Resumo do Agendamento */}
-          <section>
-            <AppointmentSummary
-              selectedService={selectedService}
-              appliedCoupon={appliedCoupon}
-              finalServicePrice={finalServicePrice}
-            />
-          </section>
+          {selectedService && (
+            <section>
+              <AppointmentSummary
+                selectedService={selectedService}
+                appliedCoupon={appliedCoupon}
+                finalServicePrice={finalServicePrice}
+              />
+            </section>
+          )}
 
           {/* Botão de Confirmação */}
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={isSending || !selectedService}
+              disabled={isSending || !selectedService || services.length === 0}
               className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3 disabled:opacity-50"
             >
               {isSending ? 'Agendando...' : (appointmentId ? 'Atualizar Agendamento' : 'Confirmar Agendamento')}
