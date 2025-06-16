@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,32 +10,29 @@ import { AppointmentSummary } from './components/AppointmentSummary';
 import { CouponField } from './components/CouponField';
 import { useToast } from '@/hooks/use-toast';
 import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
+import { LoaderPage } from '@/components/ui/loader-page';
 import { Loader } from '@/components/ui/loader';
-import { Service } from '@/types/service';
-import { Barber } from '@/types/barber';
-
-interface AppointmentInitialData {
-  serviceId: string;
-  staffId: string;
-  date: Date;
-  notes: string;
-}
 
 interface ClientAppointmentFormProps {
   clientId: string;
   appointmentId?: string;
-  initialData?: AppointmentInitialData;
+  initialData?: {
+    serviceId: string;
+    staffId: string;
+    date: Date;
+    notes: string;
+  };
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
-export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ 
+export default function ClientAppointmentForm({ 
   clientId, 
   appointmentId, 
   initialData,
   onSuccess,
   onCancel
-}) => {
+}: ClientAppointmentFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -86,18 +82,17 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <Loader size="lg" />
-        <p className="text-white text-center">
-          Carregando dados do agendamento...
-        </p>
-      </div>
+      <LoaderPage 
+        fullScreen 
+        text="Carregando dados do agendamento..." 
+        className="bg-stone-900"
+      />
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
+      <div className="flex flex-col items-center justify-center min-h-[300px] gap-4">
         <div className="text-red-500 text-center">
           <p className="font-medium">Erro ao carregar dados</p>
           <p className="text-sm mt-2">{error.message}</p>
@@ -105,6 +100,7 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
         <Button 
           variant="outline" 
           onClick={() => window.location.reload()}
+          className="text-urbana-gold border-urbana-gold"
         >
           Tentar novamente
         </Button>
@@ -124,25 +120,38 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
             Formulário de Agendamento
           </h2>
 
-          <FormSection 
-            title="Serviço"
-            loading={!selectedService && services.length === 0}
-            loadingMessage="Carregando serviços..."
-          >
-            <ServiceSelectionField
-              control={form.control}
-              services={services}
-              selectedService={selectedService}
-              setSelectedService={setSelectedService}
-              setFinalServicePrice={setFinalServicePrice}
-            />
-          </FormSection>
+          {/* Seção de Seleção de Serviço */}
+          <section className="space-y-4">
+            <h3 className="text-lg font-medium text-white">
+              Serviço
+              {!selectedService && services.length === 0 && (
+                <Loader size="sm" className="ml-2 inline-block" />
+              )}
+            </h3>
+            
+            {services.length === 0 ? (
+              <p className="text-sm text-amber-400">
+                Carregando serviços... Se não aparecer nada, entre em contato conosco.
+              </p>
+            ) : (
+              <ServiceSelectionField
+                control={form.control}
+                services={services}
+                selectedService={selectedService}
+                setSelectedService={setSelectedService}
+                setFinalServicePrice={setFinalServicePrice}
+              />
+            )}
+          </section>
 
-          <FormSection 
-            title="Data e Horário"
-            loading={!availableTimes}
-            loadingMessage="Carregando horários disponíveis..."
-          >
+          {/* Seção de Data e Horário */}
+          <section className="space-y-4">
+            <h3 className="text-lg font-medium text-white">
+              Data e Horário
+              {!availableTimes && (
+                <Loader size="sm" className="ml-2 inline-block" />
+              )}
+            </h3>
             <DateTimeSelectionFields
               control={form.control}
               disabledDays={disabledDays}
@@ -151,13 +160,16 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
               selectedService={selectedService}
               getFieldValue={form.getValues}
             />
-          </FormSection>
+          </section>
 
-          <FormSection 
-            title="Barbeiro"
-            loading={barbers.length === 0}
-            loadingMessage="Carregando barbeiros..."
-          >
+          {/* Seção de Seleção de Barbeiro */}
+          <section className="space-y-4">
+            <h3 className="text-lg font-medium text-white">
+              Barbeiro
+              {isCheckingAvailability && (
+                <Loader size="sm" className="ml-2 inline-block" />
+              )}
+            </h3>
             <BarberSelectionField
               control={form.control}
               barbers={barbers}
@@ -166,9 +178,21 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
               getFieldValue={form.getValues}
               checkBarberAvailability={checkBarberAvailability}
             />
-          </FormSection>
+            {barbers.length === 0 && (
+              <p className="text-sm text-amber-400">
+                Carregando barbeiros... Se não aparecer nada, entre em contato conosco.
+              </p>
+            )}
+          </section>
 
-          <FormSection title="Cupom de Desconto">
+          {/* Seção de Cupom */}
+          <section className="space-y-4">
+            <h3 className="text-lg font-medium text-white">
+              Cupom de Desconto
+              {isApplyingCoupon && (
+                <Loader size="sm" className="ml-2 inline-block" />
+              )}
+            </h3>
             <CouponField
               appliedCoupon={appliedCoupon}
               isApplyingCoupon={isApplyingCoupon}
@@ -176,27 +200,34 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
               onRemoveCoupon={removeCoupon}
               servicePrice={selectedService?.price || 0}
             />
-          </FormSection>
+          </section>
 
-          <FormSection title="Observações" optional>
+          {/* Seção de Observações */}
+          <section className="space-y-4">
+            <h3 className="text-lg font-medium text-white">
+              Observações <span className="text-sm text-stone-400">(Opcional)</span>
+            </h3>
             <Textarea
               {...form.register('notes')}
               placeholder="Alguma preferência especial ou observação..."
               className="bg-stone-700 border-stone-600 text-white placeholder:text-stone-400"
               aria-label="Observações opcionais"
             />
-          </FormSection>
+          </section>
 
+          {/* Resumo do Agendamento */}
           {selectedService && (
-            <FormSection title="Resumo do Agendamento">
+            <section className="space-y-4">
+              <h3 className="text-lg font-medium text-white">Resumo do Agendamento</h3>
               <AppointmentSummary
                 selectedService={selectedService}
                 appliedCoupon={appliedCoupon}
                 finalServicePrice={finalServicePrice}
               />
-            </FormSection>
+            </section>
           )}
 
+          {/* Botões de Ação */}
           <div className="flex justify-between gap-4 pt-4">
             <Button
               type="button"
@@ -209,7 +240,7 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
             <Button
               type="submit"
               disabled={isSending || !selectedService}
-              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3 disabled:opacity-50"
+              className="bg-urbana-gold hover:bg-urbana-600 text-black font-semibold px-8 py-3 disabled:opacity-50"
               aria-disabled={isSending || !selectedService}
             >
               {isSending ? (
@@ -226,40 +257,4 @@ export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
       </Form>
     </div>
   );
-};
-
-// Componente auxiliar para seções do formulário
-interface FormSectionProps {
-  title: string;
-  children: React.ReactNode;
-  optional?: boolean;
-  loading?: boolean;
-  loadingMessage?: string;
 }
-
-const FormSection: React.FC<FormSectionProps> = ({ 
-  title, 
-  children, 
-  optional, 
-  loading, 
-  loadingMessage 
-}) => (
-  <section className="space-y-4">
-    <h3 className="text-lg font-medium text-white flex items-center gap-2">
-      {title}
-      {optional && (
-        <span className="text-sm text-stone-400">(Opcional)</span>
-      )}
-      {loading && (
-        <Loader size="sm" />
-      )}
-    </h3>
-    {loading && loadingMessage ? (
-      <p className="text-sm text-amber-400">{loadingMessage}</p>
-    ) : (
-      <div className="space-y-4">
-        {children}
-      </div>
-    )}
-  </section>
-);
