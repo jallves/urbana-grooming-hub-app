@@ -4,14 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { useAppointmentData } from './hooks/useAppointmentData';
 import { ServiceSelectionField } from './components/ServiceSelectionField';
 import { DateTimeSelectionFields } from './components/DateTimeSelectionFields';
 import { BarberSelectionField } from './components/BarberSelectionField';
 import { AppointmentSummary } from './components/AppointmentSummary';
 import { CouponField } from './components/CouponField';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
 
 interface ClientAppointmentFormProps {
@@ -67,7 +65,14 @@ export default function ClientAppointmentForm({
   });
 
   if (loading) {
-    return <div className="text-white">Carregando dados do agendamento...</div>;
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-white text-center">
+          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-amber-500 rounded-full mx-auto mb-4"></div>
+          <p>Carregando dados do agendamento...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -129,7 +134,7 @@ export default function ClientAppointmentForm({
               <Textarea
                 {...form.register('notes')}
                 placeholder="Alguma preferência especial ou observação..."
-                className="bg-stone-700 border-stone-600 text-white"
+                className="bg-stone-700 border-stone-600 text-white placeholder:text-stone-400"
               />
             </div>
           </section>
@@ -148,7 +153,7 @@ export default function ClientAppointmentForm({
             <Button
               type="submit"
               disabled={isSending || !selectedService}
-              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3"
+              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3 disabled:opacity-50"
             >
               {isSending ? 'Agendando...' : (appointmentId ? 'Atualizar Agendamento' : 'Confirmar Agendamento')}
             </Button>

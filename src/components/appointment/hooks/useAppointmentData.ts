@@ -16,6 +16,8 @@ export const useAppointmentData = () => {
       try {
         setLoading(true);
         
+        console.log('[useAppointmentData] Iniciando busca de dados...');
+        
         // Buscar serviços ativos
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
@@ -27,6 +29,8 @@ export const useAppointmentData = () => {
           console.error('Erro ao buscar serviços:', servicesError);
           throw servicesError;
         }
+
+        console.log('[useAppointmentData] Serviços encontrados:', servicesData?.length || 0);
 
         // Buscar barbeiros ativos da tabela staff
         const { data: barbersData, error: barbersError } = await supabase
@@ -41,20 +45,33 @@ export const useAppointmentData = () => {
           throw barbersError;
         }
 
-        console.log('[useAppointmentData] Dados carregados:', {
-          services: servicesData,
-          barbers: barbersData
+        console.log('[useAppointmentData] Barbeiros encontrados:', barbersData?.length || 0);
+
+        console.log('[useAppointmentData] Dados carregados com sucesso:', {
+          services: servicesData?.length || 0,
+          barbers: barbersData?.length || 0
         });
 
         setServices(servicesData || []);
         setBarbers(barbersData || []);
       } catch (error: any) {
         console.error('Erro ao carregar dados:', error);
-        toast({
-          title: "Erro ao carregar dados",
-          description: error.message || "Não foi possível carregar os dados necessários.",
-          variant: "destructive",
-        });
+        
+        // Tratamento específico para erro de permissão
+        if (error.message?.includes('permission denied')) {
+          toast({
+            title: "Erro de permissão",
+            description: "Não foi possível acessar os dados. Verifique se você está logado.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro ao carregar dados",
+            description: error.message || "Não foi possível carregar os dados necessários.",
+            variant: "destructive",
+          });
+        }
+        
         setServices([]);
         setBarbers([]);
       } finally {
