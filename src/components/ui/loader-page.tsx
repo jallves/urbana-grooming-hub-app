@@ -1,6 +1,6 @@
 // src/components/ui/loader-page.tsx
 import React from "react";
-import { Loader } from "./loader"; // Corrigido o caminho de importação
+import { Loader } from "./loader";
 
 interface LoaderPageProps {
   className?: string;
