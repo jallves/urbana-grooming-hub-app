@@ -18,7 +18,7 @@ export const useAppointmentData = () => {
         
         console.log('[useAppointmentData] Iniciando busca de dados...');
         
-        // Buscar serviços ativos
+        // Buscar serviços
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
           .select('*')
@@ -27,12 +27,12 @@ export const useAppointmentData = () => {
 
         if (servicesError) {
           console.error('Erro ao buscar serviços:', servicesError);
-          throw servicesError;
+        } else {
+          console.log('[useAppointmentData] Serviços encontrados:', servicesData?.length || 0);
+          setServices(servicesData || []);
         }
 
-        console.log('[useAppointmentData] Serviços encontrados:', servicesData?.length || 0);
-
-        // Buscar barbeiros ativos da tabela staff
+        // Buscar barbeiros da tabela staff
         const { data: barbersData, error: barbersError } = await supabase
           .from('staff')
           .select('*')
@@ -42,47 +42,35 @@ export const useAppointmentData = () => {
 
         if (barbersError) {
           console.error('Erro ao buscar barbeiros:', barbersError);
-          throw barbersError;
+        } else {
+          console.log('[useAppointmentData] Barbeiros encontrados:', barbersData?.length || 0);
+          setBarbers(barbersData || []);
         }
 
-        console.log('[useAppointmentData] Barbeiros encontrados:', barbersData?.length || 0);
-
-        // Sempre atualizar os estados com os dados recebidos (mesmo que seja array vazio)
-        setServices(servicesData || []);
-        setBarbers(barbersData || []);
-
-        console.log('[useAppointmentData] Dados carregados com sucesso:', {
+        console.log('[useAppointmentData] Dados finais carregados:', {
           services: servicesData?.length || 0,
           barbers: barbersData?.length || 0
         });
         
       } catch (error: any) {
-        console.error('Erro ao carregar dados:', error);
-        
-        // Em caso de erro, ainda deixar arrays vazios para que o formulário apareça
+        console.error('Erro geral ao carregar dados:', error);
+        // Mesmo com erro, manter arrays vazios para o formulário aparecer
         setServices([]);
         setBarbers([]);
-        
-        // Só mostrar toast para erros que não sejam de permissão (que são esperados)
-        if (!error.message?.includes('permission denied')) {
-          toast({
-            title: "Erro ao carregar dados",
-            description: error.message || "Não foi possível carregar os dados necessários.",
-            variant: "destructive",
-          });
-        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [toast]);
+  }, []);
 
-  console.log('[useAppointmentData] Retornando dados:', {
+  console.log('[useAppointmentData] Hook retornando:', {
     servicesCount: services.length,
     barbersCount: barbers.length,
-    loading
+    loading,
+    services: services.slice(0, 2), // Debug dos primeiros itens
+    barbers: barbers.slice(0, 2)
   });
 
   return {

@@ -22,6 +22,8 @@ export function ServiceSelectionField({
   setSelectedService,
   setFinalServicePrice
 }: ServiceSelectionFieldProps) {
+  console.log('[ServiceSelectionField] Renderizando com serviços:', services);
+
   return (
     <FormField
       control={control}
@@ -34,6 +36,7 @@ export function ServiceSelectionField({
           </FormLabel>
           <Select 
             onValueChange={(value) => {
+              console.log('[ServiceSelectionField] Serviço selecionado:', value);
               field.onChange(value);
               const selected = services.find(s => s.id === value) || null;
               setSelectedService(selected);
@@ -49,16 +52,22 @@ export function ServiceSelectionField({
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-stone-800 border-stone-600">
-              {services.map((service) => (
-                <SelectItem key={service.id} value={service.id} className="text-white hover:bg-stone-700">
-                  <div className="flex items-center justify-between w-full">
-                    <span>{service.name}</span>
-                    <span className="text-amber-400 ml-4">
-                      R$ {service.price.toFixed(2)} ({service.duration} min)
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
+              {services.length > 0 ? (
+                services.map((service) => (
+                  <SelectItem key={service.id} value={service.id} className="text-white hover:bg-stone-700">
+                    <div className="flex items-center justify-between w-full">
+                      <span>{service.name}</span>
+                      <span className="text-amber-400 ml-4">
+                        R$ {service.price?.toFixed(2)} ({service.duration} min)
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-1 text-sm text-stone-400">
+                  Carregando serviços...
+                </div>
+              )}
             </SelectContent>
           </Select>
           <FormMessage />

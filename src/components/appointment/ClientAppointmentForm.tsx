@@ -54,7 +54,7 @@ export default function ClientAppointmentForm({
     removeCoupon,
   } = useClientAppointmentForm(clientId, initialData);
 
-  console.log('[ClientAppointmentForm] Renderizando com dados:', {
+  console.log('[ClientAppointmentForm] Estado atual:', {
     loading,
     servicesCount: services.length,
     barbersCount: barbers.length,
@@ -89,7 +89,7 @@ export default function ClientAppointmentForm({
             />
             {services.length === 0 && (
               <p className="text-sm text-amber-400 mt-2">
-                Nenhum serviço disponível no momento. Entre em contato conosco.
+                Carregando serviços... Se não aparecer nada, entre em contato conosco.
               </p>
             )}
           </section>
@@ -118,7 +118,7 @@ export default function ClientAppointmentForm({
             />
             {barbers.length === 0 && (
               <p className="text-sm text-amber-400 mt-2">
-                Nenhum barbeiro disponível no momento. Entre em contato conosco.
+                Carregando barbeiros... Se não aparecer nada, entre em contato conosco.
               </p>
             )}
           </section>
@@ -163,7 +163,7 @@ export default function ClientAppointmentForm({
           <div className="flex justify-end">
             <Button
               type="submit"
-              disabled={isSending || !selectedService || services.length === 0}
+              disabled={isSending || !selectedService}
               className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3 disabled:opacity-50"
             >
               {isSending ? 'Agendando...' : (appointmentId ? 'Atualizar Agendamento' : 'Confirmar Agendamento')}
