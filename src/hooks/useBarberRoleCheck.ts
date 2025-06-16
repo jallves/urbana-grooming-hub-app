@@ -1,95 +1,64 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useBarberRoleCheck } from '@/hooks/useBarberRoleCheck';
+import { useToast } from '@/hooks/use-toast';
 
-export default function BarberLogin() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+export const useBarberRoleCheck = () => {
+  const [checkingRole, setCheckingRole] = useState(false);
   const navigate = useNavigate();
-  const { checkingRole, checkBarberRole } = useBarberRoleCheck();
+  const { toast } = useToast();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
+  const checkBarberRole = async (userId: string) => {
+    setCheckingRole(true);
+    
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      console.log('[useBarberRoleCheck] Verificando permissões para usuário:', userId);
+      
+      const { data: staffData, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('email', (await supabase.auth.getUser()).data.user?.email)
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        console.error('[useBarberRoleCheck] Erro ao verificar staff:', error);
+        throw new Error('Usuário não autorizado como barbeiro');
+      }
+
+      if (!staffData) {
+        throw new Error('Usuário não encontrado na equipe');
+      }
+
+      console.log('[useBarberRoleCheck] Barbeiro autorizado:', staffData);
+      
+      toast({
+        title: "Acesso autorizado",
+        description: `Bem-vindo, ${staffData.name}!`,
       });
 
-      if (error) throw error;
-      if (!data.user) throw new Error('Autenticação falhou');
-
-      // Verificar permissões
-      await checkBarberRole(data.user.id);
+      navigate('/barbeiro/dashboard');
       
-    } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login');
+    } catch (error: any) {
+      console.error('[useBarberRoleCheck] Erro na verificação:', error);
+      
+      toast({
+        title: "Acesso negado",
+        description: error.message || "Você não tem permissão para acessar o painel do barbeiro",
+        variant: "destructive",
+      });
+      
+      // Fazer logout se não autorizado
+      await supabase.auth.signOut();
+      navigate('/barbeiro/login');
     } finally {
-      setLoading(false);
+      setCheckingRole(false);
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-900">
-      <form onSubmit={handleLogin} className="bg-zinc-800 p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-white text-center">Login Barbeiro</h2>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-900/30 text-red-300 rounded-lg">
-            {error}
-          </div>
-        )}
-        
-        <div className="mb-4">
-          <label className="block text-zinc-300 mb-2" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
-            required
-          />
-        </div>
-        
-        <div className="mb-6">
-          <label className="block text-zinc-300 mb-2" htmlFor="password">
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
-            required
-          />
-        </div>
-        
-        <button
-          type="submit"
-          disabled={loading || checkingRole}
-          className="w-full bg-urbana-gold text-black font-bold py-3 rounded-lg hover:bg-urbana-gold/90 transition"
-        >
-          {(loading || checkingRole) ? (
-            <div className="flex items-center justify-center">
-              <Loader2 className="animate-spin mr-2" />
-              Verificando...
-            </div>
-          ) : (
-            'Acessar Painel'
-          )}
-        </button>
-      </form>
-    </div>
-  );
-}
+  return {
+    checkingRole,
+    checkBarberRole,
+  };
+};

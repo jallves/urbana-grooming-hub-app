@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { useBarberData } from './hooks/useBarberData';
+import { useAppointmentData } from './hooks/useAppointmentData';
 import { ServiceSelectionField } from './components/ServiceSelectionField';
 import { DateTimeSelectionFields } from './components/DateTimeSelectionFields';
 import { BarberSelectionField } from './components/BarberSelectionField';
@@ -11,65 +12,73 @@ import { AppointmentSummary } from './components/AppointmentSummary';
 import { CouponField } from './components/CouponField';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
 
 export default function ClientAppointmentForm({ clientId }) {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { barbers, loading: barbersLoading } = useBarberData();
+  
+  const {
+    form,
+    loading,
+    services,
+    barbers,
+    selectedService,
+    setSelectedService,
+    availableTimes,
+    barberAvailability,
+    isCheckingAvailability,
+    isSending,
+    disabledDays,
+    appliedCoupon,
+    isApplyingCoupon,
+    finalServicePrice,
+    setFinalServicePrice,
+    onSubmit,
+    fetchAvailableTimes,
+    checkBarberAvailability,
+    applyCoupon,
+    removeCoupon,
+  } = useClientAppointmentForm(clientId);
 
-  // ... outros estados e hooks
+  console.log('[ClientAppointmentForm] Estado atual:', {
+    loading,
+    barbersCount: barbers.length,
+    servicesCount: services.length,
+    selectedService,
+    barberAvailability
+  });
 
-  const onSubmit = async (data: any) => {
-    // ... validações
-    
-    try {
-      // Converter para UTC
-      const [hours, minutes] = data.time.split(':').map(Number);
-      const utcDate = new Date(data.date);
-      utcDate.setUTCHours(hours, minutes, 0, 0);
-      
-      // Criar objeto de agendamento
-      const appointmentData = {
-        client_id: clientId,
-        service_id: data.service_id,
-        staff_id: data.staff_id || null,
-        start_time: utcDate.toISOString(),
-        end_time: new Date(utcDate.getTime() + selectedService.duration * 60000).toISOString(),
-        notes: data.notes || null,
-        status: 'scheduled',
-      };
-
-      // Inserir no banco de dados
-      const { error } = await supabase
-        .from('appointments')
-        .insert([appointmentData]);
-
-      if (error) throw error;
-      
-      // Feedback de sucesso
-      toast({
-        title: "Agendamento Confirmado!",
-        description: `Seu agendamento foi confirmado.`,
-      });
-
-      navigate('/cliente/dashboard');
-    } catch (error: any) {
-      toast({
-        title: "Erro ao agendar",
-        description: error.message || "Erro ao salvar o agendamento",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (barbersLoading) {
-    return <div>Carregando barbeiros...</div>;
+  if (loading) {
+    return <div>Carregando dados do agendamento...</div>;
   }
 
   return (
     <div className="max-w-3xl mx-auto">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Seção de Seleção de Serviço */}
+          <section>
+            <ServiceSelectionField
+              control={form.control}
+              services={services}
+              selectedService={selectedService}
+              setSelectedService={setSelectedService}
+              setFinalServicePrice={setFinalServicePrice}
+            />
+          </section>
+
+          {/* Seção de Data e Horário */}
+          <section>
+            <DateTimeSelectionFields
+              control={form.control}
+              disabledDays={disabledDays}
+              availableTimes={availableTimes}
+              fetchAvailableTimes={fetchAvailableTimes}
+              selectedService={selectedService}
+            />
+          </section>
+
           {/* Seção de Seleção de Barbeiro */}
           <section>
             <BarberSelectionField
@@ -82,7 +91,52 @@ export default function ClientAppointmentForm({ clientId }) {
             />
           </section>
 
-          {/* ... outras seções */}
+          {/* Seção de Cupom */}
+          <section>
+            <CouponField
+              control={form.control}
+              appliedCoupon={appliedCoupon}
+              isApplyingCoupon={isApplyingCoupon}
+              applyCoupon={applyCoupon}
+              removeCoupon={removeCoupon}
+            />
+          </section>
+
+          {/* Seção de Observações */}
+          <section>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white">
+                Observações (Opcional)
+              </label>
+              <Textarea
+                {...form.register('notes')}
+                placeholder="Alguma preferência especial ou observação..."
+                className="bg-stone-700 border-stone-600 text-white"
+              />
+            </div>
+          </section>
+
+          {/* Resumo do Agendamento */}
+          <section>
+            <AppointmentSummary
+              selectedService={selectedService}
+              appliedCoupon={appliedCoupon}
+              finalServicePrice={finalServicePrice}
+              form={form}
+              barbers={barbers}
+            />
+          </section>
+
+          {/* Botão de Confirmação */}
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={isSending || !selectedService}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3"
+            >
+              {isSending ? 'Agendando...' : 'Confirmar Agendamento'}
+            </Button>
+          </div>
         </form>
       </Form>
     </div>
