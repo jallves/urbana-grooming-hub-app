@@ -1,11 +1,29 @@
-
+// src/components/ui/loader-page.tsx
 import React from "react";
+import { Loader } from "./loader";
 
-const LoaderPage: React.FC = () => {
+interface LoaderPageProps {
+  className?: string;
+  text?: string;
+  fullScreen?: boolean;
+}
+
+const LoaderPage: React.FC<LoaderPageProps> = ({ 
+  className = '', 
+  text = 'Carregando...',
+  fullScreen = false
+}) => {
   return (
-    <div className="min-h-[300px] flex flex-col items-center justify-center py-16">
-      <div className="w-10 h-10 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mb-4"></div>
-      <span className="text-stone-300 text-base mt-2">Carregando...</span>
+    <div className={`
+      ${fullScreen ? 'min-h-screen' : 'min-h-[300px]'} 
+      flex flex-col items-center justify-center py-16 ${className}
+    `}>
+      <Loader size="lg" variant="spinner" />
+      {text && (
+        <span className="text-stone-300 text-base mt-4 animate-pulse">
+          {text}
+        </span>
+      )}
     </div>
   );
 };
