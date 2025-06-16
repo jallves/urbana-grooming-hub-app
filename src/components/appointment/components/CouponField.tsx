@@ -8,23 +8,19 @@ import { Loader2, Tag, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface CouponFieldProps {
-  form: any;
-  servicePrice: number;
-  appliedCoupon: any;
+  appliedCoupon: { code: string; discountAmount: number } | null;
   isApplyingCoupon: boolean;
-  finalPrice: number;
   onApplyCoupon: (code: string) => Promise<void>;
   onRemoveCoupon: () => void;
+  servicePrice?: number;
 }
 
 export function CouponField({ 
-  form, 
-  servicePrice, 
   appliedCoupon, 
   isApplyingCoupon, 
-  finalPrice,
   onApplyCoupon,
-  onRemoveCoupon 
+  onRemoveCoupon,
+  servicePrice = 0
 }: CouponFieldProps) {
   const [couponCode, setCouponCode] = useState('');
 
@@ -49,9 +45,11 @@ export function CouponField({
   };
 
   if (appliedCoupon) {
+    const finalPrice = servicePrice - appliedCoupon.discountAmount;
+    
     return (
       <div className="space-y-3">
-        <FormLabel>Cupom de Desconto</FormLabel>
+        <FormLabel className="text-white">Cupom de Desconto</FormLabel>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="flex items-center gap-1">
             <Tag className="h-3 w-3" />
@@ -73,7 +71,7 @@ export function CouponField({
             <span className="line-through text-gray-500">R$ {servicePrice.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm text-green-600">
-            <span>Desconto ({appliedCoupon.discountType === 'percentage' ? `${appliedCoupon.discountValue}%` : 'Fixo'}):</span>
+            <span>Desconto:</span>
             <span>- R$ {appliedCoupon.discountAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t border-green-200 pt-2">
@@ -87,7 +85,7 @@ export function CouponField({
 
   return (
     <div className="space-y-2">
-      <FormLabel>Cupom de Desconto (opcional)</FormLabel>
+      <FormLabel className="text-white">Cupom de Desconto (opcional)</FormLabel>
       <div className="flex gap-2">
         <Input
           placeholder="Digite o código do cupom"
@@ -99,6 +97,7 @@ export function CouponField({
               handleApplyCoupon();
             }
           }}
+          className="bg-stone-700 border-stone-600 text-white"
         />
         <Button
           type="button"
@@ -110,7 +109,7 @@ export function CouponField({
           Aplicar
         </Button>
       </div>
-      <div className="text-sm text-muted-foreground">
+      <div className="text-sm text-stone-400">
         Valor atual: R$ {servicePrice.toFixed(2)}
       </div>
     </div>

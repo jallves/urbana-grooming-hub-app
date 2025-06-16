@@ -62,6 +62,7 @@ export default function ClientAppointmentForm({ clientId }) {
             <ServiceSelectionField
               control={form.control}
               services={services}
+              selectedService={selectedService}
               setSelectedService={setSelectedService}
               setFinalServicePrice={setFinalServicePrice}
             />
@@ -96,8 +97,9 @@ export default function ClientAppointmentForm({ clientId }) {
             <CouponField
               appliedCoupon={appliedCoupon}
               isApplyingCoupon={isApplyingCoupon}
-              applyCoupon={applyCoupon}
-              removeCoupon={removeCoupon}
+              onApplyCoupon={applyCoupon}
+              onRemoveCoupon={removeCoupon}
+              servicePrice={selectedService?.price || 0}
             />
           </section>
 
@@ -120,8 +122,8 @@ export default function ClientAppointmentForm({ clientId }) {
             <AppointmentSummary
               selectedService={selectedService}
               appliedCoupon={appliedCoupon}
-              form={form}
               barbers={barbers}
+              finalServicePrice={finalServicePrice}
             />
           </section>
 
