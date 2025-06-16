@@ -1,122 +1,95 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useBarberRoleCheck } from '@/hooks/useBarberRoleCheck';
 
-export const useBarberRoleCheck = () => {
-  const [checkingRole, setCheckingRole] = useState<boolean>(false);
+export default function BarberLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { checkingRole, checkBarberRole } = useBarberRoleCheck();
 
-  const checkBarberRole = async (userId: string): Promise<void> => {
-    console.log('STRICT barber role check for ID:', userId);
-    
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
     try {
-      setCheckingRole(true);
-      
-      // Get user email for staff verification
-      const { data: userData } = await supabase.auth.getUser();
-      const userEmail = userData?.user?.email;
-      
-      if (!userEmail) {
-        console.log('❌ No user email found');
-        toast({
-          title: 'Erro de autenticação',
-          description: 'Não foi possível verificar seu email',
-          variant: 'destructive',
-        });
-        await supabase.auth.signOut();
-        navigate('/barbeiro/login');
-        return;
-      }
-      
-      // STEP 1: Check if user is an active staff member FIRST (MOST IMPORTANT)
-      console.log('Checking if user is active staff member with email:', userEmail);
-      const { data: staffMember, error: staffError } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('email', userEmail)
-        .eq('is_active', true)
-        .maybeSingle();
-      
-      if (staffError) {
-        console.error('❌ Error checking staff member:', staffError);
-        toast({
-          title: 'Erro de verificação',
-          description: 'Não foi possível verificar seu status no sistema',
-          variant: 'destructive',
-        });
-        await supabase.auth.signOut();
-        navigate('/barbeiro/login');
-        return;
-      }
-      
-      if (!staffMember) {
-        console.log('❌ User is NOT an active staff member - ACCESS DENIED');
-        toast({
-          title: 'Acesso negado',
-          description: 'Você não está cadastrado como barbeiro ativo no sistema. Apenas barbeiros cadastrados pelo administrador podem acessar.',
-          variant: 'destructive',
-        });
-        await supabase.auth.signOut();
-        navigate('/barbeiro/login');
-        return;
-      }
-      
-      console.log('✅ User is active staff member:', staffMember);
-      
-      // STEP 2: Check if user has barber role in database
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('role', 'barber');
-      
-      if (rolesError) {
-        console.error('❌ Error checking barber role:', rolesError);
-        toast({
-          title: 'Erro de verificação',
-          description: 'Não foi possível verificar seu papel no sistema',
-          variant: 'destructive',
-        });
-        await supabase.auth.signOut();
-        navigate('/barbeiro/login');
-        return;
-      }
-      
-      // If user has barber role and is active staff, allow access
-      if (roles && roles.length > 0) {
-        console.log('✅ User has barber role and is active staff - ACCESS GRANTED');
-        toast({
-          title: 'Login realizado com sucesso',
-          description: 'Bem-vindo ao painel do barbeiro',
-        });
-        navigate('/barbeiro/dashboard');
-      } else {
-        // User is active staff but doesn't have barber role - DENY ACCESS
-        console.log('❌ Active staff member but NO barber role - ACCESS DENIED');
-        toast({
-          title: 'Acesso negado',
-          description: 'Você é um profissional cadastrado, mas não tem permissão de barbeiro. Entre em contato com o administrador.',
-          variant: 'destructive',
-        });
-        await supabase.auth.signOut();
-        navigate('/barbeiro/login');
-      }
-    } catch (error) {
-      console.error('❌ Critical error in barber role check:', error);
-      toast({
-        title: 'Erro de verificação',
-        description: 'Ocorreu um erro ao verificar suas permissões',
-        variant: 'destructive',
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
-      await supabase.auth.signOut();
-      navigate('/barbeiro/login');
+
+      if (error) throw error;
+      if (!data.user) throw new Error('Autenticação falhou');
+
+      // Verificar permissões
+      await checkBarberRole(data.user.id);
+      
+    } catch (err: any) {
+      setError(err.message || 'Erro ao fazer login');
     } finally {
-      setCheckingRole(false);
+      setLoading(false);
     }
   };
 
-  return { checkingRole, setCheckingRole, checkBarberRole };
-};
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-900">
+      <form onSubmit={handleLogin} className="bg-zinc-800 p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-white text-center">Login Barbeiro</h2>
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/30 text-red-300 rounded-lg">
+            {error}
+          </div>
+        )}
+        
+        <div className="mb-4">
+          <label className="block text-zinc-300 mb-2" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
+            required
+          />
+        </div>
+        
+        <div className="mb-6">
+          <label className="block text-zinc-300 mb-2" htmlFor="password">
+            Senha
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 bg-zinc-700 border border-zinc-600 rounded-lg text-white"
+            required
+          />
+        </div>
+        
+        <button
+          type="submit"
+          disabled={loading || checkingRole}
+          className="w-full bg-urbana-gold text-black font-bold py-3 rounded-lg hover:bg-urbana-gold/90 transition"
+        >
+          {(loading || checkingRole) ? (
+            <div className="flex items-center justify-center">
+              <Loader2 className="animate-spin mr-2" />
+              Verificando...
+            </div>
+          ) : (
+            'Acessar Painel'
+          )}
+        </button>
+      </form>
+    </div>
+  );
+}
