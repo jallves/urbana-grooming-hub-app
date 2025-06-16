@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo } from 'react';
 import {
   FormField,
@@ -34,7 +35,16 @@ export function BarberSelectionField({
   getFieldValue,
   checkBarberAvailability,
 }: BarberSelectionFieldProps): JSX.Element {
-  // ... (código anterior)
+  
+  useEffect(() => {
+    const date = getFieldValue('date');
+    const time = getFieldValue('time');
+    const serviceId = getFieldValue('service_id');
+    
+    if (date && time && serviceId) {
+      checkBarberAvailability(date, time, serviceId);
+    }
+  }, [getFieldValue('date'), getFieldValue('time'), getFieldValue('service_id'), checkBarberAvailability]);
 
   const renderBarberItem = (barber: Barber, available?: boolean) => (
     <SelectItem
@@ -64,5 +74,41 @@ export function BarberSelectionField({
     </SelectItem>
   );
 
-  // ... (restante do componente)
+  return (
+    <FormField
+      control={control}
+      name="staff_id"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-white flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Barbeiro
+            {isCheckingAvailability && (
+              <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
+            )}
+          </FormLabel>
+          <Select onValueChange={field.onChange} value={field.value || ""}>
+            <FormControl>
+              <SelectTrigger className="bg-stone-700 border-stone-600 text-white">
+                <SelectValue placeholder="Selecione um barbeiro" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent className="bg-stone-800 border-stone-600">
+              {barbers.length > 0 ? (
+                barbers.map((barber) => {
+                  const availability = barberAvailability.find(a => a.id === barber.id);
+                  return renderBarberItem(barber, availability?.available);
+                })
+              ) : (
+                <div className="px-2 py-1 text-sm text-zinc-400">
+                  Nenhum barbeiro disponível
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
 }
