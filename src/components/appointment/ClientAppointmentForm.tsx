@@ -11,23 +11,32 @@ import { AppointmentSummary } from './components/AppointmentSummary';
 import { CouponField } from './components/CouponField';
 import { useToast } from '@/hooks/use-toast';
 import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
+import { Loader } from '@/components/ui/loader';
+import { Service } from '@/types/service';
+import { Barber } from '@/types/barber';
+
+interface AppointmentInitialData {
+  serviceId: string;
+  staffId: string;
+  date: Date;
+  notes: string;
+}
 
 interface ClientAppointmentFormProps {
   clientId: string;
   appointmentId?: string;
-  initialData?: {
-    serviceId: string;
-    staffId: string;
-    date: Date;
-    notes: string;
-  };
+  initialData?: AppointmentInitialData;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
-export default function ClientAppointmentForm({ 
+export const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ 
   clientId, 
   appointmentId, 
-  initialData 
-}: ClientAppointmentFormProps) {
+  initialData,
+  onSuccess,
+  onCancel
+}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -52,34 +61,74 @@ export default function ClientAppointmentForm({
     checkBarberAvailability,
     applyCoupon,
     removeCoupon,
-  } = useClientAppointmentForm(clientId, initialData);
+    error,
+  } = useClientAppointmentForm(clientId, initialData, onSuccess);
 
-  console.log('[ClientAppointmentForm] Estado atual:', {
-    loading,
-    servicesCount: services.length,
-    barbersCount: barbers.length,
-    selectedService: selectedService?.name || 'nenhum',
-    appointmentId,
-    initialData: initialData ? 'sim' : 'não'
-  });
+  const handleSubmit = async (data: any) => {
+    try {
+      await onSubmit(data);
+      toast({
+        title: 'Sucesso',
+        description: appointmentId 
+          ? 'Agendamento atualizado com sucesso!' 
+          : 'Agendamento realizado com sucesso!',
+        variant: 'success',
+      });
+      onSuccess?.();
+    } catch (err) {
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao processar seu agendamento',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-white text-center">
-          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-amber-500 rounded-full mx-auto mb-4"></div>
-          <p>Carregando dados do agendamento...</p>
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <Loader size="lg" />
+        <p className="text-white text-center">
+          Carregando dados do agendamento...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <div className="text-red-500 text-center">
+          <p className="font-medium">Erro ao carregar dados</p>
+          <p className="text-sm mt-2">{error.message}</p>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={() => window.location.reload()}
+        >
+          Tentar novamente
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto px-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* Seção de Seleção de Serviço */}
-          <section>
+        <form 
+          onSubmit={form.handleSubmit(handleSubmit)} 
+          className="space-y-8"
+          aria-labelledby="form-title"
+        >
+          <h2 id="form-title" className="sr-only">
+            Formulário de Agendamento
+          </h2>
+
+          <FormSection 
+            title="Serviço"
+            loading={!selectedService && services.length === 0}
+            loadingMessage="Carregando serviços..."
+          >
             <ServiceSelectionField
               control={form.control}
               services={services}
@@ -87,15 +136,13 @@ export default function ClientAppointmentForm({
               setSelectedService={setSelectedService}
               setFinalServicePrice={setFinalServicePrice}
             />
-            {services.length === 0 && (
-              <p className="text-sm text-amber-400 mt-2">
-                Carregando serviços... Se não aparecer nada, entre em contato conosco.
-              </p>
-            )}
-          </section>
+          </FormSection>
 
-          {/* Seção de Data e Horário */}
-          <section>
+          <FormSection 
+            title="Data e Horário"
+            loading={!availableTimes}
+            loadingMessage="Carregando horários disponíveis..."
+          >
             <DateTimeSelectionFields
               control={form.control}
               disabledDays={disabledDays}
@@ -104,10 +151,13 @@ export default function ClientAppointmentForm({
               selectedService={selectedService}
               getFieldValue={form.getValues}
             />
-          </section>
+          </FormSection>
 
-          {/* Seção de Seleção de Barbeiro */}
-          <section>
+          <FormSection 
+            title="Barbeiro"
+            loading={barbers.length === 0}
+            loadingMessage="Carregando barbeiros..."
+          >
             <BarberSelectionField
               control={form.control}
               barbers={barbers}
@@ -116,15 +166,9 @@ export default function ClientAppointmentForm({
               getFieldValue={form.getValues}
               checkBarberAvailability={checkBarberAvailability}
             />
-            {barbers.length === 0 && (
-              <p className="text-sm text-amber-400 mt-2">
-                Carregando barbeiros... Se não aparecer nada, entre em contato conosco.
-              </p>
-            )}
-          </section>
+          </FormSection>
 
-          {/* Seção de Cupom */}
-          <section>
+          <FormSection title="Cupom de Desconto">
             <CouponField
               appliedCoupon={appliedCoupon}
               isApplyingCoupon={isApplyingCoupon}
@@ -132,45 +176,90 @@ export default function ClientAppointmentForm({
               onRemoveCoupon={removeCoupon}
               servicePrice={selectedService?.price || 0}
             />
-          </section>
+          </FormSection>
 
-          {/* Seção de Observações */}
-          <section>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-white">
-                Observações (Opcional)
-              </label>
-              <Textarea
-                {...form.register('notes')}
-                placeholder="Alguma preferência especial ou observação..."
-                className="bg-stone-700 border-stone-600 text-white placeholder:text-stone-400"
-              />
-            </div>
-          </section>
+          <FormSection title="Observações" optional>
+            <Textarea
+              {...form.register('notes')}
+              placeholder="Alguma preferência especial ou observação..."
+              className="bg-stone-700 border-stone-600 text-white placeholder:text-stone-400"
+              aria-label="Observações opcionais"
+            />
+          </FormSection>
 
-          {/* Resumo do Agendamento */}
           {selectedService && (
-            <section>
+            <FormSection title="Resumo do Agendamento">
               <AppointmentSummary
                 selectedService={selectedService}
                 appliedCoupon={appliedCoupon}
                 finalServicePrice={finalServicePrice}
               />
-            </section>
+            </FormSection>
           )}
 
-          {/* Botão de Confirmação */}
-          <div className="flex justify-end">
+          <div className="flex justify-between gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel ?? (() => navigate(-1))}
+              className="text-white border-stone-600 hover:bg-stone-700"
+            >
+              Cancelar
+            </Button>
             <Button
               type="submit"
               disabled={isSending || !selectedService}
               className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3 disabled:opacity-50"
+              aria-disabled={isSending || !selectedService}
             >
-              {isSending ? 'Agendando...' : (appointmentId ? 'Atualizar Agendamento' : 'Confirmar Agendamento')}
+              {isSending ? (
+                <span className="flex items-center gap-2">
+                  <Loader size="sm" />
+                  {appointmentId ? 'Atualizando...' : 'Agendando...'}
+                </span>
+              ) : (
+                appointmentId ? 'Atualizar Agendamento' : 'Confirmar Agendamento'
+              )}
             </Button>
           </div>
         </form>
       </Form>
     </div>
   );
+};
+
+// Componente auxiliar para seções do formulário
+interface FormSectionProps {
+  title: string;
+  children: React.ReactNode;
+  optional?: boolean;
+  loading?: boolean;
+  loadingMessage?: string;
 }
+
+const FormSection: React.FC<FormSectionProps> = ({ 
+  title, 
+  children, 
+  optional, 
+  loading, 
+  loadingMessage 
+}) => (
+  <section className="space-y-4">
+    <h3 className="text-lg font-medium text-white flex items-center gap-2">
+      {title}
+      {optional && (
+        <span className="text-sm text-stone-400">(Opcional)</span>
+      )}
+      {loading && (
+        <Loader size="sm" />
+      )}
+    </h3>
+    {loading && loadingMessage ? (
+      <p className="text-sm text-amber-400">{loadingMessage}</p>
+    ) : (
+      <div className="space-y-4">
+        {children}
+      </div>
+    )}
+  </section>
+);
