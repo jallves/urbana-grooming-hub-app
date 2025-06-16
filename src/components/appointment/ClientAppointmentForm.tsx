@@ -54,14 +54,13 @@ export default function ClientAppointmentForm({
     removeCoupon,
   } = useClientAppointmentForm(clientId, initialData);
 
-  console.log('[ClientAppointmentForm] Estado atual:', {
+  console.log('[ClientAppointmentForm] Renderizando com dados:', {
     loading,
-    barbersCount: barbers.length,
     servicesCount: services.length,
-    selectedService,
-    barberAvailability,
+    barbersCount: barbers.length,
+    selectedService: selectedService?.name || 'nenhum',
     appointmentId,
-    initialData
+    initialData: initialData ? 'sim' : 'não'
   });
 
   if (loading) {
@@ -70,6 +69,19 @@ export default function ClientAppointmentForm({
         <div className="text-white text-center">
           <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-amber-500 rounded-full mx-auto mb-4"></div>
           <p>Carregando dados do agendamento...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Debug: Verificar se há serviços disponíveis
+  if (services.length === 0) {
+    console.warn('[ClientAppointmentForm] Nenhum serviço disponível!');
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-white text-center">
+          <p className="text-red-400">Nenhum serviço disponível no momento.</p>
+          <p className="text-sm text-stone-400 mt-2">Tente novamente mais tarde ou entre em contato conosco.</p>
         </div>
       </div>
     );

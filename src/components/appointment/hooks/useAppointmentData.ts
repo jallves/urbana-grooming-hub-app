@@ -52,8 +52,14 @@ export const useAppointmentData = () => {
           barbers: barbersData?.length || 0
         });
 
-        setServices(servicesData || []);
-        setBarbers(barbersData || []);
+        // Atualizar estados apenas se os dados foram carregados com sucesso
+        if (servicesData) {
+          setServices(servicesData);
+        }
+        if (barbersData) {
+          setBarbers(barbersData);
+        }
+        
       } catch (error: any) {
         console.error('Erro ao carregar dados:', error);
         
@@ -72,6 +78,7 @@ export const useAppointmentData = () => {
           });
         }
         
+        // Manter arrays vazios em caso de erro
         setServices([]);
         setBarbers([]);
       } finally {
@@ -81,6 +88,12 @@ export const useAppointmentData = () => {
 
     fetchData();
   }, [toast]);
+
+  console.log('[useAppointmentData] Retornando dados:', {
+    servicesCount: services.length,
+    barbersCount: barbers.length,
+    loading
+  });
 
   return {
     services,

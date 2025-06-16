@@ -34,14 +34,15 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     },
   });
 
-  // Usar hook de dados corrigido
+  // Usar hook de dados
   const { services, barbers, loading } = useAppointmentData();
 
-  console.log('[useClientAppointmentForm] Dados carregados:', {
+  console.log('[useClientAppointmentForm] Hook de dados retornou:', {
     servicesCount: services.length,
     barbersCount: barbers.length,
-    barbers,
-    loading
+    loading,
+    services: services.slice(0, 2), // Log apenas os primeiros 2 para debug
+    barbers: barbers.slice(0, 2)   // Log apenas os primeiros 2 para debug
   });
 
   // Usar hook de disponibilidade
@@ -96,9 +97,18 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     await checkBarberAvailability(date, time, serviceId, barbers);
   };
 
+  const finalLoading = loading || submitLoading;
+
+  console.log('[useClientAppointmentForm] Estado final:', {
+    loading: finalLoading,
+    servicesCount: services.length,
+    barbersCount: barbers.length,
+    selectedService: selectedService?.name || 'nenhum'
+  });
+
   return {
     form,
-    loading: loading || submitLoading,
+    loading: finalLoading,
     services,
     barbers,
     selectedService,
