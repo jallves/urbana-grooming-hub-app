@@ -19,7 +19,7 @@ import { Control } from 'react-hook-form';
 import {
   FormData,
   BarberAvailabilityInfo,
-} from 'src/components/appointment/hooks/useClientAppointmentForm.ts';
+} from 'src/components/appointment/hooks/useClientAppointmentForm.tsx';
 import { Barber } from '@/types/barber';
 
 interface BarberSelectionFieldProps {
