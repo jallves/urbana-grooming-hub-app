@@ -6,68 +6,68 @@ import { Service } from '@/types/appointment';
 
 interface AppointmentSummaryProps {
   selectedService: Service | null;
-  selectedDate: Date | undefined;
-  selectedTime: string;
-  appliedCoupon?: any;
-  finalPrice?: number;
+  appliedCoupon: { code: string; discountAmount: number } | null;
+  finalServicePrice: number;
 }
 
 export function AppointmentSummary({ 
   selectedService, 
-  selectedDate, 
-  selectedTime, 
   appliedCoupon,
-  finalPrice 
+  finalServicePrice 
 }: AppointmentSummaryProps) {
-  if (!selectedService || !selectedDate || !selectedTime) {
+  if (!selectedService) {
     return null;
   }
 
   return (
-    <div className="bg-muted p-4 rounded-md">
-      <h3 className="font-medium mb-2">Resumo do Agendamento</h3>
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <div>Serviço:</div>
-        <div className="font-medium">{selectedService.name}</div>
+    <div className="bg-stone-700/50 border border-stone-600 rounded-lg p-6">
+      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+        📋 Resumo do Agendamento
+      </h3>
+      
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-stone-300">Serviço:</span>
+          <span className="text-white font-medium">{selectedService.name}</span>
+        </div>
         
-        <div>Duração:</div>
-        <div className="font-medium">{selectedService.duration} minutos</div>
+        <div className="flex justify-between items-center">
+          <span className="text-stone-300">Duração:</span>
+          <span className="text-white font-medium">{selectedService.duration} minutos</span>
+        </div>
         
         {appliedCoupon ? (
           <>
-            <div>Valor original:</div>
-            <div className="font-medium line-through text-gray-500">R$ {selectedService.price.toFixed(2)}</div>
-            
-            <div>Cupom aplicado:</div>
-            <div className="font-medium text-green-600">{appliedCoupon.code}</div>
-            
-            <div>Desconto:</div>
-            <div className="font-medium text-green-600">
-              - R$ {appliedCoupon.discountAmount.toFixed(2)}
-              {appliedCoupon.discountType === 'percentage' && ` (${appliedCoupon.discountValue}%)`}
+            <div className="flex justify-between items-center">
+              <span className="text-stone-300">Valor original:</span>
+              <span className="text-stone-400 line-through">R$ {selectedService.price.toFixed(2)}</span>
             </div>
             
-            <div className="col-span-2 border-t pt-2 mt-2">
+            <div className="flex justify-between items-center">
+              <span className="text-stone-300">Cupom aplicado:</span>
+              <span className="text-green-400 font-medium">{appliedCoupon.code}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-stone-300">Desconto:</span>
+              <span className="text-green-400 font-medium">
+                - R$ {appliedCoupon.discountAmount.toFixed(2)}
+              </span>
+            </div>
+            
+            <div className="border-t border-stone-600 pt-3 mt-3">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-lg">Valor final:</span>
-                <span className="font-bold text-lg text-green-600">R$ {finalPrice?.toFixed(2)}</span>
+                <span className="text-white font-bold text-lg">Valor final:</span>
+                <span className="text-green-400 font-bold text-lg">R$ {finalServicePrice.toFixed(2)}</span>
               </div>
             </div>
           </>
         ) : (
-          <>
-            <div>Valor:</div>
-            <div className="font-medium text-lg">R$ {selectedService.price.toFixed(2)}</div>
-          </>
+          <div className="flex justify-between items-center">
+            <span className="text-white font-bold text-lg">Valor:</span>
+            <span className="text-amber-400 font-bold text-lg">R$ {selectedService.price.toFixed(2)}</span>
+          </div>
         )}
-        
-        <div>Data e Hora:</div>
-        <div className="font-medium">
-          {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às {selectedTime}
-        </div>
-        
-        <div>Confirmação:</div>
-        <div className="font-medium">Por email</div>
       </div>
     </div>
   );

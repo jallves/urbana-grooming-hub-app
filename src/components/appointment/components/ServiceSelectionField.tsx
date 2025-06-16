@@ -10,35 +10,53 @@ import { FormData } from '../hooks/useClientAppointmentForm';
 interface ServiceSelectionFieldProps {
   control: Control<FormData>;
   services: Service[];
-  onServiceSelect?: (service: Service | null) => void;
+  selectedService: Service | null;
+  setSelectedService: (service: Service | null) => void;
+  setFinalServicePrice: (price: number) => void;
 }
 
-export function ServiceSelectionField({ control, services, onServiceSelect }: ServiceSelectionFieldProps) {
+export function ServiceSelectionField({ 
+  control, 
+  services, 
+  selectedService,
+  setSelectedService,
+  setFinalServicePrice
+}: ServiceSelectionFieldProps) {
   return (
     <FormField
       control={control}
       name="service_id"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Serviço</FormLabel>
+          <FormLabel className="text-white flex items-center gap-2">
+            <Scissors className="h-4 w-4" />
+            Serviço
+          </FormLabel>
           <Select 
             onValueChange={(value) => {
               field.onChange(value);
-              const selectedService = services.find(s => s.id === value) || null;
-              onServiceSelect?.(selectedService);
+              const selected = services.find(s => s.id === value) || null;
+              setSelectedService(selected);
+              if (selected) {
+                setFinalServicePrice(selected.price);
+              }
             }} 
-            defaultValue={field.value}
+            value={field.value || ""}
           >
             <FormControl>
-              <SelectTrigger className="relative flex items-center">
-                <Scissors className="mr-2 h-4 w-4" />
+              <SelectTrigger className="bg-stone-700 border-stone-600 text-white">
                 <SelectValue placeholder="Selecione um serviço" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent>
+            <SelectContent className="bg-stone-800 border-stone-600">
               {services.map((service) => (
-                <SelectItem key={service.id} value={service.id}>
-                  {service.name} - R$ {service.price} ({service.duration} min)
+                <SelectItem key={service.id} value={service.id} className="text-white hover:bg-stone-700">
+                  <div className="flex items-center justify-between w-full">
+                    <span>{service.name}</span>
+                    <span className="text-amber-400 ml-4">
+                      R$ {service.price.toFixed(2)} ({service.duration} min)
+                    </span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

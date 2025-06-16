@@ -14,7 +14,22 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientAppointmentForm } from './hooks/useClientAppointmentForm';
 
-export default function ClientAppointmentForm({ clientId }) {
+interface ClientAppointmentFormProps {
+  clientId: string;
+  appointmentId?: string;
+  initialData?: {
+    serviceId: string;
+    staffId: string;
+    date: Date;
+    notes: string;
+  };
+}
+
+export default function ClientAppointmentForm({ 
+  clientId, 
+  appointmentId, 
+  initialData 
+}: ClientAppointmentFormProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -39,18 +54,20 @@ export default function ClientAppointmentForm({ clientId }) {
     checkBarberAvailability,
     applyCoupon,
     removeCoupon,
-  } = useClientAppointmentForm(clientId);
+  } = useClientAppointmentForm(clientId, initialData);
 
   console.log('[ClientAppointmentForm] Estado atual:', {
     loading,
     barbersCount: barbers.length,
     servicesCount: services.length,
     selectedService,
-    barberAvailability
+    barberAvailability,
+    appointmentId,
+    initialData
   });
 
   if (loading) {
-    return <div>Carregando dados do agendamento...</div>;
+    return <div className="text-white">Carregando dados do agendamento...</div>;
   }
 
   return (
@@ -122,7 +139,6 @@ export default function ClientAppointmentForm({ clientId }) {
             <AppointmentSummary
               selectedService={selectedService}
               appliedCoupon={appliedCoupon}
-              barbers={barbers}
               finalServicePrice={finalServicePrice}
             />
           </section>
@@ -134,7 +150,7 @@ export default function ClientAppointmentForm({ clientId }) {
               disabled={isSending || !selectedService}
               className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8 py-3"
             >
-              {isSending ? 'Agendando...' : 'Confirmar Agendamento'}
+              {isSending ? 'Agendando...' : (appointmentId ? 'Atualizar Agendamento' : 'Confirmar Agendamento')}
             </Button>
           </div>
         </form>
