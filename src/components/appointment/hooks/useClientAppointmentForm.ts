@@ -44,7 +44,7 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
     loading
   });
 
-  // Usar hook de disponibilidade com barbeiros da tabela staff
+  // Usar hook de disponibilidade
   const {
     availableTimes,
     barberAvailability,
