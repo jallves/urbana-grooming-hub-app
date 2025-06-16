@@ -1,29 +1,26 @@
-// src/components/ui/loader-page.tsx
+// src/components/ui/loader.tsx
+import { Loader2 } from "lucide-react";
 import React from "react";
-import { Loader } from "./loader";
 
-interface LoaderPageProps {
+interface LoaderProps {
+  size?: "sm" | "md" | "lg";
   className?: string;
-  text?: string;
-  fullScreen?: boolean;
 }
 
-export const LoaderPage: React.FC<LoaderPageProps> = ({ 
-  className = '', 
-  text = 'Carregando...',
-  fullScreen = false
-}) => {
+export const Loader = ({ 
+  size = "md", 
+  className = "" 
+}: LoaderProps) => {
+  const sizes = {
+    sm: "h-4 w-4",
+    md: "h-6 w-6",
+    lg: "h-8 w-8"
+  };
+
   return (
-    <div className={`
-      ${fullScreen ? 'min-h-screen' : 'min-h-[300px]'} 
-      flex flex-col items-center justify-center py-16 ${className}
-    `}>
-      <Loader size="lg" />
-      {text && (
-        <span className="text-stone-300 text-base mt-4 animate-pulse">
-          {text}
-        </span>
-      )}
-    </div>
+    <Loader2
+      className={`animate-spin ${sizes[size]} ${className}`}
+      aria-hidden="true"
+    />
   );
 };
