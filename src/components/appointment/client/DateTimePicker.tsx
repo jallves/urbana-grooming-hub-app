@@ -33,6 +33,19 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ form, availableTimes = 
 
   const timeSlots = availableTimes.length > 0 ? availableTimes : generateTimeSlots();
 
+  // Disable past dates and weekends
+  const isDateDisabled = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Disable past dates
+    if (date < today) return true;
+    
+    // Disable Sundays (0) and optionally Mondays (1) - adjust as needed
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 0; // Disable Sundays
+  };
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <FormField
@@ -65,9 +78,11 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ form, availableTimes = 
                   mode="single"
                   selected={field.value}
                   onSelect={(date) => {
+                    console.log('[DateTimePicker] Data selecionada:', date);
                     field.onChange(date);
                     if (date) onDateChange?.(date);
                   }}
+                  disabled={isDateDisabled}
                   initialFocus
                   className="bg-stone-800 text-white"
                 />
@@ -85,7 +100,10 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ form, availableTimes = 
           <FormItem>
             <FormLabel>Hora</FormLabel>
             <Select
-              onValueChange={field.onChange}
+              onValueChange={(value) => {
+                console.log('[DateTimePicker] Horário selecionado:', value);
+                field.onChange(value);
+              }}
               value={field.value || ""}
             >
               <FormControl>

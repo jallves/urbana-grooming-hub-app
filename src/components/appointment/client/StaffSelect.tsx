@@ -18,6 +18,8 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
   barberAvailability = [],
   isCheckingAvailability = false
 }) => {
+  console.log('[StaffSelect] Renderizando com barbeiros:', staffMembers);
+
   const availability = barberAvailability.length > 0 
     ? barberAvailability 
     : staffMembers.map(staff => ({ id: staff.id, name: staff.name, available: true }));
@@ -36,7 +38,10 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
             {isCheckingAvailability && <span className="ml-2 text-sm text-amber-400">(Verificando disponibilidade...)</span>}
           </FormLabel>
           <Select
-            onValueChange={field.onChange}
+            onValueChange={(value) => {
+              console.log('[StaffSelect] Barbeiro selecionado:', value);
+              field.onChange(value);
+            }}
             value={field.value || ""}
             disabled={isCheckingAvailability}
           >
@@ -46,30 +51,55 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-stone-800 border-stone-600">
-              {availableStaff.map((staff) => (
-                <SelectItem 
-                  key={staff.id} 
-                  value={staff.id}
-                  className="text-white hover:bg-stone-700"
-                >
-                  {staff.name} ✅ Disponível
-                </SelectItem>
-              ))}
+              {staffMembers.length > 0 ? (
+                <>
+                  {availableStaff.map((staff) => {
+                    const staffMember = staffMembers.find(s => s.id === staff.id);
+                    return (
+                      <SelectItem 
+                        key={staff.id} 
+                        value={staff.id}
+                        className="text-white hover:bg-stone-700"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>{staff.name}</span>
+                          <span className="text-green-400 text-xs ml-2">✅ Disponível</span>
+                        </div>
+                        {staffMember?.specialties && (
+                          <div className="text-xs text-stone-400 mt-1">
+                            {staffMember.specialties}
+                          </div>
+                        )}
+                      </SelectItem>
+                    );
+                  })}
 
-              {unavailableStaff.map((staff) => (
-                <SelectItem
-                  key={staff.id}
-                  value={staff.id}
-                  disabled
-                  className="opacity-50 text-stone-400"
-                >
-                  {staff.name} ❌ Indisponível
-                </SelectItem>
-              ))}
+                  {unavailableStaff.map((staff) => {
+                    const staffMember = staffMembers.find(s => s.id === staff.id);
+                    return (
+                      <SelectItem
+                        key={staff.id}
+                        value={staff.id}
+                        disabled
+                        className="opacity-50 text-stone-400"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span>{staff.name}</span>
+                          <span className="text-red-400 text-xs ml-2">❌ Indisponível</span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
 
-              {availableStaff.length === 0 && unavailableStaff.length > 0 && (
-                <div className="px-2 py-1 text-sm text-red-400">
-                  Nenhum barbeiro disponível neste horário
+                  {availableStaff.length === 0 && unavailableStaff.length > 0 && (
+                    <div className="px-2 py-1 text-sm text-red-400">
+                      Nenhum barbeiro disponível neste horário
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="px-2 py-1 text-sm text-stone-400">
+                  Carregando barbeiros...
                 </div>
               )}
             </SelectContent>

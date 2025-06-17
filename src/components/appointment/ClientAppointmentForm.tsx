@@ -46,7 +46,7 @@ export default function ClientAppointmentForm({
     services,
     staffMembers,
     selectedService,
-  } = useClientFormData('Cliente'); // Você pode buscar o nome real do cliente aqui
+  } = useClientFormData('Cliente');
 
   const {
     barberAvailability,
@@ -59,7 +59,7 @@ export default function ClientAppointmentForm({
   const { loading: submitLoading, onSubmit } = useAppointmentSubmit(
     clientId,
     selectedService,
-    null, // appliedCoupon - pode ser implementado depois
+    null, // appliedCoupon
     form as any,
     () => {}, // setSelectedService
     () => {} // setAppliedCoupon
@@ -67,8 +67,17 @@ export default function ClientAppointmentForm({
 
   const isLoading = isFormLoading || submitLoading;
 
+  console.log('[ClientAppointmentForm] Estado atual:', {
+    isFormLoading,
+    submitLoading,
+    servicesCount: services.length,
+    staffCount: staffMembers.length,
+    selectedService: selectedService?.name
+  });
+
   const handleSubmit = async (data: any) => {
     try {
+      console.log('[ClientAppointmentForm] Submetendo dados:', data);
       await onSubmit(data);
       toast({
         title: 'Sucesso',
@@ -78,6 +87,7 @@ export default function ClientAppointmentForm({
       });
       onSuccess?.();
     } catch (err) {
+      console.error('[ClientAppointmentForm] Erro ao submeter:', err);
       toast({
         title: 'Erro',
         description: 'Ocorreu um erro ao processar seu agendamento',
@@ -87,6 +97,7 @@ export default function ClientAppointmentForm({
   };
 
   const handleServiceChange = (serviceId: string) => {
+    console.log('[ClientAppointmentForm] Serviço alterado:', serviceId);
     // Reset staff selection when service changes
     form.setValue('staff_id', '');
     
@@ -98,6 +109,7 @@ export default function ClientAppointmentForm({
   };
 
   const handleDateChange = (date: Date) => {
+    console.log('[ClientAppointmentForm] Data alterada:', date);
     const serviceId = form.getValues('service_id');
     const time = form.getValues('time');
     
@@ -115,6 +127,11 @@ export default function ClientAppointmentForm({
   React.useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'time' && value.time && value.date && value.service_id) {
+        console.log('[ClientAppointmentForm] Verificando disponibilidade para:', {
+          date: value.date,
+          time: value.time,
+          serviceId: value.service_id
+        });
         checkBarberAvailability(value.date, value.time, value.service_id, staffMembers);
       }
     });

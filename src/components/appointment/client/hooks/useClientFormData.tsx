@@ -37,31 +37,44 @@ export const useClientFormData = (clientName: string = '') => {
   });
 
   // Fetch services
-  const { data: services, isLoading: isLoadingServices } = useQuery({
+  const { data: services = [], isLoading: isLoadingServices } = useQuery({
     queryKey: ['client-services'],
     queryFn: async () => {
+      console.log('[useClientFormData] Buscando serviços...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true)
         .order('name');
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('[useClientFormData] Erro ao buscar serviços:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('[useClientFormData] Serviços encontrados:', data);
       return data as Service[];
     },
   });
 
   // Fetch staff (barbeiros)
-  const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['client-barbers'],
+  const { data: staffMembers = [], isLoading: isLoadingStaff } = useQuery({
+    queryKey: ['client-staff'],
     queryFn: async () => {
+      console.log('[useClientFormData] Buscando barbeiros...');
       const { data, error } = await supabase
         .from('staff')
         .select('*')
         .eq('is_active', true)
         .eq('role', 'barber')
         .order('name');
-      if (error) throw new Error(error.message);
+        
+      if (error) {
+        console.error('[useClientFormData] Erro ao buscar barbeiros:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('[useClientFormData] Barbeiros encontrados:', data);
       return data as Staff[];
     },
   });
@@ -72,16 +85,24 @@ export const useClientFormData = (clientName: string = '') => {
     if (services && serviceId) {
       const service = services.find(s => s.id === serviceId);
       setSelectedService(service || null);
+      console.log('[useClientFormData] Serviço selecionado:', service);
     }
   }, [form.watch('service_id'), services]);
 
   const isLoading = isLoadingServices || isLoadingStaff;
 
+  console.log('[useClientFormData] Estado atual:', {
+    isLoading,
+    servicesCount: services.length,
+    staffCount: staffMembers.length,
+    selectedService: selectedService?.name
+  });
+
   return {
     form,
     isLoading,
-    services: services || [],
-    staffMembers: staffMembers || [],
+    services,
+    staffMembers,
     selectedService,
   };
 };

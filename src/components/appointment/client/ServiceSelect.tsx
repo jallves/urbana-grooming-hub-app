@@ -12,6 +12,8 @@ interface ServiceSelectProps {
 }
 
 const ServiceSelect: React.FC<ServiceSelectProps> = ({ services, form, onServiceChange }) => {
+  console.log('[ServiceSelect] Renderizando com serviços:', services);
+
   return (
     <FormField
       control={form.control}
@@ -21,6 +23,7 @@ const ServiceSelect: React.FC<ServiceSelectProps> = ({ services, form, onService
           <FormLabel>Serviço</FormLabel>
           <Select 
             onValueChange={(value) => {
+              console.log('[ServiceSelect] Serviço selecionado:', value);
               field.onChange(value);
               onServiceChange?.(value);
             }}
@@ -32,15 +35,21 @@ const ServiceSelect: React.FC<ServiceSelectProps> = ({ services, form, onService
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-stone-800 border-stone-600">
-              {services.map((service) => (
-                <SelectItem 
-                  key={service.id} 
-                  value={service.id || "no-id"}
-                  className="text-white hover:bg-stone-700"
-                >
-                  {service.name} - R$ {service.price} ({service.duration} min)
-                </SelectItem>
-              ))}
+              {services.length > 0 ? (
+                services.map((service) => (
+                  <SelectItem 
+                    key={service.id} 
+                    value={service.id || ""}
+                    className="text-white hover:bg-stone-700"
+                  >
+                    {service.name} - R$ {service.price?.toFixed(2)} ({service.duration} min)
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-1 text-sm text-stone-400">
+                  Nenhum serviço disponível
+                </div>
+              )}
             </SelectContent>
           </Select>
           <FormMessage />
