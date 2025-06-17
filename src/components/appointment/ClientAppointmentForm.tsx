@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -68,7 +69,6 @@ export default function ClientAppointmentForm({
         description: appointmentId 
           ? 'Agendamento atualizado com sucesso!' 
           : 'Agendamento realizado com sucesso!',
-        variant: 'success',
       });
       onSuccess?.();
     } catch (err) {

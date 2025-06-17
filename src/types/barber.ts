@@ -1,3 +1,4 @@
+
 // src/types/barber.ts
 export interface Staff {
   id: string;
@@ -16,3 +17,6 @@ export interface Staff {
   /** @deprecated */
   uuid_id?: string; // Marcado como deprecated
 }
+
+// Export Barber as an alias for Staff to maintain backward compatibility
+export type Barber = Staff;

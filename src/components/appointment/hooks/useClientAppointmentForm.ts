@@ -18,8 +18,9 @@ interface InitialAppointmentData {
   notes: string;
 }
 
-export const useClientAppointmentForm = (clientId: string, initialData?: InitialAppointmentData) => {
+export const useClientAppointmentForm = (clientId: string, initialData?: InitialAppointmentData, onSuccess?: () => void) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(appointmentSchema),
@@ -131,6 +132,7 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
       form.setValue('discountAmount', 0);
       removeCoupon();
     },
+    error,
   };
 };
 
