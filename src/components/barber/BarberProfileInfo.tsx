@@ -36,8 +36,8 @@ const BarberProfileInfo: React.FC = () => {
             email: data.email ?? '',
             phone: data.phone ?? '',
             image_url: data.image_url ?? '',
-            specialties: data.specialties ?? '',
-            experience: data.experience ?? '',
+            specialties: data.specialties ?? '', // Keep as string
+            experience: data.experience ?? '', // Keep as string
             commission_rate: data.commission_rate ?? 0,
             is_active: data.is_active ?? true,
             role: data.role ?? 'barber',
