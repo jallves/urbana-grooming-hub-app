@@ -36,11 +36,11 @@ export const useClientFormData = (clientName: string = '') => {
     },
   });
 
-  // Fetch services
+  // Fetch services - agora sem autenticação necessária
   const { data: services = [], isLoading: isLoadingServices } = useQuery({
-    queryKey: ['client-services'],
+    queryKey: ['public-services'],
     queryFn: async () => {
-      console.log('[useClientFormData] Buscando serviços...');
+      console.log('[useClientFormData] Buscando serviços públicos...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
@@ -49,7 +49,7 @@ export const useClientFormData = (clientName: string = '') => {
       
       if (error) {
         console.error('[useClientFormData] Erro ao buscar serviços:', error);
-        throw new Error(error.message);
+        throw new Error(`Erro ao carregar serviços: ${error.message}`);
       }
       
       console.log('[useClientFormData] Serviços encontrados:', data);
@@ -57,9 +57,9 @@ export const useClientFormData = (clientName: string = '') => {
     },
   });
 
-  // Fetch staff (barbeiros) - corrigindo para usar apenas a tabela staff
+  // Fetch staff (barbeiros) - agora sem autenticação necessária
   const { data: staffMembers = [], isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['client-staff'],
+    queryKey: ['public-staff'],
     queryFn: async () => {
       console.log('[useClientFormData] Buscando barbeiros da tabela staff...');
       const { data, error } = await supabase
@@ -70,7 +70,7 @@ export const useClientFormData = (clientName: string = '') => {
         
       if (error) {
         console.error('[useClientFormData] Erro ao buscar barbeiros da tabela staff:', error);
-        throw new Error(error.message);
+        throw new Error(`Erro ao carregar barbeiros: ${error.message}`);
       }
       
       console.log('[useClientFormData] Barbeiros encontrados na tabela staff:', data);

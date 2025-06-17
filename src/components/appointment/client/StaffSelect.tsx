@@ -22,8 +22,28 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
     staffMembersCount: staffMembers.length,
     barberAvailabilityCount: barberAvailability.length,
     isCheckingAvailability,
-    staffMembers: staffMembers.slice(0, 3) // Log apenas os primeiros 3 para debug
+    staffMembers: staffMembers.slice(0, 3)
   });
+
+  if (staffMembers.length === 0) {
+    return (
+      <FormField
+        control={form.control}
+        name="staff_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Barbeiro</FormLabel>
+            <FormControl>
+              <div className="p-3 bg-stone-700 border border-stone-600 rounded text-stone-400 text-center">
+                Carregando barbeiros...
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  }
 
   // Se não há dados de disponibilidade ainda, mostrar todos os barbeiros como disponíveis
   const shouldShowAvailability = barberAvailability.length > 0;
@@ -73,66 +93,58 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-stone-800 border-stone-600">
-              {staffMembers.length > 0 ? (
-                <>
-                  {/* Barbeiros disponíveis */}
-                  {availableStaff.map((staff) => {
-                    const staffMember = staffMembers.find(s => s.id === staff.id);
-                    if (!staffMember) return null;
-                    
-                    return (
-                      <SelectItem 
-                        key={staff.id} 
-                        value={staff.id}
-                        className="text-white hover:bg-stone-700"
-                      >
-                        <div className="flex flex-col w-full">
-                          <div className="flex items-center justify-between w-full">
-                            <span>{staff.name}</span>
-                            {shouldShowAvailability && (
-                              <span className="text-green-400 text-xs ml-2">✅ Disponível</span>
-                            )}
-                          </div>
-                          {staffMember.specialties && (
-                            <div className="text-xs text-stone-400 mt-1">
-                              {staffMember.specialties}
-                            </div>
-                          )}
+              {/* Barbeiros disponíveis */}
+              {availableStaff.map((staff) => {
+                const staffMember = staffMembers.find(s => s.id === staff.id);
+                if (!staffMember) return null;
+                
+                return (
+                  <SelectItem 
+                    key={staff.id} 
+                    value={staff.id}
+                    className="text-white hover:bg-stone-700"
+                  >
+                    <div className="flex flex-col w-full">
+                      <div className="flex items-center justify-between w-full">
+                        <span>{staff.name}</span>
+                        {shouldShowAvailability && (
+                          <span className="text-green-400 text-xs ml-2">✅ Disponível</span>
+                        )}
+                      </div>
+                      {staffMember.specialties && (
+                        <div className="text-xs text-stone-400 mt-1">
+                          {staffMember.specialties}
                         </div>
-                      </SelectItem>
-                    );
-                  })}
-
-                  {/* Barbeiros indisponíveis (apenas se houver dados de disponibilidade) */}
-                  {shouldShowAvailability && unavailableStaff.map((staff) => {
-                    const staffMember = staffMembers.find(s => s.id === staff.id);
-                    if (!staffMember) return null;
-                    
-                    return (
-                      <SelectItem
-                        key={staff.id}
-                        value={staff.id}
-                        disabled
-                        className="opacity-50 text-stone-400"
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span>{staff.name}</span>
-                          <span className="text-red-400 text-xs ml-2">❌ Indisponível</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-
-                  {/* Mensagem quando nenhum barbeiro está disponível */}
-                  {shouldShowAvailability && availableStaff.length === 0 && unavailableStaff.length > 0 && (
-                    <div className="px-2 py-1 text-sm text-red-400">
-                      Nenhum barbeiro disponível neste horário
+                      )}
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="px-2 py-1 text-sm text-stone-400">
-                  {isCheckingAvailability ? 'Verificando barbeiros...' : 'Carregando barbeiros...'}
+                  </SelectItem>
+                );
+              })}
+
+              {/* Barbeiros indisponíveis (apenas se houver dados de disponibilidade) */}
+              {shouldShowAvailability && unavailableStaff.map((staff) => {
+                const staffMember = staffMembers.find(s => s.id === staff.id);
+                if (!staffMember) return null;
+                
+                return (
+                  <SelectItem
+                    key={staff.id}
+                    value={staff.id}
+                    disabled
+                    className="opacity-50 text-stone-400"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span>{staff.name}</span>
+                      <span className="text-red-400 text-xs ml-2">❌ Indisponível</span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
+
+              {/* Mensagem quando nenhum barbeiro está disponível */}
+              {shouldShowAvailability && availableStaff.length === 0 && unavailableStaff.length > 0 && (
+                <div className="px-2 py-1 text-sm text-red-400">
+                  Nenhum barbeiro disponível neste horário
                 </div>
               )}
             </SelectContent>
