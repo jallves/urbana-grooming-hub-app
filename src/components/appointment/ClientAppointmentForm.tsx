@@ -72,8 +72,16 @@ export default function ClientAppointmentForm({
     submitLoading,
     servicesCount: services.length,
     staffCount: staffMembers.length,
-    selectedService: selectedService?.name
+    selectedService: selectedService?.name,
+    barberAvailabilityCount: barberAvailability.length
   });
+
+  // Debug: Log dos barbeiros recebidos
+  React.useEffect(() => {
+    if (staffMembers.length > 0) {
+      console.log('[ClientAppointmentForm] Barbeiros carregados:', staffMembers);
+    }
+  }, [staffMembers]);
 
   const handleSubmit = async (data: any) => {
     try {
@@ -118,6 +126,7 @@ export default function ClientAppointmentForm({
       
       // Check barber availability if time is also selected
       if (time) {
+        console.log('[ClientAppointmentForm] Verificando disponibilidade com staffMembers:', staffMembers.length);
         checkBarberAvailability(date, time, serviceId, staffMembers);
       }
     }
@@ -130,7 +139,8 @@ export default function ClientAppointmentForm({
         console.log('[ClientAppointmentForm] Verificando disponibilidade para:', {
           date: value.date,
           time: value.time,
-          serviceId: value.service_id
+          serviceId: value.service_id,
+          staffCount: staffMembers.length
         });
         checkBarberAvailability(value.date, value.time, value.service_id, staffMembers);
       }

@@ -57,7 +57,7 @@ export const useClientFormData = (clientName: string = '') => {
     },
   });
 
-  // Fetch staff (barbeiros)
+  // Fetch staff (barbeiros) - removendo filtro desnecessário
   const { data: staffMembers = [], isLoading: isLoadingStaff } = useQuery({
     queryKey: ['client-staff'],
     queryFn: async () => {
@@ -66,7 +66,6 @@ export const useClientFormData = (clientName: string = '') => {
         .from('staff')
         .select('*')
         .eq('is_active', true)
-        .eq('role', 'barber')
         .order('name');
         
       if (error) {
@@ -75,6 +74,18 @@ export const useClientFormData = (clientName: string = '') => {
       }
       
       console.log('[useClientFormData] Barbeiros encontrados:', data);
+      console.log('[useClientFormData] Quantidade de barbeiros:', data?.length || 0);
+      
+      // Log detalhado de cada barbeiro
+      data?.forEach((barber, index) => {
+        console.log(`[useClientFormData] Barbeiro ${index + 1}:`, {
+          id: barber.id,
+          name: barber.name,
+          role: barber.role,
+          is_active: barber.is_active
+        });
+      });
+      
       return data as Staff[];
     },
   });
@@ -95,7 +106,9 @@ export const useClientFormData = (clientName: string = '') => {
     isLoading,
     servicesCount: services.length,
     staffCount: staffMembers.length,
-    selectedService: selectedService?.name
+    selectedService: selectedService?.name,
+    isLoadingServices,
+    isLoadingStaff
   });
 
   return {
