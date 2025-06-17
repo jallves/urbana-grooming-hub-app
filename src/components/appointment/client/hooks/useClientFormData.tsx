@@ -57,23 +57,23 @@ export const useClientFormData = (clientName: string = '') => {
     },
   });
 
-  // Fetch staff (barbeiros) - removendo filtro desnecessário
+  // Fetch staff (barbeiros) - corrigindo para usar apenas a tabela staff
   const { data: staffMembers = [], isLoading: isLoadingStaff } = useQuery({
     queryKey: ['client-staff'],
     queryFn: async () => {
-      console.log('[useClientFormData] Buscando barbeiros...');
+      console.log('[useClientFormData] Buscando barbeiros da tabela staff...');
       const { data, error } = await supabase
         .from('staff')
-        .select('*')
+        .select('id, name, email, phone, image_url, specialties, experience, commission_rate, is_active, role, created_at, updated_at')
         .eq('is_active', true)
         .order('name');
         
       if (error) {
-        console.error('[useClientFormData] Erro ao buscar barbeiros:', error);
+        console.error('[useClientFormData] Erro ao buscar barbeiros da tabela staff:', error);
         throw new Error(error.message);
       }
       
-      console.log('[useClientFormData] Barbeiros encontrados:', data);
+      console.log('[useClientFormData] Barbeiros encontrados na tabela staff:', data);
       console.log('[useClientFormData] Quantidade de barbeiros:', data?.length || 0);
       
       // Log detalhado de cada barbeiro
@@ -82,7 +82,8 @@ export const useClientFormData = (clientName: string = '') => {
           id: barber.id,
           name: barber.name,
           role: barber.role,
-          is_active: barber.is_active
+          is_active: barber.is_active,
+          specialties: barber.specialties
         });
       });
       
