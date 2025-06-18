@@ -36,7 +36,7 @@ export const useClientFormData = (clientName: string = '') => {
     },
   });
 
-  // Fetch services - agora sem autenticação necessária
+  // Buscar serviços - agora com acesso público através das políticas RLS
   const { data: services = [], isLoading: isLoadingServices } = useQuery({
     queryKey: ['public-services'],
     queryFn: async () => {
@@ -57,7 +57,7 @@ export const useClientFormData = (clientName: string = '') => {
     },
   });
 
-  // Fetch staff (barbeiros) - agora sem autenticação necessária
+  // Buscar barbeiros da tabela staff - agora com acesso público através das políticas RLS
   const { data: staffMembers = [], isLoading: isLoadingStaff } = useQuery({
     queryKey: ['public-staff'],
     queryFn: async () => {
@@ -66,6 +66,7 @@ export const useClientFormData = (clientName: string = '') => {
         .from('staff')
         .select('id, name, email, phone, image_url, specialties, experience, commission_rate, is_active, role, created_at, updated_at')
         .eq('is_active', true)
+        .eq('role', 'barber')
         .order('name');
         
       if (error) {
