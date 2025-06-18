@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
@@ -29,6 +30,7 @@ import AdminMarketing from '@/pages/AdminMarketing';
 import AdminAnalytics from '@/pages/AdminAnalytics';
 import AdminSupport from '@/pages/AdminSupport';
 import AdminSettings from '@/pages/AdminSettings';
+import AdminBookingSettings from '@/pages/AdminBookingSettings';
 
 // Barber pages
 import BarberRoute from '@/components/auth/BarberRoute';
@@ -41,6 +43,7 @@ import BarberClients from '@/pages/BarberClients';
 import BarberModules from '@/pages/BarberModules';
 import BarberModuleAccess from '@/pages/BarberModuleAccess';
 import BarberAdminDashboard from '@/pages/BarberAdminDashboard';
+import BarberSchedule from '@/pages/BarberSchedule';
 
 // Client pages
 import ClientLogin from '@/pages/ClientLogin';
@@ -63,6 +66,7 @@ function App() {
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/agendamento" element={<AppointmentBooking />} />
+                <Route path="/agendar" element={<AppointmentBooking />} />
 
                 {/* Auth routes */}
                 <Route path="/auth" element={<Auth />} />
@@ -166,10 +170,17 @@ function App() {
                     </AdminRoute>
                   }
                 />
+                <Route
+                  path="/admin/configuracoes/agendamento"
+                  element={
+                    <AdminRoute>
+                      <AdminBookingSettings />
+                    </AdminRoute>
+                  }
+                />
 
                 {/* Barber routes */}
                 <Route path="/barbeiro/login" element={<BarberAuth />} />
-                {/* 👇 ADICIONA a rota raiz do painel barbeiro */}
                 <Route
                   path="/barbeiro"
                   element={
@@ -199,6 +210,14 @@ function App() {
                   element={
                     <BarberRoute>
                       <BarberAppointments />
+                    </BarberRoute>
+                  }
+                />
+                <Route
+                  path="/barbeiro/agenda"
+                  element={
+                    <BarberRoute>
+                      <BarberSchedule />
                     </BarberRoute>
                   }
                 />
