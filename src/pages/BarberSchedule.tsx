@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useBarberAuth } from '@/hooks/useBarberRoleCheck';
+import { useBarberAuth } from '@/hooks/useBarberAuth';
 import BarberLayout from '@/components/barber/BarberLayout';
 import BarberScheduleView from '@/components/barber/schedule/BarberScheduleView';
 import { LoaderPage } from '@/components/ui/loader-page';

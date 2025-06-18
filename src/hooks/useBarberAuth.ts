@@ -1,0 +1,66 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+
+interface BarberData {
+  id: string;
+  name: string;
+  email: string;
+  is_active: boolean;
+}
+
+export const useBarberAuth = () => {
+  const [barber, setBarber] = useState<BarberData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkBarberAuth();
+  }, []);
+
+  const checkBarberAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/barbeiro/login');
+        return;
+      }
+
+      const { data: staffData, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('email', user.email)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !staffData) {
+        console.error('Erro ao verificar barbeiro:', error);
+        toast({
+          title: "Acesso negado",
+          description: "Você não tem permissão para acessar o painel do barbeiro",
+          variant: "destructive",
+        });
+        await supabase.auth.signOut();
+        navigate('/barbeiro/login');
+        return;
+      }
+
+      setBarber(staffData);
+    } catch (error) {
+      console.error('Erro na autenticação do barbeiro:', error);
+      navigate('/barbeiro/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    barber,
+    loading,
+    checkBarberAuth
+  };
+};

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, Calendar, AlertCircle, Save } from 'lucide-react';
+import { Clock, Calendar, Save } from 'lucide-react';
 
 interface BusinessHours {
   monday: { start: string; end: string; closed?: boolean };
@@ -53,7 +53,11 @@ const BookingSettings: React.FC = () => {
 
       data?.forEach(({ setting_key, setting_value }) => {
         if (setting_key === 'business_hours') {
-          setBusinessHours(setting_value as BusinessHours);
+          // Safe type conversion with proper checking
+          const hours = setting_value as unknown;
+          if (hours && typeof hours === 'object') {
+            setBusinessHours(hours as BusinessHours);
+          }
         } else if (setting_key === 'appointment_interval') {
           setSettings(prev => ({ ...prev, appointmentInterval: setting_value as string }));
         } else if (setting_key === 'advance_booking_days') {
@@ -77,12 +81,12 @@ const BookingSettings: React.FC = () => {
   const saveSettings = async () => {
     setLoading(true);
     try {
-      // Salvar horários de funcionamento
+      // Salvar horários de funcionamento - convert to JSON-compatible format
       await supabase
         .from('booking_settings')
         .upsert({
           setting_key: 'business_hours',
-          setting_value: businessHours
+          setting_value: businessHours as unknown as any
         });
 
       // Salvar outras configurações
@@ -98,7 +102,7 @@ const BookingSettings: React.FC = () => {
           .from('booking_settings')
           .upsert({
             setting_key: setting.key,
-            setting_value: setting.value
+            setting_value: setting.value as unknown as any
           });
       }
 
