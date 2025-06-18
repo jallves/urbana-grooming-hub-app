@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -25,8 +24,6 @@ export default function AppointmentBooking() {
     
     setLoading(true);
     try {
-      console.log('Fetching client for user:', user.email);
-      
       // Search for existing client
       const { data, error } = await supabase
         .from('clients')
@@ -34,16 +31,11 @@ export default function AppointmentBooking() {
         .eq('email', user.email)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching client:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (data) {
-        console.log('Client found:', data.id);
         setClientId(data.id);
       } else {
-        console.log('No client found, creating new one');
         // Create new client if not found
         const { data: createdClient, error: clientError } = await supabase
           .from('clients')
@@ -55,16 +47,10 @@ export default function AppointmentBooking() {
           .select('id')
           .single();
         
-        if (clientError) {
-          console.error('Error creating client:', clientError);
-          throw clientError;
-        }
-        
-        console.log('Client created:', createdClient.id);
+        if (clientError) throw clientError;
         setClientId(createdClient.id);
       }
     } catch (error: any) {
-      console.error('Error in fetchClientId:', error);
       toast({
         title: "Erro ao buscar informações do cliente",
         description: error.message || "Não foi possível carregar suas informações. Por favor, tente novamente.",
@@ -79,74 +65,110 @@ export default function AppointmentBooking() {
     if (!authLoading && user && user.email) {
       fetchClientId();
     }
-  }, [authLoading, user?.email]); // Remove fetchClientId from dependencies
+  }, [authLoading, user?.email]);
 
-  // Handle successful login
   const handleLoginSuccess = useCallback(() => {
-    console.log('Login successful, switching to appointment form');
     setActiveTab("appointment");
   }, []);
 
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin h-12 w-12 border-t-2 border-b-2 border-urbana-gold rounded-full"></div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-12 w-12 bg-urbana-gold/20 rounded-full mx-auto"></div>
+          <div className="h-4 w-32 bg-urbana-gold/10 rounded mx-auto"></div>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-background pt-20 pb-10 px-4">
-      <div className="container mx-auto max-w-4xl">
+    <div className="min-h-screen bg-gradient-to-b from-background to-urbana-black/5 pt-16 pb-12 px-4">
+      <div className="container mx-auto max-w-3xl">
         <Button 
-          variant="outline" 
-          className="mb-6" 
+          variant="ghost" 
+          className="mb-8 -ml-2 group hover:bg-urbana-gold/10 transition-colors"
           onClick={() => navigate('/')}
         >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar para Home
+          <ArrowLeft className="mr-2 h-4 w-4 text-urbana-gold group-hover:translate-x-[-2px] transition-transform" />
+          <span className="text-urbana-gold">Voltar para Home</span>
         </Button>
         
-        <Card className="shadow-lg">
-          <CardHeader className="bg-urbana-black text-white text-center">
-            <CalendarDays className="h-12 w-12 text-urbana-gold mx-auto mb-2" />
-            <CardTitle className="text-2xl font-bold">Agendar Horário</CardTitle>
-            <CardDescription className="text-gray-300">
-              Escolha os serviços, profissional e horário disponíveis
-            </CardDescription>
+        <Card className="shadow-2xl border-urbana-gold/20 overflow-hidden">
+          <CardHeader className="bg-urbana-black text-white relative pb-12">
+            <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-urbana-gold/10"></div>
+            <div className="relative z-10 text-center">
+              <CalendarDays className="h-12 w-12 text-urbana-gold mx-auto mb-3" />
+              <CardTitle className="text-3xl font-bold tracking-tight">Agendar Horário</CardTitle>
+              <CardDescription className="text-gray-300/90 mt-2">
+                Escolha os serviços, profissional e horário disponíveis
+              </CardDescription>
+            </div>
           </CardHeader>
-          <CardContent className="pt-6">
+          
+          <CardContent className="pt-8 px-6 pb-6">
             {user && clientId ? (
               <ClientAppointmentForm clientId={clientId} />
             ) : (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="login">Entrar</TabsTrigger>
-                  <TabsTrigger value="register">Cadastrar</TabsTrigger>
-                </TabsList>
+              <div className="space-y-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 bg-urbana-black/5 p-1 rounded-lg">
+                    <TabsTrigger 
+                      value="login" 
+                      className="data-[state=active]:bg-urbana-gold data-[state=active]:text-white rounded-md transition-colors"
+                    >
+                      Entrar
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="register" 
+                      className="data-[state=active]:bg-urbana-gold data-[state=active]:text-white rounded-md transition-colors"
+                    >
+                      Cadastrar
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="login" className="pt-4">
+                    <LoginForm 
+                      loading={loginLoading} 
+                      setLoading={setLoginLoading} 
+                      onLoginSuccess={handleLoginSuccess} 
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="register" className="pt-4">
+                    <div className="space-y-4">
+                      <p className="text-center text-sm text-muted-foreground">
+                        Cadastre-se para agendar seu horário
+                      </p>
+                      <Button 
+                        className="w-full bg-urbana-gold hover:bg-urbana-gold/90 h-11 rounded-lg shadow-sm transition-all hover:shadow-urbana-gold/20"
+                        onClick={() => navigate('/register')}
+                      >
+                        Criar Cadastro
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
                 
-                <TabsContent value="login">
-                  <div className="text-center py-2 mb-4">
-                    <p>Entre com seus dados para agendar</p>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-urbana-gold/10"></span>
                   </div>
-                  <LoginForm 
-                    loading={loginLoading} 
-                    setLoading={setLoginLoading} 
-                    onLoginSuccess={handleLoginSuccess} 
-                  />
-                </TabsContent>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Agilize seu atendimento
+                    </span>
+                  </div>
+                </div>
                 
-                <TabsContent value="register">
-                  <div className="text-center py-2 mb-4">
-                    <p>Cadastre-se para agendar seu horário</p>
-                  </div>
-                  <Button 
-                    className="w-full bg-urbana-gold hover:bg-urbana-gold/90" 
-                    onClick={() => navigate('/register')}
-                  >
-                    Criar Cadastro
-                  </Button>
-                </TabsContent>
-              </Tabs>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/5 hover:border-urbana-gold/50"
+                  onClick={() => navigate('/contact')}
+                >
+                  Precisa de ajuda?
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
