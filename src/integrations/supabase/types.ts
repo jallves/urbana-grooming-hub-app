@@ -486,6 +486,33 @@ export type Database = {
           },
         ]
       }
+      booking_settings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       business_hours: {
         Row: {
           created_at: string | null
@@ -2429,6 +2456,50 @@ export type Database = {
           },
         ]
       }
+      time_off: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: string
+          is_recurring: boolean | null
+          reason: string | null
+          staff_id: string | null
+          start_date: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: string
+          is_recurring?: boolean | null
+          reason?: string | null
+          staff_id?: string | null
+          start_date: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          is_recurring?: boolean | null
+          reason?: string | null
+          staff_id?: string | null
+          start_date?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_off_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2449,6 +2520,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      working_hours: {
+        Row: {
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean | null
+          staff_id: string | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          staff_id?: string | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          staff_id?: string | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "working_hours_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -2481,9 +2593,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_time_slot_availability: {
+        Args: {
+          p_staff_id: string
+          p_date: string
+          p_start_time: string
+          p_duration: number
+        }
+        Returns: boolean
+      }
       clean_expired_client_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_available_time_slots: {
+        Args: { p_staff_id: string; p_date: string; p_service_duration: number }
+        Returns: {
+          time_slot: string
+        }[]
       }
       get_birthday_clients: {
         Args: { target_month?: number }
