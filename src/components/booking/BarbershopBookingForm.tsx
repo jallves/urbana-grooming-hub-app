@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, Clock, User, Scissors, Loader2, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
@@ -19,6 +19,17 @@ interface State {
   barberId: string;
 }
 
+interface Service {
+  id: string;
+  name: string;
+  duration: number;
+}
+
+interface Barber {
+  id: string;
+  name: string;
+}
+
 export default function BarbershopBookingForm() {
   // Form state
   const [step, setStep] = useState<Step>("service");
@@ -29,13 +40,18 @@ export default function BarbershopBookingForm() {
     barberId: "",
   });
   
-  const services = mockServices;
-  const barbers = mockBarbers;
+  const services: Service[] = mockServices;
+  const barbers: Barber[] = mockBarbers;
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [availableBarbers, setAvailableBarbers] = useState<typeof barbers>([]);
+  const [availableBarbers, setAvailableBarbers] = useState<Barber[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [bookingData, setBookingData] = useState<any>(null);
+  const [bookingData, setBookingData] = useState<{
+    service?: Service;
+    date?: Date | null;
+    time?: string;
+    barber?: Barber;
+  } | null>(null);
   const [noBarberMsg, setNoBarberMsg] = useState("");
 
   // Time intervals from 8:00 to 20:00 every 30 minutes
@@ -145,7 +161,10 @@ export default function BarbershopBookingForm() {
         </CardHeader>
 
         <div className="px-6 pb-2">
-          <Progress value={progressValue} className="h-2 bg-stone-800" indicatorClassName="bg-amber-500" />
+          <Progress 
+            value={progressValue} 
+            className="h-2 bg-stone-800 [&>div]:bg-amber-500" 
+          />
           {step !== "confirm" && (
             <p className="text-xs text-amber-400 mt-2 font-medium">
               Etapa: {(
