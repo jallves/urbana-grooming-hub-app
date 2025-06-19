@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, Users, DollarSign, Settings, BarChart2, Menu, X, Scissors } from 'lucide-react';
+import { Calendar, Users, DollarSign, Settings, BarChart2, Menu, X, Scissors, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -21,6 +21,11 @@ const BarberSidebar: React.FC = () => {
       name: 'Agendamentos', 
       href: '/barbeiro/agendamentos', 
       icon: <Calendar className="h-5 w-5" />
+    },
+    { 
+      name: 'Minha Agenda', 
+      href: '/barbeiro/agenda', 
+      icon: <Clock className="h-5 w-5" />
     },
     { 
       name: 'Clientes', 
