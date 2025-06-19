@@ -403,6 +403,50 @@ export type Database = {
           },
         ]
       }
+      barber_availability: {
+        Row: {
+          barber_id: string
+          created_at: string | null
+          date: string
+          end_time: string
+          id: string
+          is_available: boolean
+          reason: string | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string | null
+          date: string
+          end_time: string
+          id?: string
+          is_available?: boolean
+          reason?: string | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string | null
+          date?: string
+          end_time?: string
+          id?: string
+          is_available?: boolean
+          reason?: string | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_availability_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barber_commissions: {
         Row: {
           amount: number
@@ -2528,7 +2572,7 @@ export type Database = {
           end_time: string
           id: string
           is_active: boolean | null
-          staff_id: string | null
+          staff_id: string
           start_time: string
           updated_at: string | null
         }
@@ -2538,7 +2582,7 @@ export type Database = {
           end_time: string
           id?: string
           is_active?: boolean | null
-          staff_id?: string | null
+          staff_id: string
           start_time: string
           updated_at?: string | null
         }
@@ -2548,7 +2592,7 @@ export type Database = {
           end_time?: string
           id?: string
           is_active?: boolean | null
-          staff_id?: string | null
+          staff_id?: string
           start_time?: string
           updated_at?: string | null
         }
@@ -2581,6 +2625,15 @@ export type Database = {
           p_start_time: string
           p_end_time: string
           p_exclude_appointment_id?: string
+        }
+        Returns: boolean
+      }
+      check_barber_availability: {
+        Args: {
+          p_barber_id: string
+          p_date: string
+          p_start_time: string
+          p_duration_minutes: number
         }
         Returns: boolean
       }

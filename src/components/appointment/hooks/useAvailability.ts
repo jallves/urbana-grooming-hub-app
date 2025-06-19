@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,16 +18,47 @@ export const useAvailability = () => {
 
     setIsCheckingAvailability(true);
     try {
-      // Generate time slots from 8:00 to 20:00 in 30-minute intervals
-      const timeSlots = [];
-      for (let hour = 8; hour < 20; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-          const formattedHour = hour.toString().padStart(2, '0');
-          const formattedMinute = minute.toString().padStart(2, '0');
-          timeSlots.push(`${formattedHour}:${formattedMinute}`);
+      // Buscar duração do serviço
+      const { data: serviceData } = await supabase
+        .from('services')
+        .select('duration')
+        .eq('id', serviceId)
+        .single();
+
+      if (!serviceData) {
+        setAvailableTimes([]);
+        return;
+      }
+
+      // Buscar barbeiros ativos
+      const { data: activeBarbers } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('is_active', true)
+        .eq('role', 'barber');
+
+      if (!activeBarbers || activeBarbers.length === 0) {
+        setAvailableTimes([]);
+        return;
+      }
+
+      // Coletar todos os slots disponíveis de todos os barbeiros
+      const allSlots = new Set<string>();
+
+      for (const barber of activeBarbers) {
+        const { data: slots } = await supabase.rpc('get_available_time_slots', {
+          p_staff_id: barber.id,
+          p_date: date.toISOString().split('T')[0],
+          p_service_duration: serviceData.duration
+        });
+
+        if (slots) {
+          slots.forEach((slot: any) => allSlots.add(slot.time_slot));
         }
       }
 
+      // Converter para array e ordenar
+      const timeSlots = Array.from(allSlots).sort();
       setAvailableTimes(timeSlots);
     } catch (error) {
       console.error("Erro ao buscar horários disponíveis:", error);
@@ -63,7 +95,7 @@ export const useAvailability = () => {
           staffMembers = externalBarbers;
           console.log("[useAvailability] Usando array externo de barbeiros:", staffMembers);
         } else {
-          // Fallback: busca direto do banco (já usado somente se não passar nada)
+          // Fallback: busca direto do banco
           const { data: dbStaff, error: staffError } = await supabase
             .from("staff")
             .select("id, name, is_active, role")
@@ -96,48 +128,21 @@ export const useAvailability = () => {
         let serviceDuration = 60;
         if (!serviceError && serviceData) serviceDuration = serviceData.duration;
 
-        // Calcular horário de início e fim
-        const [hours, minutes] = time.split(":").map(Number);
-        const startTime = new Date(date);
-        startTime.setHours(hours, minutes, 0, 0);
-        const endTime = new Date(startTime);
-        endTime.setMinutes(endTime.getMinutes() + serviceDuration);
-
-        // Checar conflitos para cada barbeiro
+        // Verificar disponibilidade para cada barbeiro usando a função SQL
         const availability = await Promise.all(
           staffMembers.map(async (staff) => {
             try {
-              const startOfDay = new Date(startTime);
-              startOfDay.setHours(0, 0, 0, 0);
-              const endOfDay = new Date(startTime);
-              endOfDay.setHours(23, 59, 59, 999);
-
-              const { data: appointments, error: appointmentError } = await supabase
-                .from("appointments")
-                .select("id, start_time, end_time, status")
-                .eq("staff_id", staff.id)
-                .gte("start_time", startOfDay.toISOString())
-                .lte("start_time", endOfDay.toISOString())
-                .in("status", ["scheduled", "confirmed"]);
-
-              if (appointmentError) {
-                console.error(`Erro ao verificar agendamentos para ${staff.name}:`, appointmentError);
-                return { id: staff.id, name: staff.name, available: false };
-              }
-
-              let hasConflict = false;
-              if (appointments && appointments.length > 0) {
-                hasConflict = appointments.some((appointment) => {
-                  const appStart = new Date(appointment.start_time);
-                  const appEnd = new Date(appointment.end_time);
-                  return startTime < appEnd && endTime > appStart;
-                });
-              }
+              const { data: isAvailable } = await supabase.rpc('check_barber_availability', {
+                p_barber_id: staff.id,
+                p_date: date.toISOString().split('T')[0],
+                p_start_time: time,
+                p_duration_minutes: serviceDuration
+              });
 
               return {
                 id: staff.id,
                 name: staff.name,
-                available: !hasConflict,
+                available: Boolean(isAvailable),
               };
             } catch (error) {
               console.error(`Erro ao verificar disponibilidade para ${staff.name}:`, error);
