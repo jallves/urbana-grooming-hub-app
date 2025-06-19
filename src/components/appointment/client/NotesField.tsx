@@ -3,6 +3,7 @@ import React from 'react';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { UseFormReturn } from 'react-hook-form';
+import { MessageSquare } from 'lucide-react';
 
 interface NotesFieldProps {
   form: UseFormReturn<any>;
@@ -15,12 +16,16 @@ const NotesField: React.FC<NotesFieldProps> = ({ form }) => {
       name="notes"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Observações <span className="text-sm text-stone-400">(Opcional)</span></FormLabel>
+          <FormLabel className="text-white flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Observações (Opcional)
+          </FormLabel>
           <FormControl>
             <Textarea
-              placeholder="Alguma preferência especial ou observação..."
-              className="bg-stone-700 border-stone-600 text-white placeholder:text-stone-400 resize-none"
               {...field}
+              placeholder="Alguma observação especial ou preferência..."
+              className="bg-stone-700 border-stone-600 text-white placeholder:text-stone-400 resize-none"
+              rows={4}
             />
           </FormControl>
           <FormMessage />
