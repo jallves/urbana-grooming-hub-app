@@ -149,6 +149,12 @@ const BarbershopBookingForm: React.FC = () => {
       const selectedService = services.find(s => s.id === watchedServiceId);
       if (!selectedService) return;
 
+      console.log('Buscando horários disponíveis para:', {
+        staffId: watchedStaffId,
+        date: watchedDate.toISOString().split('T')[0],
+        duration: selectedService.duration
+      });
+
       const { data: slots, error } = await supabaseRPC.getAvailableTimeSlots(
         watchedStaffId,
         watchedDate.toISOString().split('T')[0],
@@ -165,18 +171,21 @@ const BarbershopBookingForm: React.FC = () => {
         setAvailableTimes([]);
       } else {
         const timeSlots = (slots || []).map((slot: any) => slot.time_slot);
+        console.log('Horários encontrados:', timeSlots);
         setAvailableTimes(timeSlots);
         
+        // Só mostrar mensagem se realmente não há horários, não como erro
         if (timeSlots.length === 0) {
-          toast({
-            title: "Sem horários disponíveis",
-            description: "Não há horários disponíveis para a data e barbeiro selecionados.",
-            variant: "destructive",
-          });
+          console.log('Nenhum horário disponível encontrado para esta combinação');
         }
       }
     } catch (error) {
       console.error('Erro ao verificar disponibilidade:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao verificar disponibilidade dos horários.",
+        variant: "destructive",
+      });
       setAvailableTimes([]);
     } finally {
       setCheckingAvailability(false);
@@ -535,7 +544,7 @@ const BarbershopBookingForm: React.FC = () => {
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
-                    disabled={!watchedDate || checkingAvailability || availableTimes.length === 0}
+                    disabled={!watchedDate || checkingAvailability}
                   >
                     <FormControl>
                       <SelectTrigger className="bg-stone-700 border-stone-600 text-white">
@@ -557,12 +566,17 @@ const BarbershopBookingForm: React.FC = () => {
                         <div className="px-2 py-1 text-sm text-stone-400">
                           {!watchedDate ? 'Selecione uma data primeiro' : 
                            checkingAvailability ? 'Verificando disponibilidade...' : 
-                           'Nenhum horário disponível'}
+                           'Sem horários disponíveis para esta data'}
                         </div>
                       )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                  {watchedDate && watchedServiceId && watchedStaffId && availableTimes.length === 0 && !checkingAvailability && (
+                    <p className="text-sm text-amber-400">
+                      Não há horários disponíveis para a data e barbeiro selecionados.
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
