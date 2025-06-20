@@ -87,6 +87,7 @@ const App = () => (
                 <Route path="/cliente/dashboard" element={<ClientDashboard />} />
                 <Route path="/cliente/perfil" element={<ClientProfile />} />
                 <Route path="/cliente/agendar" element={<ClientNewBooking />} />
+                <Route path="/cliente/novo-agendamento" element={<ClientNewBooking />} />
                 <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
                 
                 {/* Public Booking Routes */}
