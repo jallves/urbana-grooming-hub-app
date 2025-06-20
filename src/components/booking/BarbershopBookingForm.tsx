@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -155,6 +154,29 @@ const BarbershopBookingForm: React.FC = () => {
         duration: selectedService.duration
       });
 
+      // Primeiro, verificar se o barbeiro tem horário de trabalho configurado
+      const { data: workingHours, error: workingHoursError } = await supabase
+        .from('working_hours')
+        .select('*')
+        .eq('staff_id', watchedStaffId)
+        .eq('day_of_week', watchedDate.getDay())
+        .eq('is_active', true);
+
+      console.log('Horários de trabalho encontrados:', workingHours);
+
+      if (workingHoursError) {
+        console.error('Erro ao buscar horários de trabalho:', workingHoursError);
+      }
+
+      // Se não há horários de trabalho configurados, gerar horários padrão
+      if (!workingHours || workingHours.length === 0) {
+        console.log('Nenhum horário de trabalho configurado, usando horários padrão');
+        const defaultTimes = generateDefaultTimeSlots(selectedService.duration);
+        setAvailableTimes(defaultTimes);
+        return;
+      }
+
+      // Tentar usar a função RPC primeiro
       const { data: slots, error } = await supabaseRPC.getAvailableTimeSlots(
         watchedStaffId,
         watchedDate.toISOString().split('T')[0],
@@ -162,34 +184,127 @@ const BarbershopBookingForm: React.FC = () => {
       );
 
       if (error) {
-        console.error('Erro ao buscar horários:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os horários disponíveis.",
-          variant: "destructive",
-        });
-        setAvailableTimes([]);
+        console.error('Erro ao buscar horários via RPC:', error);
+        // Fallback: gerar horários manualmente
+        const manualSlots = await generateManualTimeSlots(
+          watchedStaffId, 
+          watchedDate, 
+          selectedService.duration,
+          workingHours[0]
+        );
+        setAvailableTimes(manualSlots);
       } else {
         const timeSlots = (slots || []).map((slot: any) => slot.time_slot);
-        console.log('Horários encontrados:', timeSlots);
-        setAvailableTimes(timeSlots);
+        console.log('Horários encontrados via RPC:', timeSlots);
         
-        // Só mostrar mensagem se realmente não há horários, não como erro
         if (timeSlots.length === 0) {
-          console.log('Nenhum horário disponível encontrado para esta combinação');
+          console.log('RPC retornou array vazio, tentando geração manual');
+          const manualSlots = await generateManualTimeSlots(
+            watchedStaffId, 
+            watchedDate, 
+            selectedService.duration,
+            workingHours[0]
+          );
+          setAvailableTimes(manualSlots);
+        } else {
+          setAvailableTimes(timeSlots);
         }
       }
     } catch (error) {
       console.error('Erro ao verificar disponibilidade:', error);
+      // Como fallback, gerar horários básicos
+      const fallbackTimes = generateDefaultTimeSlots(30); // 30 min padrão
+      setAvailableTimes(fallbackTimes);
+      
       toast({
-        title: "Erro",
-        description: "Erro ao verificar disponibilidade dos horários.",
+        title: "Aviso",
+        description: "Usando horários padrão devido a erro na verificação de disponibilidade.",
         variant: "destructive",
       });
-      setAvailableTimes([]);
     } finally {
       setCheckingAvailability(false);
     }
+  };
+
+  const generateDefaultTimeSlots = (serviceDuration: number): string[] => {
+    const slots: string[] = [];
+    const startHour = 9; // 9:00
+    const endHour = 18; // 18:00
+    const intervalMinutes = 30;
+
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += intervalMinutes) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        // Verificar se há tempo suficiente para o serviço
+        const currentTime = hour * 60 + minute;
+        const endTime = currentTime + serviceDuration;
+        const endHourCheck = Math.floor(endTime / 60);
+        
+        if (endHourCheck <= endHour) {
+          slots.push(timeString);
+        }
+      }
+    }
+
+    console.log('Horários padrão gerados:', slots);
+    return slots;
+  };
+
+  const generateManualTimeSlots = async (
+    staffId: string, 
+    date: Date, 
+    serviceDuration: number,
+    workingHour: any
+  ): Promise<string[]> => {
+    const slots: string[] = [];
+    const intervalMinutes = 30;
+
+    // Converter horários de trabalho para minutos
+    const [startHour, startMinute] = workingHour.start_time.split(':').map(Number);
+    const [endHour, endMinute] = workingHour.end_time.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+
+    console.log(`Gerando horários manuais de ${workingHour.start_time} até ${workingHour.end_time}`);
+
+    // Buscar agendamentos existentes para o dia
+    const { data: existingAppointments } = await supabase
+      .from('appointments')
+      .select('start_time, end_time')
+      .eq('staff_id', staffId)
+      .gte('start_time', date.toISOString().split('T')[0] + ' 00:00:00')
+      .lt('start_time', date.toISOString().split('T')[0] + ' 23:59:59')
+      .in('status', ['scheduled', 'confirmed']);
+
+    console.log('Agendamentos existentes:', existingAppointments);
+
+    for (let currentMinutes = startMinutes; currentMinutes + serviceDuration <= endMinutes; currentMinutes += intervalMinutes) {
+      const hour = Math.floor(currentMinutes / 60);
+      const minute = currentMinutes % 60;
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      
+      // Verificar conflitos com agendamentos existentes
+      const slotStart = new Date(date);
+      slotStart.setHours(hour, minute, 0, 0);
+      
+      const slotEnd = new Date(slotStart);
+      slotEnd.setMinutes(slotEnd.getMinutes() + serviceDuration);
+
+      const hasConflict = existingAppointments?.some(appointment => {
+        const appStart = new Date(appointment.start_time);
+        const appEnd = new Date(appointment.end_time);
+        return slotStart < appEnd && slotEnd > appStart;
+      });
+
+      if (!hasConflict) {
+        slots.push(timeString);
+      }
+    }
+
+    console.log('Horários manuais gerados:', slots);
+    return slots;
   };
 
   const isDateDisabled = (date: Date) => {
@@ -574,7 +689,7 @@ const BarbershopBookingForm: React.FC = () => {
                   <FormMessage />
                   {watchedDate && watchedServiceId && watchedStaffId && availableTimes.length === 0 && !checkingAvailability && (
                     <p className="text-sm text-amber-400">
-                      Não há horários disponíveis para a data e barbeiro selecionados.
+                      Verifique se o barbeiro tem horários de trabalho configurados para esta dia da semana.
                     </p>
                   )}
                 </FormItem>
