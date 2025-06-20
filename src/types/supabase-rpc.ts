@@ -8,7 +8,8 @@ type RpcFunctionName =
   | 'create_public_client'
   | 'create_public_appointment'
   | 'add_barber_user'
-  | 'has_role';
+  | 'has_role'
+  | 'get_available_time_slots';
 
 export const supabaseRPC = {
   getStaffModuleAccess: async (staffId: string) => {
@@ -46,8 +47,7 @@ export const supabaseRPC = {
   
   createPublicClient: async (clientName: string, clientPhone: string, clientEmail: string | null) => {
     try {
-      // Use type assertion with 'as any' to bypass TypeScript constraint
-      const { data, error } = await (supabase.rpc as any)('create_public_client', {
+      const { data, error } = await supabase.rpc('create_public_client', {
         client_name: clientName,
         client_phone: clientPhone, 
         client_email: clientEmail
@@ -66,14 +66,13 @@ export const supabaseRPC = {
   createPublicAppointment: async (
     clientId: string,
     serviceId: string,
-    staffId: string | null,
+    staffId: string,
     startTime: string,
     endTime: string,
     notes: string | null
   ) => {
     try {
-      // Use type assertion with 'as any' to bypass TypeScript constraint
-      const { data, error } = await (supabase.rpc as any)('create_public_appointment', {
+      const { data, error } = await supabase.rpc('create_public_appointment', {
         p_client_id: clientId,
         p_service_id: serviceId,
         p_staff_id: staffId,
@@ -88,6 +87,24 @@ export const supabaseRPC = {
       return { 
         data: null, 
         error: new Error('Failed to create appointment') 
+      };
+    }
+  },
+
+  getAvailableTimeSlots: async (staffId: string, date: string, serviceDuration: number) => {
+    try {
+      const { data, error } = await supabase.rpc('get_available_time_slots', {
+        p_staff_id: staffId,
+        p_date: date,
+        p_service_duration: serviceDuration
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Error in getAvailableTimeSlots RPC:', error);
+      return { 
+        data: null, 
+        error: new Error('Failed to get available time slots') 
       };
     }
   }

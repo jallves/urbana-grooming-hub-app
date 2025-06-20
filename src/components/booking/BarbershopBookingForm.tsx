@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseRPC } from '@/types/supabase-rpc';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -148,11 +148,11 @@ const BarbershopBookingForm: React.FC = () => {
       const selectedService = services.find(s => s.id === watchedServiceId);
       if (!selectedService) return;
 
-      const { data: slots, error } = await supabase.rpc('get_available_time_slots', {
-        p_staff_id: watchedStaffId,
-        p_date: watchedDate.toISOString().split('T')[0],
-        p_service_duration: selectedService.duration
-      });
+      const { data: slots, error } = await supabaseRPC.getAvailableTimeSlots(
+        watchedStaffId,
+        watchedDate.toISOString().split('T')[0],
+        selectedService.duration
+      );
 
       if (error) {
         console.error('Erro ao buscar horários:', error);
@@ -204,13 +204,10 @@ const BarbershopBookingForm: React.FC = () => {
       }
 
       // Criar ou encontrar cliente
-      const { data: clientId, error: clientError } = await supabase.rpc(
-        'create_public_client',
-        {
-          client_name: data.name,
-          client_phone: data.phone,
-          client_email: data.email || null
-        }
+      const { data: clientId, error: clientError } = await supabaseRPC.createPublicClient(
+        data.name,
+        data.phone,
+        data.email || null
       );
 
       if (clientError) {
@@ -227,16 +224,13 @@ const BarbershopBookingForm: React.FC = () => {
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
       // Criar agendamento
-      const { data: appointmentId, error: appointmentError } = await supabase.rpc(
-        'create_public_appointment',
-        {
-          p_client_id: clientId,
-          p_service_id: data.service_id,
-          p_staff_id: data.staff_id,
-          p_start_time: startTime.toISOString(),
-          p_end_time: endTime.toISOString(),
-          p_notes: data.notes || null
-        }
+      const { data: appointmentId, error: appointmentError } = await supabaseRPC.createPublicAppointment(
+        clientId,
+        data.service_id,
+        data.staff_id,
+        startTime.toISOString(),
+        endTime.toISOString(),
+        data.notes || null
       );
 
       if (appointmentError) {
