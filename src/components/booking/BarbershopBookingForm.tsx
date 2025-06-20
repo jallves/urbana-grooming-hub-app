@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -204,15 +205,41 @@ const BarbershopBookingForm: React.FC = () => {
       }
 
       // Criar ou encontrar cliente
-      const { data: clientId, error: clientError } = await supabaseRPC.createPublicClient(
-        data.name,
-        data.phone,
-        data.email || null
-      );
+      let clientId;
+      
+      // Primeiro, tentar encontrar cliente existente pelo telefone
+      const { data: existingClient, error: searchError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('phone', data.phone)
+        .maybeSingle();
 
-      if (clientError) {
-        console.error('Erro ao criar cliente:', clientError);
-        throw new Error('Erro ao processar dados do cliente');
+      if (searchError) {
+        console.error('Erro ao buscar cliente:', searchError);
+        throw new Error('Erro ao verificar cliente existente');
+      }
+
+      if (existingClient) {
+        // Cliente encontrado, usar ID existente
+        clientId = existingClient.id;
+      } else {
+        // Criar novo cliente
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert({
+            name: data.name,
+            phone: data.phone,
+            email: data.email || null
+          })
+          .select('id')
+          .single();
+
+        if (clientError) {
+          console.error('Erro ao criar cliente:', clientError);
+          throw new Error('Erro ao criar dados do cliente');
+        }
+
+        clientId = newClient.id;
       }
 
       // Criar horários de início e fim
@@ -223,15 +250,36 @@ const BarbershopBookingForm: React.FC = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
+      // Verificar conflito antes de criar agendamento
+      const { data: hasConflict, error: conflictError } = await supabase.rpc('check_appointment_conflict', {
+        p_staff_id: data.staff_id,
+        p_start_time: startTime.toISOString(),
+        p_end_time: endTime.toISOString()
+      });
+
+      if (conflictError) {
+        console.error('Erro ao verificar conflito:', conflictError);
+        throw new Error('Erro ao verificar disponibilidade');
+      }
+
+      if (hasConflict) {
+        throw new Error('Horário não disponível. Por favor, selecione outro horário.');
+      }
+
       // Criar agendamento
-      const { data: appointmentId, error: appointmentError } = await supabaseRPC.createPublicAppointment(
-        clientId,
-        data.service_id,
-        data.staff_id,
-        startTime.toISOString(),
-        endTime.toISOString(),
-        data.notes || null
-      );
+      const { data: appointment, error: appointmentError } = await supabase
+        .from('appointments')
+        .insert({
+          client_id: clientId,
+          service_id: data.service_id,
+          staff_id: data.staff_id,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          status: 'scheduled',
+          notes: data.notes || null
+        })
+        .select('id')
+        .single();
 
       if (appointmentError) {
         console.error('Erro ao criar agendamento:', appointmentError);
