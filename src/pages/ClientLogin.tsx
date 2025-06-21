@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -163,10 +164,10 @@ export default function ClientLogin() {
               </div>
               <div>
                 <Link 
-                  to="/" 
+                  to="/agendamento-online" 
                   className="hover:text-[#F59E0B] hover:underline"
                 >
-                  Voltar ao início
+                  Voltar ao agendamento
                 </Link>
               </div>
             </div>

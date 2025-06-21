@@ -7,34 +7,36 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UserPlus, Loader2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useClientAuth } from '@/contexts/ClientAuthContext';
 
 interface FormData {
   name: string;
   email: string;
-  phone: string;
-  birth_date: string;
+  whatsapp: string;
+  password: string;
+  confirmPassword: string;
 }
 
 interface FormErrors {
   name?: string;
   email?: string;
-  phone?: string;
-  birth_date?: string;
+  whatsapp?: string;
+  password?: string;
+  confirmPassword?: string;
   general?: string;
 }
 
 export default function ClientRegister() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { signUp } = useClientAuth();
   const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
-    phone: '',
-    birth_date: '',
+    whatsapp: '',
+    password: '',
+    confirmPassword: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -59,12 +61,20 @@ export default function ClientRegister() {
       newErrors.email = 'Email inválido';
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Telefone é obrigatório';
+    if (!formData.whatsapp.trim()) {
+      newErrors.whatsapp = 'WhatsApp é obrigatório';
     }
 
-    if (!formData.birth_date) {
-      newErrors.birth_date = 'Data de nascimento é obrigatória';
+    if (!formData.password) {
+      newErrors.password = 'Senha é obrigatória';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Confirmação de senha é obrigatória';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'As senhas não coincidem';
     }
 
     setErrors(newErrors);
@@ -80,34 +90,22 @@ export default function ClientRegister() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([{
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          birth_date: formData.birth_date,
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          setErrors({ general: 'Email já cadastrado' });
-        } else {
-          setErrors({ general: 'Erro ao criar conta. Tente novamente.' });
-        }
-        return;
-      }
-
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Você pode fazer login agora.",
+      const { error } = await signUp({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.whatsapp,
+        whatsapp: formData.whatsapp,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
       });
 
-      navigate('/cliente/login');
+      if (error) {
+        setErrors({ general: error });
+      } else {
+        navigate('/cliente/dashboard');
+      }
     } catch (error) {
-      console.error('Erro ao criar conta:', error);
+      console.error('Erro inesperado no cadastro:', error);
       setErrors({ general: 'Erro inesperado. Tente novamente.' });
     } finally {
       setLoading(false);
@@ -144,7 +142,7 @@ export default function ClientRegister() {
                 type="text"
                 value={formData.name}
                 onChange={handleChange}
-                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] ${errors.name ? 'border-red-500' : ''}`}
+                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] focus:ring-[#F59E0B] focus:border-[#F59E0B] ${errors.name ? 'border-red-500' : ''}`}
                 placeholder="Seu nome completo"
                 required
               />
@@ -159,7 +157,7 @@ export default function ClientRegister() {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] ${errors.email ? 'border-red-500' : ''}`}
+                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] focus:ring-[#F59E0B] focus:border-[#F59E0B] ${errors.email ? 'border-red-500' : ''}`}
                 placeholder="seu@email.com"
                 required
               />
@@ -167,32 +165,48 @@ export default function ClientRegister() {
             </div>
 
             <div>
-              <Label htmlFor="phone" className="text-white">Telefone *</Label>
+              <Label htmlFor="whatsapp" className="text-white">WhatsApp *</Label>
               <Input
-                id="phone"
-                name="phone"
+                id="whatsapp"
+                name="whatsapp"
                 type="tel"
-                value={formData.phone}
+                value={formData.whatsapp}
                 onChange={handleChange}
-                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] ${errors.phone ? 'border-red-500' : ''}`}
+                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] focus:ring-[#F59E0B] focus:border-[#F59E0B] ${errors.whatsapp ? 'border-red-500' : ''}`}
                 placeholder="(11) 99999-9999"
                 required
               />
-              {errors.phone && <p className="text-red-400 text-sm mt-1">{errors.phone}</p>}
+              {errors.whatsapp && <p className="text-red-400 text-sm mt-1">{errors.whatsapp}</p>}
             </div>
 
             <div>
-              <Label htmlFor="birth_date" className="text-white">Data de nascimento *</Label>
+              <Label htmlFor="password" className="text-white">Senha *</Label>
               <Input
-                id="birth_date"
-                name="birth_date"
-                type="date"
-                value={formData.birth_date}
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
                 onChange={handleChange}
-                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] ${errors.birth_date ? 'border-red-500' : ''}`}
+                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] focus:ring-[#F59E0B] focus:border-[#F59E0B] ${errors.password ? 'border-red-500' : ''}`}
+                placeholder="Sua senha"
                 required
               />
-              {errors.birth_date && <p className="text-red-400 text-sm mt-1">{errors.birth_date}</p>}
+              {errors.password && <p className="text-red-400 text-sm mt-1">{errors.password}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="confirmPassword" className="text-white">Confirmar Senha *</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={`bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF] focus:ring-[#F59E0B] focus:border-[#F59E0B] ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                placeholder="Confirme sua senha"
+                required
+              />
+              {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
 
             <Button
@@ -222,10 +236,10 @@ export default function ClientRegister() {
               </div>
               <div>
                 <Link 
-                  to="/" 
+                  to="/agendamento-online" 
                   className="hover:text-[#F59E0B] hover:underline"
                 >
-                  Voltar ao início
+                  Voltar ao agendamento
                 </Link>
               </div>
             </div>
