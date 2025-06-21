@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -26,6 +26,7 @@ interface Service {
 interface Staff {
   id: string;
   name: string;
+  role: string;
 }
 
 export default function ClientNewBooking() {
@@ -55,9 +56,10 @@ export default function ClientNewBooking() {
   const loadData = async () => {
     setDataLoading(true);
     try {
-      console.log('Carregando serviços e barbeiros...');
+      console.log('🔄 Iniciando carregamento de dados...');
       
-      // Carregar serviços
+      // Carregar serviços com acesso público
+      console.log('📋 Buscando serviços...');
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select('id, name, duration, price')
@@ -65,31 +67,62 @@ export default function ClientNewBooking() {
         .order('name');
 
       if (servicesError) {
-        console.error('Erro ao carregar serviços:', servicesError);
-        throw servicesError;
+        console.error('❌ Erro ao carregar serviços:', servicesError);
+      } else {
+        console.log('✅ Serviços carregados:', servicesData?.length || 0, servicesData);
+        setServices(servicesData || []);
       }
-      
-      console.log('Serviços carregados:', servicesData);
-      setServices(servicesData || []);
 
-      // Carregar barbeiros da tabela staff
+      // Carregar barbeiros da tabela staff com acesso público
+      console.log('👨‍💼 Buscando barbeiros...');
       const { data: staffData, error: staffError } = await supabase
         .from('staff')
-        .select('id, name')
+        .select('id, name, role')
         .eq('is_active', true)
         .eq('role', 'barber')
         .order('name');
 
       if (staffError) {
-        console.error('Erro ao carregar barbeiros:', staffError);
-        throw staffError;
+        console.error('❌ Erro ao carregar barbeiros:', staffError);
+        console.error('Detalhes do erro:', {
+          message: staffError.message,
+          code: staffError.code,
+          details: staffError.details,
+          hint: staffError.hint
+        });
+      } else {
+        console.log('✅ Barbeiros carregados:', staffData?.length || 0, staffData);
+        setStaff(staffData || []);
       }
-      
-      console.log('Barbeiros carregados:', staffData);
-      setStaff(staffData || []);
+
+      // Verificar se temos dados
+      if (!servicesData || servicesData.length === 0) {
+        console.warn('⚠️ Nenhum serviço ativo encontrado');
+        toast({
+          title: "Aviso",
+          description: "Nenhum serviço ativo encontrado no momento.",
+          variant: "destructive",
+        });
+      }
+
+      if (!staffData || staffData.length === 0) {
+        console.warn('⚠️ Nenhum barbeiro ativo encontrado');
+        toast({
+          title: "Aviso", 
+          description: "Nenhum barbeiro ativo encontrado no momento. Verifique se há barbeiros cadastrados no sistema.",
+          variant: "destructive",
+        });
+      }
+
+      console.log('📊 Resumo final:', {
+        servicos: servicesData?.length || 0,
+        barbeiros: staffData?.length || 0,
+        temServicos: (servicesData?.length || 0) > 0,
+        temBarbeiros: (staffData?.length || 0) > 0
+      });
       
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('💥 Erro geral ao carregar dados:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados. Tente novamente.",
@@ -246,10 +279,10 @@ export default function ClientNewBooking() {
                 </div>
 
                 <div>
-                  <Label htmlFor="staff" className="text-white">Barbeiro</Label>
+                  <Label htmlFor="staff" className="text-white">Barbeiro *</Label>
                   <Select onValueChange={(value) => setFormData(prev => ({ ...prev, staff_id: value }))}>
                     <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
-                      <SelectValue placeholder="Selecione o barbeiro (opcional)" />
+                      <SelectValue placeholder="Selecione o barbeiro" />
                     </SelectTrigger>
                     <SelectContent>
                       {staff.length > 0 ? staff.map((member) => (
@@ -257,7 +290,8 @@ export default function ClientNewBooking() {
                           {member.name}
                         </SelectItem>
                       )) : (
-                        <div className="px-2 py-1 text-sm text-gray-500">
+                        <div className="px-2 py-1 text-sm text-gray-500 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
                           Nenhum barbeiro disponível
                         </div>
                       )}
@@ -320,15 +354,25 @@ export default function ClientNewBooking() {
                 />
               </div>
 
+              {/* Debug Information */}
+              <div className="bg-blue-900/20 border border-blue-700 text-blue-400 px-4 py-3 rounded-md text-sm">
+                <h4 className="font-semibold mb-2">Debug - Dados carregados:</h4>
+                <p>Serviços: {services.length}</p>
+                <p>Barbeiros: {staff.length}</p>
+                {staff.length > 0 && (
+                  <p>Barbeiros encontrados: {staff.map(s => s.name).join(', ')}</p>
+                )}
+              </div>
+
               {services.length === 0 && (
                 <div className="bg-yellow-900/20 border border-yellow-700 text-yellow-400 px-4 py-3 rounded-md text-sm">
-                  Nenhum serviço disponível no momento.
+                  ⚠️ Nenhum serviço disponível no momento.
                 </div>
               )}
 
               {staff.length === 0 && (
-                <div className="bg-yellow-900/20 border border-yellow-700 text-yellow-400 px-4 py-3 rounded-md text-sm">
-                  Nenhum barbeiro disponível no momento.
+                <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-md text-sm">
+                  ❌ Nenhum barbeiro disponível no momento. Verifique se há barbeiros cadastrados com role 'barber' e is_active = true.
                 </div>
               )}
 
@@ -343,7 +387,7 @@ export default function ClientNewBooking() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={loading || services.length === 0}
+                  disabled={loading || services.length === 0 || staff.length === 0}
                   className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
                 >
                   {loading ? (
