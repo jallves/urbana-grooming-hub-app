@@ -1,17 +1,1 @@
-
-project_id = "bqftkknbvmggcbsubicl"
-
-[auth]
-enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://localhost:3000"]
-jwt_expiry = 3600
-
-[functions.send-whatsapp-confirmation]
-verify_jwt = false
-
-[functions.send-email-confirmation]
-verify_jwt = false
-
-[functions.send-password-reset]
-verify_jwt = false
+project_id = "aiulbwuufjbfdjgpvful"
