@@ -7,9 +7,15 @@ import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
 
 interface BarberRouteProps {
   children: React.ReactNode;
+  allowBarber?: boolean;
+  requiredModule?: string;
 }
 
-const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
+const BarberRoute: React.FC<BarberRouteProps> = ({ 
+  children, 
+  allowBarber = false, 
+  requiredModule 
+}) => {
   const { user, loading, isAdmin, isBarber } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
@@ -26,9 +32,8 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Only run the access logic ONCE per user status change:
-  // Allow access if user is admin OR has barber role
-  const hasAccess = isAdmin || isBarber;
+  // Check access permissions
+  const hasAccess = isAdmin || (allowBarber && isBarber);
 
   if (!hasAccess) {
     // Para evitar loop infinito de toast + redirect:
@@ -36,7 +41,9 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
       console.log('BarberRoute - Access DENIED. User:', {
         email: user.email,
         isAdmin,
-        isBarber
+        isBarber,
+        allowBarber,
+        requiredModule
       });
       toast({
         title: 'Acesso Negado',
@@ -51,11 +58,12 @@ const BarberRoute: React.FC<BarberRouteProps> = ({ children }) => {
   console.log('BarberRoute - Access GRANTED for:', {
     email: user.email,
     isAdmin,
-    isBarber
+    isBarber,
+    allowBarber,
+    requiredModule
   });
 
   return <>{children}</>;
 };
 
 export default BarberRoute;
-
