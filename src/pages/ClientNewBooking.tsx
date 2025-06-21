@@ -33,6 +33,7 @@ export default function ClientNewBooking() {
   const { client } = useClientAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -52,7 +53,10 @@ export default function ClientNewBooking() {
   }, [client, navigate]);
 
   const loadData = async () => {
+    setDataLoading(true);
     try {
+      console.log('Carregando serviços e barbeiros...');
+      
       // Carregar serviços
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
@@ -60,18 +64,30 @@ export default function ClientNewBooking() {
         .eq('is_active', true)
         .order('name');
 
-      if (servicesError) throw servicesError;
+      if (servicesError) {
+        console.error('Erro ao carregar serviços:', servicesError);
+        throw servicesError;
+      }
+      
+      console.log('Serviços carregados:', servicesData);
       setServices(servicesData || []);
 
-      // Carregar barbeiros
+      // Carregar barbeiros da tabela staff
       const { data: staffData, error: staffError } = await supabase
         .from('staff')
         .select('id, name')
         .eq('is_active', true)
+        .eq('role', 'barber')
         .order('name');
 
-      if (staffError) throw staffError;
+      if (staffError) {
+        console.error('Erro ao carregar barbeiros:', staffError);
+        throw staffError;
+      }
+      
+      console.log('Barbeiros carregados:', staffData);
       setStaff(staffData || []);
+      
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
@@ -79,6 +95,8 @@ export default function ClientNewBooking() {
         description: "Erro ao carregar dados. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setDataLoading(false);
     }
   };
 
@@ -155,6 +173,17 @@ export default function ClientNewBooking() {
 
   if (!client) return null;
 
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex items-center space-x-2 text-white">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span>Carregando dados...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
@@ -203,11 +232,15 @@ export default function ClientNewBooking() {
                       <SelectValue placeholder="Selecione o serviço" />
                     </SelectTrigger>
                     <SelectContent>
-                      {services.map((service) => (
+                      {services.length > 0 ? services.map((service) => (
                         <SelectItem key={service.id} value={service.id}>
                           {service.name} - R$ {service.price.toFixed(2)} ({service.duration}min)
                         </SelectItem>
-                      ))}
+                      )) : (
+                        <div className="px-2 py-1 text-sm text-gray-500">
+                          Nenhum serviço disponível
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -219,11 +252,15 @@ export default function ClientNewBooking() {
                       <SelectValue placeholder="Selecione o barbeiro (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      {staff.map((member) => (
+                      {staff.length > 0 ? staff.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.name}
                         </SelectItem>
-                      ))}
+                      )) : (
+                        <div className="px-2 py-1 text-sm text-gray-500">
+                          Nenhum barbeiro disponível
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -283,6 +320,18 @@ export default function ClientNewBooking() {
                 />
               </div>
 
+              {services.length === 0 && (
+                <div className="bg-yellow-900/20 border border-yellow-700 text-yellow-400 px-4 py-3 rounded-md text-sm">
+                  Nenhum serviço disponível no momento.
+                </div>
+              )}
+
+              {staff.length === 0 && (
+                <div className="bg-yellow-900/20 border border-yellow-700 text-yellow-400 px-4 py-3 rounded-md text-sm">
+                  Nenhum barbeiro disponível no momento.
+                </div>
+              )}
+
               <div className="flex gap-4">
                 <Button
                   type="button"
@@ -294,7 +343,7 @@ export default function ClientNewBooking() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || services.length === 0}
                   className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
                 >
                   {loading ? (
