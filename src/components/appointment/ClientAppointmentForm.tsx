@@ -23,16 +23,14 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   const {
-    form,
-    isLoading,
     services,
-    staffMembers,
-    selectedService,
-  } = useClientFormData(clientName);
+    barbers,
+    loading,
+  } = useClientFormData();
 
-  const { handleSubmit, isSubmitting } = useAppointmentSubmit(onSuccess);
+  const { loading: submitLoading, isSending, onSubmit } = useAppointmentSubmit();
 
-  if (isLoading) {
+  if (loading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -52,33 +50,27 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ServiceSelect 
-              form={form} 
-              services={services} 
-              isLoading={isLoading} 
+              services={services}
             />
             
             <BarbershopStaffSelect 
-              form={form} 
-              staffMembers={staffMembers} 
-              isLoading={isLoading} 
+              staffMembers={barbers}
             />
           </div>
 
           <EnhancedDateTimePicker
-            form={form}
-            selectedService={selectedService}
             showAdvanced={showAdvanced}
             onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
           />
 
-          <NotesField form={form} />
+          <NotesField />
           
           <AppointmentFormActions 
-            isSubmitting={isSubmitting}
-            onCancel={() => form.reset()}
+            isLoading={isSending}
+            onCancel={() => {}}
           />
         </form>
       </CardContent>

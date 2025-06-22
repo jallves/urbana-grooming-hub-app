@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,9 +20,9 @@ const BarberProfileInfo: React.FC = () => {
       }
 
       try {
-        // FIX: use 'staff'
+        // FIX: use 'barbers'
         const { data, error } = await supabase
-          .from('staff')
+          .from('barbers')
           .select('*')
           .eq('email', user.email)
           .eq('role', 'barber')

@@ -3,35 +3,43 @@ import React from 'react';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { UseFormReturn } from 'react-hook-form';
-import { MessageSquare } from 'lucide-react';
 
 interface NotesFieldProps {
-  form: UseFormReturn<any>;
+  form?: UseFormReturn<any>;
 }
 
 const NotesField: React.FC<NotesFieldProps> = ({ form }) => {
+  if (form) {
+    return (
+      <FormField
+        control={form.control}
+        name="notes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Observações</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Observações adicionais sobre o agendamento..."
+                className="resize-none"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  }
+
+  // Simple version without form
   return (
-    <FormField
-      control={form.control}
-      name="notes"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel className="text-white flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Observações (Opcional)
-          </FormLabel>
-          <FormControl>
-            <Textarea
-              {...field}
-              placeholder="Alguma observação especial ou preferência..."
-              className="bg-stone-700 border-stone-600 text-white placeholder:text-stone-400 resize-none"
-              rows={4}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+    <div className="space-y-2">
+      <label className="text-white">Observações</label>
+      <Textarea
+        placeholder="Observações adicionais sobre o agendamento..."
+        className="resize-none"
+      />
+    </div>
   );
 };
 
