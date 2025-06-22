@@ -50,9 +50,9 @@ const BarberAvailabilityChecker: React.FC<BarberAvailabilityCheckerProps> = ({
           return;
         }
 
-        // Buscar barbeiros ativos
+        // Buscar barbeiros ativos da tabela barbers
         const { data: activeBarbers, error: barbersError } = await supabase
-          .from('staff')
+          .from('barbers')
           .select('id, name, specialties, image_url')
           .eq('is_active', true)
           .eq('role', 'barber');
@@ -77,16 +77,31 @@ const BarberAvailabilityChecker: React.FC<BarberAvailabilityCheckerProps> = ({
 
               if (slotsError) {
                 console.error(`Erro ao buscar slots para ${barber.name}:`, slotsError);
-                return { ...barber, availableSlots: [] };
+                return { 
+                  id: barber.id,
+                  name: barber.name,
+                  specialties: barber.specialties,
+                  image_url: barber.image_url,
+                  availableSlots: [] 
+                };
               }
 
               return {
-                ...barber,
+                id: barber.id,
+                name: barber.name,
+                specialties: barber.specialties,
+                image_url: barber.image_url,
                 availableSlots: (slots || []).map((slot: any) => slot.time_slot)
               };
             } catch (error) {
               console.error(`Erro ao processar barbeiro ${barber.name}:`, error);
-              return { ...barber, availableSlots: [] };
+              return { 
+                id: barber.id,
+                name: barber.name,
+                specialties: barber.specialties,
+                image_url: barber.image_url,
+                availableSlots: [] 
+              };
             }
           })
         );

@@ -41,7 +41,7 @@ interface Service {
   is_active: boolean;
 }
 
-interface Staff {
+interface Barber {
   id: string;
   name: string;
   is_active: boolean;
@@ -51,7 +51,7 @@ interface Staff {
 const BarbershopBookingForm: React.FC = () => {
   const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -109,23 +109,23 @@ const BarbershopBookingForm: React.FC = () => {
         setServices(servicesData || []);
       }
 
-      // Buscar barbeiros ativos
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
+      // Buscar barbeiros ativos da tabela barbers
+      const { data: barbersData, error: barbersError } = await supabase
+        .from('barbers')
         .select('id, name, is_active, role')
         .eq('is_active', true)
         .eq('role', 'barber')
         .order('name');
 
-      if (staffError) {
-        console.error('Erro ao buscar barbeiros:', staffError);
+      if (barbersError) {
+        console.error('Erro ao buscar barbeiros:', barbersError);
         toast({
           title: "Erro",
           description: "Não foi possível carregar os barbeiros disponíveis.",
           variant: "destructive",
         });
       } else {
-        setStaff(staffData || []);
+        setBarbers(barbersData || []);
       }
 
     } catch (error) {
@@ -576,7 +576,7 @@ const BarbershopBookingForm: React.FC = () => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-stone-800 border-stone-600">
-                      {staff.map((barber) => (
+                      {barbers.map((barber) => (
                         <SelectItem
                           key={barber.id}
                           value={barber.id}

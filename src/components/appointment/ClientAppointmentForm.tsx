@@ -3,12 +3,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useClientFormData } from './client/hooks/useClientFormData';
-import { useAppointmentSubmit } from './hooks/useAppointmentSubmit';
 import ServiceSelect from './client/ServiceSelect';
 import BarbershopStaffSelect from './client/BarbershopStaffSelect';
 import EnhancedDateTimePicker from './client/EnhancedDateTimePicker';
 import NotesField from './client/NotesField';
-import AppointmentFormActions from './client/AppointmentFormActions';
 import { Loader2 } from 'lucide-react';
 
 interface ClientAppointmentFormProps {
@@ -23,14 +21,20 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   const {
+    form,
+    isLoading,
     services,
-    barbers,
-    loading,
-  } = useClientFormData();
+    staffMembers,
+    selectedService,
+  } = useClientFormData(clientName);
 
-  const { loading: submitLoading, isSending, onSubmit } = useAppointmentSubmit();
+  const handleSubmit = (data: any) => {
+    console.log('Form submitted:', data);
+    // Handle form submission here
+    onSuccess?.();
+  };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -50,28 +54,51 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <ServiceSelect 
               services={services}
+              form={form}
             />
             
             <BarbershopStaffSelect 
-              staffMembers={barbers}
+              staffMembers={staffMembers}
+              form={form}
             />
           </div>
 
           <EnhancedDateTimePicker
+            form={form}
             showAdvanced={showAdvanced}
             onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
           />
 
-          <NotesField />
+          <NotesField form={form} />
           
-          <AppointmentFormActions 
-            isLoading={isSending}
-            onCancel={() => {}}
-          />
+          <div className="flex gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {}}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Agendando...
+                </>
+              ) : (
+                'Confirmar Agendamento'
+              )}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

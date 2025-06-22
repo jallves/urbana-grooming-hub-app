@@ -1,229 +1,152 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Settings, Plus } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { Calendar, Clock, User } from 'lucide-react';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import BarberScheduleManager from './BarberScheduleManager';
 
 interface Appointment {
   id: string;
   start_time: string;
   end_time: string;
-  client: {
-    name: string;
-    phone: string;
-  };
-  service: {
-    name: string;
-    duration: number;
-  };
+  service_name: string;
+  client_name: string;
   status: string;
 }
 
-interface BarberScheduleViewProps {
-  barberId: string;
-}
-
-const BarberScheduleView: React.FC<BarberScheduleViewProps> = ({ barberId }) => {
-  const { toast } = useToast();
+const BarberScheduleView: React.FC = () => {
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showScheduleManager, setShowScheduleManager] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [barberInfo, setBarberInfo] = useState<{ name: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [barberInfo, setBarberInfo] = useState<{ name: string }>({ name: '' });
 
   useEffect(() => {
-    fetchBarberInfo();
-    fetchAppointments();
-  }, [barberId, selectedDate]);
+    const fetchBarberData = async () => {
+      if (!user?.email) return;
 
-  const fetchBarberInfo = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('name')
-        .eq('id', barberId)
-        .single();
+      try {
+        // Buscar informações do barbeiro na tabela barbers
+        const { data: barberData, error: barberError } = await supabase
+          .from('barbers')
+          .select('id, name')
+          .eq('email', user.email)
+          .eq('role', 'barber')
+          .single();
 
-      if (error) throw error;
-      setBarberInfo(data);
-    } catch (error) {
-      console.error('Erro ao buscar informações do barbeiro:', error);
-    }
-  };
+        if (barberError) {
+          console.error('Erro ao buscar barbeiro:', barberError);
+          setBarberInfo({ name: 'Barbeiro' });
+          return;
+        }
 
-  const fetchAppointments = async () => {
-    setLoading(true);
-    try {
-      const startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
-      const endDate = endOfWeek(selectedDate, { weekStartsOn: 1 });
+        setBarberInfo({ name: barberData.name });
 
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          id,
-          start_time,
-          end_time,
-          status,
-          client:client_id(name, phone),
-          service:service_id(name, duration)
-        `)
-        .eq('staff_id', barberId)
-        .gte('start_time', startDate.toISOString())
-        .lte('start_time', endDate.toISOString())
-        .order('start_time', { ascending: true });
+        // Buscar agendamentos do barbeiro
+        const { data: appointmentsData, error: appointmentsError } = await supabase
+          .from('appointments')
+          .select(`
+            id,
+            start_time,
+            end_time,
+            status,
+            services (name),
+            clients (name)
+          `)
+          .eq('staff_id', barberData.id)
+          .gte('start_time', new Date().toISOString().split('T')[0])
+          .order('start_time');
 
-      if (error) throw error;
-      setAppointments(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar agendamentos:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os agendamentos.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (appointmentsError) {
+          console.error('Erro ao buscar agendamentos:', appointmentsError);
+          return;
+        }
 
-  const getAppointmentsForDay = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return appointments.filter(appointment => 
-      appointment.start_time.startsWith(dateStr)
-    );
-  };
+        const formattedAppointments = appointmentsData?.map(apt => ({
+          id: apt.id,
+          start_time: apt.start_time,
+          end_time: apt.end_time,
+          status: apt.status,
+          service_name: (apt.services as any)?.name || 'Serviço',
+          client_name: (apt.clients as any)?.name || 'Cliente'
+        })) || [];
 
-  const renderWeekView = () => {
-    const startDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
-    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
+        setAppointments(formattedAppointments);
 
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBarberData();
+  }, [user]);
+
+  if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-        {weekDays.map((day) => {
-          const dayAppointments = getAppointmentsForDay(day);
-          const isToday = format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-
-          return (
-            <Card key={day.toISOString()} className={isToday ? 'ring-2 ring-urbana-gold' : ''}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">
-                  {format(day, 'EEEE', { locale: ptBR })}
-                  <div className="text-lg font-bold">
-                    {format(day, 'dd/MM')}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {dayAppointments.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Sem agendamentos</p>
-                ) : (
-                  dayAppointments.map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="bg-urbana-gold/10 border border-urbana-gold/20 rounded p-2 text-xs"
-                    >
-                      <div className="font-medium flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {format(new Date(appointment.start_time), 'HH:mm')}
-                      </div>
-                      <div className="text-urbana-black/80">
-                        {appointment.client.name}
-                      </div>
-                      <div className="text-urbana-black/60">
-                        {appointment.service.name}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    );
-  };
-
-  if (showScheduleManager) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Configurar Horários</h2>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowScheduleManager(false)}
-          >
-            Voltar à Agenda
-          </Button>
-        </div>
-        <BarberScheduleManager 
-          barberId={barberId} 
-          barberName={barberInfo?.name}
-        />
-      </div>
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="animate-pulse text-muted-foreground">
+            Carregando agenda...
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-urbana-gold" />
-            Minha Agenda
-          </h2>
-          {barberInfo && (
-            <p className="text-muted-foreground">
-              {barberInfo.name} - {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
-            </p>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Agenda de {barberInfo.name}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {appointments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Nenhum agendamento encontrado</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {appointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      {format(new Date(appointment.start_time), 'HH:mm', { locale: ptBR })}
+                    </div>
+                    <div>
+                      <p className="font-medium">{appointment.client_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {appointment.service_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      appointment.status === 'confirmed' 
+                        ? 'bg-green-100 text-green-800'
+                        : appointment.status === 'scheduled'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {appointment.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowScheduleManager(true)}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            Configurar Horários
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          onClick={() => setSelectedDate(addDays(selectedDate, -7))}
-        >
-          Semana Anterior
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setSelectedDate(new Date())}
-        >
-          Hoje
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-        >
-          Próxima Semana
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-pulse text-muted-foreground">
-            Carregando agenda...
-          </div>
-        </div>
-      ) : (
-        renderWeekView()
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
