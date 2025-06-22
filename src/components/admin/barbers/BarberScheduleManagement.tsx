@@ -29,7 +29,7 @@ const BarberScheduleManagement: React.FC = () => {
   const fetchBarbers = async () => {
     try {
       const { data, error } = await supabase
-        .from('staff')
+        .from('barbers')
         .select('id, name, email, is_active')
         .eq('is_active', true)
         .order('name');

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { createBarber, updateBarber } from '@/services/barberService';
 
 export const barberSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -51,7 +52,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   useEffect(() => {
     if (barberId) {
       supabase
-        .from('staff')
+        .from('barbers')
         .select('*')
         .eq('id', barberId)
         .single()
@@ -67,22 +68,22 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   const onSubmit = async (data: BarberFormValues) => {
     setIsSubmitting(true);
 
-    const payload = cleanPayload(data);
+    try {
+      const payload = cleanPayload(data);
 
-    let resp;
-    if (barberId) {
-      resp = await supabase.from('staff').update(payload).eq('id', barberId);
-    } else {
-      resp = await supabase.from('staff').insert([payload]);
-    }
+      if (barberId) {
+        await updateBarber(barberId, payload);
+      } else {
+        await createBarber(payload);
+      }
 
-    if (resp.error) {
-      toast.error('Erro ao salvar barbeiro', { description: resp.error.message });
-    } else {
       toast.success('Barbeiro salvo!');
       onSuccess();
+    } catch (error: any) {
+      toast.error('Erro ao salvar barbeiro', { description: error.message });
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   // Função para cadastrar/redefinir senha do barbeiro (via e-mail)

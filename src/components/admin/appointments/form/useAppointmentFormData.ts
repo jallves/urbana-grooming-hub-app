@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,7 +51,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
           *,
           clients(*),
           services(*),
-          staff(*)
+          barbers(*)
         `)
         .eq('id', appointmentId)
         .single();
@@ -81,7 +82,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     queryKey: ['barbers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('staff')
+        .from('barbers')
         .select('*')
         .eq('is_active', true)
         .eq('role', 'barber')
