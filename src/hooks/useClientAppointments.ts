@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -32,12 +31,25 @@ export const useClientAppointments = (clientId: string) => {
             id,
             name,
             price,
-            duration
+            duration,
+            description,
+            is_active,
+            created_at,
+            updated_at
           ),
           staff:staff_id (
             id,
             name,
-            specialties
+            specialties,
+            email,
+            phone,
+            image_url,
+            experience,
+            commission_rate,
+            is_active,
+            role,
+            created_at,
+            updated_at
           )
         `)
         .eq('client_id', clientId)
