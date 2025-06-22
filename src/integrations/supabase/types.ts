@@ -288,7 +288,7 @@ export type Database = {
             foreignKeyName: "appointments_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -398,7 +398,7 @@ export type Database = {
             foreignKeyName: "barber_audit_log_barber_id_fkey"
             columns: ["barber_id"]
             isOneToOne: false
-            referencedRelation: "barbers"
+            referencedRelation: "barbers_2"
             referencedColumns: ["id"]
           },
         ]
@@ -442,7 +442,7 @@ export type Database = {
             foreignKeyName: "barber_availability_barber_id_fkey"
             columns: ["barber_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -493,12 +493,57 @@ export type Database = {
             foreignKeyName: "barber_commissions_barber_id_fkey"
             columns: ["barber_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
       }
       barbers: {
+        Row: {
+          commission_rate: number | null
+          created_at: string | null
+          email: string | null
+          experience: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          role: string | null
+          specialties: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commission_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          experience?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          role?: string | null
+          specialties?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commission_rate?: number | null
+          created_at?: string | null
+          email?: string | null
+          experience?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          role?: string | null
+          specialties?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      barbers_2: {
         Row: {
           created_at: string | null
           id: string
@@ -525,7 +570,7 @@ export type Database = {
             foreignKeyName: "barbers_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: true
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -844,7 +889,7 @@ export type Database = {
             foreignKeyName: "client_reviews_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -2146,51 +2191,6 @@ export type Database = {
         }
         Relationships: []
       }
-      staff: {
-        Row: {
-          commission_rate: number | null
-          created_at: string | null
-          email: string | null
-          experience: string | null
-          id: string
-          image_url: string | null
-          is_active: boolean | null
-          name: string
-          phone: string | null
-          role: string | null
-          specialties: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          commission_rate?: number | null
-          created_at?: string | null
-          email?: string | null
-          experience?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          name: string
-          phone?: string | null
-          role?: string | null
-          specialties?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          commission_rate?: number | null
-          created_at?: string | null
-          email?: string | null
-          experience?: string | null
-          id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          name?: string
-          phone?: string | null
-          role?: string | null
-          specialties?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       staff_module_access: {
         Row: {
           created_at: string
@@ -2218,7 +2218,7 @@ export type Database = {
             foreignKeyName: "staff_module_access_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -2424,7 +2424,7 @@ export type Database = {
             foreignKeyName: "support_tickets_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -2539,7 +2539,7 @@ export type Database = {
             foreignKeyName: "time_off_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -2601,7 +2601,7 @@ export type Database = {
             foreignKeyName: "working_hours_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
-            referencedRelation: "staff"
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]

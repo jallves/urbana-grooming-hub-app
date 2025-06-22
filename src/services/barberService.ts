@@ -2,15 +2,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function deleteBarber(barberId: string): Promise<void> {
-  // Primeiro, buscar o staff_id do barbeiro
-  const { data: barberData, error: fetchError } = await supabase
-    .from("barbers")
-    .select("staff_id")
-    .eq("id", barberId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
   // Deletar o barbeiro da tabela barbers
   const { error: barberError } = await supabase
     .from("barbers")
@@ -18,44 +9,22 @@ export async function deleteBarber(barberId: string): Promise<void> {
     .eq("id", barberId);
 
   if (barberError) throw barberError;
-
-  // Opcionalmente, desativar o staff ao invés de deletar
-  if (barberData?.staff_id) {
-    const { error: staffError } = await supabase
-      .from("staff")
-      .update({ is_active: false })
-      .eq("id", barberData.staff_id);
-
-    if (staffError) throw staffError;
-  }
 }
 
-export async function createBarber(staffData: any): Promise<string> {
-  // Primeiro criar o registro na tabela staff
-  const { data: staff, error: staffError } = await supabase
-    .from("staff")
-    .insert([{
-      name: staffData.name,
-      email: staffData.email,
-      phone: staffData.phone,
-      image_url: staffData.image_url,
-      specialties: staffData.specialties,
-      experience: staffData.experience,
-      commission_rate: staffData.commission_rate,
-      role: 'barber',
-      is_active: true
-    }])
-    .select()
-    .single();
-
-  if (staffError) throw staffError;
-
-  // Depois criar o registro na tabela barbers
+export async function createBarber(barberData: any): Promise<string> {
+  // Criar o registro na tabela barbers
   const { data: barber, error: barberError } = await supabase
     .from("barbers")
     .insert([{
-      staff_id: staff.id,
-      user_id: staffData.user_id || null
+      name: barberData.name,
+      email: barberData.email,
+      phone: barberData.phone,
+      image_url: barberData.image_url,
+      specialties: barberData.specialties,
+      experience: barberData.experience,
+      commission_rate: barberData.commission_rate,
+      role: 'barber',
+      is_active: true
     }])
     .select()
     .single();
@@ -65,41 +34,20 @@ export async function createBarber(staffData: any): Promise<string> {
   return barber.id;
 }
 
-export async function updateBarber(barberId: string, staffData: any): Promise<void> {
-  // Buscar o staff_id do barbeiro
-  const { data: barberData, error: fetchError } = await supabase
+export async function updateBarber(barberId: string, barberData: any): Promise<void> {
+  // Atualizar os dados na tabela barbers
+  const { error: barberError } = await supabase
     .from("barbers")
-    .select("staff_id")
-    .eq("id", barberId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  // Atualizar os dados na tabela staff
-  const { error: staffError } = await supabase
-    .from("staff")
     .update({
-      name: staffData.name,
-      email: staffData.email,
-      phone: staffData.phone,
-      image_url: staffData.image_url,
-      specialties: staffData.specialties,
-      experience: staffData.experience,
-      commission_rate: staffData.commission_rate
+      name: barberData.name,
+      email: barberData.email,
+      phone: barberData.phone,
+      image_url: barberData.image_url,
+      specialties: barberData.specialties,
+      experience: barberData.experience,
+      commission_rate: barberData.commission_rate
     })
-    .eq("id", barberData.staff_id);
+    .eq("id", barberId);
 
-  if (staffError) throw staffError;
-
-  // Atualizar dados específicos do barbeiro se necessário
-  if (staffData.user_id !== undefined) {
-    const { error: barberError } = await supabase
-      .from("barbers")
-      .update({
-        user_id: staffData.user_id
-      })
-      .eq("id", barberId);
-
-    if (barberError) throw barberError;
-  }
+  if (barberError) throw barberError;
 }

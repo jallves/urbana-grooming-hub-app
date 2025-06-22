@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +22,6 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
 
-  // Always keep UI ID as number, only convert for queries as needed
   const [barberId, setBarberId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -29,9 +29,9 @@ export const useBarberAppointments = () => {
       if (!user?.email) return;
 
       try {
-        // FIX: use 'staff'
+        // Buscar na tabela barbers
         const { data } = await supabase
-          .from('staff')
+          .from('barbers')
           .select('id')
           .eq('email', user.email)
           .maybeSingle();
@@ -58,7 +58,7 @@ export const useBarberAppointments = () => {
           clients (name),
           services (name, price)
         `)
-        .eq('staff_id', barberId.toString()) // fix: always call toString() here
+        .eq('staff_id', barberId.toString())
         .order('start_time', { ascending: true });
 
       if (error) {

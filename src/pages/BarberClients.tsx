@@ -22,15 +22,15 @@ const BarberClients: React.FC = () => {
       try {
         setLoading(true);
         
-        // Primeiro buscar o ID do staff correspondente ao barbeiro logado
-        const { data: staffData, error: staffError } = await supabase
-          .from('staff')
+        // Primeiro buscar o ID do barbeiro correspondente ao barbeiro logado
+        const { data: barberData, error: barberError } = await supabase
+          .from('barbers')
           .select('id')
           .eq('email', user.email)
           .maybeSingle();
           
-        if (staffError || !staffData) {
-          console.error('Erro ao buscar dados do profissional ou registro não encontrado');
+        if (barberError || !barberData) {
+          console.error('Erro ao buscar dados do barbeiro ou registro não encontrado');
           setLoading(false);
           return;
         }
@@ -39,7 +39,7 @@ const BarberClients: React.FC = () => {
         const { data: appointments, error: appointmentsError } = await supabase
           .from('appointments')
           .select('client_id')
-          .eq('staff_id', staffData.id);
+          .eq('staff_id', barberData.id);
           
         if (appointmentsError) {
           console.error('Erro ao buscar agendamentos:', appointmentsError);

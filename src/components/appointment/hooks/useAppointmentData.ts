@@ -32,54 +32,19 @@ export const useAppointmentData = () => {
           setServices(servicesData || []);
         }
 
-        // Buscar barbeiros através da tabela barbers -> staff
+        // Buscar barbeiros da tabela barbers
         const { data: barbersData, error: barbersError } = await supabase
           .from('barbers')
-          .select(`
-            id,
-            staff_id,
-            staff:staff_id (
-              id,
-              name,
-              email,
-              phone,
-              image_url,
-              specialties,
-              experience,
-              commission_rate,
-              is_active,
-              role,
-              created_at,
-              updated_at
-            )
-          `)
-          .eq('staff.is_active', true)
-          .eq('staff.role', 'barber')
-          .order('staff(name)', { ascending: true });
+          .select('*')
+          .eq('is_active', true)
+          .eq('role', 'barber')
+          .order('name', { ascending: true });
 
         if (barbersError) {
           console.error('Erro ao buscar barbeiros:', barbersError);
         } else {
-          // Transformar dados para manter compatibilidade
-          const transformedBarbers = (barbersData || [])
-            .filter(b => b.staff)
-            .map(b => ({
-              id: b.staff.id,
-              name: b.staff.name,
-              email: b.staff.email,
-              phone: b.staff.phone,
-              image_url: b.staff.image_url,
-              specialties: b.staff.specialties,
-              experience: b.staff.experience,
-              commission_rate: b.staff.commission_rate,
-              is_active: b.staff.is_active,
-              role: b.staff.role,
-              created_at: b.staff.created_at,
-              updated_at: b.staff.updated_at
-            }));
-
-          console.log('[useAppointmentData] Barbeiros encontrados:', transformedBarbers.length);
-          setBarbers(transformedBarbers);
+          console.log('[useAppointmentData] Barbeiros encontrados:', barbersData?.length || 0);
+          setBarbers(barbersData || []);
         }
 
         console.log('[useAppointmentData] Dados finais carregados:', {

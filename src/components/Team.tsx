@@ -39,21 +39,21 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
 const Team: React.FC = () => {
   console.log('Team component rendering...');
   
-  // Query to fetch active staff members from the database
-  const { data: staffMembers, isLoading, error } = useQuery({
-    queryKey: ['team-staff'],
+  // Query to fetch active barbers from the barbers table
+  const { data: barbersMembers, isLoading, error } = useQuery({
+    queryKey: ['team-barbers'],
     queryFn: async () => {
       console.log('Buscando barbeiros ativos para a equipe...');
       
       try {
         const { data, error } = await supabase
-          .from('staff')
+          .from('barbers')
           .select('*')
           .eq('is_active', true)
           .order('name');
         
         if (error) {
-          console.error('Erro na query staff:', error);
+          console.error('Erro na query barbers:', error);
           throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
         }
         
@@ -126,8 +126,8 @@ const Team: React.FC = () => {
   }
 
   // Determine which team to display - use database data if available, otherwise fallback
-  const teamToDisplay = staffMembers && staffMembers.length > 0
-    ? staffMembers
+  const teamToDisplay = barbersMembers && barbersMembers.length > 0
+    ? barbersMembers
     : fallbackTeamMembers;
 
   console.log('Exibindo equipe na homepage:', teamToDisplay);
@@ -162,7 +162,7 @@ const Team: React.FC = () => {
           </div>
         )}
 
-        {staffMembers && staffMembers.length === 0 && (
+        {barbersMembers && barbersMembers.length === 0 && (
           <div className="text-center mt-4">
             <p className="text-yellow-400 text-sm">
               Nenhum barbeiro ativo encontrado. Certifique-se de que há barbeiros ativos cadastrados no sistema.

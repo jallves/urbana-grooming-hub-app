@@ -15,26 +15,16 @@ export const useBarberRoleCheck = () => {
     try {
       console.log('[useBarberRoleCheck] Verificando permissões para usuário:', userId);
       
-      // Verificar através da tabela barbers -> staff
+      // Verificar através da tabela barbers
       const { data: barberData, error } = await supabase
         .from('barbers')
-        .select(`
-          id,
-          staff_id,
-          staff:staff_id (
-            id,
-            name,
-            email,
-            is_active,
-            role
-          )
-        `)
-        .eq('staff.email', (await supabase.auth.getUser()).data.user?.email)
-        .eq('staff.is_active', true)
-        .eq('staff.role', 'barber')
+        .select('*')
+        .eq('email', (await supabase.auth.getUser()).data.user?.email)
+        .eq('is_active', true)
+        .eq('role', 'barber')
         .single();
 
-      if (error || !barberData || !barberData.staff) {
+      if (error || !barberData) {
         console.error('[useBarberRoleCheck] Erro ao verificar barbeiro:', error);
         throw new Error('Usuário não autorizado como barbeiro');
       }
@@ -43,7 +33,7 @@ export const useBarberRoleCheck = () => {
       
       toast({
         title: "Acesso autorizado",
-        description: `Bem-vindo, ${barberData.staff.name}!`,
+        description: `Bem-vindo, ${barberData.name}!`,
       });
 
       navigate('/barbeiro/dashboard');

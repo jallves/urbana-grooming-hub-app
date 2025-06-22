@@ -13,53 +13,33 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { deleteBarber } from '@/services/barberService';
 
-// Busca barbeiros da tabela barbers com JOIN na tabela staff
+// Busca barbeiros da tabela barbers
 const fetchBarbers = async () => {
   const { data, error } = await supabase
     .from('barbers')
-    .select(`
-      id,
-      staff_id,
-      user_id,
-      created_at,
-      updated_at,
-      staff:staff_id (
-        id,
-        name,
-        email,
-        phone,
-        image_url,
-        specialties,
-        experience,
-        commission_rate,
-        is_active,
-        role
-      )
-    `)
-    .eq('staff.is_active', true)
-    .eq('staff.role', 'barber')
-    .order('staff(name)');
+    .select('*')
+    .eq('is_active', true)
+    .eq('role', 'barber')
+    .order('name');
 
   if (error) throw new Error(error.message);
 
-  // Transformar dados para manter compatibilidade com componentes existentes
   return (data ?? [])
-    .filter((b: any) => b.staff && b.staff.id && b.staff.name)
+    .filter((b: any) => b.id && b.name)
     .map((b: any) => ({
       id: String(b.id),
-      uuid_id: b.staff_id ?? '',
-      name: b.staff.name ?? '',
-      email: b.staff.email ?? '',
-      phone: b.staff.phone ?? '',
-      image_url: b.staff.image_url ?? '',
-      specialties: b.staff.specialties ?? '',
-      experience: b.staff.experience ?? '',
-      commission_rate: b.staff.commission_rate ?? 0,
-      is_active: b.staff.is_active ?? true,
-      role: b.staff.role ?? 'barber',
+      uuid_id: b.id ?? '',
+      name: b.name ?? '',
+      email: b.email ?? '',
+      phone: b.phone ?? '',
+      image_url: b.image_url ?? '',
+      specialties: b.specialties ?? '',
+      experience: b.experience ?? '',
+      commission_rate: b.commission_rate ?? 0,
+      is_active: b.is_active ?? true,
+      role: b.role ?? 'barber',
       created_at: b.created_at ?? '',
       updated_at: b.updated_at ?? '',
-      staff_id: b.staff_id,
       barber_id: b.id
     }));
 };
@@ -107,8 +87,7 @@ const BarberManagement: React.FC = () => {
     setEditingBarberId(null);
     refetch();
     queryClient.invalidateQueries({ queryKey: ['barbers'] });
-    queryClient.invalidateQueries({ queryKey: ['staff'] });
-    queryClient.invalidateQueries({ queryKey: ['team-staff'] });
+    queryClient.invalidateQueries({ queryKey: ['team-barbers'] });
   };
 
   const handleDeleteBarber = async (barberId: string) => {
@@ -120,8 +99,7 @@ const BarberManagement: React.FC = () => {
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
-        queryClient.invalidateQueries({ queryKey: ['staff'] });
-        queryClient.invalidateQueries({ queryKey: ['team-staff'] });
+        queryClient.invalidateQueries({ queryKey: ['team-barbers'] });
       } catch (err) {
         toast.error('Erro ao excluir barbeiro.', {
           description: (err as Error).message,
@@ -154,8 +132,7 @@ const BarberManagement: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" na tabela staff, 
-              agora vinculados através da tabela barbers para melhor organização.
+              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" na tabela barbers.
             </AlertDescription>
           </Alert>
           <Card>

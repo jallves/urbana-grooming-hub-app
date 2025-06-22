@@ -18,22 +18,22 @@ export const useAppointments = () => {
       
       // If the user is not an admin and is a barber, only load their own appointments
       if (!isAdmin && isBarber && user) {
-        // First get the staff ID for the current barber user
-        const { data: staffData, error: staffError } = await supabase
-          .from('staff')
+        // First get the barber ID for the current barber user
+        const { data: barberData, error: barberError } = await supabase
+          .from('barbers')
           .select('id')
           .eq('email', user.email)
           .maybeSingle();
           
-        if (staffError) {
-          console.error('Error fetching staff data:', staffError);
-          toast.error("Não foi possível carregar os dados do profissional.");
+        if (barberError) {
+          console.error('Error fetching barber data:', barberError);
+          toast.error("Não foi possível carregar os dados do barbeiro.");
           setIsLoading(false);
           return;
         }
         
-        if (!staffData) {
-          console.log('No staff record found for this user');
+        if (!barberData) {
+          console.log('No barber record found for this user');
           setAppointments([]);
           setIsLoading(false);
           return;
@@ -48,7 +48,7 @@ export const useAppointments = () => {
             service:service_id(*),
             staff:staff_id(*)
           `)
-          .eq('staff_id', staffData.id)
+          .eq('staff_id', barberData.id)
           .order('start_time', { ascending: true });
         
         if (error) {

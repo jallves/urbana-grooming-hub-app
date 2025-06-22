@@ -9,7 +9,6 @@ interface BarberData {
   name: string;
   email: string;
   is_active: boolean;
-  barber_id?: string;
 }
 
 export const useBarberAuth = () => {
@@ -31,24 +30,15 @@ export const useBarberAuth = () => {
         return;
       }
 
-      // Buscar barbeiro através do relacionamento barbers -> staff
+      // Buscar barbeiro da tabela barbers
       const { data: barberData, error } = await supabase
         .from('barbers')
-        .select(`
-          id,
-          staff_id,
-          staff:staff_id (
-            id,
-            name,
-            email,
-            is_active
-          )
-        `)
-        .eq('staff.email', user.email)
-        .eq('staff.is_active', true)
+        .select('*')
+        .eq('email', user.email)
+        .eq('is_active', true)
         .single();
 
-      if (error || !barberData || !barberData.staff) {
+      if (error || !barberData) {
         console.error('Erro ao verificar barbeiro:', error);
         toast({
           title: "Acesso negado",
@@ -61,11 +51,10 @@ export const useBarberAuth = () => {
       }
 
       setBarber({
-        id: barberData.staff.id,
-        name: barberData.staff.name,
-        email: barberData.staff.email,
-        is_active: barberData.staff.is_active,
-        barber_id: barberData.id
+        id: barberData.id,
+        name: barberData.name,
+        email: barberData.email,
+        is_active: barberData.is_active
       });
     } catch (error) {
       console.error('Erro na autenticação do barbeiro:', error);

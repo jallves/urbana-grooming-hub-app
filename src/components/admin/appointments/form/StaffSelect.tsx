@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from 'react';
-// Busque apenas barbeiros
 import { StaffMember } from '@/types/appointment';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,7 +14,7 @@ interface StaffAvailability {
 }
 
 interface StaffSelectProps {
-  staffMembers: StaffMember[]; // RECEBE array só de barbeiros ativos (garantido pelo hook de dados)
+  staffMembers: StaffMember[];
   form: UseFormReturn<any>;
   selectedDate?: Date;
   selectedTime?: string;
