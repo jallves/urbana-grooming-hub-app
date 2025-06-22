@@ -13,33 +13,54 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { deleteBarber } from '@/services/barberService';
 
-// Busca barbeiros na tabela staff
+// Busca barbeiros da tabela barbers com JOIN na tabela staff
 const fetchBarbers = async () => {
   const { data, error } = await supabase
-    .from('staff')
-    .select('*')
-    .eq('role', 'barber')
-    .eq('is_active', true)
-    .order('name');
+    .from('barbers')
+    .select(`
+      id,
+      staff_id,
+      user_id,
+      created_at,
+      updated_at,
+      staff:staff_id (
+        id,
+        name,
+        email,
+        phone,
+        image_url,
+        specialties,
+        experience,
+        commission_rate,
+        is_active,
+        role
+      )
+    `)
+    .eq('staff.is_active', true)
+    .eq('staff.role', 'barber')
+    .order('staff(name)');
+
   if (error) throw new Error(error.message);
 
-  // Garantir fields existam (para TS) e manter compatibilidade
+  // Transformar dados para manter compatibilidade com componentes existentes
   return (data ?? [])
-    .filter((b: any) => !!b.id && !!b.name)
+    .filter((b: any) => b.staff && b.staff.id && b.staff.name)
     .map((b: any) => ({
       id: String(b.id),
-      uuid_id: b.id ?? '',
-      name: b.name ?? '',
-      email: b.email ?? '',
-      phone: b.phone ?? '',
-      image_url: b.image_url ?? '',
-      specialties: b.specialties ?? '',
-      experience: b.experience ?? '',
-      commission_rate: b.commission_rate ?? 0,
-      is_active: b.is_active ?? true,
-      role: b.role ?? 'barber',
+      uuid_id: b.staff_id ?? '',
+      name: b.staff.name ?? '',
+      email: b.staff.email ?? '',
+      phone: b.staff.phone ?? '',
+      image_url: b.staff.image_url ?? '',
+      specialties: b.staff.specialties ?? '',
+      experience: b.staff.experience ?? '',
+      commission_rate: b.staff.commission_rate ?? 0,
+      is_active: b.staff.is_active ?? true,
+      role: b.staff.role ?? 'barber',
       created_at: b.created_at ?? '',
       updated_at: b.updated_at ?? '',
+      staff_id: b.staff_id,
+      barber_id: b.id
     }));
 };
 
@@ -133,7 +154,8 @@ const BarberManagement: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" na tabela staff.
+              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" na tabela staff, 
+              agora vinculados através da tabela barbers para melhor organização.
             </AlertDescription>
           </Alert>
           <Card>
@@ -182,4 +204,3 @@ const BarberManagement: React.FC = () => {
 };
 
 export default BarberManagement;
-
