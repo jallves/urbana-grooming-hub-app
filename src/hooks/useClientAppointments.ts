@@ -17,11 +17,17 @@ export const useClientAppointments = (clientId: string) => {
         .from('appointments')
         .select(`
           id,
+          client_id,
+          service_id,
+          staff_id,
           start_time,
           end_time,
           status,
           notes,
+          coupon_code,
+          discount_amount,
           created_at,
+          updated_at,
           service:service_id (
             id,
             name,
