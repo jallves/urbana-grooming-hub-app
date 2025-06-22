@@ -35,7 +35,7 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
         {appointment.service?.name || 'Serviço não encontrado'}
       </TableCell>
       <TableCell>
-        {appointment.staff?.name || 'Não atribuído'}
+        {appointment.barber?.name || 'Não atribuído'}
       </TableCell>
       <TableCell>
         {format(new Date(appointment.start_time), 'dd/MM/yyyy')}

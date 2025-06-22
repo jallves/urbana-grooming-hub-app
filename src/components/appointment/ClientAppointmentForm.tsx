@@ -30,11 +30,13 @@ type FormData = z.infer<typeof formSchema>;
 interface ClientAppointmentFormProps {
   clientName?: string;
   onSuccess?: () => void;
+  clientId?: string;
 }
 
 const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
   clientName = '',
-  onSuccess
+  onSuccess,
+  clientId
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedService, setSelectedService] = useState<any>(null);
@@ -55,6 +57,15 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
   });
 
   const handleSubmit = async (data: FormData) => {
+    if (!clientId) {
+      toast({
+        title: "Erro",
+        description: "ID do cliente não foi fornecido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       // Find selected service for duration calculation
@@ -72,18 +83,20 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + service.duration);
 
-      // Create appointment (assuming we have client context or ID)
+      // Create appointment object
+      const appointmentData = {
+        client_id: clientId,
+        service_id: data.service_id,
+        staff_id: data.staff_id,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: 'scheduled',
+        notes: data.notes || null,
+      };
+
       const { error } = await supabase
         .from('appointments')
-        .insert([{
-          service_id: data.service_id,
-          staff_id: data.staff_id,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          status: 'scheduled',
-          notes: data.notes || null,
-          // client_id would come from context or props
-        }]);
+        .insert([appointmentData]);
 
       if (error) throw error;
 
