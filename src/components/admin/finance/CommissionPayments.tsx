@@ -23,7 +23,7 @@ interface CommissionData {
   status: 'pending' | 'paid';
   created_at: string;
   payment_date?: string;
-  staff: {
+  barbers: {
     name: string;
     email: string;
   };
@@ -56,7 +56,7 @@ const CommissionPayments: React.FC = () => {
         .from('barber_commissions')
         .select(`
           *,
-          staff:barber_id (
+          barbers:barber_id (
             name,
             email
           ),
@@ -83,7 +83,7 @@ const CommissionPayments: React.FC = () => {
     queryKey: ['barbers-list'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('staff')
+        .from('barbers')
         .select('id, name')
         .eq('role', 'barber')
         .order('name');
@@ -139,7 +139,7 @@ const CommissionPayments: React.FC = () => {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const barberName = commission.staff?.name?.toLowerCase() || '';
+      const barberName = commission.barbers?.name?.toLowerCase() || '';
       const clientName = commission.appointments?.clients?.name?.toLowerCase() || '';
       const serviceName = commission.appointments?.services?.name?.toLowerCase() || '';
       
@@ -197,6 +197,37 @@ const CommissionPayments: React.FC = () => {
   const totalPaid = commissions
     .filter(c => c.status === 'paid')
     .reduce((sum, c) => sum + Number(c.amount), 0);
+
+  // Payment mutation
+  const payCommissionMutation = useMutation({
+    mutationFn: async (commissionIds: string[]) => {
+      const { error } = await supabase
+        .from('barber_commissions')
+        .update({ 
+          status: 'paid', 
+          payment_date: new Date().toISOString() 
+        })
+        .in('id', commissionIds);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Comissões pagas com sucesso!",
+        description: "As comissões selecionadas foram marcadas como pagas.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
+      setSelectedCommissions([]);
+      setIsPaymentDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao processar pagamento",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -377,7 +408,7 @@ const CommissionPayments: React.FC = () => {
                       <TableCell>
                         <div className="flex items-center">
                           <User className="h-4 w-4 mr-2" />
-                          {commission.staff?.name}
+                          {commission.barbers?.name}
                         </div>
                       </TableCell>
                       <TableCell>{commission.appointments?.clients?.name}</TableCell>

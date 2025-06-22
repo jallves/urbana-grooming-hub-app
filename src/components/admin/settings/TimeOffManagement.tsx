@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,10 +19,10 @@ interface TimeOff {
   reason: string;
   type: string;
   is_recurring: boolean;
-  staff?: { name: string };
+  barbers?: { name: string };
 }
 
-interface Staff {
+interface Barber {
   id: string;
   name: string;
 }
@@ -32,7 +31,7 @@ const TimeOffManagement: React.FC = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [timeOffs, setTimeOffs] = useState<TimeOff[]>([]);
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     staff_id: '',
@@ -54,22 +53,22 @@ const TimeOffManagement: React.FC = () => {
         .from('time_off')
         .select(`
           *,
-          staff:staff_id (name)
+          barbers:staff_id (name)
         `)
         .order('start_date', { ascending: false });
 
       if (timeOffError) throw timeOffError;
       setTimeOffs(timeOffData || []);
 
-      // Carregar staff
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
+      // Carregar barbeiros
+      const { data: barbersData, error: barbersError } = await supabase
+        .from('barbers')
         .select('id, name')
         .eq('is_active', true)
         .order('name');
 
-      if (staffError) throw staffError;
-      setStaff(staffData || []);
+      if (barbersError) throw barbersError;
+      setBarbers(barbersData || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
@@ -227,7 +226,7 @@ const TimeOffManagement: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">Feriado Geral</SelectItem>
-                      {staff.map((member) => (
+                      {barbers.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.name}
                         </SelectItem>
@@ -302,7 +301,7 @@ const TimeOffManagement: React.FC = () => {
                         {getTypeLabel(timeOff.type)}
                       </span>
                       <span className="font-medium">
-                        {timeOff.staff ? timeOff.staff.name : 'Feriado Geral'}
+                        {timeOff.barbers ? timeOff.barbers.name : 'Feriado Geral'}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 mt-1">

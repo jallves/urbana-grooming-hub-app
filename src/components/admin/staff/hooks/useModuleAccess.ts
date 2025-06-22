@@ -56,15 +56,15 @@ export const useModuleAccess = (requiredModuleId?: string) => {
           try {
             let staffId;
             
-            // Get the staff record for this barber
-            const { data: staffData, error: staffError } = await supabase
-              .from('staff')
+            // Get the barber record for this barber
+            const { data: barberData, error: barberError } = await supabase
+              .from('barbers')
               .select('id')
               .eq('email', user.email)
               .maybeSingle();
               
-            if (staffData && !staffError) {
-              staffId = staffData.id;
+            if (barberData && !barberError) {
+              staffId = barberData.id;
               
               // Get specific module access from staff_module_access table
               const { data: moduleData, error: moduleError } = await supabase
@@ -83,7 +83,7 @@ export const useModuleAccess = (requiredModuleId?: string) => {
                 return;
               }
             } else {
-              // Try direct user ID lookup if staff record not found
+              // Try direct user ID lookup if barber record not found
               const { data: directModules, error: directError } = await supabase
                 .from('staff_module_access')
                 .select('module_id')

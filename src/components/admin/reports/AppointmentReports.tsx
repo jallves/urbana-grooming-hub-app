@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +34,7 @@ const AppointmentReports: React.FC = () => {
     queryFn: async () => {
       const { data: appointments, error } = await supabase
         .from('appointments')
-        .select('*, services(name), staff(name)')
+        .select('*, services(name), barbers(name)')
         .gte('start_time', new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString())
         .order('start_time');
       
@@ -108,7 +107,7 @@ const AppointmentReports: React.FC = () => {
     const staffStats: Record<string, { total: number; completed: number }> = {};
     
     appointmentsData.forEach(apt => {
-      const staffName = apt.staff?.name || 'Não Definido';
+      const staffName = apt.barbers?.name || 'Não Definido';
       if (!staffStats[staffName]) {
         staffStats[staffName] = { total: 0, completed: 0 };
       }

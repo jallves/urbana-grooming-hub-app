@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -86,25 +87,25 @@ export const useUserManagement = () => {
       setSyncLoading(true);
       setError(null);
       
-      // Fetch all active staff members
-      const { data: staffMembers, error: staffError } = await supabase
-        .from('staff')
+      // Fetch all active barbers
+      const { data: barbersMembers, error: barbersError } = await supabase
+        .from('barbers')
         .select('*')
         .eq('is_active', true);
         
-      if (staffError) {
-        setError(staffError.message || 'Erro ao buscar profissionais');
-        throw staffError;
+      if (barbersError) {
+        setError(barbersError.message || 'Erro ao buscar profissionais');
+        throw barbersError;
       }
       
-      if (!staffMembers || staffMembers.length === 0) {
+      if (!barbersMembers || barbersMembers.length === 0) {
         toast.info('Não há profissionais ativos para sincronizar');
         setSyncLoading(false);
         return;
       }
       
       // Log fetched staff
-      console.log('Fetched active staff members:', staffMembers);
+      console.log('Fetched active barbers members:', barbersMembers);
 
       // Fetch existing users to avoid duplicates
       const { data: existingUsers, error: usersError } = await supabase
@@ -121,14 +122,14 @@ export const useUserManagement = () => {
       
       console.log('Existing emails:', Array.from(existingEmails));
       
-      // Filter staff members who don't already exist as users
-      const newStaff = staffMembers.filter(staff => 
-        staff.email && !existingEmails.has(staff.email.toLowerCase())
+      // Filter barbers members who don't already exist as users
+      const newBarbers = barbersMembers.filter(barber => 
+        barber.email && !existingEmails.has(barber.email.toLowerCase())
       );
       
-      console.log('New staff to add:', newStaff);
+      console.log('New barbers to add:', newBarbers);
       
-      if (newStaff.length === 0) {
+      if (newBarbers.length === 0) {
         toast.info('Todos os profissionais já foram sincronizados como usuários');
         setSyncLoading(false);
         return;
@@ -138,18 +139,18 @@ export const useUserManagement = () => {
       let errors = 0;
       
       // Use the RPC function to add barbers - REMOVED AUTOMATIC ADMIN ROLE ASSIGNMENT
-      for (const staff of newStaff) {
+      for (const barber of newBarbers) {
         // Sanitize inputs before sending to database
-        const staffEmail = sanitizeInput(staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`);
-        const staffName = sanitizeInput(staff.name);
-        console.log(`Adding barber: ${staffName} with email: ${staffEmail}`);
+        const barberEmail = sanitizeInput(barber.email || `${barber.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`);
+        const barberName = sanitizeInput(barber.name);
+        console.log(`Adding barber: ${barberName} with email: ${barberEmail}`);
         
         try {
           const { data, error: rpcError } = await supabase.rpc(
             'add_barber_user' as any, 
             {
-              p_email: staffEmail,
-              p_name: staffName,
+              p_email: barberEmail,
+              p_name: barberName,
               p_role: 'barber' // Default to barber role, not admin
             }
           );
