@@ -68,7 +68,11 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
       // Fetch ticket details
       const { data: ticketData, error: ticketError } = await supabase
         .from('support_tickets')
-        .select('*, clients(*), staff(*)')
+        .select(`
+          *,
+          clients(*),
+          barbers:staff_id(*)
+        `)
         .eq('id', ticketId)
         .single();
 
@@ -90,7 +94,19 @@ const TicketDetails: React.FC<TicketDetailsProps> = ({
         staff: undefined
       }));
 
-      setTicket(ticketData as SupportTicket);
+      // Type the ticket data properly
+      const typedTicket: SupportTicket = {
+        ...ticketData,
+        clients: ticketData.clients ? {
+          name: ticketData.clients.name,
+          email: ticketData.clients.email
+        } : undefined,
+        staff: ticketData.barbers ? {
+          name: ticketData.barbers.name
+        } : undefined
+      };
+
+      setTicket(typedTicket);
       setResponses(typedResponses);
     } catch (error) {
       console.error('Error fetching ticket details:', error);

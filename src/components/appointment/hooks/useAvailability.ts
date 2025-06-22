@@ -1,172 +1,139 @@
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { BarberAvailabilityInfo } from './types';
+import { StaffMember } from '@/types/appointment';
+
+export interface BarberAvailabilityInfo {
+  id: string;
+  name: string;
+  available: boolean;
+  message?: string;
+}
 
 export const useAvailability = () => {
-  const { toast } = useToast();
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [barberAvailability, setBarberAvailability] = useState<BarberAvailabilityInfo[]>([]);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
 
-  const fetchAvailableTimes = useCallback(async (date: Date, serviceId: string) => {
-    if (!date || !serviceId) {
+  const fetchAvailableTimes = async (date: Date, serviceId?: string) => {
+    if (!serviceId) {
       setAvailableTimes([]);
       return;
     }
 
     setIsCheckingAvailability(true);
+    
     try {
-      // Buscar duração do serviço
-      const { data: serviceData } = await supabase
-        .from('services')
-        .select('duration')
-        .eq('id', serviceId)
-        .single();
+      // Fetch all barbers first
+      const { data: barbersData, error: barbersError } = await supabase
+        .from('barbers')
+        .select('*')
+        .eq('is_active', true);
 
-      if (!serviceData) {
-        setAvailableTimes([]);
-        return;
-      }
+      if (barbersError) throw barbersError;
 
-      // Buscar barbeiros ativos
-      const { data: activeBarbers } = await supabase
-        .from('staff')
-        .select('id')
-        .eq('is_active', true)
-        .eq('role', 'barber');
-
-      if (!activeBarbers || activeBarbers.length === 0) {
-        setAvailableTimes([]);
-        return;
-      }
-
-      // Coletar todos os slots disponíveis de todos os barbeiros
-      const allSlots = new Set<string>();
-
-      for (const barber of activeBarbers) {
-        const { data: slots } = await supabase.rpc('get_available_time_slots', {
-          p_staff_id: barber.id,
-          p_date: date.toISOString().split('T')[0],
-          p_service_duration: serviceData.duration
-        });
-
-        if (slots) {
-          slots.forEach((slot: any) => allSlots.add(slot.time_slot));
+      // Generate time slots based on working hours
+      const timeSlots = generateTimeSlots();
+      
+      // Check availability for each time slot
+      const availableSlots: string[] = [];
+      
+      for (const timeSlot of timeSlots) {
+        const hasAvailableBarber = await checkAnyBarberAvailable(date, timeSlot, barbersData || []);
+        if (hasAvailableBarber) {
+          availableSlots.push(timeSlot);
         }
       }
-
-      // Converter para array e ordenar
-      const timeSlots = Array.from(allSlots).sort();
-      setAvailableTimes(timeSlots);
+      
+      setAvailableTimes(availableSlots);
     } catch (error) {
-      console.error("Erro ao buscar horários disponíveis:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os horários disponíveis.",
-        variant: "destructive",
-      });
+      console.error('Error fetching available times:', error);
       setAvailableTimes([]);
     } finally {
       setIsCheckingAvailability(false);
     }
-  }, [toast]);
+  };
 
-  const checkBarberAvailability = useCallback(
-    async (date: Date, time: string, serviceId: string, externalBarbers?: any[]) => {
-      if (!date || !time || !serviceId) {
-        setBarberAvailability([]);
-        return;
-      }
-
-      setIsCheckingAvailability(true);
-      try {
-        console.log("Verificando disponibilidade dos barbeiros para:", {
-          date,
-          time,
-          serviceId,
-          externalBarbers,
+  const checkBarberAvailability = async (
+    date: Date, 
+    time: string, 
+    serviceId: string, 
+    barbers: StaffMember[]
+  ) => {
+    setIsCheckingAvailability(true);
+    
+    try {
+      const availability: BarberAvailabilityInfo[] = [];
+      
+      for (const barber of barbers) {
+        const isAvailable = await checkSingleBarberAvailability(date, time, barber.id);
+        availability.push({
+          id: barber.id,
+          name: barber.name,
+          available: isAvailable,
+          message: isAvailable ? 'Disponível' : 'Ocupado neste horário'
         });
-
-        let staffMembers: any[] = [];
-
-        if (Array.isArray(externalBarbers) && externalBarbers.length > 0) {
-          staffMembers = externalBarbers;
-          console.log("[useAvailability] Usando array externo de barbeiros:", staffMembers);
-        } else {
-          // Fallback: busca direto do banco
-          const { data: dbStaff, error: staffError } = await supabase
-            .from("staff")
-            .select("id, name, is_active, role")
-            .eq("is_active", true)
-            .eq("role", "barber")
-            .order("name", { ascending: true });
-
-          if (staffError || !dbStaff || dbStaff.length === 0) {
-            console.error("Erro ao buscar barbeiros ativos no fallback:", staffError);
-            toast({
-              title: "Erro",
-              description: "Não foi possível verificar a disponibilidade dos barbeiros.",
-              variant: "destructive",
-            });
-            setBarberAvailability([]);
-            setIsCheckingAvailability(false);
-            return;
-          }
-          staffMembers = dbStaff;
-          console.log("[useAvailability] Usando array de barbeiros buscado do banco (fallback):", staffMembers);
-        }
-
-        // Buscar duração do serviço
-        const { data: serviceData, error: serviceError } = await supabase
-          .from("services")
-          .select("duration")
-          .eq("id", serviceId)
-          .single();
-
-        let serviceDuration = 60;
-        if (!serviceError && serviceData) serviceDuration = serviceData.duration;
-
-        // Verificar disponibilidade para cada barbeiro usando a função SQL
-        const availability = await Promise.all(
-          staffMembers.map(async (staff) => {
-            try {
-              const { data: isAvailable } = await supabase.rpc('check_barber_availability', {
-                p_barber_id: staff.id,
-                p_date: date.toISOString().split('T')[0],
-                p_start_time: time,
-                p_duration_minutes: serviceDuration
-              });
-
-              return {
-                id: staff.id,
-                name: staff.name,
-                available: Boolean(isAvailable),
-              };
-            } catch (error) {
-              console.error(`Erro ao verificar disponibilidade para ${staff.name}:`, error);
-              return { id: staff.id, name: staff.name, available: false };
-            }
-          })
-        );
-
-        setBarberAvailability(availability);
-        console.log("[useAvailability] Resultado verificação:", availability);
-      } catch (error) {
-        console.error("Erro ao verificar disponibilidade dos barbeiros:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível verificar a disponibilidade dos barbeiros.",
-          variant: "destructive",
-        });
-        setBarberAvailability([]);
-      } finally {
-        setIsCheckingAvailability(false);
       }
-    },
-    [toast]
-  );
+      
+      setBarberAvailability(availability);
+    } catch (error) {
+      console.error('Error checking barber availability:', error);
+      setBarberAvailability([]);
+    } finally {
+      setIsCheckingAvailability(false);
+    }
+  };
+
+  // Helper functions
+  const generateTimeSlots = () => {
+    const slots = [];
+    const start = 8; // 8 AM
+    const end = 18; // 6 PM
+    
+    for (let hour = start; hour < end; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        slots.push(timeString);
+      }
+    }
+    
+    return slots;
+  };
+
+  const checkAnyBarberAvailable = async (date: Date, time: string, barbers: StaffMember[]) => {
+    for (const barber of barbers) {
+      const isAvailable = await checkSingleBarberAvailability(date, time, barber.id);
+      if (isAvailable) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const checkSingleBarberAvailability = async (date: Date, time: string, barberId: string) => {
+    try {
+      // Check if barber has any appointments at this time
+      const dateStr = date.toISOString().split('T')[0];
+      const [hours, minutes] = time.split(':').map(Number);
+      const appointmentTime = new Date(date);
+      appointmentTime.setHours(hours, minutes, 0, 0);
+      
+      const { data: appointments, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('staff_id', barberId)
+        .gte('start_time', appointmentTime.toISOString())
+        .lt('start_time', new Date(appointmentTime.getTime() + 60 * 60 * 1000).toISOString()) // Next hour
+        .in('status', ['scheduled', 'confirmed']);
+
+      if (error) throw error;
+      
+      return !appointments || appointments.length === 0;
+    } catch (error) {
+      console.error('Error checking single barber availability:', error);
+      return false;
+    }
+  };
 
   return {
     availableTimes,

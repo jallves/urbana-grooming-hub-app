@@ -1,154 +1,65 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Check, Clock, DollarSign, Calendar, User } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DollarSign, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
 
-const BarberCommissionsComponent: React.FC = () => {
-  const [commissions, setCommissions] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [totals, setTotals] = useState({
-    total: 0,
-    paid: 0,
-    pending: 0,
-    totalAppointments: 0,
-    completedAppointments: 0,
-  });
-  const [activeTab, setActiveTab] = useState<string>("comissoes");
+const BarberCommissions: React.FC = () => {
   const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchCommissions = async () => {
-      if (!user) return;
+  // Get barber ID from email
+  const { data: barberData } = useQuery({
+    queryKey: ['barber-profile', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return null;
       
-      try {
-        console.log('Fetching commissions for user:', user.email);
-        
-        // Primeiro tenta encontrar o registro de staff correspondente ao email do usuário
-        const { data: staffData, error: staffError } = await supabase
-          .from('staff')
-          .select('id, commission_rate')
-          .eq('email', user.email)
-          .maybeSingle();
-          
-        if (staffError) {
-          console.error('Erro ao buscar dados do profissional:', staffError);
-          setLoading(false);
-          return;
-        }
-        
-        if (!staffData) {
-          console.log('Nenhum registro de profissional encontrado para este usuário');
-          setLoading(false);
-          return;
-        }
-        
-        // Fetch appointments to calculate statistics
-        const { data: appointmentsData, error: appointmentsError } = await supabase
-          .from('appointments')
-          .select('id, status, service_id')
-          .eq('staff_id', staffData.id);
-          
-        if (appointmentsError) {
-          console.error('Erro ao buscar estatísticas de agendamentos:', appointmentsError);
-        } else {
-          const completedCount = appointmentsData?.filter(app => app.status === 'completed').length || 0;
-          const totalCount = appointmentsData?.length || 0;
-          
-          // Get service prices to calculate potential revenue
-          if (appointmentsData && appointmentsData.length > 0) {
-            const serviceIds = [...new Set(appointmentsData.map(app => app.service_id))];
-            
-            const { data: servicesData } = await supabase
-              .from('services')
-              .select('id, price')
-              .in('id', serviceIds);
-              
-            const servicesPriceMap = {};
-            servicesData?.forEach(service => {
-              servicesPriceMap[service.id] = service.price;
-            });
-            
-            // Calculate potential revenue
-            let potentialRevenue = 0;
-            appointmentsData.forEach(app => {
-              if (app.status === 'completed' && app.service_id) {
-                potentialRevenue += Number(servicesPriceMap[app.service_id] || 0);
-              }
-            });
-          }
-          
-          // Update appointments statistics
-          setTotals(prev => ({
-            ...prev,
-            totalAppointments: totalCount,
-            completedAppointments: completedCount
-          }));
-        }
-        
-        // Buscar as comissões para este barbeiro
-        const { data: commissionsData, error: commissionsError } = await supabase
-          .from('barber_commissions')
-          .select(`
-            *,
-            appointments:appointment_id (
-              *,
-              clients:client_id (*),
-              services:service_id (*)
+      const { data, error } = await supabase
+        .from('barbers')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.email
+  });
+
+  // Fetch commissions data
+  const { data: commissions = [], isLoading } = useQuery({
+    queryKey: ['barber-commissions', barberData?.id],
+    queryFn: async () => {
+      if (!barberData?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('barber_commissions')
+        .select(`
+          *,
+          appointments:appointment_id (
+            start_time,
+            clients:client_id (
+              name
+            ),
+            services:service_id (
+              name,
+              price
             )
-          `)
-          .eq('barber_id', staffData.id)
-          .order('created_at', { ascending: false });
-          
-        if (commissionsError) {
-          console.error('Erro ao buscar comissões:', commissionsError);
-        } else {
-          console.log('Comissões encontradas:', commissionsData?.length || 0);
-          setCommissions(commissionsData || []);
-          
-          // Calculate totals
-          const total = commissionsData?.reduce((sum, commission) => sum + Number(commission.amount), 0) || 0;
-          const paid = commissionsData?.reduce((sum, commission) => 
-            commission.status === 'paid' ? sum + Number(commission.amount) : sum, 0) || 0;
-          
-          setTotals(prev => ({
-            ...prev,
-            total,
-            paid,
-            pending: total - paid
-          }));
-        }
-      } catch (error) {
-        console.error('Erro ao buscar dados:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+          )
+        `)
+        .eq('barber_id', barberData.id)
+        .order('created_at', { ascending: false });
 
-    fetchCommissions();
-    
-    // Subscribe to real-time changes for commissions
-    const channel = supabase
-      .channel('barber-commissions-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'barber_commissions' },
-        (payload) => {
-          console.log('Commission data changed:', payload);
-          fetchCommissions();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    
-  }, [user]);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!barberData?.id
+  });
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -158,156 +69,150 @@ const BarberCommissionsComponent: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return '';
     try {
-      return format(parseISO(dateString), "d 'de' MMMM 'de' yyyy", { locale: ptBR });
+      return format(parseISO(dateString), "dd/MM/yyyy", { locale: ptBR });
     } catch (e) {
       return dateString;
     }
   };
 
+  // Calculate summary metrics
+  const totalPending = commissions
+    .filter(c => c.status === 'pending')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+  
+  const totalPaid = commissions
+    .filter(c => c.status === 'paid')
+    .reduce((sum, c) => sum + Number(c.amount), 0);
+
+  const thisMonthCommissions = commissions.filter(c => {
+    const commissionDate = new Date(c.created_at);
+    const now = new Date();
+    return commissionDate.getMonth() === now.getMonth() && 
+           commissionDate.getFullYear() === now.getFullYear();
+  });
+
+  const thisMonthTotal = thisMonthCommissions.reduce((sum, c) => sum + Number(c.amount), 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Minhas Comissões</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-6 flex items-center">
-            <div className="rounded-full bg-green-100 p-3 mr-4">
-              <DollarSign className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Total Ganhos</div>
-              <div className="text-xl font-bold text-green-600">{formatCurrency(totals.total)}</div>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="rounded-full bg-yellow-100 p-3 mr-4">
+                <DollarSign className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-yellow-600">{formatCurrency(totalPending)}</div>
+                <p className="text-xs text-muted-foreground">Comissões Pendentes</p>
+              </div>
             </div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-6 flex items-center">
-            <div className="rounded-full bg-blue-100 p-3 mr-4">
-              <Check className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Comissões Pagas</div>
-              <div className="text-xl font-bold">{formatCurrency(totals.paid)}</div>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="rounded-full bg-green-100 p-3 mr-4">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPaid)}</div>
+                <p className="text-xs text-muted-foreground">Comissões Pagas</p>
+              </div>
             </div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-6 flex items-center">
-            <div className="rounded-full bg-yellow-100 p-3 mr-4">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Comissões Pendentes</div>
-              <div className="text-xl font-bold text-yellow-600">{formatCurrency(totals.pending)}</div>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="rounded-full bg-blue-100 p-3 mr-4">
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{formatCurrency(thisMonthTotal)}</div>
+                <p className="text-xs text-muted-foreground">Este Mês</p>
+              </div>
             </div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-6 flex items-center">
-            <div className="rounded-full bg-gray-100 p-3 mr-4">
-              <User className="h-6 w-6 text-gray-600" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Total Atendimentos</div>
-              <div className="text-xl font-bold">{totals.completedAppointments}/{totals.totalAppointments}</div>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="rounded-full bg-purple-100 p-3 mr-4">
+                <Calendar className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{commissions.length}</div>
+                <p className="text-xs text-muted-foreground">Total de Comissões</p>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
-      
+
+      {/* Commissions Table */}
       <Card>
-        <CardContent className="p-4">
-          <Tabs defaultValue="comissoes" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="comissoes">Histórico de Comissões</TabsTrigger>
-              <TabsTrigger value="estatisticas">Estatísticas</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="comissoes">
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
-                </div>
-              ) : commissions.length > 0 ? (
-                <div className="grid gap-4">
-                  {commissions.map((commission) => (
-                    <div key={commission.id} className="border rounded-md p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">
-                            {commission.appointments?.clients?.name || 'Cliente não identificado'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {commission.appointments?.services?.name || 'Serviço não especificado'}
-                          </p>
-                        </div>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          commission.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+        <CardHeader>
+          <CardTitle>Histórico de Comissões</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Serviço</TableHead>
+                  <TableHead>Valor do Serviço</TableHead>
+                  <TableHead>Taxa (%)</TableHead>
+                  <TableHead>Comissão</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {commissions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      Nenhuma comissão encontrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  commissions.map((commission) => (
+                    <TableRow key={commission.id}>
+                      <TableCell>{commission.appointments?.clients?.name || 'N/A'}</TableCell>
+                      <TableCell>{commission.appointments?.services?.name || 'N/A'}</TableCell>
+                      <TableCell>{formatCurrency(Number(commission.appointments?.services?.price || 0))}</TableCell>
+                      <TableCell>{commission.commission_rate}%</TableCell>
+                      <TableCell className="font-medium">{formatCurrency(Number(commission.amount))}</TableCell>
+                      <TableCell>{formatDate(commission.created_at)}</TableCell>
+                      <TableCell>
+                        <Badge variant={commission.status === 'paid' ? 'default' : 'secondary'}>
                           {commission.status === 'paid' ? 'Pago' : 'Pendente'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between text-sm">
-                        <span>{formatDate(commission.created_at)}</span>
-                        <div className="flex items-center">
-                          <span className="text-gray-500 mr-2">Taxa de comissão: {commission.commission_rate}%</span>
-                          <span className="font-medium text-green-600">
-                            {formatCurrency(Number(commission.amount))}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Você ainda não tem comissões registradas.</p>
-                  <p className="text-sm text-gray-400 mt-2">
-                    As comissões são geradas automaticamente quando você concluir agendamentos.
-                  </p>
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="estatisticas">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="border rounded-md p-4">
-                  <div className="flex items-center mb-2">
-                    <Calendar className="h-5 w-5 text-gray-500 mr-2" />
-                    <span className="font-medium">Total de Agendamentos</span>
-                  </div>
-                  <p className="text-2xl font-bold">{totals.totalAppointments}</p>
-                </div>
-                
-                <div className="border rounded-md p-4">
-                  <div className="flex items-center mb-2">
-                    <Check className="h-5 w-5 text-green-500 mr-2" />
-                    <span className="font-medium">Agendamentos Concluídos</span>
-                  </div>
-                  <p className="text-2xl font-bold">{totals.completedAppointments}</p>
-                </div>
-              </div>
-              
-              <div className="mt-4 border rounded-md p-4">
-                <h3 className="font-medium mb-2">Informações sobre Comissões</h3>
-                <p className="text-sm text-gray-500 mb-2">
-                  Suas comissões são calculadas automaticamente quando um agendamento é marcado como concluído.
-                  A porcentagem da sua comissão é aplicada sobre o valor do serviço.
-                </p>
-                <p className="text-sm text-gray-500">
-                  Para mais detalhes sobre suas comissões ou para solicitar um pagamento,
-                  entre em contato com o administrador da barbearia.
-                </p>
-              </div>
-            </TabsContent>
-          </Tabs>
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 };
 
-export default BarberCommissionsComponent;
+export default BarberCommissions;

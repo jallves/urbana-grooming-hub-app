@@ -12,7 +12,7 @@ interface ServiceSelectionProps {
 
 const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSelectChange }) => {
   const [services, setServices] = useState<Service[]>([]);
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [barbers, setBarbers] = useState<StaffMember[]>([]);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -36,9 +36,9 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
     };
 
     // Carregar barbeiros
-    const fetchStaff = async () => {
+    const fetchBarbers = async () => {
       const { data, error } = await supabase
-        .from('staff')
+        .from('barbers')
         .select('*')
         .eq('is_active', true);
 
@@ -50,12 +50,12 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
           variant: "destructive",
         });
       } else {
-        setStaff(data || []);
+        setBarbers(data || []);
       }
     };
 
     fetchServices();
-    fetchStaff();
+    fetchBarbers();
   }, [toast]);
   
   return (
@@ -88,7 +88,7 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="any">Qualquer Disponível</SelectItem>
-            {staff.map((barber) => (
+            {barbers.map((barber) => (
               <SelectItem key={barber.id} value={barber.id || "no-id"}>{barber.name}</SelectItem>
             ))}
           </SelectContent>

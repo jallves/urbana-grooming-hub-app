@@ -198,37 +198,6 @@ const CommissionPayments: React.FC = () => {
     .filter(c => c.status === 'paid')
     .reduce((sum, c) => sum + Number(c.amount), 0);
 
-  // Payment mutation
-  const payCommissionMutation = useMutation({
-    mutationFn: async (commissionIds: string[]) => {
-      const { error } = await supabase
-        .from('barber_commissions')
-        .update({ 
-          status: 'paid', 
-          payment_date: new Date().toISOString() 
-        })
-        .in('id', commissionIds);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Comissões pagas com sucesso!",
-        description: "As comissões selecionadas foram marcadas como pagas.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
-      setSelectedCommissions([]);
-      setIsPaymentDialogOpen(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao processar pagamento",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
   return (
     <div className="space-y-6">
       {/* Statistics Cards */}
