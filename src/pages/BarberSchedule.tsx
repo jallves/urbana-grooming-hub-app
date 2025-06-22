@@ -18,7 +18,7 @@ const BarberSchedule: React.FC = () => {
 
   return (
     <BarberLayout>
-      <BarberScheduleView barberId={barber.id} />
+      <BarberScheduleView />
     </BarberLayout>
   );
 };
