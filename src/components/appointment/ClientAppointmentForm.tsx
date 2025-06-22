@@ -1,171 +1,89 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Form } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
-import { LoaderPage } from '@/components/ui/loader-page';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useClientFormData } from './client/hooks/useClientFormData';
 import { useAppointmentSubmit } from './hooks/useAppointmentSubmit';
-import { useAdvancedAvailability } from '@/hooks/useAdvancedAvailability';
-import ClientSelect from './client/ClientSelect';
 import ServiceSelect from './client/ServiceSelect';
-import EnhancedDateTimePicker from './client/EnhancedDateTimePicker';
 import BarbershopStaffSelect from './client/BarbershopStaffSelect';
+import EnhancedDateTimePicker from './client/EnhancedDateTimePicker';
 import NotesField from './client/NotesField';
 import AppointmentFormActions from './client/AppointmentFormActions';
-import { AppointmentSummary } from './components/AppointmentSummary';
+import { Loader2 } from 'lucide-react';
 
 interface ClientAppointmentFormProps {
-  clientId: string;
-  appointmentId?: string;
-  initialData?: {
-    serviceId: string;
-    staffId: string;
-    date: Date;
-    notes: string;
-  };
+  clientName?: string;
   onSuccess?: () => void;
-  onCancel?: () => void;
 }
 
-export default function ClientAppointmentForm({ 
-  clientId, 
-  appointmentId, 
-  initialData,
-  onSuccess,
-  onCancel
-}: ClientAppointmentFormProps) {
-  const navigate = useNavigate();
-  const { toast } = useToast();
+const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
+  clientName = '',
+  onSuccess
+}) => {
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
   const {
     form,
-    isLoading: isFormLoading,
+    isLoading,
     services,
     staffMembers,
     selectedService,
-  } = useClientFormData('Cliente');
+  } = useClientFormData(clientName);
 
-  const {
-    barberAvailability,
-    isLoading: isCheckingAvailability,
-    checkBarberAvailability,
-  } = useAdvancedAvailability();
+  const { handleSubmit, isSubmitting } = useAppointmentSubmit(onSuccess);
 
-  const { loading: submitLoading, onSubmit } = useAppointmentSubmit(
-    clientId,
-    selectedService,
-    null, // appliedCoupon
-    form as any,
-    () => {}, // setSelectedService
-    () => {} // setAppliedCoupon
-  );
-
-  const isLoading = isFormLoading || submitLoading;
-
-  const handleSubmit = async (data: any) => {
-    try {
-      await onSubmit(data);
-      toast({
-        title: 'Sucesso',
-        description: appointmentId 
-          ? 'Agendamento atualizado com sucesso!' 
-          : 'Agendamento realizado com sucesso!',
-      });
-      onSuccess?.();
-    } catch (err) {
-      console.error('[ClientAppointmentForm] Erro ao submeter:', err);
-      toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao processar seu agendamento',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleServiceChange = (serviceId: string) => {
-    // Reset staff and time selection when service changes
-    form.setValue('staff_id', '');
-    form.setValue('time', '');
-  };
-
-  const handleDateChange = (date: Date) => {
-    // Reset time when date changes
-    form.setValue('time', '');
-  };
-
-  const handleTimeChange = (time: string) => {
-    const serviceId = form.getValues('service_id');
-    const date = form.getValues('date');
-    
-    if (serviceId && date && time) {
-      checkBarberAvailability(date, time, serviceId, staffMembers);
-    }
-  };
-
-  if (isFormLoading) {
+  if (isLoading) {
     return (
-      <LoaderPage 
-        fullScreen 
-        text="Carregando dados do agendamento..." 
-        className="bg-stone-900"
-      />
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Carregando dados...</span>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4">
-      <Form {...form}>
-        <form 
-          onSubmit={form.handleSubmit(handleSubmit)} 
-          className="space-y-8"
-        >
-          <ClientSelect form={form} clientName="Cliente" />
-          
-          <ServiceSelect 
-            services={services} 
-            form={form} 
-            onServiceChange={handleServiceChange}
-          />
-          
-          <EnhancedDateTimePicker 
+    <Card>
+      <CardHeader>
+        <CardTitle>Agendar Horário</CardTitle>
+        <CardDescription>
+          Preencha os dados para fazer seu agendamento
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ServiceSelect 
+              form={form} 
+              services={services} 
+              isLoading={isLoading} 
+            />
+            
+            <BarbershopStaffSelect 
+              form={form} 
+              staffMembers={staffMembers} 
+              isLoading={isLoading} 
+            />
+          </div>
+
+          <EnhancedDateTimePicker
             form={form}
-            selectedServiceId={form.watch('service_id')}
-            selectedStaffId={form.watch('staff_id')}
-            onDateChange={handleDateChange}
-            onTimeChange={handleTimeChange}
+            selectedService={selectedService}
+            showAdvanced={showAdvanced}
+            onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
           />
-          
-          <BarbershopStaffSelect 
-            staffMembers={staffMembers} 
-            form={form} 
-            barberAvailability={barberAvailability}
-            isCheckingAvailability={isCheckingAvailability}
-          />
-          
+
           <NotesField form={form} />
           
-          {selectedService && (
-            <div className="space-y-4 p-6 bg-stone-800/50 rounded-lg border border-stone-700">
-              <h3 className="text-lg font-medium text-white flex items-center gap-2">
-                ✨ Resumo do Agendamento
-              </h3>
-              <AppointmentSummary
-                selectedService={selectedService}
-                appliedCoupon={null}
-                finalServicePrice={selectedService.price}
-              />
-            </div>
-          )}
-          
           <AppointmentFormActions 
-            isLoading={submitLoading} 
-            onCancel={onCancel ?? (() => navigate(-1))} 
-            isEditing={!!appointmentId} 
+            isSubmitting={isSubmitting}
+            onCancel={() => form.reset()}
           />
         </form>
-      </Form>
-    </div>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default ClientAppointmentForm;

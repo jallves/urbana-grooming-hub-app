@@ -23,7 +23,7 @@ interface Service {
   price: number;
 }
 
-interface Staff {
+interface Barber {
   id: string;
   name: string;
   role: string;
@@ -36,7 +36,7 @@ export default function ClientNewBooking() {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
-  const [staff, setStaff] = useState<Staff[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [formData, setFormData] = useState({
     service_id: '',
@@ -73,26 +73,26 @@ export default function ClientNewBooking() {
         setServices(servicesData || []);
       }
 
-      // Carregar barbeiros da tabela staff com acesso público
+      // Carregar barbeiros da tabela barbers com acesso público
       console.log('👨‍💼 Buscando barbeiros...');
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
+      const { data: barbersData, error: barbersError } = await supabase
+        .from('barbers')
         .select('id, name, role')
         .eq('is_active', true)
         .eq('role', 'barber')
         .order('name');
 
-      if (staffError) {
-        console.error('❌ Erro ao carregar barbeiros:', staffError);
+      if (barbersError) {
+        console.error('❌ Erro ao carregar barbeiros:', barbersError);
         console.error('Detalhes do erro:', {
-          message: staffError.message,
-          code: staffError.code,
-          details: staffError.details,
-          hint: staffError.hint
+          message: barbersError.message,
+          code: barbersError.code,
+          details: barbersError.details,
+          hint: barbersError.hint
         });
       } else {
-        console.log('✅ Barbeiros carregados:', staffData?.length || 0, staffData);
-        setStaff(staffData || []);
+        console.log('✅ Barbeiros carregados:', barbersData?.length || 0, barbersData);
+        setBarbers(barbersData || []);
       }
 
       // Verificar se temos dados
@@ -105,7 +105,7 @@ export default function ClientNewBooking() {
         });
       }
 
-      if (!staffData || staffData.length === 0) {
+      if (!barbersData || barbersData.length === 0) {
         console.warn('⚠️ Nenhum barbeiro ativo encontrado');
         toast({
           title: "Aviso", 
@@ -116,9 +116,9 @@ export default function ClientNewBooking() {
 
       console.log('📊 Resumo final:', {
         servicos: servicesData?.length || 0,
-        barbeiros: staffData?.length || 0,
+        barbeiros: barbersData?.length || 0,
         temServicos: (servicesData?.length || 0) > 0,
-        temBarbeiros: (staffData?.length || 0) > 0
+        temBarbeiros: (barbersData?.length || 0) > 0
       });
       
     } catch (error) {
@@ -285,9 +285,9 @@ export default function ClientNewBooking() {
                       <SelectValue placeholder="Selecione o barbeiro" />
                     </SelectTrigger>
                     <SelectContent>
-                      {staff.length > 0 ? staff.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.name}
+                      {barbers.length > 0 ? barbers.map((barber) => (
+                        <SelectItem key={barber.id} value={barber.id}>
+                          {barber.name}
                         </SelectItem>
                       )) : (
                         <div className="px-2 py-1 text-sm text-gray-500 flex items-center gap-2">
@@ -358,9 +358,9 @@ export default function ClientNewBooking() {
               <div className="bg-blue-900/20 border border-blue-700 text-blue-400 px-4 py-3 rounded-md text-sm">
                 <h4 className="font-semibold mb-2">Debug - Dados carregados:</h4>
                 <p>Serviços: {services.length}</p>
-                <p>Barbeiros: {staff.length}</p>
-                {staff.length > 0 && (
-                  <p>Barbeiros encontrados: {staff.map(s => s.name).join(', ')}</p>
+                <p>Barbeiros: {barbers.length}</p>
+                {barbers.length > 0 && (
+                  <p>Barbeiros encontrados: {barbers.map(s => s.name).join(', ')}</p>
                 )}
               </div>
 
@@ -370,7 +370,7 @@ export default function ClientNewBooking() {
                 </div>
               )}
 
-              {staff.length === 0 && (
+              {barbers.length === 0 && (
                 <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-md text-sm">
                   ❌ Nenhum barbeiro disponível no momento. Verifique se há barbeiros cadastrados com role 'barber' e is_active = true.
                 </div>
@@ -387,7 +387,7 @@ export default function ClientNewBooking() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={loading || services.length === 0 || staff.length === 0}
+                  disabled={loading || services.length === 0 || barbers.length === 0}
                   className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
                 >
                   {loading ? (

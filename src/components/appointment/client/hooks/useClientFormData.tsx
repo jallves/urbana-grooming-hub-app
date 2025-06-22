@@ -57,24 +57,24 @@ export const useClientFormData = (clientName: string = '') => {
     },
   });
 
-  // Buscar barbeiros da tabela staff - agora com acesso público através das políticas RLS
+  // Buscar barbeiros da tabela barbers - agora com acesso público através das políticas RLS
   const { data: staffMembers = [], isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['public-staff'],
+    queryKey: ['public-barbers'],
     queryFn: async () => {
-      console.log('[useClientFormData] Buscando barbeiros da tabela staff...');
+      console.log('[useClientFormData] Buscando barbeiros da tabela barbers...');
       const { data, error } = await supabase
-        .from('staff')
+        .from('barbers')
         .select('id, name, email, phone, image_url, specialties, experience, commission_rate, is_active, role, created_at, updated_at')
         .eq('is_active', true)
         .eq('role', 'barber')
         .order('name');
         
       if (error) {
-        console.error('[useClientFormData] Erro ao buscar barbeiros da tabela staff:', error);
+        console.error('[useClientFormData] Erro ao buscar barbeiros da tabela barbers:', error);
         throw new Error(`Erro ao carregar barbeiros: ${error.message}`);
       }
       
-      console.log('[useClientFormData] Barbeiros encontrados na tabela staff:', data);
+      console.log('[useClientFormData] Barbeiros encontrados na tabela barbers:', data);
       console.log('[useClientFormData] Quantidade de barbeiros:', data?.length || 0);
       
       // Log detalhado de cada barbeiro
