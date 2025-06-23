@@ -12,6 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAvailabilityValidation } from '@/hooks/useAvailabilityValidation';
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -33,6 +34,7 @@ export default function ClientNewBooking() {
   const navigate = useNavigate();
   const { client } = useClientAuth();
   const { toast } = useToast();
+  const { checkBarberAvailability, isChecking } = useAvailabilityValidation();
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
@@ -136,7 +138,7 @@ export default function ClientNewBooking() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!client || !selectedDate || !formData.service_id || !formData.time) {
+    if (!client || !selectedDate || !formData.service_id || !formData.time || !formData.staff_id) {
       toast({
         title: "Formulário incompleto",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -154,6 +156,19 @@ export default function ClientNewBooking() {
         throw new Error('Serviço não encontrado');
       }
 
+      // Verificar disponibilidade antes de criar o agendamento
+      const isAvailable = await checkBarberAvailability(
+        formData.staff_id,
+        selectedDate,
+        formData.time,
+        selectedService.duration
+      );
+
+      if (!isAvailable) {
+        setLoading(false);
+        return; // O hook já mostra o toast de erro
+      }
+
       // Criar data/hora de início
       const [hours, minutes] = formData.time.split(':').map(Number);
       const startTime = new Date(selectedDate);
@@ -169,7 +184,7 @@ export default function ClientNewBooking() {
         .insert([{
           client_id: client.id,
           service_id: formData.service_id,
-          staff_id: formData.staff_id || null,
+          staff_id: formData.staff_id,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
           status: 'scheduled',
@@ -354,28 +369,6 @@ export default function ClientNewBooking() {
                 />
               </div>
 
-              {/* Debug Information */}
-              <div className="bg-blue-900/20 border border-blue-700 text-blue-400 px-4 py-3 rounded-md text-sm">
-                <h4 className="font-semibold mb-2">Debug - Dados carregados:</h4>
-                <p>Serviços: {services.length}</p>
-                <p>Barbeiros: {barbers.length}</p>
-                {barbers.length > 0 && (
-                  <p>Barbeiros encontrados: {barbers.map(s => s.name).join(', ')}</p>
-                )}
-              </div>
-
-              {services.length === 0 && (
-                <div className="bg-yellow-900/20 border border-yellow-700 text-yellow-400 px-4 py-3 rounded-md text-sm">
-                  ⚠️ Nenhum serviço disponível no momento.
-                </div>
-              )}
-
-              {barbers.length === 0 && (
-                <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-md text-sm">
-                  ❌ Nenhum barbeiro disponível no momento. Verifique se há barbeiros cadastrados com role 'barber' e is_active = true.
-                </div>
-              )}
-
               <div className="flex gap-4">
                 <Button
                   type="button"
@@ -387,13 +380,13 @@ export default function ClientNewBooking() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={loading || services.length === 0 || barbers.length === 0}
+                  disabled={loading || isChecking || services.length === 0 || barbers.length === 0}
                   className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
                 >
-                  {loading ? (
+                  {loading || isChecking ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Agendando...
+                      {isChecking ? 'Verificando...' : 'Agendando...'}
                     </>
                   ) : (
                     'Confirmar Agendamento'
