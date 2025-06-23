@@ -27,6 +27,11 @@ export const useAppointmentData = () => {
 
         if (servicesError) {
           console.error('Erro ao buscar serviços:', servicesError);
+          toast({
+            title: "Erro ao carregar serviços",
+            description: "Não foi possível carregar os serviços.",
+            variant: "destructive",
+          });
         } else {
           console.log('[useAppointmentData] Serviços encontrados:', servicesData?.length || 0);
           setServices(servicesData || []);
@@ -37,14 +42,28 @@ export const useAppointmentData = () => {
           .from('barbers')
           .select('*')
           .eq('is_active', true)
-          .eq('role', 'barber')
           .order('name', { ascending: true });
 
         if (barbersError) {
           console.error('Erro ao buscar barbeiros:', barbersError);
+          toast({
+            title: "Erro ao carregar barbeiros",
+            description: "Não foi possível carregar os barbeiros.",
+            variant: "destructive",
+          });
         } else {
           console.log('[useAppointmentData] Barbeiros encontrados:', barbersData?.length || 0);
+          console.log('[useAppointmentData] Dados dos barbeiros:', barbersData);
           setBarbers(barbersData || []);
+          
+          // Se não há barbeiros, mostrar erro específico
+          if (!barbersData || barbersData.length === 0) {
+            toast({
+              title: "Nenhum barbeiro disponível",
+              description: "Verifique se há barbeiros cadastrados com role 'barber' e is_active = true.",
+              variant: "destructive",
+            });
+          }
         }
 
         console.log('[useAppointmentData] Dados finais carregados:', {
@@ -54,7 +73,12 @@ export const useAppointmentData = () => {
         
       } catch (error: any) {
         console.error('Erro geral ao carregar dados:', error);
-        // Mesmo com erro, manter arrays vazios para o formulário aparecer
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados necessários.",
+          variant: "destructive",
+        });
+        // Manter arrays vazios para o formulário aparecer
         setServices([]);
         setBarbers([]);
       } finally {
@@ -63,7 +87,7 @@ export const useAppointmentData = () => {
     };
 
     fetchData();
-  }, []);
+  }, [toast]);
 
   console.log('[useAppointmentData] Hook retornando:', {
     servicesCount: services.length,

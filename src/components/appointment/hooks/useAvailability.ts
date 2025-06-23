@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { StaffMember } from '@/types/appointment';
+import { Barber } from '@/types/barber';
 
 export interface BarberAvailabilityInfo {
   id: string;
@@ -24,7 +24,7 @@ export const useAvailability = () => {
     setIsCheckingAvailability(true);
     
     try {
-      // Fetch all barbers first
+      // Fetch all barbers first from barbers table
       const { data: barbersData, error: barbersError } = await supabase
         .from('barbers')
         .select('*')
@@ -58,7 +58,7 @@ export const useAvailability = () => {
     date: Date, 
     time: string, 
     serviceId: string, 
-    barbers: StaffMember[]
+    barbers: Barber[]
   ) => {
     setIsCheckingAvailability(true);
     
@@ -100,7 +100,7 @@ export const useAvailability = () => {
     return slots;
   };
 
-  const checkAnyBarberAvailable = async (date: Date, time: string, barbers: StaffMember[]) => {
+  const checkAnyBarberAvailable = async (date: Date, time: string, barbers: Barber[]) => {
     for (const barber of barbers) {
       const isAvailable = await checkSingleBarberAvailability(date, time, barber.id);
       if (isAvailable) {
