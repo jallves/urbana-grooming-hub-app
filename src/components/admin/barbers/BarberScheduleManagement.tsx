@@ -5,8 +5,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Clock, Users, Settings } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Clock, Users, Settings, Calendar } from 'lucide-react';
 import BarberScheduleManager from '@/components/barber/schedule/BarberScheduleManager';
+import BarberAvailabilityManager from './BarberAvailabilityManager';
 
 interface Barber {
   id: string;
@@ -171,10 +173,32 @@ const BarberScheduleManagement: React.FC = () => {
       </Card>
 
       {selectedBarber && (
-        <BarberScheduleManager 
-          barberId={selectedBarberId} 
-          barberName={selectedBarber.name}
-        />
+        <Tabs defaultValue="schedule" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="schedule" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Horários Padrão
+            </TabsTrigger>
+            <TabsTrigger value="availability" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Disponibilidade Específica
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="schedule" className="mt-6">
+            <BarberScheduleManager 
+              barberId={selectedBarberId} 
+              barberName={selectedBarber.name}
+            />
+          </TabsContent>
+          
+          <TabsContent value="availability" className="mt-6">
+            <BarberAvailabilityManager
+              barberId={selectedBarberId}
+              barberName={selectedBarber.name}
+            />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

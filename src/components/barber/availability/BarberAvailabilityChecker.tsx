@@ -72,7 +72,6 @@ const BarberAvailabilityChecker: React.FC<BarberAvailabilityCheckerProps> = ({
         const barbersWithAvailability = await Promise.all(
           activeBarbers.map(async (barber) => {
             try {
-              // Gerar slots de tempo manualmente já que a função RPC pode não existir
               const availableSlots = await generateAvailableSlots(
                 barber.id,
                 selectedDate,
@@ -130,50 +129,110 @@ const BarberAvailabilityChecker: React.FC<BarberAvailabilityCheckerProps> = ({
 
   const generateAvailableSlots = async (barberId: string, date: Date, duration: number) => {
     const slots = [];
-    const startHour = 8; // 8 AM
-    const endHour = 18; // 6 PM
-    const slotInterval = 30; // 30 minutes
+    const dateStr = date.toISOString().split('T')[0];
+    const dayOfWeek = date.getDay();
 
-    // Buscar agendamentos existentes para o barbeiro neste dia
-    const { data: existingAppointments } = await supabase
-      .from('appointments')
+    // Verificar horário de trabalho padrão
+    const { data: workingHours } = await supabase
+      .from('working_hours')
       .select('start_time, end_time')
       .eq('staff_id', barberId)
-      .gte('start_time', date.toISOString().split('T')[0] + ' 00:00:00')
-      .lt('start_time', date.toISOString().split('T')[0] + ' 23:59:59')
-      .in('status', ['scheduled', 'confirmed']);
+      .eq('day_of_week', dayOfWeek)
+      .eq('is_active', true)
+      .single();
 
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += slotInterval) {
+    if (!workingHours) {
+      return slots; // Barbeiro não trabalha neste dia
+    }
+
+    let startHour = parseInt(workingHours.start_time.split(':')[0]);
+    let startMinute = parseInt(workingHours.start_time.split(':')[1]);
+    const endHour = parseInt(workingHours.end_time.split(':')[0]);
+    const endMinute = parseInt(workingHours.end_time.split(':')[1]);
+
+    // Verificar disponibilidade específica para esta data
+    const { data: specificAvailability } = await supabase
+      .from('barber_availability')
+      .select('*')
+      .eq('barber_id', barberId)
+      .eq('date', dateStr)
+      .single();
+
+    // Se há disponibilidade específica, usar ela ao invés do horário padrão
+    if (specificAvailability) {
+      if (!specificAvailability.is_available) {
+        return slots; // Barbeiro indisponível nesta data
+      }
+      
+      startHour = parseInt(specificAvailability.start_time.split(':')[0]);
+      startMinute = parseInt(specificAvailability.start_time.split(':')[1]);
+      const specificEndHour = parseInt(specificAvailability.end_time.split(':')[0]);
+      const specificEndMinute = parseInt(specificAvailability.end_time.split(':')[1]);
+      
+      // Usar o horário específico
+      const specificEndTime = specificEndHour * 60 + specificEndMinute;
+      const startTime = startHour * 60 + startMinute;
+      
+      for (let currentTime = startTime; currentTime + duration <= specificEndTime; currentTime += 30) {
+        const hour = Math.floor(currentTime / 60);
+        const minute = currentTime % 60;
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         
-        // Verificar se há tempo suficiente para o serviço
-        const currentTime = hour * 60 + minute;
-        const endTime = currentTime + duration;
-        const endHourCheck = Math.floor(endTime / 60);
+        const slotStart = new Date(date);
+        slotStart.setHours(hour, minute, 0, 0);
         
-        if (endHourCheck <= endHour) {
-          // Verificar conflitos com agendamentos existentes
-          const slotStart = new Date(date);
-          slotStart.setHours(hour, minute, 0, 0);
-          
-          const slotEnd = new Date(slotStart);
-          slotEnd.setMinutes(slotEnd.getMinutes() + duration);
+        const slotEnd = new Date(slotStart);
+        slotEnd.setMinutes(slotEnd.getMinutes() + duration);
 
-          const hasConflict = existingAppointments?.some(appointment => {
-            const appStart = new Date(appointment.start_time);
-            const appEnd = new Date(appointment.end_time);
-            return slotStart < appEnd && slotEnd > appStart;
-          });
-
-          if (!hasConflict) {
-            slots.push(timeString);
-          }
+        const hasConflict = await checkAppointmentConflict(barberId, slotStart, slotEnd);
+        
+        if (!hasConflict) {
+          slots.push(timeString);
         }
+      }
+      
+      return slots;
+    }
+
+    // Usar horário padrão
+    const endTime = endHour * 60 + endMinute;
+    const startTime = startHour * 60 + startMinute;
+    
+    for (let currentTime = startTime; currentTime + duration <= endTime; currentTime += 30) {
+      const hour = Math.floor(currentTime / 60);
+      const minute = currentTime % 60;
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      
+      const slotStart = new Date(date);
+      slotStart.setHours(hour, minute, 0, 0);
+      
+      const slotEnd = new Date(slotStart);
+      slotEnd.setMinutes(slotEnd.getMinutes() + duration);
+
+      const hasConflict = await checkAppointmentConflict(barberId, slotStart, slotEnd);
+      
+      if (!hasConflict) {
+        slots.push(timeString);
       }
     }
 
     return slots;
+  };
+
+  const checkAppointmentConflict = async (barberId: string, slotStart: Date, slotEnd: Date) => {
+    const { data: existingAppointments } = await supabase
+      .from('appointments')
+      .select('start_time, end_time')
+      .eq('staff_id', barberId)
+      .gte('start_time', slotStart.toISOString().split('T')[0] + ' 00:00:00')
+      .lt('start_time', slotStart.toISOString().split('T')[0] + ' 23:59:59')
+      .in('status', ['scheduled', 'confirmed']);
+
+    return existingAppointments?.some(appointment => {
+      const appStart = new Date(appointment.start_time);
+      const appEnd = new Date(appointment.end_time);
+      return slotStart < appEnd && slotEnd > appStart;
+    }) || false;
   };
 
   if (loading) {

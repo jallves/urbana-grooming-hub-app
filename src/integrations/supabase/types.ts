@@ -1612,78 +1612,6 @@ export type Database = {
           },
         ]
       }
-      physical_assessments: {
-        Row: {
-          assessment_date: string | null
-          balance_score: number | null
-          body_fat_percentage: number | null
-          created_at: string | null
-          flexibility_score: number | null
-          goals: string | null
-          height: number | null
-          id: string
-          instructor_id: string | null
-          muscle_mass: number | null
-          observations: string | null
-          recommendations: string | null
-          strength_score: number | null
-          student_id: string | null
-          updated_at: string | null
-          weight: number | null
-        }
-        Insert: {
-          assessment_date?: string | null
-          balance_score?: number | null
-          body_fat_percentage?: number | null
-          created_at?: string | null
-          flexibility_score?: number | null
-          goals?: string | null
-          height?: number | null
-          id?: string
-          instructor_id?: string | null
-          muscle_mass?: number | null
-          observations?: string | null
-          recommendations?: string | null
-          strength_score?: number | null
-          student_id?: string | null
-          updated_at?: string | null
-          weight?: number | null
-        }
-        Update: {
-          assessment_date?: string | null
-          balance_score?: number | null
-          body_fat_percentage?: number | null
-          created_at?: string | null
-          flexibility_score?: number | null
-          goals?: string | null
-          height?: number | null
-          id?: string
-          instructor_id?: string | null
-          muscle_mass?: number | null
-          observations?: string | null
-          recommendations?: string | null
-          strength_score?: number | null
-          student_id?: string | null
-          updated_at?: string | null
-          weight?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "physical_assessments_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "instructors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "physical_assessments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       plan_types: {
         Row: {
           class_limit: number | null
@@ -1717,45 +1645,6 @@ export type Database = {
           name?: string
           price?: number
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      plans: {
-        Row: {
-          class_credits: number | null
-          created_at: string
-          description: string | null
-          duration_days: number
-          features: Json | null
-          id: string
-          is_active: boolean | null
-          name: string
-          price: number
-          updated_at: string
-        }
-        Insert: {
-          class_credits?: number | null
-          created_at?: string
-          description?: string | null
-          duration_days: number
-          features?: Json | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          price: number
-          updated_at?: string
-        }
-        Update: {
-          class_credits?: number | null
-          created_at?: string
-          description?: string | null
-          duration_days?: number
-          features?: Json | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          price?: number
-          updated_at?: string
         }
         Relationships: []
       }
