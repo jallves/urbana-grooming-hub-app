@@ -107,6 +107,11 @@ function App() {
                     <AdminBarbers />
                   </AdminRoute>
                 } />
+                <Route path="/admin/barbeiros/horarios" element={
+                  <AdminRoute>
+                    <AdminBarberSchedules />
+                  </AdminRoute>
+                } />
                 <Route path="/admin/produtos" element={
                   <AdminRoute>
                     <AdminProducts />
