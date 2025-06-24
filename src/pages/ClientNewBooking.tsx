@@ -28,6 +28,7 @@ interface Barber {
   id: string;
   name: string;
   role: string;
+  is_active: boolean;
 }
 
 export default function ClientNewBooking() {
@@ -60,7 +61,7 @@ export default function ClientNewBooking() {
     try {
       console.log('🔄 Iniciando carregamento de dados...');
       
-      // Carregar serviços com acesso público
+      // Carregar serviços
       console.log('📋 Buscando serviços...');
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
@@ -70,60 +71,50 @@ export default function ClientNewBooking() {
 
       if (servicesError) {
         console.error('❌ Erro ao carregar serviços:', servicesError);
+        toast({
+          title: "Erro ao carregar serviços",
+          description: "Não foi possível carregar os serviços.",
+          variant: "destructive",
+        });
       } else {
-        console.log('✅ Serviços carregados:', servicesData?.length || 0, servicesData);
+        console.log('✅ Serviços carregados:', servicesData?.length || 0);
         setServices(servicesData || []);
       }
 
-      // Carregar barbeiros da tabela barbers com acesso público
+      // Carregar barbeiros - usando a mesma consulta que funciona no admin
       console.log('👨‍💼 Buscando barbeiros...');
       const { data: barbersData, error: barbersError } = await supabase
         .from('barbers')
-        .select('id, name, role')
+        .select('id, name, role, is_active')
         .eq('is_active', true)
-        .eq('role', 'barber')
         .order('name');
 
       if (barbersError) {
         console.error('❌ Erro ao carregar barbeiros:', barbersError);
-        console.error('Detalhes do erro:', {
-          message: barbersError.message,
-          code: barbersError.code,
-          details: barbersError.details,
-          hint: barbersError.hint
+        toast({
+          title: "Erro ao carregar barbeiros",
+          description: "Não foi possível carregar os barbeiros.",
+          variant: "destructive",
         });
       } else {
-        console.log('✅ Barbeiros carregados:', barbersData?.length || 0, barbersData);
+        console.log('✅ Barbeiros carregados:', barbersData?.length || 0);
         setBarbers(barbersData || []);
-      }
-
-      // Verificar se temos dados
-      if (!servicesData || servicesData.length === 0) {
-        console.warn('⚠️ Nenhum serviço ativo encontrado');
-        toast({
-          title: "Aviso",
-          description: "Nenhum serviço ativo encontrado no momento.",
-          variant: "destructive",
-        });
-      }
-
-      if (!barbersData || barbersData.length === 0) {
-        console.warn('⚠️ Nenhum barbeiro ativo encontrado');
-        toast({
-          title: "Aviso", 
-          description: "Nenhum barbeiro ativo encontrado no momento. Verifique se há barbeiros cadastrados no sistema.",
-          variant: "destructive",
-        });
+        
+        if (!barbersData || barbersData.length === 0) {
+          toast({
+            title: "Nenhum barbeiro disponível",
+            description: "Não há barbeiros ativos cadastrados no momento.",
+            variant: "destructive",
+          });
+        }
       }
 
       console.log('📊 Resumo final:', {
         servicos: servicesData?.length || 0,
-        barbeiros: barbersData?.length || 0,
-        temServicos: (servicesData?.length || 0) > 0,
-        temBarbeiros: (barbersData?.length || 0) > 0
+        barbeiros: barbersData?.length || 0
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 Erro geral ao carregar dados:', error);
       toast({
         title: "Erro",
