@@ -81,8 +81,8 @@ export default function ClientNewBooking() {
         setServices(servicesData || []);
       }
 
-      // Carregar barbeiros - usando a mesma consulta que funciona no admin
-      console.log('👨‍💼 Buscando barbeiros...');
+      // Carregar barbeiros ativos da tabela barbers que podem receber agendamentos
+      console.log('👨‍💼 Buscando barbeiros disponíveis para agendamento...');
       const { data: barbersData, error: barbersError } = await supabase
         .from('barbers')
         .select('id, name, role, is_active')
@@ -98,9 +98,40 @@ export default function ClientNewBooking() {
         });
       } else {
         console.log('✅ Barbeiros carregados:', barbersData?.length || 0);
-        setBarbers(barbersData || []);
+        console.log('📋 Lista de barbeiros:', barbersData);
         
-        if (!barbersData || barbersData.length === 0) {
+        // Verificar se os barbeiros têm horários de trabalho configurados
+        if (barbersData && barbersData.length > 0) {
+          console.log('🔍 Verificando horários de trabalho dos barbeiros...');
+          const barbersWithSchedule = [];
+          
+          for (const barber of barbersData) {
+            const { data: workingHours } = await supabase
+              .from('working_hours')
+              .select('id')
+              .eq('staff_id', barber.id)
+              .limit(1);
+              
+            if (workingHours && workingHours.length > 0) {
+              barbersWithSchedule.push(barber);
+              console.log(`✅ ${barber.name} tem horários configurados`);
+            } else {
+              console.log(`⚠️ ${barber.name} não tem horários configurados`);
+            }
+          }
+          
+          setBarbers(barbersWithSchedule);
+          console.log('👥 Barbeiros com horários disponíveis:', barbersWithSchedule.length);
+          
+          if (barbersWithSchedule.length === 0) {
+            toast({
+              title: "Nenhum barbeiro disponível",
+              description: "Não há barbeiros com horários configurados no momento.",
+              variant: "destructive",
+            });
+          }
+        } else {
+          setBarbers([]);
           toast({
             title: "Nenhum barbeiro disponível",
             description: "Não há barbeiros ativos cadastrados no momento.",
@@ -111,7 +142,7 @@ export default function ClientNewBooking() {
 
       console.log('📊 Resumo final:', {
         servicos: servicesData?.length || 0,
-        barbeiros: barbersData?.length || 0
+        barbeiros: barbers.length
       });
       
     } catch (error: any) {
