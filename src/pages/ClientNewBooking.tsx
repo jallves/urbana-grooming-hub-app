@@ -24,7 +24,7 @@ interface Service {
   price: number;
 }
 
-interface Barber {
+interface Staff {
   id: string;
   name: string;
   role: string;
@@ -39,7 +39,7 @@ export default function ClientNewBooking() {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [services, setServices] = useState<Service[]>([]);
-  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [formData, setFormData] = useState({
     service_id: '',
@@ -81,49 +81,51 @@ export default function ClientNewBooking() {
         setServices(servicesData || []);
       }
 
-      // Carregar barbeiros ativos da tabela barbers que podem receber agendamentos
-      console.log('👨‍💼 Buscando barbeiros disponíveis para agendamento...');
-      const { data: barbersData, error: barbersError } = await supabase
-        .from('barbers')
+      // Carregar funcionários (staff) - mesma tabela usada pelo admin
+      console.log('👨‍💼 Buscando funcionários da barbearia...');
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
         .select('id, name, role, is_active')
         .eq('is_active', true)
+        .in('role', ['barber', 'manager']) // Incluir barbeiros e gerentes
         .order('name');
 
-      if (barbersError) {
-        console.error('❌ Erro ao carregar barbeiros:', barbersError);
+      if (staffError) {
+        console.error('❌ Erro ao carregar funcionários:', staffError);
         toast({
           title: "Erro ao carregar barbeiros",
           description: "Não foi possível carregar os barbeiros.",
           variant: "destructive",
         });
       } else {
-        console.log('✅ Barbeiros carregados:', barbersData?.length || 0);
-        console.log('📋 Lista de barbeiros:', barbersData);
+        console.log('✅ Funcionários carregados:', staffData?.length || 0);
+        console.log('📋 Lista de funcionários:', staffData);
         
-        // Verificar se os barbeiros têm horários de trabalho configurados
-        if (barbersData && barbersData.length > 0) {
-          console.log('🔍 Verificando horários de trabalho dos barbeiros...');
-          const barbersWithSchedule = [];
+        // Verificar se os funcionários têm horários de trabalho configurados
+        if (staffData && staffData.length > 0) {
+          console.log('🔍 Verificando horários de trabalho dos funcionários...');
+          const staffWithSchedule = [];
           
-          for (const barber of barbersData) {
+          for (const member of staffData) {
+            // Verificar se tem horários de trabalho configurados
             const { data: workingHours } = await supabase
               .from('working_hours')
               .select('id')
-              .eq('staff_id', barber.id)
+              .eq('staff_id', member.id)
               .limit(1);
               
             if (workingHours && workingHours.length > 0) {
-              barbersWithSchedule.push(barber);
-              console.log(`✅ ${barber.name} tem horários configurados`);
+              staffWithSchedule.push(member);
+              console.log(`✅ ${member.name} tem horários configurados`);
             } else {
-              console.log(`⚠️ ${barber.name} não tem horários configurados`);
+              console.log(`⚠️ ${member.name} não tem horários configurados`);
             }
           }
           
-          setBarbers(barbersWithSchedule);
-          console.log('👥 Barbeiros com horários disponíveis:', barbersWithSchedule.length);
+          setStaff(staffWithSchedule);
+          console.log('👥 Funcionários com horários disponíveis:', staffWithSchedule.length);
           
-          if (barbersWithSchedule.length === 0) {
+          if (staffWithSchedule.length === 0) {
             toast({
               title: "Nenhum barbeiro disponível",
               description: "Não há barbeiros com horários configurados no momento.",
@@ -131,7 +133,7 @@ export default function ClientNewBooking() {
             });
           }
         } else {
-          setBarbers([]);
+          setStaff([]);
           toast({
             title: "Nenhum barbeiro disponível",
             description: "Não há barbeiros ativos cadastrados no momento.",
@@ -142,7 +144,7 @@ export default function ClientNewBooking() {
 
       console.log('📊 Resumo final:', {
         servicos: servicesData?.length || 0,
-        barbeiros: barbers.length
+        funcionarios: staff.length
       });
       
     } catch (error: any) {
@@ -322,9 +324,9 @@ export default function ClientNewBooking() {
                       <SelectValue placeholder="Selecione o barbeiro" />
                     </SelectTrigger>
                     <SelectContent>
-                      {barbers.length > 0 ? barbers.map((barber) => (
-                        <SelectItem key={barber.id} value={barber.id}>
-                          {barber.name}
+                      {staff.length > 0 ? staff.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.name} ({member.role === 'barber' ? 'Barbeiro' : 'Gerente'})
                         </SelectItem>
                       )) : (
                         <div className="px-2 py-1 text-sm text-gray-500 flex items-center gap-2">
@@ -402,7 +404,7 @@ export default function ClientNewBooking() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={loading || isChecking || services.length === 0 || barbers.length === 0}
+                  disabled={loading || isChecking || services.length === 0 || staff.length === 0}
                   className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
                 >
                   {loading || isChecking ? (
