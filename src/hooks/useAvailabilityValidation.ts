@@ -24,7 +24,7 @@ export const useAvailabilityValidation = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceDuration);
 
-      // 1. Verificar se o barbeiro trabalha neste dia/horário
+      // 1. Verificar se o barbeiro trabalha neste dia/horário (working_hours)
       const { data: workingHours, error: workingError } = await supabase
         .from('working_hours')
         .select('start_time, end_time')
@@ -42,7 +42,7 @@ export const useAvailabilityValidation = () => {
         return false;
       }
 
-      // Verificar se o horário está dentro do expediente
+      // Verificar se o horário está dentro do expediente padrão
       const workStart = workingHours.start_time;
       const workEnd = workingHours.end_time;
       const requestedStart = selectedTime;
@@ -57,7 +57,50 @@ export const useAvailabilityValidation = () => {
         return false;
       }
 
-      // 2. Verificar conflitos com agendamentos existentes
+      // 2. Verificar disponibilidade específica na tabela barber_availability (se existir)
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      const { data: specificAvailability, error: availabilityError } = await supabase
+        .from('barber_availability')
+        .select('*')
+        .eq('barber_id', barberId)
+        .eq('date', dateStr)
+        .maybeSingle();
+
+      // Se há erro na consulta, retornar false
+      if (availabilityError) {
+        console.error('Erro ao verificar disponibilidade específica:', availabilityError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível verificar a disponibilidade.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Se há disponibilidade específica cadastrada para esta data
+      if (specificAvailability) {
+        if (!specificAvailability.is_available) {
+          toast({
+            title: "Barbeiro indisponível",
+            description: specificAvailability.reason || "O barbeiro não está disponível nesta data.",
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        // Verificar se o horário está dentro da disponibilidade específica
+        if (requestedStart < specificAvailability.start_time || requestedEnd > specificAvailability.end_time) {
+          toast({
+            title: "Horário fora do expediente",
+            description: `Nesta data, o barbeiro trabalha das ${specificAvailability.start_time} às ${specificAvailability.end_time}.`,
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+      // Se não há disponibilidade específica, usar apenas working_hours (que já foi verificado acima)
+
+      // 3. Verificar conflitos com agendamentos existentes
       const { data: conflicts, error: conflictError } = await supabase
         .from('appointments')
         .select('id, start_time, end_time')
@@ -90,36 +133,6 @@ export const useAvailabilityValidation = () => {
           variant: "destructive",
         });
         return false;
-      }
-
-      // 3. Verificar disponibilidade específica na tabela barber_availability
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const { data: specificAvailability } = await supabase
-        .from('barber_availability')
-        .select('*')
-        .eq('barber_id', barberId)
-        .eq('date', dateStr)
-        .single();
-
-      if (specificAvailability) {
-        if (!specificAvailability.is_available) {
-          toast({
-            title: "Barbeiro indisponível",
-            description: specificAvailability.reason || "O barbeiro não está disponível nesta data.",
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        // Se há disponibilidade específica, verificar horários
-        if (requestedStart < specificAvailability.start_time || requestedEnd > specificAvailability.end_time) {
-          toast({
-            title: "Horário fora do expediente",
-            description: `Nesta data, o barbeiro trabalha das ${specificAvailability.start_time} às ${specificAvailability.end_time}.`,
-            variant: "destructive",
-          });
-          return false;
-        }
       }
 
       return true;
