@@ -24,16 +24,27 @@ export const useAvailabilityValidation = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceDuration);
 
+      console.log('🔍 Verificando disponibilidade do barbeiro:', {
+        barberId,
+        dayOfWeek,
+        selectedTime,
+        serviceDuration
+      });
+
       // 1. Verificar se o barbeiro trabalha neste dia/horário (working_hours)
+      // IMPORTANTE: usar barberId como staff_id na tabela working_hours
       const { data: workingHours, error: workingError } = await supabase
         .from('working_hours')
         .select('start_time, end_time')
-        .eq('staff_id', barberId)
+        .eq('staff_id', barberId)  // Usar barberId diretamente
         .eq('day_of_week', dayOfWeek)
         .eq('is_active', true)
         .single();
 
+      console.log('⏰ Working hours encontrados:', workingHours);
+
       if (workingError || !workingHours) {
+        console.log('❌ Barbeiro não trabalha neste dia:', workingError);
         toast({
           title: "Barbeiro indisponível",
           description: "O barbeiro não trabalha neste dia da semana.",
@@ -47,6 +58,13 @@ export const useAvailabilityValidation = () => {
       const workEnd = workingHours.end_time;
       const requestedStart = selectedTime;
       const requestedEnd = `${Math.floor((hours * 60 + minutes + serviceDuration) / 60).toString().padStart(2, '0')}:${((hours * 60 + minutes + serviceDuration) % 60).toString().padStart(2, '0')}`;
+
+      console.log('⏰ Comparando horários:', {
+        workStart,
+        workEnd,
+        requestedStart,
+        requestedEnd
+      });
 
       if (requestedStart < workStart || requestedEnd > workEnd) {
         toast({
@@ -62,13 +80,15 @@ export const useAvailabilityValidation = () => {
       const { data: specificAvailability, error: availabilityError } = await supabase
         .from('barber_availability')
         .select('*')
-        .eq('barber_id', barberId)
+        .eq('barber_id', barberId)  // Usar barberId diretamente
         .eq('date', dateStr)
         .maybeSingle();
 
+      console.log('📅 Disponibilidade específica:', specificAvailability);
+
       // Se há erro na consulta, retornar false
       if (availabilityError) {
-        console.error('Erro ao verificar disponibilidade específica:', availabilityError);
+        console.error('❌ Erro ao verificar disponibilidade específica:', availabilityError);
         toast({
           title: "Erro",
           description: "Não foi possível verificar a disponibilidade.",
@@ -101,16 +121,19 @@ export const useAvailabilityValidation = () => {
       // Se não há disponibilidade específica, usar apenas working_hours (que já foi verificado acima)
 
       // 3. Verificar conflitos com agendamentos existentes
+      // IMPORTANTE: usar barberId como staff_id na tabela appointments
       const { data: conflicts, error: conflictError } = await supabase
         .from('appointments')
         .select('id, start_time, end_time')
-        .eq('staff_id', barberId)
+        .eq('staff_id', barberId)  // Usar barberId diretamente
         .gte('start_time', startTime.toISOString().split('T')[0] + ' 00:00:00')
         .lt('start_time', startTime.toISOString().split('T')[0] + ' 23:59:59')
         .in('status', ['scheduled', 'confirmed']);
 
+      console.log('📋 Conflitos encontrados:', conflicts);
+
       if (conflictError) {
-        console.error('Erro ao verificar conflitos:', conflictError);
+        console.error('❌ Erro ao verificar conflitos:', conflictError);
         toast({
           title: "Erro",
           description: "Não foi possível verificar a disponibilidade.",
@@ -123,7 +146,18 @@ export const useAvailabilityValidation = () => {
       const hasConflict = conflicts?.some(appointment => {
         const appStart = new Date(appointment.start_time);
         const appEnd = new Date(appointment.end_time);
-        return startTime < appEnd && endTime > appStart;
+        const overlap = startTime < appEnd && endTime > appStart;
+        
+        if (overlap) {
+          console.log('⚠️ Conflito encontrado:', {
+            appointmentStart: appStart,
+            appointmentEnd: appEnd,
+            requestedStart: startTime,
+            requestedEnd: endTime
+          });
+        }
+        
+        return overlap;
       });
 
       if (hasConflict) {
@@ -135,9 +169,10 @@ export const useAvailabilityValidation = () => {
         return false;
       }
 
+      console.log('✅ Barbeiro disponível no horário solicitado');
       return true;
     } catch (error) {
-      console.error('Erro na validação de disponibilidade:', error);
+      console.error('💥 Erro na validação de disponibilidade:', error);
       toast({
         title: "Erro",
         description: "Não foi possível verificar a disponibilidade.",

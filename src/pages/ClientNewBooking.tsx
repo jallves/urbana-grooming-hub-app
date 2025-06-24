@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -80,7 +81,7 @@ export default function ClientNewBooking() {
         setServices(servicesData || []);
       }
 
-      // Carregar barbeiros da tabela barbers
+      // Carregar barbeiros da tabela barbers (que é onde os barbeiros estão sendo cadastrados)
       console.log('👨‍💼 Buscando barbeiros...');
       const { data: barbersData, error: barbersError } = await supabase
         .from('barbers')
@@ -99,13 +100,13 @@ export default function ClientNewBooking() {
         console.log('✅ Barbeiros carregados:', barbersData?.length || 0);
         console.log('📋 Lista de barbeiros:', barbersData);
         
-        // Verificar se os barbeiros têm horários de trabalho configurados
         if (barbersData && barbersData.length > 0) {
           console.log('🔍 Verificando horários de trabalho dos barbeiros...');
           const barbersWithSchedule = [];
           
           for (const barber of barbersData) {
-            // Verificar se tem horários de trabalho configurados
+            // Verificar se tem horários de trabalho configurados na tabela working_hours
+            // Importante: usar barber.id como staff_id
             const { data: workingHours } = await supabase
               .from('working_hours')
               .select('id')
