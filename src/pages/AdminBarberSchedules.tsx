@@ -1,26 +1,31 @@
+
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import dynamic from 'next/dynamic';
 import AdminRoute from '@/components/auth/AdminRoute';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
 
-const BarberScheduleManagement = dynamic(
-  () => import('@/components/admin/schedules/BarberScheduleManagement'),
-  { 
-    loading: () => <LoadingSkeleton />,
-    ssr: false 
-  }
-);
+// Componente temporário até criarmos o BarberScheduleManagement
+const BarberScheduleManagement: React.FC<{ viewMode: string; barberId?: string }> = ({ viewMode, barberId }) => {
+  return (
+    <div className="p-8 text-center">
+      <h3 className="text-lg font-semibold mb-2">Gerenciamento de Horários</h3>
+      <p className="text-muted-foreground">
+        Visualização: {viewMode === 'week' ? 'Semanal' : 'Mensal'}
+        {barberId && ` - Barbeiro: ${barberId}`}
+      </p>
+    </div>
+  );
+};
 
 const AdminBarberSchedules: React.FC = () => {
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [selectedBarber, setSelectedBarber] = useState<string>('all');
 
   return (
-    <AdminRoute allowedRoles={['admin', 'manager']}>
+    <AdminRoute>
       <AdminLayout>
         <div className="space-y-6">
           <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -63,7 +68,6 @@ const AdminBarberSchedules: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os Barbeiros</SelectItem>
-                  {/* Barbeiros seriam carregados dinamicamente */}
                   <SelectItem value="1">João Silva</SelectItem>
                   <SelectItem value="2">Maria Santos</SelectItem>
                 </SelectContent>

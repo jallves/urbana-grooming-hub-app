@@ -1,29 +1,16 @@
+
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '@/components/ui/button';
 import { toast } from "sonner";
-import { supabase } from '@/lib/supabase/client';
-import dynamic from 'next/dynamic';
+import { supabase } from '@/integrations/supabase/client';
+import { Calendar, List, Download, Plus } from 'lucide-react';
 import AdminRoute from '@/components/auth/AdminRoute';
 import { AppointmentViewMode } from '@/types/admin';
 import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
-
-// Carregamento dinâmico para melhor performance
-const AppointmentCalendar = dynamic(
-  () => import('@/components/admin/appointments/AppointmentCalendar'),
-  { 
-    loading: () => <LoadingSkeleton />,
-    ssr: false 
-  }
-);
-
-const AppointmentList = dynamic(
-  () => import('@/components/admin/appointments/AppointmentList'),
-  { 
-    loading: () => <LoadingSkeleton />,
-    ssr: false 
-  }
-);
+import { AppointmentCalendar } from '@/components/admin/appointments/calendar/AppointmentCalendar';
+import { AppointmentList } from '@/components/admin/appointments/list/AppointmentList';
 
 const AdminAppointments: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppointmentViewMode>('calendar');
@@ -79,7 +66,7 @@ const AdminAppointments: React.FC = () => {
   }
 
   return (
-    <AdminRoute allowedRoles={['admin', 'manager']}>
+    <AdminRoute>
       <AdminLayout>
         <div className="space-y-6">
           <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

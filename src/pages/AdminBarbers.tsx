@@ -1,34 +1,37 @@
+
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import dynamic from 'next/dynamic';
 import AdminRoute from '@/components/auth/AdminRoute';
 import { Button } from '@/components/ui/button';
 import { UserPlus, ListFilter, UserCheck } from 'lucide-react';
 import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
 
-const BarberManagement = dynamic(
-  () => import('@/components/admin/barbers/BarberManagement'),
-  { 
-    loading: () => <LoadingSkeleton />,
-    ssr: false 
-  }
-);
+// Componentes temporários até criarmos os reais
+const BarberManagement: React.FC = () => {
+  return (
+    <div className="p-8 text-center">
+      <h3 className="text-lg font-semibold mb-2">Gerenciamento de Barbeiros</h3>
+      <p className="text-muted-foreground">Aqui você pode gerenciar os barbeiros da barbearia</p>
+    </div>
+  );
+};
 
-const UserRolesList = dynamic(
-  () => import('@/components/admin/settings/UserRolesList'),
-  { 
-    loading: () => <LoadingSkeleton />,
-    ssr: false 
-  }
-);
+const UserRolesList: React.FC = () => {
+  return (
+    <div className="p-4">
+      <h4 className="text-md font-semibold mb-2">Lista de Permissões</h4>
+      <p className="text-muted-foreground">Gerencie os cargos e permissões dos usuários</p>
+    </div>
+  );
+};
 
 const AdminBarbers: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'barbers' | 'roles'>('barbers');
 
   return (
-    <AdminRoute allowedRoles={['admin']}>
+    <AdminRoute>
       <AdminLayout>
         <div className="space-y-6">
           <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

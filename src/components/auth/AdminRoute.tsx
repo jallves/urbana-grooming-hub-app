@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,12 +8,14 @@ interface AdminRouteProps {
   children: React.ReactNode;
   allowBarber?: boolean;
   requiredModule?: string;
+  allowedRoles?: string[];
 }
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ 
   children, 
   allowBarber = false, 
-  requiredModule 
+  requiredModule,
+  allowedRoles 
 }) => {
   const { user, isAdmin, isBarber, loading } = useAuth();
   const location = useLocation();
