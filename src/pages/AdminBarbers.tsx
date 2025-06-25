@@ -6,18 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import AdminRoute from '@/components/auth/AdminRoute';
 import { Button } from '@/components/ui/button';
 import { UserPlus, ListFilter, UserCheck } from 'lucide-react';
-import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
+import BarberManagement from '@/components/admin/barbers/BarberManagement';
 
-// Componentes temporários até criarmos os reais
-const BarberManagement: React.FC = () => {
-  return (
-    <div className="p-8 text-center">
-      <h3 className="text-lg font-semibold mb-2">Gerenciamento de Barbeiros</h3>
-      <p className="text-muted-foreground">Aqui você pode gerenciar os barbeiros da barbearia</p>
-    </div>
-  );
-};
-
+// Componente para gerenciar permissões
 const UserRolesList: React.FC = () => {
   return (
     <div className="p-4">
@@ -41,12 +32,6 @@ const AdminBarbers: React.FC = () => {
                 Gerencie barbeiros e permissões do sistema
               </p>
             </div>
-            {activeTab === 'barbers' && (
-              <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Adicionar Barbeiro
-              </Button>
-            )}
           </header>
 
           <Tabs 

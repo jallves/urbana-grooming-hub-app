@@ -15,33 +15,36 @@ import { deleteBarber } from '@/services/barberService';
 
 // Busca barbeiros da tabela barbers
 const fetchBarbers = async () => {
+  console.log('Buscando barbeiros...');
+  
   const { data, error } = await supabase
     .from('barbers')
     .select('*')
-    .eq('is_active', true)
-    .eq('role', 'barber')
     .order('name');
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('Erro ao buscar barbeiros:', error);
+    throw new Error(error.message);
+  }
 
-  return (data ?? [])
-    .filter((b: any) => b.id && b.name)
-    .map((b: any) => ({
-      id: String(b.id),
-      uuid_id: b.id ?? '',
-      name: b.name ?? '',
-      email: b.email ?? '',
-      phone: b.phone ?? '',
-      image_url: b.image_url ?? '',
-      specialties: b.specialties ?? '',
-      experience: b.experience ?? '',
-      commission_rate: b.commission_rate ?? 0,
-      is_active: b.is_active ?? true,
-      role: b.role ?? 'barber',
-      created_at: b.created_at ?? '',
-      updated_at: b.updated_at ?? '',
-      barber_id: b.id
-    }));
+  console.log('Barbeiros encontrados:', data);
+
+  return (data ?? []).map((b: any) => ({
+    id: String(b.id),
+    uuid_id: b.id ?? '',
+    name: b.name ?? '',
+    email: b.email ?? '',
+    phone: b.phone ?? '',
+    image_url: b.image_url ?? '',
+    specialties: b.specialties ?? '',
+    experience: b.experience ?? '',
+    commission_rate: b.commission_rate ?? 0,
+    is_active: b.is_active ?? true,
+    role: b.role ?? 'barber',
+    created_at: b.created_at ?? '',
+    updated_at: b.updated_at ?? '',
+    barber_id: b.id
+  }));
 };
 
 const BarberManagement: React.FC = () => {
@@ -61,6 +64,7 @@ const BarberManagement: React.FC = () => {
 
   useEffect(() => {
     if (error) {
+      console.error('Erro na query de barbeiros:', error);
       toast.error('Erro ao carregar barbeiros', {
         description: (error as Error).message,
       });
@@ -101,6 +105,7 @@ const BarberManagement: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
         queryClient.invalidateQueries({ queryKey: ['team-barbers'] });
       } catch (err) {
+        console.error('Erro ao excluir barbeiro:', err);
         toast.error('Erro ao excluir barbeiro.', {
           description: (err as Error).message,
         });
@@ -109,6 +114,8 @@ const BarberManagement: React.FC = () => {
   };
 
   const isFormVisible = mode === 'adding' || mode === 'editing';
+
+  console.log('Estado atual:', { barbers, isLoading, error, mode });
 
   return (
     <div className="space-y-6">
@@ -132,7 +139,7 @@ const BarberManagement: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Este módulo exibe automaticamente todos os profissionais categorizados como "Barbeiro" na tabela barbers.
+              Este módulo exibe todos os profissionais cadastrados como "Barbeiro" na tabela barbers.
             </AlertDescription>
           </Alert>
           <Card>
