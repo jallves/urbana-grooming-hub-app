@@ -1,45 +1,77 @@
-
-import React from 'react';
-import AdminLayout from '../components/admin/AdminLayout';
+import React, { useState } from 'react';
+import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import UserRolesList from '@/components/admin/settings/users/UserRolesList';
-import { UserCheck, ListFilter } from 'lucide-react';
-import BarberManagement from '@/components/admin/barbers/BarberManagement';
-import AdminRoute from '../components/auth/AdminRoute';
+import dynamic from 'next/dynamic';
+import AdminRoute from '@/components/auth/AdminRoute';
+import { Button } from '@/components/ui/button';
+import { UserPlus, ListFilter, UserCheck } from 'lucide-react';
+import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
+
+const BarberManagement = dynamic(
+  () => import('@/components/admin/barbers/BarberManagement'),
+  { 
+    loading: () => <LoadingSkeleton />,
+    ssr: false 
+  }
+);
+
+const UserRolesList = dynamic(
+  () => import('@/components/admin/settings/UserRolesList'),
+  { 
+    loading: () => <LoadingSkeleton />,
+    ssr: false 
+  }
+);
 
 const AdminBarbers: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'barbers' | 'roles'>('barbers');
+
   return (
-    <AdminRoute>
+    <AdminRoute allowedRoles={['admin']}>
       <AdminLayout>
         <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold">Gerenciamento de Barbeiros</h1>
-            <p className="text-gray-500">Gerencie os barbeiros e suas permissões no sistema</p>
-          </div>
+          <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Equipe</h1>
+              <p className="text-muted-foreground">
+                Gerencie barbeiros e permissões do sistema
+              </p>
+            </div>
+            {activeTab === 'barbers' && (
+              <Button>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Adicionar Barbeiro
+              </Button>
+            )}
+          </header>
 
-          <Tabs defaultValue="barbers" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="barbers" className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(value) => setActiveTab(value as 'barbers' | 'roles')}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="barbers">
+                <UserCheck className="h-4 w-4 mr-2" />
                 Barbeiros
               </TabsTrigger>
-              <TabsTrigger value="roles" className="flex items-center gap-2">
-                <ListFilter className="h-4 w-4" />
-                Cargos e Permissões
+              <TabsTrigger value="roles">
+                <ListFilter className="h-4 w-4 mr-2" />
+                Permissões
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="barbers">
+            <TabsContent value="barbers" className="mt-6">
               <BarberManagement />
             </TabsContent>
             
-            <TabsContent value="roles">
+            <TabsContent value="roles" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Cargos e Permissões</CardTitle>
+                  <CardTitle>Controle de Acessos</CardTitle>
                   <CardDescription>
-                    Visualize os cargos atribuídos a cada usuário
+                    Gerencie cargos e permissões dos usuários
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

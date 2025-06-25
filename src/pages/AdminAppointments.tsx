@@ -1,65 +1,133 @@
-
-import React, { useEffect } from 'react';
-import AdminLayout from '../components/admin/AdminLayout';
-import AppointmentCalendar from '../components/admin/appointments/calendar/AppointmentCalendar';
-import AppointmentList from '../components/admin/appointments/list/AppointmentList';
+import React, { useEffect, useState } from 'react';
+import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase/client';
+import dynamic from 'next/dynamic';
+import AdminRoute from '@/components/auth/AdminRoute';
+import { AppointmentViewMode } from '@/types/admin';
+import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
+
+// Carregamento dinâmico para melhor performance
+const AppointmentCalendar = dynamic(
+  () => import('@/components/admin/appointments/AppointmentCalendar'),
+  { 
+    loading: () => <LoadingSkeleton />,
+    ssr: false 
+  }
+);
+
+const AppointmentList = dynamic(
+  () => import('@/components/admin/appointments/AppointmentList'),
+  { 
+    loading: () => <LoadingSkeleton />,
+    ssr: false 
+  }
+);
 
 const AdminAppointments: React.FC = () => {
-  // Configurar monitoramento em tempo real para agendamentos
+  const [activeTab, setActiveTab] = useState<AppointmentViewMode>('calendar');
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    const channel = supabase
-      .channel('appointment-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'appointments'
-        },
-        (payload) => {
-          console.log('Dados de agendamentos atualizados:', payload);
-          toast.info('Dados de agendamentos atualizados');
-        }
-      )
-      .subscribe();
+    const setupRealtime = async () => {
+      try {
+        const channel = supabase
+          .channel('appointment-changes')
+          .on(
+            'postgres_changes',
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'appointments'
+            },
+            (payload) => {
+              console.log('Change received:', payload);
+              toast.info('Agendamento atualizado', {
+                description: 'Os dados foram atualizados em tempo real'
+              });
+            }
+          )
+          .subscribe();
 
-    // Confirma que RLS foi desativado e mostra uma mensagem inicial
-    toast.success('Sistema de agendamentos inicializado', {
-      description: 'Você pode criar, editar e visualizar agendamentos livremente'
-    });
+        toast.success('Conexão estabelecida', {
+          description: 'Monitorando alterações em tempo real'
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
+        setIsLoading(false);
+        
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        toast.error('Erro na conexão', {
+          description: 'Não foi possível estabelecer monitoramento'
+        });
+        setIsLoading(false);
+      }
     };
-  }, []);
-  
-  return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Agendamentos</h1>
-          <p className="text-gray-500">Gerencie todos os agendamentos da barbearia</p>
-        </div>
 
-        <Tabs defaultValue="calendario" className="w-full">
-          <TabsList>
-            <TabsTrigger value="calendario">Calendário</TabsTrigger>
-            <TabsTrigger value="lista">Lista</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="calendario" className="mt-6">
-            <AppointmentCalendar />
-          </TabsContent>
-          
-          <TabsContent value="lista" className="mt-6">
-            <AppointmentList />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </AdminLayout>
+    setupRealtime();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <LoadingSkeleton />
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminRoute allowedRoles={['admin', 'manager']}>
+      <AdminLayout>
+        <div className="space-y-6">
+          <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Agendamentos</h1>
+              <p className="text-muted-foreground">
+                Visualize e gerencie todos os agendamentos
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Agendamento
+              </Button>
+            </div>
+          </header>
+
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(value) => setActiveTab(value as AppointmentViewMode)}
+            className="w-full"
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="calendar">
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendário
+              </TabsTrigger>
+              <TabsTrigger value="list">
+                <List className="h-4 w-4 mr-2" />
+                Lista
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="calendar" className="mt-6">
+              <AppointmentCalendar />
+            </TabsContent>
+            
+            <TabsContent value="list" className="mt-6">
+              <AppointmentList />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </AdminLayout>
+    </AdminRoute>
   );
 };
 
