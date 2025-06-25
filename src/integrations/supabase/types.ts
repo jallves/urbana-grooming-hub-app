@@ -2509,6 +2509,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_available_barbers: {
+        Args: {
+          p_service_id: string
+          p_date: string
+          p_time: string
+          p_duration: number
+        }
+        Returns: {
+          id: string
+          name: string
+          email: string
+          phone: string
+          image_url: string
+          specialties: string
+          experience: string
+          role: string
+          is_active: boolean
+        }[]
+      }
       get_available_time_slots: {
         Args: { p_staff_id: string; p_date: string; p_service_duration: number }
         Returns: {
@@ -2548,6 +2567,16 @@ export type Database = {
       update_staff_module_access: {
         Args: { staff_id_param: string; module_ids_param: string[] }
         Returns: undefined
+      }
+      validate_appointment_booking: {
+        Args: {
+          p_client_id: string
+          p_staff_id: string
+          p_service_id: string
+          p_start_time: string
+          p_end_time: string
+        }
+        Returns: Json
       }
       validate_client_age: {
         Args: { birth_date: string }
