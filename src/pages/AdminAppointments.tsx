@@ -9,8 +9,8 @@ import { Calendar, List, Download, Plus } from 'lucide-react';
 import AdminRoute from '@/components/auth/AdminRoute';
 import { AppointmentViewMode } from '@/types/admin';
 import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
-import { AppointmentCalendar } from '@/components/admin/appointments/calendar/AppointmentCalendar';
-import { AppointmentList } from '@/components/admin/appointments/list/AppointmentList';
+import AppointmentCalendar from '@/components/admin/appointments/calendar/AppointmentCalendar';
+import AppointmentList from '@/components/admin/appointments/list/AppointmentList';
 
 const AdminAppointments: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppointmentViewMode>('calendar');
@@ -66,7 +66,7 @@ const AdminAppointments: React.FC = () => {
   }
 
   return (
-    <AdminRoute>
+    <AdminRoute allowedRoles={['admin', 'barber']}>
       <AdminLayout>
         <div className="space-y-6">
           <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
