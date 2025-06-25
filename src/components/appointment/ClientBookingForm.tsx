@@ -126,13 +126,16 @@ export const ClientBookingForm: React.FC = () => {
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
       // Validar disponibilidade
-      const validation = await validateBooking(
+      const validationResult = await validateBooking(
         client.id,
         formData.staff_id,
         formData.service_id,
         startTime,
         endTime
-      ) as ValidationResult;
+      );
+
+      // Safely cast the result to ValidationResult
+      const validation = validationResult as unknown as ValidationResult;
 
       if (!validation.valid) {
         toast({
