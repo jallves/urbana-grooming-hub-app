@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Star } from 'lucide-react';
+import { Loader2, User, Star, AlertCircle } from 'lucide-react';
 import { useBarberAvailability } from '@/hooks/useBarberAvailability';
 
 interface BarberSelectorProps {
@@ -28,10 +28,21 @@ export const BarberSelector: React.FC<BarberSelectorProps> = ({
   const { availableBarbers, isLoading, fetchAvailableBarbers } = useBarberAvailability();
 
   useEffect(() => {
+    console.log('BarberSelector - useEffect disparado:', { serviceId, date, time, duration });
+    
     if (serviceId && date && time && duration > 0) {
+      console.log('Buscando barbeiros disponíveis...');
       fetchAvailableBarbers(serviceId, date, time, duration);
+    } else {
+      console.log('Parâmetros insuficientes para buscar barbeiros');
     }
   }, [serviceId, date, time, duration, fetchAvailableBarbers]);
+
+  console.log('BarberSelector - Estado atual:', { 
+    availableBarbers: availableBarbers.length, 
+    isLoading, 
+    selectedBarberId 
+  });
 
   const canShowBarbers = serviceId && date && time && duration > 0;
 
@@ -43,6 +54,9 @@ export const BarberSelector: React.FC<BarberSelectorProps> = ({
             <SelectValue placeholder="Selecione o serviço, data e horário primeiro" />
           </SelectTrigger>
         </Select>
+        <p className="text-xs text-gray-400 mt-1">
+          Complete os campos acima para ver barbeiros disponíveis
+        </p>
       </div>
     );
   }
@@ -61,7 +75,12 @@ export const BarberSelector: React.FC<BarberSelectorProps> = ({
           {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
         </SelectTrigger>
         <SelectContent className="bg-[#1F2937] border-gray-600">
-          {availableBarbers.length > 0 ? (
+          {isLoading ? (
+            <div className="px-4 py-3 text-center">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-blue-400" />
+              <p className="text-sm text-gray-300">Carregando barbeiros...</p>
+            </div>
+          ) : availableBarbers.length > 0 ? (
             availableBarbers.map((barber) => (
               <SelectItem 
                 key={barber.id} 
@@ -93,20 +112,29 @@ export const BarberSelector: React.FC<BarberSelectorProps> = ({
               </SelectItem>
             ))
           ) : (
-            <div className="px-4 py-3 text-center">
+            <div className="px-4 py-6 text-center">
               <div className="text-amber-500 mb-2">
-                <User className="h-8 w-8 mx-auto" />
+                <AlertCircle className="h-8 w-8 mx-auto" />
               </div>
-              <p className="text-sm text-gray-300">
+              <p className="text-sm text-gray-300 mb-1">
                 Nenhum barbeiro disponível
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400">
                 Tente outro horário ou data
               </p>
             </div>
           )}
         </SelectContent>
       </Select>
+      
+      {!isLoading && (
+        <p className="text-xs text-gray-400 mt-1">
+          {availableBarbers.length > 0 
+            ? `${availableBarbers.length} barbeiro(s) disponível(is)`
+            : 'Nenhum barbeiro disponível neste horário'
+          }
+        </p>
+      )}
     </div>
   );
 };
