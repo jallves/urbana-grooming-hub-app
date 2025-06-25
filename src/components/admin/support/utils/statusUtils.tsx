@@ -9,7 +9,7 @@ export const getStatusBadge = (status: string) => {
     case 'in_progress':
       return <Badge variant="secondary">Em Progresso</Badge>;
     case 'resolved':
-      return <Badge variant="success">Resolvido</Badge>;
+      return <Badge variant="default" className="bg-green-500 text-white">Resolvido</Badge>;
     case 'closed':
       return <Badge variant="outline">Fechado</Badge>;
     default:

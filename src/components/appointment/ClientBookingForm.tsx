@@ -25,6 +25,12 @@ interface Service {
   price: number;
 }
 
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+  message?: string;
+}
+
 export const ClientBookingForm: React.FC = () => {
   const navigate = useNavigate();
   const { client } = useClientAuth();
@@ -126,7 +132,7 @@ export const ClientBookingForm: React.FC = () => {
         formData.service_id,
         startTime,
         endTime
-      );
+      ) as ValidationResult;
 
       if (!validation.valid) {
         toast({
