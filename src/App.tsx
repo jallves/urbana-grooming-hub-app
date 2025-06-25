@@ -160,8 +160,13 @@ function App() {
 
                 {/* Barber Routes */}
                 <Route path="/barbeiro/login" element={<BarberAuth />} />
+                <Route path="/barbeiro" element={
+                  <BarberRoute allowBarber={true}>
+                    <BarberDashboard />
+                  </BarberRoute>
+                } />
                 <Route path="/barbeiro/dashboard" element={
-                  <BarberRoute>
+                  <BarberRoute allowBarber={true}>
                     <BarberDashboard />
                   </BarberRoute>
                 } />
@@ -171,17 +176,17 @@ function App() {
                   </BarberRoute>
                 } />
                 <Route path="/barbeiro/agendamentos" element={
-                  <BarberRoute>
+                  <BarberRoute allowBarber={true}>
                     <BarberAppointments />
                   </BarberRoute>
                 } />
                 <Route path="/barbeiro/perfil" element={
-                  <BarberRoute>
+                  <BarberRoute allowBarber={true}>
                     <BarberProfile />
                   </BarberRoute>
                 } />
                 <Route path="/barbeiro/comissoes" element={
-                  <BarberRoute>
+                  <BarberRoute allowBarber={true}>
                     <BarberCommissions />
                   </BarberRoute>
                 } />
@@ -191,12 +196,12 @@ function App() {
                   </BarberRoute>
                 } />
                 <Route path="/barbeiro/agenda" element={
-                  <BarberRoute>
+                  <BarberRoute allowBarber={true}>
                     <BarberSchedule />
                   </BarberRoute>
                 } />
                 <Route path="/barbeiro/modulos" element={
-                  <BarberRoute>
+                  <BarberRoute allowBarber={true}>
                     <BarberModules />
                   </BarberRoute>
                 } />
