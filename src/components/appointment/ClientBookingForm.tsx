@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -124,10 +125,11 @@ export const ClientBookingForm: React.FC = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      // Validar apenas disponibilidade de horário (sem verificar qualificação)
+      // Validar apenas disponibilidade de horário (com 5 argumentos)
       const validationResult = await validateBooking(
         client.id,
         formData.staff_id,
+        formData.service_id,
         startTime,
         endTime
       );
@@ -313,6 +315,7 @@ export const ClientBookingForm: React.FC = () => {
                 <div className="md:col-span-2">
                   <Label htmlFor="barber" className="text-white">Barbeiro *</Label>
                   <BarberSelector
+                    serviceId={formData.service_id}
                     date={selectedDate}
                     time={formData.time}
                     duration={selectedService?.duration || 0}
