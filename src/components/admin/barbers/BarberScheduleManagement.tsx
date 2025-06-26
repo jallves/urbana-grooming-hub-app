@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Users, Settings, Calendar } from 'lucide-react';
+import { Clock, Users, Settings, Calendar, CheckCircle } from 'lucide-react';
 import BarberScheduleManager from '@/components/barber/schedule/BarberScheduleManager';
 import BarberAvailabilityManager from './BarberAvailabilityManager';
 
@@ -23,6 +23,7 @@ const BarberScheduleManagement: React.FC = () => {
   const [selectedBarberId, setSelectedBarberId] = useState<string>('');
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applyingDefault, setApplyingDefault] = useState(false);
 
   useEffect(() => {
     fetchBarbers();
@@ -63,52 +64,61 @@ const BarberScheduleManagement: React.FC = () => {
   };
 
   const setupDefaultScheduleForAll = async () => {
+    setApplyingDefault(true);
     try {
-      const promises = barbers.map(async (barber) => {
-        // Check if barber already has schedule
-        const { data: existing } = await supabase
+      console.log('Aplicando horário padrão para todos os barbeiros...');
+      
+      const defaultSchedule = [
+        { day_of_week: 1, start_time: '09:00', end_time: '20:00', is_active: true }, // Segunda
+        { day_of_week: 2, start_time: '09:00', end_time: '20:00', is_active: true }, // Terça
+        { day_of_week: 3, start_time: '09:00', end_time: '20:00', is_active: true }, // Quarta
+        { day_of_week: 4, start_time: '09:00', end_time: '20:00', is_active: true }, // Quinta
+        { day_of_week: 5, start_time: '09:00', end_time: '20:00', is_active: true }, // Sexta
+        { day_of_week: 6, start_time: '09:00', end_time: '20:00', is_active: true }, // Sábado
+        // Domingo (0) não é incluído, ficando fechado
+      ];
+
+      for (const barber of barbers) {
+        console.log(`Configurando horários para ${barber.name}...`);
+        
+        // Deletar horários existentes do barbeiro
+        await supabase
           .from('working_hours')
-          .select('id')
-          .eq('staff_id', barber.id)
-          .limit(1);
+          .delete()
+          .eq('staff_id', barber.id);
 
-        if (!existing || existing.length === 0) {
-          // Create default schedule
-          const defaultSchedule = [
-            { day_of_week: 1, start_time: '09:00', end_time: '18:00', is_active: true },
-            { day_of_week: 2, start_time: '09:00', end_time: '18:00', is_active: true },
-            { day_of_week: 3, start_time: '09:00', end_time: '18:00', is_active: true },
-            { day_of_week: 4, start_time: '09:00', end_time: '18:00', is_active: true },
-            { day_of_week: 5, start_time: '09:00', end_time: '18:00', is_active: true },
-            { day_of_week: 6, start_time: '09:00', end_time: '14:00', is_active: true },
-          ];
+        // Inserir novos horários padrão
+        const workingHours = defaultSchedule.map(schedule => ({
+          staff_id: barber.id,
+          ...schedule
+        }));
 
-          const workingHours = defaultSchedule.map(schedule => ({
-            staff_id: barber.id,
-            ...schedule
-          }));
+        const { error } = await supabase
+          .from('working_hours')
+          .insert(workingHours);
 
-          const { error } = await supabase
-            .from('working_hours')
-            .insert(workingHours);
-
-          if (error) throw error;
+        if (error) {
+          console.error(`Erro ao configurar horários para ${barber.name}:`, error);
+          throw error;
         }
-      });
-
-      await Promise.all(promises);
+        
+        console.log(`✓ Horários configurados para ${barber.name}`);
+      }
       
       toast({
         title: "Sucesso",
-        description: "Horários padrão configurados para todos os barbeiros.",
+        description: `Horário padrão aplicado para ${barbers.length} barbeiro(s): Segunda a Sábado (09:00-20:00), Domingo fechado.`,
+        action: <CheckCircle className="h-4 w-4 text-green-500" />
       });
     } catch (error) {
       console.error('Erro ao configurar horários padrão:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível configurar os horários padrão.",
+        description: "Não foi possível configurar os horários padrão para todos os barbeiros.",
         variant: "destructive",
       });
+    } finally {
+      setApplyingDefault(false);
     }
   };
 
@@ -136,6 +146,22 @@ const BarberScheduleManagement: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+              <div className="text-sm text-green-800">
+                <p className="font-medium mb-1">Horário Padrão Configurado</p>
+                <p>
+                  <strong>Segunda a Sábado:</strong> 09:00 às 20:00<br />
+                  <strong>Domingo:</strong> Fechado
+                </p>
+                <p className="mt-2 text-xs">
+                  Este horário será aplicado automaticamente para novos barbeiros e pode ser ajustado individualmente conforme necessário.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <label className="text-sm font-medium mb-2 block">
@@ -161,11 +187,11 @@ const BarberScheduleManagement: React.FC = () => {
             <div className="flex flex-col gap-2">
               <Button
                 onClick={setupDefaultScheduleForAll}
-                variant="outline"
-                className="border-urbana-gold text-urbana-gold hover:bg-urbana-gold hover:text-urbana-black"
+                disabled={applyingDefault}
+                className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black"
               >
                 <Settings className="mr-2 h-4 w-4" />
-                Configurar Padrão para Todos
+                {applyingDefault ? 'Aplicando...' : 'Aplicar Padrão para Todos'}
               </Button>
             </div>
           </div>

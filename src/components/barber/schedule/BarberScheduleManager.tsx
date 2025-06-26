@@ -30,14 +30,16 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Horário padrão: Segunda a Sábado 09:00-20:00, Domingo fechado
   const [schedule, setSchedule] = useState<WeekSchedule>({
-    sunday: { start: '09:00', end: '14:00', active: false },
-    monday: { start: '09:00', end: '18:00', active: true },
-    tuesday: { start: '09:00', end: '18:00', active: true },
-    wednesday: { start: '09:00', end: '18:00', active: true },
-    thursday: { start: '09:00', end: '18:00', active: true },
-    friday: { start: '09:00', end: '18:00', active: true },
-    saturday: { start: '09:00', end: '14:00', active: true }
+    sunday: { start: '09:00', end: '20:00', active: false },
+    monday: { start: '09:00', end: '20:00', active: true },
+    tuesday: { start: '09:00', end: '20:00', active: true },
+    wednesday: { start: '09:00', end: '20:00', active: true },
+    thursday: { start: '09:00', end: '20:00', active: true },
+    friday: { start: '09:00', end: '20:00', active: true },
+    saturday: { start: '09:00', end: '20:00', active: true }
   });
 
   const dayNames = {
@@ -92,6 +94,9 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
           });
           
           setSchedule(newSchedule);
+        } else {
+          // Se não há horários, usar o padrão e salvar automaticamente
+          await saveDefaultSchedule();
         }
       } catch (error) {
         console.error('Erro ao carregar horários:', error);
@@ -109,6 +114,31 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
       loadSchedule();
     }
   }, [barberId]);
+
+  const saveDefaultSchedule = async () => {
+    try {
+      // Converter para formato do banco de dados
+      const workingHours = Object.entries(schedule)
+        .filter(([, config]) => config.active)
+        .map(([day, config]) => ({
+          staff_id: barberId,
+          day_of_week: dayToNumber[day as keyof typeof dayToNumber],
+          start_time: config.start,
+          end_time: config.end,
+          is_active: config.active
+        }));
+
+      if (workingHours.length > 0) {
+        const { error } = await supabase
+          .from('working_hours')
+          .insert(workingHours);
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Erro ao salvar horário padrão:', error);
+    }
+  };
 
   const saveSchedule = async () => {
     setSaving(true);
@@ -164,6 +194,18 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
     }));
   };
 
+  const resetToDefault = () => {
+    setSchedule({
+      sunday: { start: '09:00', end: '20:00', active: false },
+      monday: { start: '09:00', end: '20:00', active: true },
+      tuesday: { start: '09:00', end: '20:00', active: true },
+      wednesday: { start: '09:00', end: '20:00', active: true },
+      thursday: { start: '09:00', end: '20:00', active: true },
+      friday: { start: '09:00', end: '20:00', active: true },
+      saturday: { start: '09:00', end: '20:00', active: true }
+    });
+  };
+
   if (loading) {
     return (
       <Card>
@@ -189,17 +231,29 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-6">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-            <div className="text-sm text-amber-800">
-              <p className="font-medium mb-1">Configuração de Horários</p>
+            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium mb-1">Horário Padrão Configurado</p>
               <p>
-                Configure os horários de trabalho para cada dia da semana. 
-                Apenas os dias marcados como ativos aparecerão para agendamento.
+                Segunda a Sábado: 09:00 às 20:00 | Domingo: Fechado
+              </p>
+              <p className="mt-1 text-xs">
+                Você pode ajustar os horários conforme necessário para cada barbeiro.
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button 
+            onClick={resetToDefault} 
+            variant="outline"
+            className="border-urbana-gold text-urbana-gold hover:bg-urbana-gold hover:text-urbana-black"
+          >
+            Restaurar Padrão
+          </Button>
         </div>
 
         <div className="space-y-4">
