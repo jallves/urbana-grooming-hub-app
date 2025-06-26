@@ -26,11 +26,14 @@ export const useBarberAvailability = () => {
     time: string,
     duration: number
   ) => {
-    console.log('Buscando barbeiros disponíveis:', { serviceId, date, time, duration });
+    console.log('=== INICIANDO BUSCA DE BARBEIROS ===');
+    console.log('Parâmetros:', { serviceId, date, time, duration });
+    
     setIsLoading(true);
     
     try {
-      // Primeiro, vamos buscar todos os barbeiros ativos
+      // Primeiro, buscar todos os barbeiros ativos
+      console.log('1. Buscando todos os barbeiros ativos...');
       const { data: allBarbers, error: barbersError } = await supabase
         .from('barbers')
         .select('*')
@@ -47,49 +50,48 @@ export const useBarberAvailability = () => {
         return;
       }
 
-      console.log('Todos os barbeiros encontrados:', allBarbers);
+      console.log('Barbeiros encontrados:', allBarbers?.length || 0);
+      console.log('Lista de barbeiros:', allBarbers?.map(b => ({ id: b.id, name: b.name, email: b.email })));
 
-      // Agora vamos verificar disponibilidade usando a função RPC
-      const { data: rpcData, error: rpcError } = await supabase.rpc('get_available_barbers', {
-        p_service_id: serviceId,
-        p_date: date.toISOString().split('T')[0],
-        p_time: time,
-        p_duration: duration
-      });
-
-      if (rpcError) {
-        console.error('Erro na função RPC:', rpcError);
-        // Se a função RPC falhar, vamos usar uma verificação manual
-        console.log('Usando verificação manual de disponibilidade...');
-        
-        const availableBarbersList: AvailableBarber[] = [];
-        
-        for (const barber of allBarbers || []) {
-          // Verificação básica - se não há horário de trabalho definido, considera disponível
-          const isAvailable = await checkBarberAvailabilityManual(barber.id, date, time, duration);
-          
-          if (isAvailable) {
-            availableBarbersList.push({
-              id: barber.id,
-              name: barber.name || '',
-              email: barber.email || '',
-              phone: barber.phone || '',
-              image_url: barber.image_url || '',
-              specialties: barber.specialties || '',
-              experience: barber.experience || '',
-              role: barber.role || 'barber',
-              is_active: barber.is_active
-            });
-          }
-        }
-        
-        console.log('Barbeiros disponíveis (verificação manual):', availableBarbersList);
-        setAvailableBarbers(availableBarbersList);
+      if (!allBarbers || allBarbers.length === 0) {
+        console.log('Nenhum barbeiro ativo encontrado');
+        setAvailableBarbers([]);
         return;
       }
 
-      console.log('Barbeiros disponíveis (RPC):', rpcData);
-      setAvailableBarbers(rpcData || []);
+      // Verificar disponibilidade de cada barbeiro individualmente
+      console.log('2. Verificando disponibilidade individual...');
+      const availableBarbersList: AvailableBarber[] = [];
+      
+      for (const barber of allBarbers) {
+        console.log(`Verificando barbeiro: ${barber.name} (${barber.id})`);
+        
+        // Verificar conflitos de agendamento
+        const isAvailable = await checkBarberAvailabilityManual(barber.id, date, time, duration);
+        console.log(`Barbeiro ${barber.name} disponível:`, isAvailable);
+        
+        if (isAvailable) {
+          availableBarbersList.push({
+            id: barber.id,
+            name: barber.name || 'Sem nome',
+            email: barber.email || '',
+            phone: barber.phone || '',
+            image_url: barber.image_url || '',
+            specialties: barber.specialties || '',
+            experience: barber.experience || '',
+            role: barber.role || 'barber',
+            is_active: barber.is_active
+          });
+          console.log(`✓ Barbeiro ${barber.name} adicionado à lista`);
+        } else {
+          console.log(`✗ Barbeiro ${barber.name} não disponível`);
+        }
+      }
+      
+      console.log('3. Resultado final:', availableBarbersList.length, 'barbeiros disponíveis');
+      console.log('Lista final:', availableBarbersList.map(b => ({ id: b.id, name: b.name })));
+      
+      setAvailableBarbers(availableBarbersList);
 
     } catch (error) {
       console.error('Erro inesperado ao buscar barbeiros:', error);
@@ -111,6 +113,8 @@ export const useBarberAvailability = () => {
     duration: number
   ): Promise<boolean> => {
     try {
+      console.log(`  Verificando disponibilidade para barbeiro ${barberId}:`);
+      
       const [hours, minutes] = time.split(':').map(Number);
       const startDateTime = new Date(date);
       startDateTime.setHours(hours, minutes, 0, 0);
@@ -118,24 +122,39 @@ export const useBarberAvailability = () => {
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(endDateTime.getMinutes() + duration);
 
-      // Verificar conflitos com agendamentos existentes
+      console.log(`  Horário solicitado: ${startDateTime.toISOString()} até ${endDateTime.toISOString()}`);
+
+      // Verificar conflitos com agendamentos existentes - consulta mais precisa
       const { data: conflicts, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select('id, start_time, end_time, status')
         .eq('staff_id', barberId)
-        .gte('start_time', startDateTime.toISOString())
-        .lt('start_time', endDateTime.toISOString())
-        .in('status', ['scheduled', 'confirmed']);
+        .in('status', ['scheduled', 'confirmed'])
+        .or(`and(start_time.lt.${endDateTime.toISOString()},end_time.gt.${startDateTime.toISOString()})`);
 
       if (error) {
-        console.error('Erro ao verificar conflitos:', error);
-        return true; // Em caso de erro, considera disponível
+        console.error(`  Erro ao verificar conflitos para ${barberId}:`, error);
+        // Em caso de erro, considerar disponível para não bloquear
+        return true;
       }
 
-      return !conflicts || conflicts.length === 0;
+      const hasConflicts = conflicts && conflicts.length > 0;
+      console.log(`  Conflitos encontrados: ${conflicts?.length || 0}`);
+      
+      if (hasConflicts) {
+        console.log(`  Conflitos:`, conflicts?.map(c => ({ 
+          id: c.id, 
+          start: c.start_time, 
+          end: c.end_time,
+          status: c.status
+        })));
+      }
+
+      return !hasConflicts;
     } catch (error) {
-      console.error('Erro na verificação manual:', error);
-      return true; // Em caso de erro, considera disponível
+      console.error(`Erro na verificação manual para ${barberId}:`, error);
+      // Em caso de erro, considerar disponível
+      return true;
     }
   };
 
