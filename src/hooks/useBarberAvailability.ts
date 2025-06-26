@@ -133,18 +133,7 @@ export const useBarberAvailability = () => {
         return false;
       }
 
-      // 2. Verificar se está dentro do horário de trabalho (09:00 às 20:00)
-      const timeOnly = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      const endTimeOnly = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
-      
-      console.log(`  Horário solicitado: ${timeOnly} até ${endTimeOnly}`);
-      
-      if (timeOnly < '09:00' || endTimeOnly > '20:00') {
-        console.log(`  ✗ Fora do horário de trabalho (09:00-20:00)`);
-        return false;
-      }
-
-      // 3. Verificar horários de trabalho específicos do barbeiro (se existirem)
+      // 2. Verificar horários de trabalho específicos do barbeiro
       const { data: workingHours, error: workingError } = await supabase
         .from('working_hours')
         .select('*')
@@ -154,8 +143,15 @@ export const useBarberAvailability = () => {
 
       if (workingError) {
         console.error(`  Erro ao verificar horários de trabalho:`, workingError);
-        // Em caso de erro, assumir horário padrão e continuar
-      } else if (workingHours && workingHours.length > 0) {
+        // Em caso de erro, usar horário padrão
+      }
+
+      const timeOnly = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      const endTimeOnly = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
+      
+      console.log(`  Horário solicitado: ${timeOnly} até ${endTimeOnly}`);
+
+      if (workingHours && workingHours.length > 0) {
         // Se há horários específicos, verificar se está dentro deles
         const workingHour = workingHours[0];
         console.log(`  Horário específico encontrado: ${workingHour.start_time} - ${workingHour.end_time}`);
@@ -165,10 +161,16 @@ export const useBarberAvailability = () => {
           return false;
         }
       } else {
+        // Usar horário padrão (09:00-20:00) se não há configuração específica
         console.log(`  Usando horário padrão (09:00-20:00)`);
+        
+        if (timeOnly < '09:00' || endTimeOnly > '20:00') {
+          console.log(`  ✗ Fora do horário padrão (09:00-20:00)`);
+          return false;
+        }
       }
 
-      // 4. Verificar conflitos com agendamentos existentes
+      // 3. Verificar conflitos com agendamentos existentes
       const { data: conflicts, error: conflictError } = await supabase
         .from('appointments')
         .select('id, start_time, end_time, status')
@@ -202,6 +204,34 @@ export const useBarberAvailability = () => {
 
         if (hasOverlap) {
           return false;
+        }
+      }
+
+      // 4. Verificar disponibilidade específica do dia (se existir)
+      const { data: availability, error: availabilityError } = await supabase
+        .from('barber_availability')
+        .select('*')
+        .eq('barber_id', barberId)
+        .eq('date', startDateTime.toISOString().split('T')[0]);
+
+      if (availabilityError) {
+        console.error(`  Erro ao verificar disponibilidade específica:`, availabilityError);
+        // Em caso de erro, considerar disponível
+      } else if (availability && availability.length > 0) {
+        const dayAvailability = availability[0];
+        console.log(`  Disponibilidade específica encontrada: ${dayAvailability.is_available ? 'disponível' : 'indisponível'}`);
+        
+        if (!dayAvailability.is_available) {
+          console.log(`  ✗ Marcado como indisponível para este dia`);
+          return false;
+        }
+        
+        // Verificar horário específico se definido
+        if (dayAvailability.start_time && dayAvailability.end_time) {
+          if (timeOnly < dayAvailability.start_time || endTimeOnly > dayAvailability.end_time) {
+            console.log(`  ✗ Fora do horário específico do dia: ${dayAvailability.start_time} - ${dayAvailability.end_time}`);
+            return false;
+          }
         }
       }
 
