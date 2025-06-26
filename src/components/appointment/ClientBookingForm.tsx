@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -125,11 +124,10 @@ export const ClientBookingForm: React.FC = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      // Validar disponibilidade
+      // Validar apenas disponibilidade de horário (sem verificar qualificação)
       const validationResult = await validateBooking(
         client.id,
         formData.staff_id,
-        formData.service_id,
         startTime,
         endTime
       );
@@ -245,7 +243,12 @@ export const ClientBookingForm: React.FC = () => {
 
                 <div>
                   <Label htmlFor="service" className="text-white">Serviço *</Label>
-                  <Select onValueChange={(value) => setFormData(prev => ({ ...prev, service_id: value, staff_id: '' }))}>
+                  <Select 
+                    onValueChange={(value) => setFormData(prev => ({ 
+                      ...prev, 
+                      service_id: value 
+                    }))}
+                  >
                     <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
                       <SelectValue placeholder="Selecione o serviço" />
                     </SelectTrigger>
@@ -266,7 +269,6 @@ export const ClientBookingForm: React.FC = () => {
                       <Button
                         variant="outline"
                         className="w-full justify-start text-left font-normal bg-[#1F2937] border-gray-600 text-white hover:bg-gray-800"
-                        disabled={!formData.service_id}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {selectedDate ? format(selectedDate, "PPP", { locale: ptBR }) : "Selecione a data"}
@@ -276,27 +278,19 @@ export const ClientBookingForm: React.FC = () => {
                       <Calendar
                         mode="single"
                         selected={selectedDate}
-                        onSelect={(date) => {
-                          setSelectedDate(date);
-                          setFormData(prev => ({ ...prev, staff_id: '' }));
-                        }}
+                        onSelect={setSelectedDate}
                         disabled={(date) => date < new Date() || date.getDay() === 0}
                         initialFocus
                       />
                     </PopoverContent>
                   </Popover>
-                  {!formData.service_id && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Selecione um serviço primeiro
-                    </p>
-                  )}
                 </div>
 
                 <div>
                   <Label htmlFor="time" className="text-white">Horário *</Label>
                   <Select 
                     onValueChange={(value) => {
-                      setFormData(prev => ({ ...prev, time: value, staff_id: '' }));
+                      setFormData(prev => ({ ...prev, time: value }));
                     }}
                     disabled={!selectedDate}
                   >
@@ -314,17 +308,11 @@ export const ClientBookingForm: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  {!selectedDate && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Selecione uma data primeiro
-                    </p>
-                  )}
                 </div>
 
                 <div className="md:col-span-2">
                   <Label htmlFor="barber" className="text-white">Barbeiro *</Label>
                   <BarberSelector
-                    serviceId={formData.service_id}
                     date={selectedDate}
                     time={formData.time}
                     duration={selectedService?.duration || 0}
