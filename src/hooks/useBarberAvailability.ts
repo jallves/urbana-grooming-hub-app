@@ -59,8 +59,36 @@ export const useBarberAvailability = () => {
         return;
       }
 
+      // Verificar se o horário está dentro do expediente padrão
+      const dayOfWeek = date.getDay();
+      console.log(`2. Verificando dia da semana: ${dayOfWeek} (0=domingo)`);
+      
+      // Domingo = 0, não trabalha
+      if (dayOfWeek === 0) {
+        console.log('Domingo - barbearia fechada');
+        setAvailableBarbers([]);
+        return;
+      }
+
+      // Verificar se o horário está dentro do expediente (09:00-20:00)
+      const [hours, minutes] = time.split(':').map(Number);
+      const requestedTime = hours * 60 + minutes; // converter para minutos
+      const startTime = 9 * 60; // 09:00 em minutos
+      const endTime = 20 * 60; // 20:00 em minutos
+      const endTimeWithDuration = requestedTime + duration;
+
+      console.log(`Horário solicitado: ${time} (${requestedTime} min)`);
+      console.log(`Término previsto: ${Math.floor(endTimeWithDuration/60)}:${(endTimeWithDuration%60).toString().padStart(2,'0')} (${endTimeWithDuration} min)`);
+      console.log(`Expediente: 09:00-20:00 (${startTime}-${endTime} min)`);
+
+      if (requestedTime < startTime || endTimeWithDuration > endTime) {
+        console.log('Horário fora do expediente');
+        setAvailableBarbers([]);
+        return;
+      }
+
       // Verificar disponibilidade de cada barbeiro individualmente
-      console.log('2. Verificando disponibilidade individual...');
+      console.log('3. Verificando disponibilidade individual...');
       const availableBarbersList: AvailableBarber[] = [];
       
       for (const barber of allBarbers) {
@@ -88,7 +116,7 @@ export const useBarberAvailability = () => {
         }
       }
       
-      console.log('3. Resultado final:', availableBarbersList.length, 'barbeiros disponíveis');
+      console.log('4. Resultado final:', availableBarbersList.length, 'barbeiros disponíveis');
       console.log('Lista final:', availableBarbersList.map(b => ({ id: b.id, name: b.name })));
       
       setAvailableBarbers(availableBarbersList);
@@ -124,53 +152,7 @@ export const useBarberAvailability = () => {
 
       console.log(`  Data/hora: ${startDateTime.toLocaleString()} até ${endDateTime.toLocaleString()}`);
 
-      // 1. Verificar se é domingo (dia 0) - barbeiros não trabalham no domingo
-      const dayOfWeek = startDateTime.getDay();
-      console.log(`  Dia da semana: ${dayOfWeek} (0=domingo, 1=segunda, etc.)`);
-      
-      if (dayOfWeek === 0) {
-        console.log(`  ✗ Domingo - barbeiro não trabalha`);
-        return false;
-      }
-
-      // 2. Verificar horários de trabalho específicos do barbeiro
-      const { data: workingHours, error: workingError } = await supabase
-        .from('working_hours')
-        .select('*')
-        .eq('staff_id', barberId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_active', true);
-
-      if (workingError) {
-        console.error(`  Erro ao verificar horários de trabalho:`, workingError);
-        // Em caso de erro, usar horário padrão
-      }
-
-      const timeOnly = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      const endTimeOnly = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
-      
-      console.log(`  Horário solicitado: ${timeOnly} até ${endTimeOnly}`);
-
-      if (workingHours && workingHours.length > 0) {
-        // Se há horários específicos, verificar se está dentro deles
-        const workingHour = workingHours[0];
-        console.log(`  Horário específico encontrado: ${workingHour.start_time} - ${workingHour.end_time}`);
-        
-        if (timeOnly < workingHour.start_time || endTimeOnly > workingHour.end_time) {
-          console.log(`  ✗ Fora do horário específico do barbeiro`);
-          return false;
-        }
-      } else {
-        // Usar horário padrão (09:00-20:00) se não há configuração específica
-        console.log(`  Usando horário padrão (09:00-20:00)`);
-        
-        if (timeOnly < '09:00' || endTimeOnly > '20:00') {
-          console.log(`  ✗ Fora do horário padrão (09:00-20:00)`);
-          return false;
-        }
-      }
-
-      // 3. Verificar conflitos com agendamentos existentes
+      // 1. Verificar conflitos com agendamentos existentes
       const { data: conflicts, error: conflictError } = await supabase
         .from('appointments')
         .select('id, start_time, end_time, status')
@@ -207,7 +189,7 @@ export const useBarberAvailability = () => {
         }
       }
 
-      // 4. Verificar disponibilidade específica do dia (se existir)
+      // 2. Verificar disponibilidade específica do dia (se existir)
       const { data: availability, error: availabilityError } = await supabase
         .from('barber_availability')
         .select('*')
@@ -228,6 +210,9 @@ export const useBarberAvailability = () => {
         
         // Verificar horário específico se definido
         if (dayAvailability.start_time && dayAvailability.end_time) {
+          const timeOnly = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+          const endTimeOnly = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
+          
           if (timeOnly < dayAvailability.start_time || endTimeOnly > dayAvailability.end_time) {
             console.log(`  ✗ Fora do horário específico do dia: ${dayAvailability.start_time} - ${dayAvailability.end_time}`);
             return false;
