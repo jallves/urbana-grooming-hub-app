@@ -10,7 +10,7 @@ import { useCoupons } from './useCoupons';
 import { useDisabledDays } from './useDisabledDays';
 import { useAppointmentSubmit } from './useAppointmentSubmit';
 import { format } from 'date-fns';
-import { Barber } from '@/types/barber';
+import { Barber, Staff } from '@/types/barber';
 
 interface InitialAppointmentData {
   serviceId: string;
@@ -96,15 +96,20 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
   // Wrapper para verificação de disponibilidade de barbeiros
   const wrappedCheckBarberAvailability = async (date: Date, time: string, serviceId: string) => {
     console.log('[useClientAppointmentForm] Verificando disponibilidade com barbeiros:', barbers);
-    // Convert Barber[] to the expected type
-    const barbersData = barbers.map(barber => ({
-      ...barber,
-      image_url: barber.image_url || '',
+    // Convert Barber[] to Staff[] with all required properties
+    const barbersData: Staff[] = barbers.map(barber => ({
+      id: barber.id,
+      name: barber.name,
       email: barber.email || '',
       phone: barber.phone || '',
-      experience: barber.experience || '',
+      image_url: barber.image_url || '',
       specialties: barber.specialties || '',
-      role: barber.role || 'barber'
+      experience: barber.experience || '',
+      role: barber.role || 'barber',
+      is_active: barber.is_active,
+      commission_rate: barber.commission_rate || 0,
+      created_at: barber.created_at || new Date().toISOString(),
+      updated_at: barber.updated_at || new Date().toISOString()
     }));
     await checkBarberAvailability(date, time, serviceId, barbersData);
   };
