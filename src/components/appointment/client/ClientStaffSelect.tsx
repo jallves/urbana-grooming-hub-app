@@ -50,7 +50,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
 
   const checkStaffAvailability = async () => {
     if (!selectedDate || !selectedTime || !barbers.length) {
-      // Show all barbers as available when no date/time selected
+      // Mostrar todos os barbeiros como disponíveis quando não há data/hora selecionada
       setStaffAvailability(barbers.map(barber => ({
         id: barber.id,
         name: barber.name,
@@ -64,10 +64,11 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
     setIsChecking(true);
 
     try {
-      console.log('[ClientStaffSelect] Checking availability...', {
+      console.log('[ClientStaffSelect] Verificando disponibilidade...', {
         date: selectedDate,
         time: selectedTime,
-        duration: serviceDuration
+        duration: serviceDuration,
+        barbersCount: barbers.length
       });
 
       const [hours, minutes] = selectedTime.split(':').map(Number);
@@ -80,7 +81,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
       const availability: BarberAvailability[] = [];
 
       for (const barber of barbers) {
-        // Check for appointment conflicts
+        // Verificar conflitos com agendamentos existentes
         const { data: appointments, error } = await supabase
           .from('appointments')
           .select('id, start_time, end_time')
@@ -90,7 +91,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
           .lt('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
         if (error) {
-          console.error(`Error checking availability for ${barber.name}:`, error);
+          console.error(`Erro verificando disponibilidade para ${barber.name}:`, error);
           availability.push({
             id: barber.id,
             name: barber.name,
@@ -101,7 +102,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
           continue;
         }
 
-        // Check for time conflicts
+        // Verificar conflitos de horário
         const hasConflict = appointments?.some(appointment => {
           const appStart = new Date(appointment.start_time);
           const appEnd = new Date(appointment.end_time);
@@ -117,9 +118,15 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
         });
       }
 
+      console.log('[ClientStaffSelect] Resultado da verificação:', {
+        total: availability.length,
+        disponíveis: availability.filter(a => a.available).length,
+        indisponíveis: availability.filter(a => !a.available).length
+      });
+
       setStaffAvailability(availability);
 
-      // Auto-adjust selection if current barber is unavailable
+      // Ajustar seleção automaticamente se o barbeiro atual não estiver disponível
       const currentStaffId = form.getValues('staff_id');
       if (currentStaffId) {
         const currentStaffAvailable = availability.find(s => s.id === currentStaffId)?.available;
@@ -143,7 +150,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
       }
 
     } catch (error) {
-      console.error('[ClientStaffSelect] Error checking availability:', error);
+      console.error('[ClientStaffSelect] Erro verificando disponibilidade:', error);
       toast({
         title: "Erro",
         description: "Não foi possível verificar disponibilidade.",
@@ -187,7 +194,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent className="bg-[#1F2937] border-gray-600">
-              {/* Available barbers */}
+              {/* Barbeiros disponíveis */}
               {availableStaff.map((staff) => (
                 <SelectItem 
                   key={staff.id} 
@@ -217,7 +224,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
                 </SelectItem>
               ))}
 
-              {/* Unavailable barbers */}
+              {/* Barbeiros indisponíveis */}
               {unavailableStaff.map((staff) => (
                 <SelectItem
                   key={staff.id}
@@ -248,7 +255,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
                 </SelectItem>
               ))}
 
-              {/* No barbers available message */}
+              {/* Mensagem quando nenhum barbeiro está disponível */}
               {availableStaff.length === 0 && unavailableStaff.length > 0 && (
                 <div className="px-2 py-4 text-center text-red-400">
                   Nenhum barbeiro disponível neste horário

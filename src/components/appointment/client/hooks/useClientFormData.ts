@@ -27,12 +27,12 @@ export const useClientFormData = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      console.log('[useClientFormData] Loading appointment data...');
+      console.log('[useClientFormData] Iniciando carregamento de dados...');
       setLoading(true);
       
       try {
-        // Load services with public access
-        console.log('[useClientFormData] Loading services...');
+        // Carregar serviços
+        console.log('[useClientFormData] Carregando serviços...');
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
           .select('*')
@@ -40,15 +40,15 @@ export const useClientFormData = () => {
           .order('name');
 
         if (servicesError) {
-          console.error('[useClientFormData] Services error:', servicesError);
-          throw new Error(`Error loading services: ${servicesError.message}`);
+          console.error('[useClientFormData] Erro nos serviços:', servicesError);
+          throw new Error(`Erro ao carregar serviços: ${servicesError.message}`);
         }
 
-        console.log('[useClientFormData] Services loaded:', servicesData?.length || 0);
+        console.log('[useClientFormData] Serviços carregados:', servicesData?.length || 0);
         setServices(servicesData || []);
 
-        // Load barbers with public access - ensure they're visible to clients
-        console.log('[useClientFormData] Loading barbers...');
+        // Carregar barbeiros
+        console.log('[useClientFormData] Carregando barbeiros...');
         const { data: barbersData, error: barbersError } = await supabase
           .from('barbers')
           .select('*')
@@ -56,20 +56,27 @@ export const useClientFormData = () => {
           .order('name');
 
         if (barbersError) {
-          console.error('[useClientFormData] Barbers error:', barbersError);
-          // Don't throw error for barbers, just log and show empty list
-          console.warn('Failed to load barbers, this might be due to RLS policies');
+          console.error('[useClientFormData] Erro nos barbeiros:', barbersError);
+          console.warn('[useClientFormData] Continuando sem barbeiros devido a erro RLS');
           setBarbers([]);
         } else {
-          console.log('[useClientFormData] Barbers loaded:', barbersData?.length || 0);
+          console.log('[useClientFormData] Barbeiros carregados:', barbersData?.length || 0);
+          barbersData?.forEach((barber, index) => {
+            console.log(`[useClientFormData] Barbeiro ${index + 1}:`, {
+              id: barber.id,
+              name: barber.name,
+              is_active: barber.is_active,
+              specialties: barber.specialties
+            });
+          });
           setBarbers(barbersData || []);
         }
 
       } catch (error: any) {
-        console.error('[useClientFormData] Error:', error);
+        console.error('[useClientFormData] Erro:', error);
         toast({
           title: "Erro ao carregar dados",
-          description: error.message || "Não foi possível carregar os dados necessários.",
+          description: "Não foi possível carregar os dados. Por favor, recarregue a página.",
           variant: "destructive",
         });
       } finally {

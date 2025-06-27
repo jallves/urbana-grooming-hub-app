@@ -70,7 +70,6 @@ export const ClientBookingForm: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
-    // Type-safe submission: FormData is guaranteed to have all required fields by Zod validation
     const validatedData = {
       service_id: data.service_id,
       staff_id: data.staff_id,
@@ -82,7 +81,7 @@ export const ClientBookingForm: React.FC = () => {
     await submitForm(validatedData, selectedService);
   };
 
-  // Generate time slots
+  // Gerar horários disponíveis
   const timeSlots = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
@@ -186,7 +185,6 @@ export const ClientBookingForm: React.FC = () => {
                               selected={field.value}
                               onSelect={(date) => {
                                 field.onChange(date);
-                                // Reset staff selection when date changes
                                 form.setValue('staff_id', '');
                               }}
                               disabled={(date) => date < new Date() || date.getDay() === 0}
@@ -208,7 +206,6 @@ export const ClientBookingForm: React.FC = () => {
                         <Select 
                           onValueChange={(value) => {
                             field.onChange(value);
-                            // Reset staff selection when time changes
                             form.setValue('staff_id', '');
                           }}
                           value={field.value || ""}
