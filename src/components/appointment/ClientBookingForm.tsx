@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -70,6 +69,16 @@ export const ClientBookingForm: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
+    // Ensure all required fields are present before submitting
+    if (!data.service_id || !data.staff_id || !data.date || !data.time) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     await submitForm(data, selectedService);
   };
 

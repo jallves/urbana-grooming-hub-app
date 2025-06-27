@@ -18,6 +18,12 @@ interface UseClientFormSubmitProps {
   onSuccess?: () => void;
 }
 
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+  message?: string;
+}
+
 export const useClientFormSubmit = ({ clientId, onSuccess }: UseClientFormSubmitProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -69,10 +75,13 @@ export const useClientFormSubmit = ({ clientId, onSuccess }: UseClientFormSubmit
         throw new Error(`Validation error: ${validationError.message}`);
       }
 
-      if (!validationResult.valid) {
+      // Type assertion to handle the JSON response properly
+      const validation = validationResult as ValidationResult;
+
+      if (!validation.valid) {
         toast({
           title: "Agendamento inválido",
-          description: validationResult.error || "Não foi possível validar o agendamento.",
+          description: validation.error || "Não foi possível validar o agendamento.",
           variant: "destructive",
         });
         return;
