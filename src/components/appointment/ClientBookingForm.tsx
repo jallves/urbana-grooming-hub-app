@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useBarberAvailability } from '@/hooks/useBarberAvailability';
 import { BarberSelector } from './BarberSelector';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -63,6 +63,7 @@ export const ClientBookingForm: React.FC = () => {
   const loadServices = async () => {
     setDataLoading(true);
     try {
+      console.log('Carregando serviços...');
       const { data: servicesData, error } = await supabase
         .from('services')
         .select('id, name, duration, price')
@@ -77,6 +78,7 @@ export const ClientBookingForm: React.FC = () => {
           variant: "destructive",
         });
       } else {
+        console.log('Serviços carregados:', servicesData?.length || 0);
         setServices(servicesData || []);
       }
     } catch (error) {
@@ -125,7 +127,7 @@ export const ClientBookingForm: React.FC = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      // Validar apenas disponibilidade de horário (com 5 argumentos)
+      // Validar disponibilidade
       const validationResult = await validateBooking(
         client.id,
         formData.staff_id,
@@ -134,7 +136,6 @@ export const ClientBookingForm: React.FC = () => {
         endTime
       );
 
-      // Safely cast the result to ValidationResult
       const validation = validationResult as unknown as ValidationResult;
 
       if (!validation.valid) {
@@ -184,9 +185,9 @@ export const ClientBookingForm: React.FC = () => {
   };
 
   const timeSlots = [
-    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-    '11:00', '11:30', '14:00', '14:30', '15:00', '15:30',
-    '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+    '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
   ];
 
   if (!client) return null;
@@ -204,7 +205,7 @@ export const ClientBookingForm: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="flex items-center mb-8">
           <Button
             onClick={() => navigate('/cliente/dashboard')}
@@ -223,16 +224,17 @@ export const ClientBookingForm: React.FC = () => {
           </div>
         </div>
 
-        <Card className="bg-[#111827] border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Dados do Agendamento</CardTitle>
-            <CardDescription className="text-[#9CA3AF]">
-              Selecione o serviço, data e horário para ver barbeiros disponíveis
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Formulário */}
+          <Card className="bg-[#111827] border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Dados do Agendamento</CardTitle>
+              <CardDescription className="text-[#9CA3AF]">
+                Preencha os dados do seu agendamento
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <Label htmlFor="client_name" className="text-white">Cliente</Label>
                   <Input
@@ -248,7 +250,8 @@ export const ClientBookingForm: React.FC = () => {
                   <Select 
                     onValueChange={(value) => setFormData(prev => ({ 
                       ...prev, 
-                      service_id: value 
+                      service_id: value,
+                      staff_id: '' // Reset barbeiro quando mudar serviço
                     }))}
                   >
                     <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
@@ -280,7 +283,10 @@ export const ClientBookingForm: React.FC = () => {
                       <Calendar
                         mode="single"
                         selected={selectedDate}
-                        onSelect={setSelectedDate}
+                        onSelect={(date) => {
+                          setSelectedDate(date);
+                          setFormData(prev => ({ ...prev, staff_id: '' })); // Reset barbeiro quando mudar data
+                        }}
                         disabled={(date) => date < new Date() || date.getDay() === 0}
                         initialFocus
                       />
@@ -292,7 +298,7 @@ export const ClientBookingForm: React.FC = () => {
                   <Label htmlFor="time" className="text-white">Horário *</Label>
                   <Select 
                     onValueChange={(value) => {
-                      setFormData(prev => ({ ...prev, time: value }));
+                      setFormData(prev => ({ ...prev, time: value, staff_id: '' })); // Reset barbeiro quando mudar horário
                     }}
                     disabled={!selectedDate}
                   >
@@ -312,59 +318,59 @@ export const ClientBookingForm: React.FC = () => {
                   </Select>
                 </div>
 
-                <div className="md:col-span-2">
-                  <Label htmlFor="barber" className="text-white">Barbeiro *</Label>
-                  <BarberSelector
-                    serviceId={formData.service_id}
-                    date={selectedDate}
-                    time={formData.time}
-                    duration={selectedService?.duration || 0}
-                    selectedBarberId={formData.staff_id}
-                    onBarberChange={(barberId) => setFormData(prev => ({ ...prev, staff_id: barberId }))}
-                    disabled={loading}
+                <div>
+                  <Label htmlFor="notes" className="text-white">Observações</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Observações adicionais (opcional)"
+                    className="bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF]"
                   />
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="notes" className="text-white">Observações</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Observações adicionais (opcional)"
-                  className="bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF]"
-                />
-              </div>
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/cliente/dashboard')}
+                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading || !formData.service_id || !selectedDate || !formData.time || !formData.staff_id}
+                    className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {isValidating ? 'Validando...' : 'Agendando...'}
+                      </>
+                    ) : (
+                      'Confirmar Agendamento'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-              <div className="flex gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate('/cliente/dashboard')}
-                  className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading || !formData.service_id || !selectedDate || !formData.time || !formData.staff_id}
-                  className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isValidating ? 'Validando...' : 'Agendando...'}
-                    </>
-                  ) : (
-                    'Confirmar Agendamento'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+          {/* Seletor de Barbeiro */}
+          <div>
+            <BarberSelector
+              serviceId={formData.service_id}
+              date={selectedDate}
+              time={formData.time}
+              duration={selectedService?.duration || 0}
+              selectedBarberId={formData.staff_id}
+              onBarberChange={(barberId) => setFormData(prev => ({ ...prev, staff_id: barberId }))}
+              disabled={loading}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

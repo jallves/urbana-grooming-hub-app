@@ -1,14 +1,15 @@
 
-import React, { useEffect } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, User, Star, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useBarberAvailability } from '@/hooks/useBarberAvailability';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Users, Clock, Loader2, AlertCircle } from 'lucide-react';
 
 interface BarberSelectorProps {
   serviceId: string;
-  date: Date | undefined;
+  date?: Date;
   time: string;
   duration: number;
   selectedBarberId: string;
@@ -26,115 +27,149 @@ export const BarberSelector: React.FC<BarberSelectorProps> = ({
   disabled = false
 }) => {
   const { availableBarbers, isLoading, fetchAvailableBarbers } = useBarberAvailability();
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    console.log('BarberSelector - useEffect disparado:', { serviceId, date, time, duration });
-    
-    if (serviceId && date && time && duration > 0) {
-      console.log('Buscando barbeiros disponíveis...');
-      fetchAvailableBarbers(serviceId, date, time, duration);
-    } else {
+    console.log('BarberSelector - useEffect disparado:', {
+      serviceId,
+      date,
+      time,
+      duration
+    });
+
+    if (!serviceId || !date || !time) {
       console.log('Parâmetros insuficientes para buscar barbeiros');
+      return;
     }
+
+    console.log('Buscando barbeiros disponíveis...');
+    setHasSearched(true);
+    fetchAvailableBarbers(serviceId, date, time, duration);
   }, [serviceId, date, time, duration, fetchAvailableBarbers]);
 
-  console.log('BarberSelector - Estado atual:', { 
-    availableBarbers: availableBarbers.length, 
-    isLoading, 
-    selectedBarberId 
-  });
+  // Log do estado atual
+  useEffect(() => {
+    console.log('BarberSelector - Estado atual:', {
+      availableBarbers: availableBarbers.length,
+      isLoading,
+      selectedBarberId
+    });
+  }, [availableBarbers, isLoading, selectedBarberId]);
 
-  const canShowBarbers = serviceId && date && time && duration > 0;
+  const canShowResults = serviceId && date && time && hasSearched;
 
-  if (!canShowBarbers) {
+  if (!canShowResults) {
     return (
-      <div className="w-full">
-        <Select disabled>
-          <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
-            <SelectValue placeholder="Selecione o serviço, data e horário primeiro" />
-          </SelectTrigger>
-        </Select>
-        <p className="text-xs text-gray-400 mt-1">
-          Complete os campos acima para ver barbeiros disponíveis
-        </p>
-      </div>
+      <Card className="bg-[#1F2937] border-gray-600">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Barbeiros Disponíveis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-400">
+            <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Selecione o serviço, data e horário para ver os barbeiros disponíveis</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="bg-[#1F2937] border-gray-600">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Barbeiros Disponíveis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-400">
+            <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin" />
+            <p>Verificando disponibilidade dos barbeiros...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (availableBarbers.length === 0) {
+    return (
+      <Card className="bg-[#1F2937] border-gray-600">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Barbeiros Disponíveis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-gray-400">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
+            <p className="text-lg font-medium mb-2">Nenhum barbeiro disponível</p>
+            <p className="text-sm">
+              Não há barbeiros disponíveis para este horário. 
+              Tente selecionar outro horário ou data.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="w-full">
-      <Select 
-        value={selectedBarberId} 
-        onValueChange={onBarberChange}
-        disabled={disabled || isLoading}
-      >
-        <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
-          <SelectValue placeholder={
-            isLoading ? "Buscando barbeiros disponíveis..." : "Selecione um barbeiro"
-          } />
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-        </SelectTrigger>
-        <SelectContent className="bg-[#1F2937] border-gray-600">
-          {isLoading ? (
-            <div className="px-4 py-3 text-center">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-blue-400" />
-              <p className="text-sm text-gray-300">Carregando barbeiros...</p>
-            </div>
-          ) : availableBarbers.length > 0 ? (
-            availableBarbers.map((barber) => (
+    <Card className="bg-[#1F2937] border-gray-600">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Barbeiros Disponíveis
+          <Badge variant="secondary" className="ml-2">
+            {availableBarbers.length} disponível{availableBarbers.length !== 1 ? 'eis' : ''}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Select 
+          value={selectedBarberId} 
+          onValueChange={onBarberChange}
+          disabled={disabled}
+        >
+          <SelectTrigger className="bg-[#374151] border-gray-600 text-white">
+            <SelectValue placeholder="Selecione um barbeiro" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#374151] border-gray-600">
+            {availableBarbers.map((barber) => (
               <SelectItem 
                 key={barber.id} 
                 value={barber.id}
                 className="text-white hover:bg-gray-700 focus:bg-gray-700"
               >
-                <div className="flex items-center space-x-3 py-2">
+                <div className="flex items-center gap-3 w-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={barber.image_url} alt={barber.name} />
-                    <AvatarFallback className="bg-gray-600 text-white">
-                      <User className="h-4 w-4" />
+                    <AvatarFallback className="bg-[#F59E0B] text-black">
+                      {barber.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{barber.name}</span>
-                      <Badge variant="secondary" className="bg-green-500 text-white">
-                        <Star className="h-3 w-3 mr-1" />
-                        Disponível
-                      </Badge>
-                    </div>
+                    <div className="font-medium">{barber.name}</div>
                     {barber.specialties && (
-                      <p className="text-xs text-gray-400 mt-1">
+                      <div className="text-xs text-gray-400">
                         {barber.specialties}
-                      </p>
+                      </div>
                     )}
                   </div>
+                  <Badge variant="outline" className="text-green-400 border-green-400">
+                    Disponível
+                  </Badge>
                 </div>
               </SelectItem>
-            ))
-          ) : (
-            <div className="px-4 py-6 text-center">
-              <div className="text-amber-500 mb-2">
-                <AlertCircle className="h-8 w-8 mx-auto" />
-              </div>
-              <p className="text-sm text-gray-300 mb-1">
-                Nenhum barbeiro disponível
-              </p>
-              <p className="text-xs text-gray-400">
-                Tente outro horário ou data
-              </p>
-            </div>
-          )}
-        </SelectContent>
-      </Select>
-      
-      {!isLoading && (
-        <p className="text-xs text-gray-400 mt-1">
-          {availableBarbers.length > 0 
-            ? `${availableBarbers.length} barbeiro(s) disponível(is)`
-            : 'Nenhum barbeiro disponível neste horário'
-          }
-        </p>
-      )}
-    </div>
+            ))}
+          </SelectContent>
+        </Select>
+      </CardContent>
+    </Card>
   );
 };

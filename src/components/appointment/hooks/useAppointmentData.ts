@@ -1,105 +1,89 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Service } from '@/types/appointment';
-import { Barber } from '@/types/barber';
+import { useToast } from '@/hooks/use-toast';
+
+interface Barber {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  image_url: string;
+  specialties: string;
+  experience: string;
+  role: string;
+  is_active: boolean;
+}
 
 export const useAppointmentData = () => {
-  const { toast } = useToast();
   const [services, setServices] = useState<Service[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadData = async () => {
+      console.log('[useAppointmentData] Iniciando carregamento de dados...');
+      setLoading(true);
+      
       try {
-        setLoading(true);
-        
-        console.log('[useAppointmentData] Iniciando busca de dados...');
-        
-        // Buscar serviços
+        // Carregar serviços
+        console.log('[useAppointmentData] Carregando serviços...');
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
           .select('*')
           .eq('is_active', true)
-          .order('name', { ascending: true });
+          .order('name');
 
         if (servicesError) {
-          console.error('Erro ao buscar serviços:', servicesError);
-          toast({
-            title: "Erro ao carregar serviços",
-            description: "Não foi possível carregar os serviços.",
-            variant: "destructive",
-          });
-        } else {
-          console.log('[useAppointmentData] Serviços encontrados:', servicesData?.length || 0);
-          setServices(servicesData || []);
+          console.error('[useAppointmentData] Erro ao carregar serviços:', servicesError);
+          throw new Error(`Erro ao carregar serviços: ${servicesError.message}`);
         }
 
-        // Buscar barbeiros da tabela barbers
+        console.log('[useAppointmentData] Serviços carregados:', servicesData?.length || 0);
+        setServices(servicesData || []);
+
+        // Carregar barbeiros da tabela 'barbers'
+        console.log('[useAppointmentData] Carregando barbeiros...');
         const { data: barbersData, error: barbersError } = await supabase
           .from('barbers')
           .select('*')
           .eq('is_active', true)
-          .order('name', { ascending: true });
+          .order('name');
 
         if (barbersError) {
-          console.error('Erro ao buscar barbeiros:', barbersError);
-          toast({
-            title: "Erro ao carregar barbeiros",
-            description: "Não foi possível carregar os barbeiros.",
-            variant: "destructive",
-          });
-        } else {
-          console.log('[useAppointmentData] Barbeiros encontrados:', barbersData?.length || 0);
-          console.log('[useAppointmentData] Dados dos barbeiros:', barbersData);
-          setBarbers(barbersData || []);
-          
-          // Se não há barbeiros, mostrar erro específico
-          if (!barbersData || barbersData.length === 0) {
-            toast({
-              title: "Nenhum barbeiro disponível",
-              description: "Verifique se há barbeiros cadastrados com role 'barber' e is_active = true.",
-              variant: "destructive",
-            });
-          }
+          console.error('[useAppointmentData] Erro ao carregar barbeiros:', barbersError);
+          throw new Error(`Erro ao carregar barbeiros: ${barbersError.message}`);
         }
 
-        console.log('[useAppointmentData] Dados finais carregados:', {
-          services: servicesData?.length || 0,
-          barbers: barbersData?.length || 0
-        });
-        
-      } catch (error: any) {
-        console.error('Erro geral ao carregar dados:', error);
+        console.log('[useAppointmentData] Barbeiros carregados:', barbersData?.length || 0);
+        setBarbers(barbersData || []);
+
+      } catch (error) {
+        console.error('[useAppointmentData] Erro geral:', error);
         toast({
-          title: "Erro",
-          description: "Não foi possível carregar os dados necessários.",
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os dados necessários. Tente novamente.",
           variant: "destructive",
         });
-        // Manter arrays vazios para o formulário aparecer
-        setServices([]);
-        setBarbers([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    loadData();
   }, [toast]);
 
-  console.log('[useAppointmentData] Hook retornando:', {
-    servicesCount: services.length,
-    barbersCount: barbers.length,
+  console.log('[useAppointmentData] Estado atual:', {
     loading,
-    services: services.slice(0, 2), // Debug dos primeiros itens
-    barbers: barbers.slice(0, 2)
+    servicesCount: services.length,
+    barbersCount: barbers.length
   });
 
   return {
     services,
     barbers,
-    loading,
+    loading
   };
 };

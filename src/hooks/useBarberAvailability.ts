@@ -32,12 +32,13 @@ export const useBarberAvailability = () => {
     setIsLoading(true);
     
     try {
-      // Primeiro, buscar todos os barbeiros ativos
-      console.log('1. Buscando todos os barbeiros ativos...');
+      // Buscar barbeiros da tabela 'barbers' (não 'users')
+      console.log('1. Buscando barbeiros da tabela barbers...');
       const { data: allBarbers, error: barbersError } = await supabase
         .from('barbers')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('name');
 
       if (barbersError) {
         console.error('Erro ao buscar barbeiros:', barbersError);
@@ -51,66 +52,60 @@ export const useBarberAvailability = () => {
       }
 
       console.log('Barbeiros encontrados:', allBarbers?.length || 0);
-      console.log('Lista de barbeiros:', allBarbers?.map(b => ({ id: b.id, name: b.name, email: b.email })));
-
+      
       if (!allBarbers || allBarbers.length === 0) {
         console.log('Nenhum barbeiro ativo encontrado');
         setAvailableBarbers([]);
         return;
       }
 
-      // Verificar se o horário está dentro do expediente padrão
+      // Verificar se é domingo (não trabalha)
       const dayOfWeek = date.getDay();
       console.log(`2. Verificando dia da semana: ${dayOfWeek} (0=domingo)`);
       
-      // Domingo = 0, não trabalha
       if (dayOfWeek === 0) {
         console.log('Domingo - barbearia fechada');
         setAvailableBarbers([]);
         return;
       }
 
-      // Verificar se o horário está dentro do expediente (09:00-20:00)
+      // Verificar horário de expediente (09:00-20:00)
       const [hours, minutes] = time.split(':').map(Number);
-      const requestedTime = hours * 60 + minutes; // converter para minutos
-      const startTime = 9 * 60; // 09:00 em minutos
-      const endTime = 20 * 60; // 20:00 em minutos
+      const requestedTime = hours * 60 + minutes;
       const endTimeWithDuration = requestedTime + duration;
 
       console.log(`Horário solicitado: ${time} (${requestedTime} min)`);
-      console.log(`Término previsto: ${Math.floor(endTimeWithDuration/60)}:${(endTimeWithDuration%60).toString().padStart(2,'0')} (${endTimeWithDuration} min)`);
-      console.log(`Expediente: 09:00-20:00 (${startTime}-${endTime} min)`);
+      console.log(`Expediente: 09:00-20:00 (540-1200 min)`);
 
-      if (requestedTime < startTime || endTimeWithDuration > endTime) {
+      if (requestedTime < 540 || endTimeWithDuration > 1200) {
         console.log('Horário fora do expediente');
         setAvailableBarbers([]);
         return;
       }
 
-      // Verificar conflitos com agendamentos existentes para cada barbeiro
+      // Verificar conflitos com agendamentos existentes
       console.log('3. Verificando conflitos de agendamento...');
       const availableBarbersList: AvailableBarber[] = [];
       
-      const [hoursNum, minutesNum] = time.split(':').map(Number);
       const startDateTime = new Date(date);
-      startDateTime.setHours(hoursNum, minutesNum, 0, 0);
+      startDateTime.setHours(hours, minutes, 0, 0);
       
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(endDateTime.getMinutes() + duration);
 
-      console.log(`Verificando conflitos entre: ${startDateTime.toLocaleString()} e ${endDateTime.toLocaleString()}`);
+      console.log(`Verificando conflitos entre: ${startDateTime.toISOString()} e ${endDateTime.toISOString()}`);
 
       for (const barber of allBarbers) {
         console.log(`Verificando barbeiro: ${barber.name} (${barber.id})`);
         
-        // Verificar conflitos com agendamentos existentes
+        // Buscar agendamentos conflitantes
         const { data: conflicts, error: conflictError } = await supabase
           .from('appointments')
           .select('id, start_time, end_time, status')
           .eq('staff_id', barber.id)
           .in('status', ['scheduled', 'confirmed'])
-          .gte('start_time', startDateTime.toISOString().split('T')[0] + 'T00:00:00')
-          .lt('start_time', startDateTime.toISOString().split('T')[0] + 'T23:59:59');
+          .gte('start_time', date.toISOString().split('T')[0] + 'T00:00:00')
+          .lt('start_time', date.toISOString().split('T')[0] + 'T23:59:59');
 
         if (conflictError) {
           console.error(`Erro ao verificar conflitos para ${barber.name}:`, conflictError);
@@ -126,19 +121,17 @@ export const useBarberAvailability = () => {
             role: barber.role || 'barber',
             is_active: barber.is_active
           });
-          console.log(`✓ Barbeiro ${barber.name} adicionado (erro na verificação)`);
           continue;
         }
 
+        // Verificar se há conflito de horário
         let hasConflict = false;
         if (conflicts && conflicts.length > 0) {
-          console.log(`Agendamentos encontrados para ${barber.name}: ${conflicts.length}`);
-          
-          // Verificar se há sobreposição de horários
           hasConflict = conflicts.some(appointment => {
             const appStart = new Date(appointment.start_time);
             const appEnd = new Date(appointment.end_time);
             
+            // Verificar sobreposição
             const overlap = startDateTime < appEnd && endDateTime > appStart;
             
             if (overlap) {
@@ -168,8 +161,6 @@ export const useBarberAvailability = () => {
       }
       
       console.log('4. Resultado final:', availableBarbersList.length, 'barbeiros disponíveis');
-      console.log('Lista final:', availableBarbersList.map(b => ({ id: b.id, name: b.name })));
-      
       setAvailableBarbers(availableBarbersList);
 
     } catch (error) {
