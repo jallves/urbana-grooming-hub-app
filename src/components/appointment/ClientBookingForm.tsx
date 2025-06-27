@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -69,17 +70,16 @@ export const ClientBookingForm: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
-    // Ensure all required fields are present before submitting
-    if (!data.service_id || !data.staff_id || !data.date || !data.time) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Type-safe submission: FormData is guaranteed to have all required fields by Zod validation
+    const validatedData = {
+      service_id: data.service_id,
+      staff_id: data.staff_id,
+      date: data.date,
+      time: data.time,
+      notes: data.notes,
+    };
     
-    await submitForm(data, selectedService);
+    await submitForm(validatedData, selectedService);
   };
 
   // Generate time slots

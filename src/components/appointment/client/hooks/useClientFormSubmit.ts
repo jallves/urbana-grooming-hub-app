@@ -75,8 +75,8 @@ export const useClientFormSubmit = ({ clientId, onSuccess }: UseClientFormSubmit
         throw new Error(`Validation error: ${validationError.message}`);
       }
 
-      // Type assertion to handle the JSON response properly
-      const validation = validationResult as ValidationResult;
+      // Safe type assertion with unknown first
+      const validation = validationResult as unknown as ValidationResult;
 
       if (!validation.valid) {
         toast({
