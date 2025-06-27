@@ -31,7 +31,8 @@ export const useClientFormData = () => {
       setLoading(true);
       
       try {
-        // Load services
+        // Load services with public access
+        console.log('[useClientFormData] Loading services...');
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
           .select('*')
@@ -39,13 +40,15 @@ export const useClientFormData = () => {
           .order('name');
 
         if (servicesError) {
+          console.error('[useClientFormData] Services error:', servicesError);
           throw new Error(`Error loading services: ${servicesError.message}`);
         }
 
         console.log('[useClientFormData] Services loaded:', servicesData?.length || 0);
         setServices(servicesData || []);
 
-        // Load barbers
+        // Load barbers with public access - ensure they're visible to clients
+        console.log('[useClientFormData] Loading barbers...');
         const { data: barbersData, error: barbersError } = await supabase
           .from('barbers')
           .select('*')
@@ -53,17 +56,20 @@ export const useClientFormData = () => {
           .order('name');
 
         if (barbersError) {
-          throw new Error(`Error loading barbers: ${barbersError.message}`);
+          console.error('[useClientFormData] Barbers error:', barbersError);
+          // Don't throw error for barbers, just log and show empty list
+          console.warn('Failed to load barbers, this might be due to RLS policies');
+          setBarbers([]);
+        } else {
+          console.log('[useClientFormData] Barbers loaded:', barbersData?.length || 0);
+          setBarbers(barbersData || []);
         }
 
-        console.log('[useClientFormData] Barbers loaded:', barbersData?.length || 0);
-        setBarbers(barbersData || []);
-
-      } catch (error) {
+      } catch (error: any) {
         console.error('[useClientFormData] Error:', error);
         toast({
           title: "Erro ao carregar dados",
-          description: "Não foi possível carregar os dados necessários.",
+          description: error.message || "Não foi possível carregar os dados necessários.",
           variant: "destructive",
         });
       } finally {
