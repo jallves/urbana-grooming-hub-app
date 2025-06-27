@@ -96,7 +96,7 @@ export const useClientAppointmentForm = (clientId: string, initialData?: Initial
   // Wrapper para verificação de disponibilidade de barbeiros
   const wrappedCheckBarberAvailability = async (date: Date, time: string, serviceId: string) => {
     console.log('[useClientAppointmentForm] Verificando disponibilidade com barbeiros:', barbers);
-    // Convert Barber[] to Staff[] with all required properties
+    // Now the barbers already have all required Staff properties
     const barbersData: Staff[] = barbers.map(barber => ({
       id: barber.id,
       name: barber.name,
