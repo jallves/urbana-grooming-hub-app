@@ -1,189 +1,79 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useBarberAvailability } from '@/hooks/useBarberAvailability';
-import { BarberSelector } from './BarberSelector';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useClientFormData } from './client/hooks/useClientFormData';
+import { useClientFormSubmit } from './client/hooks/useClientFormSubmit';
+import ClientServiceSelect from './client/ClientServiceSelect';
+import ClientStaffSelect from './client/ClientStaffSelect';
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface Service {
-  id: string;
-  name: string;
-  duration: number;
-  price: number;
-}
+const formSchema = z.object({
+  service_id: z.string().min(1, 'Serviço é obrigatório'),
+  staff_id: z.string().min(1, 'Barbeiro é obrigatório'),
+  date: z.date({
+    required_error: 'Data é obrigatória',
+  }),
+  time: z.string().min(1, 'Horário é obrigatório'),
+  notes: z.string().optional(),
+});
 
-interface ValidationResult {
-  valid: boolean;
-  error?: string;
-  message?: string;
-}
+type FormData = z.infer<typeof formSchema>;
 
 export const ClientBookingForm: React.FC = () => {
   const navigate = useNavigate();
   const { client } = useClientAuth();
   const { toast } = useToast();
-  const { validateBooking } = useBarberAvailability();
+  const [selectedService, setSelectedService] = useState<any>(null);
   
-  const [loading, setLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true);
-  const [services, setServices] = useState<Service[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [isValidating, setIsValidating] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    service_id: '',
-    staff_id: '',
-    time: '',
-    notes: ''
+  const { services, barbers, loading } = useClientFormData();
+  const { handleSubmit: submitForm, isLoading: submitting } = useClientFormSubmit({
+    clientId: client?.id || '',
+    onSuccess: () => navigate('/cliente/dashboard')
   });
 
-  const selectedService = services.find(s => s.id === formData.service_id);
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      service_id: '',
+      staff_id: '',
+      date: undefined,
+      time: '',
+      notes: '',
+    },
+  });
 
   useEffect(() => {
     if (!client) {
       navigate('/cliente/login');
       return;
     }
-    loadServices();
   }, [client, navigate]);
 
-  const loadServices = async () => {
-    setDataLoading(true);
-    try {
-      console.log('Carregando serviços...');
-      const { data: servicesData, error } = await supabase
-        .from('services')
-        .select('id, name, duration, price')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) {
-        console.error('Erro ao carregar serviços:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os serviços.",
-          variant: "destructive",
-        });
-      } else {
-        console.log('Serviços carregados:', servicesData?.length || 0);
-        setServices(servicesData || []);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar serviços:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao carregar dados.",
-        variant: "destructive",
-      });
-    } finally {
-      setDataLoading(false);
-    }
+  const handleServiceChange = (serviceId: string) => {
+    const service = services.find(s => s.id === serviceId);
+    setSelectedService(service);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!client || !selectedDate || !formData.service_id || !formData.time || !formData.staff_id) {
-      toast({
-        title: "Formulário incompleto",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!selectedService) {
-      toast({
-        title: "Erro",
-        description: "Serviço não encontrado.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    setIsValidating(true);
-
-    try {
-      // Criar data/hora de início
-      const [hours, minutes] = formData.time.split(':').map(Number);
-      const startTime = new Date(selectedDate);
-      startTime.setHours(hours, minutes, 0, 0);
-
-      // Calcular horário de fim
-      const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
-
-      // Validar disponibilidade
-      const validationResult = await validateBooking(
-        client.id,
-        formData.staff_id,
-        formData.service_id,
-        startTime,
-        endTime
-      );
-
-      const validation = validationResult as unknown as ValidationResult;
-
-      if (!validation.valid) {
-        toast({
-          title: "Agendamento inválido",
-          description: validation.error || "Não foi possível validar o agendamento.",
-          variant: "destructive",
-        });
-        setIsValidating(false);
-        setLoading(false);
-        return;
-      }
-
-      // Criar agendamento
-      const { error } = await supabase
-        .from('appointments')
-        .insert([{
-          client_id: client.id,
-          service_id: formData.service_id,
-          staff_id: formData.staff_id,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          status: 'scheduled',
-          notes: formData.notes || null
-        }]);
-
-      if (error) throw error;
-
-      toast({
-        title: "Agendamento criado com sucesso!",
-        description: "Seu agendamento foi confirmado.",
-        action: <CheckCircle className="h-4 w-4 text-green-500" />
-      });
-
-      navigate('/cliente/dashboard');
-    } catch (error) {
-      console.error('Erro ao criar agendamento:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar o agendamento. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-      setIsValidating(false);
-    }
+  const onSubmit = async (data: FormData) => {
+    await submitForm(data, selectedService);
   };
 
+  // Generate time slots
   const timeSlots = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
@@ -192,7 +82,7 @@ export const ClientBookingForm: React.FC = () => {
 
   if (!client) return null;
 
-  if (dataLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="flex items-center space-x-2 text-white">
@@ -202,6 +92,9 @@ export const ClientBookingForm: React.FC = () => {
       </div>
     );
   }
+
+  const selectedDate = form.watch('date');
+  const selectedTime = form.watch('time');
 
   return (
     <div className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
@@ -224,110 +117,137 @@ export const ClientBookingForm: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Formulário */}
-          <Card className="bg-[#111827] border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">Dados do Agendamento</CardTitle>
-              <CardDescription className="text-[#9CA3AF]">
-                Preencha os dados do seu agendamento
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className="bg-[#111827] border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Dados do Agendamento</CardTitle>
+            <CardDescription className="text-[#9CA3AF]">
+              Preencha os dados do seu agendamento
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div>
-                  <Label htmlFor="client_name" className="text-white">Cliente</Label>
+                  <FormLabel className="text-white">Cliente</FormLabel>
                   <Input
-                    id="client_name"
                     value={client.name}
                     disabled
                     className="bg-[#1F2937] border-gray-600 text-white"
                   />
                 </div>
 
-                <div>
-                  <Label htmlFor="service" className="text-white">Serviço *</Label>
-                  <Select 
-                    onValueChange={(value) => setFormData(prev => ({ 
-                      ...prev, 
-                      service_id: value,
-                      staff_id: '' // Reset barbeiro quando mudar serviço
-                    }))}
-                  >
-                    <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
-                      <SelectValue placeholder="Selecione o serviço" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {services.map((service) => (
-                        <SelectItem key={service.id} value={service.id}>
-                          {service.name} - R$ {service.price.toFixed(2)} ({service.duration}min)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-white">Data *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal bg-[#1F2937] border-gray-600 text-white hover:bg-gray-800"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, "PPP", { locale: ptBR }) : "Selecione a data"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => {
-                          setSelectedDate(date);
-                          setFormData(prev => ({ ...prev, staff_id: '' })); // Reset barbeiro quando mudar data
-                        }}
-                        disabled={(date) => date < new Date() || date.getDay() === 0}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div>
-                  <Label htmlFor="time" className="text-white">Horário *</Label>
-                  <Select 
-                    onValueChange={(value) => {
-                      setFormData(prev => ({ ...prev, time: value, staff_id: '' })); // Reset barbeiro quando mudar horário
-                    }}
-                    disabled={!selectedDate}
-                  >
-                    <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
-                      <SelectValue placeholder="Selecione o horário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          <div className="flex items-center">
-                            <Clock className="mr-2 h-4 w-4" />
-                            {time}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="notes" className="text-white">Observações</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Observações adicionais (opcional)"
-                    className="bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF]"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ClientServiceSelect 
+                    services={services}
+                    form={form}
+                    onServiceChange={handleServiceChange}
+                  />
+                  
+                  <ClientStaffSelect 
+                    barbers={barbers}
+                    form={form}
+                    selectedDate={selectedDate}
+                    selectedTime={selectedTime}
+                    serviceDuration={selectedService?.duration}
                   />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Data *</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal bg-[#1F2937] border-gray-600 text-white hover:bg-gray-800"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {field.value ? format(field.value, "PPP", { locale: ptBR }) : "Selecione a data"}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={(date) => {
+                                field.onChange(date);
+                                // Reset staff selection when date changes
+                                form.setValue('staff_id', '');
+                              }}
+                              disabled={(date) => date < new Date() || date.getDay() === 0}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Horário *</FormLabel>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Reset staff selection when time changes
+                            form.setValue('staff_id', '');
+                          }}
+                          value={field.value || ""}
+                          disabled={!selectedDate}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
+                              <SelectValue placeholder="Selecione o horário" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-[#1F2937] border-gray-600">
+                            {timeSlots.map((time) => (
+                              <SelectItem 
+                                key={time} 
+                                value={time}
+                                className="text-white hover:bg-gray-700 focus:bg-gray-700"
+                              >
+                                <div className="flex items-center">
+                                  <Clock className="mr-2 h-4 w-4" />
+                                  {time}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-white">Observações</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Observações adicionais (opcional)"
+                          className="bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="flex gap-4">
                   <Button
@@ -335,19 +255,19 @@ export const ClientBookingForm: React.FC = () => {
                     variant="outline"
                     onClick={() => navigate('/cliente/dashboard')}
                     className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
-                    disabled={loading}
+                    disabled={submitting}
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
-                    disabled={loading || !formData.service_id || !selectedDate || !formData.time || !formData.staff_id}
+                    disabled={submitting}
                     className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
                   >
-                    {loading ? (
+                    {submitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {isValidating ? 'Validando...' : 'Agendando...'}
+                        Agendando...
                       </>
                     ) : (
                       'Confirmar Agendamento'
@@ -355,22 +275,9 @@ export const ClientBookingForm: React.FC = () => {
                   </Button>
                 </div>
               </form>
-            </CardContent>
-          </Card>
-
-          {/* Seletor de Barbeiro */}
-          <div>
-            <BarberSelector
-              serviceId={formData.service_id}
-              date={selectedDate}
-              time={formData.time}
-              duration={selectedService?.duration || 0}
-              selectedBarberId={formData.staff_id}
-              onBarberChange={(barberId) => setFormData(prev => ({ ...prev, staff_id: barberId }))}
-              disabled={loading}
-            />
-          </div>
-        </div>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
