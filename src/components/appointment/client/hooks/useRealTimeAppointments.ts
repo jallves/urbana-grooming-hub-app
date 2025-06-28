@@ -32,6 +32,9 @@ export const useRealTimeAppointments = (clientId: string | undefined) => {
 
     try {
       setLoading(true);
+      console.log('Carregando agendamentos para cliente:', clientId);
+      
+      // Consultar appointments com joins corretos às tabelas certas
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -46,7 +49,7 @@ export const useRealTimeAppointments = (clientId: string | undefined) => {
             price,
             duration
           ),
-          barber:barbers (
+          barber:barbers!appointments_staff_id_fkey (
             id,
             name,
             image_url
@@ -55,8 +58,12 @@ export const useRealTimeAppointments = (clientId: string | undefined) => {
         .eq('client_id', clientId)
         .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao carregar agendamentos:', error);
+        throw error;
+      }
 
+      console.log('Agendamentos carregados:', data?.length || 0);
       setAppointments(data as Appointment[]);
     } catch (error: any) {
       console.error('Erro ao carregar agendamentos:', error);

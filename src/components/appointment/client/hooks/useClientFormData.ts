@@ -47,8 +47,8 @@ export const useClientFormData = () => {
         console.log('[useClientFormData] Serviços carregados:', servicesData?.length || 0);
         setServices(servicesData || []);
 
-        // Carregar barbeiros
-        console.log('[useClientFormData] Carregando barbeiros...');
+        // Carregar barbeiros da tabela correta
+        console.log('[useClientFormData] Carregando barbeiros da tabela barbers...');
         const { data: barbersData, error: barbersError } = await supabase
           .from('barbers')
           .select('*')
@@ -57,26 +57,25 @@ export const useClientFormData = () => {
 
         if (barbersError) {
           console.error('[useClientFormData] Erro nos barbeiros:', barbersError);
-          console.warn('[useClientFormData] Continuando sem barbeiros devido a erro RLS');
-          setBarbers([]);
-        } else {
-          console.log('[useClientFormData] Barbeiros carregados:', barbersData?.length || 0);
-          barbersData?.forEach((barber, index) => {
-            console.log(`[useClientFormData] Barbeiro ${index + 1}:`, {
-              id: barber.id,
-              name: barber.name,
-              is_active: barber.is_active,
-              specialties: barber.specialties
-            });
-          });
-          setBarbers(barbersData || []);
+          throw new Error(`Erro ao carregar barbeiros: ${barbersError.message}`);
         }
+
+        console.log('[useClientFormData] Barbeiros carregados:', barbersData?.length || 0);
+        barbersData?.forEach((barber, index) => {
+          console.log(`[useClientFormData] Barbeiro ${index + 1}:`, {
+            id: barber.id,
+            name: barber.name,
+            is_active: barber.is_active,
+            specialties: barber.specialties
+          });
+        });
+        setBarbers(barbersData || []);
 
       } catch (error: any) {
         console.error('[useClientFormData] Erro:', error);
         toast({
           title: "Erro ao carregar dados",
-          description: "Não foi possível carregar os dados. Por favor, recarregue a página.",
+          description: error.message || "Não foi possível carregar os dados. Por favor, recarregue a página.",
           variant: "destructive",
         });
       } finally {

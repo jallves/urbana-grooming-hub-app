@@ -43,13 +43,21 @@ const BarberSelectionStep: React.FC<BarberSelectionStepProps> = ({
   useEffect(() => {
     const loadBarbers = async () => {
       try {
+        console.log('Carregando barbeiros da tabela barbers...');
+        
+        // Consultar a tabela barbers correta
         const { data, error } = await supabase
           .from('barbers')
           .select('*')
           .eq('is_active', true)
           .order('name');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao carregar barbeiros:', error);
+          throw error;
+        }
+        
+        console.log('Barbeiros carregados:', data?.length || 0);
         setBarbers(data || []);
       } catch (error: any) {
         console.error('Erro ao carregar barbeiros:', error);

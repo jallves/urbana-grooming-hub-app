@@ -58,6 +58,9 @@ export const RealTimeCalendar: React.FC = () => {
     if (!client) return;
 
     try {
+      console.log('Carregando agendamentos para cliente:', client.id);
+      
+      // Consultar appointments com joins corretos
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -72,7 +75,7 @@ export const RealTimeCalendar: React.FC = () => {
             price,
             duration
           ),
-          barber:barbers (
+          barber:barbers!appointments_staff_id_fkey (
             id,
             name,
             image_url
@@ -81,8 +84,12 @@ export const RealTimeCalendar: React.FC = () => {
         .eq('client_id', client.id)
         .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao carregar agendamentos:', error);
+        throw error;
+      }
 
+      console.log('Agendamentos carregados:', data?.length || 0);
       setAppointments(data as Appointment[]);
     } catch (error: any) {
       console.error('Erro ao carregar agendamentos:', error);
