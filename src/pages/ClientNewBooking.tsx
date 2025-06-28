@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { ClientBookingForm } from '@/components/appointment/ClientBookingForm';
+import { BookingWizard } from '@/components/appointment/client/BookingWizard';
 
 export default function ClientNewBooking() {
-  return <ClientBookingForm />;
+  return <BookingWizard />;
 }

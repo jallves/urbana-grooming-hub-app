@@ -1,170 +1,284 @@
 
-import React from 'react';
-import { 
-  Calendar, 
-  DollarSign, 
-  Users, 
-  Clock, 
-  TrendingUp 
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Calendar, Users, Scissors, Settings, BarChart3, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import AdminMetricsCards from './dashboard/AdminMetricsCards';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-const AdminDashboard: React.FC = () => {
-  return (
-    <div className="space-y-6">
-      <Tabs defaultValue="visao-geral" className="w-full">
-        <TabsList className="mb-6 bg-urbana-black">
-          <TabsTrigger value="visao-geral" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">
-            Visão Geral
-          </TabsTrigger>
-          <TabsTrigger value="agendamentos" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">
-            Agendamentos
-          </TabsTrigger>
-          <TabsTrigger value="financeiro" className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black">
-            Financeiro
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="visao-geral" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard 
-              title="Agendamentos Hoje" 
-              value="12" 
-              description="+2 comparado a ontem" 
-              icon={Calendar} 
-              trend="up"
-            />
-            <StatCard 
-              title="Faturamento do Dia" 
-              value="R$ 840,00" 
-              description="6 serviços concluídos" 
-              icon={DollarSign} 
-              trend="up"
-            />
-            <StatCard 
-              title="Clientes Novos" 
-              value="3" 
-              description="no último mês" 
-              icon={Users} 
-              trend="up"
-            />
-            <StatCard 
-              title="Taxa de Ocupação" 
-              value="78%" 
-              description="Média semanal" 
-              icon={Clock} 
-              trend="down"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border border-gray-200 shadow-lg">
-              <CardHeader className="pb-2 border-b border-gray-200">
-                <CardTitle className="text-lg">Próximos Agendamentos</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-4">
-                  {[1, 2, 3, 4].map((_, i) => (
-                    <div key={i} className="flex justify-between items-center border-b pb-2">
-                      <div>
-                        <p className="font-medium">Alexandre Souza</p>
-                        <p className="text-sm text-gray-500">Corte + Barba</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">14:30</p>
-                        <p className="text-sm text-gray-500">com Rafael</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border border-gray-200 shadow-lg">
-              <CardHeader className="pb-2 border-b border-gray-200">
-                <CardTitle className="text-lg">Desempenho dos Barbeiros</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {['Rafael', 'Bruno', 'Marcos'].map((name, i) => (
-                  <div key={i} className="mb-4">
-                    <div className="flex justify-between mb-1">
-                      <span className="font-medium">{name}</span>
-                      <span className="text-sm">{90 - i * 10}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 h-2 rounded-full">
-                      <div 
-                        className="bg-urbana-gold h-2 rounded-full" 
-                        style={{ width: `${90 - i * 10}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="agendamentos">
-          <Card className="border border-gray-200 shadow-lg">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle>Agendamentos do Dia</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <p>Conteúdo dos agendamentos será exibido aqui.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="financeiro">
-          <Card className="border border-gray-200 shadow-lg">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle>Resumo Financeiro</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <p>Conteúdo financeiro será exibido aqui.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
-
-interface StatCardProps {
+interface RecentActivity {
+  id: string;
+  type: 'appointment' | 'client' | 'barber';
   title: string;
-  value: string;
   description: string;
-  icon: React.ElementType;
-  trend: 'up' | 'down' | 'neutral';
+  time: string;
+  status?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ 
-  title, 
-  value, 
-  description, 
-  icon: Icon,
-  trend 
-}) => {
-  return (
-    <Card className="border border-gray-200 shadow-lg">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-sm font-medium text-gray-500">{title}</p>
-            <p className="text-2xl font-bold mt-1">{value}</p>
-            <div className="flex items-center gap-1 mt-1">
-              {trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
-              <p className="text-xs text-gray-500">{description}</p>
-            </div>
-          </div>
-          <div className="bg-gray-100 p-3 rounded-full">
-            <Icon className="w-5 h-5 text-urbana-gold" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+export default function AdminDashboard() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default AdminDashboard;
+  useEffect(() => {
+    loadRecentActivities();
+    
+    // Real-time subscription for activities
+    const channel = supabase
+      .channel('admin-activities')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments'
+        },
+        () => {
+          loadRecentActivities();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'clients'
+        },
+        () => {
+          loadRecentActivities();
+          toast({
+            title: "Novo cliente cadastrado",
+            description: "Um novo cliente se cadastrou na plataforma.",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [toast]);
+
+  const loadRecentActivities = async () => {
+    try {
+      // Load recent appointments
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          start_time,
+          status,
+          client:clients (name),
+          service:services (name),
+          barber:barbers (name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (appointmentsError) throw appointmentsError;
+
+      // Load recent clients
+      const { data: clients, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (clientsError) throw clientsError;
+
+      const activities: RecentActivity[] = [];
+
+      // Add appointment activities
+      appointments?.forEach(apt => {
+        activities.push({
+          id: apt.id,
+          type: 'appointment',
+          title: `Agendamento ${apt.status === 'completed' ? 'concluído' : apt.status === 'cancelled' ? 'cancelado' : 'agendado'}`,
+          description: `${apt.client?.name} - ${apt.service?.name} com ${apt.barber?.name}`,
+          time: new Date(apt.start_time).toLocaleString('pt-BR'),
+          status: apt.status
+        });
+      });
+
+      // Add client activities
+      clients?.forEach(client => {
+        activities.push({
+          id: client.id,
+          type: 'client',
+          title: 'Novo cliente cadastrado',
+          description: client.name,
+          time: new Date(client.created_at).toLocaleString('pt-BR')
+        });
+      });
+
+      // Sort by time and take latest 10
+      activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      setRecentActivities(activities.slice(0, 10));
+    } catch (error: any) {
+      console.error('Erro ao carregar atividades:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const quickActions = [
+    {
+      title: 'Gerenciar Agendamentos',
+      description: 'Visualizar e editar agendamentos',
+      icon: Calendar,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+      action: () => navigate('/admin/agendamentos')
+    },
+    {
+      title: 'Clientes',
+      description: 'Gerenciar base de clientes',
+      icon: Users,
+      color: 'text-green-500',
+      bgColor: 'bg-green-500/10',
+      action: () => navigate('/admin/clientes')
+    },
+    {
+      title: 'Barbeiros',
+      description: 'Gerenciar equipe de barbeiros',
+      icon: Scissors,
+      color: 'text-amber-500',
+      bgColor: 'bg-amber-500/10',
+      action: () => navigate('/admin/barbeiros')
+    },
+    {
+      title: 'Relatórios',
+      description: 'Análises e estatísticas',
+      icon: BarChart3,
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10',
+      action: () => navigate('/admin/relatorios')
+    },
+    {
+      title: 'Configurações',
+      description: 'Configurações do sistema',
+      icon: Settings,
+      color: 'text-gray-500',
+      bgColor: 'bg-gray-500/10',
+      action: () => navigate('/admin/configuracoes')
+    }
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-white font-clash mb-2">
+          Dashboard Administrativo
+        </h1>
+        <p className="text-gray-400 font-inter">
+          Visão geral das operações da barbearia
+        </p>
+      </div>
+
+      {/* Métricas */}
+      <AdminMetricsCards />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Ações Rápidas */}
+        <Card className="bg-gray-900 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white">Ações Rápidas</CardTitle>
+            <CardDescription className="text-gray-400">
+              Acesso rápido aos módulos principais
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-3">
+              {quickActions.map((action, index) => {
+                const Icon = action.icon;
+                
+                return (
+                  <div
+                    key={index}
+                    onClick={action.action}
+                    className="flex items-center gap-4 p-4 bg-gray-800 rounded-lg hover:bg-gray-750 cursor-pointer transition-colors border border-gray-700 hover:border-gray-600"
+                  >
+                    <div className={`w-10 h-10 rounded-full ${action.bgColor} flex items-center justify-center`}>
+                      <Icon className={`h-5 w-5 ${action.color}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-white">{action.title}</p>
+                      <p className="text-sm text-gray-400">{action.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Atividades Recentes */}
+        <Card className="bg-gray-900 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Atividades Recentes
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Últimas movimentações do sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-16 bg-gray-800 rounded animate-pulse"></div>
+                ))}
+              </div>
+            ) : recentActivities.length > 0 ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-800 rounded-lg">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      activity.type === 'appointment' 
+                        ? 'bg-blue-500/20 text-blue-400'
+                        : activity.type === 'client'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-amber-500/20 text-amber-400'
+                    }`}>
+                      {activity.type === 'appointment' && <Calendar className="h-4 w-4" />}
+                      {activity.type === 'client' && <Users className="h-4 w-4" />}
+                      {activity.type === 'barber' && <Scissors className="h-4 w-4" />}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white">{activity.title}</p>
+                      <p className="text-xs text-gray-400 truncate">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                    </div>
+                    
+                    {activity.status && (
+                      <div className={`px-2 py-1 rounded text-xs ${
+                        activity.status === 'completed' 
+                          ? 'bg-green-500/20 text-green-400'
+                          : activity.status === 'cancelled'
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-blue-500/20 text-blue-400'
+                      }`}>
+                        {activity.status}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Clock className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+                <p className="text-gray-400">Nenhuma atividade recente</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

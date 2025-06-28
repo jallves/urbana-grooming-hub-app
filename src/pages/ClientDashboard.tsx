@@ -3,121 +3,122 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Calendar, User, Settings } from 'lucide-react';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
-import { Calendar, User, LogOut, Plus } from 'lucide-react';
+import ClientMetrics from '@/components/cliente/dashboard/ClientMetrics';
+import RealTimeCalendar from '@/components/appointment/client/RealTimeCalendar';
 
 export default function ClientDashboard() {
   const navigate = useNavigate();
-  const { client, signOut } = useClientAuth();
+  const { client, logout } = useClientAuth();
 
   if (!client) {
-    navigate('/cliente/login');
     return null;
   }
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/agendamento-online');
-  };
-
-  const handleNewBooking = () => {
-    navigate('/cliente/novo-agendamento');
-  };
-
   return (
-    <div className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white font-clash">
-              Bem-vindo, {client.name.split(' ')[0]}!
+            <h1 className="text-3xl font-bold text-white font-clash mb-2">
+              Olá, {client.name}! 👋
             </h1>
-            <p className="text-[#9CA3AF] font-inter">
-              Gerencie seus agendamentos na barbearia
+            <p className="text-gray-400 font-inter">
+              Gerencie seus agendamentos e acompanhe seu histórico
             </p>
           </div>
-          <Button
-            onClick={handleSignOut}
-            variant="outline"
-            className="border-gray-600 text-gray-300 hover:bg-gray-800"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
+          
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <Button
+              onClick={() => navigate('/cliente/novo-agendamento')}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Agendamento
+            </Button>
+            
+            <Button
+              onClick={() => navigate('/cliente/perfil')}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              <User className="h-4 w-4 mr-2" />
+              Perfil
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-[#111827] border-gray-700">
+        {/* Métricas */}
+        <ClientMetrics clientId={client.id} />
+
+        {/* Calendário em Tempo Real */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Calendar className="h-6 w-6 text-amber-500" />
+            <h2 className="text-2xl font-bold text-white">
+              Meus Agendamentos
+            </h2>
+          </div>
+          
+          <RealTimeCalendar />
+        </div>
+
+        {/* Ações Rápidas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card 
+            className="bg-gray-900 border-gray-700 hover:border-amber-500/50 cursor-pointer transition-all"
+            onClick={() => navigate('/cliente/novo-agendamento')}
+          >
             <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <User className="mr-2 h-5 w-5 text-[#F59E0B]" />
+              <CardTitle className="text-white flex items-center gap-2">
+                <Plus className="h-5 w-5 text-amber-500" />
+                Agendar Serviço
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Marque um novo horário com nossos barbeiros
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card 
+            className="bg-gray-900 border-gray-700 hover:border-amber-500/50 cursor-pointer transition-all"
+            onClick={() => navigate('/cliente/perfil')}
+          >
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <User className="h-5 w-5 text-green-500" />
                 Meu Perfil
               </CardTitle>
-              <CardDescription className="text-[#9CA3AF]">
-                Informações da sua conta
+              <CardDescription className="text-gray-400">
+                Atualize suas informações pessoais
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm text-[#9CA3AF]">
-                <p><span className="font-medium">Nome:</span> {client.name}</p>
-                <p><span className="font-medium">Email:</span> {client.email}</p>
-                <p><span className="font-medium">WhatsApp:</span> {client.whatsapp || client.phone}</p>
-              </div>
-            </CardContent>
           </Card>
 
-          <Card className="bg-[#111827] border-gray-700">
+          <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Calendar className="mr-2 h-5 w-5 text-[#F59E0B]" />
-                Meus Agendamentos
+              <CardTitle className="text-white flex items-center gap-2">
+                <Settings className="h-5 w-5 text-blue-500" />
+                Configurações
               </CardTitle>
-              <CardDescription className="text-[#9CA3AF]">
-                Visualize seus horários marcados
+              <CardDescription className="text-gray-400">
+                Personalize suas preferências
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-[#9CA3AF] text-sm mb-4">
-                Você não possui agendamentos ativos
-              </p>
-              <Button 
-                onClick={handleNewBooking}
-                className="w-full bg-[#F59E0B] hover:bg-[#D97706] text-black"
+              <Button
+                onClick={logout}
+                variant="destructive"
+                size="sm"
+                className="w-full"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Agendamento
+                Sair da Conta
               </Button>
             </CardContent>
           </Card>
         </div>
-
-        <Card className="bg-[#111827] border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Ações Rápidas</CardTitle>
-            <CardDescription className="text-[#9CA3AF]">
-              O que você gostaria de fazer?
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button 
-                onClick={handleNewBooking}
-                className="bg-[#F59E0B] hover:bg-[#D97706] text-black"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Agendar Novo Horário
-              </Button>
-              <Button 
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                onClick={() => navigate('/cliente/perfil')}
-              >
-                <User className="mr-2 h-4 w-4" />
-                Editar Perfil
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
