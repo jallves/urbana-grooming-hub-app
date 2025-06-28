@@ -123,8 +123,8 @@ export const BookingWizard: React.FC = () => {
         throw new Error(validationError.message);
       }
 
-      // Type assertion for the RPC response
-      const validation = validationData as ValidationResult;
+      // Type assertion for the RPC response - first to unknown, then to ValidationResult
+      const validation = validationData as unknown as ValidationResult;
       
       if (!validation.valid) {
         throw new Error(validation.error || 'Erro na validação do agendamento');
