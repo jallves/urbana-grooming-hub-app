@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Client, ClientLoginData, ClientFormData } from '@/types/client';
@@ -10,6 +9,7 @@ interface ClientAuthContextType {
   signUp: (data: ClientFormData) => Promise<{ error: string | null }>;
   signIn: (data: ClientLoginData) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  logout: () => Promise<void>; // Added for backward compatibility
   updateClient: (data: Partial<Client>) => Promise<{ error: string | null }>;
 }
 
@@ -220,6 +220,9 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     });
   };
 
+  // Alias for backward compatibility
+  const logout = signOut;
+
   const updateClient = async (data: Partial<Client>): Promise<{ error: string | null }> => {
     if (!client) return { error: 'Cliente não autenticado' };
 
@@ -249,6 +252,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     signUp,
     signIn,
     signOut,
+    logout, // Added for backward compatibility
     updateClient
   };
 

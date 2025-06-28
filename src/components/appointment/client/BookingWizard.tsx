@@ -34,6 +34,12 @@ interface BookingData {
   notes?: string;
 }
 
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+  message?: string;
+}
+
 const steps = [
   { id: 1, title: 'Serviço', icon: Scissors, description: 'Escolha o serviço desejado' },
   { id: 2, title: 'Barbeiro', icon: User, description: 'Selecione seu barbeiro' },
@@ -102,7 +108,7 @@ export const BookingWizard: React.FC = () => {
       endTime.setMinutes(endTime.getMinutes() + bookingData.service.duration);
 
       // Validar agendamento
-      const { data: validation, error: validationError } = await supabase.rpc(
+      const { data: validationData, error: validationError } = await supabase.rpc(
         'validate_appointment_booking',
         {
           p_client_id: client.id,
@@ -113,8 +119,15 @@ export const BookingWizard: React.FC = () => {
         }
       );
 
-      if (validationError || !validation.valid) {
-        throw new Error(validation?.error || 'Erro na validação do agendamento');
+      if (validationError) {
+        throw new Error(validationError.message);
+      }
+
+      // Type assertion for the RPC response
+      const validation = validationData as ValidationResult;
+      
+      if (!validation.valid) {
+        throw new Error(validation.error || 'Erro na validação do agendamento');
       }
 
       // Criar agendamento

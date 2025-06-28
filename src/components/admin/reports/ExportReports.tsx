@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +52,7 @@ export const ExportReports: React.FC = () => {
   };
 
   const exportAppointments = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from('appointments')
       .select(`
         id,
@@ -68,11 +67,17 @@ export const ExportReports: React.FC = () => {
       `)
       .gte('start_time', filters.startDate.toISOString())
       .lte('start_time', filters.endDate.toISOString())
-      .modify((query) => {
-        if (filters.status) query.eq('status', filters.status);
-        if (filters.barberId) query.eq('staff_id', filters.barberId);
-      })
       .order('start_time', { ascending: false });
+
+    if (filters.status) {
+      query = query.eq('status', filters.status);
+    }
+    
+    if (filters.barberId) {
+      query = query.eq('staff_id', filters.barberId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
