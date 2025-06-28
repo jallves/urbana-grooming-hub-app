@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useClientFormData } from './client/hooks/useClientFormData';
 import { useClientFormSubmit } from './client/hooks/useClientFormSubmit';
 import ClientServiceSelect from './client/ClientServiceSelect';
+import ClientStaffSelect from './client/ClientStaffSelect';
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2 } from 'lucide-react';
 import { format, addMinutes, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -86,57 +87,6 @@ const FormErrorsSummary = ({ errors }: { errors: FieldErrors<FormData> }) => {
   );
 };
 
-export const ClientStaffSelect: React.FC<{
-  barbers: Barber[];
-  form: any;
-  selectedDate: Date | undefined;
-  selectedTime: string;
-}> = ({ barbers, form, selectedDate, selectedTime }) => {
-  return (
-    <FormField
-      control={form.control}
-      name="staff_id"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel className="text-white">Barbeiro *</FormLabel>
-          <Select 
-            onValueChange={field.onChange} 
-            value={field.value || ""}
-            disabled={!selectedDate || !selectedTime}
-          >
-            <FormControl>
-              <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
-                <SelectValue placeholder="Selecione o barbeiro" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent className="bg-[#1F2937] border-gray-600 max-h-60">
-              {barbers.length > 0 ? (
-                barbers.map((barber) => (
-                  <SelectItem 
-                    key={barber.id} 
-                    value={barber.id}
-                    className="text-white hover:bg-gray-700 focus:bg-gray-700"
-                  >
-                    {barber.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <div className="text-center py-4 text-gray-400">
-                  Nenhum barbeiro disponível
-                </div>
-              )}
-            </SelectContent>
-          </Select>
-          <p className="text-sm text-gray-400 mt-1">
-            Todos os barbeiros são qualificados para todos os serviços
-          </p>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-};
-
 export const ClientBookingForm: React.FC = () => {
   const navigate = useNavigate();
   const { client } = useClientAuth();
@@ -144,7 +94,6 @@ export const ClientBookingForm: React.FC = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   
-  // Corrigido: Adicionar tipo ao hook e remover 'error' se não existir
   const { services, barbers, loading } = useClientFormData();
   const { handleSubmit: submitForm, isLoading: submitting } = useClientFormSubmit({
     clientId: client?.id || '',
@@ -199,13 +148,7 @@ export const ClientBookingForm: React.FC = () => {
   };
 
   const timeSlots = generateTimeSlots();
-
-  // Função simplificada já que não temos workingHours
-  const filterAvailableTimeSlots = (): string[] => {
-    return timeSlots;
-  };
-
-  const availableTimeSlots = filterAvailableTimeSlots();
+  const availableTimeSlots = timeSlots;
 
   const handleConfirmBooking = async (data: FormData) => {
     setIsConfirming(true);
@@ -303,6 +246,7 @@ export const ClientBookingForm: React.FC = () => {
                     form={form}
                     selectedDate={selectedDate}
                     selectedTime={selectedTime}
+                    serviceDuration={selectedService?.duration}
                   />
                 </div>
 
