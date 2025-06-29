@@ -1,58 +1,33 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Clock, DollarSign, Scissors } from 'lucide-react';
+import { Scissors, Clock, DollarSign } from 'lucide-react';
 import { Service } from '@/types/appointment';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface ServiceSelectionStepProps {
   selectedService?: Service;
   onServiceSelect: (service: Service) => void;
+  services: Service[];
+  loading: boolean;
 }
 
 const ServiceSelectionStep: React.FC<ServiceSelectionStepProps> = ({
   selectedService,
-  onServiceSelect
+  onServiceSelect,
+  services,
+  loading
 }) => {
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const loadServices = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('services')
-          .select('*')
-          .eq('is_active', true)
-          .order('name');
-
-        if (error) throw error;
-        setServices(data || []);
-      } catch (error: any) {
-        console.error('Erro ao carregar serviços:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os serviços.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadServices();
-  }, [toast]);
-
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="bg-gray-800 rounded-lg p-6 animate-pulse">
-            <div className="h-6 bg-gray-700 rounded mb-4"></div>
-            <div className="h-4 bg-gray-700 rounded mb-2"></div>
-            <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+            <div className="h-6 bg-gray-700 rounded mb-3"></div>
+            <div className="h-4 bg-gray-700 rounded mb-4"></div>
+            <div className="flex justify-between">
+              <div className="h-4 bg-gray-700 rounded w-16"></div>
+              <div className="h-4 bg-gray-700 rounded w-20"></div>
+            </div>
           </div>
         ))}
       </div>
@@ -83,32 +58,33 @@ const ServiceSelectionStep: React.FC<ServiceSelectionStepProps> = ({
             `}
           >
             <div className="flex items-start justify-between mb-4">
-              <h4 className="text-xl font-semibold text-white">
-                {service.name}
-              </h4>
+              <div className="flex-1">
+                <h4 className="text-lg font-semibold text-white mb-2">
+                  {service.name}
+                </h4>
+                {service.description && (
+                  <p className="text-sm text-gray-400 mb-3">
+                    {service.description}
+                  </p>
+                )}
+              </div>
               {selectedService?.id === service.id && (
-                <Badge className="bg-amber-500 text-black">
+                <Badge className="bg-amber-500 text-black ml-2">
                   Selecionado
                 </Badge>
               )}
             </div>
 
-            {service.description && (
-              <p className="text-gray-400 mb-4 line-clamp-2">
-                {service.description}
-              </p>
-            )}
-
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 text-gray-300">
-                  <Clock className="h-4 w-4" />
-                  <span className="text-sm">{service.duration} min</span>
-                </div>
-                <div className="flex items-center gap-1 text-amber-500">
-                  <DollarSign className="h-4 w-4" />
-                  <span className="font-semibold">R$ {service.price.toFixed(2)}</span>
-                </div>
+              <div className="flex items-center gap-1 text-amber-500">
+                <DollarSign className="h-4 w-4" />
+                <span className="font-semibold">
+                  R$ {service.price.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-gray-400">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">{service.duration} min</span>
               </div>
             </div>
           </div>

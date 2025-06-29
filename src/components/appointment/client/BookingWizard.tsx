@@ -9,6 +9,7 @@ import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Service } from '@/types/appointment';
 import { supabase } from '@/integrations/supabase/client';
+import { useClientFormData } from './hooks/useClientFormData';
 import ServiceSelectionStep from './wizard/ServiceSelectionStep';
 import BarberSelectionStep from './wizard/BarberSelectionStep';
 import TimeSelectionStep from './wizard/TimeSelectionStep';
@@ -51,6 +52,7 @@ export const BookingWizard: React.FC = () => {
   const navigate = useNavigate();
   const { client } = useClientAuth();
   const { toast } = useToast();
+  const { services, barbers, loading } = useClientFormData();
   const [currentStep, setCurrentStep] = useState(1);
   const [bookingData, setBookingData] = useState<BookingData>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -188,6 +190,8 @@ export const BookingWizard: React.FC = () => {
           <ServiceSelectionStep
             selectedService={bookingData.service}
             onServiceSelect={(service) => updateBookingData({ service })}
+            services={services}
+            loading={loading}
           />
         );
       case 2:
@@ -198,6 +202,8 @@ export const BookingWizard: React.FC = () => {
             selectedService={bookingData.service}
             selectedDate={bookingData.date}
             selectedTime={bookingData.time}
+            barbers={barbers}
+            loading={loading}
           />
         );
       case 3:

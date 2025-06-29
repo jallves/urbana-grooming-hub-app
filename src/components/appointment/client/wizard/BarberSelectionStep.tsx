@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Star, Clock } from 'lucide-react';
 import { Service } from '@/types/appointment';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface Barber {
   id: string;
@@ -25,6 +24,8 @@ interface BarberSelectionStepProps {
   selectedService?: Service;
   selectedDate?: Date;
   selectedTime?: string;
+  barbers: Barber[];
+  loading: boolean;
 }
 
 const BarberSelectionStep: React.FC<BarberSelectionStepProps> = ({
@@ -32,47 +33,12 @@ const BarberSelectionStep: React.FC<BarberSelectionStepProps> = ({
   onBarberSelect,
   selectedService,
   selectedDate,
-  selectedTime
+  selectedTime,
+  barbers,
+  loading
 }) => {
-  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [availableBarbers, setAvailableBarbers] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const loadBarbers = async () => {
-      try {
-        console.log('Carregando barbeiros da tabela barbers...');
-        
-        // Consultar a tabela barbers correta
-        const { data, error } = await supabase
-          .from('barbers')
-          .select('*')
-          .eq('is_active', true)
-          .order('name');
-
-        if (error) {
-          console.error('Erro ao carregar barbeiros:', error);
-          throw error;
-        }
-        
-        console.log('Barbeiros carregados:', data?.length || 0);
-        setBarbers(data || []);
-      } catch (error: any) {
-        console.error('Erro ao carregar barbeiros:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os barbeiros.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadBarbers();
-  }, [toast]);
 
   useEffect(() => {
     if (selectedDate && selectedTime && selectedService && barbers.length > 0) {
