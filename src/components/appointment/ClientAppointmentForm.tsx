@@ -8,10 +8,10 @@ import { z } from 'zod';
 import { useClientFormData } from './client/hooks/useClientFormData';
 import { useClientFormSubmit } from './client/hooks/useClientFormSubmit';
 import ClientServiceSelect from './client/form/ClientServiceSelect';
-import ClientStaffSelect from './client/form/ClientStaffSelect';
 import ClientDateTimePicker from './client/form/ClientDateTimePicker';
 import ClientNotesField from './client/form/ClientNotesField';
 import ClientFormActions from './client/form/ClientFormActions';
+import ClientStaffSelect from './client/form/ClientStaffSelect';
 
 const appointmentSchema = z.object({
   service_id: z.string().min(1, 'Selecione um serviço'),
