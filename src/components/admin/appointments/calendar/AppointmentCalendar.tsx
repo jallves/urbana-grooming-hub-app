@@ -5,13 +5,17 @@ import DailySchedule from '../schedule/DailySchedule';
 import CalendarHeader from './CalendarHeader';
 import CalendarLayout from './CalendarLayout';
 
-const AppointmentCalendar: React.FC = () => {
+interface AppointmentCalendarProps {
+  searchQuery?: string;
+}
+
+const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({ searchQuery = '' }) => {
   const [date, setDate] = useState<Date>(new Date());
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full">
       <CalendarHeader 
         date={date}
         viewMode={viewMode}
@@ -20,9 +24,15 @@ const AppointmentCalendar: React.FC = () => {
         onNewAppointment={() => setIsFormOpen(true)}
       />
       
-      <CalendarLayout date={date} setDate={setDate}>
-        <DailySchedule date={date} viewMode={viewMode} />
-      </CalendarLayout>
+      <div className="flex-1 overflow-hidden">
+        <CalendarLayout date={date} setDate={setDate}>
+          <DailySchedule 
+            date={date} 
+            viewMode={viewMode}
+            searchQuery={searchQuery}
+          />
+        </CalendarLayout>
+      </div>
       
       <AppointmentForm 
         isOpen={isFormOpen} 

@@ -8,6 +8,7 @@ import AppointmentForm from '../AppointmentForm';
 interface DailyScheduleProps {
   date: Date;
   viewMode: 'day' | 'week';
+  searchQuery?: string;
 }
 
 const BUSINESS_HOURS = {
@@ -15,13 +16,24 @@ const BUSINESS_HOURS = {
   end: 20, // 8 PM
 };
 
-const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
+const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode, searchQuery = '' }) => {
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCreatingAppointment, setIsCreatingAppointment] = useState(false);
   const [newAppointmentTime, setNewAppointmentTime] = useState<Date | null>(null);
   
   const { appointments, fetchAppointments } = useAppointments({ date, viewMode });
+  
+  // Filter appointments by search query
+  const filteredAppointments = appointments.filter(appointment => {
+    if (!searchQuery) return true;
+    
+    const clientName = appointment.client?.name?.toLowerCase() || '';
+    const serviceName = appointment.service?.name?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
+    
+    return clientName.includes(query) || serviceName.includes(query);
+  });
   
   const handleEditAppointment = (appointmentId: string) => {
     setSelectedAppointment(appointmentId);
@@ -39,22 +51,24 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
   const timeSlots = generateTimeSlots({
     date,
     viewMode,
-    appointments,
+    appointments: filteredAppointments,
     businessHours: BUSINESS_HOURS
   });
   
   return (
-    <>
-      <div className="space-y-2 bg-card/30 p-4 rounded-lg">
-        {timeSlots.map((slot, index) => (
-          <TimeSlot
-            key={index}
-            slot={slot}
-            onCreateAppointment={handleCreateAppointment}
-            onEditAppointment={handleEditAppointment}
-            viewMode={viewMode}
-          />
-        ))}
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-auto">
+        <div className="space-y-1 p-4">
+          {timeSlots.map((slot, index) => (
+            <TimeSlot
+              key={index}
+              slot={slot}
+              onCreateAppointment={handleCreateAppointment}
+              onEditAppointment={handleEditAppointment}
+              viewMode={viewMode}
+            />
+          ))}
+        </div>
       </div>
       
       {isFormOpen && (
@@ -70,7 +84,7 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode }) => {
           defaultDate={isCreatingAppointment && newAppointmentTime ? newAppointmentTime : new Date()}
         />
       )}
-    </>
+    </div>
   );
 };
 
