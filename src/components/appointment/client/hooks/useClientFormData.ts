@@ -47,30 +47,63 @@ export const useClientFormData = () => {
         console.log('[useClientFormData] Serviços carregados:', servicesData?.length || 0);
         setServices(servicesData || []);
 
-        // Carregar barbeiros da tabela correta
-        console.log('[useClientFormData] Carregando barbeiros da tabela barbers...');
-        const { data: barbersData, error: barbersError } = await supabase
+        // Carregar barbeiros - vamos tentar diferentes abordagens
+        console.log('[useClientFormData] Carregando barbeiros...');
+        
+        // Primeira tentativa: consulta simples sem filtros
+        console.log('[useClientFormData] Tentativa 1: Consulta sem filtros');
+        const { data: allBarbersData, error: allBarbersError } = await supabase
           .from('barbers')
-          .select('*')
-          .eq('is_active', true)
-          .order('name');
+          .select('*');
 
-        if (barbersError) {
-          console.error('[useClientFormData] Erro nos barbeiros:', barbersError);
-          console.error('[useClientFormData] Detalhes do erro:', {
-            message: barbersError.message,
-            details: barbersError.details,
-            hint: barbersError.hint,
-            code: barbersError.code
-          });
-          throw new Error(`Erro ao carregar barbeiros: ${barbersError.message}`);
+        console.log('[useClientFormData] Resultado consulta sem filtros:', {
+          data: allBarbersData,
+          error: allBarbersError,
+          count: allBarbersData?.length || 0
+        });
+
+        if (allBarbersError) {
+          console.error('[useClientFormData] Erro na consulta sem filtros:', allBarbersError);
         }
 
-        console.log('[useClientFormData] Barbeiros carregados:', barbersData?.length || 0);
-        console.log('[useClientFormData] Dados dos barbeiros:', barbersData);
+        // Segunda tentativa: consulta apenas barbeiros ativos
+        console.log('[useClientFormData] Tentativa 2: Consulta apenas ativos');
+        const { data: activeBarbersData, error: activeBarbersError } = await supabase
+          .from('barbers')
+          .select('*')
+          .eq('is_active', true);
+
+        console.log('[useClientFormData] Resultado consulta ativos:', {
+          data: activeBarbersData,
+          error: activeBarbersError,
+          count: activeBarbersData?.length || 0
+        });
+
+        if (activeBarbersError) {
+          console.error('[useClientFormData] Erro na consulta ativos:', activeBarbersError);
+        }
+
+        // Terceira tentativa: verificar se existem registros na tabela
+        console.log('[useClientFormData] Tentativa 3: Contagem total');
+        const { count, error: countError } = await supabase
+          .from('barbers')
+          .select('*', { count: 'exact', head: true });
+
+        console.log('[useClientFormData] Contagem total barbeiros:', {
+          count,
+          error: countError
+        });
+
+        // Usar os dados da consulta que funcionou
+        let finalBarbersData = activeBarbersData || allBarbersData || [];
         
-        if (barbersData && barbersData.length > 0) {
-          barbersData.forEach((barber, index) => {
+        console.log('[useClientFormData] Dados finais dos barbeiros:', {
+          count: finalBarbersData.length,
+          barbers: finalBarbersData
+        });
+
+        if (finalBarbersData && finalBarbersData.length > 0) {
+          finalBarbersData.forEach((barber, index) => {
             console.log(`[useClientFormData] Barbeiro ${index + 1}:`, {
               id: barber.id,
               name: barber.name,
@@ -80,9 +113,24 @@ export const useClientFormData = () => {
           });
         } else {
           console.warn('[useClientFormData] Nenhum barbeiro encontrado na tabela barbers');
+          
+          // Verificar se é problema de RLS
+          console.log('[useClientFormData] Verificando políticas RLS...');
+          const { data: rlsTest, error: rlsError } = await supabase
+            .rpc('get_available_barbers', {
+              p_service_id: null,
+              p_date: new Date().toISOString().split('T')[0],
+              p_time: '09:00:00',
+              p_duration: 60
+            });
+          
+          console.log('[useClientFormData] Teste RLS function:', {
+            data: rlsTest,
+            error: rlsError
+          });
         }
 
-        setBarbers(barbersData || []);
+        setBarbers(finalBarbersData || []);
 
       } catch (error: any) {
         console.error('[useClientFormData] Erro geral:', error);
