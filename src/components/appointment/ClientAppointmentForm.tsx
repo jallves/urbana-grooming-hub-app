@@ -100,13 +100,15 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
             
             <ClientDateTimePicker form={form} />
             
-            <ClientStaffSelect 
-              staffMembers={staffList} 
-              form={form}
-              selectedDate={selectedDate}
-              selectedTime={selectedTime}
-              serviceDuration={selectedService?.duration}
-            />
+            {selectedDate && selectedTime && (
+              <ClientStaffSelect 
+                staffMembers={staffList} 
+                form={form}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                serviceDuration={selectedService?.duration}
+              />
+            )}
             
             <ClientNotesField form={form} />
             
