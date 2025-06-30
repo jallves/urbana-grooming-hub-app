@@ -15,7 +15,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({ searchQuery =
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-black">
       <CalendarHeader 
         date={date}
         viewMode={viewMode}

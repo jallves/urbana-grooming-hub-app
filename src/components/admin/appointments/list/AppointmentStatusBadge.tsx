@@ -6,13 +6,13 @@ interface AppointmentStatusBadgeProps {
   status: string;
 }
 
-// Status colors for appointments
+// Status colors for appointments with dark theme
 const statusColors: Record<string, string> = {
-  scheduled: 'bg-blue-100 text-blue-800',
-  confirmed: 'bg-green-100 text-green-800',
-  completed: 'bg-purple-100 text-purple-800',
-  cancelled: 'bg-red-100 text-red-800',
-  no_show: 'bg-gray-100 text-gray-800',
+  scheduled: 'bg-blue-500/20 text-blue-300 border-blue-500/50',
+  confirmed: 'bg-green-500/20 text-green-300 border-green-500/50',
+  completed: 'bg-purple-500/20 text-purple-300 border-purple-500/50',
+  cancelled: 'bg-red-500/20 text-red-300 border-red-500/50',
+  no_show: 'bg-gray-500/20 text-gray-300 border-gray-500/50',
 };
 
 const statusLabels: Record<string, string> = {
@@ -25,7 +25,7 @@ const statusLabels: Record<string, string> = {
 
 const AppointmentStatusBadge: React.FC<AppointmentStatusBadgeProps> = ({ status }) => {
   return (
-    <Badge className={statusColors[status]}>
+    <Badge className={`${statusColors[status]} font-raleway`}>
       {statusLabels[status] || status}
     </Badge>
   );

@@ -56,7 +56,7 @@ const DailySchedule: React.FC<DailyScheduleProps> = ({ date, viewMode, searchQue
   });
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-black">
       <div className="flex-1 overflow-auto">
         <div className="space-y-1 p-4">
           {timeSlots.map((slot, index) => (

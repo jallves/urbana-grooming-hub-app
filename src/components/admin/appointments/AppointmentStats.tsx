@@ -63,29 +63,33 @@ const AppointmentStats = () => {
       title: 'Agendamentos Hoje',
       value: stats.todayTotal,
       icon: Calendar,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-urbana-gold',
+      bgColor: 'bg-urbana-gold/10',
+      borderColor: 'border-urbana-gold/20',
     },
     {
       title: 'Concluídos',
       value: stats.todayCompleted,
       icon: Users,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-green-400',
+      bgColor: 'bg-green-400/10',
+      borderColor: 'border-green-400/20',
     },
     {
       title: 'Pendentes',
       value: stats.todayPending,
       icon: Clock,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-orange-400',
+      bgColor: 'bg-orange-400/10',
+      borderColor: 'border-orange-400/20',
     },
     {
       title: 'Crescimento Semanal',
       value: `+${stats.weeklyGrowth}%`,
       icon: TrendingUp,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-purple-400',
+      bgColor: 'bg-purple-400/10',
+      borderColor: 'border-purple-400/20',
     },
   ];
 
@@ -93,9 +97,9 @@ const AppointmentStats = () => {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
+          <Card key={i} className="animate-pulse bg-gray-800 border-gray-700">
             <CardContent className="p-4">
-              <div className="h-16 bg-gray-200 rounded"></div>
+              <div className="h-16 bg-gray-700 rounded"></div>
             </CardContent>
           </Card>
         ))}
@@ -108,18 +112,21 @@ const AppointmentStats = () => {
       {statCards.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="hover:shadow-md transition-shadow duration-200">
+          <Card 
+            key={index} 
+            className={`hover:shadow-lg hover:shadow-urbana-gold/10 transition-all duration-300 bg-gray-800 border ${stat.borderColor} hover:border-urbana-gold/50`}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600 mb-1">
+                  <p className="text-sm font-medium text-gray-400 mb-1 font-raleway">
                     {stat.title}
                   </p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-white font-playfair">
                     {stat.value}
                   </p>
                 </div>
-                <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                <div className={`p-3 rounded-full ${stat.bgColor} border ${stat.borderColor}`}>
                   <Icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
               </div>

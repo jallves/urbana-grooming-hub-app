@@ -66,9 +66,9 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ searchQuery = '' }) =
   };
   
   return (
-    <div className="flex flex-col h-full">
-      <Card className="flex-1 flex flex-col">
-        <div className="p-4 border-b">
+    <div className="flex flex-col h-full bg-black">
+      <Card className="flex-1 flex flex-col bg-gray-800 border-gray-700">
+        <div className="p-4 border-b border-gray-700">
           <AppointmentFilters
             searchQuery={searchQuery}
             setSearchQuery={() => {}} // Handled by parent

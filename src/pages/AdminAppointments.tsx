@@ -79,7 +79,7 @@ const AdminAppointments = () => {
   if (isLoading) {
     return (
       <AdminLayout>
-        <div className="p-6">
+        <div className="p-6 bg-black min-h-screen">
           <LoadingSkeleton />
         </div>
       </AdminLayout>
@@ -89,17 +89,17 @@ const AdminAppointments = () => {
   return (
     <AdminRoute allowedRoles={['admin', 'barber']}>
       <AdminLayout>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-black text-white">
           {/* Header Section */}
-          <div className="border-b bg-white px-6 py-4">
+          <div className="border-b border-gray-700 bg-gray-900 px-6 py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <Calendar className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold font-playfair text-urbana-gold flex items-center gap-2">
+                  <Calendar className="h-6 w-6 text-urbana-gold" />
                   Agendamentos
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Gerencie e visualize todos os horários agendados
+                <p className="text-sm text-gray-400 mt-1 font-raleway">
+                  Gerencie e visualize todos os horários agendados com elegância
                 </p>
               </div>
 
@@ -110,14 +110,14 @@ const AdminAppointments = () => {
                     placeholder="Buscar por cliente, serviço..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold focus:ring-urbana-gold"
                   />
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
-                  className="gap-2"
+                  className="gap-2 border-gray-600 text-gray-300 hover:text-urbana-gold hover:border-urbana-gold bg-gray-800"
                 >
                   <Filter className="h-4 w-4" />
                   Filtros
@@ -126,12 +126,15 @@ const AdminAppointments = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleExport}
-                  className="gap-2"
+                  className="gap-2 border-gray-600 text-gray-300 hover:text-urbana-gold hover:border-urbana-gold bg-gray-800"
                 >
                   <Download className="h-4 w-4" />
                   Exportar
                 </Button>
-                <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90">
+                <Button 
+                  size="sm" 
+                  className="gap-2 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-medium"
+                >
                   <Plus className="h-4 w-4" />
                   Novo Agendamento
                 </Button>
@@ -140,7 +143,7 @@ const AdminAppointments = () => {
           </div>
 
           {/* Stats Section */}
-          <div className="px-6 py-4 bg-gray-50/50">
+          <div className="px-6 py-4 bg-gray-900/50">
             <AppointmentStats />
           </div>
 
@@ -150,21 +153,27 @@ const AdminAppointments = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="px-6 py-4 border-b bg-white"
+              className="px-6 py-4 border-b border-gray-700 bg-gray-900"
             >
               <AppointmentFiltersBar />
             </motion.div>
           )}
 
           {/* Content Section */}
-          <div className="flex-1 px-6 py-4 overflow-hidden">
+          <div className="flex-1 px-6 py-4 overflow-hidden bg-black">
             <Tabs value={viewMode} onValueChange={handleViewModeChange} className="h-full flex flex-col">
-              <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto mb-4">
-                <TabsTrigger value="calendar" className="gap-2">
+              <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto mb-4 bg-gray-800 border-gray-700">
+                <TabsTrigger 
+                  value="calendar" 
+                  className="gap-2 data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-gray-300"
+                >
                   <Calendar className="h-4 w-4" />
                   Calendário
                 </TabsTrigger>
-                <TabsTrigger value="list" className="gap-2">
+                <TabsTrigger 
+                  value="list" 
+                  className="gap-2 data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-gray-300"
+                >
                   <List className="h-4 w-4" />
                   Lista
                 </TabsTrigger>
