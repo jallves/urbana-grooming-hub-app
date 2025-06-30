@@ -1,11 +1,10 @@
-
-import React, { useEffect, useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
+import { useEffect, useState } from 'react';
+import { Calendar, List, Download, Plus } from 'lucide-react';
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, List, Download, Plus } from 'lucide-react';
+import AdminLayout from '@/components/admin/AdminLayout';
 import AdminRoute from '@/components/auth/AdminRoute';
 import { AppointmentViewMode } from '@/types/admin';
 import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
@@ -13,47 +12,50 @@ import AppointmentCalendar from '@/components/admin/appointments/calendar/Appoin
 import AppointmentList from '@/components/admin/appointments/list/AppointmentList';
 
 const AdminAppointments = () => {
-  const [activeTab, setActiveTab] = useState<AppointmentViewMode>('calendar');
+  const [viewMode, setViewMode] = useState<AppointmentViewMode>('calendar');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('appointment-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'appointments'
-        },
-        (payload) => {
-          console.log('Change received:', payload);
-          toast.info('Agendamento atualizado', {
-            description: 'Os dados foram atualizados em tempo real'
-          });
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          toast.success('Conexão estabelecida', {
-            description: 'Monitorando alterações em tempo real'
-          });
-        } else if (status === 'CHANNEL_ERROR') {
-          toast.error('Erro na conexão', {
-            description: 'Não foi possível estabelecer monitoramento'
-          });
-        }
-      });
+    const setupRealtimeUpdates = async () => {
+      try {
+        const channel = supabase
+          .channel('appointment-realtime')
+          .on(
+            'postgres_changes',
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'appointments'
+            },
+            () => {
+              toast.info('Appointment updated', {
+                description: 'Data refreshed in real-time'
+              });
+            }
+          )
+          .subscribe();
 
-    setIsLoading(false);
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        toast.error('Connection error', {
+          description: 'Failed to establish real-time monitoring'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const cleanup = setupRealtimeUpdates();
 
     return () => {
-      supabase.removeChannel(channel);
+      cleanup.then(fn => fn?.());
     };
   }, []);
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as AppointmentViewMode);
+  const handleViewModeChange = (mode: string) => {
+    setViewMode(mode as AppointmentViewMode);
   };
 
   if (isLoading) {
@@ -68,38 +70,39 @@ const AdminAppointments = () => {
     <AdminRoute allowedRoles={['admin', 'barber']}>
       <AdminLayout>
         <div className="space-y-6">
-          <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Agendamentos</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Appointments</h1>
               <p className="text-muted-foreground">
-                Visualize e gerencie todos os agendamentos
+                Manage and view all scheduled appointments
               </p>
             </div>
+            
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" className="gap-2">
-                <Download size={16} />
-                Exportar
+                <Download className="size-4" />
+                Export
               </Button>
               <Button size="sm" className="gap-2">
-                <Plus size={16} />
-                Novo Agendamento
+                <Plus className="size-4" />
+                New Appointment
               </Button>
             </div>
           </header>
 
           <Tabs 
-            value={activeTab} 
-            onValueChange={handleTabChange}
+            value={viewMode} 
+            onValueChange={handleViewModeChange}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="calendar" className="flex items-center gap-2">
-                <Calendar size={16} />
-                Calendário
+              <TabsTrigger value="calendar" className="gap-2">
+                <Calendar className="size-4" />
+                Calendar
               </TabsTrigger>
-              <TabsTrigger value="list" className="flex items-center gap-2">
-                <List size={16} />
-                Lista
+              <TabsTrigger value="list" className="gap-2">
+                <List className="size-4" />
+                List
               </TabsTrigger>
             </TabsList>
             
