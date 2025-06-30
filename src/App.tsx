@@ -55,9 +55,14 @@ function App() {
                 <Route path="/admin/staff" element={<AdminRoute><AdminStaff /></AdminRoute>} />
                 <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
 
-                {/* Barber Routes */}
+                {/* Barber Routes - Consistent with /barber/ */}
                 <Route path="/barber/login" element={<BarberLogin />} />
-                <Route path="/barber/dashboard" element={<BarberRoute><BarberDashboard /></BarberRoute>} />
+                <Route path="/barber/dashboard" element={<BarberRoute allowBarber={true}><BarberDashboard /></BarberRoute>} />
+                
+                {/* Legacy barbeiro routes for backward compatibility */}
+                <Route path="/barbeiro/login" element={<BarberLogin />} />
+                <Route path="/barbeiro/dashboard" element={<BarberRoute allowBarber={true}><BarberDashboard /></BarberRoute>} />
+                <Route path="/barbeiro" element={<BarberRoute allowBarber={true}><BarberDashboard /></BarberRoute>} />
                 
                 {/* Client Routes */}
                 <Route path="/client/login" element={<ClientLogin />} />

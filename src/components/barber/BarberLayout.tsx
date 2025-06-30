@@ -30,7 +30,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
   const handleLogout = async () => {
     try {
       await signOut();
-      navigate('/barbeiro/login');
+      navigate('/barber/login');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -73,7 +73,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
                   <DropdownMenuSeparator className="bg-zinc-800" />
                   <DropdownMenuItem 
                     className="flex items-center cursor-pointer hover:bg-zinc-800 transition-colors text-xs md:text-sm"
-                    onClick={() => navigate('/barbeiro/perfil')}
+                    onClick={() => navigate('/barber/perfil')}
                   >
                     <span>Perfil</span>
                   </DropdownMenuItem>
