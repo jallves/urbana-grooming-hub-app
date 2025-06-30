@@ -57,22 +57,35 @@ export const useClientFormData = () => {
 
         if (barbersError) {
           console.error('[useClientFormData] Erro nos barbeiros:', barbersError);
+          console.error('[useClientFormData] Detalhes do erro:', {
+            message: barbersError.message,
+            details: barbersError.details,
+            hint: barbersError.hint,
+            code: barbersError.code
+          });
           throw new Error(`Erro ao carregar barbeiros: ${barbersError.message}`);
         }
 
         console.log('[useClientFormData] Barbeiros carregados:', barbersData?.length || 0);
-        barbersData?.forEach((barber, index) => {
-          console.log(`[useClientFormData] Barbeiro ${index + 1}:`, {
-            id: barber.id,
-            name: barber.name,
-            is_active: barber.is_active,
-            specialties: barber.specialties
+        console.log('[useClientFormData] Dados dos barbeiros:', barbersData);
+        
+        if (barbersData && barbersData.length > 0) {
+          barbersData.forEach((barber, index) => {
+            console.log(`[useClientFormData] Barbeiro ${index + 1}:`, {
+              id: barber.id,
+              name: barber.name,
+              is_active: barber.is_active,
+              specialties: barber.specialties
+            });
           });
-        });
+        } else {
+          console.warn('[useClientFormData] Nenhum barbeiro encontrado na tabela barbers');
+        }
+
         setBarbers(barbersData || []);
 
       } catch (error: any) {
-        console.error('[useClientFormData] Erro:', error);
+        console.error('[useClientFormData] Erro geral:', error);
         toast({
           title: "Erro ao carregar dados",
           description: error.message || "Não foi possível carregar os dados. Por favor, recarregue a página.",
@@ -80,11 +93,20 @@ export const useClientFormData = () => {
         });
       } finally {
         setLoading(false);
+        console.log('[useClientFormData] Carregamento finalizado');
       }
     };
 
     loadData();
   }, [toast]);
+
+  console.log('[useClientFormData] Estado atual:', {
+    loading,
+    servicesCount: services.length,
+    barbersCount: barbers.length,
+    services: services.map(s => ({ id: s.id, name: s.name })),
+    barbers: barbers.map(b => ({ id: b.id, name: b.name, is_active: b.is_active }))
+  });
 
   return {
     services,

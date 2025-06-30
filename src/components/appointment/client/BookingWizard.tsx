@@ -57,8 +57,23 @@ export const BookingWizard: React.FC = () => {
   const [bookingData, setBookingData] = useState<BookingData>({});
   const [isLoading, setIsLoading] = useState(false);
 
+  console.log('[BookingWizard] Estado atual:', {
+    currentStep,
+    loading,
+    servicesCount: services.length,
+    barbersCount: barbers.length,
+    clientId: client?.id,
+    bookingData: {
+      hasService: !!bookingData.service,
+      hasBarber: !!bookingData.barber,
+      hasDate: !!bookingData.date,
+      hasTime: !!bookingData.time
+    }
+  });
+
   useEffect(() => {
     if (!client) {
+      console.log('[BookingWizard] Cliente não autenticado, redirecionando...');
       navigate('/cliente/login');
     }
   }, [client, navigate]);
@@ -91,6 +106,13 @@ export const BookingWizard: React.FC = () => {
 
   const handleConfirmBooking = async () => {
     if (!client || !bookingData.service || !bookingData.barber || !bookingData.date || !bookingData.time) {
+      console.error('[BookingWizard] Dados incompletos:', {
+        hasClient: !!client,
+        hasService: !!bookingData.service,
+        hasBarber: !!bookingData.barber,
+        hasDate: !!bookingData.date,
+        hasTime: !!bookingData.time
+      });
       toast({
         title: "Erro",
         description: "Dados incompletos para o agendamento.",
@@ -98,6 +120,14 @@ export const BookingWizard: React.FC = () => {
       });
       return;
     }
+
+    console.log('[BookingWizard] Confirmando agendamento:', {
+      clientId: client.id,
+      serviceId: bookingData.service.id,
+      barberId: bookingData.barber.id,
+      date: bookingData.date,
+      time: bookingData.time
+    });
 
     setIsLoading(true);
 
@@ -122,6 +152,7 @@ export const BookingWizard: React.FC = () => {
       );
 
       if (validationError) {
+        console.error('[BookingWizard] Erro na validação:', validationError);
         throw new Error(validationError.message);
       }
 
@@ -129,6 +160,7 @@ export const BookingWizard: React.FC = () => {
       const validation = validationData as unknown as ValidationResult;
       
       if (!validation.valid) {
+        console.error('[BookingWizard] Validação falhou:', validation);
         throw new Error(validation.error || 'Erro na validação do agendamento');
       }
 
@@ -145,7 +177,12 @@ export const BookingWizard: React.FC = () => {
           notes: bookingData.notes || null,
         }]);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('[BookingWizard] Erro ao inserir agendamento:', insertError);
+        throw insertError;
+      }
+
+      console.log('[BookingWizard] Agendamento criado com sucesso');
 
       // Enviar confirmação por WhatsApp
       try {
@@ -161,8 +198,9 @@ export const BookingWizard: React.FC = () => {
             serviceDuration: bookingData.service.duration.toString()
           }
         });
+        console.log('[BookingWizard] Confirmação WhatsApp enviada');
       } catch (whatsappError) {
-        console.warn('Erro ao enviar WhatsApp:', whatsappError);
+        console.warn('[BookingWizard] Erro ao enviar WhatsApp:', whatsappError);
       }
 
       toast({
@@ -172,7 +210,7 @@ export const BookingWizard: React.FC = () => {
 
       navigate('/cliente/dashboard');
     } catch (error: any) {
-      console.error('Erro ao confirmar agendamento:', error);
+      console.error('[BookingWizard] Erro ao confirmar agendamento:', error);
       toast({
         title: "Erro",
         description: error.message || "Não foi possível confirmar o agendamento.",
@@ -184,12 +222,17 @@ export const BookingWizard: React.FC = () => {
   };
 
   const renderStepContent = () => {
+    console.log('[BookingWizard] Renderizando passo:', currentStep);
+    
     switch (currentStep) {
       case 1:
         return (
           <ServiceSelectionStep
             selectedService={bookingData.service}
-            onServiceSelect={(service) => updateBookingData({ service })}
+            onServiceSelect={(service) => {
+              console.log('[BookingWizard] Serviço selecionado:', service.name);
+              updateBookingData({ service });
+            }}
             services={services}
             loading={loading}
           />
@@ -198,7 +241,10 @@ export const BookingWizard: React.FC = () => {
         return (
           <BarberSelectionStep
             selectedBarber={bookingData.barber}
-            onBarberSelect={(barber) => updateBookingData({ barber })}
+            onBarberSelect={(barber) => {
+              console.log('[BookingWizard] Barbeiro selecionado:', barber.name);
+              updateBookingData({ barber });
+            }}
             selectedService={bookingData.service}
             selectedDate={bookingData.date}
             selectedTime={bookingData.time}
@@ -211,8 +257,14 @@ export const BookingWizard: React.FC = () => {
           <TimeSelectionStep
             selectedDate={bookingData.date}
             selectedTime={bookingData.time}
-            onDateSelect={(date) => updateBookingData({ date, time: undefined })}
-            onTimeSelect={(time) => updateBookingData({ time })}
+            onDateSelect={(date) => {
+              console.log('[BookingWizard] Data selecionada:', date);
+              updateBookingData({ date, time: undefined });
+            }}
+            onTimeSelect={(time) => {
+              console.log('[BookingWizard] Horário selecionado:', time);
+              updateBookingData({ time });
+            }}
             selectedBarber={bookingData.barber}
             selectedService={bookingData.service}
           />
