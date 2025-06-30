@@ -1,159 +1,172 @@
+import React, { useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User, Star, Clock } from 'lucide-react';
+import { Service } from '@/types/appointment';
+import { supabase } from '@/integrations/supabase/client';
 
-import React from 'react';
-import { Staff } from '@/types/barber';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UseFormReturn } from 'react-hook-form';
-
-interface StaffSelectProps {
-  staffMembers: Staff[];
-  form: UseFormReturn<any>;
-  barberAvailability?: { id: string; name: string; available: boolean }[];
-  isCheckingAvailability?: boolean;
+interface Staff {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  image_url: string;
+  specialties: string;
+  experience: string;
+  role: string;
+  is_active: boolean;
 }
 
-const StaffSelect: React.FC<StaffSelectProps> = ({
-  staffMembers,
-  form,
-  barberAvailability = [],
-  isCheckingAvailability = false
-}) => {
-  console.log('[StaffSelect] Props recebidas:', {
-    staffMembersCount: staffMembers.length,
-    barberAvailabilityCount: barberAvailability.length,
-    isCheckingAvailability,
-    staffMembers: staffMembers.slice(0, 3)
-  });
+interface StaffSelectionStepProps {
+  selectedStaff?: Staff;
+  onStaffSelect: (staff: Staff) => void;
+  selectedService?: Service;
+  selectedDate?: Date;
+  selectedTime?: string;
+  staff: Staff[];
+  loading: boolean;
+}
 
-  if (staffMembers.length === 0) {
+const StaffSelectionStep: React.FC<StaffSelectionStepProps> = ({
+  selectedStaff,
+  onStaffSelect,
+  selectedService,
+  selectedDate,
+  selectedTime,
+  staff,
+  loading
+}) => {
+  const [availableStaffIds, setAvailableStaffIds] = useState<string[]>([]);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+
+  useEffect(() => {
+    if (selectedDate && selectedTime && selectedService && staff.length > 0) {
+      checkStaffAvailability();
+    } else {
+      setAvailableStaffIds(staff.map(s => s.id));
+    }
+  }, [selectedDate, selectedTime, selectedService, staff]);
+
+  const checkStaffAvailability = async () => {
+    if (!selectedDate || !selectedTime || !selectedService) return;
+
+    setCheckingAvailability(true);
+    const available: string[] = [];
+
+    try {
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const startTime = new Date(selectedDate);
+      startTime.setHours(hours, minutes, 0, 0);
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
+
+      for (const member of staff) {
+        const { data: conflicts, error } = await supabase
+          .from('appointments')
+          .select('id, start_time, end_time')
+          .eq('staff_id', member.id)
+          .in('status', ['scheduled', 'confirmed'])
+          .gte('start_time', startTime.toISOString().split('T')[0])
+          .lt('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+        if (error) {
+          available.push(member.id); // assume disponível se erro
+          continue;
+        }
+
+        const hasConflict = conflicts?.some(app => {
+          const appStart = new Date(app.start_time);
+          const appEnd = new Date(app.end_time);
+          return startTime < appEnd && endTime > appStart;
+        });
+
+        if (!hasConflict) {
+          available.push(member.id);
+        }
+      }
+
+      setAvailableStaffIds(available);
+    } catch {
+      setAvailableStaffIds(staff.map(s => s.id));
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <FormField
-        control={form.control}
-        name="staff_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Barbeiro</FormLabel>
-            <FormControl>
-              <div className="p-3 bg-stone-700 border border-stone-600 rounded text-stone-400 text-center">
-                Carregando barbeiros...
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="bg-gray-800 rounded-lg p-6 animate-pulse"></div>
+        ))}
+      </div>
     );
   }
 
-  // Se não há dados de disponibilidade ainda, mostrar todos os barbeiros como disponíveis
-  const shouldShowAvailability = barberAvailability.length > 0;
-  
-  let availableStaff = [];
-  let unavailableStaff = [];
-
-  if (shouldShowAvailability) {
-    availableStaff = barberAvailability.filter(staff => staff.available);
-    unavailableStaff = barberAvailability.filter(staff => !staff.available);
-  } else {
-    // Se não há dados de disponibilidade, mostrar todos como disponíveis
-    availableStaff = staffMembers.map(staff => ({ 
-      id: staff.id, 
-      name: staff.name, 
-      available: true 
-    }));
-  }
-
-  console.log('[StaffSelect] Barbeiros processados:', {
-    availableCount: availableStaff.length,
-    unavailableCount: unavailableStaff.length,
-    shouldShowAvailability
-  });
-
   return (
-    <FormField
-      control={form.control}
-      name="staff_id"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>
-            Barbeiro
-            {isCheckingAvailability && <span className="ml-2 text-sm text-amber-400">(Verificando disponibilidade...)</span>}
-          </FormLabel>
-          <Select
-            onValueChange={(value) => {
-              console.log('[StaffSelect] Barbeiro selecionado:', value);
-              field.onChange(value);
-            }}
-            value={field.value || ""}
-            disabled={isCheckingAvailability}
-          >
-            <FormControl>
-              <SelectTrigger className="bg-stone-700 border-stone-600 text-white">
-                <SelectValue placeholder="Selecione um barbeiro" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent className="bg-stone-800 border-stone-600">
-              {/* Barbeiros disponíveis */}
-              {availableStaff.map((staff) => {
-                const staffMember = staffMembers.find(s => s.id === staff.id);
-                if (!staffMember) return null;
-                
-                return (
-                  <SelectItem 
-                    key={staff.id} 
-                    value={staff.id}
-                    className="text-white hover:bg-stone-700"
-                  >
-                    <div className="flex flex-col w-full">
-                      <div className="flex items-center justify-between w-full">
-                        <span>{staff.name}</span>
-                        {shouldShowAvailability && (
-                          <span className="text-green-400 text-xs ml-2">✅ Disponível</span>
-                        )}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-6">
+        <User className="h-5 w-5 text-amber-500" />
+        <h3 className="text-lg font-semibold text-white">Escolha seu profissional</h3>
+        {checkingAvailability && (
+          <div className="flex items-center gap-2 text-amber-500">
+            <Clock className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Verificando disponibilidade...</span>
+          </div>
+        )}
+      </div>
+
+      {staff.length === 0 ? (
+        <div className="text-center py-8 text-gray-400">
+          Nenhum profissional disponível no momento. Verifique se há profissionais ativos cadastrados.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {staff.map(member => {
+            const isAvailable = availableStaffIds.includes(member.id);
+            const isSelected = selectedStaff?.id === member.id;
+            return (
+              <div
+                key={member.id}
+                onClick={() => isAvailable && onStaffSelect(member)}
+                className={`
+                  bg-gray-800 rounded-lg p-6 border-2 transition-all
+                  ${isAvailable ? 'cursor-pointer hover:bg-gray-750 hover:border-amber-500/50' : 'opacity-50 cursor-not-allowed'}
+                  ${isSelected ? 'border-amber-500 bg-amber-500/10' : 'border-gray-700'}
+                `}
+              >
+                <div className="flex items-start gap-4 mb-4">
+                  <Avatar className="w-16 h-16">
+                    <AvatarImage src={member.image_url} alt={member.name} />
+                    <AvatarFallback className="bg-amber-500 text-black font-semibold">
+                      {member.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-lg font-semibold text-white">{member.name}</h4>
+                      <div className="flex items-center gap-2">
+                        {isSelected && <Badge className="bg-amber-500 text-black">Selecionado</Badge>}
+                        {!isAvailable && selectedDate && selectedTime && <Badge variant="destructive">Indisponível</Badge>}
+                        {isAvailable && selectedDate && selectedTime && <Badge className="bg-green-600">Disponível</Badge>}
                       </div>
-                      {staffMember.specialties && (
-                        <div className="text-xs text-stone-400 mt-1">
-                          {staffMember.specialties}
-                        </div>
-                      )}
                     </div>
-                  </SelectItem>
-                );
-              })}
-
-              {/* Barbeiros indisponíveis (apenas se houver dados de disponibilidade) */}
-              {shouldShowAvailability && unavailableStaff.map((staff) => {
-                const staffMember = staffMembers.find(s => s.id === staff.id);
-                if (!staffMember) return null;
-                
-                return (
-                  <SelectItem
-                    key={staff.id}
-                    value={staff.id}
-                    disabled
-                    className="opacity-50 text-stone-400"
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span>{staff.name}</span>
-                      <span className="text-red-400 text-xs ml-2">❌ Indisponível</span>
-                    </div>
-                  </SelectItem>
-                );
-              })}
-
-              {/* Mensagem quando nenhum barbeiro está disponível */}
-              {shouldShowAvailability && availableStaff.length === 0 && unavailableStaff.length > 0 && (
-                <div className="px-2 py-1 text-sm text-red-400">
-                  Nenhum barbeiro disponível neste horário
+                    {member.specialties && <p className="text-sm text-gray-400 mb-2">{member.specialties}</p>}
+                    {member.experience && (
+                      <div className="flex items-center gap-1 text-amber-500">
+                        <Star className="h-4 w-4 fill-current" />
+                        <span className="text-sm">{member.experience}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
+              </div>
+            );
+          })}
+        </div>
       )}
-    />
+    </div>
   );
 };
 
-export default StaffSelect;
+export default StaffSelectionStep;
