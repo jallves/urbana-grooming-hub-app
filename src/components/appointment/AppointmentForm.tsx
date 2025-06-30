@@ -18,9 +18,11 @@ const AppointmentForm: React.FC = () => {
     name: '',
     phone: '',
     email: '',
+    whatsapp: '',
     service: '',
     barber: '',
-    date: undefined,
+    date: '',
+    time: '',
     notes: ''
   });
   const { toast } = useToast();
@@ -35,7 +37,10 @@ const AppointmentForm: React.FC = () => {
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    setFormData(prev => ({ ...prev, date }));
+    setFormData(prev => ({ 
+      ...prev, 
+      date: date ? date.toISOString().split('T')[0] : '' 
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -137,18 +142,20 @@ const AppointmentForm: React.FC = () => {
       console.log('Service details:', serviceData);
 
       // Define appointment times
-      const startTime = formData.date;
-      if (!startTime) throw new Error("Data não selecionada");
+      const appointmentDate = new Date(formData.date + 'T' + (formData.time || '09:00'));
+      if (!appointmentDate || isNaN(appointmentDate.getTime())) {
+        throw new Error("Data não selecionada");
+      }
       
       // Set end time based on service duration (in minutes)
-      const endTime = new Date(startTime);
+      const endTime = new Date(appointmentDate);
       endTime.setMinutes(endTime.getMinutes() + serviceData.duration);
       
       console.log('Creating appointment with:', {
         clientId,
         serviceId: formData.service,
-        barberId: formData.barber || null,
-        startTime: startTime.toISOString(),
+        staffId: formData.barber || null,
+        startTime: appointmentDate.toISOString(),
         endTime: endTime.toISOString(),
         notes: formData.notes || null
       });
@@ -160,7 +167,7 @@ const AppointmentForm: React.FC = () => {
           client_id: clientId,
           service_id: formData.service,
           staff_id: formData.barber || null,
-          start_time: startTime.toISOString(),
+          start_time: appointmentDate.toISOString(),
           end_time: endTime.toISOString(),
           status: 'scheduled',
           notes: formData.notes || null
@@ -186,9 +193,11 @@ const AppointmentForm: React.FC = () => {
         name: '',
         phone: '',
         email: '',
+        whatsapp: '',
         service: '',
         barber: '',
-        date: undefined,
+        date: '',
+        time: '',
         notes: ''
       });
 
@@ -227,13 +236,13 @@ const AppointmentForm: React.FC = () => {
         />
         
         <AppointmentDateTime 
-          date={formData.date}
+          date={formData.date ? new Date(formData.date) : undefined}
           handleDateChange={handleDateChange} 
         />
       </div>
 
       <NotesField 
-        notes={formData.notes} 
+        formData={formData} 
         handleInputChange={handleInputChange} 
       />
 

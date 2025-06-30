@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { AppointmentFormData } from '@/types/appointment';
 
@@ -8,52 +9,58 @@ interface PersonalInfoFieldsProps {
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const PersonalInfoFields: React.FC<PersonalInfoFieldsProps> = ({ formData, handleInputChange }) => {
+const PersonalInfoFields: React.FC<PersonalInfoFieldsProps> = ({ 
+  formData, 
+  handleInputChange 
+}) => {
   return (
-    <>
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium mb-2">
-          Nome Completo *
-        </label>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Nome *</Label>
         <Input
           id="name"
+          type="text"
           placeholder="Seu nome completo"
-          required
           value={formData.name}
           onChange={handleInputChange}
-          className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
+          required
         />
       </div>
-      
-      <div>
-        <label htmlFor="phone" className="block text-sm font-medium mb-2">
-          Telefone *
-        </label>
+
+      <div className="space-y-2">
+        <Label htmlFor="phone">Telefone *</Label>
         <Input
           id="phone"
           type="tel"
           placeholder="(11) 99999-9999"
-          required
           value={formData.phone}
           onChange={handleInputChange}
-          className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
+          required
         />
       </div>
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-2">
-          E-mail (opcional)
-        </label>
+      <div className="space-y-2">
+        <Label htmlFor="email">E-mail</Label>
         <Input
           id="email"
           type="email"
           placeholder="seu@email.com"
           value={formData.email}
           onChange={handleInputChange}
-          className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
         />
       </div>
-    </>
+
+      <div className="space-y-2">
+        <Label htmlFor="whatsapp">WhatsApp</Label>
+        <Input
+          id="whatsapp"
+          type="tel"
+          placeholder="(11) 99999-9999"
+          value={formData.whatsapp}
+          onChange={handleInputChange}
+        />
+      </div>
+    </div>
   );
 };
 

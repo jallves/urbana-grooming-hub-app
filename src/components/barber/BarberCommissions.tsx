@@ -1,103 +1,117 @@
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAuth } from '@/contexts/AuthContext';
-import { format, parseISO } from 'date-fns';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DollarSign, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
+
+interface Commission {
+  id: string;
+  amount: number;
+  commission_rate: number;
+  status: string;
+  created_at: string;
+  payment_date: string | null;
+  appointment: {
+    id: string;
+    service: {
+      name: string;
+      price: number;
+    };
+    client: {
+      name: string;
+    };
+  };
+}
 
 const BarberCommissions: React.FC = () => {
-  const { user } = useAuth();
+  const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalPending, setTotalPending] = useState(0);
+  const [totalPaid, setTotalPaid] = useState(0);
+  const { toast } = useToast();
 
-  // Get barber ID from email
-  const { data: barberData } = useQuery({
-    queryKey: ['barber-profile', user?.email],
-    queryFn: async () => {
-      if (!user?.email) return null;
-      
-      const { data, error } = await supabase
-        .from('barbers')
-        .select('*')
+  useEffect(() => {
+    fetchCommissions();
+  }, []);
+
+  const fetchCommissions = async () => {
+    try {
+      // Get current user (barber)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get staff record for the current user
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
+        .select('id')
         .eq('email', user.email)
         .single();
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.email
-  });
+      if (staffError || !staffData) {
+        console.error('Error fetching staff data:', staffError);
+        return;
+      }
 
-  // Fetch commissions data
-  const { data: commissions = [], isLoading } = useQuery({
-    queryKey: ['barber-commissions', barberData?.id],
-    queryFn: async () => {
-      if (!barberData?.id) return [];
-      
+      // Fetch commissions for this barber
       const { data, error } = await supabase
         .from('barber_commissions')
         .select(`
           *,
-          appointments:appointment_id (
-            start_time,
-            clients:client_id (
-              name
-            ),
-            services:service_id (
-              name,
-              price
-            )
+          appointment:appointments (
+            id,
+            service:services (name, price),
+            client:clients (name)
           )
         `)
-        .eq('barber_id', barberData.id)
+        .eq('barber_id', staffData.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!barberData?.id
-  });
+      if (error) {
+        console.error('Error fetching commissions:', error);
+        toast({
+          title: "Erro ao carregar comissões",
+          description: "Não foi possível carregar suas comissões.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+      setCommissions(data || []);
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(parseISO(dateString), "dd/MM/yyyy", { locale: ptBR });
-    } catch (e) {
-      return dateString;
+      // Calculate totals
+      const pending = data?.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0) || 0;
+      const paid = data?.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0) || 0;
+      
+      setTotalPending(pending);
+      setTotalPaid(paid);
+
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Calculate summary metrics
-  const totalPending = commissions
-    .filter(c => c.status === 'pending')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
-  
-  const totalPaid = commissions
-    .filter(c => c.status === 'paid')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary">Pendente</Badge>;
+      case 'paid':
+        return <Badge className="bg-green-500">Pago</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
 
-  const thisMonthCommissions = commissions.filter(c => {
-    const commissionDate = new Date(c.created_at);
-    const now = new Date();
-    return commissionDate.getMonth() === now.getMonth() && 
-           commissionDate.getFullYear() === now.getFullYear();
-  });
-
-  const thisMonthTotal = thisMonthCommissions.reduce((sum, c) => sum + Number(c.amount), 0);
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center py-10">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Carregando comissões...</div>
       </div>
     );
   }
@@ -105,59 +119,25 @@ const BarberCommissions: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="rounded-full bg-yellow-100 p-3 mr-4">
-                <DollarSign className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-600">{formatCurrency(totalPending)}</div>
-                <p className="text-xs text-muted-foreground">Comissões Pendentes</p>
-              </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Pendente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              R$ {totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="rounded-full bg-green-100 p-3 mr-4">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPaid)}</div>
-                <p className="text-xs text-muted-foreground">Comissões Pagas</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="rounded-full bg-blue-100 p-3 mr-4">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{formatCurrency(thisMonthTotal)}</div>
-                <p className="text-xs text-muted-foreground">Este Mês</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="rounded-full bg-purple-100 p-3 mr-4">
-                <Calendar className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{commissions.length}</div>
-                <p className="text-xs text-muted-foreground">Total de Comissões</p>
-              </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Pago</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -169,46 +149,59 @@ const BarberCommissions: React.FC = () => {
           <CardTitle>Histórico de Comissões</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          {commissions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Nenhuma comissão encontrada.
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Data</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Serviço</TableHead>
                   <TableHead>Valor do Serviço</TableHead>
                   <TableHead>Taxa (%)</TableHead>
                   <TableHead>Comissão</TableHead>
-                  <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Data do Pagamento</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {commissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      Nenhuma comissão encontrada
+                {commissions.map((commission) => (
+                  <TableRow key={commission.id}>
+                    <TableCell>
+                      {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell>
+                      {commission.appointment?.client?.name || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {commission.appointment?.service?.name || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      R$ {(commission.appointment?.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell>
+                      {commission.commission_rate}%
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(commission.status)}
+                    </TableCell>
+                    <TableCell>
+                      {commission.payment_date 
+                        ? format(new Date(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })
+                        : '-'
+                      }
                     </TableCell>
                   </TableRow>
-                ) : (
-                  commissions.map((commission) => (
-                    <TableRow key={commission.id}>
-                      <TableCell>{commission.appointments?.clients?.name || 'N/A'}</TableCell>
-                      <TableCell>{commission.appointments?.services?.name || 'N/A'}</TableCell>
-                      <TableCell>{formatCurrency(Number(commission.appointments?.services?.price || 0))}</TableCell>
-                      <TableCell>{commission.commission_rate}%</TableCell>
-                      <TableCell className="font-medium">{formatCurrency(Number(commission.amount))}</TableCell>
-                      <TableCell>{formatDate(commission.created_at)}</TableCell>
-                      <TableCell>
-                        <Badge variant={commission.status === 'paid' ? 'default' : 'secondary'}>
-                          {commission.status === 'paid' ? 'Pago' : 'Pendente'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
+                ))}
               </TableBody>
             </Table>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

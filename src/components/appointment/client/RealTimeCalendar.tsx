@@ -51,6 +51,13 @@ const RealTimeCalendar: React.FC<RealTimeCalendarProps> = ({
           end_time,
           status,
           notes,
+          client_id,
+          service_id,
+          staff_id,
+          coupon_code,
+          discount_amount,
+          created_at,
+          updated_at,
           service:services (
             id,
             name,
@@ -72,7 +79,22 @@ const RealTimeCalendar: React.FC<RealTimeCalendarProps> = ({
       // Transform the data to match the expected format
       const transformedAppointments = (data || []).map(appointment => ({
         ...appointment,
-        barber: appointment.staff || { id: '', name: '', image_url: '' }
+        // Keep all appointment fields
+        id: appointment.id,
+        client_id: appointment.client_id,
+        service_id: appointment.service_id,
+        staff_id: appointment.staff_id,
+        start_time: appointment.start_time,
+        end_time: appointment.end_time,
+        status: appointment.status,
+        notes: appointment.notes,
+        coupon_code: appointment.coupon_code,
+        discount_amount: appointment.discount_amount,
+        created_at: appointment.created_at,
+        updated_at: appointment.updated_at,
+        // Include joined relations
+        service: appointment.service,
+        staff: appointment.staff
       })) as Appointment[];
 
       setAppointments(transformedAppointments);
@@ -191,10 +213,10 @@ const RealTimeCalendar: React.FC<RealTimeCalendarProps> = ({
               <li key={appointment.id} className="flex items-center space-x-2 text-sm">
                 <Clock className="h-4 w-4" />
                 <span>{format(new Date(appointment.start_time), "HH:mm")} - {appointment.service?.name}</span>
-                {appointment.barber && (
+                {appointment.staff && (
                   <div className="flex items-center space-x-1">
                     <User className="h-4 w-4" />
-                    <span>{appointment.barber.name}</span>
+                    <span>{appointment.staff.name}</span>
                   </div>
                 )}
               </li>

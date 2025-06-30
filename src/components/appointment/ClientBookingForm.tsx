@@ -224,7 +224,7 @@ const ClientBookingForm: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <PersonalInfoFields 
             formData={formData} 
-            handleInputChange={handleInputChange} 
+            handleInputChange={(e) => handleInputChange(e.target.value, e.target.id)} 
           />
           
           <ServiceSelection 
@@ -239,7 +239,7 @@ const ClientBookingForm: React.FC = () => {
           
           <NotesField 
             formData={formData} 
-            handleInputChange={handleInputChange} 
+            handleInputChange={(e) => handleInputChange(e.target.value, e.target.id)} 
           />
 
           <Button 

@@ -1,25 +1,24 @@
 
 import React from 'react';
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AppointmentFormData } from '@/types/appointment';
 
 interface NotesFieldProps {
-  notes: string | undefined;
+  formData: AppointmentFormData;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-const NotesField: React.FC<NotesFieldProps> = ({ notes, handleInputChange }) => {
+const NotesField: React.FC<NotesFieldProps> = ({ formData, handleInputChange }) => {
   return (
-    <div>
-      <label htmlFor="notes" className="block text-sm font-medium mb-2">
-        Observações Adicionais
-      </label>
+    <div className="space-y-2">
+      <Label htmlFor="notes">Observações</Label>
       <Textarea
         id="notes"
-        placeholder="Pedidos especiais ou informações adicionais"
-        rows={4}
-        value={notes || ''}
+        placeholder="Alguma observação especial?"
+        value={formData.notes}
         onChange={handleInputChange}
-        className="bg-white/20 border-urbana-gold/50 placeholder:text-white/50"
+        className="min-h-[80px]"
       />
     </div>
   );

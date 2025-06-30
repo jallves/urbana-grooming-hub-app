@@ -108,31 +108,31 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, o
         <form onSubmit={onSubmit} className="space-y-6">
           <PersonalInfoFields 
             formData={formData} 
-            handleInputChange={handleInputChange} 
+            handleInputChange={(e) => handleInputChange(e.target.value, e.target.id)} 
           />
           
           <ClientServiceSelect
             services={services}
-            selectedServiceId={formData.service}
-            onServiceChange={(value) => handleSelectChange(value, 'service')}
+            value={formData.service}
+            onValueChange={(value) => handleSelectChange(value, 'service')}
           />
           
           <BarbershopStaffSelect
-            staffList={staffList}
-            selectedStaffId={formData.barber}
-            onStaffChange={(value) => handleSelectChange(value, 'barber')}
+            staff={staffList}
+            value={formData.barber}
+            onValueChange={(value) => handleSelectChange(value, 'barber')}
           />
           
           <DateTimePicker
-            selectedDate={formData.date}
-            selectedTime={formData.time}
+            date={formData.date}
+            time={formData.time}
             onDateChange={(value) => handleInputChange(value, 'date')}
             onTimeChange={(value) => handleInputChange(value, 'time')}
           />
           
           <NotesField 
             formData={formData} 
-            handleInputChange={handleInputChange} 
+            handleInputChange={(e) => handleInputChange(e.target.value, e.target.id)} 
           />
 
           <div className="flex justify-end space-x-2">
