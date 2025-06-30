@@ -1,203 +1,284 @@
-
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from 'date-fns';
-import { CalendarIcon } from "lucide-react"
-import { Service, StaffMember } from "@/types/appointment";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
-interface BasicAppointmentFormProps {
-  onSubmit: (data: any) => void;
-  onCancel: () => void;
-  initialData?: any;
-  isLoading?: boolean;
+interface Service {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
 }
 
-const BasicAppointmentForm: React.FC<BasicAppointmentFormProps> = ({ 
-  onSubmit, 
-  onCancel,
-  initialData,
-  isLoading 
-}) => {
-  const [name, setName] = useState(initialData?.name || '');
-  const [email, setEmail] = useState(initialData?.email || '');
-  const [phone, setPhone] = useState(initialData?.phone || '');
-  const [service, setService] = useState(initialData?.service || '');
-  const [barber, setBarber] = useState(initialData?.barber || '');
-  const [date, setDate] = useState<Date | undefined>(initialData?.date ? new Date(initialData.date) : undefined);
-  const [notes, setNotes] = useState(initialData?.notes || '');
+interface Staff {
+  id: string;
+  name: string;
+  email?: string;
+}
+
+interface FormData {
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string;
+  serviceId: string;
+  staffId: string;
+  date: string;
+  time: string;
+  notes: string;
+}
+
+const BasicAppointmentForm: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
-  const [barbers, setBarbers] = useState<StaffMember[]>([]);
-  const { toast } = useToast();
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<FormData>({
+    clientName: '',
+    clientPhone: '',
+    clientEmail: '',
+    serviceId: '',
+    staffId: '',
+    date: '',
+    time: '',
+    notes: ''
+  });
 
   useEffect(() => {
-    // Carregar serviços
-    const fetchServices = async () => {
+    fetchServices();
+    fetchStaff();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('name');
 
-      if (error) {
-        console.error('Erro ao carregar serviços:', error);
-        toast({
-          title: "Erro ao carregar serviços",
-          description: "Não foi possível carregar a lista de serviços. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-      } else {
-        setServices(data || []);
-      }
-    };
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os serviços.",
+        variant: "destructive",
+      });
+    }
+  };
 
-    const fetchBarbers = async () => {
+  const fetchStaff = async () => {
+    try {
       const { data, error } = await supabase
-        .from('barbers')
-        .select('*')
-        .eq('is_active', true);
+        .from('staff')
+        .select('id, name, email')
+        .eq('is_active', true)
+        .order('name');
 
-      if (error) {
-        console.error('Erro ao carregar barbeiros:', error);
-        toast({
-          title: "Erro ao carregar barbeiros",
-          description: "Não foi possível carregar a lista de barbeiros. Por favor, tente novamente.",
-          variant: "destructive",
+      if (error) throw error;
+      setStaff(data || []);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os profissionais.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Create client first
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .insert({
+          name: formData.clientName,
+          phone: formData.clientPhone,
+          email: formData.clientEmail
+        })
+        .select()
+        .single();
+
+      if (clientError) throw clientError;
+
+      // Get service details
+      const selectedService = services.find(s => s.id === formData.serviceId);
+      if (!selectedService) throw new Error('Serviço não encontrado');
+
+      // Create appointment
+      const startDateTime = new Date(`${formData.date}T${formData.time}`);
+      const endDateTime = new Date(startDateTime.getTime() + selectedService.duration * 60000);
+
+      const { error: appointmentError } = await supabase
+        .from('appointments')
+        .insert({
+          client_id: clientData.id,
+          service_id: formData.serviceId,
+          staff_id: formData.staffId,
+          start_time: startDateTime.toISOString(),
+          end_time: endDateTime.toISOString(),
+          status: 'scheduled',
+          notes: formData.notes
         });
-      } else {
-        setBarbers(data || []);
-      }
-    };
 
-    fetchServices();
-    fetchBarbers();
-  }, [toast]);
+      if (appointmentError) throw appointmentError;
 
-  const handleSubmit = () => {
-    const data = {
-      name,
-      email,
-      phone,
-      service,
-      barber,
-      date: date ? format(date, 'yyyy-MM-dd') : undefined,
-      notes
-    };
-    onSubmit(data);
+      toast({
+        title: "Sucesso!",
+        description: "Agendamento criado com sucesso.",
+      });
+
+      // Reset form
+      setFormData({
+        clientName: '',
+        clientPhone: '',
+        clientEmail: '',
+        serviceId: '',
+        staffId: '',
+        date: '',
+        time: '',
+        notes: ''
+      });
+
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar o agendamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <div className="grid gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Nome</Label>
-          <Input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone">Telefone</Label>
-          <Input
-            type="tel"
-            id="phone"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="service">Serviço</Label>
-          <Select value={service} onValueChange={setService}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione um serviço" />
-            </SelectTrigger>
-            <SelectContent>
-              {services.map((service) => (
-                <SelectItem key={service.id} value={service.id || "no-id"}>
-                  {service.name} - R$ {service.price}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="barber">Barbeiro</Label>
-          <Select value={barber} onValueChange={setBarber}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione um barbeiro" />
-            </SelectTrigger>
-            <SelectContent>
-              {barbers.map((barber) => (
-                <SelectItem key={barber.id} value={barber.id || "no-id"}>{barber.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Data</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Escolha uma data</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                disabled={(date) =>
-                  date < new Date()
-                }
-                initialFocus
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Novo Agendamento</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Client Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="clientName">Nome do Cliente</Label>
+              <Input
+                id="clientName"
+                value={formData.clientName}
+                onChange={(e) => handleInputChange('clientName', e.target.value)}
+                required
               />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="notes">Notas</Label>
-        <Textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Alguma observação?"
-        />
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="button" onClick={handleSubmit} disabled={isLoading}>
-          {isLoading ? 'Enviando...' : 'Agendar'}
-        </Button>
-      </div>
-    </div>
+            </div>
+            <div>
+              <Label htmlFor="clientPhone">Telefone</Label>
+              <Input
+                id="clientPhone"
+                value={formData.clientPhone}
+                onChange={(e) => handleInputChange('clientPhone', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="clientEmail">Email</Label>
+            <Input
+              id="clientEmail"
+              type="email"
+              value={formData.clientEmail}
+              onChange={(e) => handleInputChange('clientEmail', e.target.value)}
+            />
+          </div>
+
+          {/* Service Selection */}
+          <div>
+            <Label htmlFor="service">Serviço</Label>
+            <Select value={formData.serviceId} onValueChange={(value) => handleInputChange('serviceId', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um serviço" />
+              </SelectTrigger>
+              <SelectContent>
+                {services.map((service) => (
+                  <SelectItem key={service.id} value={service.id}>
+                    {service.name} - R$ {service.price.toFixed(2)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Staff Selection */}
+          <div>
+            <Label htmlFor="staff">Profissional</Label>
+            <Select value={formData.staffId} onValueChange={(value) => handleInputChange('staffId', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um profissional" />
+              </SelectTrigger>
+              <SelectContent>
+                {staff.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date and Time */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="date">Data</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="time">Horário</Label>
+              <Input
+                id="time"
+                type="time"
+                value={formData.time}
+                onChange={(e) => handleInputChange('time', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="notes">Observações</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              placeholder="Observações adicionais..."
+            />
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? 'Criando...' : 'Criar Agendamento'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

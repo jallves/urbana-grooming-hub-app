@@ -12,7 +12,7 @@ interface ServiceSelectionProps {
 
 const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSelectChange }) => {
   const [services, setServices] = useState<Service[]>([]);
-  const [barbers, setBarbers] = useState<StaffMember[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -35,27 +35,27 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
       }
     };
 
-    // Carregar barbeiros
-    const fetchBarbers = async () => {
+    // Carregar profissionais (changed from barbers to staff)
+    const fetchStaff = async () => {
       const { data, error } = await supabase
-        .from('barbers')
+        .from('staff')
         .select('*')
         .eq('is_active', true);
 
       if (error) {
-        console.error('Erro ao carregar barbeiros:', error);
+        console.error('Erro ao carregar profissionais:', error);
         toast({
-          title: "Erro ao carregar barbeiros",
-          description: "Não foi possível carregar a lista de barbeiros. Por favor, tente novamente.",
+          title: "Erro ao carregar profissionais",
+          description: "Não foi possível carregar a lista de profissionais. Por favor, tente novamente.",
           variant: "destructive",
         });
       } else {
-        setBarbers(data || []);
+        setStaff(data || []);
       }
     };
 
     fetchServices();
-    fetchBarbers();
+    fetchStaff();
   }, [toast]);
   
   return (
@@ -88,8 +88,8 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="any">Qualquer Disponível</SelectItem>
-            {barbers.map((barber) => (
-              <SelectItem key={barber.id} value={barber.id || "no-id"}>{barber.name}</SelectItem>
+            {staff.map((member) => (
+              <SelectItem key={member.id} value={member.id || "no-id"}>{member.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

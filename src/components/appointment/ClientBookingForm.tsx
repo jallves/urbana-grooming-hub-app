@@ -1,462 +1,258 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm, FieldErrors } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useClientAuth } from '@/contexts/ClientAuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { useClientFormData } from './client/hooks/useClientFormData';
-import { useClientFormSubmit } from './client/hooks/useClientFormSubmit';
-import ClientServiceSelect from './client/ClientServiceSelect';
-import ClientStaffSelect from './client/ClientStaffSelect';
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Loader2 } from 'lucide-react';
-import { format, addMinutes, isWithinInterval } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
-// Definir interfaces com base nos dados reais
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PersonalInfoFields from './PersonalInfoFields';
+import ServiceSelection from './ServiceSelection';
+import AppointmentDateTime from './AppointmentDateTime';
+import NotesField from './NotesField';
+import { AppointmentFormData } from '@/types/appointment';
+
+interface Staff {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  specialties?: string;
+  is_active: boolean;
+}
+
 interface Service {
   id: string;
   name: string;
-  duration: number;
   price: number;
-  created_at: string;
-  description: string;
+  duration: number;
+  description?: string;
   is_active: boolean;
-  updated_at: string;
-}
-
-interface Barber {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
   created_at: string;
   updated_at: string;
-  // Adicionando propriedades opcionais para evitar erros
-  workingHours?: any;
 }
 
-interface Client {
-  id: string;
-  name: string;
-  email: string;
+interface FormDataResponse {
+  services: Service[];
+  staffList: Staff[];
+  loading: boolean;
 }
 
-const formSchema = z.object({
-  service_id: z.string().min(1, 'Serviço é obrigatório'),
-  staff_id: z.string().min(1, 'Barbeiro é obrigatório'),
-  date: z.date({
-    required_error: 'Data é obrigatória',
-  }),
-  time: z.string()
-    .min(1, 'Horário é obrigatório')
-    .refine(time => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time), {
-      message: 'Formato de horário inválido (HH:MM)'
-    }),
-  notes: z.string().optional(),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-// Componente para resumo de erros
-const FormErrorsSummary = ({ errors }: { errors: FieldErrors<FormData> }) => {
-  const messages = Object.keys(errors).map((name) => {
-    const key = name as keyof FormData;
-    return errors[key]?.message;
-  }).filter(Boolean);
-
-  if (messages.length === 0) return null;
-
-  return (
-    <div className="text-red-500 bg-red-500/10 p-4 rounded-md mb-6">
-      <h3 className="font-bold">Por favor, corrija os seguintes erros:</h3>
-      <ul className="list-disc pl-5 mt-2">
-        {messages.map((message, index) => (
-          <li key={index}>{message}</li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-export const ClientBookingForm: React.FC = () => {
-  const navigate = useNavigate();
-  const { client } = useClientAuth();
+const ClientBookingForm: React.FC = () => {
   const { toast } = useToast();
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [formData, setFormData] = useState<AppointmentFormData>({
+    name: '',
+    phone: '',
+    email: '',
+    whatsapp: '',
+    service: '',
+    barber: '',
+    date: '',
+    time: '',
+    notes: ''
+  });
   
-  const { services, barbers, loading } = useClientFormData();
-  const { handleSubmit: submitForm, isLoading: submitting } = useClientFormSubmit({
-    clientId: client?.id || '',
-    onSuccess: () => navigate('/cliente/dashboard')
+  const [dataResponse, setDataResponse] = useState<FormDataResponse>({
+    services: [],
+    staffList: [],
+    loading: true
   });
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      service_id: '',
-      staff_id: '',
-      date: undefined,
-      time: '',
-      notes: '',
-    },
-  });
-
-  // Observar valores para resetar dependências
-  const selectedDate = form.watch('date');
-  const selectedTime = form.watch('time');
-  const selectedStaffId = form.watch('staff_id');
+  
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!client) {
-      navigate('/cliente/login');
-      return;
-    }
-  }, [client, navigate]);
+    fetchFormData();
+  }, []);
 
-  const handleServiceChange = (serviceId: string) => {
-    const service = services.find(s => s.id === serviceId);
-    if (service) {
-      setSelectedService(service);
-    }
-  };
-
-  const generateTimeSlots = (): string[] => {
-    const slots: string[] = [];
-    
-    // Horário de funcionamento padrão
-    const startHour = 9;
-    const endHour = 20;
-    
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(timeString);
-      }
-    }
-    
-    return slots;
-  };
-
-  const timeSlots = generateTimeSlots();
-  const availableTimeSlots = timeSlots;
-
-  const handleConfirmBooking = async (data: FormData) => {
-    setIsConfirming(true);
+  const fetchFormData = async () => {
     try {
-      const validatedData = {
-        service_id: data.service_id,
-        staff_id: data.staff_id,
-        date: data.date,
-        time: data.time,
-        notes: data.notes,
-      };
-      
-      await submitForm(validatedData, selectedService);
-    } catch (err) {
+      setDataResponse(prev => ({ ...prev, loading: true }));
+
+      // Fetch services
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (servicesError) throw servicesError;
+
+      // Fetch staff (changed from barbers to staff)
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (staffError) throw staffError;
+
+      setDataResponse({
+        services: servicesData || [],
+        staffList: staffData || [],
+        loading: false
+      });
+
+    } catch (error) {
+      console.error('Error fetching form data:', error);
       toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao confirmar o agendamento',
-        variant: 'destructive',
+        title: "Erro ao carregar dados",
+        description: "Não foi possível carregar os serviços e profissionais.",
+        variant: "destructive",
+      });
+      setDataResponse(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleSelectChange = (value: string, field: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleInputChange = (value: string, field: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+
+    try {
+      // Basic validation
+      if (!formData.name || !formData.phone || !formData.service || !formData.date || !formData.time) {
+        throw new Error('Por favor, preencha todos os campos obrigatórios.');
+      }
+
+      // Create or find client
+      let clientId: string;
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('phone', formData.phone)
+        .single();
+
+      if (existingClient) {
+        clientId = existingClient.id;
+      } else {
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert({
+            name: formData.name,
+            phone: formData.phone,
+            email: formData.email || null,
+            whatsapp: formData.whatsapp || null
+          })
+          .select('id')
+          .single();
+
+        if (clientError) throw clientError;
+        clientId = newClient.id;
+      }
+
+      // Get service details
+      const selectedService = dataResponse.services.find(s => s.id === formData.service);
+      if (!selectedService) throw new Error('Serviço não encontrado');
+
+      // Create appointment
+      const startDateTime = new Date(`${formData.date}T${formData.time}`);
+      const endDateTime = new Date(startDateTime.getTime() + selectedService.duration * 60000);
+
+      const appointmentData = {
+        client_id: clientId,
+        service_id: formData.service,
+        staff_id: formData.barber === 'any' ? null : formData.barber,
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
+        status: 'scheduled' as const,
+        notes: formData.notes || null
+      };
+
+      const { error: appointmentError } = await supabase
+        .from('appointments')
+        .insert(appointmentData);
+
+      if (appointmentError) throw appointmentError;
+
+      toast({
+        title: "Agendamento realizado!",
+        description: "Seu agendamento foi confirmado. Você receberá uma confirmação em breve.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        whatsapp: '',
+        service: '',
+        barber: '',
+        date: '',
+        time: '',
+        notes: ''
+      });
+
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      toast({
+        title: "Erro no agendamento",
+        description: error instanceof Error ? error.message : "Não foi possível criar o agendamento.",
+        variant: "destructive",
       });
     } finally {
-      setIsConfirming(false);
+      setSubmitting(false);
     }
   };
 
-  const onSubmit = async (data: FormData) => {
-    // Exibir confirmação antes de submeter
-    setIsConfirming(true);
-  };
-
-  if (!client) return null;
-
-  if (loading) {
+  if (dataResponse.loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="flex items-center space-x-2 text-white">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span>Carregando dados...</span>
-        </div>
-      </div>
+      <Card className="max-w-2xl mx-auto">
+        <CardContent className="p-6">
+          <div className="text-center">Carregando...</div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center mb-8">
-          <Button
-            onClick={() => navigate('/cliente/dashboard')}
-            variant="outline"
-            className="mr-4 border-gray-600 text-gray-300 hover:bg-gray-800"
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Agendar Serviço</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <PersonalInfoFields 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+          />
+          
+          <ServiceSelection 
+            formData={formData} 
+            handleSelectChange={handleSelectChange}
+          />
+          
+          <AppointmentDateTime 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+          />
+          
+          <NotesField 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+          />
+
+          <Button 
+            type="submit" 
+            disabled={submitting} 
+            className="w-full"
           >
-            <ArrowLeft className="h-4 w-4" />
+            {submitting ? 'Agendando...' : 'Confirmar Agendamento'}
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-white font-clash">
-              Novo Agendamento
-            </h1>
-            <p className="text-[#9CA3AF] font-inter">
-              Agende seu horário com nossos barbeiros qualificados
-            </p>
-          </div>
-        </div>
-
-        <Card className="bg-[#111827] border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Dados do Agendamento</CardTitle>
-            <CardDescription className="text-[#9CA3AF]">
-              Preencha os dados do seu agendamento
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Resumo de erros */}
-                <FormErrorsSummary errors={form.formState.errors} />
-
-                <div>
-                  <FormLabel className="text-white">Cliente</FormLabel>
-                  <Input
-                    value={client.name}
-                    disabled
-                    className="bg-[#1F2937] border-gray-600 text-white"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <ClientServiceSelect 
-                    services={services}
-                    form={form}
-                    onServiceChange={handleServiceChange}
-                  />
-                  
-                  <ClientStaffSelect 
-                    barbers={barbers}
-                    form={form}
-                    selectedDate={selectedDate}
-                    selectedTime={selectedTime}
-                    serviceDuration={selectedService?.duration}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">Data *</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className="w-full justify-start text-left font-normal bg-[#1F2937] border-gray-600 text-white hover:bg-gray-800"
-                              >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {field.value ? format(field.value, "PPP", { locale: ptBR }) : "Selecione a data"}
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={(date) => {
-                                if (date) {
-                                  field.onChange(date);
-                                  form.setValue('time', '');
-                                }
-                              }}
-                              disabled={(date) => date < new Date() || date.getDay() === 0}
-                              initialFocus
-                              locale={ptBR}
-                              weekStartsOn={1}
-                              fromDate={new Date()}
-                              toDate={new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)} // 60 dias
-                              captionLayout="dropdown"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">Horário *</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                          disabled={!selectedDate}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-[#1F2937] border-gray-600 text-white">
-                              <SelectValue placeholder="Selecione o horário" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="bg-[#1F2937] border-gray-600 max-h-60">
-                            {availableTimeSlots.length > 0 ? (
-                              availableTimeSlots.map((time) => (
-                                <SelectItem 
-                                  key={time} 
-                                  value={time}
-                                  className="text-white hover:bg-gray-700 focus:bg-gray-700"
-                                >
-                                  <div className="flex items-center">
-                                    <Clock className="mr-2 h-4 w-4" />
-                                    {time}
-                                  </div>
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="text-center py-4 text-gray-400">
-                                Selecione uma data primeiro
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Observações</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="Observações adicionais (opcional)"
-                          className="bg-[#1F2937] border-gray-600 text-white placeholder-[#9CA3AF]"
-                          rows={3}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => navigate('/cliente/dashboard')}
-                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
-                    disabled={submitting || isConfirming}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={submitting || isConfirming}
-                    className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
-                  >
-                    {submitting || isConfirming ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {isConfirming ? 'Confirmando...' : 'Agendando...'}
-                      </>
-                    ) : (
-                      'Pré-confirmar Agendamento'
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-
-        {/* Modal de confirmação */}
-        {isConfirming && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <Card className="bg-[#111827] border-gray-700 w-full max-w-md">
-              <CardHeader>
-                <CardTitle className="text-white">Confirmar Agendamento</CardTitle>
-                <CardDescription className="text-[#9CA3AF]">
-                  Revise os detalhes do seu agendamento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <p className="text-gray-400">Serviço:</p>
-                    <p className="text-white">
-                      {selectedService?.name || 'Nenhum serviço selecionado'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Barbeiro:</p>
-                    <p className="text-white">
-                      {barbers.find(b => b.id === form.getValues('staff_id'))?.name || 'Não selecionado'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Data e Horário:</p>
-                    <p className="text-white">
-                      {selectedDate && form.getValues('time') 
-                        ? `${format(selectedDate, "PPP", { locale: ptBR })} às ${form.getValues('time')}`
-                        : 'Não selecionado'}
-                    </p>
-                  </div>
-                  {form.getValues('notes') && (
-                    <div>
-                      <p className="text-gray-400">Observações:</p>
-                      <p className="text-white">{form.getValues('notes')}</p>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsConfirming(false)}
-                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
-                    disabled={submitting}
-                  >
-                    Voltar
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={() => handleConfirmBooking(form.getValues())}
-                    disabled={submitting}
-                    className="flex-1 bg-[#F59E0B] hover:bg-[#D97706] text-black"
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Confirmando...
-                      </>
-                    ) : (
-                      'Confirmar Agendamento'
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-    </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
+
+export default ClientBookingForm;
