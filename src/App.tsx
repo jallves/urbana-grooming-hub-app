@@ -1,18 +1,19 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { QueryClient } from 'react-query';
-import Home from './pages/Home';
-import Services from './pages/Services';
-import Contact from './pages/Contact';
-import Booking from './pages/Booking';
-import Gallery from './pages/Gallery';
-import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminServices from './pages/AdminServices';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Home from './pages/Index';
+import Services from './pages/Index';
+import Contact from './pages/Index';
+import Booking from './pages/Index';
+import Gallery from './pages/Index';
+import AdminLogin from './pages/Auth';
+import AdminDashboard from './pages/Admin';
+import AdminServices from './pages/AdminProducts';
 import AdminAppointments from './pages/AdminAppointments';
 import AdminClients from './pages/AdminClients';
-import AdminStaff from './pages/AdminStaff';
-import AdminCoupons from './pages/AdminCoupons';
+import AdminStaff from './pages/AdminBarbers';
+import AdminCoupons from './pages/AdminMarketing';
 import ClientLogin from './pages/ClientLogin';
 import ClientRegister from './pages/ClientRegister';
 import ClientDashboard from './pages/ClientDashboard';
@@ -20,19 +21,21 @@ import ClientProfile from './pages/ClientProfile';
 import ClientEditAppointment from './pages/ClientEditAppointment';
 import { AuthProvider } from './contexts/AuthContext';
 import { ClientAuthProvider } from './contexts/ClientAuthContext';
-import BarberLogin from './pages/BarberLogin';
+import BarberLogin from './pages/BarberAuth';
 import BarberDashboard from './pages/BarberDashboard';
-import PublicBooking from './pages/PublicBooking';
+import PublicBooking from './pages/BookingOnline';
 import AdminRoute from './components/auth/AdminRoute';
 import BarberRoute from './components/auth/BarberRoute';
-import ClientAppointments from '@/pages/ClientAppointments';
+import ClientAppointments from './pages/ClientAppointments';
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
-    <Router>
-      <ClientAuthProvider>
-        <AuthProvider>
-          <QueryClient>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <ClientAuthProvider>
+          <AuthProvider>
             <div className="min-h-screen bg-white">
               <Routes>
                 {/* Public Routes */}
@@ -68,10 +71,10 @@ function App() {
                 <Route path="*" element={<Home />} />
               </Routes>
             </div>
-          </QueryClient>
-        </AuthProvider>
-      </ClientAuthProvider>
-    </Router>
+          </AuthProvider>
+        </ClientAuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
 
