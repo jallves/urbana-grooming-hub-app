@@ -46,11 +46,9 @@ import BarberModuleAccess from "./pages/BarberModuleAccess";
 import ClientLogin from "./pages/ClientLogin";
 import ClientRegister from "./pages/ClientRegister";
 import ClientDashboard from "./pages/ClientDashboard";
-import ClientNewBooking from "./pages/ClientNewBooking";
 import ClientProfile from "./pages/ClientProfile";
 import ClientEditAppointment from "./pages/ClientEditAppointment";
 
-import AppointmentBooking from "./pages/AppointmentBooking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,13 +69,11 @@ function App() {
                 <Route path="/cadastro" element={<RegisterAuth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/agendamento-online" element={<BookingOnline />} />
-                <Route path="/agendar" element={<AppointmentBooking />} />
 
                 {/* Client Routes */}
                 <Route path="/cliente/login" element={<ClientLogin />} />
                 <Route path="/cliente/registro" element={<ClientRegister />} />
                 <Route path="/cliente/dashboard" element={<ClientDashboard />} />
-                <Route path="/cliente/novo-agendamento" element={<ClientNewBooking />} />
                 <Route path="/cliente/perfil" element={<ClientProfile />} />
                 <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
 

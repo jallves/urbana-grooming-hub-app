@@ -6,7 +6,7 @@ const BookingOnline: React.FC = () => {
     <div className="min-h-screen bg-gray-100 py-12">
       <div className="max-w-4xl mx-auto px-4">
         <h1 className="text-3xl font-bold text-center mb-8">Agendamento Online</h1>
-        <p className="text-center text-gray-600">Página de agendamento online em desenvolvimento.</p>
+        <p className="text-center text-gray-600">Sistema de agendamento em desenvolvimento.</p>
       </div>
     </div>
   );
