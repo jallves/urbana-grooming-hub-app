@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,49 +11,47 @@ import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
 import AppointmentCalendar from '@/components/admin/appointments/calendar/AppointmentCalendar';
 import AppointmentList from '@/components/admin/appointments/list/AppointmentList';
 
-const AdminAppointments: React.FC = () => {
+const AdminAppointments = () => {
   const [activeTab, setActiveTab] = useState<AppointmentViewMode>('calendar');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const setupRealtime = async () => {
-      try {
-        const channel = supabase
-          .channel('appointment-changes')
-          .on(
-            'postgres_changes',
-            { 
-              event: '*', 
-              schema: 'public', 
-              table: 'appointments'
-            },
-            (payload) => {
-              console.log('Change received:', payload);
-              toast.info('Agendamento atualizado', {
-                description: 'Os dados foram atualizados em tempo real'
-              });
-            }
-          )
-          .subscribe();
+    const channel = supabase
+      .channel('appointment-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('Change received:', payload);
+          toast.info('Agendamento atualizado', {
+            description: 'Os dados foram atualizados em tempo real'
+          });
+        }
+      )
+      .subscribe(
+        (status) => {
+          if (status === 'SUBSCRIBED') {
+            toast.success('Conexão estabelecida', {
+              description: 'Monitorando alterações em tempo real'
+            });
+          }
+        },
+        (error) => {
+          toast.error('Erro na conexão', {
+            description: error.message || 'Não foi possível estabelecer monitoramento'
+          });
+        }
+      );
 
-        toast.success('Conexão estabelecida', {
-          description: 'Monitorando alterações em tempo real'
-        });
+    setIsLoading(false);
 
-        setIsLoading(false);
-        
-        return () => {
-          supabase.removeChannel(channel);
-        };
-      } catch (error) {
-        toast.error('Erro na conexão', {
-          description: 'Não foi possível estabelecer monitoramento'
-        });
-        setIsLoading(false);
-      }
+    return () => {
+      supabase.removeChannel(channel);
     };
-
-    setupRealtime();
   }, []);
 
   if (isLoading) {
@@ -76,13 +73,13 @@ const AdminAppointments: React.FC = () => {
                 Visualize e gerencie todos os agendamentos
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download size={16} />
                 Exportar
               </Button>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button size="sm" className="gap-2">
+                <Plus size={16} />
                 Novo Agendamento
               </Button>
             </div>
@@ -90,16 +87,16 @@ const AdminAppointments: React.FC = () => {
 
           <Tabs 
             value={activeTab} 
-            onValueChange={(value) => setActiveTab(value as AppointmentViewMode)}
+            onValueChange={setActiveTab}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="calendar">
-                <Calendar className="h-4 w-4 mr-2" />
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <Calendar size={16} />
                 Calendário
               </TabsTrigger>
-              <TabsTrigger value="list">
-                <List className="h-4 w-4 mr-2" />
+              <TabsTrigger value="list" className="flex items-center gap-2">
+                <List size={16} />
                 Lista
               </TabsTrigger>
             </TabsList>
