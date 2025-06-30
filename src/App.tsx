@@ -1,220 +1,77 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import RegisterAuth from "./pages/RegisterAuth";
-import ResetPassword from "./pages/ResetPassword";
-import BookingOnline from "./pages/BookingOnline";
-import AdminRoute from "./components/auth/AdminRoute";
-import BarberRoute from "./components/auth/BarberRoute";
-
-// Admin Pages
-import Admin from "./pages/Admin";
-import AdminAnalytics from "./pages/AdminAnalytics";
-import AdminAppointments from "./pages/AdminAppointments";
-import AdminClients from "./pages/AdminClients";
-import AdminBarbers from "./pages/AdminBarbers";
-import AdminProducts from "./pages/AdminProducts";
-import AdminFinance from "./pages/AdminFinance";
-import AdminSettings from "./pages/AdminSettings";
-import AdminSupport from "./pages/AdminSupport";
-import AdminMarketing from "./pages/AdminMarketing";
-import AdminBirthdays from "./pages/AdminBirthdays";
-import AdminCashFlow from "./pages/AdminCashFlow";
-import AdminBookingSettings from "./pages/AdminBookingSettings";
-import AdminBarberSchedules from "./pages/AdminBarberSchedules";
-
-// Barber Pages
-import BarberAuth from "./pages/BarberAuth";
-import BarberDashboard from "./pages/BarberDashboard";
-import BarberAdminDashboard from "./pages/BarberAdminDashboard";
-import BarberAppointments from "./pages/BarberAppointments";
-import BarberProfile from "./pages/BarberProfile";
-import BarberCommissions from "./pages/BarberCommissions";
-import BarberClients from "./pages/BarberClients";
-import BarberSchedule from "./pages/BarberSchedule";
-import BarberModules from "./pages/BarberModules";
-import BarberModuleAccess from "./pages/BarberModuleAccess";
-
-// Client Pages
-import ClientLogin from "./pages/ClientLogin";
-import ClientRegister from "./pages/ClientRegister";
-import ClientDashboard from "./pages/ClientDashboard";
-import ClientProfile from "./pages/ClientProfile";
-import ClientEditAppointment from "./pages/ClientEditAppointment";
-
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { QueryClient } from 'react-query';
+import Home from './pages/Home';
+import Services from './pages/Services';
+import Contact from './pages/Contact';
+import Booking from './pages/Booking';
+import Gallery from './pages/Gallery';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminServices from './pages/AdminServices';
+import AdminAppointments from './pages/AdminAppointments';
+import AdminClients from './pages/AdminClients';
+import AdminStaff from './pages/AdminStaff';
+import AdminCoupons from './pages/AdminCoupons';
+import ClientLogin from './pages/ClientLogin';
+import ClientRegister from './pages/ClientRegister';
+import ClientDashboard from './pages/ClientDashboard';
+import ClientProfile from './pages/ClientProfile';
+import ClientEditAppointment from './pages/ClientEditAppointment';
+import { AuthProvider } from './contexts/AuthContext';
+import { ClientAuthProvider } from './contexts/ClientAuthContext';
+import BarberLogin from './pages/BarberLogin';
+import BarberDashboard from './pages/BarberDashboard';
+import PublicBooking from './pages/PublicBooking';
+import AdminRoute from './components/auth/AdminRoute';
+import BarberRoute from './components/auth/BarberRoute';
+import ClientAppointments from '@/pages/ClientAppointments';
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <ClientAuthProvider>
+    <Router>
+      <ClientAuthProvider>
+        <AuthProvider>
+          <QueryClient>
+            <div className="min-h-screen bg-white">
               <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/cadastro" element={<RegisterAuth />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/agendamento-online" element={<BookingOnline />} />
-
-                {/* Client Routes */}
-                <Route path="/cliente/login" element={<ClientLogin />} />
-                <Route path="/cliente/registro" element={<ClientRegister />} />
-                <Route path="/cliente/dashboard" element={<ClientDashboard />} />
-                <Route path="/cliente/perfil" element={<ClientProfile />} />
-                <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
+                <Route path="/" element={<Home />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/booking" element={<Booking />} />
+                <Route path="/gallery" element={<Gallery />} />
+                <Route path="/public-booking" element={<PublicBooking />} />
 
                 {/* Admin Routes */}
-                <Route path="/admin" element={
-                  <AdminRoute>
-                    <Admin />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/analytics" element={
-                  <AdminRoute>
-                    <AdminAnalytics />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/agendamentos" element={
-                  <AdminRoute>
-                    <AdminAppointments />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/clientes" element={
-                  <AdminRoute>
-                    <AdminClients />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/barbeiros" element={
-                  <AdminRoute>
-                    <AdminBarbers />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/barbeiros/horarios" element={
-                  <AdminRoute>
-                    <AdminBarberSchedules />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/produtos" element={
-                  <AdminRoute>
-                    <AdminProducts />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/financeiro" element={
-                  <AdminRoute>
-                    <AdminFinance />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/configuracoes" element={
-                  <AdminRoute>
-                    <AdminSettings />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/suporte" element={
-                  <AdminRoute>
-                    <AdminSupport />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/marketing" element={
-                  <AdminRoute>
-                    <AdminMarketing />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/aniversarios" element={
-                  <AdminRoute>
-                    <AdminBirthdays />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/fluxo-caixa" element={
-                  <AdminRoute>
-                    <AdminCashFlow />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/configuracoes-agendamento" element={
-                  <AdminRoute>
-                    <AdminBookingSettings />
-                  </AdminRoute>
-                } />
-                <Route path="/admin/horarios-barbeiros" element={
-                  <AdminRoute>
-                    <AdminBarberSchedules />
-                  </AdminRoute>
-                } />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                <Route path="/admin/services" element={<AdminRoute><AdminServices /></AdminRoute>} />
+                <Route path="/admin/appointments" element={<AdminRoute><AdminAppointments /></AdminRoute>} />
+                <Route path="/admin/clients" element={<AdminRoute><AdminClients /></AdminRoute>} />
+                <Route path="/admin/staff" element={<AdminRoute><AdminStaff /></AdminRoute>} />
+                <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
 
                 {/* Barber Routes */}
-                <Route path="/barbeiro/login" element={<BarberAuth />} />
-                <Route path="/barbeiro" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberDashboard />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/dashboard" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberDashboard />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/admin" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberAdminDashboard />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/agendamentos" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberAppointments />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/perfil" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberProfile />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/comissoes" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberCommissions />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/clientes" element={
-                  <BarberRoute allowBarber={true} requiredModule="clients">
-                    <BarberClients />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/agenda" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberSchedule />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/modulos" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberModules />
-                  </BarberRoute>
-                } />
-                <Route path="/barbeiro/acesso-modulos" element={
-                  <BarberRoute allowBarber={true}>
-                    <BarberModuleAccess />
-                  </BarberRoute>
-                } />
-
-                {/* 404 */}
-                <Route path="*" element={<NotFound />} />
+                <Route path="/barber/login" element={<BarberLogin />} />
+                <Route path="/barber/dashboard" element={<BarberRoute><BarberDashboard /></BarberRoute>} />
+                
+                {/* Client Routes */}
+                <Route path="/client/login" element={<ClientLogin />} />
+                <Route path="/client/register" element={<ClientRegister />} />
+                <Route path="/client/dashboard" element={<ClientDashboard />} />
+                <Route path="/client/profile" element={<ClientProfile />} />
+                <Route path="/client/appointments" element={<ClientAppointments />} />
+                <Route path="/client/edit-appointment/:id" element={<ClientEditAppointment />} />
+                
+                {/* Default Route */}
+                <Route path="*" element={<Home />} />
               </Routes>
-            </ClientAuthProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+            </div>
+          </QueryClient>
+        </AuthProvider>
+      </ClientAuthProvider>
+    </Router>
   );
 }
 
