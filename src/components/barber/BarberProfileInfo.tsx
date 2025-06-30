@@ -20,9 +20,9 @@ const BarberProfileInfo: React.FC = () => {
       }
 
       try {
-        // FIX: use 'barbers'
+        // Use 'staff' table instead of 'barbers'
         const { data, error } = await supabase
-          .from('barbers')
+          .from('staff')
           .select('*')
           .eq('email', user.email)
           .eq('role', 'barber')

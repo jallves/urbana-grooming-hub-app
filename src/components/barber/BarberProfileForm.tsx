@@ -44,9 +44,9 @@ export default function BarberProfileForm() {
     if (!barber?.id) return;
 
     try {
-      // Fetch barber profile from barbers table
+      // Fetch barber profile from staff table
       const { data, error } = await supabase
-        .from('barbers')
+        .from('staff')
         .select('*')
         .eq('id', barber.id)
         .single();
@@ -57,14 +57,24 @@ export default function BarberProfileForm() {
       }
 
       if (data) {
-        setProfile(data);
+        const staffData = data as any;
+        setProfile({
+          id: staffData.id,
+          name: staffData.name || '',
+          email: staffData.email || '',
+          phone: staffData.phone || '',
+          image_url: staffData.image_url || '',
+          specialties: staffData.specialties || '',
+          experience: staffData.experience || '',
+          commission_rate: staffData.commission_rate || 0,
+        });
         setFormData({
-          name: data.name || '',
-          phone: data.phone || '',
-          email: data.email || '',
-          experience: data.experience || '',
-          specialties: data.specialties || '',
-          commission_rate: data.commission_rate || 0,
+          name: staffData.name || '',
+          phone: staffData.phone || '',
+          email: staffData.email || '',
+          experience: staffData.experience || '',
+          specialties: staffData.specialties || '',
+          commission_rate: staffData.commission_rate || 0,
         });
       }
     } catch (error) {
@@ -79,7 +89,7 @@ export default function BarberProfileForm() {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('barbers')
+        .from('staff')
         .update({
           name: formData.name,
           phone: formData.phone,

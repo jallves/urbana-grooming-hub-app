@@ -113,20 +113,20 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, o
           
           <ClientServiceSelect
             services={services}
-            value={formData.service}
-            onValueChange={(value) => handleSelectChange(value, 'service')}
+            selectedService={formData.service}
+            onServiceChange={(value) => handleSelectChange(value, 'service')}
           />
           
           <BarbershopStaffSelect
-            staff={staffList}
-            value={formData.barber}
-            onValueChange={(value) => handleSelectChange(value, 'barber')}
+            staffList={staffList}
+            selectedStaff={formData.barber}
+            onStaffChange={(value) => handleSelectChange(value, 'barber')}
           />
           
           <DateTimePicker
-            date={formData.date}
-            time={formData.time}
-            onDateChange={(value) => handleInputChange(value, 'date')}
+            selectedDate={formData.date}
+            selectedTime={formData.time}
+            onDateChange={(value) => handleInputChange(value.toISOString().split('T')[0], 'date')}
             onTimeChange={(value) => handleInputChange(value, 'time')}
           />
           
