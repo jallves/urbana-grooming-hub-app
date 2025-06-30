@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -14,7 +15,7 @@ import { Service } from '@/types/appointment';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientFormData } from './hooks/useClientFormData';
 import ServiceSelectionStep from './wizard/ServiceSelectionStep';
-import StaffSelectionStep from './wizard/StaffSelectionStep'; // import correto
+import StaffSelectionStep from './wizard/StaffSelectionStep';
 import TimeSelectionStep from './wizard/TimeSelectionStep';
 import ConfirmationStep from './wizard/ConfirmationStep';
 
@@ -103,8 +104,15 @@ export const BookingWizard: React.FC = () => {
         }
       );
 
-      if (validationError || !validationData?.valid) {
-        throw new Error(validationError?.message || validationData?.error || 'Erro ao validar agendamento.');
+      if (validationError) {
+        throw new Error(validationError.message || 'Erro ao validar agendamento.');
+      }
+
+      // Type assertion para tratar o tipo Json
+      const validation = validationData as { valid: boolean; error?: string };
+      
+      if (!validation?.valid) {
+        throw new Error(validation?.error || 'Erro ao validar agendamento.');
       }
 
       const { error: insertError } = await supabase
@@ -181,7 +189,7 @@ export const BookingWizard: React.FC = () => {
             selectedTime={bookingData.time}
             onDateSelect={(date) => updateBookingData({ date, time: undefined })}
             onTimeSelect={(time) => updateBookingData({ time })}
-            selectedBarber={bookingData.staff} // aqui poderia renomear para selectedStaff no futuro
+            selectedBarber={bookingData.staff}
             selectedService={bookingData.service}
           />
         );

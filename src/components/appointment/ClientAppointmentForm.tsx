@@ -43,7 +43,7 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
   
-  const { services, barbers, loading } = useClientFormData();
+  const { services, staffList, loading } = useClientFormData();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -151,7 +151,7 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
               />
               
               <BarbershopStaffSelect 
-                staffMembers={barbers}
+                staffMembers={staffList}
                 form={form}
               />
             </div>

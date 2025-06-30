@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Service } from '@/types/appointment';
@@ -21,7 +22,9 @@ export function useClientFormData() {
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log('[useClientFormData] Iniciando busca de dados...');
       setLoading(true);
+      
       try {
         // Buscar serviços
         const { data: servicesData, error: servicesError } = await supabase
@@ -31,12 +34,13 @@ export function useClientFormData() {
           .order('name', { ascending: true });
 
         if (servicesError) {
-          console.error('Erro ao buscar serviços:', servicesError);
+          console.error('[useClientFormData] Erro ao buscar serviços:', servicesError);
         } else {
+          console.log('[useClientFormData] Serviços carregados:', servicesData?.length || 0);
           setServices(servicesData || []);
         }
 
-        // Buscar staff (antigo barbeiros)
+        // Buscar staff (da tabela correta 'staff', não 'barbers')
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
           .select('*')
@@ -44,15 +48,17 @@ export function useClientFormData() {
           .order('name', { ascending: true });
 
         if (staffError) {
-          console.error('Erro ao buscar staff:', staffError);
+          console.error('[useClientFormData] Erro ao buscar staff:', staffError);
         } else {
+          console.log('[useClientFormData] Staff carregado:', staffData?.length || 0, staffData);
           setStaffList(staffData || []);
         }
 
       } catch (error) {
-        console.error('Erro ao buscar dados do formulário:', error);
+        console.error('[useClientFormData] Erro geral ao buscar dados:', error);
       } finally {
         setLoading(false);
+        console.log('[useClientFormData] Busca finalizada');
       }
     };
 
