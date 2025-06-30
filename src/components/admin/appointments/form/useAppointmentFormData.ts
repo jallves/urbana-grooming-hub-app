@@ -51,7 +51,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
           *,
           clients(*),
           services(*),
-          barbers(*)
+          staff(*)
         `)
         .eq('id', appointmentId)
         .single();
@@ -77,15 +77,14 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     },
   });
 
-  // Fetch staff (agora só barbeiros)
+  // Fetch staff
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['barbers'],
+    queryKey: ['staff'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('barbers')
+        .from('staff')
         .select('*')
         .eq('is_active', true)
-        .eq('role', 'barber')
         .order('name');
       if (error) throw new Error(error.message);
       return data as StaffMember[];

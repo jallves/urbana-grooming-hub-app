@@ -1,426 +1,377 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { CalendarIcon, DollarSign, Users, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { format, parseISO } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Check, Clock, DollarSign, User, Search, Calendar } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-interface CommissionData {
+interface Commission {
   id: string;
-  barber_id: string;
-  appointment_id: string;
   amount: number;
   commission_rate: number;
-  status: 'pending' | 'paid';
+  status: string;
   created_at: string;
-  payment_date?: string;
-  barbers: {
+  payment_date: string | null;
+  staff: {
+    id: string;
     name: string;
-    email: string;
   };
   appointments: {
+    id: string;
     start_time: string;
-    clients: {
-      name: string;
-    };
     services: {
       name: string;
       price: number;
     };
+    clients: {
+      name: string;
+    };
   };
 }
 
-const CommissionPayments: React.FC = () => {
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [barberFilter, setBarberFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCommissions, setSelectedCommissions] = useState<string[]>([]);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+}
 
-  // Fetch commissions data
-  const { data: commissions = [], isLoading, refetch } = useQuery({
-    queryKey: ['barber-commissions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
+const CommissionPayments: React.FC = () => {
+  const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [selectedStaff, setSelectedStaff] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [selectedCommissions, setSelectedCommissions] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchCommissions();
+    fetchStaffMembers();
+  }, [selectedStaff, statusFilter]);
+
+  const fetchCommissions = async () => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
         .from('barber_commissions')
         .select(`
           *,
-          barbers:barber_id (
-            name,
-            email
-          ),
-          appointments:appointment_id (
+          staff!barber_id(id, name),
+          appointments!appointment_id(
+            id,
             start_time,
-            clients:client_id (
-              name
-            ),
-            services:service_id (
-              name,
-              price
-            )
+            services(name, price),
+            clients(name)
           )
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as CommissionData[];
-    }
-  });
+      if (selectedStaff) {
+        query = query.eq('barber_id', selectedStaff);
+      }
 
-  // Fetch barbers for filter
-  const { data: barbers = [] } = useQuery({
-    queryKey: ['barbers-list'],
-    queryFn: async () => {
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setCommissions(data || []);
+    } catch (error) {
+      console.error('Error fetching commissions:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as comissões.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStaffMembers = async () => {
+    try {
       const { data, error } = await supabase
-        .from('barbers')
-        .select('id, name')
-        .eq('role', 'barber')
+        .from('staff')
+        .select('id, name, email')
+        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
-      return data;
-    }
-  });
 
-  // Payment mutation
-  const payCommissionMutation = useMutation({
-    mutationFn: async (commissionIds: string[]) => {
+      setStaffMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching staff members:', error);
+    }
+  };
+
+  const handlePayCommission = async (commissionId: string) => {
+    try {
       const { error } = await supabase
         .from('barber_commissions')
-        .update({ 
-          status: 'paid', 
-          payment_date: new Date().toISOString() 
+        .update({
+          status: 'paid',
+          payment_date: new Date().toISOString()
         })
-        .in('id', commissionIds);
+        .eq('id', commissionId);
 
       if (error) throw error;
-    },
-    onSuccess: () => {
+
       toast({
-        title: "Comissões pagas com sucesso!",
-        description: "As comissões selecionadas foram marcadas como pagas.",
+        title: "Sucesso",
+        description: "Comissão marcada como paga.",
       });
-      queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
-      setSelectedCommissions([]);
-      setIsPaymentDialogOpen(false);
-    },
-    onError: (error: any) => {
+
+      fetchCommissions();
+    } catch (error) {
+      console.error('Error updating commission:', error);
       toast({
-        title: "Erro ao processar pagamento",
-        description: error.message,
+        title: "Erro",
+        description: "Não foi possível atualizar a comissão.",
         variant: "destructive",
       });
     }
-  });
-
-  // Filter commissions
-  const filteredCommissions = commissions.filter(commission => {
-    // Status filter
-    if (statusFilter !== 'all' && commission.status !== statusFilter) {
-      return false;
-    }
-
-    // Barber filter
-    if (barberFilter !== 'all' && commission.barber_id !== barberFilter) {
-      return false;
-    }
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const barberName = commission.barbers?.name?.toLowerCase() || '';
-      const clientName = commission.appointments?.clients?.name?.toLowerCase() || '';
-      const serviceName = commission.appointments?.services?.name?.toLowerCase() || '';
-      
-      return barberName.includes(query) || clientName.includes(query) || serviceName.includes(query);
-    }
-
-    return true;
-  });
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
   };
 
-  const formatDate = (dateString: string) => {
+  const handleBulkPayment = async () => {
+    if (selectedCommissions.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Selecione pelo menos uma comissão para pagamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      return format(parseISO(dateString), "dd/MM/yyyy HH:mm", { locale: ptBR });
-    } catch (e) {
-      return dateString;
-    }
-  };
+      const { error } = await supabase
+        .from('barber_commissions')
+        .update({
+          status: 'paid',
+          payment_date: new Date().toISOString()
+        })
+        .in('id', selectedCommissions);
 
-  const handleSelectCommission = (commissionId: string) => {
-    setSelectedCommissions(prev => 
-      prev.includes(commissionId)
-        ? prev.filter(id => id !== commissionId)
-        : [...prev, commissionId]
-    );
-  };
+      if (error) throw error;
 
-  const handleSelectAll = () => {
-    const pendingCommissions = filteredCommissions
-      .filter(c => c.status === 'pending')
-      .map(c => c.id);
-    
-    if (selectedCommissions.length === pendingCommissions.length) {
+      toast({
+        title: "Sucesso",
+        description: `${selectedCommissions.length} comissões marcadas como pagas.`,
+      });
+
       setSelectedCommissions([]);
-    } else {
-      setSelectedCommissions(pendingCommissions);
+      fetchCommissions();
+    } catch (error) {
+      console.error('Error bulk updating commissions:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar as comissões selecionadas.",
+        variant: "destructive",
+      });
     }
   };
 
-  const pendingCommissions = filteredCommissions.filter(c => c.status === 'pending');
-  const selectedAmount = filteredCommissions
-    .filter(c => selectedCommissions.includes(c.id))
-    .reduce((sum, c) => sum + Number(c.amount), 0);
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary">Pendente</Badge>;
+      case 'paid':
+        return <Badge className="bg-green-600">Pago</Badge>;
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelado</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
 
-  // Statistics
-  const totalPending = commissions
+  const totalPendingAmount = commissions
     .filter(c => c.status === 'pending')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
-  
-  const totalPaid = commissions
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const totalPaidAmount = commissions
     .filter(c => c.status === 'paid')
-    .reduce((sum, c) => sum + Number(c.amount), 0);
+    .reduce((sum, c) => sum + c.amount, 0);
 
   return (
     <div className="space-y-6">
-      {/* Statistics Cards */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardContent className="p-6 flex items-center">
-            <div className="rounded-full bg-yellow-100 p-3 mr-4">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Comissões Pendentes</div>
-              <div className="text-xl font-bold text-yellow-600">{formatCurrency(totalPending)}</div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Comissões Pendentes</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">R$ {totalPendingAmount.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 flex items-center">
-            <div className="rounded-full bg-green-100 p-3 mr-4">
-              <Check className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Comissões Pagas</div>
-              <div className="text-xl font-bold text-green-600">{formatCurrency(totalPaid)}</div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Comissões Pagas</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">R$ {totalPaidAmount.toFixed(2)}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6 flex items-center">
-            <div className="rounded-full bg-blue-100 p-3 mr-4">
-              <DollarSign className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <div className="text-sm text-gray-500">Total Geral</div>
-              <div className="text-xl font-bold">{formatCurrency(totalPending + totalPaid)}</div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Comissões</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{commissions.length}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Actions */}
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Gerenciar Comissões</CardTitle>
+          <CardTitle>Filtros</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por barbeiro, cliente ou serviço..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="staff-select">Profissional</Label>
+              <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os profissionais" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os profissionais</SelectItem>
+                  {staffMembers.map((staff) => (
+                    <SelectItem key={staff.id} value={staff.id}>
+                      {staff.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Status</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="paid">Pago</SelectItem>
-              </SelectContent>
-            </Select>
 
-            <Select value={barberFilter} onValueChange={setBarberFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Barbeiro" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Barbeiros</SelectItem>
-                {barbers.map((barber) => (
-                  <SelectItem key={barber.id} value={barber.id}>
-                    {barber.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div>
+              <Label htmlFor="status-select">Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="paid">Pago</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Bulk Actions */}
           {selectedCommissions.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="font-medium">{selectedCommissions.length} comissões selecionadas</span>
-                  <span className="text-gray-500 ml-2">- Total: {formatCurrency(selectedAmount)}</span>
-                </div>
-                <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-green-600 hover:bg-green-700">
-                      Pagar Comissões Selecionadas
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Confirmar Pagamento</DialogTitle>
-                      <DialogDescription>
-                        Você está prestes a marcar {selectedCommissions.length} comissões como pagas.
-                        Valor total: {formatCurrency(selectedAmount)}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsPaymentDialogOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button
-                        onClick={() => payCommissionMutation.mutate(selectedCommissions)}
-                        disabled={payCommissionMutation.isPending}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        {payCommissionMutation.isPending ? 'Processando...' : 'Confirmar Pagamento'}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                {selectedCommissions.length} comissões selecionadas
+              </span>
+              <Button onClick={handleBulkPayment} size="sm">
+                Marcar como Pagas
+              </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
 
-          {/* Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <input
-                      type="checkbox"
-                      checked={selectedCommissions.length === pendingCommissions.length && pendingCommissions.length > 0}
-                      onChange={handleSelectAll}
-                      className="rounded"
-                    />
-                  </TableHead>
-                  <TableHead>Barbeiro</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Serviço</TableHead>
-                  <TableHead>Valor Serviço</TableHead>
-                  <TableHead>Taxa (%)</TableHead>
-                  <TableHead>Comissão</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8">
-                      Carregando...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredCommissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8">
-                      Nenhuma comissão encontrada
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCommissions.map((commission) => (
-                    <TableRow key={commission.id}>
-                      <TableCell>
-                        {commission.status === 'pending' && (
-                          <input
-                            type="checkbox"
-                            checked={selectedCommissions.includes(commission.id)}
-                            onChange={() => handleSelectCommission(commission.id)}
-                            className="rounded"
-                          />
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <User className="h-4 w-4 mr-2" />
-                          {commission.barbers?.name}
-                        </div>
-                      </TableCell>
-                      <TableCell>{commission.appointments?.clients?.name}</TableCell>
-                      <TableCell>{commission.appointments?.services?.name}</TableCell>
-                      <TableCell>{formatCurrency(Number(commission.appointments?.services?.price || 0))}</TableCell>
-                      <TableCell>{commission.commission_rate}%</TableCell>
-                      <TableCell className="font-medium">{formatCurrency(Number(commission.amount))}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          {formatDate(commission.created_at)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={commission.status === 'paid' ? 'default' : 'secondary'}>
-                          {commission.status === 'paid' ? 'Pago' : 'Pendente'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
+      {/* Commissions Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Comissões</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-4">Carregando...</div>
+          ) : commissions.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              Nenhuma comissão encontrada.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">
+                      <input
+                        type="checkbox"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCommissions(commissions.map(c => c.id));
+                          } else {
+                            setSelectedCommissions([]);
+                          }
+                        }}
+                      />
+                    </th>
+                    <th className="text-left p-2">Profissional</th>
+                    <th className="text-left p-2">Cliente</th>
+                    <th className="text-left p-2">Serviço</th>
+                    <th className="text-left p-2">Data</th>
+                    <th className="text-left p-2">Valor</th>
+                    <th className="text-left p-2">Taxa</th>
+                    <th className="text-left p-2">Comissão</th>
+                    <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {commissions.map((commission) => (
+                    <tr key={commission.id} className="border-b hover:bg-muted/50">
+                      <td className="p-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedCommissions.includes(commission.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCommissions([...selectedCommissions, commission.id]);
+                            } else {
+                              setSelectedCommissions(selectedCommissions.filter(id => id !== commission.id));
+                            }
+                          }}
+                        />
+                      </td>
+                      <td className="p-2">{commission.staff?.name}</td>
+                      <td className="p-2">{commission.appointments?.clients?.name}</td>
+                      <td className="p-2">{commission.appointments?.services?.name}</td>
+                      <td className="p-2">
+                        {format(new Date(commission.appointments?.start_time), 'dd/MM/yyyy', { locale: ptBR })}
+                      </td>
+                      <td className="p-2">R$ {commission.appointments?.services?.price?.toFixed(2)}</td>
+                      <td className="p-2">{commission.commission_rate}%</td>
+                      <td className="p-2">R$ {commission.amount.toFixed(2)}</td>
+                      <td className="p-2">{getStatusBadge(commission.status)}</td>
+                      <td className="p-2">
                         {commission.status === 'pending' && (
                           <Button
                             size="sm"
-                            onClick={() => {
-                              setSelectedCommissions([commission.id]);
-                              setIsPaymentDialogOpen(true);
-                            }}
-                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => handlePayCommission(commission.id)}
                           >
                             Pagar
                           </Button>
                         )}
-                        {commission.status === 'paid' && commission.payment_date && (
-                          <span className="text-sm text-gray-500">
-                            Pago em {formatDate(commission.payment_date)}
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

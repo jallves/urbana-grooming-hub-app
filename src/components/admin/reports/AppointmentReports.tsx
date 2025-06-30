@@ -1,299 +1,272 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, Users, TrendingUp, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
-interface StaffPerformance {
-  staff: string;
+interface AppointmentStats {
   total: number;
   completed: number;
-  rate: number;
+  cancelled: number;
+  pending: number;
+  revenue: number;
+}
+
+interface StaffPerformance {
+  staff_id: string;
+  staff_name: string;
+  total_appointments: number;
+  completed_appointments: number;
+  revenue: number;
 }
 
 const AppointmentReports: React.FC = () => {
-  // Fetch appointments data
-  const { data: appointmentsData, isLoading: isLoadingAppointments } = useQuery({
-    queryKey: ['appointment-reports'],
-    queryFn: async () => {
-      const { data: appointments, error } = await supabase
-        .from('appointments')
-        .select('*, services(name), barbers(name)')
-        .gte('start_time', new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString())
-        .order('start_time');
-      
-      if (error) throw new Error(error.message);
-      
-      return appointments;
-    }
+  const [stats, setStats] = useState<AppointmentStats>({
+    total: 0,
+    completed: 0,
+    cancelled: 0,
+    pending: 0,
+    revenue: 0
   });
+  const [staffPerformance, setStaffPerformance] = useState<StaffPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<string>('month');
 
-  // Process monthly appointment data
-  const monthlyData = React.useMemo(() => {
-    if (!appointmentsData) return [];
+  useEffect(() => {
+    fetchReports();
+  }, [dateRange]);
+
+  const getDateRange = () => {
+    const now = new Date();
     
-    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const currentMonth = new Date().getMonth();
-    const monthlyStats = [];
-    
-    for (let i = 5; i >= 0; i--) {
-      const monthIndex = (currentMonth - i + 12) % 12;
-      const monthAppointments = appointmentsData.filter(apt => {
-        const appointmentMonth = new Date(apt.start_time).getMonth();
-        return appointmentMonth === monthIndex;
-      });
-      
-      const completed = monthAppointments.filter(apt => apt.status === 'completed').length;
-      const cancelled = monthAppointments.filter(apt => apt.status === 'cancelled').length;
-      const scheduled = monthAppointments.filter(apt => apt.status === 'scheduled').length;
-      
-      monthlyStats.push({
-        month: months[monthIndex],
-        completed,
-        cancelled,
-        scheduled,
-        total: monthAppointments.length
-      });
+    switch (dateRange) {
+      case 'week':
+        return {
+          startDate: startOfWeek(now, { weekStartsOn: 1 }),
+          endDate: endOfWeek(now, { weekStartsOn: 1 })
+        };
+      case 'month':
+        return {
+          startDate: startOfMonth(now),
+          endDate: endOfMonth(now)
+        };
+      case 'year':
+        return {
+          startDate: new Date(now.getFullYear(), 0, 1),
+          endDate: new Date(now.getFullYear(), 11, 31)
+        };
+      default:
+        return {
+          startDate: startOfMonth(now),
+          endDate: endOfMonth(now)
+        };
     }
-    
-    return monthlyStats;
-  }, [appointmentsData]);
+  };
 
-  // Process status distribution
-  const statusData = React.useMemo(() => {
-    if (!appointmentsData) return [];
-    
-    const statusCounts = {
-      completed: 0,
-      scheduled: 0,
-      cancelled: 0,
-      'no-show': 0
-    };
-    
-    appointmentsData.forEach(apt => {
-      if (statusCounts[apt.status as keyof typeof statusCounts] !== undefined) {
-        statusCounts[apt.status as keyof typeof statusCounts]++;
-      }
-    });
-    
-    return Object.entries(statusCounts).map(([status, count]) => ({
-      name: status === 'completed' ? 'Concluído' : 
-            status === 'scheduled' ? 'Agendado' :
-            status === 'cancelled' ? 'Cancelado' : 'Não Compareceu',
-      value: count
-    }));
-  }, [appointmentsData]);
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const { startDate, endDate } = getDateRange();
 
-  // Process staff performance
-  const staffData = React.useMemo((): StaffPerformance[] => {
-    if (!appointmentsData) return [];
-    
-    const staffStats: Record<string, { total: number; completed: number }> = {};
-    
-    appointmentsData.forEach(apt => {
-      const staffName = apt.barbers?.name || 'Não Definido';
-      if (!staffStats[staffName]) {
-        staffStats[staffName] = { total: 0, completed: 0 };
-      }
-      staffStats[staffName].total++;
-      if (apt.status === 'completed') {
-        staffStats[staffName].completed++;
-      }
-    });
-    
-    return Object.entries(staffStats).map(([name, stats]) => ({
-      staff: name,
-      total: stats.total,
-      completed: stats.completed,
-      rate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0
-    }));
-  }, [appointmentsData]);
+      // Fetch appointment statistics
+      const { data: appointments, error: appointmentsError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          services(price),
+          staff(id, name)
+        `)
+        .gte('start_time', startDate.toISOString())
+        .lte('start_time', endDate.toISOString());
 
-  // Calculate summary metrics
-  const summaryMetrics = React.useMemo(() => {
-    if (!appointmentsData) return {};
-    
-    const total = appointmentsData.length;
-    const completed = appointmentsData.filter(apt => apt.status === 'completed').length;
-    const cancelled = appointmentsData.filter(apt => apt.status === 'cancelled').length;
-    const noShow = appointmentsData.filter(apt => apt.status === 'no-show').length;
-    
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    const cancellationRate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
-    const noShowRate = total > 0 ? Math.round((noShow / total) * 100) : 0;
-    
-    // Calculate average appointments per day
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const monthStart = new Date(currentYear, currentMonth, 1);
-    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
-    const daysInMonth = monthEnd.getDate();
-    
-    const thisMonthAppointments = appointmentsData.filter(apt => {
-      const aptDate = new Date(apt.start_time);
-      return aptDate >= monthStart && aptDate <= monthEnd;
-    }).length;
-    
-    const avgPerDay = Math.round(thisMonthAppointments / daysInMonth * 10) / 10;
-    
-    return {
-      total,
-      completed,
-      completionRate,
-      cancellationRate,
-      noShowRate,
-      avgPerDay
-    };
-  }, [appointmentsData]);
+      if (appointmentsError) throw appointmentsError;
 
-  if (isLoadingAppointments) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+      // Calculate statistics
+      const total = appointments?.length || 0;
+      const completed = appointments?.filter(apt => apt.status === 'completed').length || 0;
+      const cancelled = appointments?.filter(apt => apt.status === 'cancelled').length || 0;
+      const pending = appointments?.filter(apt => apt.status === 'scheduled').length || 0;
+      
+      const revenue = appointments?.reduce((sum, apt) => {
+        if (apt.status === 'completed') {
+          const servicePrice = apt.services?.price || 0;
+          const discount = apt.discount_amount || 0;
+          return sum + (servicePrice - discount);
+        }
+        return sum;
+      }, 0) || 0;
+
+      setStats({ total, completed, cancelled, pending, revenue });
+
+      // Calculate staff performance
+      const staffStats = new Map<string, StaffPerformance>();
+      
+      appointments?.forEach(apt => {
+        if (apt.staff) {
+          const staffId = apt.staff.id;
+          const staffName = apt.staff.name;
+          
+          if (!staffStats.has(staffId)) {
+            staffStats.set(staffId, {
+              staff_id: staffId,
+              staff_name: staffName,
+              total_appointments: 0,
+              completed_appointments: 0,
+              revenue: 0
+            });
+          }
+          
+          const staffStat = staffStats.get(staffId)!;
+          staffStat.total_appointments++;
+          
+          if (apt.status === 'completed') {
+            staffStat.completed_appointments++;
+            const servicePrice = apt.services?.price || 0;
+            const discount = apt.discount_amount || 0;
+            staffStat.revenue += (servicePrice - discount);
+          }
+        }
+      });
+
+      setStaffPerformance(Array.from(staffStats.values()));
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os relatórios.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getDateRangeText = () => {
+    const { startDate, endDate } = getDateRange();
+    return `${format(startDate, 'dd/MM/yyyy', { locale: ptBR })} - ${format(endDate, 'dd/MM/yyyy', { locale: ptBR })}`;
+  };
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Relatórios de Agendamentos</h2>
+          <p className="text-muted-foreground">{getDateRangeText()}</p>
+        </div>
+        <Select value={dateRange} onValueChange={setDateRange}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="week">Esta Semana</SelectItem>
+            <SelectItem value="month">Este Mês</SelectItem>
+            <SelectItem value="year">Este Ano</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold">{summaryMetrics.total}</div>
-            <p className="text-xs text-muted-foreground">Total de Agendamentos</p>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Agendamentos</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-green-600">{summaryMetrics.completionRate}%</div>
-            <p className="text-xs text-muted-foreground">Taxa de Conclusão</p>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Concluídos</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : 0}% do total
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold text-red-600">{summaryMetrics.cancellationRate}%</div>
-            <p className="text-xs text-muted-foreground">Taxa de Cancelamento</p>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Cancelados</CardTitle>
+            <Clock className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.total > 0 ? ((stats.cancelled / stats.total) * 100).toFixed(1) : 0}% do total
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="p-6">
-            <div className="text-2xl font-bold">{summaryMetrics.avgPerDay}</div>
-            <p className="text-xs text-muted-foreground">Média por Dia (Este Mês)</p>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">R$ {stats.revenue.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              Apenas agendamentos concluídos
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Monthly Trends */}
+      {/* Staff Performance */}
       <Card>
         <CardHeader>
-          <CardTitle>Tendência de Agendamentos</CardTitle>
-          <CardDescription>
-            Agendamentos dos últimos 6 meses por status (dados reais)
-          </CardDescription>
+          <CardTitle>Desempenho dos Profissionais</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="completed" name="Concluídos" fill="#4ade80" />
-                <Bar dataKey="scheduled" name="Agendados" fill="#3b82f6" />
-                <Bar dataKey="cancelled" name="Cancelados" fill="#ef4444" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {loading ? (
+            <div className="text-center py-4">Carregando...</div>
+          ) : staffPerformance.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              Nenhum dado encontrado para o período selecionado.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Profissional</th>
+                    <th className="text-left p-2">Total de Agendamentos</th>
+                    <th className="text-left p-2">Concluídos</th>
+                    <th className="text-left p-2">Taxa de Conclusão</th>
+                    <th className="text-left p-2">Receita</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffPerformance.map((staff) => (
+                    <tr key={staff.staff_id} className="border-b hover:bg-muted/50">
+                      <td className="p-2 font-medium">{staff.staff_name}</td>
+                      <td className="p-2">{staff.total_appointments}</td>
+                      <td className="p-2">{staff.completed_appointments}</td>
+                      <td className="p-2">
+                        {staff.total_appointments > 0 
+                          ? ((staff.completed_appointments / staff.total_appointments) * 100).toFixed(1)
+                          : 0}%
+                      </td>
+                      <td className="p-2">R$ {staff.revenue.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Status Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribuição por Status</CardTitle>
-            <CardDescription>
-              Distribuição de todos os agendamentos por status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Staff Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Desempenho por Profissional</CardTitle>
-            <CardDescription>
-              Taxa de conclusão de agendamentos por profissional
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {staffData.length > 0 ? (
-              <div className="space-y-4">
-                {staffData.map((staff, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-medium">{staff.staff}</span>
-                      <span>{staff.rate}% ({staff.completed}/{staff.total})</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                        style={{ width: `${staff.rate}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhum dado de profissional encontrado.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 };

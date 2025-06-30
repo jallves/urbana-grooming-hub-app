@@ -1,454 +1,287 @@
+
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { Download, Calendar as CalendarIcon, FileText, Users, DollarSign } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Download, FileText, Users, Calendar } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
 
-type ReportType = 'appointments' | 'clients' | 'revenue' | 'barbers';
+const ExportReports: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [exportType, setExportType] = useState<string>('appointments');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
 
-interface ExportFilters {
-  type: ReportType;
-  startDate: Date;
-  endDate: Date;
-  status?: string;
-  barberId?: string;
-}
-
-export const ExportReports: React.FC = () => {
-  const [filters, setFilters] = useState<ExportFilters>({
-    type: 'appointments',
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    endDate: new Date()
-  });
-  const [isExporting, setIsExporting] = useState(false);
-  const [barbers, setBarbers] = useState<any[]>([]);
-  const { toast } = useToast();
-
-  React.useEffect(() => {
-    loadBarbers();
-  }, []);
-
-  const loadBarbers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('barbers')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setBarbers(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar barbeiros:', error);
-    }
-  };
-
-  const exportAppointments = async () => {
-    let query = supabase
+  const fetchAppointments = async () => {
+    const { data, error } = await supabase
       .from('appointments')
       .select(`
-        id,
-        start_time,
-        end_time,
-        status,
-        notes,
-        created_at,
-        client:clients (name, phone, email),
-        service:services (name, duration, price),
-        barber:barbers (name)
+        *,
+        clients(name, email, phone),
+        services(name, price, duration),
+        staff(name, email)
       `)
-      .gte('start_time', filters.startDate.toISOString())
-      .lte('start_time', filters.endDate.toISOString())
+      .gte('start_time', dateFrom ? new Date(dateFrom).toISOString() : new Date(2020, 0, 1).toISOString())
+      .lte('start_time', dateTo ? new Date(dateTo).toISOString() : new Date().toISOString())
       .order('start_time', { ascending: false });
 
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-    
-    if (filters.barberId) {
-      query = query.eq('staff_id', filters.barberId);
-    }
-
-    const { data, error } = await query;
-
     if (error) throw error;
-
-    const exportData = data?.map(apt => ({
-      'ID': apt.id,
-      'Cliente': apt.client?.name || '',
-      'Telefone': apt.client?.phone || '',
-      'Email': apt.client?.email || '',
-      'Serviço': apt.service?.name || '',
-      'Barbeiro': apt.barber?.name || '',
-      'Data/Hora': new Date(apt.start_time).toLocaleString('pt-BR'),
-      'Duração (min)': apt.service?.duration || 0,
-      'Valor': apt.service?.price || 0,
-      'Status': apt.status,
-      'Observações': apt.notes || '',
-      'Criado em': new Date(apt.created_at).toLocaleString('pt-BR')
-    })) || [];
-
-    return exportData;
+    return data || [];
   };
 
-  const exportClients = async () => {
+  const fetchStaff = async () => {
+    const { data, error } = await supabase
+      .from('staff')
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+    return data || [];
+  };
+
+  const fetchClients = async () => {
     const { data, error } = await supabase
       .from('clients')
       .select('*')
-      .gte('created_at', filters.startDate.toISOString())
-      .lte('created_at', filters.endDate.toISOString())
-      .order('created_at', { ascending: false });
+      .order('name');
 
     if (error) throw error;
-
-    const exportData = data?.map(client => ({
-      'ID': client.id,
-      'Nome': client.name,
-      'Email': client.email || '',
-      'Telefone': client.phone,
-      'WhatsApp': client.whatsapp || '',
-      'Data de Nascimento': client.birth_date ? new Date(client.birth_date).toLocaleDateString('pt-BR') : '',
-      'Cadastrado em': new Date(client.created_at).toLocaleString('pt-BR')
-    })) || [];
-
-    return exportData;
+    return data || [];
   };
 
-  const exportRevenue = async () => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .select(`
-        id,
-        start_time,
-        status,
-        client:clients (name),
-        service:services (name, price),
-        barber:barbers (name)
-      `)
-      .eq('status', 'completed')
-      .gte('start_time', filters.startDate.toISOString())
-      .lte('start_time', filters.endDate.toISOString())
-      .order('start_time', { ascending: false });
+  const exportToCSV = (data: any[], filename: string, headers: string[]) => {
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => {
+        const value = row[header] || '';
+        return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+      }).join(','))
+    ].join('\n');
 
-    if (error) throw error;
-
-    const exportData = data?.map(apt => ({
-      'ID': apt.id,
-      'Data': new Date(apt.start_time).toLocaleDateString('pt-BR'),
-      'Cliente': apt.client?.name || '',
-      'Serviço': apt.service?.name || '',
-      'Barbeiro': apt.barber?.name || '',
-      'Valor': apt.service?.price || 0
-    })) || [];
-
-    // Add summary row
-    const totalRevenue = exportData.reduce((sum, row) => sum + (row.Valor || 0), 0);
-    exportData.push({
-      'ID': '',
-      'Data': '',
-      'Cliente': '',
-      'Serviço': '',
-      'Barbeiro': 'TOTAL:',
-      'Valor': totalRevenue
-    });
-
-    return exportData;
-  };
-
-  const exportBarberPerformance = async () => {
-    const { data, error } = await supabase
-      .from('appointments')
-      .select(`
-        barber:barbers (id, name),
-        service:services (price),
-        status,
-        start_time
-      `)
-      .eq('status', 'completed')
-      .gte('start_time', filters.startDate.toISOString())
-      .lte('start_time', filters.endDate.toISOString());
-
-    if (error) throw error;
-
-    // Group by barber
-    const barberStats: Record<string, any> = {};
-    
-    data?.forEach(apt => {
-      const barberId = apt.barber?.id;
-      const barberName = apt.barber?.name;
-      const revenue = apt.service?.price || 0;
-
-      if (barberId && barberName) {
-        if (!barberStats[barberId]) {
-          barberStats[barberId] = {
-            name: barberName,
-            appointments: 0,
-            revenue: 0
-          };
-        }
-        barberStats[barberId].appointments++;
-        barberStats[barberId].revenue += revenue;
-      }
-    });
-
-    const exportData = Object.values(barberStats).map((stats: any) => ({
-      'Barbeiro': stats.name,
-      'Agendamentos Concluídos': stats.appointments,
-      'Faturamento': stats.revenue,
-      'Ticket Médio': stats.appointments > 0 ? (stats.revenue / stats.appointments).toFixed(2) : '0.00'
-    }));
-
-    return exportData;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleExport = async () => {
-    setIsExporting(true);
-    
     try {
-      let data;
-      let filename;
+      setLoading(true);
 
-      switch (filters.type) {
+      switch (exportType) {
         case 'appointments':
-          data = await exportAppointments();
-          filename = 'agendamentos';
+          const appointments = await fetchAppointments();
+          const appointmentData = appointments.map(apt => ({
+            'Data/Hora': format(new Date(apt.start_time), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+            'Cliente': apt.clients?.name || '',
+            'Email do Cliente': apt.clients?.email || '',
+            'Telefone do Cliente': apt.clients?.phone || '',
+            'Serviço': apt.services?.name || '',
+            'Preço': apt.services?.price || 0,
+            'Duração (min)': apt.services?.duration || 0,
+            'Profissional': apt.staff?.name || '',
+            'Status': apt.status,
+            'Observações': apt.notes || '',
+            'Desconto': apt.discount_amount || 0,
+            'Código do Cupom': apt.coupon_code || ''
+          }));
+          
+          exportToCSV(
+            appointmentData,
+            `agendamentos_${format(new Date(), 'yyyy-MM-dd', { locale: ptBR })}`,
+            ['Data/Hora', 'Cliente', 'Email do Cliente', 'Telefone do Cliente', 'Serviço', 'Preço', 'Duração (min)', 'Profissional', 'Status', 'Observações', 'Desconto', 'Código do Cupom']
+          );
           break;
+
         case 'clients':
-          data = await exportClients();
-          filename = 'clientes';
+          const clients = await fetchClients();
+          const clientData = clients.map(client => ({
+            'Nome': client.name,
+            'Email': client.email || '',
+            'Telefone': client.phone || '',
+            'WhatsApp': client.whatsapp || '',
+            'Data de Nascimento': client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR }) : '',
+            'Data de Cadastro': format(new Date(client.created_at), 'dd/MM/yyyy', { locale: ptBR })
+          }));
+          
+          exportToCSV(
+            clientData,
+            `clientes_${format(new Date(), 'yyyy-MM-dd', { locale: ptBR })}`,
+            ['Nome', 'Email', 'Telefone', 'WhatsApp', 'Data de Nascimento', 'Data de Cadastro']
+          );
           break;
-        case 'revenue':
-          data = await exportRevenue();
-          filename = 'faturamento';
+
+        case 'staff':
+          const staff = await fetchStaff();
+          const staffData = staff.map(member => ({
+            'Nome': member.name,
+            'Email': member.email || '',
+            'Telefone': member.phone || '',
+            'Cargo': member.role || '',
+            'Especialidades': member.specialties || '',
+            'Experiência': member.experience || '',
+            'Taxa de Comissão': member.commission_rate || 0,
+            'Status': member.is_active ? 'Ativo' : 'Inativo',
+            'Data de Cadastro': format(new Date(member.created_at), 'dd/MM/yyyy', { locale: ptBR })
+          }));
+          
+          exportToCSV(
+            staffData,
+            `equipe_${format(new Date(), 'yyyy-MM-dd', { locale: ptBR })}`,
+            ['Nome', 'Email', 'Telefone', 'Cargo', 'Especialidades', 'Experiência', 'Taxa de Comissão', 'Status', 'Data de Cadastro']
+          );
           break;
-        case 'barbers':
-          data = await exportBarberPerformance();
-          filename = 'performance-barbeiros';
+
+        case 'financial':
+          const financialAppts = await fetchAppointments();
+          const financialData = financialAppts
+            .filter(apt => apt.status === 'completed')
+            .map(apt => ({
+              'Data': format(new Date(apt.start_time), 'dd/MM/yyyy', { locale: ptBR }),
+              'Cliente': apt.clients?.name || '',
+              'Serviço': apt.services?.name || '',
+              'Profissional': apt.staff?.name || '',
+              'Valor do Serviço': apt.services?.price || 0,
+              'Desconto': apt.discount_amount || 0,
+              'Valor Final': (apt.services?.price || 0) - (apt.discount_amount || 0),
+              'Código do Cupom': apt.coupon_code || ''
+            }));
+          
+          exportToCSV(
+            financialData,
+            `financeiro_${format(new Date(), 'yyyy-MM-dd', { locale: ptBR })}`,
+            ['Data', 'Cliente', 'Serviço', 'Profissional', 'Valor do Serviço', 'Desconto', 'Valor Final', 'Código do Cupom']
+          );
           break;
-        default:
-          throw new Error('Tipo de relatório inválido');
       }
 
-      // Create workbook and worksheet
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
-
-      // Generate filename with date range
-      const startDate = format(filters.startDate, 'dd-MM-yyyy');
-      const endDate = format(filters.endDate, 'dd-MM-yyyy');
-      const fullFilename = `${filename}_${startDate}_${endDate}.xlsx`;
-
-      // Download file
-      XLSX.writeFile(wb, fullFilename);
-
       toast({
-        title: "Relatório exportado com sucesso!",
-        description: `Arquivo ${fullFilename} foi baixado.`,
+        title: "Sucesso",
+        description: "Relatório exportado com sucesso!",
       });
-    } catch (error: any) {
-      console.error('Erro ao exportar:', error);
+    } catch (error) {
+      console.error('Error exporting report:', error);
       toast({
-        title: "Erro na exportação",
-        description: error.message || "Não foi possível exportar o relatório.",
+        title: "Erro",
+        description: "Não foi possível exportar o relatório.",
         variant: "destructive",
       });
     } finally {
-      setIsExporting(false);
+      setLoading(false);
     }
   };
 
-  const reportTypes = [
-    { value: 'appointments', label: 'Agendamentos', icon: CalendarIcon, color: 'text-blue-500' },
-    { value: 'clients', label: 'Clientes', icon: Users, color: 'text-green-500' },
-    { value: 'revenue', label: 'Faturamento', icon: DollarSign, color: 'text-purple-500' },
-    { value: 'barbers', label: 'Performance dos Barbeiros', icon: FileText, color: 'text-amber-500' }
-  ];
-
-  const selectedReportType = reportTypes.find(type => type.value === filters.type);
-
   return (
-    <Card className="bg-gray-900 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <Download className="h-5 w-5" />
-          Exportar Relatórios
-        </CardTitle>
-        <CardDescription className="text-gray-400">
-          Gere e baixe relatórios personalizados em Excel
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Tipo de Relatório */}
-        <div>
-          <label className="text-sm font-medium text-white mb-2 block">
-            Tipo de Relatório
-          </label>
-          <Select value={filters.type} onValueChange={(value: ReportType) => setFilters(prev => ({ ...prev, type: value }))}>
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
-              {reportTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <SelectItem key={type.value} value={type.value} className="text-white hover:bg-gray-700">
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-4 w-4 ${type.color}`} />
-                      {type.label}
-                    </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Exportar Relatórios</h2>
+        <p className="text-muted-foreground">
+          Exporte dados do sistema em formato CSV
+        </p>
+      </div>
 
-        {/* Período */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Configurações de Exportação</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-white mb-2 block">
-              Data Inicial
-            </label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start bg-gray-800 border-gray-600 text-white">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(filters.startDate, "dd/MM/yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={filters.startDate}
-                  onSelect={(date) => date && setFilters(prev => ({ ...prev, startDate: date }))}
-                  locale={ptBR}
+            <Label htmlFor="export-type">Tipo de Relatório</Label>
+            <Select value={exportType} onValueChange={setExportType}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="appointments">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Agendamentos
+                  </div>
+                </SelectItem>
+                <SelectItem value="clients">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Clientes
+                  </div>
+                </SelectItem>
+                <SelectItem value="staff">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Equipe
+                  </div>
+                </SelectItem>
+                <SelectItem value="financial">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Financeiro
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(exportType === 'appointments' || exportType === 'financial') && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="date-from">Data Inicial</Label>
+                <Input
+                  id="date-from"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-white mb-2 block">
-              Data Final
-            </label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start bg-gray-800 border-gray-600 text-white">
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {format(filters.endDate, "dd/MM/yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={filters.endDate}
-                  onSelect={(date) => date && setFilters(prev => ({ ...prev, endDate: date }))}
-                  locale={ptBR}
+              </div>
+              <div>
+                <Label htmlFor="date-to">Data Final</Label>
+                <Input
+                  id="date-to"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-        {/* Filtros Adicionais */}
-        {filters.type === 'appointments' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">
-                Status (Opcional)
-              </label>
-              <Select value={filters.status || ''} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value || undefined }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="">Todos os status</SelectItem>
-                  <SelectItem value="scheduled">Agendado</SelectItem>
-                  <SelectItem value="confirmed">Confirmado</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              </div>
             </div>
-
-            <div>
-              <label className="text-sm font-medium text-white mb-2 block">
-                Barbeiro (Opcional)
-              </label>
-              <Select value={filters.barberId || ''} onValueChange={(value) => setFilters(prev => ({ ...prev, barberId: value || undefined }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                  <SelectValue placeholder="Todos os barbeiros" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="">Todos os barbeiros</SelectItem>
-                  {barbers.map(barber => (
-                    <SelectItem key={barber.id} value={barber.id}>
-                      {barber.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
-        {/* Preview */}
-        <div className="bg-gray-800 rounded-lg p-4">
-          <div className="flex items-center gap-3 mb-3">
-            {selectedReportType && (
-              <>
-                <selectedReportType.icon className={`h-5 w-5 ${selectedReportType.color}`} />
-                <span className="font-medium text-white">{selectedReportType.label}</span>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Badge variant="outline" className="border-gray-600 text-gray-300">
-              {format(filters.startDate, "dd/MM/yyyy")} - {format(filters.endDate, "dd/MM/yyyy")}
-            </Badge>
-            {filters.status && (
-              <Badge variant="outline" className="border-gray-600 text-gray-300">
-                Status: {filters.status}
-              </Badge>
-            )}
-            {filters.barberId && (
-              <Badge variant="outline" className="border-gray-600 text-gray-300">
-                Barbeiro: {barbers.find(b => b.id === filters.barberId)?.name}
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Export Button */}
-        <Button
-          onClick={handleExport}
-          disabled={isExporting}
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
-          size="lg"
-        >
-          {isExporting ? (
-            <>
-              <Download className="mr-2 h-4 w-4 animate-spin" />
-              Exportando...
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              Exportar Relatório Excel
-            </>
           )}
-        </Button>
-      </CardContent>
-    </Card>
+
+          <Button onClick={handleExport} disabled={loading} className="w-full">
+            <Download className="h-4 w-4 mr-2" />
+            {loading ? 'Exportando...' : 'Exportar Relatório'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações sobre os Relatórios</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 text-sm">
+            <div>
+              <strong>Agendamentos:</strong> Inclui todos os agendamentos com informações do cliente, serviço e profissional.
+            </div>
+            <div>
+              <strong>Clientes:</strong> Lista completa de clientes cadastrados com informações de contato.
+            </div>
+            <div>
+              <strong>Equipe:</strong> Informações dos profissionais cadastrados no sistema.
+            </div>
+            <div>
+              <strong>Financeiro:</strong> Relatório de receitas baseado em agendamentos concluídos.
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

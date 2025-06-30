@@ -18,28 +18,28 @@ export const useAppointments = () => {
       
       // If the user is not an admin and is a barber, only load their own appointments
       if (!isAdmin && isBarber && user) {
-        // First get the barber ID for the current barber user
-        const { data: barberData, error: barberError } = await supabase
-          .from('barbers')
+        // First get the staff ID for the current barber user
+        const { data: staffData, error: staffError } = await supabase
+          .from('staff')
           .select('id')
           .eq('email', user.email)
           .maybeSingle();
           
-        if (barberError) {
-          console.error('Error fetching barber data:', barberError);
-          toast.error("Não foi possível carregar os dados do barbeiro.");
+        if (staffError) {
+          console.error('Error fetching staff data:', staffError);
+          toast.error("Não foi possível carregar os dados do profissional.");
           setIsLoading(false);
           return;
         }
         
-        if (!barberData) {
-          console.log('No barber record found for this user');
+        if (!staffData) {
+          console.log('No staff record found for this user');
           setAppointments([]);
           setIsLoading(false);
           return;
         }
         
-        // Then get appointments for this barber
+        // Then get appointments for this staff member
         const { data, error } = await supabase
           .from('appointments')
           .select(`
@@ -48,15 +48,15 @@ export const useAppointments = () => {
             service:service_id(*),
             staff:staff_id(*)
           `)
-          .eq('staff_id', barberData.id)
+          .eq('staff_id', staffData.id)
           .order('start_time', { ascending: true });
         
         if (error) {
-          console.error('Error fetching barber appointments:', error);
+          console.error('Error fetching staff appointments:', error);
           throw error;
         }
         
-        console.log('Barber appointments found:', data?.length || 0);
+        console.log('Staff appointments found:', data?.length || 0);
         setAppointments(data || []);
       } else {
         // Admin user - load all appointments

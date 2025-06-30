@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Plus, Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, Plus, Trash2, Coffee } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -18,115 +20,147 @@ interface TimeOff {
   end_date: string;
   reason: string;
   type: string;
-  is_recurring: boolean;
-  barbers?: { name: string };
+  created_at: string;
+  staff?: {
+    name: string;
+  };
 }
 
-interface Barber {
+interface StaffMember {
   id: string;
   name: string;
 }
 
 const TimeOffManagement: React.FC = () => {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const [timeOffs, setTimeOffs] = useState<TimeOff[]>([]);
-  const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    staff_id: '',
-    start_date: '',
-    end_date: '',
-    reason: '',
-    type: 'vacation',
-    is_recurring: false
-  });
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTimeOff, setEditingTimeOff] = useState<TimeOff | null>(null);
+  
+  // Form fields
+  const [staffId, setStaffId] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [reason, setReason] = useState<string>('');
+  const [type, setType] = useState<string>('vacation');
 
   useEffect(() => {
-    loadData();
+    fetchTimeOffs();
+    fetchStaffMembers();
   }, []);
 
-  const loadData = async () => {
+  const fetchStaffMembers = async () => {
     try {
-      // Carregar folgas
-      const { data: timeOffData, error: timeOffError } = await supabase
-        .from('time_off')
-        .select(`
-          *,
-          barbers:staff_id (name)
-        `)
-        .order('start_date', { ascending: false });
-
-      if (timeOffError) throw timeOffError;
-      setTimeOffs(timeOffData || []);
-
-      // Carregar barbeiros
-      const { data: barbersData, error: barbersError } = await supabase
-        .from('barbers')
+      const { data, error } = await supabase
+        .from('staff')
         .select('id, name')
         .eq('is_active', true)
         .order('name');
 
-      if (barbersError) throw barbersError;
-      setBarbers(barbersData || []);
+      if (error) throw error;
+      setStaffMembers(data || []);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os dados.',
-        variant: 'destructive'
-      });
+      console.error('Error fetching staff members:', error);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const fetchTimeOffs = async () => {
     try {
-      const dataToInsert = {
-        staff_id: formData.staff_id || null,
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        reason: formData.reason,
-        type: formData.type,
-        is_recurring: formData.is_recurring
-      };
-
-      const { error } = await supabase
+      setLoading(true);
+      const { data, error } = await supabase
         .from('time_off')
-        .insert([dataToInsert]);
+        .select(`
+          *,
+          staff:staff_id(name)
+        `)
+        .order('start_date', { ascending: false });
 
       if (error) throw error;
-
-      toast({
-        title: 'Sucesso',
-        description: 'Folga/feriado adicionado com sucesso!'
-      });
-
-      setFormData({
-        staff_id: '',
-        start_date: '',
-        end_date: '',
-        reason: '',
-        type: 'vacation',
-        is_recurring: false
-      });
-      setShowForm(false);
-      loadData();
+      setTimeOffs(data || []);
     } catch (error) {
-      console.error('Erro ao salvar:', error);
+      console.error('Error fetching time offs:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível salvar a folga/feriado.',
-        variant: 'destructive'
+        title: "Erro",
+        description: "Não foi possível carregar as folgas.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!startDate || !endDate || !reason) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const timeOffData = {
+        staff_id: staffId || null,
+        start_date: startDate,
+        end_date: endDate,
+        reason,
+        type
+      };
+
+      if (editingTimeOff) {
+        const { error } = await supabase
+          .from('time_off')
+          .update(timeOffData)
+          .eq('id', editingTimeOff.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Folga atualizada com sucesso!",
+        });
+      } else {
+        const { error } = await supabase
+          .from('time_off')
+          .insert([timeOffData]);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Folga cadastrada com sucesso!",
+        });
+      }
+
+      resetForm();
+      fetchTimeOffs();
+    } catch (error) {
+      console.error('Error saving time off:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar a folga.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = (timeOff: TimeOff) => {
+    setEditingTimeOff(timeOff);
+    setStaffId(timeOff.staff_id || '');
+    setStartDate(timeOff.start_date);
+    setEndDate(timeOff.end_date);
+    setReason(timeOff.reason);
+    setType(timeOff.type);
+    setIsFormOpen(true);
+  };
+
   const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta folga?')) return;
+
     try {
       const { error } = await supabase
         .from('time_off')
@@ -136,141 +170,149 @@ const TimeOffManagement: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: 'Sucesso',
-        description: 'Folga/feriado removido com sucesso!'
+        title: "Sucesso",
+        description: "Folga excluída com sucesso!",
       });
-      loadData();
+
+      fetchTimeOffs();
     } catch (error) {
-      console.error('Erro ao deletar:', error);
+      console.error('Error deleting time off:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível remover a folga/feriado.',
-        variant: 'destructive'
+        title: "Erro",
+        description: "Não foi possível excluir a folga.",
+        variant: "destructive",
       });
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    const types = {
-      vacation: 'Férias',
-      sick: 'Atestado',
-      holiday: 'Feriado',
-      personal: 'Pessoal'
-    };
-    return types[type as keyof typeof types] || type;
+  const resetForm = () => {
+    setStaffId('');
+    setStartDate('');
+    setEndDate('');
+    setReason('');
+    setType('vacation');
+    setEditingTimeOff(null);
+    setIsFormOpen(false);
   };
 
-  const getTypeColor = (type: string) => {
-    const colors = {
-      vacation: 'bg-blue-100 text-blue-800',
-      sick: 'bg-red-100 text-red-800',
-      holiday: 'bg-purple-100 text-purple-800',
-      personal: 'bg-gray-100 text-gray-800'
-    };
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'vacation': return 'Férias';
+      case 'sick': return 'Atestado Médico';
+      case 'personal': return 'Pessoal';
+      case 'holiday': return 'Feriado';
+      default: return type;
+    }
+  };
+
+  const getTypeBadgeVariant = (type: string) => {
+    switch (type) {
+      case 'vacation': return 'default';
+      case 'sick': return 'destructive';
+      case 'personal': return 'secondary';
+      case 'holiday': return 'outline';
+      default: return 'default';
+    }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Gestão de Folgas e Feriados</h2>
-          <p className="text-gray-600">Configure folgas individuais e feriados gerais</p>
+          <h2 className="text-2xl font-bold">Gerenciamento de Folgas</h2>
+          <p className="text-muted-foreground">
+            Gerencie folgas, férias e feriados da equipe
+          </p>
         </div>
-        <Button 
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Folga/Feriado
+        <Button onClick={() => setIsFormOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Folga
         </Button>
       </div>
 
-      {showForm && (
+      {/* Form */}
+      {isFormOpen && (
         <Card>
           <CardHeader>
-            <CardTitle>Adicionar Folga/Feriado</CardTitle>
-            <CardDescription>
-              Preencha os dados para registrar uma nova folga ou feriado
-            </CardDescription>
+            <CardTitle>
+              {editingTimeOff ? 'Editar Folga' : 'Nova Folga'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tipo</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
-                  >
+                <div>
+                  <Label htmlFor="staff">Profissional</Label>
+                  <Select value={staffId} onValueChange={setStaffId}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Selecione um profissional (ou deixe em branco para todos)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="vacation">Férias</SelectItem>
-                      <SelectItem value="sick">Atestado</SelectItem>
-                      <SelectItem value="holiday">Feriado</SelectItem>
-                      <SelectItem value="personal">Pessoal</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Barbeiro (deixe em branco para feriado geral)</Label>
-                  <Select
-                    value={formData.staff_id}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, staff_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um barbeiro" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Feriado Geral</SelectItem>
-                      {barbers.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.name}
+                      <SelectItem value="">Todos os profissionais</SelectItem>
+                      {staffMembers.map((staff) => (
+                        <SelectItem key={staff.id} value={staff.id}>
+                          {staff.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Data Início</Label>
+                <div>
+                  <Label htmlFor="type">Tipo</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="vacation">Férias</SelectItem>
+                      <SelectItem value="sick">Atestado Médico</SelectItem>
+                      <SelectItem value="personal">Pessoal</SelectItem>
+                      <SelectItem value="holiday">Feriado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="start-date">Data Inicial</Label>
                   <Input
+                    id="start-date"
                     type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Data Fim</Label>
+                <div>
+                  <Label htmlFor="end-date">Data Final</Label>
                   <Input
+                    id="end-date"
                     type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Motivo/Descrição</Label>
+              <div>
+                <Label htmlFor="reason">Motivo</Label>
                 <Textarea
-                  value={formData.reason}
-                  onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
-                  placeholder="Descrição da folga ou feriado"
+                  id="reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Descreva o motivo da folga..."
+                  required
                 />
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Salvando...' : 'Salvar'}
+                <Button type="submit">
+                  {editingTimeOff ? 'Atualizar' : 'Cadastrar'}
                 </Button>
               </div>
             </form>
@@ -278,52 +320,73 @@ const TimeOffManagement: React.FC = () => {
         </Card>
       )}
 
+      {/* Time Off List */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Folgas e Feriados Registrados
-          </CardTitle>
+          <CardTitle>Folgas Cadastradas</CardTitle>
         </CardHeader>
         <CardContent>
-          {timeOffs.length === 0 ? (
-            <div className="text-center py-8">
-              <Coffee className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Nenhuma folga ou feriado registrado</p>
+          {loading ? (
+            <div className="text-center py-4">Carregando...</div>
+          ) : timeOffs.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              Nenhuma folga cadastrada.
             </div>
           ) : (
-            <div className="space-y-3">
-              {timeOffs.map((timeOff) => (
-                <div key={timeOff.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(timeOff.type)}`}>
-                        {getTypeLabel(timeOff.type)}
-                      </span>
-                      <span className="font-medium">
-                        {timeOff.barbers ? timeOff.barbers.name : 'Feriado Geral'}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {format(new Date(timeOff.start_date), 'dd/MM/yyyy', { locale: ptBR })} - {' '}
-                      {format(new Date(timeOff.end_date), 'dd/MM/yyyy', { locale: ptBR })}
-                    </div>
-                    {timeOff.reason && (
-                      <div className="text-sm text-gray-500 mt-1">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Profissional</th>
+                    <th className="text-left p-2">Tipo</th>
+                    <th className="text-left p-2">Data Inicial</th>
+                    <th className="text-left p-2">Data Final</th>
+                    <th className="text-left p-2">Motivo</th>
+                    <th className="text-left p-2">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeOffs.map((timeOff) => (
+                    <tr key={timeOff.id} className="border-b hover:bg-muted/50">
+                      <td className="p-2">
+                        {timeOff.staff?.name || 'Todos os profissionais'}
+                      </td>
+                      <td className="p-2">
+                        <Badge variant={getTypeBadgeVariant(timeOff.type)}>
+                          {getTypeLabel(timeOff.type)}
+                        </Badge>
+                      </td>
+                      <td className="p-2">
+                        {format(new Date(timeOff.start_date), 'dd/MM/yyyy', { locale: ptBR })}
+                      </td>
+                      <td className="p-2">
+                        {format(new Date(timeOff.end_date), 'dd/MM/yyyy', { locale: ptBR })}
+                      </td>
+                      <td className="p-2 max-w-xs truncate">
                         {timeOff.reason}
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(timeOff.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(timeOff)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDelete(timeOff.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
