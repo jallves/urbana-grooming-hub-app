@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,20 +33,17 @@ const AdminAppointments = () => {
           });
         }
       )
-      .subscribe(
-        (status) => {
-          if (status === 'SUBSCRIBED') {
-            toast.success('Conexão estabelecida', {
-              description: 'Monitorando alterações em tempo real'
-            });
-          }
-        },
-        (error) => {
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          toast.success('Conexão estabelecida', {
+            description: 'Monitorando alterações em tempo real'
+          });
+        } else if (status === 'CHANNEL_ERROR') {
           toast.error('Erro na conexão', {
-            description: error.message || 'Não foi possível estabelecer monitoramento'
+            description: 'Não foi possível estabelecer monitoramento'
           });
         }
-      );
+      });
 
     setIsLoading(false);
 
@@ -53,6 +51,10 @@ const AdminAppointments = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as AppointmentViewMode);
+  };
 
   if (isLoading) {
     return (
@@ -87,7 +89,7 @@ const AdminAppointments = () => {
 
           <Tabs 
             value={activeTab} 
-            onValueChange={setActiveTab}
+            onValueChange={handleTabChange}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2">
