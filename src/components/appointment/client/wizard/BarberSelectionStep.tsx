@@ -27,7 +27,7 @@ interface StaffSelectionStepProps {
   loading: boolean;
 }
 
-const StaffSelectionStep: React.FC<StaffSelectionStepProps> = ({
+const BarberSelectionStep: React.FC<StaffSelectionStepProps> = ({
   selectedStaff,
   onStaffSelect,
   selectedService,
@@ -81,9 +81,7 @@ const StaffSelectionStep: React.FC<StaffSelectionStepProps> = ({
           return startTime < appEnd && endTime > appStart;
         }) || false;
 
-        if (!hasConflict) {
-          available.push(staff.id);
-        }
+        if (!hasConflict) available.push(staff.id);
       }
 
       setAvailableStaff(available);
@@ -144,21 +142,11 @@ const StaffSelectionStep: React.FC<StaffSelectionStepProps> = ({
             return (
               <div
                 key={staff.id}
-                onClick={() => {
-                  if (isAvailable) {
-                    onStaffSelect(staff);
-                  }
-                }}
+                onClick={() => isAvailable && onStaffSelect(staff)}
                 className={`
                   bg-gray-800 rounded-lg p-6 transition-all border-2
-                  ${isAvailable 
-                    ? 'cursor-pointer hover:bg-gray-750 hover:border-amber-500/50' 
-                    : 'opacity-50 cursor-not-allowed'
-                  }
-                  ${isSelected 
-                    ? 'border-amber-500 bg-amber-500/10' 
-                    : 'border-gray-700'
-                  }
+                  ${isAvailable ? 'cursor-pointer hover:bg-gray-750 hover:border-amber-500/50' : 'opacity-50 cursor-not-allowed'}
+                  ${isSelected ? 'border-amber-500 bg-amber-500/10' : 'border-gray-700'}
                 `}
               >
                 <div className="flex items-start gap-4 mb-4">
@@ -168,37 +156,16 @@ const StaffSelectionStep: React.FC<StaffSelectionStepProps> = ({
                       {staff.name.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
-
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-lg font-semibold text-white">
-                        {staff.name}
-                      </h4>
+                      <h4 className="text-lg font-semibold text-white">{staff.name}</h4>
                       <div className="flex items-center gap-2">
-                        {isSelected && (
-                          <Badge className="bg-amber-500 text-black">
-                            Selecionado
-                          </Badge>
-                        )}
-                        {!isAvailable && selectedDate && selectedTime && (
-                          <Badge variant="destructive">
-                            Indisponível
-                          </Badge>
-                        )}
-                        {isAvailable && selectedDate && selectedTime && (
-                          <Badge className="bg-green-600">
-                            Disponível
-                          </Badge>
-                        )}
+                        {isSelected && <Badge className="bg-amber-500 text-black">Selecionado</Badge>}
+                        {!isAvailable && selectedDate && selectedTime && <Badge variant="destructive">Indisponível</Badge>}
+                        {isAvailable && selectedDate && selectedTime && <Badge className="bg-green-600">Disponível</Badge>}
                       </div>
                     </div>
-
-                    {staff.specialties && (
-                      <p className="text-sm text-gray-400 mb-2">
-                        {staff.specialties}
-                      </p>
-                    )}
-
+                    {staff.specialties && <p className="text-sm text-gray-400 mb-2">{staff.specialties}</p>}
                     {staff.experience && (
                       <div className="flex items-center gap-1 text-amber-500">
                         <Star className="h-4 w-4 fill-current" />
@@ -216,4 +183,4 @@ const StaffSelectionStep: React.FC<StaffSelectionStepProps> = ({
   );
 };
 
-export default StaffSelectionStep;
+export default BarberSelectionStep;
