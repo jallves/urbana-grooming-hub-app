@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Calendar, List, Download, Plus } from 'lucide-react';
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion } from 'framer-motion';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -22,14 +28,14 @@ const AdminAppointments = () => {
           .channel('appointment-realtime')
           .on(
             'postgres_changes',
-            { 
-              event: '*', 
-              schema: 'public', 
-              table: 'appointments'
+            {
+              event: '*',
+              schema: 'public',
+              table: 'appointments',
             },
             () => {
-              toast.info('Appointment updated', {
-                description: 'Data refreshed in real-time'
+              toast.info('Agendamento atualizado', {
+                description: 'Os dados foram atualizados em tempo real.',
               });
             }
           )
@@ -39,8 +45,8 @@ const AdminAppointments = () => {
           supabase.removeChannel(channel);
         };
       } catch (error) {
-        toast.error('Connection error', {
-          description: 'Failed to establish real-time monitoring'
+        toast.error('Erro de conexão', {
+          description: 'Falha ao monitorar atualizações em tempo real.',
         });
       } finally {
         setIsLoading(false);
@@ -50,7 +56,7 @@ const AdminAppointments = () => {
     const cleanup = setupRealtimeUpdates();
 
     return () => {
-      cleanup.then(fn => fn?.());
+      cleanup.then((fn) => fn?.());
     };
   }, []);
 
@@ -58,10 +64,18 @@ const AdminAppointments = () => {
     setViewMode(mode as AppointmentViewMode);
   };
 
+  const handleExport = () => {
+    toast.info('Exportação em andamento...', {
+      description: 'Funcionalidade de exportar ainda não implementada.',
+    });
+  };
+
   if (isLoading) {
     return (
       <AdminLayout>
-        <LoadingSkeleton />
+        <div className="p-6">
+          <LoadingSkeleton />
+        </div>
       </AdminLayout>
     );
   }
@@ -69,52 +83,67 @@ const AdminAppointments = () => {
   return (
     <AdminRoute allowedRoles={['admin', 'barber']}>
       <AdminLayout>
-        <div className="space-y-6">
+        <section className="space-y-6 p-4 sm:p-6">
           <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Appointments</h1>
+              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                📅 Agendamentos
+              </h1>
               <p className="text-muted-foreground">
-                Manage and view all scheduled appointments
+                Visualize, gerencie e acompanhe todos os horários agendados.
               </p>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={handleExport}
+              >
                 <Download className="size-4" />
-                Export
+                Exportar
               </Button>
               <Button size="sm" className="gap-2">
                 <Plus className="size-4" />
-                New Appointment
+                Novo Agendamento
               </Button>
             </div>
           </header>
 
-          <Tabs 
-            value={viewMode} 
-            onValueChange={handleViewModeChange}
-            className="w-full"
-          >
+          <Tabs value={viewMode} onValueChange={handleViewModeChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="calendar" className="gap-2">
                 <Calendar className="size-4" />
-                Calendar
+                Calendário
               </TabsTrigger>
               <TabsTrigger value="list" className="gap-2">
                 <List className="size-4" />
-                List
+                Lista
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="calendar" className="mt-6">
-              <AppointmentCalendar />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <AppointmentCalendar />
+              </motion.div>
             </TabsContent>
-            
+
             <TabsContent value="list" className="mt-6">
-              <AppointmentList />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <AppointmentList />
+              </motion.div>
             </TabsContent>
           </Tabs>
-        </div>
+        </section>
       </AdminLayout>
     </AdminRoute>
   );
