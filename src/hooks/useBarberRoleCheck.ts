@@ -15,9 +15,9 @@ export const useBarberRoleCheck = () => {
     try {
       console.log('[useBarberRoleCheck] Verificando permissões para usuário:', userId);
       
-      // Verificar através da tabela barbers
+      // Verificar através da tabela staff
       const { data: barberData, error } = await supabase
-        .from('barbers')
+        .from('staff')
         .select('*')
         .eq('email', (await supabase.auth.getUser()).data.user?.email)
         .eq('is_active', true)

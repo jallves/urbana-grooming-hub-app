@@ -22,11 +22,12 @@ const BarberClients: React.FC = () => {
       try {
         setLoading(true);
         
-        // Primeiro buscar o ID do barbeiro correspondente ao barbeiro logado
+        // Primeiro buscar o ID do barbeiro correspondente ao barbeiro logado da tabela staff
         const { data: barberData, error: barberError } = await supabase
-          .from('barbers')
+          .from('staff')
           .select('id')
           .eq('email', user.email)
+          .eq('role', 'barber')
           .maybeSingle();
           
         if (barberError || !barberData) {

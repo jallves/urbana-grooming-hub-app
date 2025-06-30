@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ClientAppointmentForm from '@/components/appointment/ClientAppointmentForm';
 
 const AppointmentBooking: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
+  const [isFormOpen, setIsFormOpen] = useState(true);
 
   if (!clientId) {
     return (
@@ -30,6 +31,8 @@ const AppointmentBooking: React.FC = () => {
         </div>
 
         <ClientAppointmentForm 
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
           onSuccess={() => {
             console.log('Agendamento realizado com sucesso!');
           }} 

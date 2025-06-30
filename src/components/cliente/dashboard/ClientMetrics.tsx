@@ -161,3 +161,5 @@ export const ClientMetrics: React.FC<ClientMetricsProps> = ({ clientId }) => {
     </div>
   );
 };
+
+export default ClientMetrics;

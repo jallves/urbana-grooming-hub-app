@@ -19,7 +19,8 @@ import StaffSelectionStep from './wizard/StaffSelectionStep';
 import TimeSelectionStep from './wizard/TimeSelectionStep';
 import ConfirmationStep from './wizard/ConfirmationStep';
 
-interface Staff {
+// Local Staff interface to match what we need
+interface LocalStaff {
   id: string;
   name: string;
   email: string;
@@ -33,7 +34,7 @@ interface Staff {
 
 interface BookingData {
   service?: Service;
-  staff?: Staff;
+  staff?: LocalStaff;
   date?: Date;
   time?: string;
   notes?: string;
@@ -160,6 +161,19 @@ export const BookingWizard: React.FC = () => {
   };
 
   const renderStepContent = () => {
+    // Convert Staff[] to LocalStaff[] to ensure compatibility
+    const localStaffList: LocalStaff[] = staffList.map(staff => ({
+      id: staff.id,
+      name: staff.name,
+      email: staff.email || '',
+      phone: staff.phone || '',
+      image_url: staff.image_url || '',
+      specialties: staff.specialties || '',
+      experience: staff.experience || '',
+      role: staff.role || 'barber',
+      is_active: staff.is_active
+    }));
+
     switch (currentStep) {
       case 1:
         return (
@@ -178,7 +192,7 @@ export const BookingWizard: React.FC = () => {
             selectedService={bookingData.service}
             selectedDate={bookingData.date}
             selectedTime={bookingData.time}
-            staff={staffList}
+            staff={localStaffList}
             loading={loading}
           />
         );
