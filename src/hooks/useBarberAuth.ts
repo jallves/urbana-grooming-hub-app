@@ -30,11 +30,12 @@ export const useBarberAuth = () => {
         return;
       }
 
-      // Buscar barbeiro da tabela barbers
+      // Buscar barbeiro da tabela staff
       const { data: barberData, error } = await supabase
-        .from('barbers')
+        .from('staff')
         .select('*')
         .eq('email', user.email)
+        .eq('role', 'barber')
         .eq('is_active', true)
         .single();
 

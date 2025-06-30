@@ -2,18 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Service } from '@/types/appointment';
-
-export interface Staff {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  image_url: string;
-  specialties: string;
-  experience: string;
-  role: string;
-  is_active: boolean;
-}
+import { Staff } from '@/types/barber';
 
 export function useClientFormData() {
   const [services, setServices] = useState<Service[]>([]);

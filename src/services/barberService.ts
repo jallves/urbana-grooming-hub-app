@@ -2,9 +2,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function deleteBarber(barberId: string): Promise<void> {
-  // Deletar o barbeiro da tabela barbers
+  // Deletar o barbeiro da tabela staff
   const { error: barberError } = await supabase
-    .from("barbers")
+    .from("staff")
     .delete()
     .eq("id", barberId);
 
@@ -12,9 +12,9 @@ export async function deleteBarber(barberId: string): Promise<void> {
 }
 
 export async function createBarber(barberData: any): Promise<string> {
-  // Criar o registro na tabela barbers
+  // Criar o registro na tabela staff
   const { data: barber, error: barberError } = await supabase
-    .from("barbers")
+    .from("staff")
     .insert([{
       name: barberData.name,
       email: barberData.email,
@@ -35,9 +35,9 @@ export async function createBarber(barberData: any): Promise<string> {
 }
 
 export async function updateBarber(barberId: string, barberData: any): Promise<void> {
-  // Atualizar os dados na tabela barbers
+  // Atualizar os dados na tabela staff
   const { error: barberError } = await supabase
-    .from("barbers")
+    .from("staff")
     .update({
       name: barberData.name,
       email: barberData.email,

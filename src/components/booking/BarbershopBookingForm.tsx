@@ -56,6 +56,7 @@ const BarbershopBookingForm: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [loadingBarbers, setLoadingBarbers] = useState(true);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -110,23 +111,7 @@ const BarbershopBookingForm: React.FC = () => {
       }
 
       // Buscar barbeiros ativos da tabela barbers
-      const { data: barbersData, error: barbersError } = await supabase
-        .from('barbers')
-        .select('id, name, is_active, role')
-        .eq('is_active', true)
-        .eq('role', 'barber')
-        .order('name');
-
-      if (barbersError) {
-        console.error('Erro ao buscar barbeiros:', barbersError);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os barbeiros disponíveis.",
-          variant: "destructive",
-        });
-      } else {
-        setBarbers(barbersData || []);
-      }
+      fetchBarbers();
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -223,6 +208,38 @@ const BarbershopBookingForm: React.FC = () => {
       });
     } finally {
       setCheckingAvailability(false);
+    }
+  };
+
+  const fetchBarbers = async () => {
+    setLoadingBarbers(true);
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('is_active', true)
+        .eq('role', 'barber')
+        .order('name');
+
+      if (error) {
+        console.error('Erro ao buscar barbeiros:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os barbeiros.",
+          variant: "destructive",
+        });
+      } else {
+        setBarbers(data || []);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar barbeiros:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao buscar barbeiros.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingBarbers(false);
     }
   };
 

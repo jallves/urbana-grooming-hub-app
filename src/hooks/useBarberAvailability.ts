@@ -32,12 +32,13 @@ export const useBarberAvailability = () => {
     setIsLoading(true);
     
     try {
-      // Buscar barbeiros da tabela 'barbers' (não 'users')
-      console.log('1. Buscando barbeiros da tabela barbers...');
+      // Buscar barbeiros da tabela 'staff' (não 'barbers')
+      console.log('1. Buscando barbeiros da tabela staff...');
       const { data: allBarbers, error: barbersError } = await supabase
-        .from('barbers')
+        .from('staff')
         .select('*')
         .eq('is_active', true)
+        .eq('role', 'barber')
         .order('name');
 
       if (barbersError) {
