@@ -1,152 +1,273 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, User } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface Appointment {
+interface BarberInfo {
+  id: string;
+  name: string;
+  specialties: string;
+  image_url: string;
+}
+
+interface AppointmentInfo {
   id: string;
   start_time: string;
   end_time: string;
-  service_name: string;
   client_name: string;
+  service_name: string;
   status: string;
+  notes?: string;
 }
 
 const BarberScheduleView: React.FC = () => {
-  const { user } = useAuth();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [barberInfo, setBarberInfo] = useState<{ name: string }>({ name: '' });
+  const [barbers, setBarbers] = useState<BarberInfo[]>([]);
+  const [selectedBarber, setSelectedBarber] = useState<string>('');
+  const [appointments, setAppointments] = useState<AppointmentInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentWeek, setCurrentWeek] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   useEffect(() => {
-    const fetchBarberData = async () => {
-      if (!user?.email) return;
+    loadBarbers();
+  }, []);
 
-      try {
-        // Buscar informações do barbeiro na tabela barbers
-        const { data: barberData, error: barberError } = await supabase
-          .from('barbers')
-          .select('id, name')
-          .eq('email', user.email)
-          .eq('role', 'barber')
-          .single();
+  useEffect(() => {
+    if (selectedBarber) {
+      loadAppointments();
+    }
+  }, [selectedBarber, currentWeek]);
 
-        if (barberError) {
-          console.error('Erro ao buscar barbeiro:', barberError);
-          setBarberInfo({ name: 'Barbeiro' });
-          return;
-        }
+  const loadBarbers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id, name, specialties, image_url')
+        .eq('role', 'barber')
+        .eq('is_active', true);
 
-        setBarberInfo({ name: barberData.name });
-
-        // Buscar agendamentos do barbeiro
-        const { data: appointmentsData, error: appointmentsError } = await supabase
-          .from('appointments')
-          .select(`
-            id,
-            start_time,
-            end_time,
-            status,
-            services (name),
-            clients (name)
-          `)
-          .eq('staff_id', barberData.id)
-          .gte('start_time', new Date().toISOString().split('T')[0])
-          .order('start_time');
-
-        if (appointmentsError) {
-          console.error('Erro ao buscar agendamentos:', appointmentsError);
-          return;
-        }
-
-        const formattedAppointments = appointmentsData?.map(apt => ({
-          id: apt.id,
-          start_time: apt.start_time,
-          end_time: apt.end_time,
-          status: apt.status,
-          service_name: (apt.services as any)?.name || 'Serviço',
-          client_name: (apt.clients as any)?.name || 'Cliente'
-        })) || [];
-
-        setAppointments(formattedAppointments);
-
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-      } finally {
-        setLoading(false);
+      if (error) {
+        console.error('Error loading barbers:', error);
+        return;
       }
-    };
 
-    fetchBarberData();
-  }, [user]);
+      if (data) {
+        setBarbers(data.map(barber => ({
+          id: barber.id,
+          name: barber.name,
+          specialties: barber.specialties || '',
+          image_url: barber.image_url || '',
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading barbers:', error);
+    }
+  };
 
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-8">
-          <div className="animate-pulse text-muted-foreground">
-            Carregando agenda...
-          </div>
-        </CardContent>
-      </Card>
+  const loadAppointments = async () => {
+    if (!selectedBarber) return;
+    
+    setLoading(true);
+    try {
+      const weekStart = currentWeek;
+      const weekEnd = addDays(currentWeek, 6);
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          start_time,
+          end_time,
+          status,
+          notes,
+          clients (name),
+          services (name)
+        `)
+        .eq('staff_id', selectedBarber)
+        .gte('start_time', weekStart.toISOString())
+        .lte('start_time', weekEnd.toISOString())
+        .order('start_time', { ascending: true });
+
+      if (error) {
+        console.error('Error loading appointments:', error);
+        return;
+      }
+
+      if (data) {
+        const appointmentsWithDetails = data.map(appointment => ({
+          id: appointment.id,
+          start_time: appointment.start_time,
+          end_time: appointment.end_time,
+          client_name: (appointment.clients as any)?.name || 'Cliente Desconhecido',
+          service_name: (appointment.services as any)?.name || 'Serviço Desconhecido',
+          status: appointment.status,
+          notes: appointment.notes || '',
+        }));
+        setAppointments(appointmentsWithDetails);
+      }
+    } catch (error) {
+      console.error('Error loading appointments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAppointmentsForDay = (date: Date) => {
+    return appointments.filter(apt => 
+      isSameDay(new Date(apt.start_time), date)
     );
-  }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-800';
+      case 'confirmed':
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-gray-100 text-gray-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const selectedBarberInfo = barbers.find(b => b.id === selectedBarber);
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Agenda de {barberInfo.name}
+            <Calendar className="h-5 w-5 text-amber-500" />
+            Agenda dos Barbeiros
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {appointments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum agendamento encontrado</p>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Selecionar Barbeiro:</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {barbers.map((barber) => (
+                  <Card 
+                    key={barber.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      selectedBarber === barber.id ? 'ring-2 ring-amber-500 bg-amber-50' : ''
+                    }`}
+                    onClick={() => setSelectedBarber(barber.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <div className="text-sm font-medium">{barber.name}</div>
+                        {barber.specialties && (
+                          <div className="text-xs text-gray-500 mt-1">{barber.specialties}</div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {appointments.map((appointment) => (
-                <div
-                  key={appointment.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      {format(new Date(appointment.start_time), 'HH:mm', { locale: ptBR })}
-                    </div>
-                    <div>
-                      <p className="font-medium">{appointment.client_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {appointment.service_name}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      appointment.status === 'confirmed' 
-                        ? 'bg-green-100 text-green-800'
-                        : appointment.status === 'scheduled'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {appointment.status}
-                    </span>
-                  </div>
+
+            {selectedBarberInfo && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium">Agenda de {selectedBarberInfo.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    Semana de {format(currentWeek, 'dd/MM', { locale: ptBR })} a {' '}
+                    {format(addDays(currentWeek, 6), 'dd/MM/yyyy', { locale: ptBR })}
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentWeek(addDays(currentWeek, -7))}
+                  >
+                    Semana Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentWeek(addDays(currentWeek, 7))}
+                  >
+                    Próxima Semana
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
+
+      {selectedBarber && (
+        <Card>
+          <CardContent className="p-6">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500">Carregando agenda...</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4">
+                {Array.from({ length: 7 }, (_, index) => {
+                  const date = addDays(currentWeek, index);
+                  const dayAppointments = getAppointmentsForDay(date);
+                  const dayName = format(date, 'EEEE', { locale: ptBR });
+
+                  return (
+                    <div key={index} className="space-y-3">
+                      <div className="text-center">
+                        <div className="font-medium capitalize">{dayName}</div>
+                        <div className="text-sm text-gray-500">
+                          {format(date, 'dd/MM', { locale: ptBR })}
+                        </div>
+                        <Badge variant="outline" className="mt-1">
+                          {dayAppointments.length} agendamentos
+                        </Badge>
+                      </div>
+                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {dayAppointments.length === 0 ? (
+                          <div className="text-center text-gray-400 text-sm py-4">
+                            Nenhum agendamento
+                          </div>
+                        ) : (
+                          dayAppointments.map((appointment) => (
+                            <Card key={appointment.id} className="p-3 text-xs">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <Badge className={getStatusColor(appointment.status)}>
+                                    {appointment.status}
+                                  </Badge>
+                                  <div className="flex items-center text-gray-500">
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    {format(new Date(appointment.start_time), 'HH:mm')}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="font-medium">{appointment.client_name}</div>
+                                  <div className="text-gray-600">{appointment.service_name}</div>
+                                  {appointment.notes && (
+                                    <div className="text-gray-500 mt-1">{appointment.notes}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </Card>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

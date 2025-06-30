@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,22 +21,23 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
 
-  const [barberId, setBarberId] = useState<number | null>(null);
+  const [barberId, setBarberId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBarberId = async () => {
       if (!user?.email) return;
 
       try {
-        // Buscar na tabela barbers
+        // Buscar na tabela staff
         const { data } = await supabase
-          .from('barbers')
+          .from('staff')
           .select('id')
           .eq('email', user.email)
+          .eq('role', 'barber')
           .maybeSingle();
 
-        if (data && data.id !== undefined && data.id !== null) {
-          setBarberId(Number(data.id));
+        if (data?.id) {
+          setBarberId(data.id);
         }
       } catch (error) {
         console.error('Error fetching barber ID:', error);
@@ -58,7 +58,7 @@ export const useBarberAppointments = () => {
           clients (name),
           services (name, price)
         `)
-        .eq('staff_id', barberId.toString())
+        .eq('staff_id', barberId)
         .order('start_time', { ascending: true });
 
       if (error) {
@@ -93,7 +93,7 @@ export const useBarberAppointments = () => {
   };
 
   useEffect(() => {
-    if (barberId !== null && barberId !== undefined) {
+    if (barberId) {
       fetchAppointments();
     }
   }, [barberId]);
