@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Service } from '@/types/appointment';
 
-interface Staff {
+export interface Staff {
   id: string;
   name: string;
   email: string;
@@ -22,30 +22,35 @@ export function useClientFormData() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-
       try {
         // Buscar serviços
-        const { data: serviceData, error: serviceError } = await supabase
+        const { data: servicesData, error: servicesError } = await supabase
           .from('services')
           .select('*')
           .eq('is_active', true)
           .order('name', { ascending: true });
 
-        if (serviceError) throw serviceError;
-        setServices(serviceData || []);
+        if (servicesError) {
+          console.error('Erro ao buscar serviços:', servicesError);
+        } else {
+          setServices(servicesData || []);
+        }
 
-        // Buscar barbeiros da tabela staff
+        // Buscar staff (antigo barbeiros)
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
           .select('*')
           .eq('is_active', true)
-          .eq('role', 'barber') // filtrando apenas barbeiros
           .order('name', { ascending: true });
 
-        if (staffError) throw staffError;
-        setStaffList(staffData || []);
+        if (staffError) {
+          console.error('Erro ao buscar staff:', staffError);
+        } else {
+          setStaffList(staffData || []);
+        }
+
       } catch (error) {
-        console.error('[useClientFormData] Erro ao carregar dados:', error);
+        console.error('Erro ao buscar dados do formulário:', error);
       } finally {
         setLoading(false);
       }
@@ -56,8 +61,7 @@ export function useClientFormData() {
 
   return {
     services,
-    staffList, // substitui barbers
-    loading,
+    staffList,
+    loading
   };
 }
-
