@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Calendar, User, Settings } from 'lucide-react';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
-import ClientMetrics from '@/components/cliente/dashboard/ClientMetrics';
-import RealTimeCalendar from '@/components/appointment/client/RealTimeCalendar';
+import { ClientMetrics } from '@/components/cliente/dashboard/ClientMetrics';
 
 export default function ClientDashboard() {
   const navigate = useNavigate();
@@ -53,16 +52,22 @@ export default function ClientDashboard() {
         {/* Métricas */}
         <ClientMetrics clientId={client.id} />
 
-        {/* Calendário em Tempo Real */}
+        {/* Próximos Agendamentos */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-6">
             <Calendar className="h-6 w-6 text-amber-500" />
             <h2 className="text-2xl font-bold text-white">
-              Meus Agendamentos
+              Próximos Agendamentos
             </h2>
           </div>
           
-          <RealTimeCalendar />
+          <Card className="bg-gray-900 border-gray-700">
+            <CardContent className="p-6">
+              <p className="text-gray-400 text-center">
+                Use o botão "Novo Agendamento" para marcar seu próximo horário
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Ações Rápidas */}

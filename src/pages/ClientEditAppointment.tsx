@@ -24,7 +24,7 @@ interface Appointment {
     price: number;
     duration: number;
   };
-  barbers?: {
+  staff?: {
     name: string;
   };
 }
@@ -57,7 +57,7 @@ const ClientEditAppointment: React.FC = () => {
         .select(`
           *,
           services (name, price, duration),
-          barbers (name)
+          staff (name)
         `)
         .eq('id', id)
         .eq('client_id', client.id)
@@ -69,7 +69,7 @@ const ClientEditAppointment: React.FC = () => {
       const transformedAppointment: Appointment = {
         ...data,
         services: data.services,
-        barbers: data.barbers
+        staff: data.staff
       };
 
       setAppointment(transformedAppointment);
@@ -189,7 +189,7 @@ const ClientEditAppointment: React.FC = () => {
                   <User className="h-5 w-5 text-[#F59E0B]" />
                   <div>
                     <p className="text-sm text-[#9CA3AF]">Barbeiro</p>
-                    <p className="text-white font-medium">{appointment.barbers?.name || 'A ser definido'}</p>
+                    <p className="text-white font-medium">{appointment.staff?.name || 'A ser definido'}</p>
                   </div>
                 </div>
               </div>
