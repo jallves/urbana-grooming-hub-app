@@ -51,7 +51,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
         {/* Client Area Link */}
         <NavigationMenuItem>
           <Link 
-            to="/cliente/login"
+            to="/client/login"
             className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
             title="Área do Cliente"
           >
@@ -87,7 +87,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
           <>
             <NavigationMenuItem>
               <Link 
-                to="/auth" 
+                to="/admin/login" 
                 className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
                 title="Admin"
               >
@@ -96,7 +96,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
             </NavigationMenuItem>
             <NavigationMenuItem>
               <Link 
-                to="/barbeiro/login" 
+                to="/barber/login" 
                 className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
                 title="Área do Barbeiro"
               >

@@ -46,11 +46,11 @@ export const useNavbar = () => {
     }
     
     if (isAdmin) {
-      navigate('/admin');
+      navigate('/admin/dashboard');
     } else if (isBarber) {
-      navigate('/barbeiro/dashboard');
+      navigate('/barber/dashboard');
     } else {
-      navigate('/auth');
+      navigate('/admin/login');
     }
   };
 
