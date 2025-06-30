@@ -14,7 +14,7 @@ import { Service } from '@/types/appointment';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientFormData } from './hooks/useClientFormData';
 import ServiceSelectionStep from './wizard/ServiceSelectionStep';
-import BarberSelectionStep from './wizard/BarberSelectionStep';
+import StaffSelectionStep from './wizard/StaffSelectionStep'; // import correto
 import TimeSelectionStep from './wizard/TimeSelectionStep';
 import ConfirmationStep from './wizard/ConfirmationStep';
 
@@ -36,12 +36,6 @@ interface BookingData {
   date?: Date;
   time?: string;
   notes?: string;
-}
-
-interface ValidationResult {
-  valid: boolean;
-  error?: string;
-  message?: string;
 }
 
 const steps = [
@@ -170,13 +164,13 @@ export const BookingWizard: React.FC = () => {
         );
       case 2:
         return (
-          <BarberSelectionStep
-            selectedBarber={bookingData.staff}
-            onBarberSelect={(staff) => updateBookingData({ staff })}
+          <StaffSelectionStep
+            selectedStaff={bookingData.staff}
+            onStaffSelect={(staff) => updateBookingData({ staff })}
             selectedService={bookingData.service}
             selectedDate={bookingData.date}
             selectedTime={bookingData.time}
-            barbers={staffList}
+            staff={staffList}
             loading={loading}
           />
         );
@@ -187,7 +181,7 @@ export const BookingWizard: React.FC = () => {
             selectedTime={bookingData.time}
             onDateSelect={(date) => updateBookingData({ date, time: undefined })}
             onTimeSelect={(time) => updateBookingData({ time })}
-            selectedBarber={bookingData.staff}
+            selectedBarber={bookingData.staff} // aqui poderia renomear para selectedStaff no futuro
             selectedService={bookingData.service}
           />
         );
@@ -196,7 +190,7 @@ export const BookingWizard: React.FC = () => {
           <ConfirmationStep
             bookingData={{
               ...bookingData,
-              barber: bookingData.staff // compatível com o componente
+              barber: bookingData.staff // compatibilidade para ConfirmationStep
             }}
             clientName={client?.name || ''}
             onNotesChange={(notes) => updateBookingData({ notes })}
