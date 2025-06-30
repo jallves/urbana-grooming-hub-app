@@ -35,7 +35,8 @@ const AppointmentBooking: React.FC = () => {
           onClose={() => setIsFormOpen(false)}
           onSuccess={() => {
             console.log('Agendamento realizado com sucesso!');
-          }} 
+          }}
+          clientId={clientId}
         />
       </div>
     </div>

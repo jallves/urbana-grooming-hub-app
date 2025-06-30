@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { StaffMember } from '@/types/appointment';
+import { Staff } from '@/types/barber';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UseFormReturn } from 'react-hook-form';
@@ -13,7 +13,7 @@ interface StaffAvailability {
 }
 
 interface ClientStaffSelectProps {
-  staffMembers: StaffMember[];
+  staffMembers: Staff[];
   form: UseFormReturn<any>;
   selectedDate?: Date;
   selectedTime?: string;
