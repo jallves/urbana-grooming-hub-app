@@ -1,98 +1,87 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form } from "@/components/ui/form";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useClientFormData } from './client/hooks/useClientFormData';
 import { useClientFormSubmit } from './client/hooks/useClientFormSubmit';
-import PersonalInfoFields from './PersonalInfoFields';
-import { AppointmentFormData } from '@/types/appointment';
-import BarbershopStaffSelect from './client/BarbershopStaffSelect';
-import ClientServiceSelect from './client/ClientServiceSelect';
-import DateTimePicker from './client/DateTimePicker';
-import NotesField from './NotesField';
+import ClientServiceSelect from './client/form/ClientServiceSelect';
+import ClientStaffSelect from './client/form/ClientStaffSelect';
+import ClientDateTimePicker from './client/form/ClientDateTimePicker';
+import ClientNotesField from './client/form/ClientNotesField';
+import ClientFormActions from './client/form/ClientFormActions';
+
+const appointmentSchema = z.object({
+  service_id: z.string().min(1, 'Selecione um serviço'),
+  staff_id: z.string().min(1, 'Selecione um barbeiro'),
+  date: z.date({ required_error: 'Selecione uma data' }),
+  time: z.string().min(1, 'Selecione um horário'),
+  notes: z.string().optional(),
+});
+
+type FormData = z.infer<typeof appointmentSchema>;
 
 interface ClientAppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  clientId: string;
 }
 
-const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, onClose, onSuccess }) => {
-  const [formData, setFormData] = useState<AppointmentFormData>({
-    name: '',
-    phone: '',
-    email: '',
-    whatsapp: '',
-    service: '',
-    barber: '',
-    date: '',
-    time: '',
-    notes: ''
+const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess,
+  clientId 
+}) => {
+  const form = useForm<FormData>({
+    resolver: zodResolver(appointmentSchema),
+    defaultValues: {
+      service_id: '',
+      staff_id: '',
+      time: '',
+      notes: ''
+    }
   });
 
   const { services, staffList, loading } = useClientFormData();
   const { handleSubmit, isLoading } = useClientFormSubmit({ 
-    clientId: 'temp-client-id', // This should be passed as a prop
+    clientId,
     onSuccess: () => {
       onSuccess?.();
       onClose();
+      form.reset();
     }
   });
 
-  const handleInputChange = (value: string, field: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  const selectedService = services.find(s => s.id === form.watch('service_id'));
+  const selectedDate = form.watch('date');
+  const selectedTime = form.watch('time');
 
-  const handleSelectChange = (value: string, field: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const selectedService = services.find(s => s.id === formData.service);
+  const onSubmit = async (data: FormData) => {
     if (!selectedService) {
       console.error('Selected service not found');
       return;
     }
 
-    // Convert formData to match the expected format
     const submitData = {
-      service_id: formData.service,
-      staff_id: formData.barber,
-      date: new Date(formData.date),
-      time: formData.time,
-      notes: formData.notes
+      service_id: data.service_id,
+      staff_id: data.staff_id,
+      date: data.date,
+      time: data.time,
+      notes: data.notes || ''
     };
 
     await handleSubmit(submitData, selectedService);
-    
-    // Reset form after successful submission
-    setFormData({
-      name: '',
-      phone: '',
-      email: '',
-      whatsapp: '',
-      service: '',
-      barber: '',
-      date: '',
-      time: '',
-      notes: ''
-    });
   };
 
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px]">
-          <div className="p-6 text-center">Carregando...</div>
+        <DialogContent className="sm:max-w-[500px] bg-stone-900 border-stone-700">
+          <div className="p-6 text-center text-white">Carregando...</div>
         </DialogContent>
       </Dialog>
     );
@@ -100,48 +89,33 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, o
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] bg-stone-900 border-stone-700">
         <DialogHeader>
-          <DialogTitle>Agendar Serviço</DialogTitle>
+          <DialogTitle className="text-white">Agendar Serviço</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={onSubmit} className="space-y-6">
-          <PersonalInfoFields 
-            formData={formData} 
-            handleInputChange={(e) => handleInputChange(e.target.value, e.target.id)} 
-          />
-          
-          <ClientServiceSelect
-            services={services}
-            form={undefined}
-            onServiceChange={(value) => handleSelectChange(value, 'service')}
-          />
-          
-          <BarbershopStaffSelect
-            staffMembers={staffList}
-            form={undefined}
-          />
-          
-          <DateTimePicker
-            form={undefined}
-            availableTimes={[]}
-            onDateChange={(date) => handleInputChange(date.toISOString().split('T')[0], 'date')}
-          />
-          
-          <NotesField 
-            formData={formData} 
-            handleInputChange={(e) => handleInputChange(e.target.value, e.target.id)} 
-          />
-
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Agendando...' : 'Confirmar Agendamento'}
-            </Button>
-          </div>
-        </form>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <ClientServiceSelect services={services} form={form} />
+            
+            <ClientDateTimePicker form={form} />
+            
+            <ClientStaffSelect 
+              staffMembers={staffList} 
+              form={form}
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
+              serviceDuration={selectedService?.duration}
+            />
+            
+            <ClientNotesField form={form} />
+            
+            <ClientFormActions 
+              isLoading={isLoading} 
+              onClose={onClose}
+            />
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
