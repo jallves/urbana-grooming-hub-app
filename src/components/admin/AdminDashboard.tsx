@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface RecentActivity {
   id: string;
-  type: 'appointment' | 'client' | 'barber';
+  type: 'appointment' | 'client' | 'staff';
   title: string;
   description: string;
   time: string;
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
           status,
           client:clients (name),
           service:services (name),
-          barber:barbers (name)
+          staff:staff (name)
         `)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
           id: apt.id,
           type: 'appointment',
           title: `Agendamento ${apt.status === 'completed' ? 'concluído' : apt.status === 'cancelled' ? 'cancelado' : 'agendado'}`,
-          description: `${apt.client?.name} - ${apt.service?.name} com ${apt.barber?.name}`,
+          description: `${apt.client?.name} - ${apt.service?.name} com ${apt.staff?.name}`,
           time: new Date(apt.start_time).toLocaleString('pt-BR'),
           status: apt.status
         });
@@ -247,7 +247,7 @@ export default function AdminDashboard() {
                     }`}>
                       {activity.type === 'appointment' && <Calendar className="h-4 w-4" />}
                       {activity.type === 'client' && <Users className="h-4 w-4" />}
-                      {activity.type === 'barber' && <Scissors className="h-4 w-4" />}
+                      {activity.type === 'staff' && <Scissors className="h-4 w-4" />}
                     </div>
                     
                     <div className="flex-1 min-w-0">

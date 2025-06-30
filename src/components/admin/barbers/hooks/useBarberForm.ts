@@ -52,7 +52,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   useEffect(() => {
     if (barberId) {
       supabase
-        .from('barbers')
+        .from('staff')
         .select('*')
         .eq('id', barberId)
         .single()

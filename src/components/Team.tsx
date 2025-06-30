@@ -39,28 +39,28 @@ const TeamMember: React.FC<TeamMemberProps> = ({ name, role, experience, image }
 const Team: React.FC = () => {
   console.log('Team component rendering...');
   
-  // Query to fetch active barbers from the barbers table
-  const { data: barbersMembers, isLoading, error } = useQuery({
-    queryKey: ['team-barbers'],
+  // Query to fetch active staff from the staff table (not barbers)
+  const { data: staffMembers, isLoading, error } = useQuery({
+    queryKey: ['team-staff'],
     queryFn: async () => {
-      console.log('Buscando barbeiros ativos para a equipe...');
+      console.log('Buscando staff ativos para a equipe...');
       
       try {
         const { data, error } = await supabase
-          .from('barbers')
+          .from('staff')
           .select('*')
           .eq('is_active', true)
           .order('name');
         
         if (error) {
-          console.error('Erro na query barbers:', error);
-          throw new Error(`Erro ao buscar barbeiros: ${error.message}`);
+          console.error('Erro na query staff:', error);
+          throw new Error(`Erro ao buscar staff: ${error.message}`);
         }
         
-        console.log('Barbeiros ativos encontrados para equipe:', data?.length || 0, data);
+        console.log('Staff ativos encontrados para equipe:', data?.length || 0, data);
         return data || [];
       } catch (err) {
-        console.error('Erro ao buscar barbeiros para equipe:', err);
+        console.error('Erro ao buscar staff para equipe:', err);
         throw err;
       }
     },
@@ -126,8 +126,8 @@ const Team: React.FC = () => {
   }
 
   // Determine which team to display - use database data if available, otherwise fallback
-  const teamToDisplay = barbersMembers && barbersMembers.length > 0
-    ? barbersMembers
+  const teamToDisplay = staffMembers && staffMembers.length > 0
+    ? staffMembers
     : fallbackTeamMembers;
 
   console.log('Exibindo equipe na homepage:', teamToDisplay);
@@ -162,10 +162,10 @@ const Team: React.FC = () => {
           </div>
         )}
 
-        {barbersMembers && barbersMembers.length === 0 && (
+        {staffMembers && staffMembers.length === 0 && (
           <div className="text-center mt-4">
             <p className="text-yellow-400 text-sm">
-              Nenhum barbeiro ativo encontrado. Certifique-se de que há barbeiros ativos cadastrados no sistema.
+              Nenhum profissional ativo encontrado. Certifique-se de que há profissionais ativos cadastrados no sistema.
             </p>
           </div>
         )}

@@ -13,21 +13,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { deleteBarber } from '@/services/barberService';
 
-// Busca barbeiros da tabela barbers
+// Busca staff da tabela staff (não barbers)
 const fetchBarbers = async () => {
-  console.log('Buscando barbeiros...');
+  console.log('Buscando staff...');
   
   const { data, error } = await supabase
-    .from('barbers')
+    .from('staff')
     .select('*')
     .order('name');
 
   if (error) {
-    console.error('Erro ao buscar barbeiros:', error);
+    console.error('Erro ao buscar staff:', error);
     throw new Error(error.message);
   }
 
-  console.log('Barbeiros encontrados:', data);
+  console.log('Staff encontrados:', data);
 
   return (data ?? []).map((b: any) => ({
     id: String(b.id),
@@ -91,7 +91,7 @@ const BarberManagement: React.FC = () => {
     setEditingBarberId(null);
     refetch();
     queryClient.invalidateQueries({ queryKey: ['barbers'] });
-    queryClient.invalidateQueries({ queryKey: ['team-barbers'] });
+    queryClient.invalidateQueries({ queryKey: ['team-staff'] });
   };
 
   const handleDeleteBarber = async (barberId: string) => {
@@ -103,7 +103,7 @@ const BarberManagement: React.FC = () => {
         toast.success('Barbeiro excluído com sucesso.');
         refetch();
         queryClient.invalidateQueries({ queryKey: ['barbers'] });
-        queryClient.invalidateQueries({ queryKey: ['team-barbers'] });
+        queryClient.invalidateQueries({ queryKey: ['team-staff'] });
       } catch (err) {
         console.error('Erro ao excluir barbeiro:', err);
         toast.error('Erro ao excluir barbeiro.', {
@@ -139,7 +139,7 @@ const BarberManagement: React.FC = () => {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Este módulo exibe todos os profissionais cadastrados como "Barbeiro" na tabela barbers.
+              Este módulo exibe todos os profissionais cadastrados como "Barbeiro" na tabela staff.
             </AlertDescription>
           </Alert>
           <Card>

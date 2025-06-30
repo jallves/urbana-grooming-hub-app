@@ -10,7 +10,7 @@ import { Clock, Users, Settings, Calendar, CheckCircle } from 'lucide-react';
 import BarberScheduleManager from '@/components/barber/schedule/BarberScheduleManager';
 import BarberAvailabilityManager from './BarberAvailabilityManager';
 
-interface Barber {
+interface Staff {
   id: string;
   name: string;
   email: string;
@@ -19,37 +19,37 @@ interface Barber {
 
 const BarberScheduleManagement: React.FC = () => {
   const { toast } = useToast();
-  const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [selectedBarberId, setSelectedBarberId] = useState<string>('');
-  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
+  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [loading, setLoading] = useState(true);
   const [applyingDefault, setApplyingDefault] = useState(false);
 
   useEffect(() => {
-    fetchBarbers();
+    fetchStaff();
   }, []);
 
-  const fetchBarbers = async () => {
+  const fetchStaff = async () => {
     try {
       const { data, error } = await supabase
-        .from('barbers')
+        .from('staff')
         .select('id, name, email, is_active')
         .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
-      setBarbers(data || []);
+      setStaff(data || []);
       
-      // Auto-select first barber if available
+      // Auto-select first staff member if available
       if (data && data.length > 0) {
-        setSelectedBarberId(data[0].id);
-        setSelectedBarber(data[0]);
+        setSelectedStaffId(data[0].id);
+        setSelectedStaff(data[0]);
       }
     } catch (error) {
-      console.error('Erro ao buscar barbeiros:', error);
+      console.error('Erro ao buscar staff:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar a lista de barbeiros.",
+        description: "Não foi possível carregar a lista de profissionais.",
         variant: "destructive",
       });
     } finally {
@@ -57,16 +57,16 @@ const BarberScheduleManagement: React.FC = () => {
     }
   };
 
-  const handleBarberSelect = (barberId: string) => {
-    const barber = barbers.find(b => b.id === barberId);
-    setSelectedBarberId(barberId);
-    setSelectedBarber(barber || null);
+  const handleStaffSelect = (staffId: string) => {
+    const staffMember = staff.find(s => s.id === staffId);
+    setSelectedStaffId(staffId);
+    setSelectedStaff(staffMember || null);
   };
 
   const setupDefaultScheduleForAll = async () => {
     setApplyingDefault(true);
     try {
-      console.log('Aplicando horário padrão para todos os barbeiros...');
+      console.log('Aplicando horário padrão para todos os profissionais...');
       
       const defaultSchedule = [
         { day_of_week: 1, start_time: '09:00', end_time: '20:00', is_active: true }, // Segunda
@@ -78,18 +78,18 @@ const BarberScheduleManagement: React.FC = () => {
         // Domingo (0) não é incluído, ficando fechado
       ];
 
-      for (const barber of barbers) {
-        console.log(`Configurando horários para ${barber.name}...`);
+      for (const staffMember of staff) {
+        console.log(`Configurando horários para ${staffMember.name}...`);
         
-        // Deletar horários existentes do barbeiro
+        // Deletar horários existentes do profissional
         await supabase
           .from('working_hours')
           .delete()
-          .eq('staff_id', barber.id);
+          .eq('staff_id', staffMember.id);
 
         // Inserir novos horários padrão
         const workingHours = defaultSchedule.map(schedule => ({
-          staff_id: barber.id,
+          staff_id: staffMember.id,
           ...schedule
         }));
 
@@ -98,23 +98,23 @@ const BarberScheduleManagement: React.FC = () => {
           .insert(workingHours);
 
         if (error) {
-          console.error(`Erro ao configurar horários para ${barber.name}:`, error);
+          console.error(`Erro ao configurar horários para ${staffMember.name}:`, error);
           throw error;
         }
         
-        console.log(`✓ Horários configurados para ${barber.name}`);
+        console.log(`✓ Horários configurados para ${staffMember.name}`);
       }
       
       toast({
         title: "Sucesso",
-        description: `Horário padrão aplicado para ${barbers.length} barbeiro(s): Segunda a Sábado (09:00-20:00), Domingo fechado.`,
+        description: `Horário padrão aplicado para ${staff.length} profissional(is): Segunda a Sábado (09:00-20:00), Domingo fechado.`,
         action: <CheckCircle className="h-4 w-4 text-green-500" />
       });
     } catch (error) {
       console.error('Erro ao configurar horários padrão:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível configurar os horários padrão para todos os barbeiros.",
+        description: "Não foi possível configurar os horários padrão para todos os profissionais.",
         variant: "destructive",
       });
     } finally {
@@ -128,7 +128,7 @@ const BarberScheduleManagement: React.FC = () => {
         <CardContent className="pt-6">
           <div className="flex items-center justify-center">
             <div className="animate-pulse text-muted-foreground">
-              Carregando barbeiros...
+              Carregando profissionais...
             </div>
           </div>
         </CardContent>
@@ -142,7 +142,7 @@ const BarberScheduleManagement: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-urbana-gold" />
-            Gerenciamento de Horários dos Barbeiros
+            Gerenciamento de Horários dos Profissionais
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -156,7 +156,7 @@ const BarberScheduleManagement: React.FC = () => {
                   <strong>Domingo:</strong> Fechado
                 </p>
                 <p className="mt-2 text-xs">
-                  Este horário será aplicado automaticamente para novos barbeiros e pode ser ajustado individualmente conforme necessário.
+                  Este horário será aplicado automaticamente para novos profissionais e pode ser ajustado individualmente conforme necessário.
                 </p>
               </div>
             </div>
@@ -165,18 +165,18 @@ const BarberScheduleManagement: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <label className="text-sm font-medium mb-2 block">
-                Selecionar Barbeiro:
+                Selecionar Profissional:
               </label>
-              <Select value={selectedBarberId} onValueChange={handleBarberSelect}>
+              <Select value={selectedStaffId} onValueChange={handleStaffSelect}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Escolha um barbeiro" />
+                  <SelectValue placeholder="Escolha um profissional" />
                 </SelectTrigger>
                 <SelectContent>
-                  {barbers.map((barber) => (
-                    <SelectItem key={barber.id} value={barber.id}>
+                  {staff.map((staffMember) => (
+                    <SelectItem key={staffMember.id} value={staffMember.id}>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
-                        {barber.name}
+                        {staffMember.name}
                       </div>
                     </SelectItem>
                   ))}
@@ -198,7 +198,7 @@ const BarberScheduleManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {selectedBarber && (
+      {selectedStaff && (
         <Tabs defaultValue="schedule" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="schedule" className="flex items-center gap-2">
@@ -213,15 +213,15 @@ const BarberScheduleManagement: React.FC = () => {
           
           <TabsContent value="schedule" className="mt-6">
             <BarberScheduleManager 
-              barberId={selectedBarberId} 
-              barberName={selectedBarber.name}
+              barberId={selectedStaffId} 
+              barberName={selectedStaff.name}
             />
           </TabsContent>
           
           <TabsContent value="availability" className="mt-6">
             <BarberAvailabilityManager
-              barberId={selectedBarberId}
-              barberName={selectedBarber.name}
+              barberId={selectedStaffId}
+              barberName={selectedStaff.name}
             />
           </TabsContent>
         </Tabs>
