@@ -98,7 +98,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             </a>
 
             <Link 
-              to="/client/login"
+              to="/cliente/login"
               className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
               onClick={() => handleItemClick()}
             >
@@ -129,7 +129,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             ) : (
               <div className="space-y-3">
                 <Link 
-                  to="/admin/login" 
+                  to="/auth" 
                   className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20 w-full"
                   onClick={() => handleItemClick()}
                 >
@@ -137,7 +137,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                   <span className="text-lg font-medium">Admin</span>
                 </Link>
                 <Link 
-                  to="/barber/login" 
+                  to="/barbeiro/login" 
                   className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20 w-full"
                   onClick={() => handleItemClick()}
                 >

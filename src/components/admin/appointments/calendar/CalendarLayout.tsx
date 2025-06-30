@@ -14,7 +14,7 @@ const CalendarLayout: React.FC<CalendarLayoutProps> = ({
   children 
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 bg-black">
+    <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6">
       <CalendarSidebar date={date} setDate={setDate} />
       <div className="flex flex-col space-y-4">
         {children}

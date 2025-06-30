@@ -14,32 +14,32 @@ const BarberSidebar: React.FC = () => {
   const navItems = [
     { 
       name: 'Dashboard', 
-      href: '/barber/dashboard', 
+      href: '/barbeiro', 
       icon: <BarChart2 className="h-5 w-5" />
     },
     { 
       name: 'Agendamentos', 
-      href: '/barber/agendamentos', 
+      href: '/barbeiro/agendamentos', 
       icon: <Calendar className="h-5 w-5" />
     },
     { 
       name: 'Minha Agenda', 
-      href: '/barber/agenda', 
+      href: '/barbeiro/agenda', 
       icon: <Clock className="h-5 w-5" />
     },
     { 
       name: 'Clientes', 
-      href: '/barber/clientes', 
+      href: '/barbeiro/clientes', 
       icon: <Users className="h-5 w-5" />
     },
     { 
       name: 'Comissões', 
-      href: '/barber/comissoes', 
+      href: '/barbeiro/comissoes', 
       icon: <DollarSign className="h-5 w-5" />
     },
     { 
       name: 'Perfil', 
-      href: '/barber/perfil', 
+      href: '/barbeiro/perfil', 
       icon: <Settings className="h-5 w-5" />
     }
   ];
@@ -95,7 +95,7 @@ const BarberSidebar: React.FC = () => {
                       : 'hover:bg-urbana-gray/20 text-white'
                   }`
                 }
-                end={item.href === '/barber/dashboard'}
+                end={item.href === '/barbeiro'}
               >
                 {item.icon}
                 <span className="ml-3">{item.name}</span>
@@ -127,7 +127,7 @@ const BarberSidebar: React.FC = () => {
                     : 'hover:bg-urbana-gray/20 text-white'
                 }`
               }
-              end={item.href === '/barber/dashboard'}
+              end={item.href === '/barbeiro'}
             >
               {item.icon}
               <span className="ml-3">{item.name}</span>

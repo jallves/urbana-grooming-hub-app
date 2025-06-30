@@ -36,13 +36,13 @@ const BarberAuth: React.FC = () => {
   useEffect(() => {
     if (!authLoading && user && (isAdmin || isBarber)) {
       console.log('✅ User has access - redirecting to dashboard');
-      navigate('/barber/dashboard');
+      navigate('/barbeiro');
     }
   }, [user, authLoading, isBarber, isAdmin, navigate]);
 
   const handleLoginSuccess = async (userId: string) => {
     // Redirect to dashboard after successful login
-    navigate('/barber/dashboard');
+    navigate('/barbeiro');
   };
 
   // Show access denied message if user is logged in but doesn't have access

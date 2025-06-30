@@ -19,16 +19,15 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
   viewMode
 }) => {
   return (
-    <Card className="bg-gray-800 border-gray-700 hover:border-urbana-gold/50 transition-colors">
+    <Card>
       <CardContent className="p-4">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-sm font-medium text-gray-400 font-raleway">{slot.label}</h3>
+          <h3 className="text-sm font-medium text-gray-500">{slot.label}</h3>
           {viewMode === 'day' && (
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => onCreateAppointment(slot.time)}
-              className="border-urbana-gold text-urbana-gold hover:bg-urbana-gold hover:text-black"
             >
               + Agendar
             </Button>
@@ -36,7 +35,7 @@ const TimeSlot: React.FC<TimeSlotProps> = ({
         </div>
         
         {slot.appointments.length === 0 ? (
-          <p className="text-sm text-gray-500 font-raleway">Nenhum agendamento</p>
+          <p className="text-sm text-gray-400">Nenhum agendamento</p>
         ) : (
           <div className="space-y-2">
             {slot.appointments.map((appointment) => (

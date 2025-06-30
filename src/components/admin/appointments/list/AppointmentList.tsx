@@ -7,11 +7,8 @@ import AppointmentTable from './AppointmentTable';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import AppointmentForm from '../AppointmentForm';
 
-interface AppointmentListProps {
-  searchQuery?: string;
-}
-
-const AppointmentList: React.FC<AppointmentListProps> = ({ searchQuery = '' }) => {
+const AppointmentList: React.FC = () => {
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -33,15 +30,10 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ searchQuery = '' }) =
     }
     
     // Filter by search query
-    if (searchQuery) {
-      const clientName = appointment.client?.name?.toLowerCase() || '';
-      const serviceName = appointment.service?.name?.toLowerCase() || '';
-      const query = searchQuery.toLowerCase();
-      
-      return clientName.includes(query) || serviceName.includes(query);
-    }
+    const clientName = appointment.client?.name?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
     
-    return true;
+    return clientName.includes(query);
   });
   
   const handleEditAppointment = (appointmentId: string) => {
@@ -66,18 +58,16 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ searchQuery = '' }) =
   };
   
   return (
-    <div className="flex flex-col h-full bg-black">
-      <Card className="flex-1 flex flex-col bg-gray-800 border-gray-700">
-        <div className="p-4 border-b border-gray-700">
-          <AppointmentFilters
-            searchQuery={searchQuery}
-            setSearchQuery={() => {}} // Handled by parent
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-          />
-        </div>
+    <>
+      <Card className="p-4">
+        <AppointmentFilters
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+        />
         
-        <div className="flex-1 overflow-hidden">
+        <div className="rounded-md border">
           <AppointmentTable
             appointments={filteredAppointments}
             isLoading={isLoading}
@@ -105,7 +95,7 @@ const AppointmentList: React.FC<AppointmentListProps> = ({ searchQuery = '' }) =
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={executeDeleteAppointment}
       />
-    </div>
+    </>
   );
 };
 
