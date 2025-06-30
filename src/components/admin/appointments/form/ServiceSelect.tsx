@@ -17,19 +17,19 @@ const ServiceSelect: React.FC<ServiceSelectProps> = ({ services, form }) => {
       name="service_id"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Serviço</FormLabel>
+          <FormLabel className="text-black">Serviço</FormLabel>
           <Select 
             onValueChange={field.onChange} 
             value={field.value || ""}
           >
             <FormControl>
-              <SelectTrigger>
+              <SelectTrigger className="text-black">
                 <SelectValue placeholder="Selecione um serviço" />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
               {services.map((service) => (
-                <SelectItem key={service.id} value={service.id || "no-id"}>
+                <SelectItem key={service.id} value={service.id || "no-id"} className="text-black">
                   {service.name} - R$ {service.price} ({service.duration} min)
                 </SelectItem>
               ))}

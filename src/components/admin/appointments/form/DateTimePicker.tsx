@@ -38,14 +38,14 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ form }) => {
         name="date"
         render={({ field }) => (
           <FormItem className="flex flex-col">
-            <FormLabel>Data</FormLabel>
+            <FormLabel className="text-black">Data</FormLabel>
             <Popover>
               <PopoverTrigger asChild>
                 <FormControl>
                   <Button
                     variant="outline"
                     className={cn(
-                      "pl-3 text-left font-normal",
+                      "pl-3 text-left font-normal text-black",
                       !field.value && "text-muted-foreground"
                     )}
                   >
@@ -78,19 +78,19 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({ form }) => {
         name="time"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Hora</FormLabel>
+            <FormLabel className="text-black">Hora</FormLabel>
             <Select
               onValueChange={field.onChange}
               defaultValue={field.value}
             >
               <FormControl>
-                <SelectTrigger>
+                <SelectTrigger className="text-black">
                   <SelectValue placeholder="Selecione um horário" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {timeSlots.map((time) => (
-                  <SelectItem key={time} value={time}>
+                  <SelectItem key={time} value={time} className="text-black">
                     {time}
                   </SelectItem>
                 ))}

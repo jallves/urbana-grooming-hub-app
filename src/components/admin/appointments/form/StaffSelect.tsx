@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { StaffMember } from '@/types/appointment';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -142,7 +141,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
       name="staff_id"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>
+          <FormLabel className="text-black">
             Barbeiro
             {isChecking && <span className="ml-2 text-sm text-gray-500">(Verificando disponibilidade...)</span>}
           </FormLabel>
@@ -152,13 +151,13 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
             disabled={isChecking}
           >
             <FormControl>
-              <SelectTrigger>
+              <SelectTrigger className="text-black">
                 <SelectValue placeholder="Selecione um barbeiro" />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
               {availableStaff.map((staff) => (
-                <SelectItem key={staff.id} value={staff.id}>
+                <SelectItem key={staff.id} value={staff.id} className="text-black">
                   {staff.name} ✅ Disponível
                 </SelectItem>
               ))}
@@ -168,7 +167,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
                   key={staff.id}
                   value={staff.id}
                   disabled
-                  className="opacity-50"
+                  className="opacity-50 text-black"
                 >
                   {staff.name} ❌ Indisponível
                 </SelectItem>

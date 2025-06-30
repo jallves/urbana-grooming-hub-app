@@ -17,19 +17,19 @@ const ClientSelect: React.FC<ClientSelectProps> = ({ clients, form }) => {
       name="client_id"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>Cliente</FormLabel>
+          <FormLabel className="text-black">Cliente</FormLabel>
           <Select 
             onValueChange={field.onChange} 
             value={field.value || ""}
           >
             <FormControl>
-              <SelectTrigger>
+              <SelectTrigger className="text-black">
                 <SelectValue placeholder="Selecione um cliente" />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
               {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id || "no-id"}>
+                <SelectItem key={client.id} value={client.id || "no-id"} className="text-black">
                   {client.name} - {client.phone}
                 </SelectItem>
               ))}
