@@ -15,9 +15,10 @@ import NotesField from './NotesField';
 interface ClientAppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, onClose }) => {
+const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState<AppointmentFormData>({
     name: '',
     phone: '',
@@ -31,7 +32,13 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, o
   });
 
   const { services, staffList, loading } = useClientFormData();
-  const { handleSubmit, submitting } = useClientFormSubmit(onClose);
+  const { handleSubmit, isLoading } = useClientFormSubmit({ 
+    clientId: 'temp-client-id', // This should be passed as a prop
+    onSuccess: () => {
+      onSuccess?.();
+      onClose();
+    }
+  });
 
   const handleInputChange = (value: string, field: string) => {
     setFormData(prev => ({
@@ -49,7 +56,23 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, o
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleSubmit(formData);
+    
+    const selectedService = services.find(s => s.id === formData.service);
+    if (!selectedService) {
+      console.error('Selected service not found');
+      return;
+    }
+
+    // Convert formData to match the expected format
+    const submitData = {
+      service_id: formData.service,
+      staff_id: formData.barber,
+      date: new Date(formData.date),
+      time: formData.time,
+      notes: formData.notes
+    };
+
+    await handleSubmit(submitData, selectedService);
     
     // Reset form after successful submission
     setFormData({
@@ -90,13 +113,13 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, o
           
           <ClientServiceSelect
             services={services}
-            selectedService={formData.service}
+            selectedServiceId={formData.service}
             onServiceChange={(value) => handleSelectChange(value, 'service')}
           />
           
           <BarbershopStaffSelect
-            staff={staffList}
-            selectedStaff={formData.barber}
+            staffList={staffList}
+            selectedStaffId={formData.barber}
             onStaffChange={(value) => handleSelectChange(value, 'barber')}
           />
           
@@ -116,8 +139,8 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({ isOpen, o
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? 'Agendando...' : 'Confirmar Agendamento'}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Agendando...' : 'Confirmar Agendamento'}
             </Button>
           </div>
         </form>

@@ -1,40 +1,23 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Appointment } from '@/types/appointment';
 
-interface Appointment {
-  id: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  notes: string | null;
-  service: {
-    id: string;
-    name: string;
-    price: number;
-    duration: number;
-  };
-  barber: {
-    id: string;
-    name: string;
-    image_url: string;
-  };
-}
-
-export const useRealTimeAppointments = (clientId: string | undefined) => {
+export const useRealTimeAppointments = (date: Date) => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadAppointments = useCallback(async () => {
-    if (!clientId) return;
-
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      console.log('Carregando agendamentos para cliente:', clientId);
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
       
-      // Consultar appointments com joins corretos às tabelas certas
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -49,76 +32,45 @@ export const useRealTimeAppointments = (clientId: string | undefined) => {
             price,
             duration
           ),
-          barber:barbers!appointments_staff_id_fkey (
+          staff:staff (
             id,
             name,
             image_url
           )
         `)
-        .eq('client_id', clientId)
-        .order('start_time', { ascending: true });
+        .gte('start_time', startOfDay.toISOString())
+        .lte('start_time', endOfDay.toISOString())
+        .in('status', ['scheduled', 'confirmed']);
 
-      if (error) {
-        console.error('Erro ao carregar agendamentos:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Agendamentos carregados:', data?.length || 0);
-      setAppointments(data as Appointment[]);
-    } catch (error: any) {
-      console.error('Erro ao carregar agendamentos:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar seus agendamentos.",
-        variant: "destructive",
-      });
+      // Transform the data to match the expected format
+      const transformedAppointments = (data || []).map(appointment => ({
+        ...appointment,
+        barber: appointment.staff || { id: '', name: '', image_url: '' }
+      })) as Appointment[];
+
+      setAppointments(transformedAppointments);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      setError('Erro ao carregar agendamentos');
     } finally {
       setLoading(false);
     }
-  }, [clientId, toast]);
+  }, [date]);
 
   useEffect(() => {
-    loadAppointments();
-  }, [loadAppointments]);
+    fetchAppointments();
 
-  // Real-time subscription
-  useEffect(() => {
-    if (!clientId) return;
-
+    // Setup real-time subscription
     const channel = supabase
-      .channel(`client-appointments-${clientId}`)
+      .channel('appointments')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointments',
-          filter: `client_id=eq.${clientId}`
-        },
+        { event: '*', schema: 'public', table: 'appointments' },
         (payload) => {
-          console.log('Real-time appointment update:', payload);
-          
-          // Reload appointments on any change
-          loadAppointments();
-          
-          // Show appropriate notifications
-          if (payload.eventType === 'UPDATE') {
-            const newStatus = (payload.new as any)?.status;
-            const oldStatus = (payload.old as any)?.status;
-            
-            if (newStatus !== oldStatus) {
-              toast({
-                title: "Status atualizado",
-                description: `Seu agendamento foi ${newStatus === 'confirmed' ? 'confirmado' : 
-                  newStatus === 'cancelled' ? 'cancelado' : 'atualizado'}.`,
-              });
-            }
-          } else if (payload.eventType === 'INSERT') {
-            toast({
-              title: "Novo agendamento",
-              description: "Um novo agendamento foi criado.",
-            });
-          }
+          console.log('Real-time update received:', payload);
+          fetchAppointments(); // Refresh appointments on any change
         }
       )
       .subscribe();
@@ -126,38 +78,7 @@ export const useRealTimeAppointments = (clientId: string | undefined) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [clientId, loadAppointments, toast]);
+  }, [date, fetchAppointments]);
 
-  const cancelAppointment = async (appointmentId: string) => {
-    try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'cancelled' })
-        .eq('id', appointmentId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Agendamento cancelado",
-        description: "Seu agendamento foi cancelado com sucesso.",
-      });
-
-      return true;
-    } catch (error: any) {
-      console.error('Erro ao cancelar agendamento:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível cancelar o agendamento.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
-  return {
-    appointments,
-    loading,
-    loadAppointments,
-    cancelAppointment
-  };
+  return { appointments, loading, error };
 };

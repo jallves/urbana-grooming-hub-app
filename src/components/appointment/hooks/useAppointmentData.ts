@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Service } from '@/types/appointment';
 import { useToast } from '@/hooks/use-toast';
 
-interface Barber {
+interface Staff {
   id: string;
   name: string;
   email: string;
@@ -21,7 +21,7 @@ interface Barber {
 
 export const useAppointmentData = () => {
   const [services, setServices] = useState<Service[]>([]);
-  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [barbers, setBarbers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -47,21 +47,21 @@ export const useAppointmentData = () => {
         console.log('[useAppointmentData] Serviços carregados:', servicesData?.length || 0);
         setServices(servicesData || []);
 
-        // Carregar barbeiros da tabela 'barbers'
+        // Carregar barbeiros da tabela 'staff'
         console.log('[useAppointmentData] Carregando barbeiros...');
-        const { data: barbersData, error: barbersError } = await supabase
-          .from('barbers')
+        const { data: staffData, error: staffError } = await supabase
+          .from('staff')
           .select('*')
           .eq('is_active', true)
           .order('name');
 
-        if (barbersError) {
-          console.error('[useAppointmentData] Erro ao carregar barbeiros:', barbersError);
-          throw new Error(`Erro ao carregar barbeiros: ${barbersError.message}`);
+        if (staffError) {
+          console.error('[useAppointmentData] Erro ao carregar barbeiros:', staffError);
+          throw new Error(`Erro ao carregar barbeiros: ${staffError.message}`);
         }
 
-        console.log('[useAppointmentData] Barbeiros carregados:', barbersData?.length || 0);
-        setBarbers(barbersData || []);
+        console.log('[useAppointmentData] Barbeiros carregados:', staffData?.length || 0);
+        setBarbers(staffData || []);
 
       } catch (error) {
         console.error('[useAppointmentData] Erro geral:', error);

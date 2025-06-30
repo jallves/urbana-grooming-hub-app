@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Barber } from '@/types/barber';
+import { Staff } from '@/types/barber';
 
 export interface BarberAvailabilityInfo {
   id: string;
@@ -24,13 +24,13 @@ export const useAvailability = () => {
     setIsCheckingAvailability(true);
     
     try {
-      // Fetch all barbers first from barbers table
-      const { data: barbersData, error: barbersError } = await supabase
-        .from('barbers')
+      // Fetch all staff first from staff table
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
         .select('*')
         .eq('is_active', true);
 
-      if (barbersError) throw barbersError;
+      if (staffError) throw staffError;
 
       // Generate time slots based on working hours
       const timeSlots = generateTimeSlots();
@@ -39,7 +39,7 @@ export const useAvailability = () => {
       const availableSlots: string[] = [];
       
       for (const timeSlot of timeSlots) {
-        const hasAvailableBarber = await checkAnyBarberAvailable(date, timeSlot, barbersData || []);
+        const hasAvailableBarber = await checkAnyBarberAvailable(date, timeSlot, staffData || []);
         if (hasAvailableBarber) {
           availableSlots.push(timeSlot);
         }
@@ -58,7 +58,7 @@ export const useAvailability = () => {
     date: Date, 
     time: string, 
     serviceId: string, 
-    barbers: Barber[]
+    barbers: Staff[]
   ) => {
     setIsCheckingAvailability(true);
     
@@ -100,7 +100,7 @@ export const useAvailability = () => {
     return slots;
   };
 
-  const checkAnyBarberAvailable = async (date: Date, time: string, barbers: Barber[]) => {
+  const checkAnyBarberAvailable = async (date: Date, time: string, barbers: Staff[]) => {
     for (const barber of barbers) {
       const isAvailable = await checkSingleBarberAvailability(date, time, barber.id);
       if (isAvailable) {

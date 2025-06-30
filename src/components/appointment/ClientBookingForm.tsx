@@ -233,8 +233,8 @@ const ClientBookingForm: React.FC = () => {
           />
           
           <AppointmentDateTime 
-            formData={formData} 
-            handleInputChange={handleInputChange} 
+            date={formData.date ? new Date(formData.date) : undefined}
+            handleDateChange={(date) => handleInputChange(date ? date.toISOString().split('T')[0] : '', 'date')} 
           />
           
           <NotesField 
