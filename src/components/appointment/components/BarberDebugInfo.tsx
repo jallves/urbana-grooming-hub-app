@@ -1,7 +1,13 @@
 
 import React from 'react';
 import { StaffMember } from '@/types/appointment';
-import { BarberAvailabilityInfo } from '../hooks/types';
+// import { BarberAvailabilityInfo } from '../hooks/types';
+
+interface BarberAvailabilityInfo {
+  id: string;
+  name: string;
+  available: boolean;
+}
 
 interface BarberDebugInfoProps {
   barbers: StaffMember[];

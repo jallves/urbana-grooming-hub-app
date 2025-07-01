@@ -48,6 +48,7 @@ import ClientRegister from "./pages/ClientRegister";
 import ClientDashboard from "./pages/ClientDashboard";
 import ClientProfile from "./pages/ClientProfile";
 import ClientEditAppointment from "./pages/ClientEditAppointment";
+import ClientNewAppointment from "./pages/ClientNewAppointment";
 
 import NotFound from "./pages/NotFound";
 
@@ -75,6 +76,7 @@ function App() {
                 <Route path="/cliente/registro" element={<ClientRegister />} />
                 <Route path="/cliente/dashboard" element={<ClientDashboard />} />
                 <Route path="/cliente/perfil" element={<ClientProfile />} />
+                <Route path="/cliente/novo-agendamento" element={<ClientNewAppointment />} />
                 <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
 
                 {/* Admin Routes */}
