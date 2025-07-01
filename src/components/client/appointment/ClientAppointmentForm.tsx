@@ -22,6 +22,9 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
   defaultDate = new Date()
 }) => {
   const { client } = useClientAuth();
+  
+  console.log('👤 Cliente no formulário:', client);
+  
   const {
     form,
     isLoading: isFormLoading,
@@ -29,6 +32,13 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
     staffMembers,
     selectedService
   } = useClientAppointmentFormData(defaultDate, client?.id);
+  
+  console.log('📋 Dados do formulário:', {
+    servicesCount: services.length,
+    staffMembersCount: staffMembers.length,
+    isFormLoading,
+    selectedService
+  });
   
   const { handleSubmit, isLoading: isSubmitLoading } = useClientAppointmentFormSubmit({
     onClose

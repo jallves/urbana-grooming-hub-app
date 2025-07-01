@@ -60,15 +60,24 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
   });
 
   // Fetch staff (same as admin form)
-  const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
+  const { data: staffMembers, isLoading: isLoadingStaff, error: staffError } = useQuery({
     queryKey: ['staff'], // Same key as admin form
     queryFn: async () => {
+      console.log('🔍 Buscando barbeiros...');
       const { data, error } = await supabase
         .from('staff')
         .select('*')
         .eq('is_active', true)
         .order('name');
-      if (error) throw new Error(error.message);
+      
+      console.log('📊 Resultado da consulta:', { data, error });
+      
+      if (error) {
+        console.error('❌ Erro ao buscar barbeiros:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('✅ Barbeiros encontrados:', data?.length || 0);
       return data as StaffMember[];
     },
   });
@@ -83,6 +92,15 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
   }, [form.watch('service_id'), services]);
 
   const isLoading = isLoadingServices || isLoadingStaff;
+
+  console.log('🔧 Hook debug:', {
+    isLoading,
+    servicesCount: services?.length || 0,
+    staffCount: staffMembers?.length || 0,
+    staffError: staffError?.message,
+    isLoadingStaff,
+    isLoadingServices
+  });
 
   return {
     form,

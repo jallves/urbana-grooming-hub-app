@@ -135,6 +135,16 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
   const availableStaff = staffAvailability.filter(staff => staff.available);
   const unavailableStaff = staffAvailability.filter(staff => !staff.available);
 
+  console.log('🎯 StaffSelect Debug:', {
+    staffMembersLength: staffMembers.length,
+    availableStaffLength: availableStaff.length,
+    unavailableStaffLength: unavailableStaff.length,
+    staffAvailabilityLength: staffAvailability.length,
+    isChecking,
+    selectedDate: selectedDate?.toISOString().split('T')[0],
+    selectedTime
+  });
+
   return (
     <FormField
       control={form.control}
