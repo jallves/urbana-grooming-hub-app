@@ -1,120 +1,178 @@
-
 import React, { useEffect, useState } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { toast } from "sonner";
-import { supabase } from '@/integrations/supabase/client';
-import { Calendar, List, Download, Plus } from 'lucide-react';
-import AdminRoute from '@/components/auth/AdminRoute';
-import { AppointmentViewMode } from '@/types/admin';
-import LoadingSkeleton from '@/components/admin/LoadingSkeleton';
-import AppointmentCalendar from '@/components/admin/appointments/calendar/AppointmentCalendar';
-import AppointmentList from '@/components/admin/appointments/list/AppointmentList';
+import { Input } from '@/components/ui/input';
+import { Select, SelectItem } from '@/components/ui/select';
+import { toast } from 'sonner';
 
-const AdminAppointments = () => {
-  const [activeTab, setActiveTab] = useState<AppointmentViewMode>('calendar');
-  const [isLoading, setIsLoading] = useState(true);
+interface AppointmentFormProps {
+  mode: 'admin' | 'client';
+  isOpen: boolean;
+  onClose: () => void;
+  defaultDate?: Date;
+  defaultValues?: any;
+}
+
+export default function AppointmentForm({
+  mode,
+  isOpen,
+  onClose,
+  defaultDate,
+  defaultValues
+}: AppointmentFormProps) {
+  const [barbers, setBarbers] = useState([]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    client_name: '',
+    service_id: '',
+    barber_id: '',
+    date: defaultDate?.toISOString().split('T')[0] || '',
+    time: '',
+    status: 'agendado',
+  });
 
   useEffect(() => {
-    const channel = supabase
-      .channel('appointment-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'appointments'
-        },
-        (payload) => {
-          console.log('Change received:', payload);
-          toast.info('Agendamento atualizado', {
-            description: 'Os dados foram atualizados em tempo real'
-          });
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          toast.success('Conexão estabelecida', {
-            description: 'Monitorando alterações em tempo real'
-          });
-        } else if (status === 'CHANNEL_ERROR') {
-          toast.error('Erro na conexão', {
-            description: 'Não foi possível estabelecer monitoramento'
-          });
-        }
-      });
-
-    setIsLoading(false);
-
-    return () => {
-      supabase.removeChannel(channel);
+    const fetchData = async () => {
+      const { data: barbersData } = await supabase.from('barbers').select('*').eq('active', true);
+      const { data: servicesData } = await supabase.from('services').select('*').eq('active', true);
+      setBarbers(barbersData || []);
+      setServices(servicesData || []);
     };
+    fetchData();
   }, []);
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as AppointmentViewMode);
+  useEffect(() => {
+    if (defaultValues) {
+      setForm((prev) => ({
+        ...prev,
+        ...defaultValues,
+      }));
+    }
+  }, [defaultValues]);
+
+  if (!isOpen) return null;
+
+  const handleChange = (key: string, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <LoadingSkeleton />
-      </AdminLayout>
-    );
-  }
+  const handleSubmit = async () => {
+    const { client_name, service_id, barber_id, date, time, status } = form;
+
+    // validação básica
+    if (!service_id || !barber_id || !date || !time || (mode === 'admin' && !client_name)) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    const start_time = `${date}T${time}`;
+
+    setLoading(true);
+
+    const payload = {
+      client_name: mode === 'admin' ? client_name : null, // pode ser preenchido automaticamente no back-end
+      service_id,
+      barber_id,
+      start_time,
+      status: mode === 'admin' ? status : 'agendado',
+    };
+
+    const { error } = await supabase.from('appointments').insert(payload);
+
+    if (error) {
+      toast.error('Erro ao salvar agendamento');
+      console.error(error);
+    } else {
+      toast.success('Agendamento criado com sucesso');
+      onClose();
+    }
+
+    setLoading(false);
+  };
 
   return (
-    <AdminRoute allowedRoles={['admin', 'barber']}>
-      <AdminLayout>
-        <div className="space-y-6">
-          <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold">Agendamentos</h1>
-              <p className="text-muted-foreground">
-                Visualize e gerencie todos os agendamentos
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Download size={16} />
-                Exportar
-              </Button>
-              <Button size="sm" className="gap-2">
-                <Plus size={16} />
-                Novo Agendamento
-              </Button>
-            </div>
-          </header>
+    <div className="bg-white p-6 rounded-md shadow-md w-full max-w-md mx-auto">
+      <h2 className="text-xl font-semibold mb-4">
+        {defaultValues ? 'Editar Agendamento' : 'Novo Agendamento'}
+      </h2>
 
-          <Tabs 
-            value={activeTab} 
-            onValueChange={handleTabChange}
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="calendar" className="flex items-center gap-2">
-                <Calendar size={16} />
-                Calendário
-              </TabsTrigger>
-              <TabsTrigger value="list" className="flex items-center gap-2">
-                <List size={16} />
-                Lista
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="calendar" className="mt-6">
-              <AppointmentCalendar />
-            </TabsContent>
-            
-            <TabsContent value="list" className="mt-6">
-              <AppointmentList />
-            </TabsContent>
-          </Tabs>
+      {mode === 'admin' && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Nome do Cliente</label>
+          <Input
+            value={form.client_name}
+            onChange={(e) => handleChange('client_name', e.target.value)}
+          />
         </div>
-      </AdminLayout>
-    </AdminRoute>
-  );
-};
+      )}
 
-export default AdminAppointments;
+      <div className="mb-4">
+        <label className="block text-sm font-medium">Serviço</label>
+        <Select
+          value={form.service_id}
+          onValueChange={(val) => handleChange('service_id', val)}
+        >
+          {services.map((service) => (
+            <SelectItem key={service.id} value={service.id}>
+              {service.name}
+            </SelectItem>
+          ))}
+        </Select>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium">Barbeiro</label>
+        <Select
+          value={form.barber_id}
+          onValueChange={(val) => handleChange('barber_id', val)}
+        >
+          {barbers.map((barber) => (
+            <SelectItem key={barber.id} value={barber.id}>
+              {barber.name}
+            </SelectItem>
+          ))}
+        </Select>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium">Data</label>
+        <Input
+          type="date"
+          value={form.date}
+          onChange={(e) => handleChange('date', e.target.value)}
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium">Horário</label>
+        <Input
+          type="time"
+          value={form.time}
+          onChange={(e) => handleChange('time', e.target.value)}
+        />
+      </div>
+
+      {mode === 'admin' && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium">Status</label>
+          <Select
+            value={form.status}
+            onValueChange={(val) => handleChange('status', val)}
+          >
+            <SelectItem value="agendado">Agendado</SelectItem>
+            <SelectItem value="concluido">Concluído</SelectItem>
+            <SelectItem value="cancelado">Cancelado</SelectItem>
+          </Select>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2 mt-6">
+        <Button variant="outline" onClick={onClose}>Cancelar</Button>
+        <Button onClick={handleSubmit} disabled={loading}>
+          {loading ? 'Salvando...' : 'Salvar'}
+        </Button>
+      </div>
+    </div>
+  );
+}
