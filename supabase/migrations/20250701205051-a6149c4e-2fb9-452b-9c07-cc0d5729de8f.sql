@@ -1,3 +1,4 @@
+
 -- Allow clients to view active staff members for appointment booking
 CREATE POLICY "Clients can view active staff for booking"
 ON public.staff

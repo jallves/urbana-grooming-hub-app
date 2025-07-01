@@ -49,28 +49,40 @@ export const useClientFormData = (defaultDate: Date = new Date()) => {
   const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
+      console.log('🔍 Buscando serviços...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true)
         .order('name');
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('❌ Erro ao buscar serviços:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('✅ Serviços encontrados:', data?.length || 0);
       return data as Service[];
     },
   });
 
-  // Fetch staff members
+  // Fetch staff members (barbeiros)
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => {
+      console.log('🔍 Buscando barbeiros...');
       const { data, error } = await supabase
         .from('staff')
         .select('*')
         .eq('is_active', true)
         .order('name');
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('❌ Erro ao buscar barbeiros:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('✅ Barbeiros encontrados:', data?.length || 0, data);
       return data as StaffMember[];
     },
   });
@@ -85,6 +97,15 @@ export const useClientFormData = (defaultDate: Date = new Date()) => {
   }, [form.watch('service_id'), services]);
 
   const isLoading = isLoadingServices || isLoadingStaff;
+
+  // Debug logs
+  console.log('🐛 useClientFormData Debug:', {
+    servicesLength: services?.length || 0,
+    staffLength: staffMembers?.length || 0,
+    isLoading,
+    isLoadingServices,
+    isLoadingStaff
+  });
 
   return {
     form,

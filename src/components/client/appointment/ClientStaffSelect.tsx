@@ -31,8 +31,30 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
   const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>([]);
   const [isChecking, setIsChecking] = useState(false);
 
+  // Debug logs
+  console.log('🎯 ClientStaffSelect Debug:', {
+    staffMembersLength: staffMembers?.length || 0,
+    staffAvailabilityLength: staffAvailability?.length || 0,
+    availableStaffLength: staffAvailability.filter(s => s.available)?.length || 0,
+    unavailableStaffLength: staffAvailability.filter(s => !s.available)?.length || 0,
+    isChecking,
+    selectedDate: selectedDate?.toISOString().split('T')[0],
+    selectedTime,
+    serviceDuration,
+    staffMembers: staffMembers?.map(s => ({ id: s.id, name: s.name })) || []
+  });
+
   const checkStaffAvailability = async () => {
-    if (!selectedDate || !selectedTime || !staffMembers.length) {
+    // Se não há barbeiros, não fazer nada
+    if (!staffMembers || staffMembers.length === 0) {
+      console.log('⚠️ Nenhum barbeiro disponível para verificar');
+      setStaffAvailability([]);
+      return;
+    }
+
+    // Se não há data ou horário selecionado, mostrar todos como disponíveis
+    if (!selectedDate || !selectedTime) {
+      console.log('📅 Sem data/horário - mostrando todos barbeiros como disponíveis');
       setStaffAvailability(staffMembers.map(staff => ({
         id: staff.id,
         name: staff.name,
@@ -42,6 +64,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
     }
 
     setIsChecking(true);
+    console.log('🔍 Verificando disponibilidade dos barbeiros...');
 
     try {
       const [hours, minutes] = selectedTime.split(':').map(Number);
@@ -61,6 +84,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
           .lte('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
         if (error) {
+          console.error('❌ Erro ao verificar disponibilidade:', error);
           return {
             id: staff.id,
             name: staff.name,
@@ -106,6 +130,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
         }
       }
     } catch (error) {
+      console.error('❌ Erro geral na verificação:', error);
       toast({
         title: "Erro",
         description: "Não foi possível verificar a disponibilidade dos barbeiros.",
@@ -127,6 +152,27 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
 
   const availableStaff = staffAvailability.filter(staff => staff.available);
   const unavailableStaff = staffAvailability.filter(staff => !staff.available);
+
+  // Se não há barbeiros carregados, mostrar mensagem
+  if (!staffMembers || staffMembers.length === 0) {
+    return (
+      <FormField
+        control={form.control}
+        name="staff_id"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-black">Barbeiro</FormLabel>
+            <FormControl>
+              <SelectTrigger className="text-black">
+                <SelectValue placeholder="Carregando barbeiros..." />
+              </SelectTrigger>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  }
 
   return (
     <FormField
@@ -169,6 +215,12 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
               {availableStaff.length === 0 && unavailableStaff.length > 0 && (
                 <div className="px-2 py-1 text-sm text-red-600">
                   Nenhum barbeiro disponível neste horário
+                </div>
+              )}
+
+              {staffAvailability.length === 0 && !isChecking && (
+                <div className="px-2 py-1 text-sm text-gray-600">
+                  Nenhum barbeiro encontrado
                 </div>
               )}
             </SelectContent>
