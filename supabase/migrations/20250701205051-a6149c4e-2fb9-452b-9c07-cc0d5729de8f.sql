@@ -12,3 +12,9 @@ ON public.staff
 FOR SELECT
 TO anon
 USING (is_active = true);
+
+-- Enable public read access for staff table
+CREATE POLICY "Enable read access for all users"
+ON public.staff
+FOR SELECT
+USING (true);

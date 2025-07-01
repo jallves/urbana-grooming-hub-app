@@ -66,7 +66,7 @@ export const useClientFormData = (defaultDate: Date = new Date()) => {
     },
   });
 
-  // Fetch staff members (barbeiros)
+  // Fetch staff members (barbeiros) - simplified query without auth.users
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => {
