@@ -31,19 +31,6 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
   const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>([]);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Debug logs
-  console.log('🎯 ClientStaffSelect Debug:', {
-    staffMembersLength: staffMembers?.length || 0,
-    staffAvailabilityLength: staffAvailability?.length || 0,
-    availableStaffLength: staffAvailability.filter(s => s.available)?.length || 0,
-    unavailableStaffLength: staffAvailability.filter(s => !s.available)?.length || 0,
-    isChecking,
-    selectedDate: selectedDate?.toISOString().split('T')[0],
-    selectedTime,
-    serviceDuration,
-    staffMembers: staffMembers?.map(s => ({ id: s.id, name: s.name })) || []
-  });
-
   const checkStaffAvailability = async () => {
     // Se não há barbeiros, não fazer nada
     if (!staffMembers || staffMembers.length === 0) {
@@ -153,27 +140,6 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
   const availableStaff = staffAvailability.filter(staff => staff.available);
   const unavailableStaff = staffAvailability.filter(staff => !staff.available);
 
-  // Se não há barbeiros carregados, mostrar mensagem
-  if (!staffMembers || staffMembers.length === 0) {
-    return (
-      <FormField
-        control={form.control}
-        name="staff_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-black">Barbeiro</FormLabel>
-            <FormControl>
-              <SelectTrigger className="text-black">
-                <SelectValue placeholder="Carregando barbeiros..." />
-              </SelectTrigger>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    );
-  }
-
   return (
     <FormField
       control={form.control}
@@ -191,37 +157,49 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
           >
             <FormControl>
               <SelectTrigger className="text-black">
-                <SelectValue placeholder="Selecione um barbeiro" />
+                <SelectValue placeholder={
+                  staffMembers.length === 0 
+                    ? "Carregando barbeiros..." 
+                    : "Selecione um barbeiro"
+                } />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {availableStaff.map((staff) => (
-                <SelectItem key={staff.id} value={staff.id} className="text-black">
-                  {staff.name} ✅ Disponível
-                </SelectItem>
-              ))}
-
-              {unavailableStaff.map((staff) => (
-                <SelectItem
-                  key={staff.id}
-                  value={staff.id}
-                  disabled
-                  className="opacity-50 text-black"
-                >
-                  {staff.name} ❌ Indisponível
-                </SelectItem>
-              ))}
-
-              {availableStaff.length === 0 && unavailableStaff.length > 0 && (
-                <div className="px-2 py-1 text-sm text-red-600">
-                  Nenhum barbeiro disponível neste horário
-                </div>
-              )}
-
-              {staffAvailability.length === 0 && !isChecking && (
+              {staffMembers.length === 0 ? (
                 <div className="px-2 py-1 text-sm text-gray-600">
-                  Nenhum barbeiro encontrado
+                  Carregando barbeiros...
                 </div>
+              ) : (
+                <>
+                  {availableStaff.map((staff) => (
+                    <SelectItem key={staff.id} value={staff.id} className="text-black">
+                      {staff.name} ✅ Disponível
+                    </SelectItem>
+                  ))}
+
+                  {unavailableStaff.map((staff) => (
+                    <SelectItem
+                      key={staff.id}
+                      value={staff.id}
+                      disabled
+                      className="opacity-50 text-black"
+                    >
+                      {staff.name} ❌ Indisponível
+                    </SelectItem>
+                  ))}
+
+                  {availableStaff.length === 0 && unavailableStaff.length > 0 && (
+                    <div className="px-2 py-1 text-sm text-red-600">
+                      Nenhum barbeiro disponível neste horário
+                    </div>
+                  )}
+
+                  {staffAvailability.length === 0 && !isChecking && staffMembers.length > 0 && (
+                    <div className="px-2 py-1 text-sm text-gray-600">
+                      Verificando disponibilidade...
+                    </div>
+                  )}
+                </>
               )}
             </SelectContent>
           </Select>
