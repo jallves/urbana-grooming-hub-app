@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarItem, SidebarTrigger } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from "@/components/ui/sidebar";
@@ -19,10 +20,34 @@ import {
   UserCheck
 } from "lucide-react";
 
+interface SidebarItemProps {
+  title: string;
+  icon: React.ComponentType<any>;
+  href: string;
+  active?: boolean;
+}
+
+const SidebarItem: React.FC<SidebarItemProps> = ({ title, icon: Icon, href, active }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <button
+      onClick={() => navigate(href)}
+      className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors ${
+        active 
+          ? 'bg-blue-600 text-white' 
+          : 'text-gray-400 hover:text-white hover:bg-zinc-800'
+      }`}
+    >
+      <Icon className="h-4 w-4" />
+      <span>{title}</span>
+    </button>
+  );
+};
+
 const AdminSidebar: React.FC = () => {
   const location = useLocation();
   const { isBarber } = useAuth();
-  const { collapsed } = useSidebar();
 
   const menuItems = [
     {
@@ -99,20 +124,22 @@ const AdminSidebar: React.FC = () => {
 
   return (
     <Sidebar className="bg-zinc-900 border-r border-zinc-800 text-gray-400">
-      <SidebarHeader className="font-bold text-xl text-white">
+      <SidebarHeader className="font-bold text-xl text-white p-4">
         <SidebarTrigger />
         Urbana Barbearia
       </SidebarHeader>
-      <SidebarContent>
-        {menuItems.map((item) => (
-          <SidebarItem
-            key={item.href}
-            title={item.title}
-            icon={item.icon}
-            href={item.href}
-            active={location.pathname === item.href}
-          />
-        ))}
+      <SidebarContent className="px-4">
+        <div className="space-y-1">
+          {menuItems.map((item) => (
+            <SidebarItem
+              key={item.href}
+              title={item.title}
+              icon={item.icon}
+              href={item.href}
+              active={location.pathname === item.href}
+            />
+          ))}
+        </div>
       </SidebarContent>
       <SidebarFooter>
         {/* Footer content can go here */}

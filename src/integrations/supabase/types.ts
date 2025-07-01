@@ -1120,6 +1120,48 @@ export type Database = {
           },
         ]
       }
+      employees: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          last_login: string | null
+          name: string
+          phone: string
+          photo_url: string | null
+          role: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          last_login?: string | null
+          name: string
+          phone: string
+          photo_url?: string | null
+          role: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          last_login?: string | null
+          name?: string
+          phone?: string
+          photo_url?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       faqs: {
         Row: {
           answer: string
@@ -2584,7 +2626,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user" | "barber" | "customer"
+      app_role: "admin" | "user" | "barber" | "customer" | "manager"
       user_type: "admin" | "user"
     }
     CompositeTypes: {
@@ -2701,7 +2743,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "barber", "customer"],
+      app_role: ["admin", "user", "barber", "customer", "manager"],
       user_type: ["admin", "user"],
     },
   },

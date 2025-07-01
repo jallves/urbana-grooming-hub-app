@@ -99,7 +99,12 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
     // Depois, criar o registro na tabela employees
     const employeeData: CreateEmployeeData = {
-      ...data,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role: data.role,
+      status: data.status,
+      password: data.password,
       photo_url: photoUrl,
     };
 
@@ -109,12 +114,14 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
     if (error) throw error;
 
-    // Adicionar role na tabela user_roles
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .insert([{ user_id: authData.user.id, role: data.role }]);
+    // Adicionar role na tabela user_roles se a role for compatível
+    if (data.role === 'admin' || data.role === 'barber') {
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert([{ user_id: authData.user.id, role: data.role }]);
 
-    if (roleError) console.warn('Erro ao adicionar role:', roleError);
+      if (roleError) console.warn('Erro ao adicionar role:', roleError);
+    }
   };
 
   const updateEmployee = async (data: EmployeeFormData) => {
