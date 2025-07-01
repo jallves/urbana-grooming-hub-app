@@ -32,9 +32,9 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
     },
   });
 
-  // Fetch services
+  // Fetch services (same as admin form)
   const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services'],
+    queryKey: ['services'], // Same key as admin form
     queryFn: async () => {
       const { data, error } = await supabase
         .from('services')
@@ -47,9 +47,9 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
     },
   });
 
-  // Fetch staff
+  // Fetch staff (same as admin form)
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['staff'],
+    queryKey: ['staff'], // Same key as admin form
     queryFn: async () => {
       const { data, error } = await supabase
         .from('staff')
