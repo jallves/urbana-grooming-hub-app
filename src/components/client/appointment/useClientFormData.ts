@@ -9,7 +9,7 @@ import { Service, StaffMember } from '@/types/appointment';
 
 const formSchema = z.object({
   service_id: z.string().min(1, 'Serviço é obrigatório'),
-  staff_id: z.string().min(1, 'Profissional é obrigatório'),
+  staff_id: z.string().min(1, 'Barbeiro é obrigatório'),
   date: z.date({
     required_error: 'Data é obrigatória',
   }).refine((date) => {
@@ -31,7 +31,7 @@ const formSchema = z.object({
 
 export type ClientFormValues = z.infer<typeof formSchema>;
 
-export const useClientAppointmentFormData = (defaultDate: Date = new Date(), clientId?: string) => {
+export const useClientFormData = (defaultDate: Date = new Date()) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   const form = useForm<ClientFormValues>({
@@ -45,9 +45,9 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
     },
   });
 
-  // Fetch services (same as admin form)
+  // Fetch services
   const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services'], // Same key as admin form
+    queryKey: ['services'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('services')
@@ -60,9 +60,9 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
     },
   });
 
-  // Fetch staff (same as admin form)
-  const { data: staffMembers, isLoading: isLoadingStaff, error: staffError } = useQuery({
-    queryKey: ['staff'], // Same key as admin form
+  // Fetch staff members
+  const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
+    queryKey: ['staff'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('staff')
@@ -70,10 +70,7 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
         .eq('is_active', true)
         .order('name');
       
-      if (error) {
-        throw new Error(error.message);
-      }
-      
+      if (error) throw new Error(error.message);
       return data as StaffMember[];
     },
   });

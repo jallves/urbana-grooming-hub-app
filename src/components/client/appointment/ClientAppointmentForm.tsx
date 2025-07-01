@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
-import { useClientAppointmentFormData } from './useClientAppointmentFormData';
-import { useClientAppointmentFormSubmit } from './useClientAppointmentFormSubmit';
+import { useClientFormData } from './useClientFormData';
+import { useClientFormSubmit } from './useClientFormSubmit';
 import ServiceSelect from '@/components/admin/appointments/form/ServiceSelect';
-import StaffSelect from '@/components/admin/appointments/form/StaffSelect';
+import ClientStaffSelect from './ClientStaffSelect';
 import ClientDateTimePicker from './ClientDateTimePicker';
 import NotesField from '@/components/admin/appointments/form/NotesField';
 import AppointmentFormActions from '@/components/admin/appointments/form/AppointmentFormActions';
@@ -23,25 +24,17 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
 }) => {
   const { client } = useClientAuth();
   
-  console.log('👤 Cliente no formulário:', client);
-  
   const {
     form,
     isLoading: isFormLoading,
     services,
     staffMembers,
     selectedService
-  } = useClientAppointmentFormData(defaultDate, client?.id);
+  } = useClientFormData(defaultDate);
   
-  console.log('📋 Dados do formulário:', {
-    servicesCount: services.length,
-    staffMembersCount: staffMembers.length,
-    isFormLoading,
-    selectedService
-  });
-  
-  const { handleSubmit, isLoading: isSubmitLoading } = useClientAppointmentFormSubmit({
-    onClose
+  const { handleSubmit, isLoading: isSubmitLoading } = useClientFormSubmit({
+    onClose,
+    clientId: client?.id || ''
   });
   
   const isLoading = isFormLoading || isSubmitLoading;
@@ -52,13 +45,7 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
       return;
     }
     
-    // Add client_id to the form data
-    const appointmentData = {
-      ...data,
-      client_id: client.id
-    };
-    
-    await handleSubmit(appointmentData, selectedService);
+    await handleSubmit(data, selectedService);
   };
 
   // Get form values for StaffSelect
@@ -90,7 +77,7 @@ const ClientAppointmentForm: React.FC<ClientAppointmentFormProps> = ({
             
             <ClientDateTimePicker form={form} />
             
-            <StaffSelect 
+            <ClientStaffSelect 
               staffMembers={staffMembers} 
               form={form} 
               selectedDate={selectedDate}

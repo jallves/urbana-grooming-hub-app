@@ -13,22 +13,20 @@ interface StaffAvailability {
   available: boolean;
 }
 
-interface StaffSelectProps {
+interface ClientStaffSelectProps {
   staffMembers: StaffMember[];
   form: UseFormReturn<any>;
   selectedDate?: Date;
   selectedTime?: string;
   serviceDuration?: number;
-  appointmentId?: string;
 }
 
-const StaffSelect: React.FC<StaffSelectProps> = ({
+const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
   staffMembers,
   form,
   selectedDate,
   selectedTime,
-  serviceDuration = 60,
-  appointmentId
+  serviceDuration = 60
 }) => {
   const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>([]);
   const [isChecking, setIsChecking] = useState(false);
@@ -54,19 +52,13 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
       endTime.setMinutes(endTime.getMinutes() + serviceDuration);
 
       const availability = await Promise.all(staffMembers.map(async (staff) => {
-        let query = supabase
+        const { data: appointments, error } = await supabase
           .from('appointments')
           .select('id, start_time, end_time')
           .eq('staff_id', staff.id)
           .eq('status', 'scheduled')
           .gte('start_time', startTime.toISOString().split('T')[0])
           .lte('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-
-        if (appointmentId) {
-          query = query.neq('id', appointmentId);
-        }
-
-        const { data: appointments, error } = await query;
 
         if (error) {
           return {
@@ -91,7 +83,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
 
       setStaffAvailability(availability);
 
-      // Ajuste automático se barbeiro indisponível
+      // Auto-select first available staff if current is unavailable
       const currentStaffId = form.getValues('staff_id');
       if (currentStaffId) {
         const currentStaffAvailable = availability.find(s => s.id === currentStaffId)?.available;
@@ -131,7 +123,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
 
   useEffect(() => {
     checkStaffAvailability();
-  }, [selectedDate, selectedTime, serviceDuration, staffMembers, appointmentId]);
+  }, [selectedDate, selectedTime, serviceDuration, staffMembers]);
 
   const availableStaff = staffAvailability.filter(staff => staff.available);
   const unavailableStaff = staffAvailability.filter(staff => !staff.available);
@@ -188,4 +180,4 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
   );
 };
 
-export default StaffSelect;
+export default ClientStaffSelect;
