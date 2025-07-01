@@ -58,9 +58,9 @@ export const useClientAppointmentFormSubmit = ({
       if (error) throw error;
       
       toast({
-        title: "🎉 Agendamento Criado!",
-        description: `Seu agendamento de ${selectedService.name} foi marcado para ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
-        duration: 5000,
+        title: "✅ Agendamento Concluído!",
+        description: `Seu agendamento de ${selectedService.name} foi marcado para ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}. Agradecemos sua preferência!`,
+        duration: 6000,
       });
       
       onClose();

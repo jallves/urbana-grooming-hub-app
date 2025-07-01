@@ -11,8 +11,20 @@ const formSchema = z.object({
   staff_id: z.string().min(1, 'Profissional é obrigatório'),
   date: z.date({
     required_error: 'Data é obrigatória',
-  }),
-  time: z.string().min(1, 'Horário é obrigatório'),
+  }).refine((date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
+  }, 'Data não pode ser no passado')
+  .refine((date) => {
+    const dayOfWeek = date.getDay();
+    return dayOfWeek !== 0; // Não pode ser domingo
+  }, 'Não atendemos aos domingos'),
+  time: z.string().min(1, 'Horário é obrigatório')
+    .refine((time) => {
+      const [hours] = time.split(':').map(Number);
+      return hours >= 9 && hours < 20;
+    }, 'Horário deve ser entre 09h e 20h'),
   notes: z.string().optional(),
 });
 
