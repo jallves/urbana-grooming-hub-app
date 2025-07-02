@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -88,7 +87,6 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const createEmployee = async (data: EmployeeFormData) => {
     console.log('Creating new employee...');
     
-    // Inserir diretamente na tabela employees sem criar usuário no auth
     const employeeData = {
       name: data.name,
       email: data.email,
@@ -162,10 +160,10 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `employees/${fileName}`;
 
-      console.log('Uploading photo:', filePath);
+      console.log('Uploading photo to bucket staff-photos:', filePath);
 
       const { error: uploadError } = await supabase.storage
-        .from('Staff Photos')
+        .from('staff-photos')
         .upload(filePath, file);
 
       if (uploadError) {
@@ -174,10 +172,12 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       }
 
       const { data: urlData } = supabase.storage
-        .from('Staff Photos')
+        .from('staff-photos')
         .getPublicUrl(filePath);
 
+      console.log('Photo uploaded successfully, URL:', urlData.publicUrl);
       setPhotoUrl(urlData.publicUrl);
+      
       toast({
         title: 'Sucesso',
         description: 'Foto carregada com sucesso!',
@@ -186,7 +186,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       console.error('Photo upload error:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao carregar foto',
+        description: 'Erro ao carregar foto: ' + error.message,
         variant: 'destructive',
       });
     } finally {
