@@ -30,7 +30,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
   const handleLogout = async () => {
     try {
       await signOut();
-      navigate('/barbeiro/login');
+      // Redirection is handled by the signOut function in AuthContext
     } catch (error) {
       console.error('Error signing out:', error);
     }

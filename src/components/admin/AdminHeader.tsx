@@ -15,6 +15,7 @@ const AdminHeader: React.FC = () => {
         title: 'Logout realizado',
         description: 'Você foi desconectado do sistema',
       });
+      // Redirection is handled by the signOut function in AuthContext
     } catch (error) {
       toast({
         title: 'Erro ao fazer logout',

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Client, ClientLoginData, ClientFormData } from '@/types/client';
@@ -218,6 +219,9 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       title: "Logout realizado",
       description: "Até a próxima!",
     });
+
+    // Redirect to homepage after logout
+    window.location.href = '/';
   };
 
   // Alias for backward compatibility

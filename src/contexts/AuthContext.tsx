@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 type AppRole = 'admin' | 'user' | 'barber';
 
@@ -77,6 +78,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error during logout:', error);
       } else {
         console.log('Logout completed successfully');
+        // Redirect to homepage after successful logout
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Error during logout:', error);
