@@ -5,8 +5,8 @@ import { Form } from "@/components/ui/form";
 import { useClientFormData } from './useClientFormData';
 import { useClientFormSubmit } from './useClientFormSubmit';
 import ServiceSelect from '@/components/admin/appointments/form/ServiceSelect';
-import ClientStaffSelect from './ClientStaffSelect';
-import ClientDateTimePicker from './ClientDateTimePicker';
+import StaffSelect from '@/components/admin/appointments/form/StaffSelect';
+import DateTimePicker from '@/components/admin/appointments/form/DateTimePicker';
 import NotesField from '@/components/admin/appointments/form/NotesField';
 import AppointmentFormActions from '@/components/admin/appointments/form/AppointmentFormActions';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
@@ -51,7 +51,6 @@ const NewClientAppointmentForm: React.FC<NewClientAppointmentFormProps> = ({
   // Get form values for StaffSelect
   const selectedDate = form.watch('date');
   const selectedTime = form.watch('time');
-  const selectedServiceId = form.watch('service_id');
   
   if (!client) {
     return null;
@@ -76,34 +75,26 @@ const NewClientAppointmentForm: React.FC<NewClientAppointmentFormProps> = ({
         </div>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="space-y-4">
-              <ServiceSelect services={services} form={form} />
-              
-              <ClientDateTimePicker form={form} />
-              
-              {selectedServiceId && selectedDate && selectedTime && (
-                <div className="animate-in fade-in-50 duration-300">
-                  <ClientStaffSelect 
-                    staffMembers={staffMembers} 
-                    form={form} 
-                    selectedDate={selectedDate}
-                    selectedTime={selectedTime}
-                    serviceDuration={selectedService?.duration}
-                  />
-                </div>
-              )}
-              
-              <NotesField form={form} />
-            </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <ServiceSelect services={services} form={form} />
             
-            <div className="pt-4 border-t">
-              <AppointmentFormActions 
-                isLoading={isLoading} 
-                onClose={onClose} 
-                isEditing={false}
-              />
-            </div>
+            <DateTimePicker form={form} />
+            
+            <StaffSelect 
+              staffMembers={staffMembers} 
+              form={form} 
+              selectedDate={selectedDate}
+              selectedTime={selectedTime}
+              serviceDuration={selectedService?.duration}
+            />
+            
+            <NotesField form={form} />
+            
+            <AppointmentFormActions 
+              isLoading={isLoading} 
+              onClose={onClose} 
+              isEditing={false}
+            />
           </form>
         </Form>
       </DialogContent>
