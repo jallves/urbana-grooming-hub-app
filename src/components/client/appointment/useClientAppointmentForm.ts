@@ -5,8 +5,24 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Service, StaffMember } from '@/types/appointment';
+import { Service } from '@/types/appointment';
 import { toast } from '@/hooks/use-toast';
+
+// Interface para Staff Member da tabela staff
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  is_active: boolean;
+  image_url?: string;
+  specialties?: string;
+  experience?: string;
+  commission_rate?: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
 const formSchema = z.object({
   service_id: z.string().min(1, 'Serviço é obrigatório'),
@@ -46,7 +62,7 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
     },
   });
 
-  // Fetch serviços usando a mesma query do admin
+  // Fetch serviços
   const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['client-services'],
     queryFn: async () => {
@@ -149,6 +165,14 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
   }, [services, form]);
 
   const isLoading = isLoadingServices || isLoadingStaff;
+
+  console.log('📊 useClientAppointmentForm - Estado:', {
+    isLoading,
+    servicesCount: services?.length || 0,
+    staffCount: staffMembers?.length || 0,
+    selectedService: selectedService?.name,
+    formValues: form.getValues()
+  });
 
   return {
     form,

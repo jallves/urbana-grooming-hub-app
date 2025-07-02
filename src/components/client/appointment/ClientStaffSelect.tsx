@@ -6,7 +6,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-// Tipo para Staff Member (barbeiro da tabela staff)
+// Tipo simplificado para Staff Member compatível com a tabela staff
 interface StaffMember {
   id: string;
   name: string;
@@ -43,6 +43,14 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
   const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>([]);
   const [isChecking, setIsChecking] = useState(false);
 
+  console.log('🔍 ClientStaffSelect - Props recebidas:', {
+    staffMembersCount: staffMembers?.length || 0,
+    staffMembers: staffMembers,
+    selectedDate,
+    selectedTime,
+    serviceDuration
+  });
+
   const checkStaffAvailability = async () => {
     console.log('🔍 Cliente: Verificando disponibilidade dos barbeiros...');
     
@@ -78,12 +86,12 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
       console.log(`📅 Horário solicitado: ${startTime.toLocaleString()} - ${endTime.toLocaleString()}`);
 
       const availability = await Promise.all(staffMembers.map(async (staff) => {
-        console.log(`👤 Verificando barbeiro: ${staff.name}`);
+        console.log(`👤 Verificando barbeiro: ${staff.name} (ID: ${staff.id})`);
         
         // Buscar agendamentos usando o staff_id
         const { data: appointments, error } = await supabase
           .from('appointments')
-          .select('id, start_time, end_time')
+          .select('id, start_time, end_time, status')
           .eq('staff_id', staff.id)
           .eq('status', 'scheduled')
           .gte('start_time', startTime.toISOString().split('T')[0])
@@ -167,6 +175,14 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
 
   const availableStaff = staffAvailability.filter(staff => staff.available);
   const unavailableStaff = staffAvailability.filter(staff => !staff.available);
+
+  console.log('📊 Resultado final:', {
+    totalStaff: staffMembers.length,
+    availableCount: availableStaff.length,
+    unavailableCount: unavailableStaff.length,
+    availableStaff,
+    unavailableStaff
+  });
 
   return (
     <FormField
