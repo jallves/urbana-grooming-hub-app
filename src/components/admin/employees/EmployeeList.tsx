@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -17,7 +16,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Loader2, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { Employee } from './types';
 
