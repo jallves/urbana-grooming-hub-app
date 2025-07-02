@@ -48,7 +48,14 @@ export const useEmployeeManagement = () => {
         );
       }
 
-      setEmployees(filteredData);
+      // Type assertion para garantir que os dados estão no formato correto
+      const typedEmployees = filteredData.map(employee => ({
+        ...employee,
+        role: employee.role as 'admin' | 'manager' | 'barber',
+        status: employee.status as 'active' | 'inactive'
+      })) as Employee[];
+
+      setEmployees(typedEmployees);
     } catch (error: any) {
       console.error('Erro ao buscar funcionários:', error);
       toast({
