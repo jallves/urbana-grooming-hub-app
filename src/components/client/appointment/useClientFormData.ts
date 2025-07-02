@@ -5,18 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Service } from '@/types/appointment';
-
-// Define tipo para Employee (barbeiro)
-interface Employee {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  status: string;
-  photo_url?: string;
-}
+import { Service, StaffMember } from '@/types/appointment';
 
 const formSchema = z.object({
   service_id: z.string().min(1, 'Serviço é obrigatório'),
@@ -71,16 +60,15 @@ export const useClientFormData = (defaultDate: Date = new Date(), clientId?: str
     },
   });
 
-  // Fetch employees (barbeiros) da tabela employees
+  // Fetch staff members (barbeiros) da tabela staff - igual ao admin
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['employees-barbers'],
+    queryKey: ['staff'],
     queryFn: async () => {
-      console.log('🔍 Buscando barbeiros da tabela employees...');
+      console.log('🔍 Buscando barbeiros da tabela staff...');
       const { data, error } = await supabase
-        .from('employees')
+        .from('staff')
         .select('*')
-        .eq('status', 'active')
-        .eq('role', 'barber')
+        .eq('is_active', true)
         .order('name');
       
       if (error) {
@@ -89,7 +77,7 @@ export const useClientFormData = (defaultDate: Date = new Date(), clientId?: str
       }
       
       console.log('✅ Barbeiros encontrados:', data?.length || 0);
-      return data as Employee[];
+      return data as StaffMember[];
     },
   });
 
