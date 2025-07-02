@@ -56,48 +56,56 @@ const EmployeeManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-white">Gerenciamento de Funcionários</CardTitle>
+    <div className="space-y-6 bg-black min-h-screen p-6">
+      <Card className="bg-gray-900 border-gray-700 shadow-lg">
+        <CardHeader className="border-b border-gray-700">
+          <CardTitle className="text-2xl font-playfair text-urbana-gold">
+            Gerenciamento de Funcionários
+          </CardTitle>
+          <p className="text-gray-300 font-raleway">
+            Gerencie administradores, gerentes e barbeiros da Urbana Barbearia
+          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6 pt-6">
           {/* Filtros e Busca */}
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-urbana-gold" />
               <Input
                 placeholder="Buscar por nome ou email..."
-                className="pl-8 bg-zinc-800 border-zinc-700 text-white"
+                className="pl-10 bg-black border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold focus:ring-urbana-gold/20 font-raleway"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[180px] bg-zinc-800 border-zinc-700 text-white">
+              <SelectTrigger className="w-[180px] bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
                 <SelectValue placeholder="Filtrar por cargo" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os cargos</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
-                <SelectItem value="manager">Gerente</SelectItem>
-                <SelectItem value="barber">Barbeiro</SelectItem>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="all" className="text-white hover:bg-gray-800">Todos os cargos</SelectItem>
+                <SelectItem value="admin" className="text-white hover:bg-gray-800">Administrador</SelectItem>
+                <SelectItem value="manager" className="text-white hover:bg-gray-800">Gerente</SelectItem>
+                <SelectItem value="barber" className="text-white hover:bg-gray-800">Barbeiro</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px] bg-zinc-800 border-zinc-700 text-white">
+              <SelectTrigger className="w-[180px] bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="inactive">Inativo</SelectItem>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="all" className="text-white hover:bg-gray-800">Todos</SelectItem>
+                <SelectItem value="active" className="text-white hover:bg-gray-800">Ativo</SelectItem>
+                <SelectItem value="inactive" className="text-white hover:bg-gray-800">Inativo</SelectItem>
               </SelectContent>
             </Select>
 
-            <Button onClick={handleAddEmployee} className="bg-blue-600 hover:bg-blue-700">
+            <Button 
+              onClick={handleAddEmployee} 
+              className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium transition-all duration-300 hover:scale-105"
+            >
               <UserPlus className="mr-2 h-4 w-4" />
               Adicionar Funcionário
             </Button>
@@ -115,9 +123,9 @@ const EmployeeManagement: React.FC = () => {
 
       {/* Dialog do Formulário */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-700 text-white max-w-2xl">
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl font-playfair text-urbana-gold">
               {editingEmployee ? 'Editar Funcionário' : 'Adicionar Funcionário'}
             </DialogTitle>
           </DialogHeader>

@@ -194,160 +194,162 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {/* Upload de Foto */}
-      <div className="flex flex-col items-center space-y-4">
-        <Avatar className="h-20 w-20">
-          <AvatarImage src={photoUrl} />
-          <AvatarFallback className="bg-zinc-700 text-white text-lg">
-            {form.watch('name')?.substring(0, 2).toUpperCase() || 'FU'}
-          </AvatarFallback>
-        </Avatar>
-        <div className="relative">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoUpload}
-            className="absolute inset-0 opacity-0 cursor-pointer"
-            disabled={uploadingPhoto}
-          />
+    <div className="bg-gray-900 p-6 rounded-lg">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Upload de Foto */}
+        <div className="flex flex-col items-center space-y-4">
+          <Avatar className="h-24 w-24 border-4 border-urbana-gold/30">
+            <AvatarImage src={photoUrl} />
+            <AvatarFallback className="bg-urbana-gold/10 text-urbana-gold text-xl font-playfair">
+              {form.watch('name')?.substring(0, 2).toUpperCase() || 'FU'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="relative">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              disabled={uploadingPhoto}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="bg-black border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 font-raleway"
+              disabled={uploadingPhoto}
+            >
+              {uploadingPhoto ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              {uploadingPhoto ? 'Carregando...' : 'Carregar Foto'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Nome */}
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-urbana-gold font-raleway font-medium">Nome *</Label>
+            <Input
+              {...form.register('name')}
+              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+              placeholder="Nome completo"
+            />
+            {form.formState.errors.name && (
+              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.name.message}</p>
+            )}
+          </div>
+
+          {/* Email */}
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-urbana-gold font-raleway font-medium">Email *</Label>
+            <Input
+              {...form.register('email')}
+              type="email"
+              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+              placeholder="email@exemplo.com"
+            />
+            {form.formState.errors.email && (
+              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.email.message}</p>
+            )}
+          </div>
+
+          {/* Telefone */}
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-urbana-gold font-raleway font-medium">Telefone *</Label>
+            <Input
+              {...form.register('phone')}
+              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+              placeholder="(11) 99999-9999"
+            />
+            {form.formState.errors.phone && (
+              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.phone.message}</p>
+            )}
+          </div>
+
+          {/* Senha */}
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-urbana-gold font-raleway font-medium">
+              Senha {!isEditing && '*'}
+            </Label>
+            <Input
+              {...form.register('password')}
+              type="password"
+              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+              placeholder={isEditing ? 'Deixe vazio para manter atual' : 'Senha do funcionário'}
+            />
+            {form.formState.errors.password && (
+              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.password.message}</p>
+            )}
+          </div>
+
+          {/* Cargo */}
+          <div className="space-y-2">
+            <Label className="text-urbana-gold font-raleway font-medium">Cargo *</Label>
+            <Select
+              value={form.watch('role')}
+              onValueChange={(value) => form.setValue('role', value as any)}
+            >
+              <SelectTrigger className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
+                <SelectValue placeholder="Selecione o cargo" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="admin" className="text-white hover:bg-gray-700 font-raleway">Administrador</SelectItem>
+                <SelectItem value="manager" className="text-white hover:bg-gray-700 font-raleway">Gerente</SelectItem>
+                <SelectItem value="barber" className="text-white hover:bg-gray-700 font-raleway">Barbeiro</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.formState.errors.role && (
+              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.role.message}</p>
+            )}
+          </div>
+
+          {/* Status */}
+          <div className="space-y-2">
+            <Label className="text-urbana-gold font-raleway font-medium">Status *</Label>
+            <Select
+              value={form.watch('status')}
+              onValueChange={(value) => form.setValue('status', value as any)}
+            >
+              <SelectTrigger className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="active" className="text-white hover:bg-gray-700 font-raleway">Ativo</SelectItem>
+                <SelectItem value="inactive" className="text-white hover:bg-gray-700 font-raleway">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+            {form.formState.errors.status && (
+              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.status.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Botões */}
+        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-700">
           <Button
             type="button"
             variant="outline"
-            className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
-            disabled={uploadingPhoto}
+            onClick={onClose}
+            className="bg-black border-gray-600 text-gray-300 hover:bg-gray-800 font-raleway"
           >
-            {uploadingPhoto ? (
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium transition-all duration-300"
+          >
+            {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 h-4 w-4" />
-            )}
-            {uploadingPhoto ? 'Carregando...' : 'Carregar Foto'}
+            ) : null}
+            {loading ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Criar')} Funcionário
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Nome */}
-        <div className="space-y-2">
-          <Label htmlFor="name" className="text-white">Nome *</Label>
-          <Input
-            {...form.register('name')}
-            className="bg-zinc-800 border-zinc-700 text-white"
-            placeholder="Nome completo"
-          />
-          {form.formState.errors.name && (
-            <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
-          )}
-        </div>
-
-        {/* Email */}
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-white">Email *</Label>
-          <Input
-            {...form.register('email')}
-            type="email"
-            className="bg-zinc-800 border-zinc-700 text-white"
-            placeholder="email@exemplo.com"
-          />
-          {form.formState.errors.email && (
-            <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
-          )}
-        </div>
-
-        {/* Telefone */}
-        <div className="space-y-2">
-          <Label htmlFor="phone" className="text-white">Telefone *</Label>
-          <Input
-            {...form.register('phone')}
-            className="bg-zinc-800 border-zinc-700 text-white"
-            placeholder="(11) 99999-9999"
-          />
-          {form.formState.errors.phone && (
-            <p className="text-sm text-red-500">{form.formState.errors.phone.message}</p>
-          )}
-        </div>
-
-        {/* Senha */}
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-white">
-            Senha {!isEditing && '*'}
-          </Label>
-          <Input
-            {...form.register('password')}
-            type="password"
-            className="bg-zinc-800 border-zinc-700 text-white"
-            placeholder={isEditing ? 'Deixe vazio para manter atual' : 'Senha do funcionário'}
-          />
-          {form.formState.errors.password && (
-            <p className="text-sm text-red-500">{form.formState.errors.password.message}</p>
-          )}
-        </div>
-
-        {/* Cargo */}
-        <div className="space-y-2">
-          <Label className="text-white">Cargo *</Label>
-          <Select
-            value={form.watch('role')}
-            onValueChange={(value) => form.setValue('role', value as any)}
-          >
-            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-              <SelectValue placeholder="Selecione o cargo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="admin">Administrador</SelectItem>
-              <SelectItem value="manager">Gerente</SelectItem>
-              <SelectItem value="barber">Barbeiro</SelectItem>
-            </SelectContent>
-          </Select>
-          {form.formState.errors.role && (
-            <p className="text-sm text-red-500">{form.formState.errors.role.message}</p>
-          )}
-        </div>
-
-        {/* Status */}
-        <div className="space-y-2">
-          <Label className="text-white">Status *</Label>
-          <Select
-            value={form.watch('status')}
-            onValueChange={(value) => form.setValue('status', value as any)}
-          >
-            <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
-              <SelectValue placeholder="Selecione o status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="inactive">Inativo</SelectItem>
-            </SelectContent>
-          </Select>
-          {form.formState.errors.status && (
-            <p className="text-sm text-red-500">{form.formState.errors.status.message}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Botões */}
-      <div className="flex justify-end space-x-4 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : null}
-          {loading ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Criar')} Funcionário
-        </Button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 
