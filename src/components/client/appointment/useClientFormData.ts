@@ -49,35 +49,60 @@ export const useClientFormData = (defaultDate: Date = new Date(), clientId?: str
   const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
+      console.log('🔍 Buscando serviços...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true)
         .order('name');
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('❌ Erro ao buscar serviços:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('✅ Serviços encontrados:', data?.length || 0);
       return data as Service[];
     },
   });
 
-  // Fetch staff members (barbeiros) da tabela staff - igual ao admin
+  // Fetch staff members (barbeiros) da tabela staff
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
     queryKey: ['staff'],
     queryFn: async () => {
       console.log('🔍 Buscando barbeiros da tabela staff...');
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
       
-      if (error) {
-        console.error('❌ Erro ao buscar barbeiros:', error);
-        throw new Error(error.message);
+      try {
+        const { data, error } = await supabase
+          .from('staff')
+          .select(`
+            id,
+            name,
+            email,
+            phone,
+            role,
+            specialties,
+            experience,
+            image_url,
+            is_active,
+            commission_rate,
+            created_at,
+            updated_at
+          `)
+          .eq('is_active', true)
+          .order('name');
+        
+        if (error) {
+          console.error('❌ Erro ao buscar barbeiros:', error);
+          throw new Error(error.message);
+        }
+        
+        console.log('✅ Barbeiros encontrados:', data?.length || 0);
+        return data as StaffMember[];
+      } catch (error) {
+        console.error('❌ Erro na busca de barbeiros:', error);
+        throw error;
       }
-      
-      console.log('✅ Barbeiros encontrados:', data?.length || 0);
-      return data as StaffMember[];
     },
   });
 
