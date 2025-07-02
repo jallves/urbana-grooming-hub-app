@@ -5,7 +5,7 @@ import { Form } from "@/components/ui/form";
 import { useClientFormData } from './useClientFormData';
 import { useClientFormSubmit } from './useClientFormSubmit';
 import ServiceSelect from '@/components/admin/appointments/form/ServiceSelect';
-import StaffSelect from '@/components/admin/appointments/form/StaffSelect';
+import ClientStaffSelect from './ClientStaffSelect';
 import DateTimePicker from '@/components/admin/appointments/form/DateTimePicker';
 import NotesField from '@/components/admin/appointments/form/NotesField';
 import AppointmentFormActions from '@/components/admin/appointments/form/AppointmentFormActions';
@@ -80,7 +80,7 @@ const NewClientAppointmentForm: React.FC<NewClientAppointmentFormProps> = ({
             
             <DateTimePicker form={form} />
             
-            <StaffSelect 
+            <ClientStaffSelect 
               staffMembers={staffMembers} 
               form={form} 
               selectedDate={selectedDate}
