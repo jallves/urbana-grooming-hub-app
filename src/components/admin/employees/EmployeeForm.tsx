@@ -29,7 +29,6 @@ const employeeSchema = z.object({
   status: z.enum(['active', 'inactive'], {
     required_error: 'Selecione um status',
   }),
-  password: z.string().optional(),
 });
 
 type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -55,24 +54,27 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       phone: employee?.phone || '',
       role: employee?.role || 'barber',
       status: employee?.status || 'active',
-      password: '',
     },
   });
 
   const onSubmit = async (data: EmployeeFormData) => {
     setLoading(true);
+    console.log('Submitting employee data:', data);
+    
     try {
       if (isEditing) {
         await updateEmployee(data);
       } else {
         await createEmployee(data);
       }
+      
       toast({
         title: 'Sucesso',
         description: `Funcionário ${isEditing ? 'atualizado' : 'criado'} com sucesso!`,
       });
       onClose();
     } catch (error: any) {
+      console.error('Error saving employee:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao salvar funcionário',
@@ -84,48 +86,38 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   };
 
   const createEmployee = async (data: EmployeeFormData) => {
-    if (!data.password) {
-      throw new Error('Senha é obrigatória para novos funcionários');
-    }
-
-    // Primeiro, criar o usuário na auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true,
-    });
-
-    if (authError) throw authError;
-
-    // Depois, criar o registro na tabela employees
-    const employeeData: CreateEmployeeData = {
+    console.log('Creating new employee...');
+    
+    // Inserir diretamente na tabela employees sem criar usuário no auth
+    const employeeData = {
       name: data.name,
       email: data.email,
       phone: data.phone,
       role: data.role,
       status: data.status,
-      password: data.password,
       photo_url: photoUrl,
     };
 
-    const { error } = await supabase
+    console.log('Employee data to insert:', employeeData);
+
+    const { data: insertedEmployee, error } = await supabase
       .from('employees')
-      .insert([{ ...employeeData, user_id: authData.user.id }]);
+      .insert([employeeData])
+      .select()
+      .single();
 
-    if (error) throw error;
-
-    // Adicionar role na tabela user_roles se a role for compatível
-    if (data.role === 'admin' || data.role === 'barber') {
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert([{ user_id: authData.user.id, role: data.role }]);
-
-      if (roleError) console.warn('Erro ao adicionar role:', roleError);
+    if (error) {
+      console.error('Error inserting employee:', error);
+      throw new Error(error.message);
     }
+
+    console.log('Employee created successfully:', insertedEmployee);
   };
 
   const updateEmployee = async (data: EmployeeFormData) => {
     if (!employee) return;
+
+    console.log('Updating employee:', employee.id);
 
     const updateData: UpdateEmployeeData = {
       name: data.name,
@@ -136,16 +128,19 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       photo_url: photoUrl,
     };
 
-    if (data.password) {
-      updateData.password = data.password;
-    }
+    console.log('Update data:', updateData);
 
     const { error } = await supabase
       .from('employees')
       .update(updateData)
       .eq('id', employee.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating employee:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('Employee updated successfully');
   };
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,11 +162,16 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `employees/${fileName}`;
 
+      console.log('Uploading photo:', filePath);
+
       const { error: uploadError } = await supabase.storage
         .from('Staff Photos')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
 
       const { data: urlData } = supabase.storage
         .from('Staff Photos')
@@ -183,6 +183,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         description: 'Foto carregada com sucesso!',
       });
     } catch (error: any) {
+      console.error('Photo upload error:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar foto',
@@ -269,22 +270,6 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
             )}
           </div>
 
-          {/* Senha */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-urbana-gold font-raleway font-medium">
-              Senha {!isEditing && '*'}
-            </Label>
-            <Input
-              {...form.register('password')}
-              type="password"
-              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
-              placeholder={isEditing ? 'Deixe vazio para manter atual' : 'Senha do funcionário'}
-            />
-            {form.formState.errors.password && (
-              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.password.message}</p>
-            )}
-          </div>
-
           {/* Cargo */}
           <div className="space-y-2">
             <Label className="text-urbana-gold font-raleway font-medium">Cargo *</Label>
@@ -307,7 +292,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           </div>
 
           {/* Status */}
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-1">
             <Label className="text-urbana-gold font-raleway font-medium">Status *</Label>
             <Select
               value={form.watch('status')}

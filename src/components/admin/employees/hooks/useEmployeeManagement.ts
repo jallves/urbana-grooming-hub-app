@@ -19,6 +19,7 @@ export const useEmployeeManagement = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
+      console.log('Fetching employees...');
       
       let query = supabase
         .from('employees')
@@ -36,7 +37,12 @@ export const useEmployeeManagement = () => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching employees:', error);
+        throw error;
+      }
+
+      console.log('Fetched employees:', data);
 
       let filteredData = data || [];
 
@@ -56,6 +62,7 @@ export const useEmployeeManagement = () => {
       })) as Employee[];
 
       setEmployees(typedEmployees);
+      console.log('Employees set successfully');
     } catch (error: any) {
       console.error('Erro ao buscar funcionários:', error);
       toast({
@@ -74,12 +81,17 @@ export const useEmployeeManagement = () => {
     }
 
     try {
+      console.log('Deleting employee:', employeeId);
+      
       const { error } = await supabase
         .from('employees')
         .delete()
         .eq('id', employeeId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting employee:', error);
+        throw error;
+      }
 
       toast({
         title: 'Sucesso',
@@ -88,6 +100,7 @@ export const useEmployeeManagement = () => {
 
       fetchEmployees();
     } catch (error: any) {
+      console.error('Error in handleDeleteEmployee:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao excluir funcionário',
