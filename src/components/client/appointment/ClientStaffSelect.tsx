@@ -32,6 +32,8 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
   const [isChecking, setIsChecking] = useState(false);
 
   const checkStaffAvailability = async () => {
+    console.log('🔍 Cliente: Verificando disponibilidade dos barbeiros da tabela staff...');
+    
     // Se não há barbeiros, não fazer nada
     if (!staffMembers || staffMembers.length === 0) {
       console.log('⚠️ Nenhum barbeiro disponível para verificar');
@@ -61,7 +63,11 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceDuration);
 
+      console.log(`📅 Horário solicitado: ${startTime.toLocaleString()} - ${endTime.toLocaleString()}`);
+
       const availability = await Promise.all(staffMembers.map(async (staff) => {
+        console.log(`👤 Verificando barbeiro: ${staff.name}`);
+        
         const { data: appointments, error } = await supabase
           .from('appointments')
           .select('id, start_time, end_time')
@@ -82,13 +88,22 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
         const hasConflict = appointments?.some(appointment => {
           const appStart = new Date(appointment.start_time);
           const appEnd = new Date(appointment.end_time);
-          return startTime < appEnd && endTime > appStart;
+          const overlap = startTime < appEnd && endTime > appStart;
+          
+          if (overlap) {
+            console.log(`⚠️ Conflito para ${staff.name}: ${appStart.toLocaleTimeString()} - ${appEnd.toLocaleTimeString()}`);
+          }
+          
+          return overlap;
         }) || false;
+
+        const available = !hasConflict;
+        console.log(`${available ? '✅' : '❌'} ${staff.name}: ${available ? 'Disponível' : 'Indisponível'}`);
 
         return {
           id: staff.id,
           name: staff.name,
-          available: !hasConflict
+          available
         };
       }));
 

@@ -34,7 +34,10 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
   const [isChecking, setIsChecking] = useState(false);
 
   const checkStaffAvailability = async () => {
+    console.log('🔍 Verificando disponibilidade dos barbeiros da tabela staff...');
+    
     if (!selectedDate || !selectedTime || !staffMembers.length) {
+      console.log('⚠️ Parâmetros insuficientes - mostrando todos como disponíveis');
       setStaffAvailability(staffMembers.map(staff => ({
         id: staff.id,
         name: staff.name,
@@ -53,7 +56,11 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + serviceDuration);
 
+      console.log(`📅 Verificando disponibilidade para: ${startTime.toLocaleString()} - ${endTime.toLocaleString()}`);
+
       const availability = await Promise.all(staffMembers.map(async (staff) => {
+        console.log(`👤 Verificando barbeiro: ${staff.name}`);
+        
         let query = supabase
           .from('appointments')
           .select('id, start_time, end_time')
@@ -69,6 +76,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         const { data: appointments, error } = await query;
 
         if (error) {
+          console.error(`❌ Erro ao verificar ${staff.name}:`, error);
           return {
             id: staff.id,
             name: staff.name,
@@ -79,13 +87,22 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         const hasConflict = appointments?.some(appointment => {
           const appStart = new Date(appointment.start_time);
           const appEnd = new Date(appointment.end_time);
-          return startTime < appEnd && endTime > appStart;
+          const overlap = startTime < appEnd && endTime > appStart;
+          
+          if (overlap) {
+            console.log(`⚠️ Conflito para ${staff.name}: ${appStart.toLocaleTimeString()} - ${appEnd.toLocaleTimeString()}`);
+          }
+          
+          return overlap;
         }) || false;
+
+        const available = !hasConflict;
+        console.log(`${available ? '✅' : '❌'} ${staff.name}: ${available ? 'Disponível' : 'Indisponível'}`);
 
         return {
           id: staff.id,
           name: staff.name,
-          available: !hasConflict
+          available
         };
       }));
 
@@ -114,6 +131,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
         }
       }
     } catch (error) {
+      console.error('❌ Erro na verificação de disponibilidade:', error);
       toast({
         title: "Erro",
         description: "Não foi possível verificar a disponibilidade dos barbeiros.",

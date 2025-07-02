@@ -9,7 +9,7 @@ import { Service, StaffMember } from '@/types/appointment';
 
 const formSchema = z.object({
   service_id: z.string().min(1, 'Serviço é obrigatório'),
-  staff_id: z.string().min(1, 'Barbeiro é obrigatório'),
+  staff_id: z.string().min(1, 'Profissional é obrigatório'),
   date: z.date({
     required_error: 'Data é obrigatória',
   }).refine((date) => {
@@ -31,7 +31,7 @@ const formSchema = z.object({
 
 export type ClientFormValues = z.infer<typeof formSchema>;
 
-export const useClientFormData = (defaultDate: Date = new Date()) => {
+export const useClientFormData = (defaultDate: Date = new Date(), clientId?: string) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   const form = useForm<ClientFormValues>({
@@ -49,32 +49,27 @@ export const useClientFormData = (defaultDate: Date = new Date()) => {
   const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
-      console.log('🔍 Buscando serviços...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true)
         .order('name');
       
-      if (error) {
-        console.error('❌ Erro ao buscar serviços:', error);
-        throw new Error(error.message);
-      }
-      
-      console.log('✅ Serviços encontrados:', data?.length || 0);
+      if (error) throw new Error(error.message);
       return data as Service[];
     },
   });
 
-  // Fetch staff members (barbeiros) - apenas da tabela staff
+  // Fetch staff from staff table (barbeiros)
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['staff'],
+    queryKey: ['staff-barbers'],
     queryFn: async () => {
-      console.log('🔍 Buscando barbeiros...');
+      console.log('🔍 Buscando barbeiros da tabela staff...');
       const { data, error } = await supabase
         .from('staff')
         .select('*')
         .eq('is_active', true)
+        .eq('role', 'barber')
         .order('name');
       
       if (error) {
@@ -82,7 +77,7 @@ export const useClientFormData = (defaultDate: Date = new Date()) => {
         throw new Error(error.message);
       }
       
-      console.log('✅ Barbeiros encontrados:', data?.length || 0, data);
+      console.log('✅ Barbeiros encontrados:', data?.length || 0);
       return data as StaffMember[];
     },
   });
@@ -97,15 +92,6 @@ export const useClientFormData = (defaultDate: Date = new Date()) => {
   }, [form.watch('service_id'), services]);
 
   const isLoading = isLoadingServices || isLoadingStaff;
-
-  // Debug logs
-  console.log('🐛 useClientFormData Debug:', {
-    servicesLength: services?.length || 0,
-    staffLength: staffMembers?.length || 0,
-    isLoading,
-    isLoadingServices,
-    isLoadingStaff
-  });
 
   return {
     form,

@@ -26,13 +26,13 @@ export const useBarberAvailability = () => {
     time: string,
     duration: number
   ) => {
-    console.log('=== INICIANDO BUSCA DE BARBEIROS ===');
+    console.log('=== INICIANDO BUSCA DE BARBEIROS DA TABELA STAFF ===');
     console.log('Parâmetros:', { serviceId, date, time, duration });
     
     setIsLoading(true);
     
     try {
-      // Buscar barbeiros da tabela 'staff' (não 'barbers')
+      // Buscar barbeiros da tabela 'staff' 
       console.log('1. Buscando barbeiros da tabela staff...');
       const { data: allBarbers, error: barbersError } = await supabase
         .from('staff')
