@@ -5,8 +5,8 @@ import { Form } from "@/components/ui/form";
 import { useClientAppointmentForm } from './useClientAppointmentForm';
 import { useClientAppointmentSubmit } from './useClientAppointmentSubmit';
 import ServiceSelect from '@/components/admin/appointments/form/ServiceSelect';
-import StaffSelect from '@/components/admin/appointments/form/StaffSelect';
-import DateTimePicker from '@/components/admin/appointments/form/DateTimePicker';
+import ClientStaffSelect from './ClientStaffSelect';
+import ClientDateTimePicker from './ClientDateTimePicker';
 import NotesField from '@/components/admin/appointments/form/NotesField';
 import AppointmentFormActions from '@/components/admin/appointments/form/AppointmentFormActions';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
@@ -83,15 +83,14 @@ const ClientAppointmentModal: React.FC<ClientAppointmentModalProps> = ({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <ServiceSelect services={services} form={form} />
             
-            <DateTimePicker form={form} />
+            <ClientDateTimePicker form={form} />
             
-            <StaffSelect 
+            <ClientStaffSelect 
               staffMembers={staffMembers} 
               form={form} 
               selectedDate={selectedDate}
               selectedTime={selectedTime}
               serviceDuration={selectedService?.duration}
-              appointmentId={appointmentId}
             />
             
             <NotesField form={form} />

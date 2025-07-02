@@ -6,15 +6,17 @@ import { UseFormReturn } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-// Tipo para Employee (barbeiro)
-interface Employee {
+// Tipo para Staff Member (barbeiro da tabela staff)
+interface StaffMember {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   role: string;
-  status: string;
-  photo_url?: string;
+  is_active: boolean;
+  image_url?: string;
+  specialties?: string;
+  experience?: string;
 }
 
 interface StaffAvailability {
@@ -24,7 +26,7 @@ interface StaffAvailability {
 }
 
 interface ClientStaffSelectProps {
-  staffMembers: Employee[];
+  staffMembers: StaffMember[];
   form: UseFormReturn<any>;
   selectedDate?: Date;
   selectedTime?: string;
@@ -42,7 +44,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
   const [isChecking, setIsChecking] = useState(false);
 
   const checkStaffAvailability = async () => {
-    console.log('🔍 Cliente: Verificando disponibilidade dos barbeiros da tabela employees...');
+    console.log('🔍 Cliente: Verificando disponibilidade dos barbeiros...');
     
     // Se não há barbeiros, não fazer nada
     if (!staffMembers || staffMembers.length === 0) {
@@ -78,7 +80,7 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
       const availability = await Promise.all(staffMembers.map(async (staff) => {
         console.log(`👤 Verificando barbeiro: ${staff.name}`);
         
-        // Buscar agendamentos usando o employee_id como staff_id
+        // Buscar agendamentos usando o staff_id
         const { data: appointments, error } = await supabase
           .from('appointments')
           .select('id, start_time, end_time')

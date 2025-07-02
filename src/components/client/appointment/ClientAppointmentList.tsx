@@ -1,194 +1,265 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, User, Scissors, Edit, Plus } from 'lucide-react';
+import { Plus, Calendar, Clock, User, Scissors, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import ClientAppointmentModal from './ClientAppointmentModal';
 import { toast } from '@/hooks/use-toast';
+import ClientAppointmentModal from './ClientAppointmentModal';
 
-const ClientAppointmentList: React.FC = () => {
+const ClientAppointmentList = () => {
   const { client } = useClientAuth();
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | undefined>();
+  const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
 
-  const { data: appointments, isLoading, refetch } = useQuery({
+  // Buscar agendamentos do cliente
+  const { data: appointments, isLoading } = useQuery({
     queryKey: ['client-appointments', client?.id],
     queryFn: async () => {
       if (!client?.id) return [];
+      
+      console.log('🔍 Buscando agendamentos do cliente:', client.id);
       
       const { data, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          services (name, price, duration),
-          staff (name, email)
+          services (
+            id,
+            name,
+            price,
+            duration
+          ),
+          staff (
+            id,
+            name,
+            email,
+            specialties
+          )
         `)
         .eq('client_id', client.id)
-        .order('start_time', { ascending: true });
-      
-      if (error) throw error;
-      return data;
+        .order('start_time', { ascending: false });
+
+      if (error) {
+        console.error('❌ Erro ao buscar agendamentos:', error);
+        throw new Error(error.message);
+      }
+
+      console.log('✅ Agendamentos encontrados:', data?.length || 0);
+      return data || [];
     },
     enabled: !!client?.id,
   });
 
   const handleNewAppointment = () => {
-    setSelectedAppointmentId(undefined);
+    setEditingAppointmentId(null);
     setIsModalOpen(true);
   };
 
   const handleEditAppointment = (appointmentId: string) => {
-    setSelectedAppointmentId(appointmentId);
+    setEditingAppointmentId(appointmentId);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', appointmentId)
+        .eq('client_id', client?.id); // Garantir que só pode deletar próprios agendamentos
+
+      if (error) throw error;
+
+      toast({
+        title: "Agendamento cancelado",
+        description: "Seu agendamento foi cancelado com sucesso.",
+      });
+
+      // Refetch appointments
+      queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível cancelar o agendamento.",
+      });
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedAppointmentId(undefined);
-    refetch();
+    setEditingAppointmentId(null);
+    // Refetch appointments when modal closes
+    queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       scheduled: { label: 'Agendado', variant: 'default' as const },
       confirmed: { label: 'Confirmado', variant: 'secondary' as const },
-      completed: { label: 'Concluído', variant: 'outline' as const },
+      completed: { label: 'Concluído', variant: 'default' as const },
       cancelled: { label: 'Cancelado', variant: 'destructive' as const },
+      'no-show': { label: 'Não Compareceu', variant: 'destructive' as const },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.scheduled;
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: 'default' as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const canEditAppointment = (appointment: any) => {
-    const appointmentDate = new Date(appointment.start_time);
-    const now = new Date();
-    return appointmentDate > now && ['scheduled', 'confirmed'].includes(appointment.status);
-  };
-
-  if (!client) {
+  if (isLoading) {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">Faça login para ver seus agendamentos</p>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader>
+              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Header com botão de novo agendamento */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Meus Agendamentos</h2>
-          <p className="text-gray-600">Gerencie seus horários marcados</p>
+          <p className="text-gray-600">Gerencie seus agendamentos na barbearia</p>
         </div>
-        <Button onClick={handleNewAppointment} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
+        <Button 
+          onClick={handleNewAppointment}
+          className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold"
+        >
+          <Plus className="h-4 w-4 mr-2" />
           Novo Agendamento
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-amber-500 rounded-full"></div>
-        </div>
-      ) : appointments && appointments.length > 0 ? (
+      {/* Lista de agendamentos */}
+      {appointments && appointments.length === 0 ? (
+        <Card className="text-center py-12">
+          <CardContent>
+            <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum agendamento encontrado</h3>
+            <p className="text-gray-500 mb-4">Você ainda não possui nenhum agendamento.</p>
+            <Button 
+              onClick={handleNewAppointment}
+              className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-semibold"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Fazer Primeiro Agendamento
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
         <div className="grid gap-4">
-          {appointments.map((appointment) => (
+          {appointments?.map((appointment) => (
             <Card key={appointment.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Scissors className="h-5 w-5 text-amber-600" />
-                    {(appointment.services as any)?.name || 'Serviço'}
-                  </CardTitle>
-                  {getStatusBadge(appointment.status)}
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <Scissors className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold">
+                        {appointment.services?.name || 'Serviço não encontrado'}
+                      </CardTitle>
+                      {getStatusBadge(appointment.status)}
+                    </div>
+                  </div>
+                  
+                  {appointment.status === 'scheduled' && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditAppointment(appointment.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteAppointment(appointment.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>
+
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">
                       {format(new Date(appointment.start_time), "dd/MM/yyyy", { locale: ptBR })}
                     </span>
                   </div>
-                  
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      {format(new Date(appointment.start_time), "HH:mm", { locale: ptBR })} - 
-                      {format(new Date(appointment.end_time), "HH:mm", { locale: ptBR })}
+
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">
+                      {format(new Date(appointment.start_time), "HH:mm", { locale: ptBR })}
                     </span>
                   </div>
-                  
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <User className="h-4 w-4" />
-                    <span>{(appointment.staff as any)?.name || 'Barbeiro não definido'}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <span className="text-sm font-medium">
-                      R$ {(appointment.services as any)?.price || '0'}
+
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">
+                      {appointment.staff?.name || 'Barbeiro não definido'}
                     </span>
-                    <span className="text-sm text-gray-500">
-                      ({(appointment.services as any)?.duration || 0} min)
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">Preço:</span>
+                    <span className="font-semibold text-green-600">
+                      R$ {appointment.services?.price || '0,00'}
                     </span>
                   </div>
                 </div>
 
                 {appointment.notes && (
-                  <div className="pt-2 border-t border-gray-100">
-                    <p className="text-sm text-gray-600">
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700">
                       <strong>Observações:</strong> {appointment.notes}
                     </p>
-                  </div>
-                )}
-
-                {canEditAppointment(appointment) && (
-                  <div className="pt-3 border-t border-gray-100">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditAppointment(appointment.id)}
-                      className="flex items-center gap-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Editar Agendamento
-                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
           ))}
         </div>
-      ) : (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum agendamento encontrado
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Você ainda não possui agendamentos. Que tal marcar um horário?
-            </p>
-            <Button onClick={handleNewAppointment} className="flex items-center gap-2 mx-auto">
-              <Plus className="h-4 w-4" />
-              Fazer Primeiro Agendamento
-            </Button>
-          </CardContent>
-        </Card>
       )}
 
+      {/* Modal de agendamento */}
       <ClientAppointmentModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        appointmentId={selectedAppointmentId}
+        appointmentId={editingAppointmentId || undefined}
       />
     </div>
   );

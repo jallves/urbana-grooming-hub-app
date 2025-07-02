@@ -34,8 +34,6 @@ export type ClientAppointmentFormValues = z.infer<typeof formSchema>;
 
 export const useClientAppointmentForm = (defaultDate: Date = new Date(), appointmentId?: string) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [availableStaff, setAvailableStaff] = useState<StaffMember[]>([]);
-  const [unavailableStaff, setUnavailableStaff] = useState<StaffMember[]>([]);
 
   const form = useForm<ClientAppointmentFormValues>({
     resolver: zodResolver(formSchema),
@@ -48,39 +46,56 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
     },
   });
 
-  // Fetch serviços
+  // Fetch serviços usando a mesma query do admin
   const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services'],
+    queryKey: ['client-services'],
     queryFn: async () => {
+      console.log('🔍 Cliente: Buscando serviços...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true)
         .order('name');
-      if (error) throw new Error(error.message);
+      
+      if (error) {
+        console.error('❌ Erro ao buscar serviços:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('✅ Serviços encontrados:', data?.length || 0);
       return data as Service[];
     },
   });
 
-  // Fetch staff (barbeiros)
+  // Fetch staff (barbeiros) - usando a tabela staff correta
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['staff'],
+    queryKey: ['client-staff'],
     queryFn: async () => {
+      console.log('🔍 Cliente: Buscando barbeiros da tabela staff...');
+      
       const { data, error } = await supabase
         .from('staff')
         .select('*')
         .eq('is_active', true)
         .order('name');
-      if (error) throw new Error(error.message);
+      
+      if (error) {
+        console.error('❌ Erro ao buscar staff:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('✅ Staff encontrados:', data?.length || 0, data);
       return data as StaffMember[];
     },
   });
 
   // Buscar dados do agendamento existente se estivermos editando
   const { data: appointmentData } = useQuery({
-    queryKey: ['appointment', appointmentId],
+    queryKey: ['client-appointment', appointmentId],
     queryFn: async () => {
       if (!appointmentId) return null;
+      
+      console.log('🔍 Cliente: Buscando dados do agendamento:', appointmentId);
       
       const { data, error } = await supabase
         .from('appointments')
@@ -92,7 +107,12 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
         .eq('id', appointmentId)
         .single();
       
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('❌ Erro ao buscar agendamento:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('✅ Dados do agendamento encontrados:', data);
       return data;
     },
     enabled: !!appointmentId,
@@ -128,88 +148,6 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
     return () => subscription.unsubscribe();
   }, [services, form]);
 
-  // Verifica disponibilidade dos barbeiros
-  useEffect(() => {
-    const checkAvailability = async () => {
-      const date = form.getValues('date');
-      const time = form.getValues('time');
-      const duration = selectedService?.duration || 60;
-
-      if (!date || !time || !staffMembers?.length) {
-        setAvailableStaff(staffMembers || []);
-        setUnavailableStaff([]);
-        return;
-      }
-
-      const [hours, minutes] = time.split(':').map(Number);
-      const startTime = new Date(date);
-      startTime.setHours(hours, minutes, 0, 0);
-
-      const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + duration);
-
-      const availability = await Promise.all(
-        staffMembers.map(async (staff) => {
-          let query = supabase
-            .from('appointments')
-            .select('id, start_time, end_time')
-            .eq('staff_id', staff.id)
-            .eq('status', 'scheduled')
-            .gte('start_time', startTime.toISOString().split('T')[0])
-            .lte('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-
-          if (appointmentId) {
-            query = query.neq('id', appointmentId);
-          }
-
-          const { data: appointments, error } = await query;
-          if (error) return { staff, available: false };
-
-          const hasConflict = appointments?.some(appt => {
-            const appStart = new Date(appt.start_time);
-            const appEnd = new Date(appt.end_time);
-            return startTime < appEnd && endTime > appStart;
-          });
-
-          return { staff, available: !hasConflict };
-        })
-      );
-
-      const available = availability.filter(a => a.available).map(a => a.staff);
-      const unavailable = availability.filter(a => !a.available).map(a => a.staff);
-
-      setAvailableStaff(available);
-      setUnavailableStaff(unavailable);
-
-      const currentStaffId = form.getValues('staff_id');
-      const currentStaffAvailable = available.some(s => s.id === currentStaffId);
-      if (!currentStaffAvailable) {
-        if (available.length > 0) {
-          form.setValue('staff_id', available[0].id);
-          toast({
-            title: 'Barbeiro não disponível',
-            description: `Selecionamos automaticamente ${available[0].name}.`,
-          });
-        } else {
-          form.setValue('staff_id', '');
-          toast({
-            title: 'Nenhum barbeiro disponível',
-            description: 'Por favor, escolha outro horário.',
-            variant: 'destructive',
-          });
-        }
-      }
-    };
-
-    checkAvailability();
-  }, [
-    form.watch('date'),
-    form.watch('time'),
-    selectedService,
-    staffMembers,
-    appointmentId,
-  ]);
-
   const isLoading = isLoadingServices || isLoadingStaff;
 
   return {
@@ -218,7 +156,5 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
     services: services || [],
     staffMembers: staffMembers || [],
     selectedService,
-    availableStaff,
-    unavailableStaff,
   };
 };
