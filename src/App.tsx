@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ClientAuthProvider } from "@/contexts/ClientAuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import RegisterAuth from "./pages/RegisterAuth";
+import RegisterAuth from "./pages/RegisterAuth";  
 import ResetPassword from "./pages/ResetPassword";
 import BookingOnline from "./pages/BookingOnline";
 import AdminRoute from "./components/auth/AdminRoute";
@@ -48,6 +48,7 @@ import ClientLogin from "./pages/ClientLogin";
 import ClientRegister from "./pages/ClientRegister";
 import ClientDashboard from "./pages/ClientDashboard";
 import ClientProfile from "./pages/ClientProfile";
+import ClientAppointments from "./pages/ClientAppointments";
 import ClientEditAppointment from "./pages/ClientEditAppointment";
 import ClientNewAppointment from "./pages/ClientNewAppointment";
 
@@ -76,6 +77,7 @@ function App() {
                   <Route path="/cliente/registro" element={<ClientRegister />} />
                   <Route path="/cliente/dashboard" element={<ClientDashboard />} />
                   <Route path="/cliente/perfil" element={<ClientProfile />} />
+                  <Route path="/cliente/agendamentos" element={<ClientAppointments />} />
                   <Route path="/cliente/novo-agendamento" element={<ClientNewAppointment />} />
                   <Route path="/cliente/agendamento/:id/editar" element={<ClientEditAppointment />} />
 
