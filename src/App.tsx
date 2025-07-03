@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -58,6 +57,7 @@ import PainelClienteCadastro from "./pages/PainelClienteCadastro";
 import PainelClienteLogin from "./pages/PainelClienteLogin";
 import PainelClienteDashboard from "./pages/PainelClienteDashboard";
 import PainelClientePerfil from "./pages/PainelClientePerfil";
+import PainelClienteAgendar from "./pages/PainelClienteAgendar";
 
 import NotFound from "./pages/NotFound";
 
@@ -85,6 +85,7 @@ function App() {
                     <Route path="/painel-cliente/login" element={<PainelClienteLogin />} />
                     <Route path="/painel-cliente/dashboard" element={<PainelClienteDashboard />} />
                     <Route path="/painel-cliente/perfil" element={<PainelClientePerfil />} />
+                    <Route path="/painel-cliente/agendar" element={<PainelClienteAgendar />} />
 
                     {/* Client Routes */}
                     <Route path="/cliente/login" element={<ClientLogin />} />

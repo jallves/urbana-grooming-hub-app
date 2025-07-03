@@ -1555,6 +1555,142 @@ export type Database = {
         }
         Relationships: []
       }
+      painel_agendamentos: {
+        Row: {
+          barbeiro_id: string
+          cliente_id: string
+          created_at: string
+          data: string
+          hora: string
+          id: string
+          servico_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          barbeiro_id: string
+          cliente_id: string
+          created_at?: string
+          data: string
+          hora: string
+          id?: string
+          servico_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          barbeiro_id?: string
+          cliente_id?: string
+          created_at?: string
+          data?: string
+          hora?: string
+          id?: string
+          servico_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "painel_agendamentos_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "painel_barbeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      painel_barbeiros: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      painel_clientes: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          senha_hash: string
+          updated_at: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          senha_hash: string
+          updated_at?: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          senha_hash?: string
+          updated_at?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      painel_servicos: {
+        Row: {
+          created_at: string
+          duracao: number
+          id: string
+          nome: string
+          preco: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duracao: number
+          id?: string
+          nome: string
+          preco: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duracao?: number
+          id?: string
+          nome?: string
+          preco?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number

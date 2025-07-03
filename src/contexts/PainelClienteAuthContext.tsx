@@ -60,9 +60,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       const { data, error } = await supabase
-        .from('painel_clientes')
-        .select('*')
-        .eq('id', token)
+        .rpc('get_painel_cliente_by_id', { cliente_id: token })
         .single();
 
       if (error || !data) {
@@ -105,14 +103,11 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
-      // Verificar se email já existe
+      // Verificar se email já existe usando SQL direto
       const { data: clienteExistente, error: checkError } = await supabase
-        .from('painel_clientes')
-        .select('id')
-        .eq('email', dados.email.trim().toLowerCase())
-        .single();
+        .rpc('check_painel_cliente_email', { email_to_check: dados.email.trim().toLowerCase() });
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError) {
         console.error('Erro ao verificar email:', checkError);
         return { error: 'Erro interno. Tente novamente.' };
       }
@@ -124,25 +119,18 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       // Criar hash da senha
       const senhaHash = btoa(dados.senha);
 
-      // Inserir cliente
+      // Inserir cliente usando SQL direto
       const { data: novoCliente, error: insertError } = await supabase
-        .from('painel_clientes')
-        .insert([{
+        .rpc('create_painel_cliente', {
           nome: dados.nome.trim(),
           email: dados.email.trim().toLowerCase(),
           whatsapp: dados.whatsapp.trim(),
           senha_hash: senhaHash
-        }])
-        .select()
+        })
         .single();
 
       if (insertError) {
         console.error('Erro ao inserir cliente:', insertError);
-        
-        if (insertError.code === '23505') {
-          return { error: 'Este e-mail já está cadastrado' };
-        }
-        
         return { error: `Erro ao criar conta: ${insertError.message}` };
       }
 
@@ -176,15 +164,15 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       const senhaHash = btoa(senha);
 
       const { data: clienteData, error } = await supabase
-        .from('painel_clientes')
-        .select('*')
-        .eq('email', email.trim().toLowerCase())
-        .eq('senha_hash', senhaHash)
+        .rpc('authenticate_painel_cliente', {
+          email: email.trim().toLowerCase(),
+          senha_hash: senhaHash
+        })
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Erro na consulta de login:', error);
-        return { error: 'Erro interno do servidor' };
+        return { error: 'E-mail ou senha incorretos' };
       }
 
       if (!clienteData) {
@@ -221,10 +209,12 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
     try {
       const { data: clienteAtualizado, error } = await supabase
-        .from('painel_clientes')
-        .update(dados)
-        .eq('id', cliente.id)
-        .select()
+        .rpc('update_painel_cliente', {
+          cliente_id: cliente.id,
+          nome: dados.nome,
+          email: dados.email,
+          whatsapp: dados.whatsapp
+        })
         .single();
 
       if (error) {
