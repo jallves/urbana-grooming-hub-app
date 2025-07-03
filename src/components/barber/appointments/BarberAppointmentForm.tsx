@@ -11,12 +11,32 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface Client {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+interface Service {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
+}
+
 interface BarberAppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
   appointmentId?: string;
   defaultDate?: Date;
   dateTimeOnly?: boolean;
+}
+
+interface FormData {
+  client_id: string;
+  service_id: string;
+  start_time: string;
+  notes: string;
 }
 
 const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
@@ -29,11 +49,11 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [clients, setClients] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [barberId, setBarberId] = useState<string>('');
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     client_id: '',
     service_id: '',
     start_time: defaultDate ? format(defaultDate, "yyyy-MM-dd'T'HH:mm") : '',
@@ -74,8 +94,8 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
         supabase.from('services').select('id, name, price, duration').eq('is_active', true)
       ]);
 
-      if (clientsRes.data) setClients(clientsRes.data);
-      if (servicesRes.data) setServices(servicesRes.data);
+      if (clientsRes.data) setClients(clientsRes.data as Client[]);
+      if (servicesRes.data) setServices(servicesRes.data as Service[]);
     } catch (error) {
       console.error('Error loading initial data:', error);
     }
@@ -171,6 +191,10 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
     }
   };
 
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
@@ -187,7 +211,7 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
                 <Label htmlFor="client">Cliente</Label>
                 <Select 
                   value={formData.client_id} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                  onValueChange={(value) => handleInputChange('client_id', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um cliente" />
@@ -206,7 +230,7 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
                 <Label htmlFor="service">Serviço</Label>
                 <Select 
                   value={formData.service_id} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, service_id: value }))}
+                  onValueChange={(value) => handleInputChange('service_id', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um serviço" />
@@ -229,7 +253,7 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
               id="start_time"
               type="datetime-local"
               value={formData.start_time}
-              onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+              onChange={(e) => handleInputChange('start_time', e.target.value)}
               required
             />
           </div>
@@ -239,7 +263,7 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
               placeholder="Observações sobre o agendamento..."
             />
           </div>
