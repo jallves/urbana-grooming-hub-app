@@ -1,49 +1,85 @@
 
-import React from 'react';
-import { Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { LoaderPage } from '@/components/ui/loader-page';
 
 interface ModuleAccessGuardProps {
   moduleId: string;
   children: React.ReactNode;
-  fallback?: React.ReactNode;
 }
 
-const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({
-  moduleId,
-  children,
-  fallback
-}) => {
-  const { isAdmin, isBarber, user } = useAuth();
-  
-  // Define base modules always available to barbers
-  const baseBarberModules = ['appointments', 'clients', 'commissions'];
-  
-  // Check if module is accessible to barbers by default
-  const isBarberDefaultModule = baseBarberModules.includes(moduleId);
-  
-  // Admin has access to everything
-  if (isAdmin) {
-    return <>{children}</>;
-  }
-  
-  // REMOVED HARDCODED EMAIL CHECKS - Now only using database roles
-  
-  // Barber has access to default modules
-  if (isBarber && isBarberDefaultModule) {
-    return <>{children}</>;
+const ModuleAccessGuard: React.FC<ModuleAccessGuardProps> = ({ moduleId, children }) => {
+  const { user, isAdmin } = useAuth();
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const checkModuleAccess = async () => {
+      if (!user) {
+        setHasAccess(false);
+        setLoading(false);
+        return;
+      }
+
+      // Admins have access to all modules
+      if (isAdmin) {
+        setHasAccess(true);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Check if user has access to this specific module
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('id')
+          .eq('email', user.email)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!staffData) {
+          setHasAccess(false);
+          setLoading(false);
+          return;
+        }
+
+        // Check module access
+        const { data: moduleAccess } = await supabase
+          .from('staff_module_access')
+          .select('module_id')
+          .eq('staff_id', staffData.id)
+          .eq('module_id', moduleId)
+          .maybeSingle();
+
+        setHasAccess(!!moduleAccess);
+      } catch (error) {
+        console.error('Error checking module access:', error);
+        setHasAccess(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkModuleAccess();
+  }, [user, isAdmin, moduleId]);
+
+  if (loading) {
+    return <LoaderPage />;
   }
 
-  // No access - show fallback
-  return fallback || (
-    <div className="flex flex-col items-center justify-center p-8 text-center">
-      <Shield className="h-12 w-12 text-zinc-400 mb-4" />
-      <h3 className="text-xl font-medium mb-2">Acesso Restrito</h3>
-      <p className="text-zinc-400 max-w-md">
-        Você não tem permissão para acessar este módulo. Entre em contato com o administrador para solicitar acesso.
-      </p>
-    </div>
-  );
+  if (!hasAccess) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Acesso Restrito</h3>
+          <p className="text-gray-600">Você não tem permissão para acessar este módulo.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 };
 
 export default ModuleAccessGuard;

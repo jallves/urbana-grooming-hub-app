@@ -1,74 +1,62 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Check, Clock, User } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, CheckCircle, Clock, DollarSign } from 'lucide-react';
+
+interface StatsData {
+  total: number;
+  completed: number;
+  upcoming: number;
+  revenue: number;
+}
 
 interface AppointmentStatsProps {
-  stats: {
-    total: number;
-    completed: number;
-    upcoming: number;
-    revenue: number;
-  }
+  stats: StatsData;
 }
 
 export const AppointmentStats: React.FC<AppointmentStatsProps> = ({ stats }) => {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+  const statsItems = [
+    {
+      title: "Total de Agendamentos",
+      value: stats.total,
+      icon: <Calendar className="h-5 w-5 text-blue-600" />,
+      color: "text-blue-600"
+    },
+    {
+      title: "Concluídos",
+      value: stats.completed,
+      icon: <CheckCircle className="h-5 w-5 text-green-600" />,
+      color: "text-green-600"
+    },
+    {
+      title: "Próximos",
+      value: stats.upcoming,
+      icon: <Clock className="h-5 w-5 text-orange-600" />,
+      color: "text-orange-600"
+    },
+    {
+      title: "Receita",
+      value: `R$ ${stats.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: <DollarSign className="h-5 w-5 text-purple-600" />,
+      color: "text-purple-600"
+    }
+  ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <Card className="bg-white">
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Total de Agendamentos</p>
-            <div className="p-2 bg-blue-100 rounded-full">
-              <Calendar className="h-4 w-4 text-blue-600" />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {statsItems.map((item, index) => (
+        <Card key={index}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
+            {item.icon}
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${item.color}`}>
+              {item.value}
             </div>
-          </div>
-          <p className="text-2xl font-bold mt-2">{stats.total}</p>
-        </CardContent>
-      </Card>
-      
-      <Card className="bg-white">
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Agendamentos Concluídos</p>
-            <div className="p-2 bg-green-100 rounded-full">
-              <Check className="h-4 w-4 text-green-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold mt-2">{stats.completed}</p>
-        </CardContent>
-      </Card>
-      
-      <Card className="bg-white">
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Próximos Agendamentos</p>
-            <div className="p-2 bg-yellow-100 rounded-full">
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold mt-2">{stats.upcoming}</p>
-        </CardContent>
-      </Card>
-      
-      <Card className="bg-white">
-        <CardContent className="pt-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Receita Total</p>
-            <div className="p-2 bg-gray-100 rounded-full">
-              <User className="h-4 w-4 text-gray-600" />
-            </div>
-          </div>
-          <p className="text-2xl font-bold mt-2">{formatCurrency(stats.revenue)}</p>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

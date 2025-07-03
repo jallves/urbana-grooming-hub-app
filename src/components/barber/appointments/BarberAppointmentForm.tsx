@@ -1,168 +1,258 @@
 
-import React, { useEffect, useState } from 'react';
-import { DialogContent, DialogHeader, DialogTitle, Dialog } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import DateTimePicker from '@/components/admin/appointments/form/DateTimePicker';
+import { useToast } from "@/hooks/use-toast";
+import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BarberAppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
+  appointmentId?: string;
   defaultDate?: Date;
-  appointmentId?: string; 
   dateTimeOnly?: boolean;
 }
 
-const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({ 
-  isOpen, 
+const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
+  isOpen,
   onClose,
-  defaultDate = new Date(),
   appointmentId,
-  dateTimeOnly = true // By default, only allow date/time editing
+  defaultDate,
+  dateTimeOnly = false
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [appointmentData, setAppointmentData] = useState<any>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [barberId, setBarberId] = useState<string>('');
   
-  const form = useForm({
-    defaultValues: {
-      date: defaultDate,
-      time: defaultDate ? `${String(defaultDate.getHours()).padStart(2, '0')}:${String(defaultDate.getMinutes()).padStart(2, '0')}` : '10:00',
-    }
+  const [formData, setFormData] = useState({
+    client_id: '',
+    service_id: '',
+    start_time: defaultDate ? format(defaultDate, "yyyy-MM-dd'T'HH:mm") : '',
+    notes: ''
   });
-  
-  // Fetch the existing appointment data
+
   useEffect(() => {
-    const fetchAppointmentData = async () => {
-      if (!appointmentId) return;
-      
-      setIsLoading(true);
-      try {
-        const { data: appointment, error } = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            services:service_id (*),
-            clients:client_id (*),
-            staff:staff_id (*)
-          `)
-          .eq('id', appointmentId)
-          .single();
-          
-        if (error) throw error;
-        
-        if (appointment) {
-          setAppointmentData(appointment);
-          
-          // Parse date and time from start_time
-          const startDate = new Date(appointment.start_time);
-          
-          form.reset({
-            date: startDate,
-            time: `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching appointment:', error);
-        toast.error('Não foi possível carregar os dados do agendamento');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchAppointmentData();
-  }, [appointmentId, form]);
-  
-  const onSubmit = async (data: any) => {
-    if (!appointmentId || !appointmentData) return;
-    
+    if (isOpen) {
+      loadInitialData();
+    }
+  }, [isOpen, user]);
+
+  useEffect(() => {
+    if (appointmentId && isOpen) {
+      loadAppointment();
+    }
+  }, [appointmentId, isOpen]);
+
+  const loadInitialData = async () => {
     try {
-      setIsLoading(true);
-      
-      // Format the date and time
-      const [hours, minutes] = data.time.split(':').map(Number);
-      const startDate = new Date(data.date);
-      startDate.setHours(hours, minutes, 0, 0);
-      
-      // Calculate end time based on service duration
-      const endDate = new Date(startDate);
-      endDate.setMinutes(endDate.getMinutes() + (appointmentData.services?.duration || 60));
-      
-      const updateData = {
-        start_time: startDate.toISOString(),
-        end_time: endDate.toISOString(),
-      };
-      
-      // Update only the date/time of the appointment
-      const { error } = await supabase
-        .from('appointments')
-        .update(updateData)
-        .eq('id', appointmentId);
+      // Get barber ID
+      if (user?.email) {
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('id')
+          .eq('email', user.email)
+          .eq('role', 'barber')
+          .maybeSingle();
         
-      if (error) throw error;
-      
-      toast.success('Agendamento atualizado com sucesso');
-      onClose();
+        if (staffData) {
+          setBarberId(staffData.id);
+        }
+      }
+
+      // Load clients and services
+      const [clientsRes, servicesRes] = await Promise.all([
+        supabase.from('clients').select('id, name, phone').eq('is_active', true),
+        supabase.from('services').select('id, name, price, duration').eq('is_active', true)
+      ]);
+
+      if (clientsRes.data) setClients(clientsRes.data);
+      if (servicesRes.data) setServices(servicesRes.data);
     } catch (error) {
-      console.error('Error updating appointment:', error);
-      toast.error('Não foi possível atualizar o agendamento');
-    } finally {
-      setIsLoading(false);
+      console.error('Error loading initial data:', error);
     }
   };
-  
+
+  const loadAppointment = async () => {
+    if (!appointmentId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('id', appointmentId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setFormData({
+          client_id: data.client_id,
+          service_id: data.service_id,
+          start_time: format(new Date(data.start_time), "yyyy-MM-dd'T'HH:mm"),
+          notes: data.notes || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error loading appointment:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar o agendamento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barberId) return;
+
+    setLoading(true);
+    try {
+      const service = services.find(s => s.id === formData.service_id);
+      if (!service) throw new Error('Serviço não encontrado');
+
+      const startTime = new Date(formData.start_time);
+      const endTime = new Date(startTime.getTime() + (service.duration * 60000));
+
+      const appointmentData = {
+        client_id: formData.client_id,
+        staff_id: barberId,
+        service_id: formData.service_id,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: 'scheduled',
+        notes: formData.notes
+      };
+
+      if (appointmentId) {
+        const { error } = await supabase
+          .from('appointments')
+          .update(appointmentData)
+          .eq('id', appointmentId);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Agendamento atualizado",
+          description: "O agendamento foi atualizado com sucesso.",
+        });
+      } else {
+        const { error } = await supabase
+          .from('appointments')
+          .insert([appointmentData]);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Agendamento criado",
+          description: "O agendamento foi criado com sucesso.",
+        });
+      }
+
+      onClose();
+    } catch (error: any) {
+      console.error('Error saving appointment:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível salvar o agendamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            Reagendar Horário
+            {appointmentId ? 'Editar Agendamento' : 'Novo Agendamento'}
           </DialogTitle>
         </DialogHeader>
         
-        {appointmentData && (
-          <div className="mb-4">
-            <div className="grid gap-2">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {!dateTimeOnly && (
+            <>
               <div>
-                <span className="font-medium">Cliente:</span> {appointmentData.clients?.name}
+                <Label htmlFor="client">Cliente</Label>
+                <Select 
+                  value={formData.client_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name} - {client.phone}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
               <div>
-                <span className="font-medium">Serviço:</span> {appointmentData.services?.name}
+                <Label htmlFor="service">Serviço</Label>
+                <Select 
+                  value={formData.service_id} 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, service_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service) => (
+                      <SelectItem key={service.id} value={service.id}>
+                        {service.name} - R$ {service.price} ({service.duration}min)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <span className="font-medium">Profissional:</span> {appointmentData.staff?.name}
-              </div>
-              <div>
-                <span className="font-medium">Duração:</span> {appointmentData.services?.duration} minutos
-              </div>
-            </div>
+            </>
+          )}
+          
+          <div>
+            <Label htmlFor="start_time">Data e Hora</Label>
+            <Input
+              id="start_time"
+              type="datetime-local"
+              value={formData.start_time}
+              onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+              required
+            />
           </div>
-        )}
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <DateTimePicker form={form} />
-            
-            <div className="flex justify-end space-x-2 pt-4">
-              <button 
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border rounded-md"
-              >
-                Cancelar
-              </button>
-              
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Salvando...' : 'Reagendar'}
-              </button>
-            </div>
-          </form>
-        </Form>
+
+          <div>
+            <Label htmlFor="notes">Observações</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              placeholder="Observações sobre o agendamento..."
+            />
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Salvando...' : appointmentId ? 'Atualizar' : 'Criar'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

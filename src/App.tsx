@@ -37,6 +37,7 @@ import BarberAppointments from './pages/BarberAppointments';
 import BarberClients from './pages/BarberClients';
 import BarberCommissions from './pages/BarberCommissions';
 import BarberSchedule from './pages/BarberSchedule';
+import BarberProfile from './pages/BarberProfile';
 import BarberAdminDashboard from './pages/BarberAdminDashboard';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
@@ -161,6 +162,11 @@ function App() {
                     <Route path="/barbeiro/agenda" element={
                       <BarberRoute allowBarber={true}>
                         <BarberSchedule />
+                      </BarberRoute>
+                    } />
+                    <Route path="/barbeiro/perfil" element={
+                      <BarberRoute allowBarber={true}>
+                        <BarberProfile />
                       </BarberRoute>
                     } />
                     <Route path="/barbeiro/admin" element={
