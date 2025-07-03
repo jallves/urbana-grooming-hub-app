@@ -7,7 +7,16 @@ type RpcFunctionName =
   | 'update_staff_module_access'
   | 'add_barber_user'
   | 'has_role'
-  | 'get_available_time_slots';
+  | 'get_available_time_slots'
+  | 'check_painel_cliente_email'
+  | 'create_painel_cliente'
+  | 'authenticate_painel_cliente'
+  | 'get_painel_cliente_by_id'
+  | 'update_painel_cliente'
+  | 'get_painel_barbeiros'
+  | 'get_painel_servicos'
+  | 'get_agendamentos_barbeiro_data'
+  | 'create_painel_agendamento';
 
 export const supabaseRPC = {
   getStaffModuleAccess: async (staffId: string) => {

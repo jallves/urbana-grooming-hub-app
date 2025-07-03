@@ -60,14 +60,13 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       const { data, error } = await supabase
-        .rpc('get_painel_cliente_by_id', { cliente_id: token })
-        .single();
+        .rpc('get_painel_cliente_by_id', { cliente_id: token });
 
       if (error || !data) {
         localStorage.removeItem('painel_cliente_token');
         setCliente(null);
       } else {
-        setCliente(data);
+        setCliente(data as Cliente);
       }
     } catch (error) {
       console.error('Erro ao verificar sessão:', error);
@@ -126,8 +125,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           email: dados.email.trim().toLowerCase(),
           whatsapp: dados.whatsapp.trim(),
           senha_hash: senhaHash
-        })
-        .single();
+        });
 
       if (insertError) {
         console.error('Erro ao inserir cliente:', insertError);
@@ -139,8 +137,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       // Fazer login automático
-      localStorage.setItem('painel_cliente_token', novoCliente.id);
-      setCliente(novoCliente);
+      const clienteData = novoCliente as Cliente;
+      localStorage.setItem('painel_cliente_token', clienteData.id);
+      setCliente(clienteData);
 
       toast({
         title: "Conta criada com sucesso!",
@@ -167,8 +166,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         .rpc('authenticate_painel_cliente', {
           email: email.trim().toLowerCase(),
           senha_hash: senhaHash
-        })
-        .single();
+        });
 
       if (error) {
         console.error('Erro na consulta de login:', error);
@@ -179,8 +177,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'E-mail ou senha incorretos' };
       }
 
-      localStorage.setItem('painel_cliente_token', clienteData.id);
-      setCliente(clienteData);
+      const cliente = clienteData as Cliente;
+      localStorage.setItem('painel_cliente_token', cliente.id);
+      setCliente(cliente);
 
       toast({
         title: "Login realizado com sucesso!",
@@ -214,14 +213,13 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           nome: dados.nome,
           email: dados.email,
           whatsapp: dados.whatsapp
-        })
-        .single();
+        });
 
       if (error) {
         return { error: error.message };
       }
 
-      setCliente(clienteAtualizado);
+      setCliente(clienteAtualizado as Cliente);
       return { error: null };
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);

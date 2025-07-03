@@ -55,11 +55,11 @@ export default function PainelClienteDashboard() {
         return;
       }
 
-      const agendamentosFormatados = data?.map(agendamento => ({
+      const agendamentosFormatados: Agendamento[] = data?.map(agendamento => ({
         id: agendamento.id,
         data: agendamento.data,
         hora: agendamento.hora,
-        status: agendamento.status,
+        status: agendamento.status as 'pendente' | 'confirmado' | 'cancelado',
         barbeiro_nome: agendamento.painel_barbeiros?.nome || 'N/A',
         servico_nome: agendamento.painel_servicos?.nome || 'N/A',
         servico_preco: agendamento.painel_servicos?.preco || 0

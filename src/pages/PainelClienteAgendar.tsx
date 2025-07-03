@@ -23,6 +23,12 @@ interface Servico {
   duracao: number;
 }
 
+interface AgendamentoResponse {
+  id: string;
+  hora: string;
+  status: string;
+}
+
 export default function PainelClienteAgendar() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
@@ -57,7 +63,7 @@ export default function PainelClienteAgendar() {
       if (barbeirosError) {
         console.error('Erro ao carregar barbeiros:', barbeirosError);
       } else {
-        setBarbeiros(barbeirosData || []);
+        setBarbeiros((barbeirosData as Barbeiro[]) || []);
       }
 
       // Carregar serviços
@@ -67,7 +73,7 @@ export default function PainelClienteAgendar() {
       if (servicosError) {
         console.error('Erro ao carregar serviços:', servicosError);
       } else {
-        setServicos(servicosData || []);
+        setServicos((servicosData as Servico[]) || []);
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -113,7 +119,8 @@ export default function PainelClienteAgendar() {
         return;
       }
 
-      const horariosOcupados = agendamentos?.map((ag: any) => ag.hora) || [];
+      const agendamentosArray = (agendamentos as AgendamentoResponse[]) || [];
+      const horariosOcupados = agendamentosArray.map((ag: AgendamentoResponse) => ag.hora);
       const todosHorarios = gerarHorarios();
       const horariosLivres = todosHorarios.filter(horario => !horariosOcupados.includes(horario));
       
