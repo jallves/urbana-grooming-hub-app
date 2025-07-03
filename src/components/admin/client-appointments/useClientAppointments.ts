@@ -44,7 +44,7 @@ export const useClientAppointments = () => {
         .select(`
           *,
           painel_clientes!inner(nome, email, whatsapp),
-          painel_barbeiros!inner(nome, email, telefone),
+          painel_barbeiros!inner(nome, telefone),
           painel_servicos!inner(nome, preco, duracao)
         `)
         .order('data', { ascending: false })

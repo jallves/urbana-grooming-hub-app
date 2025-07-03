@@ -56,7 +56,7 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
     const statusConfig = {
       'pendente': { variant: 'secondary' as const, label: 'Pendente' },
       'confirmado': { variant: 'default' as const, label: 'Confirmado' },
-      'concluido': { variant: 'success' as const, label: 'Concluído' },
+      'concluido': { variant: 'outline' as const, label: 'Concluído' },
       'cancelado': { variant: 'destructive' as const, label: 'Cancelado' },
     };
     

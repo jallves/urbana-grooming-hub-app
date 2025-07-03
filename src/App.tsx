@@ -1,26 +1,27 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ClientAuthProvider } from './contexts/ClientAuthContext';
 import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
-import AdminRoute from './components/AdminRoute';
+import AdminRoute from './components/auth/AdminRoute';
 import ClientRoute from './components/ClientRoute';
 import PainelClienteRoute from './components/PainelClienteRoute';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/Admin';
+import AdminLogin from './pages/Auth';
 import ClientLogin from './pages/ClientLogin';
 import ClientRegister from './pages/ClientRegister';
 import ClientDashboard from './pages/ClientDashboard';
 import AdminAppointments from './pages/AdminAppointments';
 import AdminClients from './pages/AdminClients';
-import AdminStaff from './pages/AdminStaff';
+import AdminStaff from './pages/AdminEmployees';
 import AdminBarbers from './pages/AdminBarbers';
 import AdminProducts from './pages/AdminProducts';
-import AdminFinancial from './pages/AdminFinancial';
+import AdminFinancial from './pages/AdminFinance';
 import AdminMarketing from './pages/AdminMarketing';
 import AdminBirthdays from './pages/AdminBirthdays';
 import AdminSupport from './pages/AdminSupport';
-import AdminSchedules from './pages/AdminSchedules';
+import AdminSchedules from './pages/AdminBarberSchedules';
 import AdminCashFlow from './pages/AdminCashFlow';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminSettings from './pages/AdminSettings';
@@ -28,9 +29,11 @@ import PainelClienteLogin from './pages/PainelClienteLogin';
 import PainelClienteRegister from './pages/PainelClienteRegister';
 import PainelClienteDashboard from './pages/PainelClienteDashboard';
 import PainelClienteAgendar from './pages/PainelClienteAgendar';
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
+
+const queryClient = new QueryClient();
 
 function App() {
   return (
@@ -39,7 +42,7 @@ function App() {
         <AuthProvider>
           <ClientAuthProvider>
             <PainelClienteAuthProvider>
-              <QueryClient>
+              <QueryClientProvider client={queryClient}>
                 <div className="min-h-screen bg-background">
                   <Routes>
                     <Route path="/" element={<Navigate to="/admin/login" />} />
@@ -147,7 +150,7 @@ function App() {
                     } />
                   </Routes>
                 </div>
-              </QueryClient>
+              </QueryClientProvider>
             </PainelClienteAuthProvider>
           </ClientAuthProvider>
         </AuthProvider>
