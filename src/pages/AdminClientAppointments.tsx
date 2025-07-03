@@ -6,14 +6,15 @@ import ClientAppointmentList from '@/components/admin/client-appointments/Client
 export default function AdminClientAppointments() {
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Agendamentos de Clientes</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-white font-clash mb-2">
+            Agendamentos de Clientes
+          </h1>
+          <p className="text-gray-400 font-inter">
             Gerencie os agendamentos criados pelos clientes através do painel do cliente
           </p>
         </div>
-
         <ClientAppointmentList />
       </div>
     </AdminLayout>
