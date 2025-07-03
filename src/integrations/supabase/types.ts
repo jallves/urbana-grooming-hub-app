@@ -1615,24 +1615,59 @@ export type Database = {
       }
       painel_barbeiros: {
         Row: {
+          commission_rate: number | null
           created_at: string
+          email: string | null
+          experience: string | null
           id: string
+          image_url: string | null
+          is_active: boolean | null
           nome: string
+          role: string | null
+          specialties: string | null
+          staff_id: string | null
+          telefone: string | null
           updated_at: string
         }
         Insert: {
+          commission_rate?: number | null
           created_at?: string
+          email?: string | null
+          experience?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           nome: string
+          role?: string | null
+          specialties?: string | null
+          staff_id?: string | null
+          telefone?: string | null
           updated_at?: string
         }
         Update: {
+          commission_rate?: number | null
           created_at?: string
+          email?: string | null
+          experience?: string | null
           id?: string
+          image_url?: string | null
+          is_active?: boolean | null
           nome?: string
+          role?: string | null
+          specialties?: string | null
+          staff_id?: string | null
+          telefone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_painel_barbeiros_staff"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       painel_clientes: {
         Row: {
@@ -2788,9 +2823,18 @@ export type Database = {
       get_painel_barbeiros: {
         Args: Record<PropertyKey, never>
         Returns: {
+          commission_rate: number | null
           created_at: string
+          email: string | null
+          experience: string | null
           id: string
+          image_url: string | null
+          is_active: boolean | null
           nome: string
+          role: string | null
+          specialties: string | null
+          staff_id: string | null
+          telefone: string | null
           updated_at: string
         }[]
       }

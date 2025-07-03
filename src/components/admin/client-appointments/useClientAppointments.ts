@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +20,15 @@ interface PainelAgendamento {
   };
   painel_barbeiros: {
     nome: string;
+    email: string;
+    telefone: string;
+    image_url: string;
+    specialties: string;
+    experience: string;
+    commission_rate: number;
+    is_active: boolean;
+    role: string;
+    staff_id: string;
   };
   painel_servicos: {
     nome: string;
@@ -41,7 +51,7 @@ export const useClientAppointments = () => {
         .select(`
           *,
           painel_clientes!inner(nome, email, whatsapp),
-          painel_barbeiros!inner(nome),
+          painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
           painel_servicos!inner(nome, preco, duracao)
         `)
         .order('data', { ascending: false })

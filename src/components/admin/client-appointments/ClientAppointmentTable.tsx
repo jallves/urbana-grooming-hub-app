@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Table,
@@ -25,6 +26,15 @@ interface PainelAgendamento {
   };
   painel_barbeiros: {
     nome: string;
+    email: string;
+    telefone: string;
+    image_url: string;
+    specialties: string;
+    experience: string;
+    commission_rate: number;
+    is_active: boolean;
+    role: string;
+    staff_id: string;
   };
   painel_servicos: {
     nome: string;
