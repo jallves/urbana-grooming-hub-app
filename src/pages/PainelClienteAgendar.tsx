@@ -146,12 +146,30 @@ export default function PainelClienteAgendar() {
       return;
     }
 
+    if (!cliente || !cliente.id) {
+      toast({
+        title: "Erro",
+        description: "Cliente não encontrado. Faça login novamente.",
+        variant: "destructive"
+      });
+      navigate('/painel-cliente/login');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      console.log('Criando agendamento com dados:', {
+        cliente_id: cliente.id,
+        barbeiro_id: formData.barbeiroId,
+        servico_id: formData.servicoId,
+        data: formData.data,
+        hora: formData.hora
+      });
+
       const { data, error } = await supabase
         .rpc('create_painel_agendamento' as any, {
-          cliente_id: cliente!.id,
+          cliente_id: cliente.id,
           barbeiro_id: formData.barbeiroId,
           servico_id: formData.servicoId,
           data: formData.data,
@@ -162,7 +180,7 @@ export default function PainelClienteAgendar() {
         console.error('Erro ao criar agendamento:', error);
         toast({
           title: "Erro",
-          description: "Erro ao criar agendamento. Tente novamente.",
+          description: error.message || "Erro ao criar agendamento. Tente novamente.",
           variant: "destructive"
         });
         return;
