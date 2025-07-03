@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Edit, Check, X, Clock, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Check, X, Clock, Trash2, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,10 +27,23 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
   onStatusChange, 
   onDelete 
 }) => {
+  // Verificar se é um agendamento do painel do cliente
+  const isPainelAppointment = appointment.client?.email && 
+    !appointment.client?.email.includes('@') || 
+    appointment.client?.whatsapp === appointment.client?.phone;
+
   return (
     <TableRow>
       <TableCell className="font-medium">
-        {appointment.client?.name || 'Cliente não encontrado'}
+        <div className="flex items-center gap-2">
+          <span>{appointment.client?.name || 'Cliente não encontrado'}</span>
+          {isPainelAppointment && (
+            <Badge variant="outline" className="text-xs">
+              <Users className="h-3 w-3 mr-1" />
+              Painel Cliente
+            </Badge>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         {appointment.service?.name || 'Serviço não encontrado'}
@@ -55,10 +69,12 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(appointment.id)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Editar
-            </DropdownMenuItem>
+            {!isPainelAppointment && (
+              <DropdownMenuItem onClick={() => onEdit(appointment.id)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+            )}
             
             {appointment.status !== 'confirmed' && (
               <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmed')}>
@@ -81,7 +97,7 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
               </DropdownMenuItem>
             )}
             
-            {appointment.status !== 'no_show' && (
+            {appointment.status !== 'no_show' && !isPainelAppointment && (
               <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'no_show')}>
                 <Clock className="mr-2 h-4 w-4" />
                 Marcar como No-Show
