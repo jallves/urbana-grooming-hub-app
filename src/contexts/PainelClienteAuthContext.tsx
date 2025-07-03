@@ -60,7 +60,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       const { data, error } = await supabase
-        .rpc('get_painel_cliente_by_id', { cliente_id: token });
+        .rpc('get_painel_cliente_by_id' as any, { cliente_id: token });
 
       if (error || !data) {
         localStorage.removeItem('painel_cliente_token');
@@ -104,7 +104,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       // Verificar se email já existe usando SQL direto
       const { data: clienteExistente, error: checkError } = await supabase
-        .rpc('check_painel_cliente_email', { email_to_check: dados.email.trim().toLowerCase() });
+        .rpc('check_painel_cliente_email' as any, { email_to_check: dados.email.trim().toLowerCase() });
 
       if (checkError) {
         console.error('Erro ao verificar email:', checkError);
@@ -120,7 +120,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       // Inserir cliente usando SQL direto
       const { data: novoCliente, error: insertError } = await supabase
-        .rpc('create_painel_cliente', {
+        .rpc('create_painel_cliente' as any, {
           nome: dados.nome.trim(),
           email: dados.email.trim().toLowerCase(),
           whatsapp: dados.whatsapp.trim(),
@@ -163,7 +163,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       const senhaHash = btoa(senha);
 
       const { data: clienteData, error } = await supabase
-        .rpc('authenticate_painel_cliente', {
+        .rpc('authenticate_painel_cliente' as any, {
           email: email.trim().toLowerCase(),
           senha_hash: senhaHash
         });
@@ -208,7 +208,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
     try {
       const { data: clienteAtualizado, error } = await supabase
-        .rpc('update_painel_cliente', {
+        .rpc('update_painel_cliente' as any, {
           cliente_id: cliente.id,
           nome: dados.nome,
           email: dados.email,

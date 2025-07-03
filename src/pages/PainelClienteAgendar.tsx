@@ -58,7 +58,7 @@ export default function PainelClienteAgendar() {
     try {
       // Carregar barbeiros
       const { data: barbeirosData, error: barbeirosError } = await supabase
-        .rpc('get_painel_barbeiros');
+        .rpc('get_painel_barbeiros' as any);
 
       if (barbeirosError) {
         console.error('Erro ao carregar barbeiros:', barbeirosError);
@@ -68,7 +68,7 @@ export default function PainelClienteAgendar() {
 
       // Carregar serviços
       const { data: servicosData, error: servicosError } = await supabase
-        .rpc('get_painel_servicos');
+        .rpc('get_painel_servicos' as any);
 
       if (servicosError) {
         console.error('Erro ao carregar serviços:', servicosError);
@@ -109,7 +109,7 @@ export default function PainelClienteAgendar() {
 
     try {
       const { data: agendamentos, error } = await supabase
-        .rpc('get_agendamentos_barbeiro_data', {
+        .rpc('get_agendamentos_barbeiro_data' as any, {
           barbeiro_id: formData.barbeiroId,
           data_agendamento: formData.data
         });
@@ -150,7 +150,7 @@ export default function PainelClienteAgendar() {
 
     try {
       const { data, error } = await supabase
-        .rpc('create_painel_agendamento', {
+        .rpc('create_painel_agendamento' as any, {
           cliente_id: cliente!.id,
           barbeiro_id: formData.barbeiroId,
           servico_id: formData.servicoId,
