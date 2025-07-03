@@ -28,37 +28,39 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-black overflow-x-hidden">
+      <div className="min-h-screen flex w-full bg-black text-white overflow-x-hidden panel-responsive">
         <AdminSidebar />
         <div className={`flex-1 overflow-auto ${isMobile ? 'pl-0' : 'md:pl-0'}`}>
-          <header className={`flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-3 p-4 md:p-6 ${isMobile ? 'pt-16' : ''}`}>
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-white">Painel Administrativo</h1>
-              <p className="text-sm text-gray-400">Urbana Barbearia</p>
-            </div>
-            <div className="flex items-center gap-2 md:gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="text-xs md:text-sm text-gray-400 hover:text-white flex items-center gap-1"
-                onClick={() => navigate('/')}
-              >
-                Ver Site
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="text-gray-400 hover:text-white hover:bg-zinc-800"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-zinc-800 flex items-center justify-center text-white font-semibold">
-                {user?.email?.charAt(0).toUpperCase() || 'A'}
+          <header className={`panel-header-responsive ${isMobile ? 'pt-16' : ''}`}>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+              <div>
+                <h1 className="panel-title-responsive font-bold text-white">Painel Administrativo</h1>
+                <p className="text-sm text-gray-400">Urbana Barbearia</p>
+              </div>
+              <div className="flex items-center gap-2 md:gap-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="panel-text-responsive text-gray-400 hover:text-white flex items-center gap-1 hover:bg-gray-800"
+                  onClick={() => navigate('/')}
+                >
+                  Ver Site
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="text-gray-400 hover:text-white hover:bg-gray-800"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-5 w-5" />
+                </Button>
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-800 flex items-center justify-center text-white font-semibold">
+                  {user?.email?.charAt(0).toUpperCase() || 'A'}
+                </div>
               </div>
             </div>
           </header>
-          <main className="px-4 md:px-6 pb-6 overflow-x-auto">{children}</main>
+          <main className="panel-content-responsive overflow-x-auto">{children}</main>
         </div>
       </div>
     </SidebarProvider>

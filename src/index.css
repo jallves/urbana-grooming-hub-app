@@ -27,6 +27,80 @@
   #root {
     @apply bg-black min-h-screen;
   }
+
+  /* Force dark theme for all admin panels */
+  .admin-panel, .barber-panel, .client-panel {
+    @apply bg-black text-white;
+  }
+
+  /* Override any white backgrounds */
+  .bg-white {
+    @apply bg-gray-900 !important;
+  }
+
+  .bg-gray-50 {
+    @apply bg-gray-800 !important;
+  }
+
+  .bg-gray-100 {
+    @apply bg-gray-800 !important;
+  }
+
+  /* Card styling for all panels */
+  .card, [data-radix-collection-item] {
+    @apply bg-gray-900 border-gray-700 text-white !important;
+  }
+
+  /* Input styling */
+  input, textarea, select {
+    @apply bg-gray-800 border-gray-600 text-white placeholder-gray-400 !important;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    @apply border-urbana-gold ring-urbana-gold/20 !important;
+  }
+
+  /* Button styling */
+  .btn-primary, button[type="submit"] {
+    @apply bg-urbana-gold text-black hover:bg-urbana-gold/90 !important;
+  }
+
+  /* Dropdown and select styling */
+  [role="option"], [role="menuitem"] {
+    @apply bg-gray-900 text-white hover:bg-gray-800 !important;
+  }
+
+  /* Table styling */
+  table {
+    @apply bg-gray-900 !important;
+  }
+
+  th {
+    @apply bg-gray-800 text-white border-gray-700 !important;
+  }
+
+  td {
+    @apply bg-gray-900 text-white border-gray-700 !important;
+  }
+
+  /* Modal and dialog styling */
+  [role="dialog"], .dialog-content {
+    @apply bg-gray-900 border-gray-700 text-white !important;
+  }
+
+  /* Sidebar styling */
+  .sidebar {
+    @apply bg-black border-gray-800 !important;
+  }
+
+  /* Form styling */
+  .form-control, .form-input {
+    @apply bg-gray-800 border-gray-600 text-white !important;
+  }
+
+  .form-label {
+    @apply text-white !important;
+  }
 }
 
 .urbana-container {
@@ -52,27 +126,144 @@
 /* Mobile responsive styles */
 @media (max-width: 640px) {
   h1 {
-    @apply text-3xl;
+    @apply text-2xl md:text-3xl;
   }
   
   h2 {
-    @apply text-2xl;
+    @apply text-xl md:text-2xl;
   }
   
   .btn-responsive {
-    @apply w-full mb-2 justify-center;
+    @apply w-full mb-2 justify-center text-sm px-3 py-2;
+  }
+
+  /* Mobile navigation */
+  .mobile-nav {
+    @apply fixed top-0 left-0 w-full h-screen bg-black z-50 flex flex-col px-6 py-10 transform transition-transform duration-300;
+  }
+
+  /* Mobile admin/barber/client panels */
+  .mobile-panel {
+    @apply bg-black min-h-screen p-4;
+  }
+
+  .mobile-panel-header {
+    @apply bg-black border-b border-gray-700 px-4 py-4 sticky top-0 z-10;
+  }
+
+  .mobile-panel-content {
+    @apply bg-black px-2 py-4 space-y-4;
+  }
+
+  .mobile-card {
+    @apply bg-gray-900 border border-gray-700 rounded-lg p-3 mb-3;
+  }
+
+  .mobile-form {
+    @apply space-y-4;
+  }
+
+  .mobile-form input,
+  .mobile-form textarea,
+  .mobile-form select {
+    @apply w-full px-3 py-2 text-sm;
+  }
+
+  .mobile-table {
+    @apply overflow-x-auto;
+  }
+
+  .mobile-table table {
+    @apply min-w-full text-sm;
+  }
+
+  /* Mobile sidebar */
+  .mobile-sidebar {
+    @apply fixed inset-y-0 left-0 z-50 w-64 bg-black transform transition-transform duration-300;
+  }
+
+  /* Mobile responsive grid */
+  .mobile-grid {
+    @apply grid grid-cols-1 gap-4;
+  }
+
+  .tablet-grid {
+    @apply sm:grid-cols-2 md:grid-cols-3;
+  }
+
+  /* Mobile buttons */
+  .mobile-button {
+    @apply w-full py-3 px-4 text-base font-medium rounded-lg;
+  }
+
+  /* Mobile stats cards */
+  .mobile-stats {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .mobile-stat-card {
+    @apply bg-gray-900 border border-gray-700 rounded-lg p-3 text-center;
   }
 }
 
-/* Mobile navigation menu styling */
-.mobile-nav {
-  @apply fixed top-0 left-0 w-full h-screen bg-black z-50 flex flex-col px-6 py-10 transform transition-transform duration-300;
+/* Tablet responsive styles */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .tablet-container {
+    @apply px-6 py-4;
+  }
+
+  .tablet-grid {
+    @apply grid-cols-2 gap-4;
+  }
+
+  .tablet-panel {
+    @apply px-6 py-4;
+  }
+
+  .tablet-card {
+    @apply p-4;
+  }
+
+  .tablet-form {
+    @apply grid grid-cols-2 gap-4;
+  }
+
+  .tablet-full-width {
+    @apply col-span-2;
+  }
+}
+
+/* Desktop responsive styles */
+@media (min-width: 1024px) {
+  .desktop-container {
+    @apply px-8 py-6;
+  }
+
+  .desktop-grid {
+    @apply grid-cols-3 lg:grid-cols-4 gap-6;
+  }
+
+  .desktop-panel {
+    @apply px-8 py-6;
+  }
+
+  .desktop-card {
+    @apply p-6;
+  }
+
+  .desktop-form {
+    @apply grid grid-cols-3 gap-6;
+  }
+
+  .desktop-full-width {
+    @apply col-span-3;
+  }
 }
 
 /* Improved mobile sheet/drawer styling */
 @media (max-width: 640px) {
   .sheet-content {
-    @apply w-[85vw] max-w-none bg-black;
+    @apply w-[85vw] max-w-none bg-black border-gray-700;
   }
   
   /* Ensure proper touch targets on mobile */
@@ -92,10 +283,10 @@
   
   /* Responsive text sizing */
   .mobile-text-responsive {
-    @apply text-base leading-relaxed;
+    @apply text-sm md:text-base leading-relaxed;
   }
 
-  /* Mobile-specific client dashboard styles */
+  /* Mobile-specific dashboard styles */
   .mobile-dashboard {
     @apply bg-black min-h-screen;
   }
@@ -108,12 +299,17 @@
     @apply bg-black px-4 py-6;
   }
 
-  .mobile-card {
-    @apply bg-gray-900 border border-gray-700 rounded-lg p-4 mb-4;
-  }
-
   .mobile-appointment-card {
     @apply bg-gray-900 border border-gray-700 rounded-lg p-3 mb-3;
+  }
+
+  /* Mobile navigation improvements */
+  .mobile-nav-item {
+    @apply py-4 px-3 text-base border-b border-gray-800;
+  }
+
+  .mobile-nav-item:last-child {
+    @apply border-b-0;
   }
 }
 
@@ -163,6 +359,29 @@
   .mobile-nav-item {
     @apply py-4 px-3 text-lg;
   }
+
+  /* Mobile panel specific */
+  .mobile-panel-wrapper {
+    @apply min-h-screen bg-black flex flex-col;
+  }
+
+  .mobile-panel-main {
+    @apply flex-1 overflow-auto p-4;
+  }
+
+  /* Mobile stats grid */
+  .mobile-stats-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+
+  /* Mobile table wrapper */
+  .mobile-table-wrapper {
+    @apply overflow-x-auto;
+  }
+
+  .mobile-table-wrapper table {
+    @apply min-w-full;
+  }
 }
 
 /* Improve mobile viewport handling */
@@ -174,7 +393,7 @@
   }
 }
 
-/* Dark theme overrides for all components */
+/* Universal dark theme enforcement */
 .bg-gray-50 {
   @apply bg-black !important;
 }
@@ -191,6 +410,56 @@
   @apply text-gray-300 !important;
 }
 
+.text-black {
+  @apply text-white !important;
+}
+
 .border-gray-200 {
   @apply border-gray-700 !important;
+}
+
+.border-gray-300 {
+  @apply border-gray-600 !important;
+}
+
+/* Panel-specific responsive classes */
+.panel-responsive {
+  @apply bg-black text-white min-h-screen;
+}
+
+.panel-header-responsive {
+  @apply bg-black border-b border-gray-700 px-4 md:px-6 py-4 sticky top-0 z-10;
+}
+
+.panel-content-responsive {
+  @apply bg-black p-4 md:p-6 space-y-4 md:space-y-6;
+}
+
+.panel-card-responsive {
+  @apply bg-gray-900 border border-gray-700 rounded-lg p-4 md:p-6;
+}
+
+.panel-form-responsive {
+  @apply space-y-4 md:space-y-6;
+}
+
+.panel-grid-responsive {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6;
+}
+
+.panel-button-responsive {
+  @apply w-full md:w-auto px-4 py-2 text-sm md:text-base;
+}
+
+.panel-text-responsive {
+  @apply text-sm md:text-base;
+}
+
+.panel-title-responsive {
+  @apply text-lg md:text-xl lg:text-2xl;
+}
+
+/* Loading page theme */
+.loader-page {
+  @apply bg-black text-white min-h-screen;
 }

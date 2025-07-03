@@ -52,18 +52,18 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-urbana-gold rounded-full"></div>
       </div>
     );
   }
 
   if (appointments.length === 0) {
     return (
-      <Card>
+      <Card className="panel-card-responsive">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-500 text-lg mb-2">Nenhum agendamento encontrado</p>
-          <p className="text-gray-400 text-sm">Os agendamentos aparecerão aqui quando forem criados</p>
+          <p className="text-gray-300 text-lg mb-2">Nenhum agendamento encontrado</p>
+          <p className="text-gray-500 text-sm">Os agendamentos aparecerão aqui quando forem criados</p>
         </CardContent>
       </Card>
     );
@@ -72,34 +72,38 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
   return (
     <div className="space-y-4">
       {appointments.map((appointment) => (
-        <Card key={appointment.id} className="overflow-hidden">
+        <Card key={appointment.id} className="panel-card-responsive mobile-appointment-card overflow-hidden">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-medium">
-                  {format(new Date(appointment.start_time), 'dd/MM/yyyy', { locale: ptBR })}
-                </span>
-                <Clock className="h-4 w-4 text-gray-500 ml-2" />
-                <span className="text-sm">
-                  {format(new Date(appointment.start_time), 'HH:mm', { locale: ptBR })} - 
-                  {format(new Date(appointment.end_time), 'HH:mm', { locale: ptBR })}
-                </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span className="font-medium text-white">
+                    {format(new Date(appointment.start_time), 'dd/MM/yyyy', { locale: ptBR })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-300">
+                    {format(new Date(appointment.start_time), 'HH:mm', { locale: ptBR })} - 
+                    {format(new Date(appointment.end_time), 'HH:mm', { locale: ptBR })}
+                  </span>
+                </div>
               </div>
               {getStatusBadge(appointment.status)}
             </div>
           </CardHeader>
           
           <CardContent className="pt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">{appointment.client_name}</span>
+                <User className="h-4 w-4 text-gray-400" />
+                <span className="font-medium text-white">{appointment.client_name}</span>
               </div>
               
               <div className="flex items-center space-x-2">
-                <Scissors className="h-4 w-4 text-gray-500" />
-                <span>{appointment.service_name}</span>
+                <Scissors className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-300">{appointment.service_name}</span>
                 {appointment.service?.price && (
                   <span className="text-sm text-gray-500">
                     - R$ {appointment.service.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -109,12 +113,12 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
             </div>
 
             {appointment.notes && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-md">
-                <p className="text-sm text-gray-700">{appointment.notes}</p>
+              <div className="mb-4 p-3 bg-gray-800 rounded-md">
+                <p className="text-sm text-gray-300">{appointment.notes}</p>
               </div>
             )}
 
-            <div className="flex items-center justify-end space-x-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
               {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
                 <>
                   <Button
@@ -122,6 +126,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                     size="sm"
                     onClick={() => onEdit(appointment.id, appointment.start_time)}
                     disabled={updatingId === appointment.id}
+                    className="panel-button-responsive bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Editar
@@ -132,6 +137,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                     size="sm"
                     onClick={() => onComplete(appointment.id)}
                     disabled={updatingId === appointment.id}
+                    className="panel-button-responsive bg-urbana-gold text-black hover:bg-urbana-gold/90"
                   >
                     <Check className="h-4 w-4 mr-1" />
                     Concluir
@@ -142,6 +148,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                     size="sm"
                     onClick={() => onCancel(appointment.id)}
                     disabled={updatingId === appointment.id}
+                    className="panel-button-responsive"
                   >
                     <X className="h-4 w-4 mr-1" />
                     Cancelar
