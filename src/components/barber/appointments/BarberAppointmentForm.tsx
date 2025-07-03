@@ -68,14 +68,20 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
         }
       }
 
-      // Load clients and services
-      const [clientsRes, servicesRes] = await Promise.all([
-        supabase.from('clients').select('id, name, phone').eq('is_active', true),
-        supabase.from('services').select('id, name, price, duration').eq('is_active', true)
-      ]);
+      // Load clients
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('id, name, phone')
+        .eq('is_active', true);
 
-      if (clientsRes.data) setClients(clientsRes.data);
-      if (servicesRes.data) setServices(servicesRes.data);
+      // Load services  
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('id, name, price, duration')
+        .eq('is_active', true);
+
+      if (clientsData) setClients(clientsData);
+      if (servicesData) setServices(servicesData);
     } catch (error) {
       console.error('Error loading initial data:', error);
     }
