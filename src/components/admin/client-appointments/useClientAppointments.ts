@@ -20,7 +20,6 @@ interface PainelAgendamento {
   };
   painel_barbeiros: {
     nome: string;
-    email: string;
     telefone: string;
   };
   painel_servicos: {
