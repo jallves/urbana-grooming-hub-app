@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -7,6 +6,7 @@ import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
 import AdminRoute from './components/auth/AdminRoute';
 import ClientRoute from './components/client/ClientRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
+import Index from './pages/Index';
 import AdminDashboard from './pages/Admin';
 import AdminLogin from './pages/Auth';
 import ClientLogin from './pages/ClientLogin';
@@ -45,7 +45,7 @@ function App() {
               <QueryClientProvider client={queryClient}>
                 <div className="min-h-screen bg-background">
                   <Routes>
-                    <Route path="/" element={<Navigate to="/admin/login" />} />
+                    <Route path="/" element={<Index />} />
                     
                     {/* Admin Routes */}
                     <Route path="/admin/login" element={<AdminLogin />} />
@@ -54,6 +54,8 @@ function App() {
                         <AdminDashboard />
                       </AdminRoute>
                     } />
+                    
+                    {/* Admin Routes */}
                     <Route path="/admin/agendamentos" element={
                       <AdminRoute>
                         <AdminAppointments />
