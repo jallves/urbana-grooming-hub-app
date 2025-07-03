@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -6,6 +7,7 @@ import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
 import AdminRoute from './components/auth/AdminRoute';
 import ClientRoute from './components/client/ClientRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
+import BarberRoute from './components/auth/BarberRoute';
 import Index from './pages/Index';
 import AdminDashboard from './pages/Admin';
 import AdminLogin from './pages/Auth';
@@ -29,6 +31,13 @@ import PainelClienteLogin from './pages/PainelClienteLogin';
 import PainelClienteRegister from './pages/PainelClienteRegister';
 import PainelClienteDashboard from './pages/PainelClienteDashboard';
 import PainelClienteAgendar from './pages/PainelClienteAgendar';
+import BarberAuth from './pages/BarberAuth';
+import BarberDashboard from './pages/BarberDashboard';
+import BarberAppointments from './pages/BarberAppointments';
+import BarberClients from './pages/BarberClients';
+import BarberCommissions from './pages/BarberCommissions';
+import BarberSchedule from './pages/BarberSchedule';
+import BarberAdminDashboard from './pages/BarberAdminDashboard';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
@@ -120,6 +129,44 @@ function App() {
                       <AdminRoute>
                         <AdminSettings />
                       </AdminRoute>
+                    } />
+                    
+                    {/* Barber Routes */}
+                    <Route path="/barbeiro/login" element={<BarberAuth />} />
+                    <Route path="/barbeiro" element={
+                      <BarberRoute allowBarber={true}>
+                        <BarberDashboard />
+                      </BarberRoute>
+                    } />
+                    <Route path="/barbeiro/dashboard" element={
+                      <BarberRoute allowBarber={true}>
+                        <BarberDashboard />
+                      </BarberRoute>
+                    } />
+                    <Route path="/barbeiro/agendamentos" element={
+                      <BarberRoute allowBarber={true}>
+                        <BarberAppointments />
+                      </BarberRoute>
+                    } />
+                    <Route path="/barbeiro/clientes" element={
+                      <BarberRoute allowBarber={true}>
+                        <BarberClients />
+                      </BarberRoute>
+                    } />
+                    <Route path="/barbeiro/comissoes" element={
+                      <BarberRoute allowBarber={true}>
+                        <BarberCommissions />
+                      </BarberRoute>
+                    } />
+                    <Route path="/barbeiro/agenda" element={
+                      <BarberRoute allowBarber={true}>
+                        <BarberSchedule />
+                      </BarberRoute>
+                    } />
+                    <Route path="/barbeiro/admin" element={
+                      <BarberRoute>
+                        <BarberAdminDashboard />
+                      </BarberRoute>
                     } />
                     
                     {/* Client Routes */}
