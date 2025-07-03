@@ -1,27 +1,35 @@
-import React from 'react';
-import Navbar from '../components/Navbar';
-import Hero from '../components/Hero';
-import Services from '../components/Services';
-import Footer from '../components/Footer';
-import Gallery from '../components/Gallery';
-import WhatsAppButton from '../components/WhatsAppButton';
+import { User } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Hero from '@/components/Hero';
+import Services from '@/components/Services';
+import Team from '@/components/Team';
+import Gallery from '@/components/Gallery';
+import Appointment from '@/components/Appointment';
+import Footer from '@/components/Footer';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 const Index = () => {
-  console.log('Rendering Index page');
-
   return (
-    <div className="min-h-screen bg-amber-50 text-gray-900 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-black">
       <Navbar />
-      <div>
-        <Hero />
-        <div className="relative">
-          <div className="absolute inset-0 bg-amber-100/30 skew-y-3 -z-10 -mt-16 h-[120vh]"></div>
-          <Services />
-        </div>
-        <Gallery />
-        <Footer />
-      </div>
+      <Hero />
+      <Services />
+      <Team />
+      <Gallery />
+      <Appointment />
+      <Footer />
       <WhatsAppButton />
+      
+      {/* Link para o Painel do Cliente */}
+      <div className="fixed bottom-4 left-4 z-50">
+        <a 
+          href="/painel-cliente/login"
+          className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-all"
+        >
+          <User className="h-4 w-4" />
+          Painel Cliente
+        </a>
+      </div>
     </div>
   );
 };
