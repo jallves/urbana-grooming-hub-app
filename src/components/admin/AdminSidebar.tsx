@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar";
@@ -59,6 +58,11 @@ const AdminSidebar: React.FC = () => {
       title: "Agendamentos",
       icon: Calendar,
       href: "/admin/agendamentos",
+    },
+    {
+      title: "Agendamentos Clientes",
+      icon: UserCheck,
+      href: "/admin/agendamentos-clientes",
     },
     {
       title: "Clientes",
