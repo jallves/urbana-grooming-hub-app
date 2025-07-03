@@ -11,32 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface Client {
-  id: string;
-  name: string;
-  phone: string;
-}
-
-interface Service {
-  id: string;
-  name: string;
-  price: number;
-  duration: number;
-}
-
 interface BarberAppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
   appointmentId?: string;
   defaultDate?: Date;
   dateTimeOnly?: boolean;
-}
-
-interface FormData {
-  client_id: string;
-  service_id: string;
-  start_time: string;
-  notes: string;
 }
 
 const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
@@ -49,11 +29,11 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [barberId, setBarberId] = useState<string>('');
   
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     client_id: '',
     service_id: '',
     start_time: defaultDate ? format(defaultDate, "yyyy-MM-dd'T'HH:mm") : '',
@@ -94,8 +74,8 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
         supabase.from('services').select('id, name, price, duration').eq('is_active', true)
       ]);
 
-      if (clientsRes.data) setClients(clientsRes.data as Client[]);
-      if (servicesRes.data) setServices(servicesRes.data as Service[]);
+      if (clientsRes.data) setClients(clientsRes.data);
+      if (servicesRes.data) setServices(servicesRes.data);
     } catch (error) {
       console.error('Error loading initial data:', error);
     }
@@ -191,7 +171,7 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
