@@ -19,6 +19,19 @@ interface BarberAppointmentFormProps {
   dateTimeOnly?: boolean;
 }
 
+interface ClientData {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+interface ServiceData {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
+}
+
 const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
   isOpen,
   onClose,
@@ -29,8 +42,8 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [clients, setClients] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
+  const [clients, setClients] = useState<ClientData[]>([]);
+  const [services, setServices] = useState<ServiceData[]>([]);
   const [barberId, setBarberId] = useState<string>('');
   
   const [formData, setFormData] = useState({
@@ -56,32 +69,46 @@ const BarberAppointmentForm: React.FC<BarberAppointmentFormProps> = ({
     try {
       // Get barber ID
       if (user?.email) {
-        const { data: staffData } = await supabase
+        const staffQuery = await supabase
           .from('staff')
           .select('id')
           .eq('email', user.email)
           .eq('role', 'barber')
           .maybeSingle();
         
-        if (staffData) {
-          setBarberId(staffData.id);
+        if (staffQuery.data) {
+          setBarberId(staffQuery.data.id);
         }
       }
 
-      // Load clients
-      const { data: clientsData } = await supabase
+      // Load clients with explicit typing
+      const clientsQuery = await supabase
         .from('clients')
-        .select('id, name, phone')
-        .eq('is_active', true);
+        .select('id, name, phone');
 
-      // Load services  
-      const { data: servicesData } = await supabase
+      if (clientsQuery.data) {
+        const clientsData: ClientData[] = clientsQuery.data.map(client => ({
+          id: client.id,
+          name: client.name,
+          phone: client.phone
+        }));
+        setClients(clientsData);
+      }
+
+      // Load services with explicit typing
+      const servicesQuery = await supabase
         .from('services')
-        .select('id, name, price, duration')
-        .eq('is_active', true);
+        .select('id, name, price, duration');
 
-      if (clientsData) setClients(clientsData);
-      if (servicesData) setServices(servicesData);
+      if (servicesQuery.data) {
+        const servicesData: ServiceData[] = servicesQuery.data.map(service => ({
+          id: service.id,
+          name: service.name,
+          price: service.price,
+          duration: service.duration
+        }));
+        setServices(servicesData);
+      }
     } catch (error) {
       console.error('Error loading initial data:', error);
     }
