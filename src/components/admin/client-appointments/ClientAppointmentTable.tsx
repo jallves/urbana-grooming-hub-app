@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -26,7 +25,6 @@ interface PainelAgendamento {
   };
   painel_barbeiros: {
     nome: string;
-    telefone: string;
   };
   painel_servicos: {
     nome: string;

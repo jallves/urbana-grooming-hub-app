@@ -29,7 +29,6 @@ interface PainelAgendamento {
   };
   painel_barbeiros: {
     nome: string;
-    telefone: string;
   };
   painel_servicos: {
     nome: string;
@@ -55,7 +54,7 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
     const statusConfig = {
       'pendente': { variant: 'secondary' as const, label: 'Pendente' },
       'confirmado': { variant: 'default' as const, label: 'Confirmado' },
-      'concluido': { variant: 'outline' as const, label: 'Concluído' },
+      'concluido': { variant: 'secondary' as const, label: 'Concluído' },
       'cancelado': { variant: 'destructive' as const, label: 'Cancelado' },
     };
     
