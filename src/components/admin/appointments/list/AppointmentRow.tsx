@@ -27,10 +27,8 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
   onStatusChange, 
   onDelete 
 }) => {
-  // Verificar se é um agendamento do painel do cliente
-  const isPainelAppointment = appointment.client?.email && 
-    !appointment.client?.email.includes('@') || 
-    appointment.client?.whatsapp === appointment.client?.phone;
+  // Verificar se é um agendamento do painel do cliente pelo prefixo no ID
+  const isPainelAppointment = appointment.id.startsWith('painel_');
 
   return (
     <TableRow>

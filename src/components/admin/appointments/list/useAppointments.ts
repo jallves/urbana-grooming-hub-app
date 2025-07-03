@@ -112,7 +112,7 @@ export const useAppointments = () => {
             const endTime = new Date(startTime.getTime() + (painel.painel_servicos.duracao * 60000));
 
             return {
-              id: painel.id,
+              id: `painel_${painel.id}`, // Adicionar prefixo para identificar agendamentos do painel
               client_id: painel.cliente_id,
               service_id: painel.servico_id,
               staff_id: painel.barbeiro_id,
@@ -187,7 +187,7 @@ export const useAppointments = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAdmin, isBarber, user]); // Include dependencies for useCallback
+  }, [isAdmin, isBarber, user]);
 
   useEffect(() => {
     if (user) {
@@ -227,15 +227,17 @@ export const useAppointments = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user, fetchAppointments]); // Add fetchAppointments as a dependency
+  }, [user, fetchAppointments]);
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
-      // Verificar se é um agendamento do painel do cliente
-      const isPainelAppointment = appointments.find(apt => apt.id === appointmentId && 
-        !appointments.some(regApt => regApt.id === appointmentId && regApt.client?.email));
-
+      // Verificar se é um agendamento do painel do cliente pelo prefixo
+      const isPainelAppointment = appointmentId.startsWith('painel_');
+      
       if (isPainelAppointment) {
+        // Remove o prefixo para obter o ID real
+        const realId = appointmentId.replace('painel_', '');
+        
         // Atualizar agendamento do painel do cliente
         const painelStatus = newStatus === 'cancelled' ? 'cancelado' : 
                            newStatus === 'confirmed' ? 'confirmado' : 
@@ -244,7 +246,7 @@ export const useAppointments = () => {
         const { error } = await supabase
           .from('painel_agendamentos')
           .update({ status: painelStatus })
-          .eq('id', appointmentId);
+          .eq('id', realId);
 
         if (error) throw error;
       } else {
@@ -271,20 +273,22 @@ export const useAppointments = () => {
         description: "Não foi possível atualizar o status.",
       });
     }
-  }, [appointments]);
+  }, []);
   
   const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
     try {
-      // Verificar se é um agendamento do painel do cliente
-      const isPainelAppointment = appointments.find(apt => apt.id === appointmentId && 
-        !appointments.some(regApt => regApt.id === appointmentId && regApt.client?.email));
+      // Verificar se é um agendamento do painel do cliente pelo prefixo
+      const isPainelAppointment = appointmentId.startsWith('painel_');
 
       if (isPainelAppointment) {
+        // Remove o prefixo para obter o ID real
+        const realId = appointmentId.replace('painel_', '');
+        
         // Deletar agendamento do painel do cliente
         const { error } = await supabase
           .from('painel_agendamentos')
           .delete()
-          .eq('id', appointmentId);
+          .eq('id', realId);
 
         if (error) throw error;
       } else {
@@ -311,7 +315,7 @@ export const useAppointments = () => {
       });
       return false;
     }
-  }, [appointments]);
+  }, []);
 
   return {
     appointments,
