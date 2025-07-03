@@ -2647,6 +2647,18 @@ export type Database = {
         Args: { p_appointment_id: string; p_coupon_code: string }
         Returns: Json
       }
+      authenticate_painel_cliente: {
+        Args: { email: string; senha_hash: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          senha_hash: string
+          updated_at: string
+          whatsapp: string
+        }
+      }
       check_appointment_conflict: {
         Args: {
           p_staff_id: string
@@ -2674,6 +2686,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_painel_cliente_email: {
+        Args: { email_to_check: string }
+        Returns: boolean
+      }
       check_time_slot_availability: {
         Args: {
           p_staff_id: string
@@ -2686,6 +2702,51 @@ export type Database = {
       clean_expired_client_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_painel_agendamento: {
+        Args: {
+          cliente_id: string
+          barbeiro_id: string
+          servico_id: string
+          data: string
+          hora: string
+        }
+        Returns: {
+          barbeiro_id: string
+          cliente_id: string
+          created_at: string
+          data: string
+          hora: string
+          id: string
+          servico_id: string
+          status: string
+          updated_at: string
+        }
+      }
+      create_painel_cliente: {
+        Args: {
+          nome: string
+          email: string
+          whatsapp: string
+          senha_hash: string
+        }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          senha_hash: string
+          updated_at: string
+          whatsapp: string
+        }
+      }
+      get_agendamentos_barbeiro_data: {
+        Args: { barbeiro_id: string; data_agendamento: string }
+        Returns: {
+          id: string
+          hora: string
+          status: string
+        }[]
       }
       get_available_barbers: {
         Args: {
@@ -2724,6 +2785,38 @@ export type Database = {
           age: number
         }[]
       }
+      get_painel_barbeiros: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }[]
+      }
+      get_painel_cliente_by_id: {
+        Args: { cliente_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          senha_hash: string
+          updated_at: string
+          whatsapp: string
+        }
+      }
+      get_painel_servicos: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          duracao: number
+          id: string
+          nome: string
+          preco: number
+          updated_at: string
+        }[]
+      }
       get_staff_module_access: {
         Args: { staff_id_param: string }
         Returns: string[]
@@ -2741,6 +2834,23 @@ export type Database = {
       is_staff_member: {
         Args: { user_email: string }
         Returns: boolean
+      }
+      update_painel_cliente: {
+        Args: {
+          cliente_id: string
+          nome?: string
+          email?: string
+          whatsapp?: string
+        }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          senha_hash: string
+          updated_at: string
+          whatsapp: string
+        }
       }
       update_staff_module_access: {
         Args: { staff_id_param: string; module_ids_param: string[] }
