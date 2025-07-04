@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Scissors } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion } from 'framer-motion';
+import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
@@ -38,8 +39,8 @@ export default function PainelClienteLogin() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md mx-auto">
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900">
+      <AuthContainer>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -123,7 +124,7 @@ export default function PainelClienteLogin() {
             </CardContent>
           </Card>
         </motion.div>
-      </div>
+      </AuthContainer>
     </div>
   );
 }

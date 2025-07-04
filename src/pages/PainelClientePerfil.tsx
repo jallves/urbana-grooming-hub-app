@@ -9,6 +9,7 @@ import { ArrowLeft, User, Save } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import DashboardContainer from '@/components/ui/containers/DashboardContainer';
 
 export default function PainelClientePerfil() {
   const navigate = useNavigate();
@@ -67,8 +68,8 @@ export default function PainelClientePerfil() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center py-10 px-4">
-      <div className="w-full max-w-2xl mx-auto">
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900">
+      <DashboardContainer>
         <motion.div 
           initial={{ opacity: 0, y: 40 }} 
           animate={{ opacity: 1, y: 0 }} 
@@ -163,7 +164,7 @@ export default function PainelClientePerfil() {
             </CardContent>
           </Card>
         </motion.div>
-      </div>
+      </DashboardContainer>
     </div>
   );
 }

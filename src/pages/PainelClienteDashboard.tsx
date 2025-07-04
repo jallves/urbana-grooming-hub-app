@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
-import { useNavigate, Link, Navigate } from 'react-router-dom';
+import React from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, User, LogOut, Settings, Phone, Mail, Scissors, Plus } from 'lucide-react';
+import { Calendar, User, LogOut, Phone, Mail, Scissors, Plus } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion } from 'framer-motion';
+import FullScreenContainer from '@/components/ui/containers/FullScreenContainer';
 
 export default function PainelClienteDashboard() {
   const { cliente, logout } = usePainelClienteAuth();
@@ -21,8 +22,8 @@ export default function PainelClienteDashboard() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 p-4">
-      <div className="w-full max-w-none mx-auto">
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900">
+      <FullScreenContainer>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -156,7 +157,7 @@ export default function PainelClienteDashboard() {
             </Button>
           </div>
         </motion.div>
-      </div>
+      </FullScreenContainer>
     </div>
   );
 }
