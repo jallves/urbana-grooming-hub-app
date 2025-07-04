@@ -4,21 +4,23 @@ import { Navigate } from 'react-router-dom';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 
 const PainelClienteRegister: React.FC = () => {
-  const { cliente } = usePainelClienteAuth();
+  const { cliente, loading } = usePainelClienteAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-2 border-amber-500 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   if (cliente) {
     // Se já está autenticado, redireciona para o dashboard
     return <Navigate to="/painel-cliente/dashboard" replace />;
   }
 
-  // Se não estiver autenticado, redireciona para o cadastro
-  return (
-    <>
-      <p className="text-center text-gray-400">Redirecionando para a página de cadastro...</p>
-      <Navigate to="/painel-cliente/register" replace />
-    </>
-  );
+  // Se não estiver autenticado, redireciona para o login
+  return <Navigate to="/painel-cliente/login" replace />;
 };
 
 export default PainelClienteRegister;
-

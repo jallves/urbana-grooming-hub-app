@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -67,101 +68,102 @@ export default function PainelClientePerfil() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center py-10 px-4">
-      <motion.div 
-        className="w-full max-w-2xl"
-        initial={{ opacity: 0, y: 40 }} 
-        animate={{ opacity: 1, y: 0 }} 
-        transition={{ duration: 0.4 }}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            onClick={() => navigate('/painel-cliente/dashboard')}
-            variant="outline"
-            size="sm"
-            className="border-gray-600 text-gray-300 hover:bg-gray-800"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <h1 className="text-3xl font-bold text-white">Editar Perfil</h1>
-        </div>
+      <div className="w-full max-w-2xl mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.4 }}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              onClick={() => navigate('/painel-cliente/dashboard')}
+              variant="outline"
+              size="sm"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+            <h1 className="text-3xl font-bold text-white">Editar Perfil</h1>
+          </div>
 
-        <Card className="bg-gray-900 border border-gray-700 shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <User className="h-5 w-5 text-amber-500" />
-              Suas Informações
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {erro && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-red-500/20 border border-red-500 rounded-lg"
-                >
-                  <p className="text-red-400 text-sm">{erro}</p>
-                </motion.div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="nome" className="text-white">Nome Completo</Label>
-                <Input
-                  id="nome"
-                  type="text"
-                  value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="bg-gray-800 border-gray-600 text-white"
-                  placeholder="Seu nome completo"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-gray-800 border-gray-600 text-white"
-                  placeholder="seu.email@exemplo.com"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
-                  value={formData.whatsapp}
-                  onChange={handleWhatsAppChange}
-                  className="bg-gray-800 border-gray-600 text-white"
-                  placeholder="(11) 99999-9999"
-                  maxLength={15}
-                  required
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                disabled={loading}
-              >
-                {loading ? 'Salvando...' : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Salvar Alterações
-                  </>
+          <Card className="bg-gray-900 border border-gray-700 shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <User className="h-5 w-5 text-amber-500" />
+                Suas Informações
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {erro && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 bg-red-500/20 border border-red-500 rounded-lg"
+                  >
+                    <p className="text-red-400 text-sm">{erro}</p>
+                  </motion.div>
                 )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </motion.div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="nome" className="text-white">Nome Completo</Label>
+                  <Input
+                    id="nome"
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white"
+                    placeholder="Seu nome completo"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-white">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="bg-gray-800 border-gray-600 text-white"
+                    placeholder="seu.email@exemplo.com"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    value={formData.whatsapp}
+                    onChange={handleWhatsAppChange}
+                    className="bg-gray-800 border-gray-600 text-white"
+                    placeholder="(11) 99999-9999"
+                    maxLength={15}
+                    required
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                  disabled={loading}
+                >
+                  {loading ? 'Salvando...' : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar Alterações
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   );
 }

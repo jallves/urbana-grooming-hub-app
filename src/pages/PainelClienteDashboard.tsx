@@ -1,249 +1,135 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Scissors, Check, X } from 'lucide-react';
+import { Calendar, User, LogOut, Settings, Phone, Mail, Scissors } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion } from 'framer-motion';
 
-export default function PainelClienteCadastro() {
+export default function PainelClienteDashboard() {
+  const { cliente, logout } = usePainelClienteAuth();
   const navigate = useNavigate();
-  const { cadastrar } = usePainelClienteAuth();
 
-  const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    whatsapp: '',
-    senha: '',
-    confirmarSenha: ''
-  });
-
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState('');
-
-  const validacoesSenha = {
-    minimo8: formData.senha.length >= 8,
-    maiuscula: /[A-Z]/.test(formData.senha),
-    minuscula: /[a-z]/.test(formData.senha),
-    numero: /\d/.test(formData.senha),
-    especial: /[@$!%*?&]/.test(formData.senha)
+  const handleLogout = async () => {
+    await logout();
+    navigate('/painel-cliente/login');
   };
 
-  const senhaValida = Object.values(validacoesSenha).every(v => v);
-  const senhasIguais = formData.senha === formData.confirmarSenha && formData.confirmarSenha !== '';
-
-  const formatarWhatsApp = (valor: string) => {
-    const numero = valor.replace(/\D/g, '');
-    if (numero.length <= 2) return numero;
-    if (numero.length <= 7) return `(${numero.slice(0, 2)}) ${numero.slice(2)}`;
-    if (numero.length <= 11) return `(${numero.slice(0, 2)}) ${numero.slice(2, 7)}-${numero.slice(7)}`;
-    return `(${numero.slice(0, 2)}) ${numero.slice(2, 7)}-${numero.slice(7, 11)}`;
-  };
-
-  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valorFormatado = formatarWhatsApp(e.target.value);
-    setFormData(prev => ({ ...prev, whatsapp: valorFormatado }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErro('');
-
-    if (!senhaValida) {
-      setErro('Senha não atende aos critérios de segurança');
-      return;
-    }
-
-    if (!senhasIguais) {
-      setErro('As senhas não coincidem');
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await cadastrar({
-      nome: formData.nome,
-      email: formData.email,
-      whatsapp: formData.whatsapp,
-      senha: formData.senha
-    });
-
-    if (error) {
-      setErro(error);
-      setLoading(false);
-    } else {
-      navigate('/painel-cliente/dashboard');
-    }
-  };
+  if (!cliente) {
+    return <Navigate to="/painel-cliente/login" replace />;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <Card className="bg-zinc-900 border border-zinc-700 shadow-2xl">
-          <CardHeader className="text-center">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-6"
+        >
+          {/* Header */}
+          <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-amber-500 rounded-full shadow-lg">
                 <Scissors className="h-8 w-8 text-black" />
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-white">Criar Conta</CardTitle>
-            <p className="text-gray-400 text-sm">Cadastre-se para agendar seus cortes</p>
-          </CardHeader>
+            <h1 className="text-3xl font-bold text-white mb-2">Painel do Cliente</h1>
+            <p className="text-gray-400">Bem-vindo, {cliente.nome}!</p>
+          </div>
 
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {erro && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="p-3 bg-red-500/20 border border-red-500 rounded-lg"
+          {/* Info Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <Card className="bg-zinc-900 border-zinc-700">
+              <CardContent className="p-4 flex items-center space-x-3">
+                <User className="h-8 w-8 text-amber-500" />
+                <div>
+                  <p className="text-gray-400 text-sm">Nome</p>
+                  <p className="text-white font-medium">{cliente.nome}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-zinc-900 border-zinc-700">
+              <CardContent className="p-4 flex items-center space-x-3">
+                <Mail className="h-8 w-8 text-amber-500" />
+                <div>
+                  <p className="text-gray-400 text-sm">E-mail</p>
+                  <p className="text-white font-medium">{cliente.email}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-zinc-900 border-zinc-700">
+              <CardContent className="p-4 flex items-center space-x-3">
+                <Phone className="h-8 w-8 text-amber-500" />
+                <div>
+                  <p className="text-gray-400 text-sm">WhatsApp</p>
+                  <p className="text-white font-medium">{cliente.whatsapp}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Action Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <Card className="bg-zinc-900 border-zinc-700 hover:border-amber-500 transition-colors cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-amber-500" />
+                  Meus Agendamentos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-400 text-sm mb-4">
+                  Visualize e gerencie seus agendamentos
+                </p>
+                <Button 
+                  onClick={() => navigate('/painel-cliente/agendamentos')}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
                 >
-                  <p className="text-red-400 text-sm text-center">{erro}</p>
-                </motion.div>
-              )}
+                  Ver Agendamentos
+                </Button>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="nome" className="text-white">Nome Completo</Label>
-                <Input
-                  id="nome"
-                  type="text"
-                  value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="bg-zinc-800 border-zinc-600 text-white"
-                  placeholder="Seu nome completo"
-                  required
-                />
-              </div>
+            <Card className="bg-zinc-900 border-zinc-700 hover:border-amber-500 transition-colors cursor-pointer">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <User className="h-5 w-5 text-amber-500" />
+                  Meu Perfil
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-400 text-sm mb-4">
+                  Edite suas informações pessoais
+                </p>
+                <Button 
+                  onClick={() => navigate('/painel-cliente/perfil')}
+                  variant="outline"
+                  className="w-full border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black"
+                >
+                  Editar Perfil
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-zinc-800 border-zinc-600 text-white"
-                  placeholder="seu.email@exemplo.com"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
-                  value={formData.whatsapp}
-                  onChange={handleWhatsAppChange}
-                  className="bg-zinc-800 border-zinc-600 text-white"
-                  placeholder="(11) 99999-9999"
-                  maxLength={15}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="senha" className="text-white">Senha</Label>
-                <div className="relative">
-                  <Input
-                    id="senha"
-                    type={mostrarSenha ? "text" : "password"}
-                    value={formData.senha}
-                    onChange={(e) => setFormData(prev => ({ ...prev, senha: e.target.value }))}
-                    className="bg-zinc-800 border-zinc-600 text-white pr-10"
-                    placeholder="Sua senha"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMostrarSenha(!mostrarSenha)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-
-                {formData.senha && (
-                  <div className="space-y-1 text-xs mt-2">
-                    {Object.entries({
-                      minimo8: 'Mínimo 8 caracteres',
-                      maiuscula: 'Pelo menos 1 maiúscula',
-                      minuscula: 'Pelo menos 1 minúscula',
-                      numero: 'Pelo menos 1 número',
-                      especial: 'Pelo menos 1 caractere especial'
-                    }).map(([key, label]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        {validacoesSenha[key as keyof typeof validacoesSenha] ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <X className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={validacoesSenha[key as keyof typeof validacoesSenha] ? 'text-green-400' : 'text-red-400'}>
-                          {label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmarSenha" className="text-white">Confirmar Senha</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmarSenha"
-                    type={mostrarConfirmarSenha ? "text" : "password"}
-                    value={formData.confirmarSenha}
-                    onChange={(e) => setFormData(prev => ({ ...prev, confirmarSenha: e.target.value }))}
-                    className={`bg-zinc-800 border-zinc-600 text-white pr-10 ${
-                      formData.confirmarSenha && !senhasIguais ? 'border-red-500' :
-                      formData.confirmarSenha && senhasIguais ? 'border-green-500' : ''
-                    }`}
-                    placeholder="Confirme sua senha"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    {mostrarConfirmarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {formData.confirmarSenha && !senhasIguais && (
-                  <p className="text-red-400 text-xs">As senhas não coincidem</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold shadow-md"
-                disabled={loading || !senhaValida || !senhasIguais}
-              >
-                {loading ? 'Criando conta...' : 'Criar Conta'}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-gray-400 text-sm">
-                Já tem uma conta?{' '}
-                <Link to="/painel-cliente/login" className="text-amber-500 hover:text-amber-400 font-medium">
-                  Fazer login
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          {/* Logout Button */}
+          <div className="text-center">
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
