@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface BarberData {
   id: string;
-  name: string;
+  nome: string;
   email: string;
   is_active: boolean;
 }
@@ -30,12 +30,11 @@ export const useBarberAuth = () => {
         return;
       }
 
-      // Buscar barbeiro da tabela staff
+      // Buscar barbeiro da tabela painel_barbeiros
       const { data: barberData, error } = await supabase
-        .from('staff')
+        .from('painel_barbeiros')
         .select('*')
         .eq('email', user.email)
-        .eq('role', 'barber')
         .eq('is_active', true)
         .single();
 
@@ -53,7 +52,7 @@ export const useBarberAuth = () => {
 
       setBarber({
         id: barberData.id,
-        name: barberData.name,
+        nome: barberData.nome,
         email: barberData.email,
         is_active: barberData.is_active
       });

@@ -3,13 +3,15 @@ import React from 'react';
 import BarberLayout from '../components/barber/BarberLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, DollarSign, Users, Clock, BarChart2 } from 'lucide-react';
+import { Calendar, DollarSign, Users, Clock, BarChart2, CheckCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BarberProfileInfo from '@/components/barber/BarberProfileInfo';
+import { useBarberDashboardMetrics } from '@/hooks/useBarberDashboardMetrics';
 
 const BarberDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { metrics, loading } = useBarberDashboardMetrics();
 
   const quickAccessItems = [
     {
@@ -57,6 +59,61 @@ const BarberDashboard: React.FC = () => {
           <p className="text-zinc-400">Acesse as principais funcionalidades do seu painel</p>
         </div>
 
+        {/* Métricas do Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-gradient-to-br from-blue-600 to-blue-800 border-0 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Agendamentos</CardTitle>
+              <Calendar className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : metrics.totalAppointments}
+              </div>
+              <p className="text-xs text-blue-100">Este mês</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-600 to-green-800 border-0 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Concluídos</CardTitle>
+              <CheckCircle className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : metrics.completedAppointments}
+              </div>
+              <p className="text-xs text-green-100">Este mês</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-amber-500 to-amber-700 border-0 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Próximos</CardTitle>
+              <Clock className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : metrics.upcomingAppointments}
+              </div>
+              <p className="text-xs text-amber-100">Agendados</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-600 to-purple-800 border-0 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Receita</CardTitle>
+              <DollarSign className="h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {loading ? '...' : `R$ ${metrics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+              </div>
+              <p className="text-xs text-purple-100">Este mês</p>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {quickAccessItems.map((item, index) => (
             <Card 
@@ -85,15 +142,27 @@ const BarberDashboard: React.FC = () => {
             <CardContent className="space-y-2">
               <div className="flex justify-between py-2">
                 <span className="text-zinc-400">Total de Serviços</span>
-                <span className="font-medium">0</span>
+                <span className="font-medium">
+                  {loading ? '...' : metrics.completedAppointments}
+                </span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Total de Comissões</span>
-                <span className="font-medium">R$ 0,00</span>
+                <span className="text-zinc-400">Total de Receita</span>
+                <span className="font-medium">
+                  {loading ? '...' : `R$ ${metrics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                </span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-zinc-400">Média por Serviço</span>
-                <span className="font-medium">R$ 0,00</span>
+                <span className="font-medium">
+                  {loading ? '...' : `R$ ${metrics.averageServiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                </span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-zinc-400">Cancelamentos</span>
+                <span className="font-medium text-red-400">
+                  {loading ? '...' : metrics.cancelledAppointments}
+                </span>
               </div>
             </CardContent>
           </Card>

@@ -4,12 +4,44 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Appointment } from '@/types/appointment';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface AppointmentWithDetails extends Appointment {
+// Interface para agendamentos do painel do cliente adaptada para o barbeiro
+interface PainelAgendamento {
+  id: string;
+  cliente_id: string;
+  barbeiro_id: string;
+  servico_id: string;
+  data: string;
+  hora: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  painel_clientes: {
+    nome: string;
+    email: string;
+    whatsapp: string;
+  };
+  painel_servicos: {
+    nome: string;
+    preco: number;
+    duracao: number;
+  };
+}
+
+interface AppointmentWithDetails {
+  id: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  notes?: string;
   client_name: string;
   service_name: string;
+  service?: {
+    price?: number;
+  };
+  data: string;
+  hora: string;
 }
 
 export const useBarberAppointments = () => {
@@ -29,12 +61,11 @@ export const useBarberAppointments = () => {
       if (!user?.email) return;
 
       try {
-        // Buscar na tabela staff
+        // Buscar na tabela painel_barbeiros usando o email do usuário logado
         const { data } = await supabase
-          .from('staff')
+          .from('painel_barbeiros')
           .select('id')
           .eq('email', user.email)
-          .eq('role', 'barber')
           .maybeSingle();
 
         if (data?.id) {
@@ -52,15 +83,18 @@ export const useBarberAppointments = () => {
     if (!barberId) return;
     setLoading(true);
     try {
+      console.log('Fetching barber appointments from painel_agendamentos for barber:', barberId);
+      
       const { data, error } = await supabase
-        .from('appointments')
+        .from('painel_agendamentos')
         .select(`
           *,
-          clients (name),
-          services (name, price)
+          painel_clientes!inner(nome, email, whatsapp),
+          painel_servicos!inner(nome, preco, duracao)
         `)
-        .eq('staff_id', barberId)
-        .order('start_time', { ascending: true });
+        .eq('barbeiro_id', barberId)
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
 
       if (error) {
         console.error('Erro ao buscar agendamentos:', error);
@@ -74,11 +108,30 @@ export const useBarberAppointments = () => {
       }
 
       if (data) {
-        const appointmentsWithDetails = data.map(appointment => ({
-          ...appointment,
-          client_name: (appointment.clients as any)?.name || 'Cliente Desconhecido',
-          service_name: (appointment.services as any)?.name || 'Serviço Desconhecido',
-        })) as AppointmentWithDetails[];
+        console.log('Barber appointments found:', data.length);
+        
+        const appointmentsWithDetails = data.map((appointment: PainelAgendamento) => {
+          // Criar timestamp combinando data e hora
+          const startTime = new Date(`${appointment.data}T${appointment.hora}`);
+          const endTime = new Date(startTime.getTime() + (appointment.painel_servicos.duracao * 60000));
+
+          return {
+            id: appointment.id,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            status: appointment.status === 'cancelado' ? 'cancelled' : 
+                    appointment.status === 'confirmado' ? 'confirmed' : 
+                    appointment.status === 'concluido' ? 'completed' : 'scheduled',
+            client_name: appointment.painel_clientes.nome,
+            service_name: appointment.painel_servicos.nome,
+            service: {
+              price: appointment.painel_servicos.preco
+            },
+            data: appointment.data,
+            hora: appointment.hora
+          } as AppointmentWithDetails;
+        });
+        
         setAppointments(appointmentsWithDetails);
       }
     } catch (error) {
@@ -112,7 +165,7 @@ export const useBarberAppointments = () => {
     const revenue = appointments
       .filter(a => a.status === 'completed')
       .reduce((acc, appointment) => {
-        const servicePrice = (appointment.service as any)?.price || 0;
+        const servicePrice = appointment.service?.price || 0;
         return acc + Number(servicePrice);
       }, 0);
 
@@ -128,8 +181,8 @@ export const useBarberAppointments = () => {
       const appointmentDate = new Date(appointment.start_time);
       
       const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'completed' })
+        .from('painel_agendamentos')
+        .update({ status: 'concluido' })
         .eq('id', appointmentId);
 
       if (error) {
@@ -170,8 +223,8 @@ export const useBarberAppointments = () => {
       const appointmentDate = new Date(appointment.start_time);
       
       const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'cancelled' })
+        .from('painel_agendamentos')
+        .update({ status: 'cancelado' })
         .eq('id', appointmentId);
 
       if (error) {

@@ -9,8 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Search, Phone, Mail, Calendar } from 'lucide-react';
 import ModuleAccessGuard from '@/components/auth/ModuleAccessGuard';
 
+interface ClientData {
+  id: string;
+  nome: string;
+  email: string;
+  whatsapp: string;
+  created_at: string;
+}
+
 const BarberClients: React.FC = () => {
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const { user } = useAuth();
@@ -22,12 +30,11 @@ const BarberClients: React.FC = () => {
       try {
         setLoading(true);
         
-        // Primeiro buscar o ID do barbeiro correspondente ao barbeiro logado da tabela staff
+        // Primeiro buscar o ID do barbeiro correspondente ao barbeiro logado da tabela painel_barbeiros
         const { data: barberData, error: barberError } = await supabase
-          .from('staff')
+          .from('painel_barbeiros')
           .select('id')
           .eq('email', user.email)
-          .eq('role', 'barber')
           .maybeSingle();
           
         if (barberError || !barberData) {
@@ -36,11 +43,13 @@ const BarberClients: React.FC = () => {
           return;
         }
         
-        // Busca apenas os clientes que têm agendamentos com este barbeiro
+        console.log('Barber ID found:', barberData.id);
+        
+        // Busca apenas os clientes que têm agendamentos com este barbeiro na tabela painel_agendamentos
         const { data: appointments, error: appointmentsError } = await supabase
-          .from('appointments')
-          .select('client_id')
-          .eq('staff_id', barberData.id);
+          .from('painel_agendamentos')
+          .select('cliente_id')
+          .eq('barbeiro_id', barberData.id);
           
         if (appointmentsError) {
           console.error('Erro ao buscar agendamentos:', appointmentsError);
@@ -49,22 +58,26 @@ const BarberClients: React.FC = () => {
         }
         
         if (!appointments || appointments.length === 0) {
+          console.log('No appointments found for this barber');
           setLoading(false);
           return;
         }
         
         // Extrair IDs únicos dos clientes
-        const uniqueClientIds = [...new Set(appointments.map(item => item.client_id))];
+        const uniqueClientIds = [...new Set(appointments.map(item => item.cliente_id))];
         
-        // Buscar detalhes dos clientes
+        console.log('Unique client IDs:', uniqueClientIds);
+        
+        // Buscar detalhes dos clientes na tabela painel_clientes
         const { data: clientsData, error: clientsError } = await supabase
-          .from('clients')
+          .from('painel_clientes')
           .select('*')
           .in('id', uniqueClientIds);
           
         if (clientsError) {
           console.error('Erro ao buscar clientes:', clientsError);
         } else {
+          console.log('Clients found:', clientsData?.length || 0);
           setClients(clientsData || []);
         }
       } catch (error) {
@@ -79,8 +92,8 @@ const BarberClients: React.FC = () => {
 
   // Filtrar clientes pela busca
   const filteredClients = clients.filter(client => 
-    client.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.nome?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    client.whatsapp?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     client.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -110,12 +123,12 @@ const BarberClients: React.FC = () => {
               {filteredClients.map((client) => (
                 <Card key={client.id} className="overflow-hidden">
                   <CardHeader className="bg-zinc-800 p-4">
-                    <CardTitle className="text-lg">{client.name}</CardTitle>
+                    <CardTitle className="text-lg">{client.nome}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-center text-sm">
                       <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                      <span>{client.phone || 'Sem telefone'}</span>
+                      <span>{client.whatsapp || 'Sem telefone'}</span>
                     </div>
                     
                     {client.email && (
@@ -141,7 +154,7 @@ const BarberClients: React.FC = () => {
             <div className="text-center py-12">
               <p className="text-gray-500 mb-2">Nenhum cliente encontrado</p>
               <p className="text-sm text-gray-400">
-                Os clientes aparecerão aqui conforme você realizar agendamentos
+                Os clientes aparecerão aqui conforme você receber agendamentos do painel do cliente
               </p>
             </div>
           )}
