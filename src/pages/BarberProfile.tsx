@@ -18,7 +18,9 @@ const BarberProfile: React.FC = () => {
 
   return (
     <BarberLayout title="Meu Perfil">
-      <BarberProfileForm />
+      <div className="panel-content-responsive">
+        <BarberProfileForm />
+      </div>
     </BarberLayout>
   );
 };

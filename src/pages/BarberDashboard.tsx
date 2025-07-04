@@ -3,7 +3,7 @@ import React from 'react';
 import BarberLayout from '../components/barber/BarberLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, DollarSign, Users, Clock, BarChart2, CheckCircle, X } from 'lucide-react';
+import { Calendar, DollarSign, Users, Clock, BarChart2, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BarberProfileInfo from '@/components/barber/BarberProfileInfo';
 import { useBarberDashboardMetrics } from '@/hooks/useBarberDashboardMetrics';
@@ -17,35 +17,35 @@ const BarberDashboard: React.FC = () => {
     {
       title: 'Dashboard',
       description: 'Visualizar métricas e relatórios pessoais',
-      icon: <BarChart2 className="h-8 w-8 text-zinc-300" />,
+      icon: <BarChart2 className="h-8 w-8 text-gray-300" />,
       path: '/barbeiro',
       color: 'bg-gradient-to-br from-indigo-600 to-indigo-800'
     },
     {
       title: 'Minha Agenda',
       description: 'Visualizar e gerenciar agendamentos',
-      icon: <Calendar className="h-8 w-8 text-zinc-300" />,
+      icon: <Calendar className="h-8 w-8 text-gray-300" />,
       path: '/barbeiro/agendamentos',
       color: 'bg-gradient-to-br from-blue-600 to-blue-800'
     },
     {
       title: 'Comissões',
       description: 'Acompanhar ganhos e histórico',
-      icon: <DollarSign className="h-8 w-8 text-zinc-300" />,
+      icon: <DollarSign className="h-8 w-8 text-gray-300" />,
       path: '/barbeiro/comissoes',
       color: 'bg-gradient-to-br from-green-600 to-green-800'
     },
     {
       title: 'Clientes',
       description: 'Visualizar histórico de clientes',
-      icon: <Users className="h-8 w-8 text-zinc-300" />,
+      icon: <Users className="h-8 w-8 text-gray-300" />,
       path: '/barbeiro/clientes',
       color: 'bg-gradient-to-br from-purple-600 to-purple-800'
     },
     {
       title: 'Próximo Atendimento',
       description: 'Ver detalhes do próximo cliente',
-      icon: <Clock className="h-8 w-8 text-zinc-300" />,
+      icon: <Clock className="h-8 w-8 text-gray-300" />,
       path: '/barbeiro/agendamentos',
       color: 'bg-gradient-to-br from-amber-500 to-amber-700'
     }
@@ -53,10 +53,10 @@ const BarberDashboard: React.FC = () => {
 
   return (
     <BarberLayout title="Dashboard">
-      <div className="space-y-6">
+      <div className="panel-content-responsive">
         <div>
-          <h2 className="text-2xl font-bold mb-2">Bem-vindo, {user?.email?.split('@')[0]}</h2>
-          <p className="text-zinc-400">Acesse as principais funcionalidades do seu painel</p>
+          <h2 className="text-2xl font-bold mb-2 text-white">Bem-vindo, {user?.email?.split('@')[0]}</h2>
+          <p className="text-gray-400">Acesse as principais funcionalidades do seu painel</p>
         </div>
 
         {/* Métricas do Dashboard */}
@@ -125,7 +125,7 @@ const BarberDashboard: React.FC = () => {
                 <div className="mb-2">{item.icon}</div>
                 <div>
                   <h3 className="font-bold text-white text-lg">{item.title}</h3>
-                  <p className="text-zinc-300 text-sm">{item.description}</p>
+                  <p className="text-gray-200 text-sm">{item.description}</p>
                 </div>
               </CardContent>
             </Card>
@@ -135,31 +135,31 @@ const BarberDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <BarberProfileInfo />
 
-          <Card>
+          <Card className="bg-gray-900 border-gray-700">
             <CardHeader>
-              <CardTitle>Este Mês</CardTitle>
+              <CardTitle className="text-white">Este Mês</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Total de Serviços</span>
-                <span className="font-medium">
+                <span className="text-gray-400">Total de Serviços</span>
+                <span className="font-medium text-white">
                   {loading ? '...' : metrics.completedAppointments}
                 </span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Total de Receita</span>
-                <span className="font-medium">
+                <span className="text-gray-400">Total de Receita</span>
+                <span className="font-medium text-white">
                   {loading ? '...' : `R$ ${metrics.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                 </span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Média por Serviço</span>
-                <span className="font-medium">
+                <span className="text-gray-400">Média por Serviço</span>
+                <span className="font-medium text-white">
                   {loading ? '...' : `R$ ${metrics.averageServiceValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                 </span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-zinc-400">Cancelamentos</span>
+                <span className="text-gray-400">Cancelamentos</span>
                 <span className="font-medium text-red-400">
                   {loading ? '...' : metrics.cancelledAppointments}
                 </span>

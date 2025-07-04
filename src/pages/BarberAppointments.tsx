@@ -6,7 +6,9 @@ import BarberAppointmentsComponent from '@/components/barber/BarberAppointments'
 const BarberAppointmentsPage: React.FC = () => {
   return (
     <BarberLayout title="Meus Agendamentos">
-      <BarberAppointmentsComponent />
+      <div className="panel-content-responsive">
+        <BarberAppointmentsComponent />
+      </div>
     </BarberLayout>
   );
 };

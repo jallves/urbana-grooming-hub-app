@@ -100,14 +100,14 @@ const BarberClients: React.FC = () => {
   return (
     <BarberLayout title="Meus Clientes">
       <ModuleAccessGuard moduleId="clients">
-        <div className="space-y-6">
+        <div className="panel-content-responsive">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Lista de Clientes</h2>
+            <h2 className="text-2xl font-bold text-white">Lista de Clientes</h2>
             <div className="relative w-full max-w-xs">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               <Input 
                 placeholder="Buscar clientes..." 
-                className="pl-10"
+                className="pl-10 bg-gray-800 border-gray-600 text-white"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -121,29 +121,29 @@ const BarberClients: React.FC = () => {
           ) : filteredClients.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredClients.map((client) => (
-                <Card key={client.id} className="overflow-hidden">
-                  <CardHeader className="bg-zinc-800 p-4">
-                    <CardTitle className="text-lg">{client.nome}</CardTitle>
+                <Card key={client.id} className="overflow-hidden bg-gray-900 border-gray-700">
+                  <CardHeader className="bg-gray-800 p-4">
+                    <CardTitle className="text-lg text-white">{client.nome}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-center text-sm">
                       <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                      <span>{client.whatsapp || 'Sem telefone'}</span>
+                      <span className="text-gray-300">{client.whatsapp || 'Sem telefone'}</span>
                     </div>
                     
                     {client.email && (
                       <div className="flex items-center text-sm">
                         <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                        <span>{client.email}</span>
+                        <span className="text-gray-300">{client.email}</span>
                       </div>
                     )}
                     
                     <div className="flex items-center text-sm">
                       <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                      <span>Cliente desde {new Date(client.created_at).toLocaleDateString('pt-BR')}</span>
+                      <span className="text-gray-300">Cliente desde {new Date(client.created_at).toLocaleDateString('pt-BR')}</span>
                     </div>
                     
-                    <Button variant="outline" className="w-full mt-2" size="sm">
+                    <Button variant="outline" className="w-full mt-2 border-gray-600 text-gray-300 hover:bg-gray-800" size="sm">
                       Ver histórico
                     </Button>
                   </CardContent>
@@ -152,8 +152,8 @@ const BarberClients: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-500 mb-2">Nenhum cliente encontrado</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-gray-400 mb-2">Nenhum cliente encontrado</p>
+              <p className="text-sm text-gray-500">
                 Os clientes aparecerão aqui conforme você receber agendamentos do painel do cliente
               </p>
             </div>

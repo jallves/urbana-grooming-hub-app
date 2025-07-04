@@ -60,22 +60,22 @@ const BarberProfileInfo: React.FC = () => {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-gray-900 border-gray-700">
         <CardHeader>
-          <CardTitle>Informações do Barbeiro</CardTitle>
+          <CardTitle className="text-white">Informações do Barbeiro</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-4">
-            <Skeleton className="h-12 w-12 rounded-full" />
+            <Skeleton className="h-12 w-12 rounded-full bg-gray-700" />
             <div className="space-y-2">
-              <Skeleton className="h-4 w-[200px]" />
-              <Skeleton className="h-3 w-[150px]" />
+              <Skeleton className="h-4 w-[200px] bg-gray-700" />
+              <Skeleton className="h-3 w-[150px] bg-gray-700" />
             </div>
           </div>
           <div className="space-y-2">
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-3/4" />
+            <Skeleton className="h-3 w-full bg-gray-700" />
+            <Skeleton className="h-3 w-full bg-gray-700" />
+            <Skeleton className="h-3 w-3/4 bg-gray-700" />
           </div>
         </CardContent>
       </Card>
@@ -83,50 +83,50 @@ const BarberProfileInfo: React.FC = () => {
   }
 
   return (
-    <Card>
+    <Card className="bg-gray-900 border-gray-700">
       <CardHeader>
-        <CardTitle>Informações do Barbeiro</CardTitle>
+        <CardTitle className="text-white">Informações do Barbeiro</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex items-center space-x-4 mb-6">
           <Avatar className="h-16 w-16">
             <AvatarImage src={barberInfo?.image_url || ''} />
-            <AvatarFallback className="bg-zinc-800 text-white text-xl">
+            <AvatarFallback className="bg-gray-800 text-white text-xl">
               {barberInfo?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="text-lg font-semibold">{barberInfo?.name || 'Barbeiro'}</h3>
-            <p className="text-sm text-zinc-400">{user?.email}</p>
+            <h3 className="text-lg font-semibold text-white">{barberInfo?.name || 'Barbeiro'}</h3>
+            <p className="text-sm text-gray-400">{user?.email}</p>
           </div>
         </div>
 
         <div className="space-y-3">
           {barberInfo?.phone && (
             <div>
-              <p className="text-sm font-medium text-zinc-500">Telefone</p>
-              <p>{barberInfo.phone}</p>
+              <p className="text-sm font-medium text-gray-400">Telefone</p>
+              <p className="text-white">{barberInfo.phone}</p>
             </div>
           )}
           
           {barberInfo?.specialties && (
             <div>
-              <p className="text-sm font-medium text-zinc-500">Especialidades</p>
-              <p>{barberInfo.specialties}</p>
+              <p className="text-sm font-medium text-gray-400">Especialidades</p>
+              <p className="text-white">{barberInfo.specialties}</p>
             </div>
           )}
           
           {barberInfo?.experience && (
             <div>
-              <p className="text-sm font-medium text-zinc-500">Experiência</p>
-              <p>{barberInfo.experience}</p>
+              <p className="text-sm font-medium text-gray-400">Experiência</p>
+              <p className="text-white">{barberInfo.experience}</p>
             </div>
           )}
           
           {barberInfo?.commission_rate !== null && barberInfo?.commission_rate !== undefined && (
             <div>
-              <p className="text-sm font-medium text-zinc-500">Taxa de Comissão</p>
-              <p>{barberInfo.commission_rate}%</p>
+              <p className="text-sm font-medium text-gray-400">Taxa de Comissão</p>
+              <p className="text-white">{barberInfo.commission_rate}%</p>
             </div>
           )}
         </div>

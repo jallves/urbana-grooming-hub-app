@@ -17,8 +17,10 @@ const BarberSchedule: React.FC = () => {
   }
 
   return (
-    <BarberLayout>
-      <BarberScheduleView />
+    <BarberLayout title="Minha Agenda">
+      <div className="panel-content-responsive">
+        <BarberScheduleView />
+      </div>
     </BarberLayout>
   );
 };
