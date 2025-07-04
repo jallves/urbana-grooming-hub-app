@@ -3,161 +3,164 @@ import React from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, User, LogOut, Phone, Mail, Scissors, Plus } from 'lucide-react';
+import { Calendar, User, Phone, Mail, Plus, Clock, MapPin } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion } from 'framer-motion';
-import FullScreenContainer from '@/components/ui/containers/FullScreenContainer';
+import DashboardContainer from '@/components/ui/containers/DashboardContainer';
 
 export default function PainelClienteDashboard() {
-  const { cliente, logout } = usePainelClienteAuth();
+  const { cliente } = usePainelClienteAuth();
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/painel-cliente/login');
-  };
 
   if (!cliente) {
     return <Navigate to="/painel-cliente/login" replace />;
   }
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.1, duration: 0.4 }
+    })
+  };
+
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900">
-      <FullScreenContainer>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="space-y-6"
-        >
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 bg-amber-500 rounded-full shadow-lg">
-                <Scissors className="h-8 w-8 text-black" />
-              </div>
-            </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Painel do Cliente</h1>
-            <p className="text-gray-400">Bem-vindo, {cliente.nome}!</p>
-          </div>
+    <DashboardContainer>
+      {/* Welcome Section */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-8"
+      >
+        <h1 className="text-3xl font-bold text-white mb-2">
+          Bem-vindo, {cliente.nome}!
+        </h1>
+        <p className="text-gray-400">
+          Gerencie seus agendamentos e perfil de forma simples e rápida
+        </p>
+      </motion.div>
 
-          {/* Botão Principal - Agendar */}
-          <div className="mb-8">
-            <Card className="bg-gradient-to-r from-amber-500/20 to-amber-600/20 border-amber-500/30 hover:border-amber-500/50 transition-all cursor-pointer"
-                  onClick={() => navigate('/painel-cliente/agendar')}>
-              <CardContent className="p-8 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 bg-amber-500 rounded-full">
-                    <Scissors className="h-8 w-8 text-black" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Agendar Corte</h2>
-                    <p className="text-gray-300 mb-4">
-                      Marque seu horário com nossos barbeiros profissionais
-                    </p>
-                    <Button 
-                      size="lg"
-                      className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8"
-                    >
-                      <Plus className="h-5 w-5 mr-2" />
-                      Agendar Agora
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="bg-zinc-900 border-zinc-700">
-              <CardContent className="p-4 flex items-center space-x-3">
-                <User className="h-8 w-8 text-amber-500" />
-                <div>
-                  <p className="text-gray-400 text-sm">Nome</p>
-                  <p className="text-white font-medium">{cliente.nome}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-zinc-900 border-zinc-700">
-              <CardContent className="p-4 flex items-center space-x-3">
-                <Mail className="h-8 w-8 text-amber-500" />
-                <div>
-                  <p className="text-gray-400 text-sm">E-mail</p>
-                  <p className="text-white font-medium">{cliente.email}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-zinc-900 border-zinc-700">
-              <CardContent className="p-4 flex items-center space-x-3">
-                <Phone className="h-8 w-8 text-amber-500" />
-                <div>
-                  <p className="text-gray-400 text-sm">WhatsApp</p>
-                  <p className="text-white font-medium">{cliente.whatsapp}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Action Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <Card className="bg-zinc-900 border-zinc-700 hover:border-amber-500 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-amber-500" />
-                  Meus Agendamentos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-400 text-sm mb-4">
-                  Visualize e gerencie seus agendamentos
-                </p>
-                <Button 
-                  onClick={() => navigate('/painel-cliente/meus-agendamentos')}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                >
-                  Ver Agendamentos
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-zinc-900 border-zinc-700 hover:border-amber-500 transition-colors cursor-pointer">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <User className="h-5 w-5 text-amber-500" />
-                  Meu Perfil
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-400 text-sm mb-4">
-                  Edite suas informações pessoais
-                </p>
-                <Button 
-                  onClick={() => navigate('/painel-cliente/perfil')}
-                  variant="outline"
-                  className="w-full border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-black"
-                >
-                  Editar Perfil
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Logout Button */}
-          <div className="text-center">
+      {/* Botão Principal - Agendar */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card className="bg-gradient-to-r from-amber-500 to-amber-600 border-none shadow-xl mb-8">
+          <CardContent className="p-6 text-center">
+            <Plus className="h-12 w-12 text-black mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-black mb-2">Agendar Horário</h2>
+            <p className="text-black/80 mb-4">
+              Reserve seu horário com nossos barbeiros especializados
+            </p>
             <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+              onClick={() => navigate('/painel-cliente/agendar')}
+              size="lg"
+              className="bg-black text-white hover:bg-gray-800 transition-colors"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
+              <Calendar className="h-5 w-5 mr-2" />
+              Agendar Agora
             </Button>
-          </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Info Cards */}
+      <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <motion.div
+          custom={0}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+        >
+          <Card className="bg-gray-900 border border-gray-700 hover:border-gray-600 transition-colors">
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <User className="h-5 w-5 text-amber-500 mr-2" />
+              <CardTitle className="text-white text-lg">Seus Dados</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex items-center text-gray-300">
+                <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                <span className="text-sm">{cliente.email}</span>
+              </div>
+              {cliente.whatsapp && (
+                <div className="flex items-center text-gray-300">
+                  <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                  <span className="text-sm">{cliente.whatsapp}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </motion.div>
-      </FullScreenContainer>
-    </div>
+
+        <motion.div
+          custom={1}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+        >
+          <Card className="bg-gray-900 border border-gray-700 hover:border-gray-600 transition-colors">
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <MapPin className="h-5 w-5 text-amber-500 mr-2" />
+              <CardTitle className="text-white text-lg">Nossa Localização</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-300 text-sm mb-2">
+                Urbana Barbearia - Centro
+              </p>
+              <div className="flex items-center text-gray-400">
+                <Clock className="h-4 w-4 mr-2" />
+                <span className="text-xs">Seg-Sex: 9h às 18h | Sáb: 8h às 17h</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Action Cards */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <motion.div
+          custom={2}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+        >
+          <Card className="bg-gray-900 border border-gray-700 hover:border-amber-500/50 cursor-pointer transition-all hover:shadow-lg">
+            <CardContent 
+              className="p-6 text-center"
+              onClick={() => navigate('/painel-cliente/agendamentos')}
+            >
+              <Calendar className="h-8 w-8 text-amber-500 mx-auto mb-3" />
+              <h3 className="text-white font-semibold mb-2">Meus Agendamentos</h3>
+              <p className="text-gray-400 text-sm">
+                Visualize e gerencie seus horários marcados
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          custom={3}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+        >
+          <Card className="bg-gray-900 border border-gray-700 hover:border-amber-500/50 cursor-pointer transition-all hover:shadow-lg">
+            <CardContent 
+              className="p-6 text-center"
+              onClick={() => navigate('/painel-cliente/perfil')}
+            >
+              <User className="h-8 w-8 text-amber-500 mx-auto mb-3" />
+              <h3 className="text-white font-semibold mb-2">Editar Perfil</h3>
+              <p className="text-gray-400 text-sm">
+                Atualize suas informações pessoais
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </DashboardContainer>
   );
 }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -8,6 +7,7 @@ import AdminRoute from './components/auth/AdminRoute';
 import ClientRoute from './components/client/ClientRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
 import BarberRoute from './components/auth/BarberRoute';
+import PainelClienteLayout from './components/painel-cliente/PainelClienteLayout';
 import Index from './pages/Index';
 import AdminDashboard from './pages/Admin';
 import AdminLogin from './pages/Auth';
@@ -31,6 +31,8 @@ import PainelClienteLogin from './pages/PainelClienteLogin';
 import PainelClienteRegister from './pages/PainelClienteRegister';
 import PainelClienteDashboard from './pages/PainelClienteDashboard';
 import PainelClienteAgendar from './pages/PainelClienteAgendar';
+import PainelClienteAgendamentos from './pages/PainelClienteAgendamentos';
+import PainelClientePerfil from './pages/PainelClientePerfil';
 import BarberAuth from './pages/BarberAuth';
 import BarberDashboard from './pages/BarberDashboard';
 import BarberAppointments from './pages/BarberAppointments';
@@ -43,7 +45,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
@@ -184,19 +194,22 @@ function App() {
                       </ClientRoute>
                     } />
 
-                    {/* Painel Cliente Routes */}
+                    {/* Painel Cliente Routes - Using nested routing */}
                     <Route path="/painel-cliente/login" element={<PainelClienteLogin />} />
                     <Route path="/painel-cliente/register" element={<PainelClienteRegister />} />
-                    <Route path="/painel-cliente/dashboard" element={
+                    
+                    {/* Nested routes for authenticated client panel */}
+                    <Route path="/painel-cliente" element={
                       <PainelClienteRoute>
-                        <PainelClienteDashboard />
+                        <PainelClienteLayout />
                       </PainelClienteRoute>
-                    } />
-                    <Route path="/painel-cliente/agendar" element={
-                      <PainelClienteRoute>
-                        <PainelClienteAgendar />
-                      </PainelClienteRoute>
-                    } />
+                    }>
+                      <Route path="dashboard" element={<PainelClienteDashboard />} />
+                      <Route path="agendar" element={<PainelClienteAgendar />} />
+                      <Route path="agendamentos" element={<PainelClienteAgendamentos />} />
+                      <Route path="perfil" element={<PainelClientePerfil />} />
+                      <Route index element={<Navigate to="dashboard" replace />} />
+                    </Route>
                     
                     <Route path="/admin/agendamentos-clientes" element={
                       <AdminRoute>
