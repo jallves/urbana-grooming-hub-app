@@ -1,8 +1,10 @@
 import { User } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
+import Team from '@/components/Team';
 import Services from '@/components/Services';
 import Gallery from '@/components/Gallery';
+import Appointment from '@/components/Appointment';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 
