@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -46,11 +46,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    verificarSessao();
-  }, []);
-
-  const verificarSessao = async () => {
+  const verificarSessao = useCallback(async () => {
     try {
       const token = localStorage.getItem('painel_cliente_token');
       
@@ -60,7 +56,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       const { data, error } = await supabase
-        .rpc('get_painel_cliente_by_id' as any, { cliente_id: token });
+        .rpc('get_painel_cliente_by_id', { cliente_id: token });
 
       if (error || !data) {
         localStorage.removeItem('painel_cliente_token');
@@ -75,11 +71,15 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const cadastrar = async (dados: CadastroData): Promise<{ error: string | null }> => {
+  useEffect(() => {
+    verificarSessao();
+  }, [verificarSessao]);
+
+  const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null }> => {
     try {
-      // Validar se todos os campos obrigatórios estão preenchidos
+      // Validações
       if (!dados.nome?.trim()) {
         return { error: 'Nome é obrigatório' };
       }
@@ -102,9 +102,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
-      // Verificar se email já existe usando SQL direto
+      // Verificar se email já existe
       const { data: clienteExistente, error: checkError } = await supabase
-        .rpc('check_painel_cliente_email' as any, { email_to_check: dados.email.trim().toLowerCase() });
+        .rpc('check_painel_cliente_email', { email_to_check: dados.email.trim().toLowerCase() });
 
       if (checkError) {
         console.error('Erro ao verificar email:', checkError);
@@ -118,9 +118,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       // Criar hash da senha
       const senhaHash = btoa(dados.senha);
 
-      // Inserir cliente usando SQL direto
+      // Inserir cliente
       const { data: novoCliente, error: insertError } = await supabase
-        .rpc('create_painel_cliente' as any, {
+        .rpc('create_painel_cliente', {
           nome: dados.nome.trim(),
           email: dados.email.trim().toLowerCase(),
           whatsapp: dados.whatsapp.trim(),
@@ -136,7 +136,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      // Fazer login automático
+      // Login automático
       const clienteData = novoCliente as Cliente;
       localStorage.setItem('painel_cliente_token', clienteData.id);
       setCliente(clienteData);
@@ -152,9 +152,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       console.error('Erro inesperado no cadastro:', error);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
-  };
+  }, [toast]);
 
-  const login = async (email: string, senha: string): Promise<{ error: string | null }> => {
+  const login = useCallback(async (email: string, senha: string): Promise<{ error: string | null }> => {
     try {
       if (!email?.trim() || !senha) {
         return { error: 'E-mail e senha são obrigatórios' };
@@ -163,7 +163,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       const senhaHash = btoa(senha);
 
       const { data: clienteData, error } = await supabase
-        .rpc('authenticate_painel_cliente' as any, {
+        .rpc('authenticate_painel_cliente', {
           email: email.trim().toLowerCase(),
           senha_hash: senhaHash
         });
@@ -191,9 +191,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       console.error('Erro inesperado no login:', error);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
-  };
+  }, [toast]);
 
-  const logout = async (): Promise<void> => {
+  const logout = useCallback(async (): Promise<void> => {
     localStorage.removeItem('painel_cliente_token');
     setCliente(null);
     
@@ -201,14 +201,14 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       title: "Logout realizado",
       description: "Até a próxima!",
     });
-  };
+  }, [toast]);
 
-  const atualizarPerfil = async (dados: Partial<Cliente>): Promise<{ error: string | null }> => {
+  const atualizarPerfil = useCallback(async (dados: Partial<Cliente>): Promise<{ error: string | null }> => {
     if (!cliente) return { error: 'Cliente não autenticado' };
 
     try {
       const { data: clienteAtualizado, error } = await supabase
-        .rpc('update_painel_cliente' as any, {
+        .rpc('update_painel_cliente', {
           cliente_id: cliente.id,
           nome: dados.nome,
           email: dados.email,
@@ -225,7 +225,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       console.error('Erro ao atualizar perfil:', error);
       return { error: 'Erro interno do servidor' };
     }
-  };
+  }, [cliente]);
 
   const value = {
     cliente,

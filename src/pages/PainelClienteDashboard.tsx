@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, User, LogOut, Settings, Phone, Mail, Scissors } from 'lucide-react';
+import { Calendar, User, LogOut, Settings, Phone, Mail, Scissors, Plus } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion } from 'framer-motion';
 
@@ -21,8 +21,8 @@ export default function PainelClienteDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 p-4">
+      <div className="w-full max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -40,8 +40,35 @@ export default function PainelClienteDashboard() {
             <p className="text-gray-400">Bem-vindo, {cliente.nome}!</p>
           </div>
 
+          {/* Botão Principal - Agendar */}
+          <div className="mb-8">
+            <Card className="bg-gradient-to-r from-amber-500/20 to-amber-600/20 border-amber-500/30 hover:border-amber-500/50 transition-all cursor-pointer"
+                  onClick={() => navigate('/painel-cliente/agendar')}>
+              <CardContent className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="p-4 bg-amber-500 rounded-full">
+                    <Scissors className="h-8 w-8 text-black" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Agendar Corte</h2>
+                    <p className="text-gray-300 mb-4">
+                      Marque seu horário com nossos barbeiros profissionais
+                    </p>
+                    <Button 
+                      size="lg"
+                      className="bg-amber-500 hover:bg-amber-600 text-black font-semibold px-8"
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      Agendar Agora
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Card className="bg-zinc-900 border-zinc-700">
               <CardContent className="p-4 flex items-center space-x-3">
                 <User className="h-8 w-8 text-amber-500" />
