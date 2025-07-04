@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Scissors } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion } from 'framer-motion';
-import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
@@ -39,21 +37,21 @@ export default function PainelClienteLogin() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900">
-      <AuthContainer>
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center px-4">
+      <div className="w-full sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <Card className="bg-zinc-900 border border-zinc-700 shadow-2xl backdrop-blur-lg">
-            <CardHeader className="text-center">
+          <Card className="bg-zinc-900 border border-zinc-700 shadow-2xl backdrop-blur-lg px-6 py-6">
+            <CardHeader className="text-center space-y-2">
               <div className="flex justify-center mb-4">
                 <div className="p-3 bg-amber-500 rounded-full shadow-lg">
                   <Scissors className="h-8 w-8 text-black" />
                 </div>
               </div>
-              <CardTitle className="text-2xl font-bold text-white">Entrar</CardTitle>
+              <CardTitle className="text-3xl font-bold text-white">Entrar</CardTitle>
               <p className="text-gray-400 text-sm">Acesse sua conta para gerenciar agendamentos</p>
             </CardHeader>
 
@@ -124,7 +122,7 @@ export default function PainelClienteLogin() {
             </CardContent>
           </Card>
         </motion.div>
-      </AuthContainer>
+      </div>
     </div>
   );
 }
