@@ -38,7 +38,7 @@ export default function PainelClienteLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center px-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

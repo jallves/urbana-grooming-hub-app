@@ -21,8 +21,8 @@ export default function PainelClienteDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 p-4">
-      <div className="w-full max-w-6xl mx-auto">
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 p-4">
+      <div className="w-full max-w-none mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -114,7 +114,7 @@ export default function PainelClienteDashboard() {
                   Visualize e gerencie seus agendamentos
                 </p>
                 <Button 
-                  onClick={() => navigate('/painel-cliente/agendamentos')}
+                  onClick={() => navigate('/painel-cliente/meus-agendamentos')}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
                 >
                   Ver Agendamentos

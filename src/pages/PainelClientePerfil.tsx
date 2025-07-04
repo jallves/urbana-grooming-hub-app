@@ -67,7 +67,7 @@ export default function PainelClientePerfil() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center py-10 px-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex items-center justify-center py-10 px-4">
       <div className="w-full max-w-2xl mx-auto">
         <motion.div 
           initial={{ opacity: 0, y: 40 }} 
