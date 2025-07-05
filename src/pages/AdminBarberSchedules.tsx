@@ -14,7 +14,7 @@ const AdminBarberSchedules: React.FC = () => {
             <ModernCard
               title="Gestão de Escalas"
               description="Configure os horários de trabalho de cada barbeiro"
-              gradient="from-green-500/10 to-blue-600/10"
+              gradient="from-black-500/10 to-blue-600/10"
             >
               <BarberScheduleManagement />
             </ModernCard>

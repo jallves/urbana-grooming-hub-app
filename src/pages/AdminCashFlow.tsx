@@ -12,7 +12,7 @@ const AdminCashFlow: React.FC = () => {
           <ModernCard
             title="Controle de Fluxo de Caixa"
             description="Controle detalhado do fluxo de caixa e movimentações financeiras"
-            gradient="from-cyan-500/10 to-blue-600/10"
+            gradient="from-black-500/10 to-blue-600/10"
           >
             <CashFlowManagement />
           </ModernCard>

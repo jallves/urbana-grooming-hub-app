@@ -14,7 +14,7 @@ const AdminBirthdays: React.FC = () => {
             <ModernCard
               title="Gestão de Aniversários"
               description="Gestão de aniversários dos clientes e campanhas especiais"
-              gradient="from-purple-500/10 to-indigo-600/10"
+              gradient="from-black-500/10 to-indigo-600/10"
             >
               <BirthdayManagement />
             </ModernCard>

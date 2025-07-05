@@ -14,7 +14,7 @@ const AdminBookingSettings: React.FC = () => {
           <Settings className="h-8 w-8 text-yellow-600" />
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Configurações de Agendamento</h1>
-            <p className="text-gray-700">
+            <p className="text-black-700">
               Configure horários de funcionamento, folgas e regras de agendamento
             </p>
           </div>
