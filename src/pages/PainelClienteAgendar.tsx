@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,16 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Calendar, Clock, User, Scissors, DollarSign, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Scissors, Plus } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { format, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import ConfirmacaoAgendamento from '@/components/painel-cliente/ConfirmacaoAgendamento';
+import { useToast } from '@/hooks/use-toast';
 
 interface Barbeiro {
   id: string;
   nome: string;
-  specialties: string;
 }
 
 interface Servico {
@@ -23,14 +26,13 @@ interface Servico {
   nome: string;
   preco: number;
   duracao: number;
-  descricao?: string;
 }
 
 export default function PainelClienteAgendar() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
   const { toast } = useToast();
-
+  
   const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,74 +46,132 @@ export default function PainelClienteAgendar() {
     observacoes: ''
   });
 
+  const [confirmacao, setConfirmacao] = useState({
+    isOpen: false,
+    tipo: 'sucesso' as 'sucesso' | 'erro',
+    titulo: '',
+    mensagem: '',
+    detalhes: undefined as any
+  });
+
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (cliente) {
+      fetchData();
+    }
+  }, [cliente]);
 
   const fetchData = async () => {
     try {
-      const { data: barbeirosData, error: barbeirosError } = await supabase
-        .from('painel_barbeiros')
-        .select('*');
+      setLoadingData(true);
       
-      const { data: servicosData, error: servicosError } = await supabase
-        .from('painel_servicos')
-        .select('*');
+      const [barbeirosResponse, servicosResponse] = await Promise.all([
+        supabase.from('painel_barbeiros').select('*').order('nome'),
+        supabase.from('painel_servicos').select('*').order('nome')
+      ]);
 
-      if (barbeirosError) throw barbeirosError;
-      if (servicosError) throw servicosError;
-
-      const mappedBarbeiros = (barbeirosData || []).map(barbeiro => ({
-        id: barbeiro.id,
-        nome: barbeiro.nome,
-        specialties: barbeiro.specialties || ''
-      }));
-
-      setBarbeiros(mappedBarbeiros);
-      setServicos(servicosData || []);
+      if (barbeirosResponse.data) setBarbeiros(barbeirosResponse.data);
+      if (servicosResponse.data) setServicos(servicosResponse.data);
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
+      console.error('Erro ao carregar dados:', error);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível carregar os dados necessários.",
+        description: "Não foi possível carregar os dados. Tente novamente.",
       });
     } finally {
       setLoadingData(false);
     }
   };
 
+  const gerarHorariosDisponiveis = () => {
+    const horarios = [];
+    for (let hora = 8; hora <= 18; hora++) {
+      for (let minuto = 0; minuto < 60; minuto += 30) {
+        const horaFormatada = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
+        horarios.push(horaFormatada);
+      }
+    }
+    return horarios;
+  };
+
+  const gerarDatasDisponiveis = () => {
+    const datas = [];
+    for (let i = 1; i <= 30; i++) {
+      const data = addDays(new Date(), i);
+      // Pular domingos (0)
+      if (data.getDay() !== 0) {
+        datas.push({
+          value: format(data, 'yyyy-MM-dd'),
+          label: format(data, "EEEE, dd 'de' MMMM", { locale: ptBR })
+        });
+      }
+    }
+    return datas;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!cliente) {
-      navigate('/painel-cliente/login');
+    if (!formData.barbeiro_id || !formData.servico_id || !formData.data || !formData.hora) {
+      setConfirmacao({
+        isOpen: true,
+        tipo: 'erro',
+        titulo: 'Dados Incompletos',
+        mensagem: 'Por favor, preencha todos os campos obrigatórios para realizar o agendamento.',
+        detalhes: undefined
+      });
       return;
     }
 
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('painel_agendamentos')
-        .insert({
-          cliente_id: cliente.id,
+      const { data: novoAgendamento, error } = await supabase
+        .rpc('create_painel_agendamento', {
+          cliente_id: cliente?.id,
           barbeiro_id: formData.barbeiro_id,
           servico_id: formData.servico_id,
           data: formData.data,
-          hora: formData.hora,
-          observacoes: formData.observacoes,
-          status: 'agendado'
+          hora: formData.hora
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar agendamento:', error);
+        
+        let mensagemErro = 'Não foi possível realizar o agendamento. Tente novamente.';
+        if (error.message?.includes('já está ocupado')) {
+          mensagemErro = 'Este horário já está ocupado. Por favor, escolha outro horário.';
+        }
 
-      toast({
-        title: "Agendamento realizado!",
-        description: "Seu agendamento foi criado com sucesso.",
-        duration: 3000,
+        setConfirmacao({
+          isOpen: true,
+          tipo: 'erro',
+          titulo: 'Erro no Agendamento',
+          mensagem: mensagemErro,
+          detalhes: undefined
+        });
+        return;
+      }
+
+      // Buscar detalhes para a confirmação
+      const barbeiro = barbeiros.find(b => b.id === formData.barbeiro_id);
+      const servico = servicos.find(s => s.id === formData.servico_id);
+      
+      setConfirmacao({
+        isOpen: true,
+        tipo: 'sucesso',
+        titulo: '🎉 Agendamento Confirmado!',
+        mensagem: 'Seu agendamento foi realizado com sucesso! Você receberá uma confirmação em breve.',
+        detalhes: {
+          servico: servico?.nome || '',
+          barbeiro: barbeiro?.nome || '',
+          data: format(new Date(formData.data), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }),
+          hora: formData.hora,
+          preco: servico?.preco || 0
+        }
       });
 
+      // Limpar formulário
       setFormData({
         barbeiro_id: '',
         servico_id: '',
@@ -120,23 +180,26 @@ export default function PainelClienteAgendar() {
         observacoes: ''
       });
 
-      setTimeout(() => {
-        navigate('/painel-cliente/agendamentos');
-      }, 1500);
-
-    } catch (error: any) {
-      console.error('Erro ao criar agendamento:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao agendar",
-        description: error.message || "Não foi possível realizar o agendamento.",
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+      setConfirmacao({
+        isOpen: true,
+        tipo: 'erro',
+        titulo: 'Erro Inesperado',
+        mensagem: 'Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.',
+        detalhes: undefined
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedService = servicos.find(s => s.id === formData.servico_id);
+  const fecharConfirmacao = () => {
+    setConfirmacao(prev => ({ ...prev, isOpen: false }));
+    if (confirmacao.tipo === 'sucesso') {
+      navigate('/painel-cliente/dashboard');
+    }
+  };
 
   if (!cliente) {
     navigate('/painel-cliente/login');
@@ -145,51 +208,29 @@ export default function PainelClienteAgendar() {
 
   if (loadingData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen w-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full"
+          className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full"
         />
       </div>
     );
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100
-      }
-    }
-  };
-
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-emerald-600/5 to-green-600/5" />
+      <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-blue-600/5 to-green-600/5" />
       
       <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="w-full space-y-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-2xl mx-auto space-y-6"
         >
           {/* Header */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button
               onClick={() => navigate('/painel-cliente/dashboard')}
               variant="outline"
@@ -200,168 +241,167 @@ export default function PainelClienteAgendar() {
               Voltar
             </Button>
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-green-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-green-400 bg-clip-text text-transparent">
                 Novo Agendamento
               </h1>
-              <p className="text-gray-400 text-base sm:text-lg mt-2">Escolha o melhor horário para você</p>
+              <p className="text-gray-400 text-base sm:text-lg mt-2">Agende seu próximo corte</p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Form Card */}
-          <motion.div variants={itemVariants} className="w-full">
-            <Card className="w-full bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-6">
-                <CardTitle className="text-xl lg:text-2xl text-white flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
-                    <Calendar className="h-6 w-6 text-white" />
-                  </div>
-                  Detalhes do Agendamento
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Serviço */}
-                    <motion.div variants={itemVariants} className="space-y-3">
-                      <Label htmlFor="servico" className="text-white text-base font-medium flex items-center gap-2">
-                        <Scissors className="h-4 w-4 text-green-400" />
-                        Serviço
-                      </Label>
-                      <Select value={formData.servico_id} onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}>
-                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500">
-                          <SelectValue placeholder="Escolha um serviço" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-600">
-                          {servicos.map((servico) => (
-                            <SelectItem key={servico.id} value={servico.id}>
-                              <div className="flex justify-between items-center w-full">
-                                <span>{servico.nome}</span>
-                                <span className="text-green-400 font-semibold ml-4">R$ {servico.preco.toFixed(2)}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </motion.div>
-
-                    {/* Barbeiro */}
-                    <motion.div variants={itemVariants} className="space-y-3">
-                      <Label htmlFor="barbeiro" className="text-white text-base font-medium flex items-center gap-2">
-                        <User className="h-4 w-4 text-green-400" />
-                        Barbeiro
-                      </Label>
-                      <Select value={formData.barbeiro_id} onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}>
-                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500">
-                          <SelectValue placeholder="Escolha um barbeiro" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-600">
-                          {barbeiros.map((barbeiro) => (
-                            <SelectItem key={barbeiro.id} value={barbeiro.id}>
-                              {barbeiro.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </motion.div>
-
-                    {/* Data */}
-                    <motion.div variants={itemVariants} className="space-y-3">
-                      <Label htmlFor="data" className="text-white text-base font-medium flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-green-400" />
-                        Data
-                      </Label>
-                      <Input
-                        id="data"
-                        type="date"
-                        value={formData.data}
-                        onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                        className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500"
-                        min={new Date().toISOString().split('T')[0]}
-                        required
-                      />
-                    </motion.div>
-
-                    {/* Hora */}
-                    <motion.div variants={itemVariants} className="space-y-3">
-                      <Label htmlFor="hora" className="text-white text-base font-medium flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-green-400" />
-                        Horário
-                      </Label>
-                      <Input
-                        id="hora"
-                        type="time"
-                        value={formData.hora}
-                        onChange={(e) => setFormData(prev => ({ ...prev, hora: e.target.value }))}
-                        className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500"
-                        min="08:00"
-                        max="20:00"
-                        required
-                      />
-                    </motion.div>
-                  </div>
-
-                  {/* Service Info */}
-                  {selectedService && (
-                    <motion.div
-                      variants={itemVariants}
-                      className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-xl p-4 backdrop-blur-sm"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-white font-semibold text-lg">{selectedService.nome}</h3>
-                          <p className="text-green-400 text-sm mt-1">Duração: {selectedService.duracao} minutos</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-1 text-green-400 font-bold text-xl">
-                            <DollarSign className="h-5 w-5" />
-                            {selectedService.preco.toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Observações */}
-                  <motion.div variants={itemVariants} className="space-y-3">
-                    <Label htmlFor="observacoes" className="text-white text-base font-medium">
-                      Observações (opcional)
+          {/* Form */}
+          <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-white text-xl flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl">
+                  <Plus className="h-5 w-5 text-white" />
+                </div>
+                Dados do Agendamento
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Serviço */}
+                  <div className="space-y-2">
+                    <Label className="text-white flex items-center gap-2">
+                      <Scissors className="h-4 w-4 text-green-400" />
+                      Serviço *
                     </Label>
-                    <Textarea
-                      id="observacoes"
-                      value={formData.observacoes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                      className="bg-slate-800/50 border-slate-600 text-white rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500 resize-none"
-                      placeholder="Alguma observação especial para seu agendamento..."
-                      rows={3}
-                    />
-                  </motion.div>
-
-                  {/* Submit Button */}
-                  <motion.div variants={itemVariants} className="pt-6">
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold h-14 text-base rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
-                      disabled={loading || !formData.barbeiro_id || !formData.servico_id || !formData.data || !formData.hora}
+                    <Select
+                      value={formData.servico_id}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}
                     >
-                      {loading ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
-                        />
-                      ) : (
-                        <CheckCircle className="h-5 w-5 mr-2" />
-                      )}
-                      {loading ? 'Agendando...' : 'Confirmar Agendamento'}
-                    </Button>
-                  </motion.div>
-                </form>
-              </CardContent>
-            </Card>
-          </motion.div>
+                      <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                        <SelectValue placeholder="Selecione o serviço" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {servicos.map((servico) => (
+                          <SelectItem key={servico.id} value={servico.id} className="text-white">
+                            {servico.nome} - R$ {servico.preco.toFixed(2)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Barbeiro */}
+                  <div className="space-y-2">
+                    <Label className="text-white flex items-center gap-2">
+                      <User className="h-4 w-4 text-green-400" />
+                      Barbeiro *
+                    </Label>
+                    <Select
+                      value={formData.barbeiro_id}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}
+                    >
+                      <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                        <SelectValue placeholder="Selecione o barbeiro" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {barbeiros.map((barbeiro) => (
+                          <SelectItem key={barbeiro.id} value={barbeiro.id} className="text-white">
+                            {barbeiro.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Data */}
+                  <div className="space-y-2">
+                    <Label className="text-white flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-green-400" />
+                      Data *
+                    </Label>
+                    <Select
+                      value={formData.data}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, data: value }))}
+                    >
+                      <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                        <SelectValue placeholder="Selecione a data" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {gerarDatasDisponiveis().map((data) => (
+                          <SelectItem key={data.value} value={data.value} className="text-white">
+                            {data.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Hora */}
+                  <div className="space-y-2">
+                    <Label className="text-white flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-green-400" />
+                      Horário *
+                    </Label>
+                    <Select
+                      value={formData.hora}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}
+                    >
+                      <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                        <SelectValue placeholder="Selecione o horário" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-slate-600">
+                        {gerarHorariosDisponiveis().map((hora) => (
+                          <SelectItem key={hora} value={hora} className="text-white">
+                            {hora}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Observações */}
+                <div className="space-y-2">
+                  <Label htmlFor="observacoes" className="text-white">Observações</Label>
+                  <Textarea
+                    id="observacoes"
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+                    className="bg-slate-800 border-slate-600 text-white"
+                    placeholder="Observações adicionais (opcional)..."
+                    rows={3}
+                  />
+                </div>
+
+                {/* Botão de envio */}
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                  >
+                    {loading ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
+                      />
+                    ) : (
+                      <Calendar className="h-5 w-5 mr-2" />
+                    )}
+                    {loading ? 'Agendando...' : 'Confirmar Agendamento'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
+
+      {/* Modal de Confirmação */}
+      <ConfirmacaoAgendamento
+        isOpen={confirmacao.isOpen}
+        onClose={fecharConfirmacao}
+        tipo={confirmacao.tipo}
+        titulo={confirmacao.titulo}
+        mensagem={confirmacao.mensagem}
+        detalhesAgendamento={confirmacao.detalhes}
+      />
     </div>
   );
 }
