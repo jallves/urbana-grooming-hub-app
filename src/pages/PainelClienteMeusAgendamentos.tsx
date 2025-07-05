@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Calendar, Clock, User, Scissors, Plus, Filter, Search } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Scissors, Plus, Filter, Search, Edit, Trash2 } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface Agendamento {
   id: string;
@@ -32,6 +34,9 @@ export default function PainelClienteMeusAgendamentos() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (cliente) {
@@ -87,6 +92,59 @@ export default function PainelClienteMeusAgendamentos() {
     
     const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' };
     return <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${config.color} backdrop-blur-sm`}>{config.label}</span>;
+  };
+
+  const handleEditAgendamento = (agendamento: Agendamento) => {
+    if (!['agendado', 'confirmado'].includes(agendamento.status)) {
+      toast({
+        variant: "destructive",
+        title: "Não é possível editar",
+        description: "Apenas agendamentos com status 'Agendado' ou 'Confirmado' podem ser editados.",
+      });
+      return;
+    }
+    
+    setSelectedAgendamento(agendamento);
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteAgendamento = async (agendamento: Agendamento) => {
+    if (!['agendado', 'confirmado'].includes(agendamento.status)) {
+      toast({
+        variant: "destructive",
+        title: "Não é possível cancelar",
+        description: "Apenas agendamentos com status 'Agendado' ou 'Confirmado' podem ser cancelados.",
+      });
+      return;
+    }
+
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('painel_agendamentos')
+        .update({ status: 'cancelado' })
+        .eq('id', agendamento.id)
+        .eq('cliente_id', cliente?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Agendamento cancelado!",
+        description: "Seu agendamento foi cancelado com sucesso.",
+      });
+
+      fetchAgendamentos();
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível cancelar o agendamento.",
+      });
+    }
   };
 
   const agendamentosFiltrados = filtroStatus === 'todos' 
@@ -223,7 +281,7 @@ export default function PainelClienteMeusAgendamentos() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-4 sm:gap-6">
+              <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
                 <AnimatePresence>
                   {agendamentosFiltrados.map((agendamento, index) => (
                     <motion.div
@@ -239,7 +297,7 @@ export default function PainelClienteMeusAgendamentos() {
                       <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl hover:border-slate-600/70 transition-all duration-300 shadow-xl hover:shadow-2xl">
                         <CardHeader className="pb-4">
                           <div className="flex justify-between items-start gap-3">
-                            <CardTitle className="text-white text-lg font-semibold group-hover:text-purple-300 transition-colors">
+                            <CardTitle className="text-white text-lg font-semibold group-hover:text-purple-300 transition-colors truncate pr-2 flex-1">
                               {agendamento.painel_servicos.nome}
                             </CardTitle>
                             {getStatusBadge(agendamento.status)}
@@ -265,7 +323,7 @@ export default function PainelClienteMeusAgendamentos() {
                           
                           <div className="pt-4 border-t border-slate-700/50">
                             <div className="flex justify-between items-center mb-2">
-                              <span className="text-gray-400 text-sm">Preço:</span>
+                              <span className="text-xs text-gray-400">Valor</span>
                               <span className="text-purple-400 font-bold text-lg">
                                 R$ {agendamento.painel_servicos.preco.toFixed(2)}
                               </span>
@@ -277,16 +335,49 @@ export default function PainelClienteMeusAgendamentos() {
                               </span>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-            )}
-          </motion.div>
-        </motion.div>
-      </div>
+
+                      {/* Action Buttons */}
+                      {['agendado', 'confirmado'].includes(agendamento.status) && (
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditAgendamento(agendamento)}
+                            className="flex-1 text-xs border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500"
+                          >
+                            <Edit className="w-3 h-3 mr-1" />
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteAgendamento(agendamento)}
+                            className="flex-1 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Cancelar
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Edit Modal */}
+      <EditAgendamentoModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedAgendamento(null);
+        }}
+        agendamento={selectedAgendamento}
+        onUpdate={fetchAgendamentos}
+      />
     </div>
   );
 }
