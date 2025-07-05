@@ -31,20 +31,20 @@ const StatsCard: React.FC<StatsCardProps> = ({
       'bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105',
       className
     )}>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="p-3 sm:p-4 md:p-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-2 flex-1 min-w-0">
-            <p className="text-gray-400 text-xs sm:text-sm font-medium truncate">{title}</p>
+          <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
+            <p className="text-gray-400 text-xs font-medium truncate">{title}</p>
             <div className="space-y-1">
-              <p className="text-xl sm:text-3xl font-bold text-white truncate">{value}</p>
+              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white truncate">{value}</p>
               {subtitle && (
-                <p className="text-gray-500 text-xs sm:text-sm truncate">{subtitle}</p>
+                <p className="text-gray-500 text-xs truncate">{subtitle}</p>
               )}
             </div>
             {trend && (
               <div className="flex items-center space-x-1">
                 <span className={cn(
-                  'text-xs sm:text-sm font-medium',
+                  'text-xs font-medium',
                   trend.isPositive ? 'text-green-400' : 'text-red-400'
                 )}>
                   {trend.isPositive ? '+' : '-'}{Math.abs(trend.value)}%
@@ -55,10 +55,10 @@ const StatsCard: React.FC<StatsCardProps> = ({
           </div>
           
           <div className={cn(
-            'w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-r flex items-center justify-center flex-shrink-0 ml-3',
+            'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-r flex items-center justify-center flex-shrink-0 ml-2 sm:ml-3',
             gradient
           )}>
-            <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
           </div>
         </div>
       </CardContent>

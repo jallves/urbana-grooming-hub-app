@@ -51,7 +51,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
 
       <div className="relative z-10 flex min-h-screen">
         {/* Sidebar - Always visible on desktop */}
-        <div className={`${isMobile ? 'hidden' : 'block'} w-80 flex-shrink-0`}>
+        <div className={`${isMobile ? 'hidden' : 'block'} w-64 lg:w-80 flex-shrink-0`}>
           <AdminSidebar />
         </div>
 
@@ -59,7 +59,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         {isMobile && sidebarOpen && (
           <>
             <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
-            <div className="fixed inset-y-0 left-0 w-80 z-50">
+            <div className="fixed inset-y-0 left-0 w-64 z-50">
               <AdminSidebar onClose={() => setSidebarOpen(false)} />
             </div>
           </>
@@ -69,70 +69,70 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
           {/* Header */}
           <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 sticky top-0 z-30">
-            <div className="px-4 lg:px-8 py-4">
+            <div className="px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
               <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                   {isMobile && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setSidebarOpen(true)}
-                      className="text-white hover:bg-white/10"
+                      className="text-white hover:bg-white/10 h-8 w-8 sm:h-10 sm:w-10"
                     >
-                      <Menu className="h-6 w-6" />
+                      <Menu className="h-4 w-4 sm:h-6 sm:w-6" />
                     </Button>
                   )}
-                  <div>
-                    <h1 className="text-xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-sm sm:text-lg lg:text-2xl xl:text-3xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent truncate">
                       {title}
                     </h1>
-                    <p className="text-xs lg:text-sm text-gray-400">Urbana Barbearia</p>
+                    <p className="text-xs sm:text-sm text-gray-400 truncate">Urbana Barbearia</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="relative text-gray-400 hover:text-white hover:bg-white/10 transition-all hidden sm:flex"
+                    className="relative text-gray-400 hover:text-white hover:bg-white/10 transition-all hidden sm:flex h-8 w-8 sm:h-10 sm:w-10"
                   >
-                    <Bell className="h-5 w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 p-0 border-0 text-xs"></Badge>
+                    <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Badge className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 p-0 border-0 text-xs"></Badge>
                   </Button>
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-8 w-8 lg:h-10 lg:w-10 rounded-full hover:bg-white/10 transition-all">
-                        <Avatar className="h-8 w-8 lg:h-10 lg:w-10 ring-2 ring-urbana-gold/30">
-                          <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-sm font-semibold">
+                      <Button variant="ghost" className="relative h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full hover:bg-white/10 transition-all">
+                        <Avatar className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 ring-2 ring-urbana-gold/30">
+                          <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-xs sm:text-sm font-semibold">
                             {userInitials}
                           </AvatarFallback>
                         </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 bg-black/90 backdrop-blur-lg border-white/20 text-white" align="end">
-                      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                    <DropdownMenuContent className="w-48 sm:w-56 bg-black/90 backdrop-blur-lg border-white/20 text-white" align="end">
+                      <DropdownMenuLabel className="text-xs sm:text-sm">Minha Conta</DropdownMenuLabel>
                       <DropdownMenuSeparator className="bg-white/20" />
                       <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-white/10 transition-colors"
+                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm"
                         onClick={() => navigate('/admin/configuracoes')}
                       >
-                        <User className="mr-2 h-4 w-4" />
+                        <User className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Perfil
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-white/10 transition-colors"
+                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm"
                         onClick={() => navigate('/')}
                       >
-                        <Settings className="mr-2 h-4 w-4" />
+                        <Settings className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Ver Site
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-white/20" />
                       <DropdownMenuItem 
-                        className="cursor-pointer text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
+                        className="cursor-pointer text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs sm:text-sm"
                         onClick={handleLogout}
                       >
-                        <LogOut className="mr-2 h-4 w-4" />
+                        <LogOut className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Sair
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -143,7 +143,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 p-2 sm:p-4 lg:p-8 overflow-y-auto overflow-x-hidden">
+          <main className="flex-1 p-2 sm:p-3 lg:p-6 xl:p-8 overflow-y-auto overflow-x-hidden">
             <div className="max-w-full mx-auto">
               {children}
             </div>

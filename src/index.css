@@ -135,18 +135,18 @@
   @apply rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gray-900 shadow-lg shadow-black/10 border border-gray-700;
 }
 
-/* Mobile responsive styles */
+/* Mobile responsive styles - OPTIMIZED */
 @media (max-width: 640px) {
   h1 {
-    @apply text-xl md:text-3xl;
+    @apply text-base md:text-3xl;
   }
   
   h2 {
-    @apply text-lg md:text-2xl;
+    @apply text-sm md:text-2xl;
   }
   
   .btn-responsive {
-    @apply w-full mb-2 justify-center text-sm px-3 py-2;
+    @apply w-full mb-2 justify-center text-xs px-2 py-1.5;
   }
 
   /* Mobile admin panel optimizations */
@@ -155,27 +155,27 @@
   }
 
   .admin-panel-header {
-    @apply w-full bg-black border-b border-gray-700 px-3 py-3 sticky top-0 z-10;
+    @apply w-full bg-black border-b border-gray-700 px-2 py-2 sticky top-0 z-10;
   }
 
   .admin-panel-content {
-    @apply w-full bg-black px-3 py-4 space-y-4;
+    @apply w-full bg-black px-2 py-3 space-y-3;
   }
 
   /* Mobile card optimizations */
   .mobile-card {
-    @apply w-full bg-gray-900 border border-gray-700 rounded-lg p-3 mb-3;
+    @apply w-full bg-gray-900 border border-gray-700 rounded-lg p-2 mb-2;
   }
 
   /* Mobile form optimizations */
   .mobile-form {
-    @apply space-y-3;
+    @apply space-y-2;
   }
 
   .mobile-form input,
   .mobile-form textarea,
   .mobile-form select {
-    @apply w-full px-3 py-2 text-sm;
+    @apply w-full px-2 py-1.5 text-xs;
   }
 
   /* Mobile table wrapper */
@@ -184,60 +184,70 @@
   }
 
   .mobile-table table {
-    @apply min-w-full text-sm;
+    @apply min-w-full text-xs;
   }
 
   /* Mobile grid improvements */
   .mobile-grid {
-    @apply grid grid-cols-1 gap-3 w-full;
+    @apply grid grid-cols-1 gap-2 w-full;
   }
 
   .mobile-grid-2 {
-    @apply grid grid-cols-2 gap-3 w-full;
+    @apply grid grid-cols-2 gap-2 w-full;
   }
 
   /* Mobile stats grid */
   .mobile-stats {
-    @apply grid grid-cols-1 sm:grid-cols-2 gap-3 w-full;
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-2 w-full;
   }
 
   .mobile-stat-card {
-    @apply bg-gray-900 border border-gray-700 rounded-lg p-3 text-center min-h-[80px];
+    @apply bg-gray-900 border border-gray-700 rounded-lg p-2 text-center min-h-[60px];
   }
 
   /* Mobile button optimizations */
   .mobile-button {
-    @apply w-full py-3 px-4 text-base font-medium rounded-lg;
+    @apply w-full py-2 px-3 text-sm font-medium rounded-lg;
   }
 
   /* Mobile navigation */
   .mobile-nav {
-    @apply fixed top-0 left-0 w-full h-screen bg-black z-50 flex flex-col px-4 py-6 transform transition-transform duration-300;
+    @apply fixed top-0 left-0 w-full h-screen bg-black z-50 flex flex-col px-3 py-4 transform transition-transform duration-300;
   }
 
   /* Mobile text handling */
   .mobile-text-responsive {
-    @apply text-sm leading-relaxed;
+    @apply text-xs leading-relaxed;
   }
 
   /* Improve touch targets on mobile */
   .mobile-touch-target {
-    @apply min-h-[44px] min-w-[44px];
+    @apply min-h-[40px] min-w-[40px];
+  }
+
+  /* Mobile specific spacing */
+  .mobile-spacing {
+    @apply space-y-2 p-2;
+  }
+
+  /* Mobile tabs */
+  .mobile-tabs {
+    @apply text-xs py-1.5 px-2;
   }
 }
 
 /* Tablet responsive styles */
 @media (min-width: 640px) and (max-width: 1024px) {
   .tablet-container {
-    @apply px-4 py-4 w-full;
+    @apply px-3 py-3 w-full;
   }
 
   .tablet-grid {
-    @apply grid-cols-2 gap-4 w-full;
+    @apply grid-cols-2 gap-3 w-full;
   }
 
   .tablet-card {
-    @apply p-4 w-full;
+    @apply p-3 w-full;
   }
 }
 
@@ -256,37 +266,37 @@
   }
 }
 
-/* Panel-specific responsive classes */
+/* Panel-specific responsive classes - OPTIMIZED */
 .panel-responsive {
   @apply bg-black text-white min-h-screen w-full overflow-x-hidden;
 }
 
 .panel-header-responsive {
-  @apply bg-black border-b border-gray-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4 sticky top-0 z-10 w-full;
+  @apply bg-black border-b border-gray-700 px-2 sm:px-3 md:px-4 lg:px-6 py-2 sm:py-3 sticky top-0 z-10 w-full;
 }
 
 .panel-content-responsive {
-  @apply bg-black p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 w-full;
+  @apply bg-black p-2 sm:p-3 md:p-4 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4 lg:space-y-6 w-full;
 }
 
 .panel-card-responsive {
-  @apply bg-gray-900 border border-gray-700 rounded-lg p-3 sm:p-4 md:p-6 w-full;
+  @apply bg-gray-900 border border-gray-700 rounded-lg p-2 sm:p-3 md:p-4 lg:p-6 w-full;
 }
 
 .panel-grid-responsive {
-  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 w-full;
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6 w-full;
 }
 
 .panel-button-responsive {
-  @apply w-full sm:w-auto px-3 sm:px-4 py-2 text-sm;
+  @apply w-full sm:w-auto px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm;
 }
 
 .panel-text-responsive {
-  @apply text-sm sm:text-base;
+  @apply text-xs sm:text-sm md:text-base;
 }
 
 .panel-title-responsive {
-  @apply text-lg sm:text-xl lg:text-2xl;
+  @apply text-sm sm:text-lg md:text-xl lg:text-2xl;
 }
 
 /* Force full width utility */
@@ -305,4 +315,17 @@
     @apply min-h-screen bg-black;
     min-height: -webkit-fill-available;
   }
+}
+
+/* Mobile-first optimized utilities */
+.mobile-optimized {
+  @apply text-xs p-2 space-y-2 sm:text-sm sm:p-3 sm:space-y-3 md:text-base md:p-4 md:space-y-4;
+}
+
+.mobile-header {
+  @apply text-sm font-semibold sm:text-base md:text-lg lg:text-xl;
+}
+
+.mobile-content {
+  @apply space-y-2 sm:space-y-3 md:space-y-4;
 }
