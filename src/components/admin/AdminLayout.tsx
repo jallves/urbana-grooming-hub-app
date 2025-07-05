@@ -41,7 +41,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const userInitials = user?.email?.charAt(0).toUpperCase() || 'A';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white w-full overflow-x-hidden">
       {/* Modern Background Pattern */}
       <div className="fixed inset-0 opacity-5 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/api/placeholder/1920/1080')] bg-cover bg-center mix-blend-overlay"></div>
@@ -49,7 +49,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         <div className="absolute bottom-20 right-20 w-64 h-64 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-3xl opacity-10"></div>
       </div>
 
-      <div className="relative z-10 flex min-h-screen">
+      <div className="relative z-10 flex min-h-screen w-full">
         {/* Sidebar - Always visible on desktop */}
         <div className={`${isMobile ? 'hidden' : 'block'} w-64 lg:w-80 flex-shrink-0`}>
           <AdminSidebar />
@@ -66,20 +66,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         )}
         
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-          {/* Header */}
-          <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 sticky top-0 z-30">
-            <div className="px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex-1 flex flex-col min-h-screen w-full overflow-hidden">
+          {/* Header - Otimizado para mobile */}
+          <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 sticky top-0 z-30 w-full">
+            <div className="px-2 sm:px-4 lg:px-8 py-2 sm:py-3 lg:py-4 w-full">
+              <div className="flex justify-between items-center w-full">
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
                   {isMobile && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setSidebarOpen(true)}
-                      className="text-white hover:bg-white/10 h-8 w-8 sm:h-10 sm:w-10"
+                      className="text-white hover:bg-white/10 h-8 w-8 flex-shrink-0"
                     >
-                      <Menu className="h-4 w-4 sm:h-6 sm:w-6" />
+                      <Menu className="h-4 w-4" />
                     </Button>
                   )}
                   <div className="min-w-0 flex-1">
@@ -90,7 +90,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-1 sm:gap-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <Button 
                     variant="ghost" 
                     size="icon"
@@ -102,8 +102,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 rounded-full hover:bg-white/10 transition-all">
-                        <Avatar className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 ring-2 ring-urbana-gold/30">
+                      <Button variant="ghost" className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-white/10 transition-all">
+                        <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-urbana-gold/30">
                           <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-xs sm:text-sm font-semibold">
                             {userInitials}
                           </AvatarFallback>
@@ -111,17 +111,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-48 sm:w-56 bg-black/90 backdrop-blur-lg border-white/20 text-white" align="end">
-                      <DropdownMenuLabel className="text-xs sm:text-sm">Minha Conta</DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-xs sm:text-sm text-white">Minha Conta</DropdownMenuLabel>
                       <DropdownMenuSeparator className="bg-white/20" />
                       <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm"
+                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm text-white focus:text-white"
                         onClick={() => navigate('/admin/configuracoes')}
                       >
                         <User className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                         Perfil
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm"
+                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm text-white focus:text-white"
                         onClick={() => navigate('/')}
                       >
                         <Settings className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -129,7 +129,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-white/20" />
                       <DropdownMenuItem 
-                        className="cursor-pointer text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs sm:text-sm"
+                        className="cursor-pointer text-red-400 hover:bg-red-500/20 hover:text-red-300 focus:text-red-300 transition-colors text-xs sm:text-sm"
                         onClick={handleLogout}
                       >
                         <LogOut className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -142,9 +142,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
             </div>
           </header>
 
-          {/* Main Content Area */}
-          <main className="flex-1 p-2 sm:p-3 lg:p-6 xl:p-8 overflow-y-auto overflow-x-hidden">
-            <div className="max-w-full mx-auto">
+          {/* Main Content Area - Otimizado para evitar overflow */}
+          <main className="flex-1 p-2 sm:p-3 lg:p-6 xl:p-8 overflow-y-auto w-full">
+            <div className="w-full max-w-full">
               {children}
             </div>
           </main>

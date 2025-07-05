@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,7 +30,7 @@ import {
 import {
   Badge
 } from "@/components/ui/badge";
-import { Edit, MoreHorizontal, Trash2, Search, Plus, ArrowUpCircle, ArrowDownCircle, Filter } from 'lucide-react';
+import { Edit, MoreHorizontal, Trash2, Search, Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import FinancialTransactionForm from './FinancialTransactionForm';
 import {
   AlertDialog,
@@ -66,9 +65,9 @@ const TransactionList: React.FC = () => {
 
   // Transaction status and type styling
   const statusStyles: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-green-100 text-green-800',
-    canceled: 'bg-red-100 text-red-800',
+    pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+    completed: 'bg-green-500/20 text-green-300 border-green-500/30',
+    canceled: 'bg-red-500/20 text-red-300 border-red-500/30',
   };
 
   const getMonthRange = (date: Date) => {
@@ -192,213 +191,218 @@ const TransactionList: React.FC = () => {
   const { totalIncome, totalExpense, balance } = calculateTotals();
 
   return (
-    <>
-      <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <div className="flex items-center gap-2">
-              <ArrowUpCircle className="h-5 w-5 text-green-600" />
-              <h3 className="text-sm font-medium text-green-800">Total de Receitas</h3>
+    <div className="space-y-3 sm:space-y-4 w-full">
+      <Card className="p-3 sm:p-4 bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
+        {/* Cards de resumo responsivos */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 p-3 sm:p-4 rounded-lg border border-green-500/30">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowUpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
+              <h3 className="text-xs sm:text-sm font-medium text-green-300">Receitas</h3>
             </div>
-            <p className="mt-2 text-2xl font-bold text-green-700">
-              R$ {totalIncome.toFixed(2)}
+            <p className="text-lg sm:text-2xl font-bold text-green-400">
+              R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           </div>
           
-          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-            <div className="flex items-center gap-2">
-              <ArrowDownCircle className="h-5 w-5 text-red-600" />
-              <h3 className="text-sm font-medium text-red-800">Total de Despesas</h3>
+          <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 p-3 sm:p-4 rounded-lg border border-red-500/30">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowDownCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" />
+              <h3 className="text-xs sm:text-sm font-medium text-red-300">Despesas</h3>
             </div>
-            <p className="mt-2 text-2xl font-bold text-red-700">
-              R$ {totalExpense.toFixed(2)}
+            <p className="text-lg sm:text-2xl font-bold text-red-400">
+              R$ {totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           </div>
           
-          <div className={`${balance >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'} p-4 rounded-lg border`}>
-            <div className="flex items-center gap-2">
-              <h3 className={`text-sm font-medium ${balance >= 0 ? 'text-blue-800' : 'text-orange-800'}`}>
+          <div className={`bg-gradient-to-r ${balance >= 0 ? 'from-urbana-gold/20 to-yellow-500/20 border-urbana-gold/30' : 'from-red-500/20 to-red-600/20 border-red-500/30'} p-3 sm:p-4 rounded-lg border`}>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className={`text-xs sm:text-sm font-medium ${balance >= 0 ? 'text-urbana-gold' : 'text-red-300'}`}>
                 Balanço
               </h3>
             </div>
-            <p className={`mt-2 text-2xl font-bold ${balance >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
-              R$ {balance.toFixed(2)}
+            <p className={`text-lg sm:text-2xl font-bold ${balance >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>
+              R$ {balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+        {/* Filtros responsivos */}
+        <div className="space-y-3 mb-4 sm:mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Buscar transações..."
-              className="pl-10"
+              className="pl-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select
-              value={typeFilter}
-              onValueChange={setTypeFilter}
-            >
-              <SelectTrigger className="w-[180px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white text-sm">
                 <SelectValue placeholder="Tipo" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="income">Receitas</SelectItem>
-                <SelectItem value="expense">Despesas</SelectItem>
+              <SelectContent className="bg-gray-800 border-gray-600">
+                <SelectItem value="all" className="text-white hover:bg-gray-700">Todos os tipos</SelectItem>
+                <SelectItem value="income" className="text-white hover:bg-gray-700">Receitas</SelectItem>
+                <SelectItem value="expense" className="text-white hover:bg-gray-700">Despesas</SelectItem>
               </SelectContent>
             </Select>
             
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
-              <SelectTrigger className="w-[180px]">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white text-sm">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="pending">Pendentes</SelectItem>
-                <SelectItem value="completed">Concluídos</SelectItem>
-                <SelectItem value="canceled">Cancelados</SelectItem>
+              <SelectContent className="bg-gray-800 border-gray-600">
+                <SelectItem value="all" className="text-white hover:bg-gray-700">Todos os status</SelectItem>
+                <SelectItem value="pending" className="text-white hover:bg-gray-700">Pendentes</SelectItem>
+                <SelectItem value="completed" className="text-white hover:bg-gray-700">Concluídos</SelectItem>
+                <SelectItem value="canceled" className="text-white hover:bg-gray-700">Cancelados</SelectItem>
               </SelectContent>
             </Select>
             
             <div className="flex items-center gap-1">
               <Button 
                 variant="outline" 
-                size="icon"
+                size="sm"
                 onClick={() => navigateMonth('prev')}
+                className="bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700 text-xs px-2"
               >
                 &lt;
               </Button>
               
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-[180px]">
-                    {dateFilter ? format(dateFilter, "MMMM 'de' yyyy", { locale: ptBR }) : 
-                      "Selecione o mês"}
+                  <Button variant="outline" className="flex-1 bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700 text-xs">
+                    {dateFilter ? format(dateFilter, "MMM/yy", { locale: ptBR }) : "Mês"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-600">
                   <Calendar
                     mode="single"
                     selected={dateFilter}
                     onSelect={setDateFilter}
                     initialFocus
+                    className="text-white"
                   />
                 </PopoverContent>
               </Popover>
               
               <Button 
                 variant="outline" 
-                size="icon"
+                size="sm"
                 onClick={() => navigateMonth('next')}
+                className="bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700 text-xs px-2"
               >
                 &gt;
               </Button>
             </div>
             
-            <Button onClick={handleCreateTransaction}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Transação
+            <Button onClick={handleCreateTransaction} className="bg-gradient-to-r from-urbana-gold to-urbana-gold/80 hover:from-urbana-gold/90 hover:to-urbana-gold text-black font-semibold text-xs">
+              <Plus className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Nova</span> Transação
             </Button>
           </div>
         </div>
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+        {/* Tabela responsiva com scroll horizontal */}
+        <div className="rounded-md border border-white/10 overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10">
-                    Carregando transações...
-                  </TableCell>
+                  <TableHead className="min-w-[80px]">Data</TableHead>
+                  <TableHead className="min-w-[120px]">Descrição</TableHead>
+                  <TableHead className="min-w-[100px] hidden sm:table-cell">Categoria</TableHead>
+                  <TableHead className="min-w-[80px]">Tipo</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Valor</TableHead>
+                  <TableHead className="min-w-[80px] hidden md:table-cell">Status</TableHead>
+                  <TableHead className="text-right min-w-[60px]">Ações</TableHead>
                 </TableRow>
-              ) : filteredTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10">
-                    Nenhuma transação encontrada
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      {format(new Date(transaction.transaction_date), 'dd/MM/yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      {transaction.description || '-'}
-                    </TableCell>
-                    <TableCell>
-                      {transaction.category || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={transaction.transaction_type === 'income' 
-                          ? 'bg-green-100 text-green-800 border-green-200' 
-                          : 'bg-red-100 text-red-800 border-red-200'
-                        }
-                      >
-                        {transaction.transaction_type === 'income' ? 'Receita' : 'Despesa'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className={`text-right font-medium ${
-                      transaction.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      R$ {Number(transaction.amount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusStyles[transaction.status]}>
-                        {transaction.status === 'pending' && 'Pendente'}
-                        {transaction.status === 'completed' && 'Concluído'}
-                        {transaction.status === 'canceled' && 'Cancelado'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Abrir menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditTransaction(transaction.id)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => confirmDeleteTransaction(transaction.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-400">
+                      Carregando transações...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : filteredTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-400">
+                      Nenhuma transação encontrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredTransactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="text-white">
+                        {format(new Date(transaction.transaction_date), 'dd/MM')}
+                      </TableCell>
+                      <TableCell className="text-white">
+                        <div className="max-w-[120px] truncate">
+                          {transaction.description || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-white hidden sm:table-cell">
+                        <div className="max-w-[100px] truncate">
+                          {transaction.category || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant="outline" 
+                          className={transaction.transaction_type === 'income' 
+                            ? 'bg-green-500/20 text-green-300 border-green-500/30 text-xs' 
+                            : 'bg-red-500/20 text-red-300 border-red-500/30 text-xs'
+                          }
+                        >
+                          {transaction.transaction_type === 'income' ? 'Rec.' : 'Desp.'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={`text-right font-medium text-sm ${
+                        transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        R$ {Number(transaction.amount).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge className={`${statusStyles[transaction.status]} text-xs`}>
+                          {transaction.status === 'pending' && 'Pend.'}
+                          {transaction.status === 'completed' && 'Ok'}
+                          {transaction.status === 'canceled' && 'Canc.'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-white hover:bg-white/10">
+                              <MoreHorizontal className="h-3 w-3" />
+                              <span className="sr-only">Abrir menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
+                            <DropdownMenuItem onClick={() => handleEditTransaction(transaction.id)} className="text-white hover:bg-gray-700 text-xs">
+                              <Edit className="mr-2 h-3 w-3" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => confirmDeleteTransaction(transaction.id)}
+                              className="text-red-400 hover:bg-gray-700 text-xs"
+                            >
+                              <Trash2 className="mr-2 h-3 w-3" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </Card>
 
@@ -414,27 +418,26 @@ const TransactionList: React.FC = () => {
       )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir transação</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-white">Excluir transação</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
               Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteTransaction}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };
 
 export default TransactionList;
-

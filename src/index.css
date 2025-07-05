@@ -35,31 +35,31 @@
     @apply bg-black text-white w-full;
   }
 
-  /* Override any white backgrounds */
+  /* Override any white backgrounds and ensure text visibility */
   .bg-white {
-    @apply bg-gray-900 !important;
+    @apply bg-gray-900 text-white !important;
   }
 
   .bg-gray-50 {
-    @apply bg-gray-800 !important;
+    @apply bg-gray-800 text-white !important;
   }
 
   .bg-gray-100 {
-    @apply bg-gray-800 !important;
+    @apply bg-gray-800 text-white !important;
   }
 
-  /* Card styling for all panels */
+  /* Card styling for all panels with white text */
   .card, [data-radix-collection-item] {
     @apply bg-gray-900 border-gray-700 text-white !important;
   }
 
-  /* Input styling */
+  /* Input styling with white text */
   input, textarea, select {
     @apply bg-gray-800 border-gray-600 text-white placeholder-gray-400 !important;
   }
 
   input:focus, textarea:focus, select:focus {
-    @apply border-urbana-gold ring-urbana-gold/20 !important;
+    @apply border-urbana-gold ring-urbana-gold/20 text-white !important;
   }
 
   /* Button styling */
@@ -67,14 +67,14 @@
     @apply bg-urbana-gold text-black hover:bg-urbana-gold/90 !important;
   }
 
-  /* Dropdown and select styling */
+  /* Dropdown and select styling with white text */
   [role="option"], [role="menuitem"] {
     @apply bg-gray-900 text-white hover:bg-gray-800 !important;
   }
 
-  /* Table styling */
+  /* Table styling with white text */
   table {
-    @apply bg-gray-900 !important;
+    @apply bg-gray-900 text-white !important;
   }
 
   th {
@@ -85,23 +85,33 @@
     @apply bg-gray-900 text-white border-gray-700 !important;
   }
 
-  /* Modal and dialog styling */
+  /* Modal and dialog styling with white text */
   [role="dialog"], .dialog-content {
     @apply bg-gray-900 border-gray-700 text-white !important;
   }
 
   /* Sidebar styling */
   .sidebar {
-    @apply bg-black border-gray-800 !important;
+    @apply bg-black border-gray-800 text-white !important;
   }
 
-  /* Form styling */
+  /* Form styling with white text */
   .form-control, .form-input {
     @apply bg-gray-800 border-gray-600 text-white !important;
   }
 
   .form-label {
     @apply text-white !important;
+  }
+
+  /* Ensure all text elements are white in admin panels */
+  .admin-panel *, .barber-panel *, .client-panel * {
+    color: white !important;
+  }
+
+  /* Override specific elements that might have dark text */
+  p, span, div, label, a {
+    @apply text-white;
   }
 
   /* Custom scrollbar for mobile navigation */
@@ -112,6 +122,32 @@
   
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Enable horizontal scroll when needed */
+  .overflow-x-auto {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Improved scrollbars for mobile */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.5);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 215, 0, 0.7);
   }
 }
 
@@ -135,14 +171,24 @@
   @apply rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gray-900 shadow-lg shadow-black/10 border border-gray-700;
 }
 
-/* Mobile responsive styles - OPTIMIZED */
+/* Mobile responsive styles - ULTRA OPTIMIZED */
 @media (max-width: 640px) {
+  html, body {
+    font-size: 14px;
+    overflow-x: hidden;
+    width: 100vw;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
   h1 {
-    @apply text-base md:text-3xl;
+    @apply text-sm md:text-3xl;
   }
   
   h2 {
-    @apply text-sm md:text-2xl;
+    @apply text-xs md:text-2xl;
   }
   
   .btn-responsive {
@@ -152,6 +198,7 @@
   /* Mobile admin panel optimizations */
   .admin-panel-mobile {
     @apply w-screen min-h-screen bg-black overflow-x-hidden;
+    max-width: 100vw;
   }
 
   .admin-panel-header {
@@ -159,12 +206,14 @@
   }
 
   .admin-panel-content {
-    @apply w-full bg-black px-2 py-3 space-y-3;
+    @apply w-full bg-black px-2 py-2 space-y-2;
+    max-width: 100vw;
   }
 
   /* Mobile card optimizations */
   .mobile-card {
     @apply w-full bg-gray-900 border border-gray-700 rounded-lg p-2 mb-2;
+    max-width: 100%;
   }
 
   /* Mobile form optimizations */
@@ -178,13 +227,15 @@
     @apply w-full px-2 py-1.5 text-xs;
   }
 
-  /* Mobile table wrapper */
+  /* Mobile table wrapper with horizontal scroll */
   .mobile-table {
-    @apply overflow-x-auto;
+    @apply overflow-x-auto w-full;
+    max-width: 100vw;
   }
 
   .mobile-table table {
     @apply min-w-full text-xs;
+    min-width: 600px; /* Force minimum width for horizontal scroll */
   }
 
   /* Mobile grid improvements */
@@ -215,9 +266,9 @@
     @apply fixed top-0 left-0 w-full h-screen bg-black z-50 flex flex-col px-3 py-4 transform transition-transform duration-300;
   }
 
-  /* Mobile text handling */
+  /* Mobile text handling - WHITE TEXT GUARANTEED */
   .mobile-text-responsive {
-    @apply text-xs leading-relaxed;
+    @apply text-xs leading-relaxed text-white;
   }
 
   /* Improve touch targets on mobile */
@@ -233,6 +284,42 @@
   /* Mobile tabs */
   .mobile-tabs {
     @apply text-xs py-1.5 px-2;
+  }
+
+  /* Ensure no horizontal overflow on mobile */
+  .container, .max-w-full, .w-full {
+    max-width: 100vw !important;
+    overflow-x: hidden;
+  }
+
+  /* Mobile table cells - compact but readable */
+  .mobile-table-cell {
+    @apply px-2 py-1 text-xs whitespace-nowrap;
+    min-width: 80px;
+  }
+
+  /* Mobile specific padding reductions */
+  .p-6 {
+    @apply p-2;
+  }
+
+  .p-4 {
+    @apply p-2;
+  }
+
+  .px-8 {
+    @apply px-2;
+  }
+
+  .py-8 {
+    @apply py-2;
+  }
+
+  /* Mobile viewport fixes */
+  .mobile-viewport-fix {
+    width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 
@@ -266,9 +353,10 @@
   }
 }
 
-/* Panel-specific responsive classes - OPTIMIZED */
+/* Panel-specific responsive classes - ULTRA OPTIMIZED */
 .panel-responsive {
   @apply bg-black text-white min-h-screen w-full overflow-x-hidden;
+  max-width: 100vw;
 }
 
 .panel-header-responsive {
@@ -277,10 +365,11 @@
 
 .panel-content-responsive {
   @apply bg-black p-2 sm:p-3 md:p-4 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4 lg:space-y-6 w-full;
+  max-width: 100vw;
 }
 
 .panel-card-responsive {
-  @apply bg-gray-900 border border-gray-700 rounded-lg p-2 sm:p-3 md:p-4 lg:p-6 w-full;
+  @apply bg-gray-900 border border-gray-700 rounded-lg p-2 sm:p-3 md:p-4 lg:p-6 w-full text-white;
 }
 
 .panel-grid-responsive {
@@ -292,21 +381,23 @@
 }
 
 .panel-text-responsive {
-  @apply text-xs sm:text-sm md:text-base;
+  @apply text-xs sm:text-sm md:text-base text-white;
 }
 
 .panel-title-responsive {
-  @apply text-sm sm:text-lg md:text-xl lg:text-2xl;
+  @apply text-sm sm:text-lg md:text-xl lg:text-2xl text-white;
 }
 
 /* Force full width utility */
 .force-full-width {
   @apply w-full min-w-full;
+  max-width: 100vw;
 }
 
 /* Prevent horizontal scroll */
 .no-horizontal-scroll {
   @apply overflow-x-hidden;
+  max-width: 100vw;
 }
 
 /* Improve mobile viewport handling */
@@ -320,12 +411,32 @@
 /* Mobile-first optimized utilities */
 .mobile-optimized {
   @apply text-xs p-2 space-y-2 sm:text-sm sm:p-3 sm:space-y-3 md:text-base md:p-4 md:space-y-4;
+  color: white !important;
 }
 
 .mobile-header {
-  @apply text-sm font-semibold sm:text-base md:text-lg lg:text-xl;
+  @apply text-sm font-semibold sm:text-base md:text-lg lg:text-xl text-white;
 }
 
 .mobile-content {
-  @apply space-y-2 sm:space-y-3 md:space-y-4;
+  @apply space-y-2 sm:space-y-3 md:space-y-4 text-white;
+}
+
+/* Guarantee white text visibility in all scenarios */
+* {
+  color: white !important;
+}
+
+/* Override any potential dark text */
+.text-black, .text-gray-900, .text-gray-800 {
+  @apply text-white !important;
+}
+
+/* Ensure dropdowns and selects have white text */
+[data-radix-select-content], [data-radix-dropdown-menu-content] {
+  @apply bg-gray-800 border-gray-600 text-white !important;
+}
+
+[data-radix-select-item], [data-radix-dropdown-menu-item] {
+  @apply text-white hover:bg-gray-700 focus:bg-gray-700 !important;
 }

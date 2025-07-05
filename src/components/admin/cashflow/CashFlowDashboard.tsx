@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,14 +60,14 @@ const CashFlowDashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="bg-gray-900 border-gray-700">
-            <CardContent className="p-6">
-              <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-                <div className="h-8 bg-gray-700 rounded w-1/2"></div>
-                <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+          <Card key={i} className="bg-gray-900/50 border-gray-700">
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="animate-pulse space-y-2 sm:space-y-3">
+                <div className="h-3 sm:h-4 bg-gray-700 rounded w-3/4"></div>
+                <div className="h-6 sm:h-8 bg-gray-700 rounded w-1/2"></div>
+                <div className="h-2 sm:h-3 bg-gray-700 rounded w-2/3"></div>
               </div>
             </CardContent>
           </Card>
@@ -78,124 +77,136 @@ const CashFlowDashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Métricas principais */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-green-900/20 to-green-800/10 border-green-700/50 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-400">
-              Receitas do Mês
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6 w-full">
+      {/* Métricas principais - Grid responsivo */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700/50 shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-green-400">
+              Receitas
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-400" />
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-400">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-400">
               R$ {currentIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <div className="flex items-center mt-1">
               <span className={`text-xs ${incomeGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {incomeGrowth >= 0 ? '+' : ''}{incomeGrowth.toFixed(1)}% em relação ao mês anterior
+                {incomeGrowth >= 0 ? '+' : ''}{incomeGrowth.toFixed(1)}% vs mês anterior
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-900/20 to-red-800/10 border-red-700/50 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-400">
-              Despesas do Mês
+        <Card className="bg-gradient-to-br from-red-900/30 to-red-800/20 border-red-700/50 shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-red-400">
+              Despesas
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-400" />
+            <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-400">
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-400">
               R$ {currentExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <div className="flex items-center mt-1">
               <span className={`text-xs ${expenseGrowth <= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {expenseGrowth >= 0 ? '+' : ''}{expenseGrowth.toFixed(1)}% em relação ao mês anterior
+                {expenseGrowth >= 0 ? '+' : ''}{expenseGrowth.toFixed(1)}% vs mês anterior
               </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className={`bg-gradient-to-br ${currentNet >= 0 ? 'from-urbana-gold/20 to-yellow-800/10 border-urbana-gold/50' : 'from-red-900/20 to-red-800/10 border-red-700/50'} shadow-lg`}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className={`text-sm font-medium ${currentNet >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>
+        <Card className={`bg-gradient-to-br ${currentNet >= 0 ? 'from-urbana-gold/30 to-yellow-800/20 border-urbana-gold/50' : 'from-red-900/30 to-red-800/20 border-red-700/50'} shadow-lg sm:col-span-2 lg:col-span-1`}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className={`text-xs sm:text-sm font-medium ${currentNet >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>
               Saldo Líquido
             </CardTitle>
-            <DollarSign className={`h-4 w-4 ${currentNet >= 0 ? 'text-urbana-gold' : 'text-red-400'}`} />
+            <DollarSign className={`h-3 w-3 sm:h-4 sm:w-4 ${currentNet >= 0 ? 'text-urbana-gold' : 'text-red-400'}`} />
           </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${currentNet >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${currentNet >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>
               R$ {currentNet.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <div className="flex items-center mt-1">
               <span className={`text-xs ${netGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {netGrowth >= 0 ? '+' : ''}{netGrowth.toFixed(1)}% em relação ao mês anterior
+                {netGrowth >= 0 ? '+' : ''}{netGrowth.toFixed(1)}% vs mês anterior
               </span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="bg-gray-900 border-gray-700 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-urbana-gold font-playfair">Fluxo de Caixa - Últimos 6 Meses</CardTitle>
+      {/* Gráficos - Stack em mobile, side-by-side em desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+        <Card className="bg-gray-900/50 border-gray-700 shadow-lg">
+          <CardHeader className="p-3 sm:p-4 lg:p-6">
+            <CardTitle className="text-sm sm:text-base lg:text-lg text-urbana-gold font-playfair">
+              Fluxo - 6 Meses
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <CashFlowChart />
+          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+              <CashFlowChart />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900 border-gray-700 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-urbana-gold font-playfair">Despesas por Categoria</CardTitle>
+        <Card className="bg-gray-900/50 border-gray-700 shadow-lg">
+          <CardHeader className="p-3 sm:p-4 lg:p-6">
+            <CardTitle className="text-sm sm:text-base lg:text-lg text-urbana-gold font-playfair">
+              Categorias
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <CategoryChart />
+          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+              <CategoryChart />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Transações recentes */}
-      <Card className="bg-gray-900 border-gray-700 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-urbana-gold font-playfair flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+      {/* Transações recentes - Otimizado para mobile */}
+      <Card className="bg-gray-900/50 border-gray-700 shadow-lg">
+        <CardHeader className="p-3 sm:p-4 lg:p-6">
+          <CardTitle className="text-sm sm:text-base lg:text-lg text-urbana-gold font-playfair flex items-center gap-2">
+            <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
             Transações Recentes
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
           {currentMonthData && currentMonthData.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {currentMonthData.slice(-5).reverse().map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${transaction.transaction_type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <div>
-                        <p className="font-medium text-white">{transaction.description}</p>
-                        <p className="text-sm text-gray-400">{transaction.category}</p>
+                <div key={transaction.id} className="flex items-center justify-between p-2 sm:p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${transaction.transaction_type === 'income' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-white text-xs sm:text-sm truncate">
+                          {transaction.description}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {transaction.category}
+                        </p>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-semibold ${transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className="text-right flex-shrink-0 ml-2">
+                    <p className={`font-semibold text-xs sm:text-sm ${transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
                       {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {format(new Date(transaction.transaction_date), "dd 'de' MMMM", { locale: ptBR })}
+                      {format(new Date(transaction.transaction_date), "dd/MM", { locale: ptBR })}
                     </p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-400">Nenhuma transação encontrada este mês</p>
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-gray-400 text-sm">Nenhuma transação encontrada este mês</p>
             </div>
           )}
         </CardContent>
