@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, ArrowLeft, Clock, Scissors, User, MapPin, Star } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Scissors, DollarSign, CheckCircle } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +16,7 @@ import { motion } from 'framer-motion';
 interface Barbeiro {
   id: string;
   nome: string;
+  especialidades: string[];
 }
 
 interface Servico {
@@ -21,12 +24,7 @@ interface Servico {
   nome: string;
   preco: number;
   duracao: number;
-}
-
-interface AgendamentoResponse {
-  id: string;
-  hora: string;
-  status: string;
+  descricao?: string;
 }
 
 export default function PainelClienteAgendar() {
@@ -36,123 +34,120 @@ export default function PainelClienteAgendar() {
 
   const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
-  const [formData, setFormData] = useState({
-    servicoId: '',
-    barbeiroId: '',
-    data: '',
-    hora: ''
-  });
   const [loading, setLoading] = useState(false);
-  const [horariosDisponiveis, setHorariosDisponiveis] = useState<string[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  const [formData, setFormData] = useState({
+    barbeiro_id: '',
+    servico_id: '',
+    data: '',
+    hora: '',
+    observacoes: ''
+  });
 
   useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [barbeirosRes, servicosRes] = await Promise.all([
+        supabase.from('painel_barbeiros').select('*').eq('ativo', true),
+        supabase.from('painel_servicos').select('*').eq('ativo', true)
+      ]);
+
+      if (barbeirosRes.error) throw barbeirosRes.error;
+      if (servicosRes.error) throw servicosRes.error;
+
+      setBarbeiros(barbeirosRes.data || []);
+      setServicos(servicosRes.data || []);
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os dados necessários.",
+      });
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!cliente) {
       navigate('/painel-cliente/login');
       return;
     }
 
-    carregarDados();
-  }, [cliente, navigate]);
-
-  const carregarDados = async () => {
-    try {
-      const { data: barbeirosData } = await supabase.rpc('get_painel_barbeiros' as any);
-      const { data: servicosData } = await supabase.rpc('get_painel_servicos' as any);
-
-      setBarbeiros((barbeirosData as Barbeiro[]) || []);
-      setServicos((servicosData as Servico[]) || []);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-    }
-  };
-
-  const gerarHorarios = () => {
-    const horarios = [];
-    const agora = new Date();
-    const dataAtual = new Date().toISOString().split('T')[0];
-    const ehHoje = formData.data === dataAtual;
-    const horaAtual = agora.getHours();
-
-    for (let hora = 9; hora <= 19; hora++) {
-      const horarioFormatado = `${hora.toString().padStart(2, '0')}:00`;
-      if (ehHoje && hora <= horaAtual) continue;
-      horarios.push(horarioFormatado);
-    }
-
-    return horarios;
-  };
-
-  const verificarDisponibilidade = async () => {
-    if (!formData.barbeiroId || !formData.data) {
-      setHorariosDisponiveis([]);
-      return;
-    }
-
-    try {
-      const { data: agendamentos } = await supabase.rpc('get_agendamentos_barbeiro_data' as any, {
-        barbeiro_id: formData.barbeiroId,
-        data_agendamento: formData.data
-      });
-
-      const ocupados = (agendamentos as AgendamentoResponse[])?.map(ag => ag.hora) || [];
-      const livres = gerarHorarios().filter(h => !ocupados.includes(h));
-      setHorariosDisponiveis(livres);
-    } catch (error) {
-      console.error('Erro ao verificar disponibilidade:', error);
-    }
-  };
-
-  useEffect(() => {
-    verificarDisponibilidade();
-  }, [formData.barbeiroId, formData.data]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.servicoId || !formData.barbeiroId || !formData.data || !formData.hora) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!cliente?.id) {
-      toast({
-        title: "Erro",
-        description: "Cliente não encontrado. Faça login novamente.",
-        variant: "destructive"
-      });
-      navigate('/painel-cliente/login');
-      return;
-    }
-
     setLoading(true);
+
     try {
-      const { error } = await supabase.rpc('create_painel_agendamento' as any, {
-        cliente_id: cliente.id,
-        barbeiro_id: formData.barbeiroId,
-        servico_id: formData.servicoId,
-        data: formData.data,
-        hora: formData.hora
+      const { error } = await supabase
+        .from('painel_agendamentos')
+        .insert({
+          cliente_id: cliente.id,
+          barbeiro_id: formData.barbeiro_id,
+          servico_id: formData.servico_id,
+          data: formData.data,
+          hora: formData.hora,
+          observacoes: formData.observacoes,
+          status: 'agendado'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Agendamento realizado!",
+        description: "Seu agendamento foi criado com sucesso.",
+        duration: 3000,
       });
 
-      if (error) {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-        return;
-      }
+      // Reset form
+      setFormData({
+        barbeiro_id: '',
+        servico_id: '',
+        data: '',
+        hora: '',
+        observacoes: ''
+      });
 
-      toast({ title: "Sucesso", description: "Agendamento criado com sucesso." });
-      navigate('/painel-cliente/dashboard');
-    } catch (err) {
-      toast({ title: "Erro", description: "Erro inesperado.", variant: "destructive" });
+      // Navigate to appointments after a short delay
+      setTimeout(() => {
+        navigate('/painel-cliente/agendamentos');
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('Erro ao criar agendamento:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao agendar",
+        description: error.message || "Não foi possível realizar o agendamento.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  if (!cliente) return null;
+  const selectedService = servicos.find(s => s.id === formData.servico_id);
+
+  if (!cliente) {
+    navigate('/painel-cliente/login');
+    return null;
+  }
+
+  if (loadingData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -177,16 +172,16 @@ export default function PainelClienteAgendar() {
   };
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative overflow-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-emerald-600/5 to-teal-600/5" />
+      <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-emerald-600/5 to-green-600/5" />
       
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto min-h-screen">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6 lg:space-y-8"
+          className="space-y-6"
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -200,10 +195,10 @@ export default function PainelClienteAgendar() {
               Voltar
             </Button>
             <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                Agendar Corte
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-green-400 bg-clip-text text-transparent">
+                Novo Agendamento
               </h1>
-              <p className="text-gray-400 text-lg mt-2">Reserve seu horário de forma rápida e fácil</p>
+              <p className="text-gray-400 text-base sm:text-lg mt-2">Escolha o melhor horário para você</p>
             </div>
           </motion.div>
 
@@ -213,35 +208,31 @@ export default function PainelClienteAgendar() {
               <CardHeader className="pb-6">
                 <CardTitle className="text-xl lg:text-2xl text-white flex items-center gap-3">
                   <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
-                    <Scissors className="h-6 w-6 text-white" />
+                    <Calendar className="h-6 w-6 text-white" />
                   </div>
-                  Novo Agendamento
+                  Detalhes do Agendamento
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+
+              <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Serviço */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
+                    <motion.div variants={itemVariants} className="space-y-3">
                       <Label htmlFor="servico" className="text-white text-base font-medium flex items-center gap-2">
-                        <Star className="h-4 w-4 text-green-400" />
+                        <Scissors className="h-4 w-4 text-green-400" />
                         Serviço
                       </Label>
-                      <Select value={formData.servicoId} onValueChange={(value) => setFormData(prev => ({ ...prev, servicoId: value }))}>
-                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white h-12 rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors">
-                          <SelectValue placeholder="Selecione um serviço" />
+                      <Select value={formData.servico_id} onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}>
+                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500">
+                          <SelectValue placeholder="Escolha um serviço" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-800 border-slate-600">
-                          {servicos.map(servico => (
-                            <SelectItem key={servico.id} value={servico.id} className="text-white hover:bg-slate-700">
+                          {servicos.map((servico) => (
+                            <SelectItem key={servico.id} value={servico.id}>
                               <div className="flex justify-between items-center w-full">
                                 <span>{servico.nome}</span>
-                                <span className="text-green-400 font-semibold ml-4">
-                                  R$ {servico.preco.toFixed(2)} ({servico.duracao}min)
-                                </span>
+                                <span className="text-green-400 font-semibold ml-4">R$ {servico.preco.toFixed(2)}</span>
                               </div>
                             </SelectItem>
                           ))}
@@ -250,21 +241,18 @@ export default function PainelClienteAgendar() {
                     </motion.div>
 
                     {/* Barbeiro */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
+                    <motion.div variants={itemVariants} className="space-y-3">
                       <Label htmlFor="barbeiro" className="text-white text-base font-medium flex items-center gap-2">
                         <User className="h-4 w-4 text-green-400" />
                         Barbeiro
                       </Label>
-                      <Select value={formData.barbeiroId} onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiroId: value }))}>
-                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white h-12 rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors">
-                          <SelectValue placeholder="Selecione um barbeiro" />
+                      <Select value={formData.barbeiro_id} onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}>
+                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500">
+                          <SelectValue placeholder="Escolha um barbeiro" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-800 border-slate-600">
-                          {barbeiros.map(barbeiro => (
-                            <SelectItem key={barbeiro.id} value={barbeiro.id} className="text-white hover:bg-slate-700">
+                          {barbeiros.map((barbeiro) => (
+                            <SelectItem key={barbeiro.id} value={barbeiro.id}>
                               {barbeiro.nome}
                             </SelectItem>
                           ))}
@@ -273,63 +261,83 @@ export default function PainelClienteAgendar() {
                     </motion.div>
 
                     {/* Data */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
+                    <motion.div variants={itemVariants} className="space-y-3">
                       <Label htmlFor="data" className="text-white text-base font-medium flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-green-400" />
                         Data
                       </Label>
                       <Input
+                        id="data"
                         type="date"
                         value={formData.data}
                         onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
+                        className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500"
                         min={new Date().toISOString().split('T')[0]}
-                        className="bg-slate-800/50 border-slate-600 text-white h-12 rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500"
                         required
                       />
                     </motion.div>
 
                     {/* Hora */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
+                    <motion.div variants={itemVariants} className="space-y-3">
                       <Label htmlFor="hora" className="text-white text-base font-medium flex items-center gap-2">
                         <Clock className="h-4 w-4 text-green-400" />
                         Horário
                       </Label>
-                      <Select value={formData.hora} onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}>
-                        <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white h-12 rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors">
-                          <SelectValue placeholder="Selecione um horário" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-slate-800 border-slate-600">
-                          {horariosDisponiveis.map(horario => (
-                            <SelectItem key={horario} value={horario} className="text-white hover:bg-slate-700">
-                              {horario}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {formData.barbeiroId && formData.data && horariosDisponiveis.length === 0 && (
-                        <p className="text-red-400 text-sm flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          Nenhum horário disponível para esta data.
-                        </p>
-                      )}
+                      <Input
+                        id="hora"
+                        type="time"
+                        value={formData.hora}
+                        onChange={(e) => setFormData(prev => ({ ...prev, hora: e.target.value }))}
+                        className="bg-slate-800/50 border-slate-600 text-white h-12 text-base rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500"
+                        min="08:00"
+                        max="20:00"
+                        required
+                      />
                     </motion.div>
                   </div>
 
+                  {/* Service Info */}
+                  {selectedService && (
+                    <motion.div
+                      variants={itemVariants}
+                      className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-xl p-4 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-white font-semibold text-lg">{selectedService.nome}</h3>
+                          <p className="text-green-400 text-sm mt-1">Duração: {selectedService.duracao} minutos</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 text-green-400 font-bold text-xl">
+                            <DollarSign className="h-5 w-5" />
+                            {selectedService.preco.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Observações */}
+                  <motion.div variants={itemVariants} className="space-y-3">
+                    <Label htmlFor="observacoes" className="text-white text-base font-medium">
+                      Observações (opcional)
+                    </Label>
+                    <Textarea
+                      id="observacoes"
+                      value={formData.observacoes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+                      className="bg-slate-800/50 border-slate-600 text-white rounded-xl backdrop-blur-sm hover:border-slate-500 transition-colors focus:border-green-500 resize-none"
+                      placeholder="Alguma observação especial para seu agendamento..."
+                      rows={3}
+                    />
+                  </motion.div>
+
                   {/* Submit Button */}
-                  <motion.div 
-                    variants={itemVariants}
-                    className="pt-6"
-                  >
+                  <motion.div variants={itemVariants} className="pt-6">
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold h-14 text-base rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
-                      disabled={loading}
+                      disabled={loading || !formData.barbeiro_id || !formData.servico_id || !formData.data || !formData.hora}
                     >
                       {loading ? (
                         <motion.div
@@ -338,7 +346,7 @@ export default function PainelClienteAgendar() {
                           className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
                         />
                       ) : (
-                        <Calendar className="h-5 w-5 mr-2" />
+                        <CheckCircle className="h-5 w-5 mr-2" />
                       )}
                       {loading ? 'Agendando...' : 'Confirmar Agendamento'}
                     </Button>

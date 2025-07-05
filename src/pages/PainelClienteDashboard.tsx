@@ -97,7 +97,7 @@ export default function PainelClienteDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -130,7 +130,7 @@ export default function PainelClienteDashboard() {
   };
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative overflow-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5" />
       
@@ -267,16 +267,20 @@ export default function PainelClienteDashboard() {
                             <h4 className="text-white font-semibold text-base lg:text-lg truncate">
                               {agendamento.painel_servicos.nome}
                             </h4>
-                            <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
-                              <Users className="h-4 w-4" />
-                              <span className="truncate">{agendamento.painel_barbeiros.nome}</span>
-                              <span>•</span>
-                              <Clock className="h-4 w-4" />
-                              <span>{format(new Date(agendamento.data), 'dd/MM', { locale: ptBR })} às {agendamento.hora}</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm text-gray-400 mt-1">
+                              <div className="flex items-center gap-1">
+                                <Users className="h-4 w-4" />
+                                <span className="truncate">{agendamento.painel_barbeiros.nome}</span>
+                              </div>
+                              <span className="hidden sm:inline">•</span>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span>{format(new Date(agendamento.data), 'dd/MM', { locale: ptBR })} às {agendamento.hora}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 flex-shrink-0">
                           {getStatusBadge(agendamento.status)}
                           <span className="text-amber-400 font-bold text-sm lg:text-base">
                             R$ {agendamento.painel_servicos.preco.toFixed(2)}

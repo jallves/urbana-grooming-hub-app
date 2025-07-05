@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -121,16 +122,16 @@ export default function PainelClienteMeusAgendamentos() {
   };
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative overflow-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-pink-600/5 to-purple-600/5" />
       
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto min-h-screen">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6 lg:space-y-8 h-full flex flex-col"
+          className="space-y-6"
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -144,10 +145,10 @@ export default function PainelClienteMeusAgendamentos() {
               Voltar
             </Button>
             <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                 Meus Agendamentos
               </h1>
-              <p className="text-gray-400 text-lg mt-2">Acompanhe todos os seus agendamentos</p>
+              <p className="text-gray-400 text-base sm:text-lg mt-2">Acompanhe todos os seus agendamentos</p>
             </div>
             <Button
               onClick={() => navigate('/painel-cliente/agendar')}
@@ -159,34 +160,36 @@ export default function PainelClienteMeusAgendamentos() {
           </motion.div>
 
           {/* Filters */}
-          <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
-            {[
-              { key: 'todos', label: 'Todos', color: 'from-gray-500 to-gray-600' },
-              { key: 'agendado', label: 'Agendados', color: 'from-blue-500 to-blue-600' },
-              { key: 'confirmado', label: 'Confirmados', color: 'from-green-500 to-green-600' },
-              { key: 'concluido', label: 'Concluídos', color: 'from-purple-500 to-purple-600' },
-              { key: 'cancelado', label: 'Cancelados', color: 'from-red-500 to-red-600' }
-            ].map((filtro) => (
-              <Button
-                key={filtro.key}
-                onClick={() => setFiltroStatus(filtro.key)}
-                variant={filtroStatus === filtro.key ? "default" : "outline"}
-                size="sm"
-                className={`rounded-xl px-4 py-2 transition-all duration-300 ${
-                  filtroStatus === filtro.key 
-                    ? `bg-gradient-to-r ${filtro.color} text-white shadow-lg` 
-                    : 'border-slate-600 text-gray-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-500'
-                }`}
-              >
-                {filtro.label}
-              </Button>
-            ))}
+          <motion.div variants={itemVariants} className="overflow-x-auto">
+            <div className="flex gap-3 pb-2">
+              {[
+                { key: 'todos', label: 'Todos', color: 'from-gray-500 to-gray-600' },
+                { key: 'agendado', label: 'Agendados', color: 'from-blue-500 to-blue-600' },
+                { key: 'confirmado', label: 'Confirmados', color: 'from-green-500 to-green-600' },
+                { key: 'concluido', label: 'Concluídos', color: 'from-purple-500 to-purple-600' },
+                { key: 'cancelado', label: 'Cancelados', color: 'from-red-500 to-red-600' }
+              ].map((filtro) => (
+                <Button
+                  key={filtro.key}
+                  onClick={() => setFiltroStatus(filtro.key)}
+                  variant={filtroStatus === filtro.key ? "default" : "outline"}
+                  size="sm"
+                  className={`flex-shrink-0 rounded-xl px-4 py-2 transition-all duration-300 ${
+                    filtroStatus === filtro.key 
+                      ? `bg-gradient-to-r ${filtro.color} text-white shadow-lg` 
+                      : 'border-slate-600 text-gray-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-500'
+                  }`}
+                >
+                  {filtro.label}
+                </Button>
+              ))}
+            </div>
           </motion.div>
 
           {/* Content */}
-          <motion.div variants={itemVariants} className="flex-1">
+          <motion.div variants={itemVariants} className="pb-6">
             {loading ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center py-12">
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -194,19 +197,19 @@ export default function PainelClienteMeusAgendamentos() {
                 />
               </div>
             ) : agendamentosFiltrados.length === 0 ? (
-              <Card className="bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl h-full flex items-center justify-center">
-                <CardContent className="p-12 text-center">
+              <Card className="bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl">
+                <CardContent className="p-8 sm:p-12 text-center">
                   <motion.div
                     animate={{ scale: [1, 1.1, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className="mb-6"
                   >
-                    <Scissors className="h-20 w-20 text-gray-500 mx-auto" />
+                    <Scissors className="h-16 sm:h-20 w-16 sm:w-20 text-gray-500 mx-auto" />
                   </motion.div>
-                  <h3 className="text-2xl font-semibold text-white mb-4">
+                  <h3 className="text-xl sm:text-2xl font-semibold text-white mb-4">
                     {filtroStatus === 'todos' ? 'Nenhum agendamento encontrado' : `Nenhum agendamento ${filtroStatus}`}
                   </h3>
-                  <p className="text-gray-400 mb-8 text-lg">
+                  <p className="text-gray-400 mb-8 text-base sm:text-lg">
                     {filtroStatus === 'todos' 
                       ? 'Você ainda não possui agendamentos. Que tal marcar um horário?' 
                       : `Você não possui agendamentos com status "${filtroStatus}".`
@@ -222,7 +225,7 @@ export default function PainelClienteMeusAgendamentos() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                 <AnimatePresence>
                   {agendamentosFiltrados.map((agendamento, index) => (
                     <motion.div
@@ -235,7 +238,7 @@ export default function PainelClienteMeusAgendamentos() {
                       whileHover={{ scale: 1.02, y: -5 }}
                       className="group"
                     >
-                      <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl hover:border-slate-600/70 transition-all duration-300 h-full shadow-xl hover:shadow-2xl">
+                      <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl hover:border-slate-600/70 transition-all duration-300 shadow-xl hover:shadow-2xl">
                         <CardHeader className="pb-4">
                           <div className="flex justify-between items-start gap-3">
                             <CardTitle className="text-white text-lg font-semibold group-hover:text-purple-300 transition-colors">

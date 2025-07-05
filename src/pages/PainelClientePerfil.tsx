@@ -89,16 +89,16 @@ export default function PainelClientePerfil() {
   };
 
   return (
-    <div className="h-full w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative overflow-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-orange-600/5 via-red-600/5 to-orange-600/5" />
       
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto min-h-screen">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6 lg:space-y-8"
+          className="space-y-6"
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -112,10 +112,10 @@ export default function PainelClientePerfil() {
               Voltar
             </Button>
             <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 bg-clip-text text-transparent">
                 Editar Perfil
               </h1>
-              <p className="text-gray-400 text-lg mt-2">Mantenha suas informações sempre atualizadas</p>
+              <p className="text-gray-400 text-base sm:text-lg mt-2">Mantenha suas informações sempre atualizadas</p>
             </div>
           </motion.div>
 
