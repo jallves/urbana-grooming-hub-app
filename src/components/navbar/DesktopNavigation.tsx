@@ -40,7 +40,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
           </a>
         </NavigationMenuItem>
         
-        {/* Painel do Cliente - substitui a antiga área do cliente */}
+        {/* Painel do Cliente */}
         <NavigationMenuItem>
           <Link 
             to="/painel-cliente/login"
@@ -81,9 +81,9 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
               <Link 
                 to="/auth" 
                 className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
-                title="Admin"
+                title="Admin Login"
               >
-                <Shield size={18} />
+                <Shield size={18} className="text-urbana-gold" />
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>

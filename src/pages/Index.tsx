@@ -16,17 +16,6 @@ const Index = () => {
       <Gallery />
       <Footer />
       <WhatsAppButton />
-      
-      {/* Link para o Painel do Cliente */}
-      <div className="fixed bottom-4 left-4 z-50">
-        <a 
-          href="/painel-cliente/login"
-          className="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg font-semibold flex items-center gap-2 shadow-lg transition-all"
-        >
-          <User className="h-4 w-4" />
-          Painel Cliente
-        </a>
-      </div>
     </div>
   );
 };
