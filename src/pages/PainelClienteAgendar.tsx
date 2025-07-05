@@ -51,12 +51,10 @@ export default function PainelClienteAgendar() {
 
   const fetchData = async () => {
     try {
-      // Fetch barbeiros without the 'ativo' filter since the column doesn't exist
       const { data: barbeirosData, error: barbeirosError } = await supabase
         .from('painel_barbeiros')
         .select('*');
       
-      // Fetch servicos without the 'ativo' filter for consistency
       const { data: servicosData, error: servicosError } = await supabase
         .from('painel_servicos')
         .select('*');
@@ -64,7 +62,6 @@ export default function PainelClienteAgendar() {
       if (barbeirosError) throw barbeirosError;
       if (servicosError) throw servicosError;
 
-      // Map the data to match our interface
       const mappedBarbeiros = (barbeirosData || []).map(barbeiro => ({
         id: barbeiro.id,
         nome: barbeiro.nome,
@@ -116,7 +113,6 @@ export default function PainelClienteAgendar() {
         duration: 3000,
       });
 
-      // Reset form
       setFormData({
         barbeiro_id: '',
         servico_id: '',
@@ -125,7 +121,6 @@ export default function PainelClienteAgendar() {
         observacoes: ''
       });
 
-      // Navigate to appointments after a short delay
       setTimeout(() => {
         navigate('/painel-cliente/agendamentos');
       }, 1500);
@@ -151,7 +146,7 @@ export default function PainelClienteAgendar() {
 
   if (loadingData) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -184,11 +179,10 @@ export default function PainelClienteAgendar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
-      {/* Background Effects - Same as homepage */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
       <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-emerald-600/5 to-green-600/5" />
       
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"

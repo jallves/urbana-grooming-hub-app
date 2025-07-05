@@ -28,18 +28,18 @@ const PainelClienteLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 flex flex-col">
-      {/* Background Effects - Same as homepage */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+      {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-cyan-600/10 animate-pulse" />
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '6s' }} />
       <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '8s', animationDelay: '2s' }} />
       
       <LoadingBar isLoading={isLoading} />
       
-      {/* Header - Responsive */}
+      {/* Header - Mobile Optimized */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-700/50 shadow-xl">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between">
             <motion.div 
               className="flex items-center gap-3"
               initial={{ opacity: 0, x: -20 }}
@@ -61,10 +61,7 @@ const PainelClienteLayout: React.FC = () => {
             </motion.div>
             
             <div className="flex items-center gap-2 sm:gap-3">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -79,10 +76,7 @@ const PainelClienteLayout: React.FC = () => {
                 Olá, {cliente?.nome?.split(' ')[0]}
               </span>
               
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -98,132 +92,58 @@ const PainelClienteLayout: React.FC = () => {
       </header>
 
       {/* Mobile Navigation */}
-      <nav className="lg:hidden sticky top-[73px] sm:top-[81px] z-40 backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50 overflow-x-auto">
-        <div className="flex px-2 min-w-max">
-          {navigationItems.map((item, index) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            
-            return (
-              <motion.div
-                key={item.path}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex-shrink-0"
-              >
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate(item.path)}
-                  className={`px-4 py-3 mx-1 my-2 rounded-xl transition-all duration-300 relative overflow-hidden ${
-                    isActive 
-                      ? `bg-gradient-to-r ${item.color} text-white shadow-lg` 
-                      : 'text-gray-400 hover:text-white hover:bg-slate-800/50'
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"
-                      initial={false}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <Icon className="h-4 w-4 mr-2 relative z-10" />
-                  <span className="text-xs sm:text-sm font-medium relative z-10">{item.label}</span>
-                </Button>
-              </motion.div>
-            );
-          })}
-        </div>
-      </nav>
-
-      <div className="flex flex-1 relative max-w-7xl mx-auto w-full">
-        {/* Desktop Sidebar */}
-        <aside className="hidden lg:flex lg:flex-col w-80 xl:w-96 backdrop-blur-xl bg-slate-900/50 border-r border-slate-700/50 flex-shrink-0 relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-800/20 to-transparent" />
-          
-          <nav className="p-6 space-y-3 flex-1 relative z-10">
-            <h2 className="text-lg font-semibold text-gray-300 mb-6 px-3">Navegação</h2>
+      <nav className="lg:hidden sticky top-[70px] sm:top-[78px] z-40 backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex overflow-x-auto scrollbar-hide">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               
               return (
-                <motion.div 
-                  key={item.path} 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                <motion.div
+                  key={item.path}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  whileHover={{ x: 4 }} 
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  className="flex-shrink-0"
                 >
                   <Button
                     variant="ghost"
                     onClick={() => navigate(item.path)}
-                    className={`w-full justify-start gap-4 py-4 px-4 rounded-xl transition-all duration-300 relative overflow-hidden group ${
+                    className={`px-4 py-3 mx-1 my-2 rounded-xl transition-all duration-300 relative overflow-hidden ${
                       isActive 
-                        ? `bg-gradient-to-r ${item.color} text-white shadow-xl border-l-4 border-white/30` 
+                        ? `bg-gradient-to-r ${item.color} text-white shadow-lg` 
                         : 'text-gray-400 hover:text-white hover:bg-slate-800/50'
                     }`}
                   >
                     {isActive && (
                       <motion.div
-                        layoutId="desktopActiveTab"
-                        className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"
+                        layoutId="mobileActiveTab"
+                        className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent"
                         initial={false}
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
                     )}
-                    <Icon className="h-5 w-5 relative z-10" />
-                    <span className="font-medium relative z-10">{item.label}</span>
-                    {isActive && (
-                      <motion.div
-                        className="ml-auto w-2 h-2 bg-white rounded-full relative z-10"
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      />
-                    )}
+                    <Icon className="h-4 w-4 mr-2 relative z-10" />
+                    <span className="text-xs sm:text-sm font-medium relative z-10 whitespace-nowrap">{item.label}</span>
                   </Button>
                 </motion.div>
               );
             })}
-          </nav>
+          </div>
+        </div>
+      </nav>
 
-          {/* Profile Card in Sidebar */}
-          <motion.div 
-            className="p-6 border-t border-slate-700/50 relative z-10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-xl p-4 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{cliente?.nome}</p>
-                  <p className="text-xs text-gray-400 truncate">{cliente?.email}</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </aside>
-
-        {/* Main Content - Full width container like homepage */}
-        <main className="flex-1 relative w-full">
-          <AnimatePresence mode="wait">
-            <PageTransition mode="fade">
-              <div className="w-full">
-                <Outlet />
-              </div>
-            </PageTransition>
-          </AnimatePresence>
-        </main>
-      </div>
+      {/* Main Content */}
+      <main className="relative">
+        <AnimatePresence mode="wait">
+          <PageTransition mode="fade">
+            <Outlet />
+          </PageTransition>
+        </AnimatePresence>
+      </main>
     </div>
   );
 };
