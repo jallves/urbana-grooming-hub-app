@@ -43,7 +43,9 @@ const ClientList: React.FC<ClientListProps> = ({
                          client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          client.phone.includes(searchQuery);
     
-    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
+    // Default status to 'active' if not present
+    const clientStatus = client.status || 'active';
+    const matchesStatus = statusFilter === 'all' || clientStatus === statusFilter;
     
     return matchesSearch && matchesStatus;
   });

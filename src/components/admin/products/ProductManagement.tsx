@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -93,6 +92,7 @@ const ProductManagement: React.FC = () => {
       {/* Modais dos Formulários */}
       {isProductFormOpen && (
         <ProductForm
+          productId={null}
           onClose={() => setIsProductFormOpen(false)}
           onSuccess={() => {
             setIsProductFormOpen(false);
@@ -103,6 +103,7 @@ const ProductManagement: React.FC = () => {
 
       {isServiceFormOpen && (
         <ServiceForm
+          serviceId={null}
           onClose={() => setIsServiceFormOpen(false)}
           onSuccess={() => {
             setIsServiceFormOpen(false);
