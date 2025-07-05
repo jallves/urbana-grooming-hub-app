@@ -14,7 +14,7 @@ const AdminEmployees: React.FC = () => {
             <ModernCard
               title="Gestão de Funcionários"
               description="Gerencie administradores, gerentes e barbeiros da Urbana Barbearia"
-              gradient="from-pink-500/10 to-rose-600/10"
+              gradient="from-black-500/10 to-rose-600/10"
             >
               <EmployeeManagement />
             </ModernCard>
