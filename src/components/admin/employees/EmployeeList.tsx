@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Table,
@@ -21,17 +22,23 @@ import { format } from 'date-fns';
 import { Employee } from './types';
 
 interface EmployeeListProps {
-  employees: Employee[];
-  loading: boolean;
-  onEdit: (employee: Employee) => void;
-  onDelete: (employeeId: string) => void;
+  searchQuery: string;
+  roleFilter: string;
+  statusFilter: string;
+  employees?: Employee[];
+  loading?: boolean;
+  onEdit?: (employee: Employee) => void;
+  onDelete?: (employeeId: string) => void;
 }
 
 const EmployeeList: React.FC<EmployeeListProps> = ({
-  employees,
-  loading,
-  onEdit,
-  onDelete,
+  searchQuery,
+  roleFilter,
+  statusFilter,
+  employees = [],
+  loading = false,
+  onEdit = () => {},
+  onDelete = () => {},
 }) => {
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -63,6 +70,17 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     }
   };
 
+  // Filter employees based on search and filters
+  const filteredEmployees = employees.filter(employee => {
+    const matchesSearch = employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         employee.email.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesRole = roleFilter === 'all' || employee.role === roleFilter;
+    const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
+    
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
   if (loading) {
     return (
       <div className="flex justify-center items-center p-12 bg-gray-900 rounded-lg border border-gray-700">
@@ -89,8 +107,8 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {employees.length > 0 ? (
-            employees.map((employee) => (
+          {filteredEmployees.length > 0 ? (
+            filteredEmployees.map((employee) => (
               <TableRow key={employee.id} className="border-gray-700 hover:bg-gray-800/50 transition-colors">
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">

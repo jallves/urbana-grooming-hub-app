@@ -12,13 +12,22 @@ import LoadingClientState from './components/LoadingClientState';
 import { useClientDelete } from './hooks/useClientDelete';
 
 interface ClientListProps {
-  clients: Client[];
-  isLoading: boolean;
-  onEdit: (id: string) => void;
-  onDelete: () => void;
+  searchQuery: string;
+  statusFilter: string;
+  clients?: Client[];
+  isLoading?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: () => void;
 }
 
-const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onDelete }) => {
+const ClientList: React.FC<ClientListProps> = ({ 
+  searchQuery, 
+  statusFilter, 
+  clients = [], 
+  isLoading = false, 
+  onEdit = () => {}, 
+  onDelete = () => {} 
+}) => {
   const {
     deleteDialogOpen,
     setDeleteDialogOpen,
@@ -28,11 +37,22 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
     confirmDelete
   } = useClientDelete(onDelete);
 
+  // Filter clients based on search and status
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         client.phone.includes(searchQuery);
+    
+    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
   if (isLoading) {
     return <LoadingClientState />;
   }
 
-  if (clients.length === 0) {
+  if (filteredClients.length === 0) {
     return <EmptyClientState />;
   }
 
@@ -41,15 +61,15 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
       <Card>
         <CardContent className="p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Lista de Clientes ({clients.length})</h3>
-            <ExportButton clients={clients} />
+            <h3 className="text-lg font-semibold">Lista de Clientes ({filteredClients.length})</h3>
+            <ExportButton clients={filteredClients} />
           </div>
           
           <div className="overflow-x-auto">
             <Table>
               <ClientTableHeader />
               <TableBody>
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <ClientTableRow
                     key={client.id}
                     client={client}
