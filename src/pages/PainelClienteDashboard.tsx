@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
+import { useToast } from '@/hooks/use-toast';
 
 interface Agendamento {
   id: string;
