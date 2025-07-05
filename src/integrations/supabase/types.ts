@@ -1672,6 +1672,7 @@ export type Database = {
       painel_clientes: {
         Row: {
           created_at: string
+          data_nascimento: string | null
           email: string
           id: string
           nome: string
@@ -1681,6 +1682,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          data_nascimento?: string | null
           email: string
           id?: string
           nome: string
@@ -1690,6 +1692,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          data_nascimento?: string | null
           email?: string
           id?: string
           nome?: string
@@ -2686,6 +2689,7 @@ export type Database = {
         Args: { email: string; senha_hash: string }
         Returns: {
           created_at: string
+          data_nascimento: string | null
           email: string
           id: string
           nome: string
@@ -2767,6 +2771,7 @@ export type Database = {
         }
         Returns: {
           created_at: string
+          data_nascimento: string | null
           email: string
           id: string
           nome: string
@@ -2842,6 +2847,7 @@ export type Database = {
         Args: { cliente_id: string }
         Returns: {
           created_at: string
+          data_nascimento: string | null
           email: string
           id: string
           nome: string
@@ -2888,6 +2894,7 @@ export type Database = {
         }
         Returns: {
           created_at: string
+          data_nascimento: string | null
           email: string
           id: string
           nome: string

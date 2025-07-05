@@ -1,3 +1,4 @@
+
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ClientManagement from '@/components/admin/clients/ClientManagement';
@@ -18,7 +19,7 @@ const AdminClients: React.FC = () => {
             contentClassName="overflow-x-auto pb-2"
           >
             <div className="min-w-[280px] sm:min-w-[350px] md:min-w-full">
-              <ClientManagement mobileView={true} />
+              <ClientManagement />
             </div>
           </ModernCard>
         </div>
