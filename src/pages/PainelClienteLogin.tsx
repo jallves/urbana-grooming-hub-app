@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,6 +22,7 @@ export default function PainelClienteLogin() {
     nome: '',
     email: '',
     whatsapp: '',
+    dataNascimento: '',
     senha: '',
     confirmarSenha: ''
   });
@@ -98,6 +98,7 @@ export default function PainelClienteLogin() {
       nome: formDataCadastro.nome,
       email: formDataCadastro.email,
       whatsapp: formDataCadastro.whatsapp,
+      dataNascimento: formDataCadastro.dataNascimento,
       senha: formDataCadastro.senha
     });
 
@@ -266,6 +267,18 @@ export default function PainelClienteLogin() {
                         className="bg-zinc-800 border-zinc-600 text-white"
                         placeholder="(11) 99999-9999"
                         maxLength={15}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="dataNascimento" className="text-white">Data de Nascimento</Label>
+                      <Input
+                        id="dataNascimento"
+                        type="date"
+                        value={formDataCadastro.dataNascimento}
+                        onChange={(e) => setFormDataCadastro(prev => ({ ...prev, dataNascimento: e.target.value }))}
+                        className="bg-zinc-800 border-zinc-600 text-white"
                         required
                       />
                     </div>
