@@ -28,7 +28,7 @@ const AdminBarbers: React.FC = () => {
             onValueChange={(value) => setActiveTab(value as 'barbers' | 'roles')}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200">
+            <TabsList className="grid w-full grid-cols-2 bg-black-100 border border-gray-200">
               <TabsTrigger 
                 value="barbers" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-blue-500 text-black"
