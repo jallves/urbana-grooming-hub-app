@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -95,7 +96,8 @@ export default function PainelClienteDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+      /* DEBUG: Full-width loading container */
+      <div className="flex items-center justify-center min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -128,19 +130,20 @@ export default function PainelClienteDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      {/* Overlay de gradiente */}
-      <div className="fixed inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5 pointer-events-none" />
+    /* DEBUG: Full-width main container */
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+      {/* DEBUG: Full-width overlay */}
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5 pointer-events-none" />
       
-      {/* Container principal */}
-      <div className="relative w-full px-4 py-6 mx-auto sm:px-6 lg:px-8 lg:py-8">
+      {/* DEBUG: Full-width content container with mobile padding only */}
+      <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="w-full space-y-6 lg:space-y-8"
         >
-          {/* Header */}
+          {/* DEBUG: Full-width header */}
           <div className="flex flex-col justify-between w-full gap-4 md:flex-row md:items-center">
             <div>
               <h1 className="text-2xl font-bold text-white sm:text-3xl">Bem-vindo, {cliente.nome}</h1>
@@ -152,40 +155,42 @@ export default function PainelClienteDashboard() {
             </Button>
           </div>
 
-          {/* Grid de estatísticas */}
-          <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* DEBUG: Full-width statistics grid - expandable columns */}
+          <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
             {/* Cards de estatísticas aqui */}
           </div>
 
-          {/* Seção de agendamentos */}
+          {/* DEBUG: Full-width appointments section */}
           <div className="w-full space-y-4">
             <h2 className="text-xl font-semibold text-white">Seus Agendamentos</h2>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* DEBUG: Full-width appointments grid - responsive columns */}
+            <div className="w-full grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
               {agendamentos.map((agendamento) => (
-                <motion.div key={agendamento.id} variants={itemVariants}>
-                  <Card className="border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+                <motion.div key={agendamento.id} variants={itemVariants} className="w-full">
+                  {/* DEBUG: Full-width card */}
+                  <Card className="w-full border-gray-800 bg-gray-900/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                      <CardTitle className="text-sm font-medium text-white">
+                      <CardTitle className="text-sm font-medium text-white truncate pr-2">
                         {agendamento.painel_servicos.nome}
                       </CardTitle>
                       {getStatusBadge(agendamento.status)}
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center space-x-2 text-sm text-gray-400">
-                          <Calendar className="w-4 h-4" />
-                          <span>
+                        <div className="flex items-center space-x-2 text-sm text-gray-400 min-w-0 flex-1">
+                          <Calendar className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">
                             {format(new Date(agendamento.data), 'PPP', { locale: ptBR })}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2 text-sm text-gray-400">
-                          <Clock className="w-4 h-4" />
+                        <div className="flex items-center space-x-2 text-sm text-gray-400 ml-2">
+                          <Clock className="w-4 h-4 flex-shrink-0" />
                           <span>{agendamento.hora}</span>
                         </div>
                       </div>
-                      <div className="flex items-center mt-4 space-x-2 text-sm text-gray-400">
-                        <Scissors className="w-4 h-4" />
-                        <span>Barbeiro: {agendamento.painel_barbeiros.nome}</span>
+                      <div className="flex items-center mt-4 space-x-2 text-sm text-gray-400 min-w-0">
+                        <Scissors className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">Barbeiro: {agendamento.painel_barbeiros.nome}</span>
                       </div>
                     </CardContent>
                   </Card>
