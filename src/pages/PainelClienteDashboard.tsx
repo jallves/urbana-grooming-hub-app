@@ -130,7 +130,7 @@ export default function PainelClienteDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5" />
-      <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-4 max-w-full mx-auto">
+      <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-4 max-w-full mx-auto lg:pl-64">
         <motion.div
           variants={containerVariants}
           initial="hidden"
