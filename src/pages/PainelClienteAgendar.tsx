@@ -50,34 +50,28 @@ export default function PainelClienteAgendar() {
 
   const fetchData = async () => {
     try {
-      // Explicitly type the queries to avoid TypeScript deep instantiation issues
-      const barbeirosQuery = supabase
+      // Fetch barbeiros without the 'ativo' filter since the column doesn't exist
+      const { data: barbeirosData, error: barbeirosError } = await supabase
         .from('painel_barbeiros')
-        .select('*')
-        .eq('ativo', true);
+        .select('*');
       
-      const servicosQuery = supabase
+      // Fetch servicos without the 'ativo' filter for consistency
+      const { data: servicosData, error: servicosError } = await supabase
         .from('painel_servicos')
-        .select('*')
-        .eq('ativo', true);
+        .select('*');
 
-      const [barbeirosRes, servicosRes] = await Promise.all([
-        barbeirosQuery,
-        servicosQuery
-      ]);
-
-      if (barbeirosRes.error) throw barbeirosRes.error;
-      if (servicosRes.error) throw servicosRes.error;
+      if (barbeirosError) throw barbeirosError;
+      if (servicosError) throw servicosError;
 
       // Map the data to match our interface
-      const mappedBarbeiros = (barbeirosRes.data || []).map(barbeiro => ({
+      const mappedBarbeiros = (barbeirosData || []).map(barbeiro => ({
         id: barbeiro.id,
         nome: barbeiro.nome,
         specialties: barbeiro.specialties || ''
       }));
 
       setBarbeiros(mappedBarbeiros);
-      setServicos(servicosRes.data || []);
+      setServicos(servicosData || []);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
       toast({
