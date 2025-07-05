@@ -50,9 +50,20 @@ export default function PainelClienteAgendar() {
 
   const fetchData = async () => {
     try {
+      // Explicitly type the queries to avoid TypeScript deep instantiation issues
+      const barbeirosQuery = supabase
+        .from('painel_barbeiros')
+        .select('*')
+        .eq('ativo', true);
+      
+      const servicosQuery = supabase
+        .from('painel_servicos')
+        .select('*')
+        .eq('ativo', true);
+
       const [barbeirosRes, servicosRes] = await Promise.all([
-        supabase.from('painel_barbeiros').select('*').eq('ativo', true),
-        supabase.from('painel_servicos').select('*').eq('ativo', true)
+        barbeirosQuery,
+        servicosQuery
       ]);
 
       if (barbeirosRes.error) throw barbeirosRes.error;
