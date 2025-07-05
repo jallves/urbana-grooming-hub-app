@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Scissors, Calendar, Clock, TrendingUp, Star, Users, Award, BarChart3, Timer, CheckCircle, XCircle, Edit, Trash2 } from 'lucide-react';
+import { Plus, Scissors, Calendar, Clock, TrendingUp, Star, Users, Award, BarChart3, Timer, CheckCircle, XCircle, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
@@ -98,12 +99,12 @@ export default function PainelClienteDashboard() {
   };
 
   const handleEditAgendamento = (agendamento: Agendamento) => {
-    // Só permite editar agendamentos com status 'agendado' ou 'confirmado'
-    if (!['agendado', 'confirmado'].includes(agendamento.status)) {
+    // Permite editar agendamentos que NÃO sejam 'concluido'
+    if (agendamento.status === 'concluido') {
       toast({
         variant: "destructive",
         title: "Não é possível editar",
-        description: "Apenas agendamentos com status 'Agendado' ou 'Confirmado' podem ser editados.",
+        description: "Agendamentos concluídos não podem ser editados.",
       });
       return;
     }
@@ -113,12 +114,12 @@ export default function PainelClienteDashboard() {
   };
 
   const handleDeleteAgendamento = async (agendamento: Agendamento) => {
-    // Só permite excluir agendamentos com status 'agendado' ou 'confirmado'
-    if (!['agendado', 'confirmado'].includes(agendamento.status)) {
+    // Permite cancelar agendamentos que NÃO sejam 'concluido'
+    if (agendamento.status === 'concluido') {
       toast({
         variant: "destructive",
         title: "Não é possível cancelar",
-        description: "Apenas agendamentos com status 'Agendado' ou 'Confirmado' podem ser cancelados.",
+        description: "Agendamentos concluídos não podem ser cancelados.",
       });
       return;
     }
@@ -242,36 +243,48 @@ export default function PainelClienteDashboard() {
           animate="visible"
           className="w-full space-y-8"
         >
-          {/* Welcome Header */}
-          <motion.div variants={itemVariants} className="text-center lg:text-left">
-            <div className="inline-flex items-center gap-3 mb-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full blur-md opacity-75" />
-                <div className="relative p-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full">
-                  <Scissors className="h-6 w-6 text-black" />
+          {/* Header with Back Button */}
+          <motion.div variants={itemVariants} className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+            <Button
+              onClick={() => navigate('/')}
+              variant="outline"
+              size="sm"
+              className="border-slate-600 text-gray-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-500 rounded-xl px-4 py-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+            
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-3 mb-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full blur-md opacity-75" />
+                  <div className="relative p-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full">
+                    <Scissors className="h-6 w-6 text-black" />
+                  </div>
+                </div>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-300 bg-clip-text text-transparent">
+                    Olá, {cliente.nome.split(' ')[0]}!
+                  </h1>
+                  <p className="text-gray-400 text-lg mt-2">Bem-vindo de volta ao seu painel pessoal</p>
                 </div>
               </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-300 bg-clip-text text-transparent">
-                  Olá, {cliente.nome.split(' ')[0]}!
-                </h1>
-                <p className="text-gray-400 text-lg mt-2">Bem-vindo de volta ao seu painel pessoal</p>
-              </div>
-            </div>
-            
-            <motion.div
-              variants={itemVariants}
-              className="mt-6"
-            >
-              <Button 
-                onClick={() => navigate('/painel-cliente/agendar')}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-                size="lg"
+              
+              <motion.div
+                variants={itemVariants}
+                className="mt-6"
               >
-                <Plus className="w-5 h-5 mr-2" />
-                Novo Agendamento
-              </Button>
-            </motion.div>
+                <Button 
+                  onClick={() => navigate('/painel-cliente/agendar')}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-semibold px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                  size="lg"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Novo Agendamento
+                </Button>
+              </motion.div>
+            </div>
           </motion.div>
 
           {/* Stats Cards */}
@@ -391,8 +404,8 @@ export default function PainelClienteDashboard() {
                           </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        {['agendado', 'confirmado'].includes(agendamento.status) && (
+                        {/* Action Buttons - Mostra para todos status exceto 'concluido' */}
+                        {agendamento.status !== 'concluido' && (
                           <div className="flex gap-2 pt-2">
                             <Button
                               size="sm"
