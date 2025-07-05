@@ -2,20 +2,21 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ClientAppointmentList from '@/components/admin/client-appointments/ClientAppointmentList';
+import ModernCard from '@/components/ui/containers/ModernCard';
 
 export default function AdminClientAppointments() {
   return (
-    <AdminLayout>
+    <AdminLayout title="Agendamentos de Clientes">
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white font-clash mb-2">
-            Agendamentos de Clientes
-          </h1>
-          <p className="text-gray-400 font-inter">
-            Gerencie os agendamentos criados pelos clientes através do painel do cliente
-          </p>
+        <div className="grid gap-6">
+          <ModernCard
+            title="Painel de Clientes"
+            description="Gerencie os agendamentos criados pelos clientes através do painel do cliente"
+            gradient="from-purple-500/10 to-violet-600/10"
+          >
+            <ClientAppointmentList />
+          </ModernCard>
         </div>
-        <ClientAppointmentList />
       </div>
     </AdminLayout>
   );

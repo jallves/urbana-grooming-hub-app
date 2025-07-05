@@ -1,21 +1,22 @@
 
 import React from 'react';
-import AdminLayout from '../components/admin/AdminLayout';
-import MarketingManagement from '../components/admin/marketing/MarketingManagement';
+import AdminLayout from '@/components/admin/AdminLayout';
+import MarketingManagement from '@/components/admin/marketing/MarketingManagement';
+import ModernCard from '@/components/ui/containers/ModernCard';
 
 const AdminMarketing: React.FC = () => {
   return (
-    <AdminLayout>
+    <AdminLayout title="Marketing">
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white font-clash mb-2">
-            Marketing
-          </h1>
-          <p className="text-gray-400 font-inter">
-            Gerenciamento de campanhas, cupons e estratégias de marketing
-          </p>
+        <div className="grid gap-6">
+          <ModernCard
+            title="Gestão de Marketing"
+            description="Gerenciamento de campanhas, cupons e estratégias de marketing"
+            gradient="from-red-500/10 to-pink-600/10"
+          >
+            <MarketingManagement />
+          </ModernCard>
         </div>
-        <MarketingManagement />
       </div>
     </AdminLayout>
   );

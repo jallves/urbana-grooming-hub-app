@@ -1,22 +1,33 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SidebarProvider } from "@/components/ui/sidebar";
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, Bell, Settings, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from '@/components/ui/badge';
 import { useIsMobile } from '@/hooks/use-mobile';
-import DashboardContainer from '@/components/ui/containers/DashboardContainer';
+import { useState } from 'react';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+  title?: string;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Administrativo" }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -27,50 +38,119 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   };
 
+  const userInitials = user?.email?.charAt(0).toUpperCase() || 'A';
+
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-black text-white overflow-x-hidden panel-responsive">
-        <AdminSidebar />
-        <div className={`flex-1 overflow-auto ${isMobile ? 'pl-0' : 'md:pl-0'}`}>
-          <header className={`panel-header-responsive ${isMobile ? 'pt-16' : ''}`}>
-            <DashboardContainer maxWidth="full" spacing="sm">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                <div>
-                  <h1 className="panel-title-responsive font-bold text-white">Painel Administrativo</h1>
-                  <p className="text-sm text-gray-400">Urbana Barbearia</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white overflow-x-hidden">
+      {/* Modern Background Pattern */}
+      <div className="fixed inset-0 opacity-5 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('/api/placeholder/1920/1080')] bg-cover bg-center mix-blend-overlay"></div>
+        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-full blur-3xl opacity-10"></div>
+        <div className="absolute bottom-20 right-20 w-64 h-64 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-3xl opacity-10"></div>
+      </div>
+
+      <div className="relative z-10 flex min-h-screen">
+        {/* Sidebar - Always visible on desktop */}
+        <div className={`${isMobile ? 'hidden' : 'block'} w-80 flex-shrink-0`}>
+          <AdminSidebar />
+        </div>
+
+        {/* Mobile Sidebar Overlay */}
+        {isMobile && sidebarOpen && (
+          <>
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
+            <div className="fixed inset-y-0 left-0 w-80 z-50">
+              <AdminSidebar onClose={() => setSidebarOpen(false)} />
+            </div>
+          </>
+        )}
+        
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+          {/* Header */}
+          <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 sticky top-0 z-30">
+            <div className="px-4 lg:px-8 py-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSidebarOpen(true)}
+                      className="text-white hover:bg-white/10"
+                    >
+                      <Settings className="h-6 w-6" />
+                    </Button>
+                  )}
+                  <div>
+                    <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent">
+                      {title}
+                    </h1>
+                    <p className="text-sm text-gray-400">Urbana Barbearia</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 md:gap-4">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="panel-text-responsive text-gray-400 hover:text-white flex items-center gap-1 hover:bg-gray-800"
-                    onClick={() => navigate('/')}
-                  >
-                    Ver Site
-                  </Button>
+                
+                <div className="flex items-center gap-3">
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="text-gray-400 hover:text-white hover:bg-gray-800"
-                    onClick={handleLogout}
+                    className="relative text-gray-400 hover:text-white hover:bg-white/10 transition-all"
                   >
-                    <LogOut className="h-5 w-5" />
+                    <Bell className="h-5 w-5" />
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 p-0 border-0 text-xs"></Badge>
                   </Button>
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-800 flex items-center justify-center text-white font-semibold">
-                    {user?.email?.charAt(0).toUpperCase() || 'A'}
-                  </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10 transition-all">
+                        <Avatar className="h-10 w-10 ring-2 ring-urbana-gold/30">
+                          <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-sm font-semibold">
+                            {userInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-black/90 backdrop-blur-lg border-white/20 text-white" align="end">
+                      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-white/10 transition-colors"
+                        onClick={() => navigate('/admin/configuracoes')}
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Perfil
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="cursor-pointer hover:bg-white/10 transition-colors"
+                        onClick={() => navigate('/')}
+                      >
+                        <Settings className="mr-2 h-4 w-4" />
+                        Ver Site
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-white/20" />
+                      <DropdownMenuItem 
+                        className="cursor-pointer text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sair
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-            </DashboardContainer>
+            </div>
           </header>
-          <main className="panel-content-responsive overflow-x-auto">
-            <DashboardContainer maxWidth="full">
+
+          {/* Main Content Area */}
+          <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden">
+            <div className="max-w-full mx-auto">
               {children}
-            </DashboardContainer>
+            </div>
           </main>
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

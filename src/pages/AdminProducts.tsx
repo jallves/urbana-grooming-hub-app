@@ -1,21 +1,22 @@
 
 import React from 'react';
-import AdminLayout from '../components/admin/AdminLayout';
-import ProductManagement from '../components/admin/products/ProductManagement';
+import AdminLayout from '@/components/admin/AdminLayout';
+import ProductManagement from '@/components/admin/products/ProductManagement';
+import ModernCard from '@/components/ui/containers/ModernCard';
 
 const AdminProducts: React.FC = () => {
   return (
-    <AdminLayout>
+    <AdminLayout title="Produtos e Serviços">
       <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white font-clash mb-2">
-            Produtos e Serviços
-          </h1>
-          <p className="text-gray-400 font-inter">
-            Gerenciamento de produtos e serviços da barbearia
-          </p>
+        <div className="grid gap-6">
+          <ModernCard
+            title="Gestão de Produtos"
+            description="Gerenciamento de produtos e serviços da barbearia"
+            gradient="from-teal-500/10 to-cyan-600/10"
+          >
+            <ProductManagement />
+          </ModernCard>
         </div>
-        <ProductManagement />
       </div>
     </AdminLayout>
   );
