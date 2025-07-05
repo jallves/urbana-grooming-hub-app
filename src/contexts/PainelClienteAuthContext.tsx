@@ -24,7 +24,6 @@ interface CadastroData {
   nome: string;
   email: string;
   whatsapp: string;
-  dataNascimento: string;
   senha: string;
 }
 

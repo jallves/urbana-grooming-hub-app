@@ -12,7 +12,7 @@ const AdminProducts: React.FC = () => {
           <ModernCard
             title="Gestão de Produtos"
             description="Gerenciamento de produtos e serviços da barbearia"
-            gradient="from-black-500/10 to-cyan-600/10"
+            gradient="from-teal-500/10 to-cyan-600/10"
           >
             <ProductManagement />
           </ModernCard>

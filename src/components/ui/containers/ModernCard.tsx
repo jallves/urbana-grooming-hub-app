@@ -10,7 +10,6 @@ interface ModernCardProps {
   className?: string;
   headerActions?: React.ReactNode;
   gradient?: string;
-  textColor?: string;
 }
 
 const ModernCard: React.FC<ModernCardProps> = ({
@@ -19,8 +18,7 @@ const ModernCard: React.FC<ModernCardProps> = ({
   children,
   className,
   headerActions,
-  gradient = 'from-black/40 to-gray-900/40',
-  textColor
+  gradient = 'from-black/40 to-gray-900/40'
 }) => {
   return (
     <Card className={cn(
@@ -32,18 +30,12 @@ const ModernCard: React.FC<ModernCardProps> = ({
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-3 sm:pb-4 px-3 sm:px-4 md:px-6">
           <div className="space-y-1 w-full sm:w-auto">
             {title && (
-              <CardTitle className={cn(
-                "text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent",
-                textColor
-              )}>
+              <CardTitle className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                 {title}
               </CardTitle>
             )}
             {description && (
-              <CardDescription className={cn(
-                "text-gray-400 text-xs sm:text-sm",
-                textColor
-              )}>
+              <CardDescription className="text-gray-400 text-xs sm:text-sm">
                 {description}
               </CardDescription>
             )}

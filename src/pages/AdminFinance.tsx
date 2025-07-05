@@ -12,7 +12,7 @@ const AdminFinance: React.FC = () => {
           <ModernCard
             title="Gestão Financeira"
             description="Gestão financeira e fluxo de caixa da barbearia"
-            gradient="from-black-500/10 to-orange-600/10"
+            gradient="from-yellow-500/10 to-orange-600/10"
           >
             <FinanceManagement />
           </ModernCard>

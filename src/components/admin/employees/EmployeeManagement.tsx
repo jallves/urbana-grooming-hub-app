@@ -1,126 +1,140 @@
 
 import React, { useState } from 'react';
-import { Plus, Users, Search, Filter } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserPlus, Search, Filter } from 'lucide-react';
+import EmployeeList from './EmployeeList';
+import EmployeeForm from './EmployeeForm';
+import { useEmployeeManagement } from './hooks/useEmployeeManagement';
+import { Employee } from './types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import EmployeeList from './EmployeeList';
-import EmployeeForm from './EmployeeForm';
+} from '@/components/ui/select';
 
 const EmployeeManagement: React.FC = () => {
+  const {
+    employees,
+    loading,
+    searchQuery,
+    setSearchQuery,
+    roleFilter,
+    setRoleFilter,
+    statusFilter,
+    setStatusFilter,
+    fetchEmployees,
+    handleDeleteEmployee,
+  } = useEmployeeManagement();
+
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+
+  const handleAddEmployee = () => {
+    setEditingEmployee(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setIsFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingEmployee(null);
+    fetchEmployees();
+  };
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6 w-full max-w-full overflow-hidden">
-      {/* Header Mobile-First */}
-      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center">
-        <div>
-          <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-white">
-            Gestão de Funcionários
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-400 mt-1">
-            Administre sua equipe de trabalho
-          </p>
-        </div>
-        
-        <Button 
-          onClick={() => setIsFormOpen(true)}
-          className="bg-gradient-to-r from-urbana-gold to-urbana-gold/80 hover:from-urbana-gold/90 hover:to-urbana-gold text-black font-semibold text-xs sm:text-sm w-full sm:w-auto"
-        >
-          <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-          <span className="sm:hidden">Funcionário</span>
-          <span className="hidden sm:inline">Novo Funcionário</span>
-        </Button>
-      </div>
-
-      {/* Filtros Mobile-Optimized */}
-      <Card className="bg-gray-900/50 border-gray-700">
-        <CardHeader className="p-3 sm:p-4 lg:p-6">
-          <CardTitle className="text-sm sm:text-base lg:text-lg text-white flex items-center gap-2">
-            <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-            Filtros
+    <div className="space-y-6 bg-black min-h-screen p-6">
+      <Card className="bg-gray-900 border-gray-700 shadow-lg">
+        <CardHeader className="border-b border-gray-700">
+          <CardTitle className="text-2xl font-playfair text-urbana-gold">
+            Gerenciamento de Funcionários
           </CardTitle>
+          <p className="text-gray-300 font-raleway">
+            Gerencie administradores, gerentes e barbeiros da Urbana Barbearia
+          </p>
         </CardHeader>
-        <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-          <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-3 lg:gap-4">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+        <CardContent className="space-y-6 pt-6">
+          {/* Filtros e Busca */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-urbana-gold" />
               <Input
-                placeholder="Buscar funcionários..."
-                className="pl-8 sm:pl-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 text-xs sm:text-sm h-8 sm:h-10"
+                placeholder="Buscar por nome ou email..."
+                className="pl-10 bg-black border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold focus:ring-urbana-gold/20 font-raleway"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-
-            {/* Role Filter */}
+            
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white text-xs sm:text-sm h-8 sm:h-10">
-                <SelectValue placeholder="Cargo" />
+              <SelectTrigger className="w-[180px] bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
+                <SelectValue placeholder="Filtrar por cargo" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="all" className="text-white hover:bg-gray-700 text-xs sm:text-sm">Todos os cargos</SelectItem>
-                <SelectItem value="barber" className="text-white hover:bg-gray-700 text-xs sm:text-sm">Barbeiro</SelectItem>
-                <SelectItem value="receptionist" className="text-white hover:bg-gray-700 text-xs sm:text-sm">Recepcionista</SelectItem>
-                <SelectItem value="manager" className="text-white hover:bg-gray-700 text-xs sm:text-sm">Gerente</SelectItem>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="all" className="text-white hover:bg-gray-800">Todos os cargos</SelectItem>
+                <SelectItem value="admin" className="text-white hover:bg-gray-800">Administrador</SelectItem>
+                <SelectItem value="manager" className="text-white hover:bg-gray-800">Gerente</SelectItem>
+                <SelectItem value="barber" className="text-white hover:bg-gray-800">Barbeiro</SelectItem>
               </SelectContent>
             </Select>
 
-            {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-gray-800/50 border-gray-600 text-white text-xs sm:text-sm h-8 sm:h-10">
-                <SelectValue placeholder="Status" />
+              <SelectTrigger className="w-[180px] bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
+                <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="all" className="text-white hover:bg-gray-700 text-xs sm:text-sm">Todos</SelectItem>
-                <SelectItem value="active" className="text-white hover:bg-gray-700 text-xs sm:text-sm">Ativos</SelectItem>
-                <SelectItem value="inactive" className="text-white hover:bg-gray-700 text-xs sm:text-sm">Inativos</SelectItem>
+              <SelectContent className="bg-gray-900 border-gray-700">
+                <SelectItem value="all" className="text-white hover:bg-gray-800">Todos</SelectItem>
+                <SelectItem value="active" className="text-white hover:bg-gray-800">Ativo</SelectItem>
+                <SelectItem value="inactive" className="text-white hover:bg-gray-800">Inativo</SelectItem>
               </SelectContent>
             </Select>
+
+            <Button 
+              onClick={handleAddEmployee} 
+              className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium transition-all duration-300 hover:scale-105"
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Adicionar Funcionário
+            </Button>
           </div>
+
+          {/* Lista de Funcionários */}
+          <EmployeeList
+            employees={employees}
+            loading={loading}
+            onEdit={handleEditEmployee}
+            onDelete={handleDeleteEmployee}
+          />
         </CardContent>
       </Card>
 
-      {/* Lista de Funcionários */}
-      <Card className="bg-gray-900/50 border-gray-700 overflow-hidden">
-        <CardHeader className="p-3 sm:p-4 lg:p-6">
-          <CardTitle className="text-sm sm:text-base lg:text-lg text-white flex items-center gap-2">
-            <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-            Equipe de Trabalho
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <EmployeeList 
-              searchQuery={searchQuery} 
-              roleFilter={roleFilter}
-              statusFilter={statusFilter}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal do Formulário */}
-      {isFormOpen && (
-        <EmployeeForm
-          onClose={() => setIsFormOpen(false)}
-          onSuccess={() => {
-            setIsFormOpen(false);
-            // Recarregar lista
-          }}
-        />
-      )}
+      {/* Dialog do Formulário */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-playfair text-urbana-gold">
+              {editingEmployee ? 'Editar Funcionário' : 'Adicionar Funcionário'}
+            </DialogTitle>
+          </DialogHeader>
+          <EmployeeForm
+            employee={editingEmployee}
+            onClose={handleFormClose}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

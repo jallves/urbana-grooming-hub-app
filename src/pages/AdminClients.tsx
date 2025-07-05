@@ -14,7 +14,7 @@ const AdminClients: React.FC = () => {
             <ModernCard
               title="Gestão de Clientes"
               description="Gerenciamento completo da base de clientes"
-              gradient="from-black-500/10 to-red-600/10"
+              gradient="from-orange-500/10 to-red-600/10"
             >
               <ClientManagement />
             </ModernCard>

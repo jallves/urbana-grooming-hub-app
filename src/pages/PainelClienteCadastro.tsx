@@ -15,7 +15,6 @@ export default function PainelClienteCadastro() {
     nome: '',
     email: '',
     whatsapp: '',
-    dataNascimento: '',
     senha: '',
     confirmarSenha: ''
   });
@@ -49,50 +48,9 @@ export default function PainelClienteCadastro() {
     setFormData(prev => ({ ...prev, whatsapp: valorFormatado }));
   };
 
-  const handleDataNascimentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Formatação automática para o padrão DD/MM/AAAA
-    value = value.replace(/\D/g, '');
-    
-    if (value.length > 2) {
-      value = value.substring(0, 2) + '/' + value.substring(2);
-    }
-    if (value.length > 5) {
-      value = value.substring(0, 5) + '/' + value.substring(5, 9);
-    }
-    
-    setFormData(prev => ({ ...prev, dataNascimento: value }));
-  };
-
-  const calcularIdade = (dataNascimento: string) => {
-    if (!dataNascimento || dataNascimento.length < 10) return 0;
-    
-    const [dia, mes, ano] = dataNascimento.split('/').map(Number);
-    const hoje = new Date();
-    const dataNasc = new Date(ano, mes - 1, dia);
-    
-    let idade = hoje.getFullYear() - dataNasc.getFullYear();
-    const mesAtual = hoje.getMonth();
-    const diaAtual = hoje.getDate();
-    
-    if (mesAtual < mes - 1 || (mesAtual === mes - 1 && diaAtual < dia)) {
-      idade--;
-    }
-    
-    return idade;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
-
-    // Validação da data de nascimento
-    const idade = calcularIdade(formData.dataNascimento);
-    if (idade < 18) {
-      setErro('Você deve ter pelo menos 18 anos para se cadastrar');
-      return;
-    }
 
     if (!senhaValida) {
       setErro('Senha não atende aos critérios de segurança');
@@ -110,7 +68,6 @@ export default function PainelClienteCadastro() {
       nome: formData.nome,
       email: formData.email,
       whatsapp: formData.whatsapp,
-      dataNascimento: formData.dataNascimento,
       senha: formData.senha
     });
 
@@ -181,25 +138,6 @@ export default function PainelClienteCadastro() {
                 maxLength={15}
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dataNascimento" className="text-white">Data de Nascimento</Label>
-              <Input
-                id="dataNascimento"
-                type="text"
-                value={formData.dataNascimento}
-                onChange={handleDataNascimentoChange}
-                className="bg-gray-800 border-gray-600 text-white"
-                placeholder="DD/MM/AAAA"
-                maxLength={10}
-                required
-              />
-              {formData.dataNascimento && (
-                <p className="text-xs text-gray-400">
-                  Idade: {calcularIdade(formData.dataNascimento)} anos
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -278,7 +216,7 @@ export default function PainelClienteCadastro() {
             <Button
               type="submit"
               className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-              disabled={loading || !senhaValida || !senhasIguais || !formData.dataNascimento}
+              disabled={loading || !senhaValida || !senhasIguais}
             >
               {loading ? 'Criando conta...' : 'Criar Conta'}
             </Button>

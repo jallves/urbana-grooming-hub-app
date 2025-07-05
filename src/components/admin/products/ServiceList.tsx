@@ -236,7 +236,7 @@ const ServiceList: React.FC = () => {
       {isFormOpen && (
         <ServiceForm
           serviceId={selectedService}
-          onClose={() => setIsFormOpen(false)}
+          onCancel={() => setIsFormOpen(false)}
           onSuccess={() => {
             setIsFormOpen(false);
             fetchServices();

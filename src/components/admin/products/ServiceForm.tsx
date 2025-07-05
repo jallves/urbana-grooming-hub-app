@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -28,9 +29,8 @@ import { useQuery } from '@tanstack/react-query';
 
 interface ServiceFormProps {
   serviceId: string | null;
-  onClose: () => void;
+  onCancel: () => void;
   onSuccess: () => void;
-  onCancel?: () => void;
 }
 
 const serviceFormSchema = z.object({
@@ -43,7 +43,7 @@ const serviceFormSchema = z.object({
 
 type ServiceFormValues = z.infer<typeof serviceFormSchema>;
 
-const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, onClose, onSuccess, onCancel }) => {
+const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, onCancel, onSuccess }) => {
   const isEditing = !!serviceId;
 
   const { data: serviceData, isLoading: isLoadingService } = useQuery({
@@ -119,16 +119,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, onClose, onSuccess
     }
   };
 
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    } else {
-      onClose();
-    }
-  };
-
   return (
-    <Dialog open={true} onOpenChange={handleCancel}>
+    <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Serviço' : 'Novo Serviço'}</DialogTitle>
@@ -237,7 +229,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, onClose, onSuccess
               />
               
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleCancel}>
+                <Button type="button" variant="outline" onClick={onCancel}>
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>

@@ -213,7 +213,7 @@ const ProductList: React.FC = () => {
       {isFormOpen && (
         <ProductForm
           productId={selectedProduct}
-          onClose={() => setIsFormOpen(false)}
+          onCancel={() => setIsFormOpen(false)}
           onSuccess={() => {
             setIsFormOpen(false);
             fetchProducts();

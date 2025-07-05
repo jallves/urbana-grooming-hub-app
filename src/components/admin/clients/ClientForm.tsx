@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,12 +22,11 @@ type ClientFormData = z.infer<typeof clientSchema>;
 
 interface ClientFormProps {
   clientId?: string | null;
-  onClose: () => void;
+  onCancel: () => void;
   onSuccess: () => void;
-  onCancel?: () => void;
 }
 
-const ClientForm: React.FC<ClientFormProps> = ({ clientId, onClose, onSuccess, onCancel }) => {
+const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(!!clientId);
 
@@ -116,14 +116,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onClose, onSuccess, o
     }
   };
 
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    } else {
-      onClose();
-    }
-  };
-
   if (isLoadingData) {
     return (
       <Card>
@@ -202,7 +194,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onClose, onSuccess, o
       </div>
 
       <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
           Cancelar
         </Button>
         <Button type="submit" disabled={isLoading}>

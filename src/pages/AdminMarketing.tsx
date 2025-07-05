@@ -12,7 +12,7 @@ const AdminMarketing: React.FC = () => {
           <ModernCard
             title="Gestão de Marketing"
             description="Gerenciamento de campanhas, cupons e estratégias de marketing"
-            gradient="from-black-500/10 to-pink-600/10"
+            gradient="from-red-500/10 to-pink-600/10"
           >
             <MarketingManagement />
           </ModernCard>

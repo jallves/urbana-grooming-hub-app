@@ -11,7 +11,7 @@ export default function AdminAppointments() {
         <ModernCard
           title="Gestão de Agendamentos"
           description="Gerencie todos os agendamentos da barbearia em tempo real"
-          gradient="from-black-500/10 to-emerald-600/10"
+          gradient="from-green-500/10 to-emerald-600/10"
           className="w-full"
         >
           <AppointmentList />

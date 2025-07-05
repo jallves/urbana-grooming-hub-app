@@ -4,7 +4,6 @@ import { Database } from '@/integrations/supabase/types';
 // Define o tipo para clientes
 export type Client = Database['public']['Tables']['clients']['Row'] & {
   whatsapp?: string | null;
-  status?: 'active' | 'inactive';
 };
 
 // Define um tipo para novos clientes (sem id e timestamps)

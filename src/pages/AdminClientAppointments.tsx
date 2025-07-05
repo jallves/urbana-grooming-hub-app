@@ -12,7 +12,7 @@ export default function AdminClientAppointments() {
           <ModernCard
             title="Painel de Clientes"
             description="Gerencie os agendamentos criados pelos clientes através do painel do cliente"
-            gradient="from-black-500/10 to-violet-600/10"
+            gradient="from-purple-500/10 to-violet-600/10"
           >
             <ClientAppointmentList />
           </ModernCard>
