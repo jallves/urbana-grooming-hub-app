@@ -62,15 +62,13 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   
-                  {/* Admin Routes */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
+                  {/* Admin Routes - Simplified */}
+                  <Route path="/auth" element={<AdminLogin />} />
                   <Route path="/admin" element={
                     <AdminRoute>
                       <AdminDashboard />
                     </AdminRoute>
                   } />
-                  
-                  {/* Admin Routes */}
                   <Route path="/admin/agendamentos" element={
                     <AdminRoute>
                       <AdminAppointments />
@@ -136,8 +134,13 @@ function App() {
                       <AdminSettings />
                     </AdminRoute>
                   } />
+                  <Route path="/admin/agendamentos-clientes" element={
+                    <AdminRoute>
+                      <AdminClientAppointments />
+                    </AdminRoute>
+                  } />
                   
-                  {/* Barber Routes */}
+                  {/* Barber Routes - Simplified */}
                   <Route path="/barbeiro/login" element={<BarberAuth />} />
                   <Route path="/barbeiro" element={
                     <BarberRoute allowBarber={true}>
@@ -180,11 +183,10 @@ function App() {
                     </BarberRoute>
                   } />
 
-                  {/* Painel Cliente Routes - Using nested routing */}
+                  {/* Painel Cliente Routes - Nested routing */}
                   <Route path="/painel-cliente/login" element={<PainelClienteLogin />} />
                   <Route path="/painel-cliente/register" element={<PainelClienteRegister />} />
                   
-                  {/* Nested routes for authenticated client panel */}
                   <Route path="/painel-cliente" element={
                     <PainelClienteRoute>
                       <PainelClienteLayout />
@@ -196,12 +198,9 @@ function App() {
                     <Route path="perfil" element={<PainelClientePerfil />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
                   </Route>
-                  
-                  <Route path="/admin/agendamentos-clientes" element={
-                    <AdminRoute>
-                      <AdminClientAppointments />
-                    </AdminRoute>
-                  } />
+
+                  {/* Catch all redirect */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </div>
             </QueryClientProvider>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Shield, Scissors, Menu, Home, X, User } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -18,6 +18,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
@@ -29,6 +30,16 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const handlePanelClickMobile = () => {
     closeMenu();
     handlePanelClick();
+  };
+
+  const handleAdminLogin = () => {
+    closeMenu();
+    navigate('/auth');
+  };
+
+  const handleBarberLogin = () => {
+    closeMenu();
+    navigate('/barbeiro/login');
   };
 
   if (!isMobile) return null;
@@ -119,22 +130,22 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                <Link 
-                  to="/auth" 
-                  className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20 w-full"
-                  onClick={() => handleItemClick()}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:text-urbana-gold hover:bg-urbana-gold/20 text-lg py-3 h-auto"
+                  onClick={handleAdminLogin}
                 >
-                  <Shield size={20} />
+                  <Shield size={20} className="mr-3" />
                   <span className="text-lg font-medium">Admin</span>
-                </Link>
-                <Link 
-                  to="/barbeiro/login" 
-                  className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20 w-full"
-                  onClick={() => handleItemClick()}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:text-urbana-gold hover:bg-urbana-gold/20 text-lg py-3 h-auto"
+                  onClick={handleBarberLogin}
                 >
-                  <Scissors size={20} className="text-urbana-gold" />
+                  <Scissors size={20} className="text-urbana-gold mr-3" />
                   <span className="text-lg font-medium">Área do Barbeiro</span>
-                </Link>
+                </Button>
               </div>
             )}
           </div>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Scissors, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -20,6 +20,16 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
   handlePanelClick, 
   handleSignOut 
 }) => {
+  const navigate = useNavigate();
+
+  const handleAdminLogin = () => {
+    navigate('/auth');
+  };
+
+  const handleBarberLogin = () => {
+    navigate('/barbeiro/login');
+  };
+
   return (
     <NavigationMenu className="hidden md:flex">
       <NavigationMenuList className="gap-1">
@@ -78,22 +88,24 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
         ) : (
           <>
             <NavigationMenuItem>
-              <Link 
-                to="/auth" 
-                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+              <Button
+                variant="ghost"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                onClick={handleAdminLogin}
                 title="Admin Login"
               >
                 <Shield size={18} className="text-urbana-gold" />
-              </Link>
+              </Button>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link 
-                to="/barbeiro/login" 
-                className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+              <Button
+                variant="ghost"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                onClick={handleBarberLogin}
                 title="Área do Barbeiro"
               >
                 <Scissors size={18} className="text-urbana-gold" />
-              </Link>
+              </Button>
             </NavigationMenuItem>
           </>
         )}
