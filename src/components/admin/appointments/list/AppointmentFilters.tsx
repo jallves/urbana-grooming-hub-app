@@ -24,12 +24,12 @@ const AppointmentFilters: React.FC<AppointmentFiltersProps> = ({
   setStatusFilter,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="flex flex-col space-y-2 sm:space-y-3 mb-3 sm:mb-4 w-full">
+      <div className="relative w-full">
+        <Search className="absolute left-2 sm:left-3 top-2 sm:top-2.5 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por nome do cliente..."
-          className="pl-10"
+          placeholder="Buscar cliente..."
+          className="pl-7 sm:pl-10 text-xs sm:text-sm h-8 sm:h-10 w-full"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -39,11 +39,11 @@ const AppointmentFilters: React.FC<AppointmentFiltersProps> = ({
         value={statusFilter || "all"}
         onValueChange={setStatusFilter}
       >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Filtrar por status" />
+        <SelectTrigger className="w-full h-8 sm:h-10 text-xs sm:text-sm">
+          <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todos os status</SelectItem>
+          <SelectItem value="all">Todos</SelectItem>
           <SelectItem value="scheduled">Agendado</SelectItem>
           <SelectItem value="confirmed">Confirmado</SelectItem>
           <SelectItem value="completed">Finalizado</SelectItem>

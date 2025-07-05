@@ -24,12 +24,10 @@ const AppointmentList: React.FC = () => {
   } = useAppointments();
   
   const filteredAppointments = appointments.filter(appointment => {
-    // Filter by status
     if (statusFilter !== 'all' && appointment.status !== statusFilter) {
       return false;
     }
     
-    // Filter by search query
     const clientName = appointment.client?.name?.toLowerCase() || '';
     const query = searchQuery.toLowerCase();
     
@@ -58,8 +56,8 @@ const AppointmentList: React.FC = () => {
   };
   
   return (
-    <>
-      <Card className="p-4">
+    <div className="w-full space-y-3 sm:space-y-4">
+      <Card className="p-2 sm:p-3 md:p-4 bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
         <AppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -67,7 +65,7 @@ const AppointmentList: React.FC = () => {
           setStatusFilter={setStatusFilter}
         />
         
-        <div className="rounded-md border">
+        <div className="rounded-md border border-white/10 overflow-hidden">
           <AppointmentTable
             appointments={filteredAppointments}
             isLoading={isLoading}
@@ -95,7 +93,7 @@ const AppointmentList: React.FC = () => {
         onClose={() => setIsDeleteDialogOpen(false)}
         onConfirm={executeDeleteAppointment}
       />
-    </>
+    </div>
   );
 };
 
