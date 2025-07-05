@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -48,7 +47,7 @@ export default function PainelClienteDashboard() {
             table: 'painel_agendamentos',
             filter: `cliente_id=eq.${cliente.id}`
           },
-          (payload) => {
+          () => {
             fetchAgendamentos();
           }
         )
@@ -85,7 +84,6 @@ export default function PainelClienteDashboard() {
       concluido: { label: 'Concluído', variant: 'default' as const, color: 'bg-purple-500/20 text-purple-400' },
       cancelado: { label: 'Cancelado', variant: 'destructive' as const, color: 'bg-red-500/20 text-red-400' },
     };
-    
     const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: 'default' as const, color: 'bg-gray-500/20 text-gray-400' };
     return <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.color}`}>{config.label}</span>;
   };
@@ -132,7 +130,6 @@ export default function PainelClienteDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5" />
-      
       <div className="relative z-10 px-4 sm:px-6 lg:px-8 py-4 max-w-full mx-auto">
         <motion.div
           variants={containerVariants}
