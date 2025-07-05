@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from "framer-motion";
 import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Twitter, Heart } from 'lucide-react';
@@ -9,7 +8,7 @@ const Footer: React.FC = () => {
   
   // Extract values or use defaults
   const shopName = shopSettings?.shop_name || "Costa Urbana";
-  const address = shopSettings?.address || "Rua da Barbearia, 123, São Paulo, SP";
+  const address = shopSettings?.address || "Rua Castelo Branco, 483 - 29101-480 Praia da Costa - Vila Velha/ES";
   const phone = shopSettings?.phone || "+55 11 9876-5432";
   const email = shopSettings?.email || "contato@costaurbana.com.br";
   const instagram = shopSettings?.social_instagram || "#";
@@ -167,12 +166,12 @@ const Footer: React.FC = () => {
               </h4>
               <div className="bg-urbana-gold/10 rounded-lg p-4 border border-urbana-gold/20">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.1963839158024!2d-46.65844968502146!3d-23.561081684685447!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt!2sbr!4v1620000000000!5m2!1spt!2sbr"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3742.6441437707836!2d-40.28747308455458!3d-20.325849486358473!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xb83d4e5a5e5e5e5%3A0x5e5e5e5e5e5e5e5!2sRua%20Castelo%20Branco%2C%20483%20-%20Praia%20da%20Costa%2C%20Vila%20Velha%20-%20ES%2C%2029101-480!5e0!3m2!1spt!2sbr!4v1620000000000!5m2!1spt!2sbr"
                   className="w-full h-40 rounded border-0"
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  title="Localização da Barbearia"
+                  title="Localização da Barbearia - Rua Castelo Branco, 483 - Praia da Costa - Vila Velha/ES"
                 ></iframe>
               </div>
             </div>
