@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -122,12 +123,14 @@ export default function PainelClienteMeusAgendamentos() {
   };
 
   const getStatusBadge = (status: string) => {
-    const config = {
-      agendado: { label: 'Agendado', variant: 'default' },
-      confirmado: { label: 'Confirmado', variant: 'secondary' },
-      concluido: { label: 'Concluído', variant: 'default' },
-      cancelado: { label: 'Cancelado', variant: 'destructive' },
-    }[status] || { label: status, variant: 'default' };
+    const statusConfig = {
+      agendado: { label: 'Agendado', variant: 'default' as const },
+      confirmado: { label: 'Confirmado', variant: 'secondary' as const },
+      concluido: { label: 'Concluído', variant: 'default' as const },
+      cancelado: { label: 'Cancelado', variant: 'destructive' as const },
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: 'default' as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
