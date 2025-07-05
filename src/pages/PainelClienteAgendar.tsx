@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ import { motion } from 'framer-motion';
 interface Barbeiro {
   id: string;
   nome: string;
-  especialidades: string[];
+  specialties: string;
 }
 
 interface Servico {
@@ -59,7 +58,14 @@ export default function PainelClienteAgendar() {
       if (barbeirosRes.error) throw barbeirosRes.error;
       if (servicosRes.error) throw servicosRes.error;
 
-      setBarbeiros(barbeirosRes.data || []);
+      // Map the data to match our interface
+      const mappedBarbeiros = (barbeirosRes.data || []).map(barbeiro => ({
+        id: barbeiro.id,
+        nome: barbeiro.nome,
+        specialties: barbeiro.specialties || ''
+      }));
+
+      setBarbeiros(mappedBarbeiros);
       setServicos(servicosRes.data || []);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -172,11 +178,11 @@ export default function PainelClienteAgendar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative overflow-x-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-emerald-600/5 to-green-600/5" />
       
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto min-h-screen">
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         <motion.div
           variants={containerVariants}
           initial="hidden"
