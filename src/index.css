@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -605,7 +606,7 @@
 /* Ultra-wide screen support */
 @media (min-width: 1920px) {
   .ultrawide-grid {
-    @apply grid-cols-6 2xl:grid-cols-8 3xl:grid-cols-10 gap-6 w-full;
+    @apply grid-cols-6 2xl:grid-cols-8 gap-6 w-full;
   }
 }
 
