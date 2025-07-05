@@ -4,18 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Calendar, Clock, User, Scissors, Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Scissors, Plus } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
 
 interface Agendamento {
   id: string;
@@ -34,35 +28,11 @@ interface Agendamento {
   };
 }
 
-interface Barbeiro {
-  id: string;
-  nome: string;
-}
-
-interface Servico {
-  id: string;
-  nome: string;
-  preco: number;
-  duracao: number;
-}
-
 export default function PainelClienteMeusAgendamentos() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
-  const { toast } = useToast();
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
-  const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
-  const [servicos, setServicos] = useState<Servico[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingAgendamento, setEditingAgendamento] = useState<Agendamento | null>(null);
-  const [editForm, setEditForm] = useState({
-    data: '',
-    hora: '',
-    barbeiro_id: '',
-    servico_id: '',
-    observacoes: ''
-  });
 
   useEffect(() => {
     if (cliente) {
@@ -91,11 +61,7 @@ export default function PainelClienteMeusAgendamentos() {
   }, [cliente]);
 
   const fetchData = async () => {
-    await Promise.all([
-      fetchAgendamentos(),
-      fetchBarbeiros(),
-      fetchServicos()
-    ]);
+    await fetchAgendamentos();
     setLoading(false);
   };
 
@@ -110,16 +76,6 @@ export default function PainelClienteMeusAgendamentos() {
       .order('hora', { ascending: false });
 
     if (!error) setAgendamentos(data || []);
-  };
-
-  const fetchBarbeiros = async () => {
-    const { data, error } = await supabase.from('painel_barbeiros').select('id, nome').order('nome');
-    if (!error) setBarbeiros(data || []);
-  };
-
-  const fetchServicos = async () => {
-    const { data, error } = await supabase.from('painel_servicos').select('id, nome, preco, duracao').order('nome');
-    if (!error) setServicos(data || []);
   };
 
   const getStatusBadge = (status: string) => {
@@ -140,15 +96,119 @@ export default function PainelClienteMeusAgendamentos() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 px-4 py-6 flex justify-center"
-    >
-      <div className="w-full max-w-7xl space-y-6">
-        {/* Conteúdo original da tela continua aqui... */}
+    <div className="h-full w-full bg-gradient-to-br from-zinc-950 to-zinc-900 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-auto">
+      <div className="h-full max-w-none mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-4 sm:space-y-6 lg:space-y-8 h-full"
+        >
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <Button
+              onClick={() => navigate('/painel-cliente/dashboard')}
+              variant="outline"
+              size="sm"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">Meus Agendamentos</h1>
+              <p className="text-gray-400 text-sm sm:text-base">Visualize e gerencie seus horários marcados</p>
+            </div>
+            <Button
+              onClick={() => navigate('/painel-cliente/agendar')}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Agendamento
+            </Button>
+          </div>
+
+          {/* Lista de Agendamentos */}
+          <div className="flex-1">
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-white">Carregando...</div>
+              </div>
+            ) : agendamentos.length === 0 ? (
+              <Card className="bg-gray-900 border border-gray-700 h-full flex items-center justify-center">
+                <CardContent className="p-8 sm:p-12 text-center">
+                  <Scissors className="h-16 w-16 sm:h-20 sm:w-20 text-gray-500 mx-auto mb-6" />
+                  <h3 className="text-xl sm:text-2xl font-semibold text-white mb-3">
+                    Nenhum agendamento encontrado
+                  </h3>
+                  <p className="text-gray-400 mb-6 text-sm sm:text-base">
+                    Você ainda não possui agendamentos. Que tal marcar um horário?
+                  </p>
+                  <Button
+                    onClick={() => navigate('/painel-cliente/agendar')}
+                    className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Fazer Primeiro Agendamento
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                {agendamentos.map((agendamento, index) => (
+                  <motion.div
+                    key={agendamento.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <Card className="bg-gray-900 border border-gray-700 hover:border-gray-600 transition-colors h-full">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start gap-2">
+                          <CardTitle className="text-white text-base sm:text-lg">
+                            {agendamento.painel_servicos.nome}
+                          </CardTitle>
+                          {getStatusBadge(agendamento.status)}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center text-gray-300">
+                            <Calendar className="h-4 w-4 mr-2 text-amber-500 flex-shrink-0" />
+                            <span className="text-sm">{format(new Date(agendamento.data), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                          </div>
+                          <div className="flex items-center text-gray-300">
+                            <Clock className="h-4 w-4 mr-2 text-amber-500 flex-shrink-0" />
+                            <span className="text-sm">{agendamento.hora}</span>
+                          </div>
+                          <div className="flex items-center text-gray-300">
+                            <User className="h-4 w-4 mr-2 text-amber-500 flex-shrink-0" />
+                            <span className="text-sm">{agendamento.painel_barbeiros.nome}</span>
+                          </div>
+                        </div>
+                        <div className="pt-2 border-t border-gray-700">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Preço:</span>
+                            <span className="text-amber-500 font-semibold">
+                              R$ {agendamento.painel_servicos.preco.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Duração:</span>
+                            <span className="text-gray-300 text-sm">
+                              {agendamento.painel_servicos.duracao} min
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 }

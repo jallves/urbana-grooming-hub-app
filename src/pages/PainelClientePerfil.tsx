@@ -9,7 +9,6 @@ import { ArrowLeft, User, Save } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
-import DashboardContainer from '@/components/ui/containers/DashboardContainer';
 
 export default function PainelClientePerfil() {
   const navigate = useNavigate();
@@ -68,15 +67,16 @@ export default function PainelClientePerfil() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900">
-      <DashboardContainer>
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }} 
-          animate={{ opacity: 1, y: 0 }} 
+    <div className="h-full w-full bg-gradient-to-br from-zinc-950 to-zinc-900 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-auto">
+      <div className="h-full max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
+          className="space-y-4 sm:space-y-6 lg:space-y-8 h-full"
         >
           {/* Header */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-4">
             <Button
               onClick={() => navigate('/painel-cliente/dashboard')}
               variant="outline"
@@ -86,18 +86,18 @@ export default function PainelClientePerfil() {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            <h1 className="text-3xl font-bold text-white">Editar Perfil</h1>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">Editar Perfil</h1>
           </div>
 
           <Card className="bg-gray-900 border border-gray-700 shadow-xl">
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+              <CardTitle className="text-white flex items-center gap-2 text-lg sm:text-xl">
                 <User className="h-5 w-5 text-amber-500" />
                 Suas Informações
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+            <CardContent className="space-y-4 sm:space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                 {erro && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -108,63 +108,67 @@ export default function PainelClientePerfil() {
                   </motion.div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="nome" className="text-white">Nome Completo</Label>
-                  <Input
-                    id="nome"
-                    type="text"
-                    value={formData.nome}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                    className="bg-gray-800 border-gray-600 text-white"
-                    placeholder="Seu nome completo"
-                    required
-                  />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome" className="text-white text-sm sm:text-base">Nome Completo</Label>
+                    <Input
+                      id="nome"
+                      type="text"
+                      value={formData.nome}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white h-10 sm:h-12"
+                      placeholder="Seu nome completo"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-white text-sm sm:text-base">E-mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="bg-gray-800 border-gray-600 text-white h-10 sm:h-12"
+                      placeholder="seu.email@exemplo.com"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2 lg:col-span-2">
+                    <Label htmlFor="whatsapp" className="text-white text-sm sm:text-base">WhatsApp</Label>
+                    <Input
+                      id="whatsapp"
+                      type="tel"
+                      value={formData.whatsapp}
+                      onChange={handleWhatsAppChange}
+                      className="bg-gray-800 border-gray-600 text-white h-10 sm:h-12"
+                      placeholder="(11) 99999-9999"
+                      maxLength={15}
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="bg-gray-800 border-gray-600 text-white"
-                    placeholder="seu.email@exemplo.com"
-                    required
-                  />
+                <div className="pt-4 sm:pt-6">
+                  <Button
+                    type="submit"
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold h-10 sm:h-12"
+                    disabled={loading}
+                  >
+                    {loading ? 'Salvando...' : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Salvar Alterações
+                      </>
+                    )}
+                  </Button>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
-                  <Input
-                    id="whatsapp"
-                    type="tel"
-                    value={formData.whatsapp}
-                    onChange={handleWhatsAppChange}
-                    className="bg-gray-800 border-gray-600 text-white"
-                    placeholder="(11) 99999-9999"
-                    maxLength={15}
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? 'Salvando...' : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Salvar Alterações
-                    </>
-                  )}
-                </Button>
               </form>
             </CardContent>
           </Card>
         </motion.div>
-      </DashboardContainer>
+      </div>
     </div>
   );
 }

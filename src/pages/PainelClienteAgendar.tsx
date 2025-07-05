@@ -155,10 +155,10 @@ export default function PainelClienteAgendar() {
   if (!cliente) return null;
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 py-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="h-full w-full bg-gradient-to-br from-zinc-950 to-zinc-900 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-auto">
+      <div className="h-full max-w-none mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <Button
             onClick={() => navigate('/painel-cliente/dashboard')}
             variant="outline"
@@ -168,99 +168,103 @@ export default function PainelClienteAgendar() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
-          <h1 className="text-3xl font-bold text-white">Agendar Corte</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">Agendar Corte</h1>
         </div>
 
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full max-w-4xl mx-auto">
           <Card className="bg-zinc-900 border border-zinc-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="text-white flex items-center gap-2 text-lg sm:text-xl">
                 <Scissors className="h-5 w-5 text-amber-500" />
                 Novo Agendamento
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Serviço */}
-                <div className="space-y-2">
-                  <Label htmlFor="servico" className="text-white">Serviço</Label>
-                  <Select value={formData.servicoId} onValueChange={(value) => setFormData(prev => ({ ...prev, servicoId: value }))}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white">
-                      <SelectValue placeholder="Selecione um serviço" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {servicos.map(servico => (
-                        <SelectItem key={servico.id} value={servico.id}>
-                          {servico.nome} - R$ {servico.preco.toFixed(2)} ({servico.duracao}min)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <CardContent className="space-y-4 sm:space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Serviço */}
+                  <div className="space-y-2">
+                    <Label htmlFor="servico" className="text-white text-sm sm:text-base">Serviço</Label>
+                    <Select value={formData.servicoId} onValueChange={(value) => setFormData(prev => ({ ...prev, servicoId: value }))}>
+                      <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white h-10 sm:h-12">
+                        <SelectValue placeholder="Selecione um serviço" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {servicos.map(servico => (
+                          <SelectItem key={servico.id} value={servico.id}>
+                            {servico.nome} - R$ {servico.preco.toFixed(2)} ({servico.duracao}min)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Barbeiro */}
-                <div className="space-y-2">
-                  <Label htmlFor="barbeiro" className="text-white">Barbeiro</Label>
-                  <Select value={formData.barbeiroId} onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiroId: value }))}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white">
-                      <SelectValue placeholder="Selecione um barbeiro" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {barbeiros.map(barbeiro => (
-                        <SelectItem key={barbeiro.id} value={barbeiro.id}>
-                          {barbeiro.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  {/* Barbeiro */}
+                  <div className="space-y-2">
+                    <Label htmlFor="barbeiro" className="text-white text-sm sm:text-base">Barbeiro</Label>
+                    <Select value={formData.barbeiroId} onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiroId: value }))}>
+                      <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white h-10 sm:h-12">
+                        <SelectValue placeholder="Selecione um barbeiro" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {barbeiros.map(barbeiro => (
+                          <SelectItem key={barbeiro.id} value={barbeiro.id}>
+                            {barbeiro.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Data */}
-                <div className="space-y-2">
-                  <Label htmlFor="data" className="text-white">Data</Label>
-                  <Input
-                    type="date"
-                    value={formData.data}
-                    onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="bg-zinc-800 border-zinc-600 text-white"
-                    required
-                  />
-                </div>
+                  {/* Data */}
+                  <div className="space-y-2">
+                    <Label htmlFor="data" className="text-white text-sm sm:text-base">Data</Label>
+                    <Input
+                      type="date"
+                      value={formData.data}
+                      onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="bg-zinc-800 border-zinc-600 text-white h-10 sm:h-12"
+                      required
+                    />
+                  </div>
 
-                {/* Hora */}
-                <div className="space-y-2">
-                  <Label htmlFor="hora" className="text-white">Horário</Label>
-                  <Select value={formData.hora} onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}>
-                    <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white">
-                      <SelectValue placeholder="Selecione um horário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {horariosDisponiveis.map(horario => (
-                        <SelectItem key={horario} value={horario}>
-                          {horario}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {formData.barbeiroId && formData.data && horariosDisponiveis.length === 0 && (
-                    <p className="text-red-400 text-sm">Nenhum horário disponível para esta data.</p>
-                  )}
+                  {/* Hora */}
+                  <div className="space-y-2">
+                    <Label htmlFor="hora" className="text-white text-sm sm:text-base">Horário</Label>
+                    <Select value={formData.hora} onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}>
+                      <SelectTrigger className="bg-zinc-800 border-zinc-600 text-white h-10 sm:h-12">
+                        <SelectValue placeholder="Selecione um horário" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {horariosDisponiveis.map(horario => (
+                          <SelectItem key={horario} value={horario}>
+                            {horario}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formData.barbeiroId && formData.data && horariosDisponiveis.length === 0 && (
+                      <p className="text-red-400 text-xs sm:text-sm">Nenhum horário disponível para esta data.</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Botão */}
-                <Button
-                  type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                  disabled={loading}
-                >
-                  {loading ? 'Agendando...' : (
-                    <>
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Confirmar Agendamento
-                    </>
-                  )}
-                </Button>
+                <div className="pt-4 sm:pt-6">
+                  <Button
+                    type="submit"
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold h-10 sm:h-12 text-sm sm:text-base"
+                    disabled={loading}
+                  >
+                    {loading ? 'Agendando...' : (
+                      <>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Confirmar Agendamento
+                      </>
+                    )}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
