@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -13,6 +12,8 @@
   html, body {
     @apply bg-black text-white font-raleway;
     min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   body {
@@ -23,14 +24,14 @@
     @apply font-playfair font-bold text-white;
   }
 
-  /* Ensure all main containers have black background */
+  /* Ensure all main containers have black background and full width */
   #root {
-    @apply bg-black min-h-screen;
+    @apply bg-black min-h-screen w-full;
   }
 
   /* Force dark theme for all admin panels */
   .admin-panel, .barber-panel, .client-panel {
-    @apply bg-black text-white;
+    @apply bg-black text-white w-full;
   }
 
   /* Override any white backgrounds */
@@ -100,6 +101,16 @@
 
   .form-label {
     @apply text-white !important;
+  }
+
+  /* Custom scrollbar for mobile navigation */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -462,4 +473,215 @@
 /* Loading page theme */
 .loader-page {
   @apply bg-black text-white min-h-screen;
+}
+
+/* Custom scrollbar for mobile navigation */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile responsive styles - Enhanced */
+@media (max-width: 640px) {
+  html, body {
+    overflow-x: hidden;
+    width: 100vw;
+  }
+
+  h1 {
+    @apply text-2xl md:text-3xl;
+  }
+  
+  h2 {
+    @apply text-xl md:text-2xl;
+  }
+  
+  .btn-responsive {
+    @apply w-full mb-2 justify-center text-sm px-3 py-2;
+  }
+
+  /* Mobile navigation improvements */
+  .mobile-nav {
+    @apply fixed top-0 left-0 w-full h-screen bg-black z-50 flex flex-col px-6 py-10 transform transition-transform duration-300;
+  }
+
+  /* Client panel mobile optimizations */
+  .client-panel-mobile {
+    @apply w-screen min-h-screen bg-black overflow-x-hidden;
+  }
+
+  .client-panel-header {
+    @apply w-full bg-black border-b border-gray-700 px-4 py-3 sticky top-0 z-10;
+  }
+
+  .client-panel-nav {
+    @apply w-full bg-black border-b border-gray-700 px-2 py-2 overflow-x-auto;
+  }
+
+  .client-panel-content {
+    @apply w-full bg-black px-4 py-6 space-y-4;
+  }
+
+  /* Mobile navigation buttons */
+  .mobile-nav-button {
+    @apply flex-shrink-0 px-3 py-2 text-xs rounded-xl min-w-[70px] flex flex-col items-center gap-1;
+  }
+
+  /* Mobile card optimizations */
+  .mobile-card {
+    @apply w-full bg-gray-900 border border-gray-700 rounded-lg p-3 mb-3;
+  }
+
+  /* Mobile grid improvements */
+  .mobile-grid {
+    @apply grid grid-cols-1 gap-3 w-full;
+  }
+
+  .mobile-grid-2 {
+    @apply grid grid-cols-2 gap-3 w-full;
+  }
+
+  /* Mobile text handling */
+  .mobile-text-truncate {
+    @apply truncate max-w-[120px];
+  }
+
+  /* Mobile responsive stats */
+  .mobile-stats {
+    @apply grid grid-cols-2 gap-3 w-full;
+  }
+
+  .mobile-stat-card {
+    @apply bg-gray-900 border border-gray-700 rounded-lg p-3 text-center min-h-[80px];
+  }
+}
+
+/* Tablet responsive styles - Enhanced */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .tablet-container {
+    @apply px-6 py-4 w-full;
+  }
+
+  .tablet-grid {
+    @apply grid-cols-2 md:grid-cols-3 gap-4 w-full;
+  }
+
+  .tablet-panel {
+    @apply px-6 py-4 w-full;
+  }
+
+  .tablet-card {
+    @apply p-4 w-full;
+  }
+
+  .tablet-nav-button {
+    @apply px-4 py-2 text-sm rounded-xl min-w-[90px];
+  }
+}
+
+/* Desktop responsive styles - Enhanced */
+@media (min-width: 1024px) {
+  .desktop-container {
+    @apply px-8 py-6 w-full;
+  }
+
+  .desktop-grid {
+    @apply grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 w-full;
+  }
+
+  .desktop-panel {
+    @apply px-8 py-6 w-full;
+  }
+
+  .desktop-card {
+    @apply p-6 w-full;
+  }
+}
+
+/* Ultra-wide screen support */
+@media (min-width: 1920px) {
+  .ultrawide-grid {
+    @apply grid-cols-6 2xl:grid-cols-8 3xl:grid-cols-10 gap-6 w-full;
+  }
+}
+
+/* Improved mobile viewport handling */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  .ios-safari-fix {
+    @apply min-h-screen bg-black;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Universal dark theme enforcement */
+.bg-gray-50 {
+  @apply bg-black !important;
+}
+
+.bg-white {
+  @apply bg-gray-900 !important;
+}
+
+.text-gray-900 {
+  @apply text-white !important;
+}
+
+.text-gray-600 {
+  @apply text-gray-300 !important;
+}
+
+.text-black {
+  @apply text-white !important;
+}
+
+.border-gray-200 {
+  @apply border-gray-700 !important;
+}
+
+.border-gray-300 {
+  @apply border-gray-600 !important;
+}
+
+/* Panel-specific responsive classes - Enhanced */
+.panel-responsive {
+  @apply bg-black text-white min-h-screen w-screen overflow-x-hidden;
+}
+
+.panel-header-responsive {
+  @apply bg-black border-b border-gray-700 px-4 md:px-6 py-4 sticky top-0 z-10 w-full;
+}
+
+.panel-content-responsive {
+  @apply bg-black p-4 md:p-6 space-y-4 md:space-y-6 w-full;
+}
+
+.panel-card-responsive {
+  @apply bg-gray-900 border border-gray-700 rounded-lg p-4 md:p-6 w-full;
+}
+
+.panel-grid-responsive {
+  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-6 w-full;
+}
+
+.panel-nav-responsive {
+  @apply w-full overflow-x-auto scrollbar-hide px-2 sm:px-4 py-2;
+}
+
+.panel-button-responsive {
+  @apply flex-shrink-0 px-3 py-2 text-xs sm:text-sm rounded-xl transition-all duration-300;
+}
+
+/* Force full width utility */
+.force-full-width {
+  @apply w-screen min-w-full;
+}
+
+/* Prevent horizontal scroll */
+.no-horizontal-scroll {
+  @apply overflow-x-hidden;
 }

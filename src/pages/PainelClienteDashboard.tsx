@@ -96,8 +96,8 @@ export default function PainelClienteDashboard() {
 
   if (loading) {
     return (
-      /* DEBUG: Full-width loading container - no max-width restrictions */
-      <div className="flex items-center justify-center min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+      /* DEBUG: Full-screen loading - w-screen ensures complete width */
+      <div className="flex items-center justify-center min-h-screen w-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -130,12 +130,12 @@ export default function PainelClienteDashboard() {
   };
 
   return (
-    /* DEBUG: Full-width main container - no container or max-width classes */
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      {/* DEBUG: Full-width overlay - absolute positioning to prevent scroll issues */}
+    /* DEBUG: Full-screen container - w-screen forces 100% viewport width */
+    <div className="min-h-screen w-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 overflow-x-hidden">
+      {/* DEBUG: Full-screen overlay - absolute positioning prevents scroll issues */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5 pointer-events-none" />
       
-      {/* DEBUG: Full-width content container - only mobile padding, no max-width */}
+      {/* DEBUG: Full-screen content - responsive padding without width limits */}
       <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <motion.div
           variants={containerVariants}
@@ -143,7 +143,7 @@ export default function PainelClienteDashboard() {
           animate="visible"
           className="w-full space-y-6 lg:space-y-8"
         >
-          {/* DEBUG: Full-width header - w-full ensures complete expansion */}
+          {/* DEBUG: Full-width header */}
           <div className="flex flex-col justify-between w-full gap-4 md:flex-row md:items-center">
             <div>
               <h1 className="text-2xl font-bold text-white sm:text-3xl">Bem-vindo, {cliente.nome}</h1>
@@ -155,42 +155,44 @@ export default function PainelClienteDashboard() {
             </Button>
           </div>
 
-          {/* DEBUG: Full-width statistics grid - responsive columns that expand to fill */}
-          <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+          {/* DEBUG: Responsive grid - more columns for larger screens */}
+          <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8">
             {/* Cards de estatísticas aqui */}
           </div>
 
           {/* DEBUG: Full-width appointments section */}
           <div className="w-full space-y-4">
             <h2 className="text-xl font-semibold text-white">Seus Agendamentos</h2>
-            {/* DEBUG: Full-width appointments grid - more responsive columns for larger screens */}
-            <div className="w-full grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
+            {/* DEBUG: Enhanced responsive grid for appointments */}
+            <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
               {agendamentos.map((agendamento) => (
                 <motion.div key={agendamento.id} variants={itemVariants} className="w-full">
-                  {/* DEBUG: Full-width card */}
+                  {/* DEBUG: Full-width card with proper text handling */}
                   <Card className="w-full border-gray-800 bg-gray-900/50 backdrop-blur-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                      <CardTitle className="text-sm font-medium text-white truncate pr-2">
+                      <CardTitle className="text-sm font-medium text-white truncate pr-2 flex-1 min-w-0">
                         {agendamento.painel_servicos.nome}
                       </CardTitle>
-                      {getStatusBadge(agendamento.status)}
+                      <div className="flex-shrink-0">
+                        {getStatusBadge(agendamento.status)}
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between mt-4">
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2 text-sm text-gray-400 min-w-0 flex-1">
                           <Calendar className="w-4 h-4 flex-shrink-0" />
                           <span className="truncate">
-                            {format(new Date(agendamento.data), 'PPP', { locale: ptBR })}
+                            {format(new Date(agendamento.data), 'dd/MM', { locale: ptBR })}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2 text-sm text-gray-400 ml-2">
-                          <Clock className="w-4 h-4 flex-shrink-0" />
+                        <div className="flex items-center space-x-2 text-sm text-gray-400 flex-shrink-0">
+                          <Clock className="w-4 h-4" />
                           <span>{agendamento.hora}</span>
                         </div>
                       </div>
-                      <div className="flex items-center mt-4 space-x-2 text-sm text-gray-400 min-w-0">
+                      <div className="flex items-center space-x-2 text-sm text-gray-400 min-w-0">
                         <Scissors className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">Barbeiro: {agendamento.painel_barbeiros.nome}</span>
+                        <span className="truncate">{agendamento.painel_barbeiros.nome}</span>
                       </div>
                     </CardContent>
                   </Card>

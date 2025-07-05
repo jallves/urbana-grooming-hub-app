@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,8 @@ const PainelClienteLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+    /* DEBUG: Full screen layout - w-screen forces 100% viewport width */
+    <div className="min-h-screen w-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 overflow-x-hidden">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-cyan-600/10 animate-pulse" />
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '6s' }} />
@@ -35,8 +37,8 @@ const PainelClienteLayout: React.FC = () => {
       
       <LoadingBar isLoading={isLoading} />
       
-      {/* Header - Full width */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-slate-900/80 border-b border-slate-700/50 shadow-xl">
+      {/* Header - Full viewport width */}
+      <header className="sticky top-0 z-50 w-screen backdrop-blur-xl bg-slate-900/80 border-b border-slate-700/50 shadow-xl">
         <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <motion.div 
@@ -90,10 +92,10 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile Navigation - Full width */}
-      <nav className="lg:hidden sticky top-[70px] sm:top-[78px] z-40 w-full backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50">
-        <div className="w-full px-4">
-          <div className="flex overflow-x-auto scrollbar-hide">
+      {/* Mobile Navigation - Optimized for all screen sizes */}
+      <nav className="lg:hidden sticky top-[70px] sm:top-[78px] z-40 w-screen backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50">
+        <div className="w-full px-2 sm:px-4">
+          <div className="flex overflow-x-auto scrollbar-hide gap-1 sm:gap-2 py-2">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -111,7 +113,7 @@ const PainelClienteLayout: React.FC = () => {
                   <Button
                     variant="ghost"
                     onClick={() => navigate(item.path)}
-                    className={`px-4 py-3 mx-1 my-2 rounded-xl transition-all duration-300 relative overflow-hidden ${
+                    className={`px-3 py-2 mx-0.5 my-1 rounded-xl transition-all duration-300 relative overflow-hidden min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm ${
                       isActive 
                         ? `bg-gradient-to-r ${item.color} text-white shadow-lg` 
                         : 'text-gray-400 hover:text-white hover:bg-slate-800/50'
@@ -125,8 +127,8 @@ const PainelClienteLayout: React.FC = () => {
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
                     )}
-                    <Icon className="h-4 w-4 mr-2 relative z-10" />
-                    <span className="text-xs sm:text-sm font-medium relative z-10 whitespace-nowrap">{item.label}</span>
+                    <Icon className="h-3 w-3 sm:h-4 sm:w-4 mb-1 relative z-10" />
+                    <span className="font-medium relative z-10 whitespace-nowrap block">{item.label}</span>
                   </Button>
                 </motion.div>
               );
@@ -135,8 +137,8 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content - Full width */}
-      <main className="relative w-full">
+      {/* Main Content - Full viewport width */}
+      <main className="relative w-screen min-h-screen">
         <AnimatePresence mode="wait">
           <PageTransition mode="fade">
             <Outlet />
