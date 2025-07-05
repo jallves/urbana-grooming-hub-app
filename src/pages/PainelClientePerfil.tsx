@@ -89,15 +89,17 @@ export default function PainelClientePerfil() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+    /* DEBUG: Full-width container */
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
       <div className="absolute inset-0 bg-gradient-to-r from-orange-600/5 via-red-600/5 to-orange-600/5" />
       
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* DEBUG: Full-width content */}
+      <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6"
+          className="w-full space-y-6"
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -235,4 +237,3 @@ export default function PainelClientePerfil() {
       </div>
     </div>
   );
-}

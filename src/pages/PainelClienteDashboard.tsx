@@ -96,7 +96,7 @@ export default function PainelClienteDashboard() {
 
   if (loading) {
     return (
-      /* DEBUG: Full-width loading container */
+      /* DEBUG: Full-width loading container - no max-width restrictions */
       <div className="flex items-center justify-center min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
         <motion.div
           animate={{ rotate: 360 }}
@@ -130,12 +130,12 @@ export default function PainelClienteDashboard() {
   };
 
   return (
-    /* DEBUG: Full-width main container */
+    /* DEBUG: Full-width main container - no container or max-width classes */
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      {/* DEBUG: Full-width overlay */}
+      {/* DEBUG: Full-width overlay - absolute positioning to prevent scroll issues */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5 pointer-events-none" />
       
-      {/* DEBUG: Full-width content container with mobile padding only */}
+      {/* DEBUG: Full-width content container - only mobile padding, no max-width */}
       <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <motion.div
           variants={containerVariants}
@@ -143,7 +143,7 @@ export default function PainelClienteDashboard() {
           animate="visible"
           className="w-full space-y-6 lg:space-y-8"
         >
-          {/* DEBUG: Full-width header */}
+          {/* DEBUG: Full-width header - w-full ensures complete expansion */}
           <div className="flex flex-col justify-between w-full gap-4 md:flex-row md:items-center">
             <div>
               <h1 className="text-2xl font-bold text-white sm:text-3xl">Bem-vindo, {cliente.nome}</h1>
@@ -155,16 +155,16 @@ export default function PainelClienteDashboard() {
             </Button>
           </div>
 
-          {/* DEBUG: Full-width statistics grid - expandable columns */}
-          <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
+          {/* DEBUG: Full-width statistics grid - responsive columns that expand to fill */}
+          <div className="w-full grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
             {/* Cards de estatísticas aqui */}
           </div>
 
           {/* DEBUG: Full-width appointments section */}
           <div className="w-full space-y-4">
             <h2 className="text-xl font-semibold text-white">Seus Agendamentos</h2>
-            {/* DEBUG: Full-width appointments grid - responsive columns */}
-            <div className="w-full grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {/* DEBUG: Full-width appointments grid - more responsive columns for larger screens */}
+            <div className="w-full grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
               {agendamentos.map((agendamento) => (
                 <motion.div key={agendamento.id} variants={itemVariants} className="w-full">
                   {/* DEBUG: Full-width card */}

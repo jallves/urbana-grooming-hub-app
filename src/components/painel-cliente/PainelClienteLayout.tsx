@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,7 @@ const PainelClienteLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-cyan-600/10 animate-pulse" />
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '6s' }} />
@@ -36,9 +35,9 @@ const PainelClienteLayout: React.FC = () => {
       
       <LoadingBar isLoading={isLoading} />
       
-      {/* Header - Mobile Optimized */}
-      <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-700/50 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+      {/* Header - Full width */}
+      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-slate-900/80 border-b border-slate-700/50 shadow-xl">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <motion.div 
               className="flex items-center gap-3"
@@ -91,9 +90,9 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile Navigation */}
-      <nav className="lg:hidden sticky top-[70px] sm:top-[78px] z-40 backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-4">
+      {/* Mobile Navigation - Full width */}
+      <nav className="lg:hidden sticky top-[70px] sm:top-[78px] z-40 w-full backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50">
+        <div className="w-full px-4">
           <div className="flex overflow-x-auto scrollbar-hide">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
@@ -136,8 +135,8 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="relative">
+      {/* Main Content - Full width */}
+      <main className="relative w-full">
         <AnimatePresence mode="wait">
           <PageTransition mode="fade">
             <Outlet />

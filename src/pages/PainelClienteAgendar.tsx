@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -179,18 +178,18 @@ export default function PainelClienteAgendar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
       <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-emerald-600/5 to-green-600/5" />
       
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6"
+          className="w-full space-y-6"
         >
           {/* Header */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
             <Button
               onClick={() => navigate('/painel-cliente/dashboard')}
               variant="outline"
@@ -209,8 +208,8 @@ export default function PainelClienteAgendar() {
           </motion.div>
 
           {/* Form Card */}
-          <motion.div variants={itemVariants}>
-            <Card className="bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl shadow-2xl">
+          <motion.div variants={itemVariants} className="w-full">
+            <Card className="w-full bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl shadow-2xl">
               <CardHeader className="pb-6">
                 <CardTitle className="text-xl lg:text-2xl text-white flex items-center gap-3">
                   <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">

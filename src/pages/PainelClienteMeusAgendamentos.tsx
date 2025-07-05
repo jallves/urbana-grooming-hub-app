@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -122,15 +121,15 @@ export default function PainelClienteMeusAgendamentos() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-pink-600/5 to-purple-600/5" />
       
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-6"
+          className="w-full space-y-6"
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -186,7 +185,7 @@ export default function PainelClienteMeusAgendamentos() {
           </motion.div>
 
           {/* Content */}
-          <motion.div variants={itemVariants} className="pb-6">
+          <motion.div variants={itemVariants} className="pb-6 w-full">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <motion.div
@@ -224,7 +223,7 @@ export default function PainelClienteMeusAgendamentos() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+              <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-4 sm:gap-6">
                 <AnimatePresence>
                   {agendamentosFiltrados.map((agendamento, index) => (
                     <motion.div
