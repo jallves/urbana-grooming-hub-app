@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Shield, Scissors, Menu, Home, Users, X, User } from "lucide-react";
+import { Shield, Scissors, Menu, Home, X, User } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileNavigationProps {
@@ -87,23 +87,14 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
               <Scissors size={20} />
               <span className="text-lg font-medium">Serviços</span>
             </a>
-            
-            <a 
-              href="#team" 
-              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
-              onClick={() => handleItemClick()}
-            >
-              <Users size={20} />
-              <span className="text-lg font-medium">Equipe</span>
-            </a>
 
             <Link 
-              to="/cliente/login"
+              to="/painel-cliente/login"
               className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
               onClick={() => handleItemClick()}
             >
               <User size={20} className="text-urbana-gold" />
-              <span className="text-lg font-medium">Área do Cliente</span>
+              <span className="text-lg font-medium">Painel do Cliente</span>
             </Link>
           </div>
 

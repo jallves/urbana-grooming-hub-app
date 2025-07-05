@@ -39,24 +39,16 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
             Serviços
           </a>
         </NavigationMenuItem>
-        <NavigationMenuItem>
-          <a 
-            href="#team" 
-            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
-          >
-            Equipe
-          </a>
-        </NavigationMenuItem>
         
-        {/* Client Area Link */}
+        {/* Painel do Cliente - substitui a antiga área do cliente */}
         <NavigationMenuItem>
           <Link 
-            to="/cliente/login"
+            to="/painel-cliente/login"
             className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
-            title="Área do Cliente"
+            title="Painel do Cliente"
           >
             <User size={18} className="inline-block mr-1 text-urbana-gold" />
-            Cliente
+            Painel Cliente
           </Link>
         </NavigationMenuItem>
         

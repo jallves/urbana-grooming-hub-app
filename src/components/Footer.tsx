@@ -37,9 +37,7 @@ const Footer: React.FC = () => {
 
   const quickLinks = [
     { name: "Serviços", href: "#services" },
-    { name: "Nossa Equipe", href: "#team" },
     { name: "Galeria", href: "#gallery" },
-    { name: "Agendar Horário", href: "#appointment" },
     { name: "Política de Privacidade", href: "#" }
   ];
 
@@ -142,7 +140,7 @@ const Footer: React.FC = () => {
             <h3 className="font-playfair text-xl font-bold mb-6 text-urbana-gold">
               Links Rápidos
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-3 mb-8">
               {quickLinks.map((link, index) => (
                 <motion.li
                   key={link.name}
@@ -161,6 +159,23 @@ const Footer: React.FC = () => {
                 </motion.li>
               ))}
             </ul>
+
+            {/* Map Section */}
+            <div className="mt-8">
+              <h4 className="font-playfair text-lg font-bold mb-4 text-urbana-gold">
+                Nossa Localização
+              </h4>
+              <div className="bg-urbana-gold/10 rounded-lg p-4 border border-urbana-gold/20">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.1963839158024!2d-46.65844968502146!3d-23.561081684685447!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sAv.%20Paulista%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt!2sbr!4v1620000000000!5m2!1spt!2sbr"
+                  className="w-full h-40 rounded border-0"
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Localização da Barbearia"
+                ></iframe>
+              </div>
+            </div>
           </motion.div>
         </div>
 
@@ -172,14 +187,17 @@ const Footer: React.FC = () => {
           viewport={{ once: true }}
           className="border-t border-gray-800 mt-16 pt-8"
         >
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-center md:text-left">
+          <div className="text-center space-y-4">
+            <p className="text-gray-500">
               © {new Date().getFullYear()} {shopName}. Todos os direitos reservados.
             </p>
-            <div className="flex items-center gap-2 text-gray-500">
+            <div className="flex items-center justify-center gap-2 text-gray-500">
               <span>Feito com</span>
               <Heart className="w-4 h-4 text-red-500 animate-pulse" />
               <span>pela equipe {shopName}</span>
+            </div>
+            <div className="text-gray-400 text-sm">
+              <span>Desenvolvido pela Beltec Soluções</span>
             </div>
           </div>
         </motion.div>
