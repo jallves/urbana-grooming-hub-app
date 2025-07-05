@@ -11,7 +11,7 @@ import ModernCard from '@/components/ui/containers/ModernCard';
 const UserRolesList: React.FC = () => {
   return (
     <div className="p-4">
-      <h4 className="text-md font-semibold mb-2 text-white">Lista de Permissões</h4>
+      <h4 className="text-md font-semibold mb-2 text-black">Lista de Permissões</h4>
       <p className="text-black-400">Gerencie os cargos e permissões dos usuários</p>
     </div>
   );
