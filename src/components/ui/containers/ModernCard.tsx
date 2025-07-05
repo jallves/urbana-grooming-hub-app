@@ -27,27 +27,27 @@ const ModernCard: React.FC<ModernCardProps> = ({
       className
     )}>
       {(title || description || headerActions) && (
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div className="space-y-1">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4 px-4 sm:px-6">
+          <div className="space-y-1 w-full sm:w-auto">
             {title && (
-              <CardTitle className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                 {title}
               </CardTitle>
             )}
             {description && (
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-gray-400 text-sm">
                 {description}
               </CardDescription>
             )}
           </div>
           {headerActions && (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
               {headerActions}
             </div>
           )}
         </CardHeader>
       )}
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         {children}
       </CardContent>
     </Card>

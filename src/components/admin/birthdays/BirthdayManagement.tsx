@@ -18,7 +18,7 @@ const BirthdayManagement: React.FC = () => {
       let targetMonth = null;
       
       if (filter === 'month') {
-        targetMonth = new Date().getMonth() + 1; // JavaScript months are 0-indexed
+        targetMonth = new Date().getMonth() + 1;
       } else if (filter === 'today') {
         targetMonth = new Date().getMonth() + 1;
       } else if (filter === 'week') {
@@ -33,7 +33,6 @@ const BirthdayManagement: React.FC = () => {
         throw new Error(error.message);
       }
       
-      // Filter by specific criteria based on selected filter
       let filteredData = data || [];
       
       if (filter === 'today') {
@@ -70,16 +69,18 @@ const BirthdayManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Aniversariantes</h1>
+    <div className="space-y-4 sm:space-y-6 w-full">
+      <div className="flex items-center justify-between px-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Aniversariantes</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros de Aniversariantes</CardTitle>
+      <Card className="bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
+        <CardHeader className="pb-4 px-4 sm:px-6">
+          <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            Filtros de Aniversariantes
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           <BirthdayFilters filter={filter} onFilterChange={setFilter} />
         </CardContent>
       </Card>

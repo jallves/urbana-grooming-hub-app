@@ -16,7 +16,7 @@ interface AppointmentFormProps {
   isOpen: boolean;
   onClose: () => void;
   defaultDate?: Date;
-  appointmentId?: string; // For editing existing appointments
+  appointmentId?: string;
 }
 
 const AppointmentForm: React.FC<AppointmentFormProps> = ({ 
@@ -45,15 +45,14 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     await handleSubmit(data, selectedService);
   };
 
-  // Obter valores do formulário para passar para StaffSelect
   const selectedDate = form.watch('date');
   const selectedTime = form.watch('time');
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-w-[95vw] max-h-[90vh] overflow-y-auto mx-4">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">
             {appointmentId ? 'Editar Agendamento' : 'Novo Agendamento'}
           </DialogTitle>
         </DialogHeader>

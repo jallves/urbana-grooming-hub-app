@@ -22,12 +22,10 @@ const ClientAppointmentList: React.FC = () => {
   } = useClientAppointments();
   
   const filteredAppointments = appointments.filter(appointment => {
-    // Filter by status
     if (statusFilter !== 'all' && appointment.status !== statusFilter) {
       return false;
     }
     
-    // Filter by search query
     const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
     const query = searchQuery.toLowerCase();
     
@@ -46,8 +44,8 @@ const ClientAppointmentList: React.FC = () => {
   };
   
   return (
-    <>
-      <Card className="p-4">
+    <div className="w-full space-y-4">
+      <Card className="p-3 sm:p-4 bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
         <ClientAppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -55,14 +53,16 @@ const ClientAppointmentList: React.FC = () => {
           setStatusFilter={setStatusFilter}
         />
         
-        <div className="rounded-md border">
-          <ClientAppointmentTable
-            appointments={filteredAppointments}
-            isLoading={isLoading}
-            onEdit={handleEditAppointment}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDeleteAppointment}
-          />
+        <div className="rounded-md border border-white/10 mt-4 overflow-hidden">
+          <div className="overflow-x-auto">
+            <ClientAppointmentTable
+              appointments={filteredAppointments}
+              isLoading={isLoading}
+              onEdit={handleEditAppointment}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDeleteAppointment}
+            />
+          </div>
         </div>
       </Card>
       
@@ -74,7 +74,7 @@ const ClientAppointmentList: React.FC = () => {
           onUpdate={handleUpdateAppointment}
         />
       )}
-    </>
+    </div>
   );
 };
 

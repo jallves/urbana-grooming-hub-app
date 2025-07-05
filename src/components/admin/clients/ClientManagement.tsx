@@ -29,7 +29,6 @@ const ClientManagement: React.FC = () => {
     }
   });
 
-  // Set up real-time subscription for clients
   useEffect(() => {
     const channel = supabase
       .channel('client-changes')
@@ -43,12 +42,11 @@ const ClientManagement: React.FC = () => {
         (payload) => {
           console.log('Client data changed:', payload);
           toast.info('Dados de clientes atualizados');
-          refetch(); // Refresh data when changes occur
+          refetch();
         }
       )
       .subscribe();
 
-    // Confirma que RLS foi desativado e mostra uma mensagem inicial
     toast.success('Sistema de clientes inicializado', {
       description: 'Você pode criar, editar e visualizar clientes livremente'
     });
@@ -86,22 +84,24 @@ const ClientManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Gerenciamento de Clientes</h1>
+    <div className="space-y-4 sm:space-y-6 w-full">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Gerenciamento de Clientes</h1>
         {!isAddingClient && !editingClient && (
-          <Button onClick={handleAddClient}>
+          <Button onClick={handleAddClient} className="w-full sm:w-auto">
             <Plus className="mr-2 h-4 w-4" /> Novo Cliente
           </Button>
         )}
       </div>
 
       {(isAddingClient || editingClient) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</CardTitle>
+        <Card className="bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
+          <CardHeader className="px-4 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 sm:px-6">
             <ClientForm 
               clientId={editingClient}
               onCancel={handleCancelForm}

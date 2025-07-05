@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Bell, Settings, User } from 'lucide-react';
+import { LogOut, Bell, Settings, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -79,22 +79,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                       onClick={() => setSidebarOpen(true)}
                       className="text-white hover:bg-white/10"
                     >
-                      <Settings className="h-6 w-6" />
+                      <Menu className="h-6 w-6" />
                     </Button>
                   )}
                   <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent">
+                    <h1 className="text-xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent">
                       {title}
                     </h1>
-                    <p className="text-sm text-gray-400">Urbana Barbearia</p>
+                    <p className="text-xs lg:text-sm text-gray-400">Urbana Barbearia</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="relative text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                    className="relative text-gray-400 hover:text-white hover:bg-white/10 transition-all hidden sm:flex"
                   >
                     <Bell className="h-5 w-5" />
                     <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 p-0 border-0 text-xs"></Badge>
@@ -102,8 +102,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10 transition-all">
-                        <Avatar className="h-10 w-10 ring-2 ring-urbana-gold/30">
+                      <Button variant="ghost" className="relative h-8 w-8 lg:h-10 lg:w-10 rounded-full hover:bg-white/10 transition-all">
+                        <Avatar className="h-8 w-8 lg:h-10 lg:w-10 ring-2 ring-urbana-gold/30">
                           <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-sm font-semibold">
                             {userInitials}
                           </AvatarFallback>
@@ -143,7 +143,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
           </header>
 
           {/* Main Content Area */}
-          <main className="flex-1 p-4 lg:p-8 overflow-y-auto overflow-x-hidden">
+          <main className="flex-1 p-2 sm:p-4 lg:p-8 overflow-y-auto overflow-x-hidden">
             <div className="max-w-full mx-auto">
               {children}
             </div>

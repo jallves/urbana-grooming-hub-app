@@ -31,34 +31,34 @@ const StatsCard: React.FC<StatsCardProps> = ({
       'bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105',
       className
     )}>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-gray-400 text-sm font-medium">{title}</p>
+          <div className="space-y-2 flex-1 min-w-0">
+            <p className="text-gray-400 text-xs sm:text-sm font-medium truncate">{title}</p>
             <div className="space-y-1">
-              <p className="text-3xl font-bold text-white">{value}</p>
+              <p className="text-xl sm:text-3xl font-bold text-white truncate">{value}</p>
               {subtitle && (
-                <p className="text-gray-500 text-sm">{subtitle}</p>
+                <p className="text-gray-500 text-xs sm:text-sm truncate">{subtitle}</p>
               )}
             </div>
             {trend && (
               <div className="flex items-center space-x-1">
                 <span className={cn(
-                  'text-sm font-medium',
+                  'text-xs sm:text-sm font-medium',
                   trend.isPositive ? 'text-green-400' : 'text-red-400'
                 )}>
                   {trend.isPositive ? '+' : '-'}{Math.abs(trend.value)}%
                 </span>
-                <span className="text-gray-500 text-sm">vs. mês anterior</span>
+                <span className="text-gray-500 text-xs hidden sm:inline">vs. mês anterior</span>
               </div>
             )}
           </div>
           
           <div className={cn(
-            'w-12 h-12 rounded-lg bg-gradient-to-r flex items-center justify-center',
+            'w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-r flex items-center justify-center flex-shrink-0 ml-3',
             gradient
           )}>
-            <Icon className="h-6 w-6 text-white" />
+            <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
         </div>
       </CardContent>
