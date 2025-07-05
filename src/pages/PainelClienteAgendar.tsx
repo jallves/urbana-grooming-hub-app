@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -183,11 +184,11 @@ export default function PainelClienteAgendar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative overflow-x-hidden">
-      {/* Background Effects */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
+      {/* Background Effects - Same as homepage */}
       <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-emerald-600/5 to-green-600/5" />
       
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
         <motion.div
           variants={containerVariants}
           initial="hidden"

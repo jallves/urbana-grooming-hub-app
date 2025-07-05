@@ -131,7 +131,7 @@ export default function PainelClienteDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 relative">
-      {/* Background Effects */}
+      {/* Background Effects - Same as homepage */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5" />
       
       <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">

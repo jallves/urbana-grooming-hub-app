@@ -28,18 +28,18 @@ const PainelClienteLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 flex flex-col relative overflow-hidden">
-      {/* Background Effects */}
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 flex flex-col">
+      {/* Background Effects - Same as homepage */}
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-cyan-600/10 animate-pulse" />
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '6s' }} />
       <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-bounce" style={{ animationDuration: '8s', animationDelay: '2s' }} />
       
       <LoadingBar isLoading={isLoading} />
       
-      {/* Modern Header */}
+      {/* Header - Responsive */}
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-slate-900/80 border-b border-slate-700/50 shadow-xl">
-        <div className="w-full px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
             <motion.div 
               className="flex items-center gap-3"
               initial={{ opacity: 0, x: -20 }}
@@ -98,8 +98,8 @@ const PainelClienteLayout: React.FC = () => {
       </header>
 
       {/* Mobile Navigation */}
-      <nav className="lg:hidden sticky top-[73px] sm:top-[81px] z-40 backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50">
-        <div className="flex overflow-x-auto scrollbar-hide px-2">
+      <nav className="lg:hidden sticky top-[73px] sm:top-[81px] z-40 backdrop-blur-xl bg-slate-900/90 border-b border-slate-700/50 overflow-x-auto">
+        <div className="flex px-2 min-w-max">
           {navigationItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -112,11 +112,12 @@ const PainelClienteLayout: React.FC = () => {
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                className="flex-shrink-0"
               >
                 <Button
                   variant="ghost"
                   onClick={() => navigate(item.path)}
-                  className={`flex-shrink-0 px-4 py-3 mx-1 my-2 rounded-xl transition-all duration-300 min-w-max relative overflow-hidden ${
+                  className={`px-4 py-3 mx-1 my-2 rounded-xl transition-all duration-300 relative overflow-hidden ${
                     isActive 
                       ? `bg-gradient-to-r ${item.color} text-white shadow-lg` 
                       : 'text-gray-400 hover:text-white hover:bg-slate-800/50'
@@ -139,7 +140,7 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 relative max-w-7xl mx-auto w-full">
         {/* Desktop Sidebar */}
         <aside className="hidden lg:flex lg:flex-col w-80 xl:w-96 backdrop-blur-xl bg-slate-900/50 border-r border-slate-700/50 flex-shrink-0 relative">
           <div className="absolute inset-0 bg-gradient-to-b from-slate-800/20 to-transparent" />
@@ -212,11 +213,11 @@ const PainelClienteLayout: React.FC = () => {
           </motion.div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-hidden relative">
+        {/* Main Content - Full width container like homepage */}
+        <main className="flex-1 relative w-full">
           <AnimatePresence mode="wait">
             <PageTransition mode="fade">
-              <div className="h-full w-full">
+              <div className="w-full">
                 <Outlet />
               </div>
             </PageTransition>
