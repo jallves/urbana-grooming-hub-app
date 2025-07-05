@@ -11,7 +11,7 @@ const UserRolesList: React.FC = () => {
   return (
     <div className="p-4">
       <h4 className="text-md font-semibold mb-2 text-black">Lista de Permissões</h4>
-      <p className="text-gray-600">Gerencie os cargos e permissões dos usuários</p>
+      <p className="text-black-600">Gerencie os cargos e permissões dos usuários</p>
     </div>
   );
 };
