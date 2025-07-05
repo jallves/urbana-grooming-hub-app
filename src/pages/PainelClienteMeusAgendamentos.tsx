@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -336,37 +337,39 @@ export default function PainelClienteMeusAgendamentos() {
                             </div>
                           </div>
 
-                      {/* Action Buttons */}
-                      {['agendado', 'confirmado'].includes(agendamento.status) && (
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditAgendamento(agendamento)}
-                            className="flex-1 text-xs border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Editar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteAgendamento(agendamento)}
-                            className="flex-1 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            Cancelar
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </motion.div>
+                          {/* Action Buttons */}
+                          {['agendado', 'confirmado'].includes(agendamento.status) && (
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditAgendamento(agendamento)}
+                                className="flex-1 text-xs border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteAgendamento(agendamento)}
+                                className="flex-1 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Cancelar
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      </div>
 
       {/* Edit Modal */}
       <EditAgendamentoModal
