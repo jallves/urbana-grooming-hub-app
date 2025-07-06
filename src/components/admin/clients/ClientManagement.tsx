@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,7 +115,6 @@ const ClientManagement: React.FC = () => {
               clientId={editingClient}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
-              compact={window.innerWidth < 640} // Pass compact prop for mobile
             />
           </CardContent>
         </Card>
@@ -128,7 +128,6 @@ const ClientManagement: React.FC = () => {
             isLoading={isLoading}
             onEdit={handleEditClient}
             onDelete={() => refetch()}
-            compactView={window.innerWidth < 640} // Pass compact prop for mobile
           />
         </div>
       </div>
