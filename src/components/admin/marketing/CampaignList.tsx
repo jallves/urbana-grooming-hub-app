@@ -116,65 +116,67 @@ const CampaignList = () => {
   };
 
   return (
-    <Card>
+    <Card className="bg-white border-gray-200">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Campanhas de Marketing</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-gray-900">Campanhas de Marketing</CardTitle>
+          <CardDescription className="text-gray-600">
             Gerencie suas campanhas de marketing
           </CardDescription>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
           <Plus className="mr-2 h-4 w-4" />
           Nova Campanha
         </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-4">Carregando...</div>
+          <div className="text-center py-4 text-gray-700">Carregando...</div>
         ) : error ? (
           <div className="text-center text-red-500 py-4">
             Erro ao carregar campanhas. Por favor, tente novamente.
           </div>
         ) : campaigns && campaigns.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Data Início</TableHead>
-                <TableHead>Data Fim</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Orçamento</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {campaigns.map((campaign) => (
-                <TableRow key={campaign.id}>
-                  <TableCell className="font-medium">{campaign.name}</TableCell>
-                  <TableCell>{format(new Date(campaign.start_date), 'dd/MM/yyyy')}</TableCell>
-                  <TableCell>
-                    {campaign.end_date ? format(new Date(campaign.end_date), 'dd/MM/yyyy') : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getBadgeVariant(campaign.status)}>
-                      {getStatusName(campaign.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {campaign.budget ? `R$ ${campaign.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(campaign)}>
-                      Editar
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-gray-900">Nome</TableHead>
+                  <TableHead className="text-gray-900">Data Início</TableHead>
+                  <TableHead className="text-gray-900">Data Fim</TableHead>
+                  <TableHead className="text-gray-900">Status</TableHead>
+                  <TableHead className="text-gray-900">Orçamento</TableHead>
+                  <TableHead className="text-right text-gray-900">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {campaigns.map((campaign) => (
+                  <TableRow key={campaign.id}>
+                    <TableCell className="font-medium text-gray-900">{campaign.name}</TableCell>
+                    <TableCell className="text-gray-700">{format(new Date(campaign.start_date), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell className="text-gray-700">
+                      {campaign.end_date ? format(new Date(campaign.end_date), 'dd/MM/yyyy') : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getBadgeVariant(campaign.status)}>
+                        {getStatusName(campaign.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-gray-700">
+                      {campaign.budget ? `R$ ${campaign.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(campaign)} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                        Editar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-gray-600">
             Nenhuma campanha encontrada. Crie uma nova campanha para começar.
           </div>
         )}

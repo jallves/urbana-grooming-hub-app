@@ -9,18 +9,16 @@ const AdminBirthdays: React.FC = () => {
   return (
     <AdminRoute allowBarber={true}>
       <AdminLayout title="Aniversários">
-        <div className="space-y-6 sm:space-y-8">
-          <ModernCard
-            title="Gestão de Aniversários"
-            description="Gestão de aniversários dos clientes e campanhas especiais"
-            className="w-full max-w-full"
-            contentClassName="overflow-hidden"
-          >
-            <div className="w-full overflow-hidden">
-              <BirthdayManagement />
-            </div>
-          </ModernCard>
-        </div>
+        <ModernCard
+          title="Gestão de Aniversários"
+          description="Gestão de aniversários dos clientes e campanhas especiais"
+          className="w-full max-w-full bg-white border-gray-200"
+          contentClassName="overflow-hidden"
+        >
+          <div className="w-full overflow-hidden">
+            <BirthdayManagement />
+          </div>
+        </ModernCard>
       </AdminLayout>
     </AdminRoute>
   );

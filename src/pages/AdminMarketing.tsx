@@ -9,18 +9,16 @@ const AdminMarketing: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Marketing">
-        <div className="space-y-6 sm:space-y-8">
-          <ModernCard
-            title="Gestão de Marketing"
-            description="Gerenciamento de campanhas, cupons e estratégias de marketing"
-            className="w-full max-w-full"
-            contentClassName="overflow-hidden"
-          >
-            <div className="w-full overflow-hidden">
-              <MarketingManagement />
-            </div>
-          </ModernCard>
-        </div>
+        <ModernCard
+          title="Gestão de Marketing"
+          description="Gerenciamento de campanhas, cupons e estratégias de marketing"
+          className="w-full max-w-full bg-white border-gray-200"
+          contentClassName="overflow-hidden"
+        >
+          <div className="w-full overflow-hidden">
+            <MarketingManagement />
+          </div>
+        </ModernCard>
       </AdminLayout>
     </AdminRoute>
   );

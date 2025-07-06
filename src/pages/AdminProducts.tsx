@@ -9,18 +9,16 @@ const AdminProducts: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Produtos e Serviços">
-        <div className="space-y-6 sm:space-y-8">
-          <ModernCard
-            title="Gestão de Produtos"
-            description="Gerenciamento de produtos e serviços da barbearia"
-            className="w-full max-w-full"
-            contentClassName="overflow-hidden"
-          >
-            <div className="w-full overflow-hidden">
-              <ProductManagement />
-            </div>
-          </ModernCard>
-        </div>
+        <ModernCard
+          title="Gestão de Produtos"
+          description="Gerenciamento de produtos e serviços da barbearia"
+          className="w-full max-w-full bg-white border-gray-200"
+          contentClassName="overflow-hidden"
+        >
+          <div className="w-full overflow-hidden">
+            <ProductManagement />
+          </div>
+        </ModernCard>
       </AdminLayout>
     </AdminRoute>
   );

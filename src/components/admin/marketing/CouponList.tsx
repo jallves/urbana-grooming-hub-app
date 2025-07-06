@@ -93,82 +93,84 @@ const CouponList = () => {
   };
 
   return (
-    <Card>
+    <Card className="bg-white border-gray-200">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Cupons de Desconto</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-gray-900">Cupons de Desconto</CardTitle>
+          <CardDescription className="text-gray-600">
             Gerencie seus cupons de desconto para campanhas
           </CardDescription>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
+        <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
           <Plus className="mr-2 h-4 w-4" />
           Novo Cupom
         </Button>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-4">Carregando...</div>
+          <div className="text-center py-4 text-gray-700">Carregando...</div>
         ) : error ? (
           <div className="text-center text-red-500 py-4">
             Erro ao carregar cupons. Por favor, tente novamente.
           </div>
         ) : coupons && coupons.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Desconto</TableHead>
-                <TableHead>Validade</TableHead>
-                <TableHead>Campanha</TableHead>
-                <TableHead>Utilizações</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {coupons.map((coupon) => (
-                <TableRow key={coupon.id}>
-                  <TableCell className="font-medium flex items-center">
-                    <Tag className="h-4 w-4 mr-2 text-purple-500" />
-                    {coupon.code}
-                  </TableCell>
-                  <TableCell>{formatDiscountValue(coupon)}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-xs text-muted-foreground">De:</span>
-                      <span>{format(new Date(coupon.valid_from), 'dd/MM/yyyy')}</span>
-                      {coupon.valid_until && (
-                        <>
-                          <span className="text-xs text-muted-foreground mt-1">Até:</span>
-                          <span>{format(new Date(coupon.valid_until), 'dd/MM/yyyy')}</span>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {coupon.marketing_campaigns?.name || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {coupon.current_uses || 0}
-                    {coupon.max_uses ? `/${coupon.max_uses}` : ''}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={coupon.is_active ? 'default' : 'secondary'}>
-                      {coupon.is_active ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(coupon)}>
-                      Editar
-                    </Button>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-gray-900">Código</TableHead>
+                  <TableHead className="text-gray-900">Desconto</TableHead>
+                  <TableHead className="text-gray-900">Validade</TableHead>
+                  <TableHead className="text-gray-900">Campanha</TableHead>
+                  <TableHead className="text-gray-900">Utilizações</TableHead>
+                  <TableHead className="text-gray-900">Status</TableHead>
+                  <TableHead className="text-right text-gray-900">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {coupons.map((coupon) => (
+                  <TableRow key={coupon.id}>
+                    <TableCell className="font-medium flex items-center text-gray-900">
+                      <Tag className="h-4 w-4 mr-2 text-purple-500" />
+                      {coupon.code}
+                    </TableCell>
+                    <TableCell className="text-gray-700">{formatDiscountValue(coupon)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">De:</span>
+                        <span className="text-gray-700">{format(new Date(coupon.valid_from), 'dd/MM/yyyy')}</span>
+                        {coupon.valid_until && (
+                          <>
+                            <span className="text-xs text-gray-500 mt-1">Até:</span>
+                            <span className="text-gray-700">{format(new Date(coupon.valid_until), 'dd/MM/yyyy')}</span>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-gray-700">
+                      {coupon.marketing_campaigns?.name || '-'}
+                    </TableCell>
+                    <TableCell className="text-gray-700">
+                      {coupon.current_uses || 0}
+                      {coupon.max_uses ? `/${coupon.max_uses}` : ''}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={coupon.is_active ? 'default' : 'secondary'}>
+                        {coupon.is_active ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(coupon)} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                        Editar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-gray-600">
             Nenhum cupom encontrado. Crie um novo cupom para começar.
           </div>
         )}
