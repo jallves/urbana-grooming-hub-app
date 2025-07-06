@@ -11,7 +11,7 @@ const UserRolesList: React.FC = () => {
   return (
     <div className="p-4 sm:p-6">
       <h4 className="text-lg font-semibold mb-3 text-black-900 dark:text-white">Lista de Permissões</h4>
-      <p className="text-black-600 dark:text-gray-400">Gerencie os cargos e permissões dos usuários</p>
+      <p className="text-black-600 dark:text-black-400">Gerencie os cargos e permissões dos usuários</p>
     </div>
   );
 };
@@ -28,7 +28,7 @@ const AdminBarbers: React.FC = () => {
             onValueChange={(value) => setActiveTab(value as 'barbers' | 'roles')}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1">
+            <TabsList className="grid w-full grid-cols-2 bg-black-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1">
               <TabsTrigger 
                 value="barbers" 
                 className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-blue-500 data-[state=active]:text-black py-2 px-3 text-sm font-medium transition-all"
