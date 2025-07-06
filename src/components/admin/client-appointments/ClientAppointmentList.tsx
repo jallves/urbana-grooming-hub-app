@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { useClientAppointments } from './useClientAppointments';
@@ -44,23 +43,29 @@ const ClientAppointmentList: React.FC = () => {
   };
   
   return (
-    <div className="w-full space-y-3 sm:space-y-4">
-      <Card className="p-2 sm:p-3 md:p-4 bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
+    <div className="w-full space-y-3 px-2 py-2 sm:space-y-4 sm:px-4">
+      <Card className="p-2 bg-black dark:bg-black-800 shadow-sm border border-black-200 dark:border-black-700 sm:p-3 md:p-4">
         <ClientAppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
+          compact={window.innerWidth < 640}
         />
         
-        <div className="rounded-md border border-white/10 overflow-hidden">
-          <ClientAppointmentTable
-            appointments={filteredAppointments}
-            isLoading={isLoading}
-            onEdit={handleEditAppointment}
-            onStatusChange={handleStatusChange}
-            onDelete={handleDeleteAppointment}
-          />
+        <div className="mt-3 rounded-md border border-black-200 dark:border-black-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px] sm:min-w-full">
+              <ClientAppointmentTable
+                appointments={filteredAppointments}
+                isLoading={isLoading}
+                onEdit={handleEditAppointment}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDeleteAppointment}
+                compact={window.innerWidth < 640}
+              />
+            </div>
+          </div>
         </div>
       </Card>
       
@@ -70,6 +75,7 @@ const ClientAppointmentList: React.FC = () => {
           onClose={handleCloseEditDialog}
           appointmentId={selectedAppointment}
           onUpdate={handleUpdateAppointment}
+          compact={window.innerWidth < 640}
         />
       )}
     </div>
