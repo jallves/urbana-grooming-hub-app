@@ -37,28 +37,36 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
   }
 
   return (
-    <>
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Lista de Clientes ({clients.length})</h3>
-            <ExportButton clients={clients} />
+    <div className="w-full max-w-full overflow-hidden">
+      <Card className="w-full">
+        <CardContent className="p-2 sm:p-3 md:p-4">
+          {/* Header com contador e botão de exportação - Responsivo */}
+          <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:justify-between sm:items-center sm:mb-4">
+            <h3 className="text-sm font-semibold sm:text-base md:text-lg">
+              Lista de Clientes ({clients.length})
+            </h3>
+            <div className="flex-shrink-0">
+              <ExportButton clients={clients} />
+            </div>
           </div>
           
-          <div className="overflow-x-auto">
-            <Table>
-              <ClientTableHeader />
-              <TableBody>
-                {clients.map((client) => (
-                  <ClientTableRow
-                    key={client.id}
-                    client={client}
-                    onEdit={onEdit}
-                    onDelete={confirmDelete}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+          {/* Tabela com scroll horizontal para mobile */}
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[600px] sm:min-w-[700px] lg:min-w-full">
+              <Table>
+                <ClientTableHeader />
+                <TableBody>
+                  {clients.map((client) => (
+                    <ClientTableRow
+                      key={client.id}
+                      client={client}
+                      onEdit={onEdit}
+                      onDelete={confirmDelete}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -70,7 +78,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
         onConfirm={handleDelete}
         isDeleting={isDeleting}
       />
-    </>
+    </div>
   );
 };
 
