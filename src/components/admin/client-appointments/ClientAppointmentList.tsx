@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { useClientAppointments } from './useClientAppointments';
@@ -50,7 +51,6 @@ const ClientAppointmentList: React.FC = () => {
           setSearchQuery={setSearchQuery}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
-          compact={window.innerWidth < 640}
         />
         
         <div className="mt-3 rounded-md border border-black-200 dark:border-black-700 overflow-hidden">
@@ -62,7 +62,6 @@ const ClientAppointmentList: React.FC = () => {
                 onEdit={handleEditAppointment}
                 onStatusChange={handleStatusChange}
                 onDelete={handleDeleteAppointment}
-                compact={window.innerWidth < 640}
               />
             </div>
           </div>
@@ -75,7 +74,6 @@ const ClientAppointmentList: React.FC = () => {
           onClose={handleCloseEditDialog}
           appointmentId={selectedAppointment}
           onUpdate={handleUpdateAppointment}
-          compact={window.innerWidth < 640}
         />
       )}
     </div>
