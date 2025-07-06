@@ -102,14 +102,14 @@ const AdminMetricsCards: React.FC = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {metrics.map((metric, index) => {
         const Icon = metric.icon;
         
         return (
-          <Card key={index} className="bg-gray-900 border-gray-700">
+          <Card key={index} className="bg-white border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-400">
+              <CardTitle className="text-sm font-medium text-gray-600">
                 {metric.title}
               </CardTitle>
               <div className={`w-10 h-10 rounded-full ${metric.bgColor} flex items-center justify-center`}>
@@ -117,7 +117,7 @@ const AdminMetricsCards: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-2xl font-bold text-gray-900">
                 {typeof metric.value === 'number' ? metric.value.toLocaleString() : metric.value}
               </div>
             </CardContent>

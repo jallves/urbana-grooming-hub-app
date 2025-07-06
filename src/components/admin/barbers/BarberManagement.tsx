@@ -118,14 +118,14 @@ const BarberManagement: React.FC = () => {
   console.log('Estado atual:', { barbers, isLoading, error, mode });
 
   return (
-    <div className="space-y-3 sm:space-y-4 md:space-y-6 w-full max-w-full">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full">
       {/* Header Section - Responsivo */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="space-y-1">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
             Gerenciamento de Barbeiros
           </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
             Gerencie os barbeiros e suas permissões no sistema
           </p>
         </div>
@@ -143,20 +143,20 @@ const BarberManagement: React.FC = () => {
       {/* Alerts e Cards informativos - Responsivos */}
       {mode === 'viewing' && (
         <>
-          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+          <Alert className="border-blue-200 bg-blue-50">
             <Info className="h-3 w-3 sm:h-4 sm:w-4" />
-            <AlertDescription className="text-xs sm:text-sm leading-relaxed">
+            <AlertDescription className="text-xs sm:text-sm leading-relaxed text-blue-800">
               Este módulo exibe todos os profissionais cadastrados como "Barbeiro" na tabela staff.
             </AlertDescription>
           </Alert>
           
-          <Card className="w-full">
+          <Card className="w-full bg-white border-gray-200">
             <CardHeader className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl text-gray-900">
                 <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="text-sm sm:text-base md:text-lg">Controle de Acesso aos Módulos</span>
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm leading-relaxed">
+              <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
                 Cada barbeiro pode ter permissões diferentes para acessar os módulos do sistema.
                 Edite um barbeiro e acesse a aba "Permissões de Acesso" para configurar.
               </CardDescription>
@@ -167,12 +167,12 @@ const BarberManagement: React.FC = () => {
 
       {/* Formulário de Barbeiro - Responsivo */}
       {isFormVisible && (
-        <Card className="w-full">
+        <Card className="w-full bg-white border-gray-200">
           <CardHeader className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-            <CardTitle className="text-base sm:text-lg md:text-xl">
+            <CardTitle className="text-base sm:text-lg md:text-xl text-gray-900">
               {mode === 'editing' ? 'Editar Barbeiro' : 'Novo Barbeiro'}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm leading-relaxed">
+            <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
               {mode === 'editing'
                 ? 'Edite as informações e permissões do barbeiro'
                 : 'Preencha as informações para cadastrar um novo barbeiro no sistema. A categoria será automaticamente definida como "Barbeiro".'}

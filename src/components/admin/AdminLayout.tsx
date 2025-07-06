@@ -142,9 +142,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
             </div>
           </header>
 
-          {/* Main Content Area - Otimizado para evitar overflow */}
-          <main className="flex-1 p-2 sm:p-3 lg:p-6 xl:p-8 overflow-y-auto w-full">
-            <div className="w-full max-w-full">
+          {/* Main Content Area - PADRONIZADO com o Dashboard */}
+          <main className="flex-1 overflow-y-auto w-full">
+            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
               {children}
             </div>
           </main>

@@ -168,7 +168,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white font-clash mb-2">
@@ -182,12 +182,12 @@ export default function AdminDashboard() {
       {/* Métricas */}
       <AdminMetricsCards />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
         {/* Ações Rápidas */}
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white">Ações Rápidas</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardTitle className="text-gray-900">Ações Rápidas</CardTitle>
+            <CardDescription className="text-gray-600">
               Acesso rápido aos módulos principais
             </CardDescription>
           </CardHeader>
@@ -200,14 +200,14 @@ export default function AdminDashboard() {
                   <div
                     key={index}
                     onClick={action.action}
-                    className="flex items-center gap-4 p-4 bg-gray-800 rounded-lg hover:bg-gray-750 cursor-pointer transition-colors border border-gray-700 hover:border-gray-600"
+                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200"
                   >
                     <div className={`w-10 h-10 rounded-full ${action.bgColor} flex items-center justify-center`}>
                       <Icon className={`h-5 w-5 ${action.color}`} />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-white">{action.title}</p>
-                      <p className="text-sm text-gray-400">{action.description}</p>
+                      <p className="font-medium text-gray-900">{action.title}</p>
+                      <p className="text-sm text-gray-600">{action.description}</p>
                     </div>
                   </div>
                 );
@@ -217,13 +217,13 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Atividades Recentes */}
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="bg-white border-gray-200">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-gray-900 flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Atividades Recentes
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-gray-600">
               Últimas movimentações do sistema
             </CardDescription>
           </CardHeader>
@@ -231,19 +231,19 @@ export default function AdminDashboard() {
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="h-16 bg-gray-800 rounded animate-pulse"></div>
+                  <div key={i} className="h-16 bg-gray-100 rounded animate-pulse"></div>
                 ))}
               </div>
             ) : recentActivities.length > 0 ? (
               <div className="space-y-3 max-h-80 overflow-y-auto">
                 {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-800 rounded-lg">
+                  <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       activity.type === 'appointment' 
-                        ? 'bg-blue-500/20 text-blue-400'
+                        ? 'bg-blue-500/20 text-blue-600'
                         : activity.type === 'client'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-amber-500/20 text-amber-400'
+                        ? 'bg-green-500/20 text-green-600'
+                        : 'bg-amber-500/20 text-amber-600'
                     }`}>
                       {activity.type === 'appointment' && <Calendar className="h-4 w-4" />}
                       {activity.type === 'client' && <Users className="h-4 w-4" />}
@@ -251,18 +251,18 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white">{activity.title}</p>
-                      <p className="text-xs text-gray-400 truncate">{activity.description}</p>
+                      <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                      <p className="text-xs text-gray-600 truncate">{activity.description}</p>
                       <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
                     </div>
                     
                     {activity.status && (
                       <div className={`px-2 py-1 rounded text-xs ${
                         activity.status === 'completed' 
-                          ? 'bg-green-500/20 text-green-400'
+                          ? 'bg-green-500/20 text-green-600'
                           : activity.status === 'cancelled'
-                          ? 'bg-red-500/20 text-red-400'
-                          : 'bg-blue-500/20 text-blue-400'
+                          ? 'bg-red-500/20 text-red-600'
+                          : 'bg-blue-500/20 text-blue-600'
                       }`}>
                         {activity.status}
                       </div>
@@ -272,8 +272,8 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <Clock className="h-8 w-8 text-gray-600 mx-auto mb-2" />
-                <p className="text-gray-400">Nenhuma atividade recente</p>
+                <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">Nenhuma atividade recente</p>
               </div>
             )}
           </CardContent>

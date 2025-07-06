@@ -26,23 +26,22 @@ const ModernCard: React.FC<ModernCardProps> = ({
 }) => {
   return (
     <Card className={cn(
-      'bg-gradient-to-br backdrop-blur-lg border border-white/10 shadow-2xl w-full max-w-full overflow-hidden',
-      gradient,
+      'bg-white border border-gray-200 shadow-lg w-full max-w-full overflow-hidden',
       className
     )}>
       {(title || description || headerActions) && (
         <CardHeader className={cn(
-          'flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between px-2 py-2 sm:px-3 sm:py-3 md:px-4 md:py-4 lg:px-6 lg:py-6 pb-2 sm:pb-3 md:pb-4',
+          'flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between px-4 py-4 lg:px-6 lg:py-6 pb-4',
           headerClassName
         )}>
           <div className="space-y-1 w-full sm:flex-1 min-w-0">
             {title && (
-              <CardTitle className="text-sm sm:text-base md:text-lg lg:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent leading-tight">
+              <CardTitle className="text-lg md:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">
                 {title}
               </CardTitle>
             )}
             {description && (
-              <CardDescription className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+              <CardDescription className="text-gray-600 text-sm leading-relaxed">
                 {description}
               </CardDescription>
             )}
@@ -55,7 +54,7 @@ const ModernCard: React.FC<ModernCardProps> = ({
         </CardHeader>
       )}
       <CardContent className={cn(
-        'p-2 sm:p-3 md:p-4 lg:p-6 w-full max-w-full',
+        'p-4 lg:p-6 w-full max-w-full',
         contentClassName
       )}>
         <div className="w-full max-w-full overflow-hidden">
