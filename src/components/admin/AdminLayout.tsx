@@ -86,7 +86,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                     <h1 className="text-sm sm:text-lg lg:text-2xl xl:text-3xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent truncate">
                       {title}
                     </h1>
-                    <p className="text-xs sm:text-sm text-gray-400 truncate">Urbana Barbearia</p>
+                    <p className="text-xs sm:text-sm text-yellow-400 truncate"> Barbearia Costa Urbana </p>
                   </div>
                 </div>
                 
