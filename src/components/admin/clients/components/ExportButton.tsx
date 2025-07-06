@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import { Client } from '@/types/client';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
@@ -13,6 +13,11 @@ interface ExportButtonProps {
 const ExportButton: React.FC<ExportButtonProps> = ({ clients }) => {
   const handleExport = () => {
     try {
+      if (clients.length === 0) {
+        toast.error('Nenhum cliente para exportar');
+        return;
+      }
+
       const exportData = clients.map(client => ({
         Nome: client.name,
         Email: client.email || '',
@@ -26,11 +31,16 @@ const ExportButton: React.FC<ExportButtonProps> = ({ clients }) => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Clientes');
       
-      XLSX.writeFile(workbook, `clientes_${new Date().toISOString().split('T')[0]}.xlsx`);
+      const fileName = `clientes_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
       
-      toast.success('Arquivo exportado com sucesso!');
+      toast.success(`Arquivo "${fileName}" exportado com sucesso!`, {
+        description: `${clients.length} clientes exportados`
+      });
     } catch (error) {
-      toast.error('Erro ao exportar arquivo');
+      toast.error('Erro ao exportar arquivo', {
+        description: 'Tente novamente em alguns instantes'
+      });
       console.error('Export error:', error);
     }
   };
@@ -40,12 +50,17 @@ const ExportButton: React.FC<ExportButtonProps> = ({ clients }) => {
       variant="outline"
       size="sm"
       onClick={handleExport}
-      className="text-xs sm:text-sm"
       disabled={clients.length === 0}
+      className="w-full sm:w-auto text-xs sm:text-sm font-medium border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      <Download className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4" />
-      <span className="hidden sm:inline">Exportar</span>
-      <span className="sm:hidden">Excel</span>
+      <div className="flex items-center gap-1 sm:gap-2">
+        <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
+        <span className="hidden xs:inline sm:inline">Exportar</span>
+        <span className="xs:hidden sm:hidden">Excel</span>
+        <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500">
+          ({clients.length})
+        </div>
+      </div>
     </Button>
   );
 };
