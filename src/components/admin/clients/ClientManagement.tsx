@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -84,39 +83,55 @@ const ClientManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-1">
-        <h1 className="text-xl sm:text-2xl font-bold text-white">Gerenciamento de Clientes</h1>
+    <div className="space-y-4 w-full px-2 py-2 sm:space-y-6 sm:px-4 sm:py-4">
+      {/* Header Section */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-lg font-bold sm:text-xl md:text-2xl text-black-900 dark:text-white">
+          Gerenciamento de Clientes
+        </h1>
         {!isAddingClient && !editingClient && (
-          <Button onClick={handleAddClient} className="w-full sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" /> Novo Cliente
+          <Button 
+            onClick={handleAddClient} 
+            className="w-full sm:w-auto"
+            size="sm"
+          >
+            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="text-sm sm:text-base">Novo Cliente</span>
           </Button>
         )}
       </div>
 
+      {/* Form Section */}
       {(isAddingClient || editingClient) && (
-        <Card className="bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
-          <CardHeader className="px-4 sm:px-6">
-            <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+        <Card className="bg-black dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+          <CardHeader className="px-3 py-3 sm:px-4 sm:py-4">
+            <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-black-900 dark:text-white">
               {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 sm:px-6">
+          <CardContent className="px-3 py-2 sm:px-4 sm:py-4">
             <ClientForm 
               clientId={editingClient}
               onCancel={handleCancelForm}
               onSuccess={handleSuccess}
+              compact={window.innerWidth < 640} // Pass compact prop for mobile
             />
           </CardContent>
         </Card>
       )}
 
-      <ClientList 
-        clients={clients || []}
-        isLoading={isLoading}
-        onEdit={handleEditClient}
-        onDelete={() => refetch()}
-      />
+      {/* Client List Section */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[280px] sm:min-w-full">
+          <ClientList 
+            clients={clients || []}
+            isLoading={isLoading}
+            onEdit={handleEditClient}
+            onDelete={() => refetch()}
+            compactView={window.innerWidth < 640} // Pass compact prop for mobile
+          />
+        </div>
+      </div>
     </div>
   );
 };
