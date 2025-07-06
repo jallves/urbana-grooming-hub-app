@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +42,9 @@ const ClientManagement: React.FC = () => {
       )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [refetch]);
 
   if (error) {
@@ -90,7 +93,6 @@ const ClientManagement: React.FC = () => {
                 setIsAddingClient(false);
                 setEditingClient(null);
               }}
-              compact={isMobile}
             />
           </CardContent>
         </Card>
@@ -106,7 +108,6 @@ const ClientManagement: React.FC = () => {
             setIsAddingClient(false);
           }}
           onDelete={refetch}
-          compactView={isMobile}
         />
       </div>
     </div>
