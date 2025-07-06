@@ -26,36 +26,41 @@ const ModernCard: React.FC<ModernCardProps> = ({
 }) => {
   return (
     <Card className={cn(
-      'bg-gradient-to-br backdrop-blur-lg border border-white/10 shadow-2xl',
+      'bg-gradient-to-br backdrop-blur-lg border border-white/10 shadow-2xl w-full max-w-full overflow-hidden',
       gradient,
       className
     )}>
       {(title || description || headerActions) && (
         <CardHeader className={cn(
-          'flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-3 sm:pb-4 px-3 sm:px-4 md:px-6',
+          'flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between px-2 py-2 sm:px-3 sm:py-3 md:px-4 md:py-4 lg:px-6 lg:py-6 pb-2 sm:pb-3 md:pb-4',
           headerClassName
         )}>
-          <div className="space-y-1 w-full sm:w-auto">
+          <div className="space-y-1 w-full sm:flex-1 min-w-0">
             {title && (
-              <CardTitle className="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              <CardTitle className="text-sm sm:text-base md:text-lg lg:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent leading-tight">
                 {title}
               </CardTitle>
             )}
             {description && (
-              <CardDescription className="text-gray-400 text-xs sm:text-sm">
+              <CardDescription className="text-gray-400 text-xs sm:text-sm leading-relaxed">
                 {description}
               </CardDescription>
             )}
           </div>
           {headerActions && (
-            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+            <div className="flex items-center space-x-2 w-full sm:w-auto justify-start sm:justify-end flex-shrink-0">
               {headerActions}
             </div>
           )}
         </CardHeader>
       )}
-      <CardContent className={cn('p-3 sm:p-4 md:p-6', contentClassName)}>
-        {children}
+      <CardContent className={cn(
+        'p-2 sm:p-3 md:p-4 lg:p-6 w-full max-w-full',
+        contentClassName
+      )}>
+        <div className="w-full max-w-full overflow-hidden">
+          {children}
+        </div>
       </CardContent>
     </Card>
   );
