@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Plus, MessageSquare, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import AdminLayout from '@/components/admin/AdminLayout';
+import AdminRoute from '@/components/auth/AdminRoute';
+import ModernCard from '@/components/ui/containers/ModernCard';
 
 interface SupportTicket {
   id: string;
@@ -117,98 +120,111 @@ const AdminSupport: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-48 bg-gray-200 rounded"></div>
-            ))}
+      <AdminRoute>
+        <AdminLayout title="Suporte">
+          <div className="space-y-6 sm:space-y-8">
+            <ModernCard className="w-full max-w-full">
+              <div className="animate-pulse space-y-4 p-6">
+                <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="h-48 bg-gray-200 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            </ModernCard>
           </div>
-        </div>
-      </div>
+        </AdminLayout>
+      </AdminRoute>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Suporte</h1>
-          <p className="text-gray-600">Gerencie tickets de suporte dos clientes</p>
-        </div>
-        <Button onClick={() => navigate('/admin/support/new')}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Ticket
-        </Button>
-      </div>
-
-      {tickets.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <MessageSquare className="w-12 h-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum ticket encontrado
-            </h3>
-            <p className="text-gray-600 text-center mb-4">
-              Não há tickets de suporte registrados no momento.
-            </p>
-            <Button onClick={() => navigate('/admin/support/new')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeiro Ticket
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tickets.map((ticket) => (
-            <Card 
-              key={ticket.id} 
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(`/admin/support/${ticket.id}`)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg line-clamp-2">
-                    {ticket.subject}
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    {getStatusBadge(ticket.status)}
-                    {getPriorityBadge(ticket.priority)}
-                  </div>
+    <AdminRoute>
+      <AdminLayout title="Suporte">
+        <div className="space-y-6 sm:space-y-8">
+          <ModernCard
+            title="Gestão de Suporte"
+            description="Gerencie tickets de suporte dos clientes"
+            className="w-full max-w-full"
+            contentClassName="overflow-hidden"
+            headerActions={
+              <Button onClick={() => navigate('/admin/support/new')} size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Novo Ticket</span>
+                <span className="sm:hidden">Novo</span>
+              </Button>
+            }
+          >
+            <div className="w-full overflow-hidden">
+              {tickets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nenhum ticket encontrado
+                  </h3>
+                  <p className="text-gray-600 text-center mb-4">
+                    Não há tickets de suporte registrados no momento.
+                  </p>
+                  <Button onClick={() => navigate('/admin/support/new')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeiro Ticket
+                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-gray-600 text-sm line-clamp-3">
-                  {ticket.description}
-                </p>
-                
-                <div className="space-y-2 text-xs text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <User className="w-3 h-3" />
-                    <span>Cliente: {ticket.clients?.name || 'N/A'}</span>
-                  </div>
-                  
-                  {ticket.staff && (
-                    <div className="flex items-center gap-2">
-                      <User className="w-3 h-3" />
-                      <span>Atribuído: {ticket.staff.name}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-3 h-3" />
-                    <span>
-                      {format(new Date(ticket.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                    </span>
-                  </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {tickets.map((ticket) => (
+                    <Card 
+                      key={ticket.id} 
+                      className="cursor-pointer hover:shadow-lg transition-shadow bg-white"
+                      onClick={() => navigate(`/admin/support/${ticket.id}`)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <CardTitle className="text-lg line-clamp-2 text-gray-900">
+                            {ticket.subject}
+                          </CardTitle>
+                          <div className="flex gap-2 flex-wrap">
+                            {getStatusBadge(ticket.status)}
+                            {getPriorityBadge(ticket.priority)}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-gray-600 text-sm line-clamp-3">
+                          {ticket.description}
+                        </p>
+                        
+                        <div className="space-y-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-2">
+                            <User className="w-3 h-3" />
+                            <span>Cliente: {ticket.clients?.name || 'N/A'}</span>
+                          </div>
+                          
+                          {ticket.staff && (
+                            <div className="flex items-center gap-2">
+                              <User className="w-3 h-3" />
+                              <span>Atribuído: {ticket.staff.name}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {format(new Date(ticket.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              )}
+            </div>
+          </ModernCard>
         </div>
-      )}
-    </div>
+      </AdminLayout>
+    </AdminRoute>
   );
 };
 

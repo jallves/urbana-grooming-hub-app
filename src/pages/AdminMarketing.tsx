@@ -2,23 +2,27 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import MarketingManagement from '@/components/admin/marketing/MarketingManagement';
+import AdminRoute from '@/components/auth/AdminRoute';
 import ModernCard from '@/components/ui/containers/ModernCard';
 
 const AdminMarketing: React.FC = () => {
   return (
-    <AdminLayout title="Marketing">
-      <div className="space-y-8">
-        <div className="grid gap-6">
+    <AdminRoute>
+      <AdminLayout title="Marketing">
+        <div className="space-y-6 sm:space-y-8">
           <ModernCard
             title="Gestão de Marketing"
             description="Gerenciamento de campanhas, cupons e estratégias de marketing"
-            gradient="from-red-500/10 to-pink-600/10"
+            className="w-full max-w-full"
+            contentClassName="overflow-hidden"
           >
-            <MarketingManagement />
+            <div className="w-full overflow-hidden">
+              <MarketingManagement />
+            </div>
           </ModernCard>
         </div>
-      </div>
-    </AdminLayout>
+      </AdminLayout>
+    </AdminRoute>
   );
 };
 

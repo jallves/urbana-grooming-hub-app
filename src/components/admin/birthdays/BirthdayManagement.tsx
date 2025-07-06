@@ -71,12 +71,15 @@ const BirthdayManagement: React.FC = () => {
   return (
     <div className="space-y-4 sm:space-y-6 w-full">
       <div className="flex items-center justify-between px-1">
-        <h1 className="text-xl sm:text-2xl font-bold text-white">Aniversariantes</h1>
+        <div>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Aniversariantes</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Gerencie aniversários e campanhas especiais</p>
+        </div>
       </div>
 
-      <Card className="bg-gradient-to-br from-black/40 to-gray-900/40 backdrop-blur-lg border border-white/10">
+      <Card className="bg-white border-gray-200 w-full">
         <CardHeader className="pb-4 px-4 sm:px-6">
-          <CardTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
             Filtros de Aniversariantes
           </CardTitle>
         </CardHeader>
@@ -85,12 +88,14 @@ const BirthdayManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      <BirthdayList 
-        clients={clients || []}
-        isLoading={isLoading}
-        filter={filter}
-        onRefresh={() => refetch()}
-      />
+      <div className="w-full overflow-x-auto">
+        <BirthdayList 
+          clients={clients || []}
+          isLoading={isLoading}
+          filter={filter}
+          onRefresh={() => refetch()}
+        />
+      </div>
     </div>
   );
 };
