@@ -10,13 +10,12 @@ export default function AdminAppointments() {
         <ModernCard
           title="Gestão de Agendamentos"
           description="Gerencie todos os agendamentos da barbearia em tempo real"
-          gradient="from-black/20 to-emerald-700/20"
+          gradient="from-black-500/10 to-emerald-600/10"
           className="w-full"
           headerClassName="px-4 py-3 sm:px-6 sm:py-4"
           contentClassName="overflow-x-auto"
         >
-          {/* Container fluido, sem min-width fixo, ocupa 100% e permite scroll se necessário */}
-          <div className="w-full max-w-full">
+          <div className="min-w-[600px] md:min-w-full">
             <AppointmentList />
           </div>
         </ModernCard>

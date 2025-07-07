@@ -1,198 +1,259 @@
 
 import React from 'react';
-import { motion } from "framer-motion";
+import { Scissors, Clock, Star, Award, Coffee, Shield } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Scissors, Zap, Crown, Star, ArrowRight, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+
+interface ServiceProps {
+  title: string;
+  price: string;
+  description: string | null;
+  index: number;
+}
+
+const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      viewport={{ once: true }}
+    >
+      <Card className="group relative overflow-hidden bg-white hover:shadow-2xl transition-all duration-500 border-0 shadow-lg hover:-translate-y-2 h-full">
+        <CardContent className="p-8 h-full flex flex-col">
+          {/* Modern service icon */}
+          <div className="relative mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <Scissors className="w-8 h-8 text-urbana-gold" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-urbana-gold/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </div>
+
+          <div className="flex-1">
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="font-playfair text-2xl font-bold text-urbana-black leading-tight group-hover:text-urbana-gold transition-colors duration-300">
+                {title}
+              </h3>
+              <div className="text-right ml-4">
+                <div className="relative">
+                  <span className="text-3xl font-playfair font-bold text-urbana-gold group-hover:scale-110 inline-block transition-transform duration-300">
+                    {price}
+                  </span>
+                  <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-urbana-gold/0 via-urbana-gold/50 to-urbana-gold/0 scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative mb-6">
+              <div className="h-px bg-gradient-to-r from-urbana-gold/0 via-urbana-gold/30 to-urbana-gold/0 group-hover:via-urbana-gold/60 transition-all duration-500"></div>
+              <div className="absolute left-1/2 top-0 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-urbana-gold rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            </div>
+            
+            <p className="text-urbana-gray text-base leading-relaxed group-hover:text-urbana-black/80 transition-colors duration-300">
+              {description || "Serviço premium de barbearia com atenção aos detalhes"}
+            </p>
+          </div>
+          
+          {/* Modern decorative elements */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-urbana-gold/5 to-transparent rounded-bl-full group-hover:scale-125 transition-transform duration-500"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-urbana-gold/5 to-transparent rounded-tr-full group-hover:scale-125 transition-transform duration-500"></div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
 
 const Services: React.FC = () => {
-  const services = [
+  const { data: services, isLoading, error } = useQuery({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    }
+  });
+
+  const features = [
     {
-      icon: Scissors,
-      title: "Corte Clássico",
-      description: "Corte tradicional com acabamento impecável, respeitando o formato do rosto e estilo pessoal.",
-      price: "R$ 45",
-      duration: "45 min",
-      features: ["Análise facial", "Lavagem completa", "Finalização"],
-      color: "from-blue-600 to-cyan-600"
+      icon: <Award className="h-8 w-8 text-urbana-gold" />,
+      title: "Profissionais Certificados",
+      description: "Nossa equipe possui certificações e anos de experiência em técnicas modernas e clássicas."
     },
     {
-      icon: Crown,
-      title: "Barba Premium",
-      description: "Cuidado completo para sua barba com produtos premium e técnicas tradicionais.",
-      price: "R$ 35",
-      duration: "30 min",
-      features: ["Design personalizado", "Produtos premium", "Hidratação"],
-      color: "from-purple-600 to-pink-600"
+      icon: <Clock className="h-8 w-8 text-urbana-gold" />,
+      title: "Pontualidade Garantida",
+      description: "Respeitamos seu tempo com agendamentos precisos e serviços eficientes."
     },
     {
-      icon: Zap,
-      title: "Combo Completo",
-      description: "Experiência completa com corte, barba e cuidados especiais para o cavalheiro moderno.",
-      price: "R$ 70",
-      duration: "75 min",
-      features: ["Corte + Barba", "Relaxamento", "Produtos especiais"],
-      color: "from-amber-600 to-orange-600",
-      popular: true
+      icon: <Coffee className="h-8 w-8 text-urbana-gold" />,
+      title: "Experiência Completa",
+      description: "Ambiente relaxante com bebidas cortesia e música ambiente cuidadosamente selecionada."
     },
     {
-      icon: Star,
-      title: "Tratamento Capilar",
-      description: "Cuidados especiais para manutenção e saúde dos seus cabelos com produtos profissionais.",
-      price: "R$ 25",
-      duration: "20 min",
-      features: ["Hidratação profunda", "Análise capilar", "Produtos naturais"],
-      color: "from-green-600 to-emerald-600"
+      icon: <Shield className="h-8 w-8 text-urbana-gold" />,
+      title: "Higiene Premium",
+      description: "Protocolos rigorosos de limpeza e esterilização para sua segurança."
+    },
+    {
+      icon: <Star className="h-8 w-8 text-urbana-gold" />,
+      title: "Atendimento Personalizado",
+      description: "Cada cliente é único. Adaptamos nossos serviços ao seu estilo pessoal."
+    },
+    {
+      icon: <Scissors className="h-8 w-8 text-urbana-gold" />,
+      title: "Técnicas Modernas",
+      description: "Combinamos tradição com as mais modernas técnicas e equipamentos."
     }
   ];
 
+  const formatPrice = (price: number) => {
+    return `R$ ${price.toFixed(2).replace('.', ',')}`;
+  };
+
   return (
-    <section id="services" className="relative py-24 bg-gradient-to-b from-white via-gray-50 to-white overflow-hidden">
+    <section id="services" className="relative py-24 bg-gradient-to-b from-white via-gray-50/50 to-white overflow-hidden">
       {/* Modern background elements */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-32 right-10 w-96 h-96 bg-urbana-gold rounded-full blur-3xl"></div>
-        <div className="absolute bottom-32 left-10 w-80 h-80 bg-urbana-gold rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-urbana-gold/20 rounded-full"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-urbana-gold rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-urbana-gold rounded-full blur-3xl"></div>
       </div>
 
       <div className="urbana-container relative z-10">
-        {/* Enhanced Header */}
-        <motion.div
+        {/* Modern header */}
+        <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-px bg-gradient-to-r from-transparent via-urbana-gold to-transparent"></div>
-            <Sparkles className="mx-4 h-6 w-6 text-urbana-gold" />
-            <div className="w-16 h-px bg-gradient-to-l from-transparent via-urbana-gold to-transparent"></div>
+          <div className="relative inline-block">
+            <motion.div
+              initial={{ scale: 0 }}
+              whileInView={{ scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="absolute -top-4 -left-4 w-8 h-8 border-2 border-urbana-gold rounded-full opacity-30"
+            ></motion.div>
+            
+            <h2 className="font-playfair text-5xl md:text-6xl lg:text-7xl font-bold text-urbana-black mb-6 relative">
+              Nossos <span className="text-urbana-gold">Serviços</span>
+              <motion.div 
+                initial={{ width: 0 }}
+                whileInView={{ width: "100%" }}
+                transition={{ duration: 1, delay: 0.5 }}
+                viewport={{ once: true }}
+                className="absolute -bottom-2 left-0 h-1 bg-gradient-to-r from-urbana-gold/0 via-urbana-gold to-urbana-gold/0 rounded-full"
+              ></motion.div>
+            </h2>
+            
+            <motion.div
+              initial={{ scale: 0 }}
+              whileInView={{ scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+              className="absolute -bottom-4 -right-4 w-6 h-6 bg-urbana-gold rounded-full opacity-40"
+            ></motion.div>
           </div>
           
-          <h2 className="urbana-heading mb-6 relative">
-            <span className="bg-gradient-to-r from-urbana-black via-urbana-brown to-urbana-black bg-clip-text text-transparent">
-              Nossos Serviços
-            </span>
-          </h2>
-          
-          <p className="urbana-subheading max-w-3xl mx-auto leading-relaxed">
-            Oferecemos uma experiência premium de cuidados masculinos, combinando técnicas tradicionais 
-            com as mais modernas tendências da barbearia contemporânea.
-          </p>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            viewport={{ once: true }}
+            className="text-xl md:text-2xl text-urbana-gray max-w-4xl mx-auto leading-relaxed mt-8"
+          >
+            Descubra uma experiência única onde tradição e modernidade se encontram. 
+            Cada serviço é uma obra de arte dedicada ao seu estilo pessoal.
+          </motion.p>
         </motion.div>
 
-        {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-          {services.map((service, index) => (
-            <motion.div
-              key={service.title}
+        {/* Modern features grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
+          {features.map((feature, index) => (
+            <motion.div 
+              key={index}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className="relative group"
+              className="group text-center"
             >
-              <Card className="h-full border-0 shadow-xl hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-white to-gray-50 group-hover:from-white group-hover:to-urbana-gold/5 relative overflow-hidden">
-                {/* Popular badge */}
-                {service.popular && (
-                  <div className="absolute -top-2 -right-2 z-10">
-                    <div className="bg-gradient-to-r from-urbana-gold to-yellow-400 text-urbana-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                      POPULAR
-                    </div>
-                  </div>
-                )}
-
-                {/* Decorative corner */}
-                <div className="absolute top-0 right-0 w-20 h-20 overflow-hidden">
-                  <div className={`absolute top-0 right-0 w-0 h-0 border-l-[80px] border-l-transparent border-t-[80px] bg-gradient-to-br ${service.color} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
-                </div>
-
-                <CardContent className="p-8 relative z-10">
-                  {/* Icon with gradient background */}
-                  <div className="relative mb-6">
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${service.color} p-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <service.icon className="w-full h-full text-white" />
-                    </div>
-                    <div className={`absolute inset-0 w-16 h-16 rounded-2xl bg-gradient-to-br ${service.color} blur-xl opacity-30 group-hover:opacity-50 transition-opacity`}></div>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-urbana-black mb-3 group-hover:text-urbana-brown transition-colors">
-                    {service.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                    {service.description}
-                  </p>
-
-                  {/* Features */}
-                  <ul className="space-y-2 mb-6">
-                    {service.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center text-sm text-gray-500">
-                        <div className="w-1.5 h-1.5 bg-urbana-gold rounded-full mr-3"></div>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* Price and Duration */}
-                  <div className="flex justify-between items-center mb-6 p-4 bg-gray-50 rounded-xl">
-                    <div>
-                      <span className="text-2xl font-bold text-urbana-gold">{service.price}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm text-gray-500">{service.duration}</span>
-                    </div>
-                  </div>
-
-                  {/* Action Button */}
-                  <Button 
-                    className="w-full bg-gradient-to-r from-urbana-black to-urbana-brown hover:from-urbana-brown hover:to-urbana-black text-white font-medium py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group/btn"
-                  >
-                    <span>Agendar Agora</span>
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                  </Button>
-                </CardContent>
-
-                {/* Hover effect overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-urbana-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-              </Card>
+              <div className="relative inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-urbana-gold/10 to-urbana-gold/5 rounded-2xl mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                {feature.icon}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-urbana-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <h3 className="text-xl font-playfair font-bold mb-4 text-urbana-black group-hover:text-urbana-gold transition-colors duration-300">
+                {feature.title}
+              </h3>
+              <p className="text-urbana-gray leading-relaxed max-w-sm mx-auto group-hover:text-urbana-black/80 transition-colors duration-300">
+                {feature.description}
+              </p>
             </motion.div>
           ))}
         </div>
 
-        {/* Call to Action */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <div className="bg-gradient-to-br from-urbana-black to-urbana-brown rounded-2xl p-12 text-white relative overflow-hidden">
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,215,0,0.3)_0%,transparent_50%)]"></div>
-              <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_70%_80%,rgba(255,215,0,0.2)_0%,transparent_50%)]"></div>
+        {/* Services grid */}
+        {isLoading ? (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-20"
+          >
+            <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-solid border-urbana-gold border-r-transparent mb-6"></div>
+            <p className="text-urbana-gray text-xl font-playfair">Carregando serviços premium...</p>
+          </motion.div>
+        ) : error ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-20"
+          >
+            <div className="max-w-md mx-auto">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-red-600 text-3xl">⚠</span>
+              </div>
+              <p className="text-2xl font-playfair font-semibold text-red-600 mb-3">Erro ao carregar serviços</p>
+              <p className="text-urbana-gray">Por favor, tente novamente mais tarde.</p>
             </div>
-            
-            <div className="relative z-10">
-              <h3 className="text-3xl font-bold mb-4">
-                Pronto para uma Transformação?
-              </h3>
-              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Agende seu horário e descubra por que somos a barbearia preferida dos cavalheiros exigentes.
-              </p>
-              <Button 
-                size="lg"
-                className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-bold px-8 py-4 text-lg rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-              >
-                Agendar Consulta Grátis
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
+          </motion.div>
+        ) : services && services.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service, index) => (
+              <ServiceCard
+                key={service.id}
+                title={service.name}
+                price={formatPrice(service.price)}
+                description={service.description}
+                index={index}
+              />
+            ))}
           </div>
-        </motion.div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20"
+          >
+            <div className="max-w-md mx-auto">
+              <div className="w-20 h-20 bg-urbana-gold/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Scissors className="h-10 w-10 text-urbana-gold" />
+              </div>
+              <p className="text-2xl font-playfair text-urbana-black mb-3">Em breve, novos serviços</p>
+              <p className="text-urbana-gray">Estamos preparando experiências incríveis para você!</p>
+            </div>
+          </motion.div>
+        )}
       </div>
     </section>
   );
