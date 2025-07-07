@@ -94,18 +94,18 @@ export default function PainelClienteDashboard() {
 
   return (
     <div className="min-h-screen w-screen bg-gray-950 overflow-x-hidden relative">
-      {/* Mobile-first container with proper padding */}
-      <div className="relative w-full px-3 py-4 sm:px-6 sm:py-6 lg:px-12 lg:py-10 max-w-7xl mx-auto">
-        <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Container responsivo com padding adequado para mobile */}
+      <div className="relative w-full px-4 py-6 sm:px-6 lg:px-12 lg:py-10 max-w-7xl mx-auto">
+        <div className="w-full space-y-6 lg:space-y-8">
 
-          {/* MOBILE-OPTIMIZED HEADER */}
-          <div className="flex flex-col gap-3 w-full">
-            <div className="flex items-center justify-between">
+          {/* HEADER OTIMIZADO PARA MOBILE */}
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <div className="flex items-center justify-between w-full">
               <Button
                 onClick={() => navigate('/')}
                 variant="outline"
                 size="sm"
-                className="border-gray-800 text-gray-300 bg-gray-900/50 backdrop-blur-md rounded-lg px-3 py-2 flex items-center gap-2 hover:bg-gray-800/50"
+                className="border-gray-800 text-gray-300 bg-transparent hover:bg-gray-800/50 rounded-lg px-3 py-2 flex items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Voltar</span>
@@ -121,8 +121,8 @@ export default function PainelClienteDashboard() {
             </div>
           </div>
 
-          {/* MOBILE-OPTIMIZED GREETING */}
-          <div className="flex items-start gap-3 mb-4">
+          {/* SAUDAÇÃO OTIMIZADA PARA MOBILE */}
+          <div className="flex items-start gap-3 mb-6">
             <div className="p-2.5 bg-gray-900/70 rounded-xl border border-gray-800 shadow-lg flex-shrink-0">
               <Scissors className="h-5 w-5 text-cyan-400" />
             </div>
@@ -136,13 +136,13 @@ export default function PainelClienteDashboard() {
             </div>
           </div>
 
-          {/* MOBILE-OPTIMIZED STATISTICS */}
+          {/* ESTATÍSTICAS OTIMIZADAS PARA MOBILE */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-300 mb-3 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-300 mb-4 flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-cyan-400" />
               <span>Estatísticas</span>
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { title: 'Total', value: agendamentos.length, icon: Calendar, color: 'from-blue-600 to-blue-800' },
                 { title: 'Confirmados', value: agendamentos.filter(a => a.status === 'confirmado').length, icon: CheckCircle, color: 'from-green-600 to-green-800' },
@@ -150,7 +150,7 @@ export default function PainelClienteDashboard() {
                 { title: 'Cancelados', value: agendamentos.filter(a => a.status === 'cancelado').length, icon: XCircle, color: 'from-red-600 to-red-800' }
               ].map((stat, index) => (
                 <Card key={index} className="border-0 bg-gradient-to-br from-gray-900/80 to-gray-950/80 backdrop-blur-sm">
-                  <CardContent className="p-3 sm:p-4">
+                  <CardContent className="p-4">
                     <div className="flex flex-col items-center text-center space-y-2">
                       <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color} flex-shrink-0`}>
                         <stat.icon className="h-4 w-4 text-white" />
@@ -166,7 +166,7 @@ export default function PainelClienteDashboard() {
             </div>
           </div>
 
-          {/* MOBILE-OPTIMIZED RECENT APPOINTMENTS */}
+          {/* AGENDAMENTOS RECENTES OTIMIZADOS PARA MOBILE */}
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
               <h2 className="text-lg font-semibold text-gray-300 flex items-center gap-2">
@@ -176,18 +176,18 @@ export default function PainelClienteDashboard() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/painel-cliente/agendamentos')}
-                className="border-gray-800 text-gray-300 bg-gray-900/50 backdrop-blur-md rounded-lg px-4 py-2 text-sm hover:bg-gray-800/50 w-full sm:w-auto"
+                className="border-gray-800 text-gray-300 bg-transparent hover:bg-gray-800/50 rounded-lg px-4 py-2 text-sm w-full sm:w-auto"
               >
                 Ver Todos
               </Button>
             </div>
 
-            {/* MOBILE-FIRST APPOINTMENT CARDS */}
-            <div className="space-y-3 sm:space-y-4">
+            {/* CARDS DE AGENDAMENTO OTIMIZADOS PARA MOBILE */}
+            <div className="space-y-4">
               {agendamentos.slice(0, 6).map((agendamento) => (
                 <Card key={agendamento.id} className="border-0 bg-gradient-to-br from-gray-900/80 to-gray-950/80">
-                  <CardHeader className="pb-2 px-4 pt-4">
-                    <div className="flex justify-between items-start gap-2">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start gap-3">
                       <CardTitle className="text-white text-base sm:text-lg font-semibold leading-tight flex-1 min-w-0">
                         {agendamento.painel_servicos.nome}
                       </CardTitle>
@@ -196,12 +196,12 @@ export default function PainelClienteDashboard() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="px-4 pb-4 space-y-3">
-                    {/* Mobile-optimized info grid */}
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                  <CardContent className="space-y-4">
+                    {/* Grid de informações otimizado para mobile */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div className="flex items-center text-gray-300">
                         <Calendar className="w-4 h-4 mr-2 text-cyan-400 flex-shrink-0" />
-                        <span className="truncate">{format(new Date(agendamento.data), 'dd/MM', { locale: ptBR })}</span>
+                        <span>{format(new Date(agendamento.data), 'dd/MM/yyyy', { locale: ptBR })}</span>
                       </div>
                       <div className="flex items-center text-gray-300">
                         <Clock className="w-4 h-4 mr-2 text-cyan-400 flex-shrink-0" />
@@ -214,7 +214,7 @@ export default function PainelClienteDashboard() {
                       <span className="truncate">{agendamento.painel_barbeiros.nome}</span>
                     </div>
                     
-                    <div className="pt-2 border-t border-gray-800">
+                    <div className="pt-3 border-t border-gray-800">
                       <div className="flex justify-between items-center mb-3">
                         <span className="text-xs text-gray-400">Valor</span>
                         <span className="text-sm font-semibold text-cyan-400">
@@ -222,14 +222,14 @@ export default function PainelClienteDashboard() {
                         </span>
                       </div>
                       
-                      {/* Mobile-optimized action buttons */}
+                      {/* Botões de ação otimizados para mobile */}
                       {agendamento.status !== 'concluido' && (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleEditAgendamento(agendamento)}
-                            className="text-xs border-gray-700 text-gray-300 bg-gray-800/50 backdrop-blur-sm hover:bg-gray-700/50 py-2"
+                            className="flex-1 text-xs border-gray-700 text-gray-300 bg-transparent hover:bg-gray-700/50 py-2"
                           >
                             <Edit className="w-3 h-3 mr-1" />
                             Editar
@@ -238,7 +238,7 @@ export default function PainelClienteDashboard() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDeleteAgendamento(agendamento)}
-                            className="text-xs border-gray-700 text-gray-300 bg-gray-800/50 backdrop-blur-sm hover:bg-gray-700/50 py-2"
+                            className="flex-1 text-xs border-gray-700 text-gray-300 bg-transparent hover:bg-gray-700/50 py-2"
                           >
                             <Trash2 className="w-3 h-3 mr-1" />
                             Cancelar
