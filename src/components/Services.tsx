@@ -101,7 +101,7 @@ const Services: React.FC = () => {
   return (
     <section
       id="services"
-      className="relative py-16 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
+      className="relative py-8 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
     >
       {/* Modern background elements */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -119,9 +119,9 @@ const Services: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center max-w-4xl mx-auto mb-12"
+          className="text-center max-w-4xl mx-auto mb-8"
         >
-          <h2 className="text-5xl md:text-6xl font-playfair font-bold text-urbana-gold mb-6">
+          <h2 className="text-5xl md:text-6xl font-playfair font-bold text-urbana-gold mb-4">
             Nossos{" "}
             <span className="text-urbana-light drop-shadow-[0_0_8px_rgba(255,215,0,0.3)]">
               Serviços
@@ -135,7 +135,7 @@ const Services: React.FC = () => {
         </motion.div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {features.map(({ icon, title, description }, i) => {
             const ref = React.createRef<HTMLDivElement>();
             const isInView = useInView(ref, { once: true, margin: "-50px" });
@@ -146,12 +146,12 @@ const Services: React.FC = () => {
                 initial={{ opacity: 0, y: 40 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: i * 0.15, ease: "easeOut" }}
-                className="group text-center p-6 rounded-xl bg-urbana-black/50 backdrop-blur-lg border border-urbana-gold/20 shadow-lg hover:shadow-[0_0_25px_rgba(255,215,0,0.2)] hover:border-urbana-gold/40 transition-all duration-500 hover:scale-105"
+                className="group text-center p-4 rounded-xl bg-urbana-black/50 backdrop-blur-lg border border-urbana-gold/20 shadow-lg hover:shadow-[0_0_25px_rgba(255,215,0,0.2)] hover:border-urbana-gold/40 transition-all duration-500 hover:scale-105"
               >
-                <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-yellow-400/20 text-urbana-gold mx-auto group-hover:scale-110 transition-transform duration-300">
+                <div className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-yellow-400/20 text-urbana-gold mx-auto group-hover:scale-110 transition-transform duration-300">
                   {icon}
                 </div>
-                <h3 className="text-xl font-bold mb-4 font-playfair text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
+                <h3 className="text-xl font-bold mb-3 font-playfair text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
                   {title}
                 </h3>
                 <p className="text-urbana-light/70 font-raleway text-base leading-relaxed">
@@ -167,7 +167,7 @@ const Services: React.FC = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-24"
+            className="flex flex-col items-center justify-center py-16"
           >
             <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-urbana-gold border-r-transparent mb-6"></div>
             <p className="text-urbana-gold text-xl font-bold font-playfair">
@@ -178,7 +178,7 @@ const Services: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-24 max-w-md mx-auto"
+            className="text-center py-16 max-w-md mx-auto"
           >
             <div className="w-20 h-20 bg-red-900/50 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-red-400 text-4xl">⚠</span>
@@ -191,7 +191,7 @@ const Services: React.FC = () => {
             </p>
           </motion.div>
         ) : services && services.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service, i) => (
               <ServiceCard
                 key={service.id}
@@ -206,7 +206,7 @@ const Services: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-24 max-w-md mx-auto"
+            className="text-center py-16 max-w-md mx-auto"
           >
             <div className="w-20 h-20 bg-urbana-gold/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-urbana-gold text-4xl">📋</span>
