@@ -93,16 +93,16 @@ export default function PainelClienteDashboard() {
 
   return (
     <div className="min-h-screen w-screen bg-gray-950 overflow-x-hidden relative">
-      <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-7xl mx-auto">
+      <div className="relative w-full px-6 py-6 sm:px-8 lg:px-12 lg:py-10 max-w-7xl mx-auto">
         <div className="w-full space-y-8">
 
-          {/* TOPO COM VOLTAR + NOVO AGENDAMENTO */}
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 w-full">
+          {/* TOPO: VOLTAR + NOVO AGENDAMENTO */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 w-full">
             <Button
               onClick={() => navigate('/')}
               variant="outline"
               size="sm"
-              className="border-gray-800 text-gray-300 bg-transparent rounded-lg px-4 py-2 backdrop-blur-md flex items-center gap-2"
+              className="border-gray-800 text-gray-300 bg-transparent rounded-lg px-4 py-3 w-full sm:w-auto backdrop-blur-md flex items-center justify-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Voltar</span>
@@ -110,23 +110,25 @@ export default function PainelClienteDashboard() {
 
             <Button
               onClick={() => navigate('/painel-cliente/agendar')}
-              className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-medium px-6 py-3 rounded-lg shadow-xl ml-auto"
+              className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-medium px-6 py-3 rounded-lg shadow-xl w-full sm:w-auto flex justify-center items-center gap-2"
             >
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className="w-5 h-5" />
               Novo Agendamento
             </Button>
           </div>
 
           {/* SAUDAÇÃO */}
-          <div className="inline-flex items-center gap-4 mb-6 mt-4">
+          <div className="inline-flex items-center gap-4 mb-6 mt-4 flex-wrap">
             <div className="p-3 bg-gray-900 rounded-xl border border-gray-800 shadow-lg">
               <Scissors className="h-6 w-6 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400 leading-tight">
                 Olá, {cliente?.nome.split(' ')[0]}!
               </h1>
-              <p className="text-gray-400 text-lg mt-2">Painel de agendamentos</p>
+              <p className="text-gray-400 text-lg mt-2 max-w-xs sm:max-w-none">
+                Painel de agendamentos
+              </p>
             </div>
           </div>
 
@@ -136,7 +138,7 @@ export default function PainelClienteDashboard() {
               <BarChart3 className="h-5 w-5 text-cyan-400" />
               <span>Estatísticas</span>
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { title: 'Total', value: agendamentos.length, icon: Calendar, color: 'from-blue-600 to-blue-800' },
                 { title: 'Confirmados', value: agendamentos.filter(a => a.status === 'confirmado').length, icon: CheckCircle, color: 'from-green-600 to-green-800' },
@@ -162,7 +164,7 @@ export default function PainelClienteDashboard() {
 
           {/* AGENDAMENTOS RECENTES */}
           <div>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
               <h2 className="text-xl font-semibold text-gray-300 flex items-center gap-2">
                 <Clock className="h-5 w-5 text-cyan-400" />
                 <span>Agendamentos Recentes</span>
@@ -170,13 +172,13 @@ export default function PainelClienteDashboard() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/painel-cliente/agendamentos')}
-                className="border-gray-800 text-gray-300 bg-transparent rounded-lg backdrop-blur-md"
+                className="border-gray-800 text-gray-300 bg-transparent rounded-lg backdrop-blur-md px-5 py-2 w-full sm:w-auto"
               >
                 Ver Todos
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
               {agendamentos.slice(0, 6).map((agendamento) => (
                 <Card key={agendamento.id} className="border-0 bg-gradient-to-br from-gray-900 to-gray-950">
                   <CardHeader className="pb-3">
@@ -211,12 +213,12 @@ export default function PainelClienteDashboard() {
                       </div>
                     </div>
                     {agendamento.status !== 'concluido' && (
-                      <div className="flex gap-2 pt-3">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-3">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleEditAgendamento(agendamento)}
-                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm"
+                          className="w-full sm:flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm"
                         >
                           <Edit className="w-3 h-3 mr-1" />
                           Editar
@@ -225,7 +227,7 @@ export default function PainelClienteDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteAgendamento(agendamento)}
-                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm"
+                          className="w-full sm:flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm"
                         >
                           <Trash2 className="w-3 h-3 mr-1" />
                           Cancelar
