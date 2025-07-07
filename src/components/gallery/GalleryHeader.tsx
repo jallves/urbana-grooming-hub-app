@@ -11,7 +11,7 @@ const GalleryHeader: React.FC = () => {
       className="text-center mb-20 px-4 max-w-4xl mx-auto"
     >
       <div className="relative inline-block">
-        {/* Golden shimmer decorations */}
+        {/* Elemento decorativo superior esquerdo */}
         <motion.div
           initial={{ scale: 0, rotate: -45 }}
           whileInView={{ scale: 1, rotate: 0 }}
@@ -20,6 +20,7 @@ const GalleryHeader: React.FC = () => {
           className="absolute -top-6 -left-6 w-3 h-12 bg-yellow-400/30 rounded-full shadow-[0_0_12px_rgba(255,215,0,0.5)]"
         />
 
+        {/* Título */}
         <motion.h2 
           initial={{ opacity: 0, scale: 0.8 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -29,9 +30,10 @@ const GalleryHeader: React.FC = () => {
         >
           Nossa{" "}
           <span className="relative inline-block">
-            <span className="text-black hover:text-yellow-500 transition-colors duration-300">
+            <span className="text-black">
               Galeria
             </span>
+            {/* Sublinhado com efeito dourado */}
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: "100%" }}
@@ -43,6 +45,7 @@ const GalleryHeader: React.FC = () => {
           </span>
         </motion.h2>
 
+        {/* Elemento decorativo inferior direito */}
         <motion.div
           initial={{ scale: 0, rotate: 45 }}
           whileInView={{ scale: 1, rotate: 0 }}
@@ -52,6 +55,7 @@ const GalleryHeader: React.FC = () => {
         />
       </div>
 
+      {/* Frase de destaque */}
       <motion.p 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -60,16 +64,16 @@ const GalleryHeader: React.FC = () => {
         className="text-xl md:text-2xl text-black max-w-3xl mx-auto leading-relaxed mt-8 font-medium"
       >
         Cada imagem conta uma história de{" "}
-        <strong className="text-black drop-shadow-[0_0_4px_rgba(255,215,0,0.6)] font-semibold">
+        <strong className="text-black drop-shadow-[0_0_4px_rgba(255,215,0,0.4)] font-semibold">
           maestria
         </strong>{" "}
         e{" "}
-        <strong className="text-black drop-shadow-[0_0_4px_rgba(255,215,0,0.6)] font-semibold">
+        <strong className="text-black drop-shadow-[0_0_4px_rgba(255,215,0,0.4)] font-semibold">
           paixão
         </strong>. Descubra o resultado do nosso trabalho meticuloso e da dedicação em cada detalhe.
       </motion.p>
 
-      {/* Decorative line with central gold dot */}
+      {/* Linha decorativa com pontos dourados */}
       <motion.div 
         initial={{ scale: 0 }}
         whileInView={{ scale: 1 }}
@@ -95,4 +99,3 @@ const GalleryHeader: React.FC = () => {
 };
 
 export default GalleryHeader;
-
