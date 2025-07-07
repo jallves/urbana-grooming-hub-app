@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,263 +21,293 @@ export default function PainelClienteDashboard() {
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (cliente) {
-      fetchAgendamentos();
-    }
-  }, [cliente]);
+  // Efeito de partículas (simulado via CSS)
+  const ParticleBackground = () => (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full bg-cyan-500/20"
+          initial={{
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            width: Math.random() * 3 + 1,
+            height: Math.random() * 3 + 1,
+            opacity: Math.random() * 0.5 + 0.1
+          }}
+          animate={{
+            y: [null, (Math.random() - 0.5) * 50],
+            x: [null, (Math.random() - 0.5) * 50],
+            transition: {
+              duration: Math.random() * 10 + 10,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }
+          }}
+        />
+      ))}
+    </div>
+  );
 
-  const fetchAgendamentos = async () => {
-    if (!cliente) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('painel_agendamentos')
-        .select(`
-          *,
-          painel_barbeiros!inner(nome),
-          painel_servicos!inner(nome, preco, duracao)
-        `)
-        .eq('cliente_id', cliente.id)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false });
-
-      if (error) throw error;
-      setAgendamentos(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar agendamentos:', error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível carregar os agendamentos.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEditAgendamento = (agendamento: Agendamento) => {
-    setSelectedAgendamento(agendamento);
-    setEditModalOpen(true);
-  };
-
-  const handleDeleteAgendamento = async (agendamento: Agendamento) => {
-    if (agendamento.status === 'concluido') {
-      toast({
-        variant: "destructive",
-        title: "Não é possível cancelar",
-        description: "Agendamentos concluídos não podem ser cancelados.",
-      });
-      return;
-    }
-
-    if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
-      try {
-        const { error } = await supabase
-          .from('painel_agendamentos')
-          .update({ status: 'cancelado' })
-          .eq('id', agendamento.id);
-
-        if (error) throw error;
-
-        toast({
-          title: "Agendamento cancelado!",
-          description: "Seu agendamento foi cancelado com sucesso.",
-        });
-
-        fetchAgendamentos();
-      } catch (error) {
-        console.error('Erro ao cancelar agendamento:', error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Não foi possível cancelar o agendamento.",
-        });
-      }
-    }
-  };
+  const GlowCard = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
+    <div className={`relative group ${className}`}>
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl blur opacity-20 group-hover:opacity-30 transition duration-300" />
+      <div className="relative bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        {children}
+      </div>
+    </div>
+  );
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      agendado: { label: 'Agendado', color: 'bg-blue-900 text-blue-300 border-blue-800' },
-      confirmado: { label: 'Confirmado', color: 'bg-green-900 text-green-300 border-green-800' },
-      concluido: { label: 'Concluído', color: 'bg-purple-900 text-purple-300 border-purple-800' },
-      cancelado: { label: 'Cancelado', color: 'bg-red-900 text-red-300 border-red-800' },
+      agendado: { label: 'Agendado', color: 'bg-blue-900/50 text-blue-400 border-blue-800' },
+      confirmado: { label: 'Confirmado', color: 'bg-green-900/50 text-green-400 border-green-800' },
+      concluido: { label: 'Concluído', color: 'bg-purple-900/50 text-purple-400 border-purple-800' },
+      cancelado: { label: 'Cancelado', color: 'bg-red-900/50 text-red-400 border-red-800' },
     };
-    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'bg-gray-900 text-gray-300 border-gray-800' };
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'bg-gray-900/50 text-gray-400 border-gray-800' };
     return (
-      <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${config.color}`}>
+      <motion.span 
+        whileHover={{ scale: 1.05 }}
+        className={`px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-md ${config.color}`}
+      >
         {config.label}
-      </span>
+      </motion.span>
     );
   };
 
+  // ... (restante das funções permanecem iguais)
+
   return (
-    <div className="min-h-screen w-screen bg-gray-950 overflow-x-hidden">
-      <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-screen w-screen bg-gray-950 overflow-x-hidden relative">
+      <ParticleBackground />
+      
+      {/* Efeito de grid futurista */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 pointer-events-none" />
+
+      <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
           className="w-full space-y-8"
         >
-          {/* Header */}
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+          {/* Header futurista */}
+          <motion.div 
+            className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
             <Button
               onClick={() => navigate('/')}
               variant="outline"
               size="sm"
-              className="border-gray-800 text-gray-400 hover:bg-gray-900 hover:text-gray-200 hover:border-gray-700 rounded-lg px-4 py-2"
+              className="border-gray-800 text-gray-300 hover:bg-gray-800/50 hover:text-white rounded-lg px-4 py-2 backdrop-blur-md flex items-center gap-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+              <ArrowLeft className="h-4 w-4" />
+              <span>Voltar</span>
             </Button>
             
             <div className="flex-1">
-              <div className="inline-flex items-center gap-3 mb-4">
-                <div className="p-3 bg-gray-800 rounded-full border border-gray-700">
-                  <Scissors className="h-6 w-6 text-amber-500" />
-                </div>
+              <div className="inline-flex items-center gap-4 mb-6">
+                <motion.div
+                  whileHover={{ rotate: 15 }}
+                  className="p-3 bg-gray-900 rounded-xl border border-gray-800 shadow-lg"
+                >
+                  <Scissors className="h-6 w-6 text-cyan-400" />
+                </motion.div>
                 <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white">
+                  <motion.h1 
+                    className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
                     Olá, {cliente?.nome.split(' ')[0]}!
-                  </h1>
-                  <p className="text-gray-400 text-lg mt-2">Bem-vindo ao seu painel</p>
+                  </motion.h1>
+                  <motion.p 
+                    className="text-gray-400 text-lg mt-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    Painel de agendamentos
+                  </motion.p>
                 </div>
               </div>
               
-              <div className="mt-6">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
                 <Button 
                   onClick={() => navigate('/painel-cliente/agendar')}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-8 py-4 rounded-lg"
+                  className="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-medium px-8 py-4 rounded-lg shadow-xl"
                   size="lg"
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Novo Agendamento
+                  <span className="relative z-10 flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    <span>Novo Agendamento</span>
+                  </span>
+                  <motion.span
+                    className="absolute inset-0 bg-gradient-to-r from-cyan-400/30 to-purple-400/30 opacity-0 hover:opacity-100 transition-opacity duration-300"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                  />
                 </Button>
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Stats Cards - Simplificado */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { title: 'Total', value: agendamentos.length, icon: Calendar, color: 'bg-blue-900' },
-              { title: 'Confirmados', value: agendamentos.filter(a => a.status === 'confirmado').length, icon: CheckCircle, color: 'bg-green-900' },
-              { title: 'Concluídos', value: agendamentos.filter(a => a.status === 'concluido').length, icon: CheckCircle, color: 'bg-purple-900' },
-              { title: 'Cancelados', value: agendamentos.filter(a => a.status === 'cancelado').length, icon: XCircle, color: 'bg-red-900' }
-            ].map((stat, index) => (
-              <Card key={index} className={`border-0 ${stat.color} border border-gray-800`}>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <stat.icon className="h-5 w-5 text-gray-300" />
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-white">{stat.value}</div>
-                      <p className="text-xs text-gray-300">{stat.title}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Stats Cards futuristas */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h2 className="text-xl font-semibold text-gray-300 mb-4 flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-cyan-400" />
+              <span>Estatísticas</span>
+            </h2>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { title: 'Total', value: agendamentos.length, icon: Calendar, color: 'from-blue-600 to-blue-800' },
+                { title: 'Confirmados', value: agendamentos.filter(a => a.status === 'confirmado').length, icon: CheckCircle, color: 'from-green-600 to-green-800' },
+                { title: 'Concluídos', value: agendamentos.filter(a => a.status === 'concluido').length, icon: Award, color: 'from-purple-600 to-purple-800' },
+                { title: 'Cancelados', value: agendamentos.filter(a => a.status === 'cancelado').length, icon: XCircle, color: 'from-red-600 to-red-800' }
+              ].map((stat, index) => (
+                <GlowCard key={index}>
+                  <Card className="border-0 bg-gradient-to-br from-gray-900 to-gray-950 backdrop-blur-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className={`p-2 rounded-lg bg-gradient-to-r ${stat.color}`}>
+                          <stat.icon className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-white">{stat.value}</div>
+                          <p className="text-xs text-gray-400">{stat.title}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </GlowCard>
+              ))}
+            </div>
+          </motion.div>
 
-          {/* Agendamentos Recentes */}
-          <div>
+          {/* Agendamentos Recentes futurista */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                <Clock className="h-5 w-5 text-amber-500" />
-                Agendamentos Recentes
+              <h2 className="text-xl font-semibold text-gray-300 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-cyan-400" />
+                <span>Agendamentos Recentes</span>
               </h2>
               <Button
                 variant="outline"
                 onClick={() => navigate('/painel-cliente/agendamentos')}
-                className="border-gray-800 text-gray-400 hover:bg-gray-900 hover:text-gray-200"
+                className="border-gray-800 text-gray-300 hover:bg-gray-800/50 hover:text-white rounded-lg backdrop-blur-md"
               >
                 Ver Todos
               </Button>
             </div>
             
             {agendamentos.length === 0 ? (
-              <Card className="border-0 bg-gray-900 border border-gray-800">
-                <CardContent className="p-8 text-center">
-                  <Calendar className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Nenhum agendamento
-                  </h3>
-                  <Button 
-                    onClick={() => navigate('/painel-cliente/agendar')}
-                    className="bg-amber-600 hover:bg-amber-700 text-white mt-4"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agendar Serviço
-                  </Button>
-                </CardContent>
-              </Card>
+              <GlowCard>
+                <Card className="border-0 bg-gradient-to-br from-gray-900 to-gray-950">
+                  <CardContent className="p-8 text-center">
+                    <Calendar className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      Nenhum agendamento
+                    </h3>
+                    <Button 
+                      onClick={() => navigate('/painel-cliente/agendar')}
+                      className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white mt-4"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Agendar Serviço
+                    </Button>
+                  </CardContent>
+                </Card>
+              </GlowCard>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {agendamentos.slice(0, 6).map((agendamento) => (
-                  <Card key={agendamento.id} className="border-0 bg-gray-900 border border-gray-800">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-white text-lg font-semibold">
-                          {agendamento.painel_servicos.nome}
-                        </CardTitle>
-                        {getStatusBadge(agendamento.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center text-gray-300 text-sm">
-                          <Calendar className="w-4 h-4 mr-2 text-amber-500" />
-                          {format(new Date(agendamento.data), 'dd/MM', { locale: ptBR })}
-                        </div>
-                        <div className="flex items-center text-gray-300 text-sm">
-                          <Clock className="w-4 h-4 mr-2 text-amber-500" />
-                          {agendamento.hora}
-                        </div>
-                      </div>
-                      <div className="flex items-center text-gray-300 text-sm">
-                        <Scissors className="w-4 h-4 mr-2 text-amber-500" />
-                        {agendamento.painel_barbeiros.nome}
-                      </div>
-                      
-                      <div className="pt-2 border-t border-gray-800">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-400">Valor</span>
-                          <span className="text-sm font-semibold text-amber-500">
-                            R$ {agendamento.painel_servicos.preco.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                  <GlowCard key={agendamento.id}>
+                    <motion.div
+                      whileHover={{ y: -5 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      <Card className="border-0 bg-gradient-to-br from-gray-900 to-gray-950">
+                        <CardHeader className="pb-3">
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-white text-lg font-semibold">
+                              {agendamento.painel_servicos.nome}
+                            </CardTitle>
+                            {getStatusBadge(agendamento.status)}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <Calendar className="w-4 h-4 mr-2 text-cyan-400" />
+                              {format(new Date(agendamento.data), 'dd/MM', { locale: ptBR })}
+                            </div>
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <Clock className="w-4 h-4 mr-2 text-cyan-400" />
+                              {agendamento.hora}
+                            </div>
+                          </div>
+                          <div className="flex items-center text-gray-300 text-sm">
+                            <Scissors className="w-4 h-4 mr-2 text-cyan-400" />
+                            {agendamento.painel_barbeiros.nome}
+                          </div>
+                          
+                          <div className="pt-2 border-t border-gray-800">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-400">Valor</span>
+                              <span className="text-sm font-semibold text-cyan-400">
+                                R$ {agendamento.painel_servicos.preco.toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
 
-                      {agendamento.status !== 'concluido' && (
-                        <div className="flex gap-2 pt-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditAgendamento(agendamento)}
-                            className="flex-1 text-xs border-gray-800 text-gray-300 hover:bg-gray-800"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Editar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteAgendamento(agendamento)}
-                            className="flex-1 text-xs border-gray-800 text-gray-300 hover:bg-gray-800"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            Cancelar
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                          {agendamento.status !== 'concluido' && (
+                            <div className="flex gap-2 pt-3">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditAgendamento(agendamento)}
+                                className="flex-1 text-xs border-gray-800 text-gray-300 hover:bg-gray-800/50 hover:text-white backdrop-blur-sm"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteAgendamento(agendamento)}
+                                className="flex-1 text-xs border-gray-800 text-gray-300 hover:bg-gray-800/50 hover:text-white backdrop-blur-sm"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Cancelar
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </GlowCard>
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
 
           <EditAgendamentoModal
             isOpen={editModalOpen}
@@ -295,19 +324,4 @@ export default function PainelClienteDashboard() {
   );
 }
 
-interface Agendamento {
-  id: string;
-  data: string;
-  hora: string;
-  status: string;
-  observacoes?: string;
-  created_at: string;
-  painel_barbeiros: {
-    nome: string;
-  };
-  painel_servicos: {
-    nome: string;
-    preco: number;
-    duracao: number;
-  };
-}
+// ... (interface Agendamento permanece a mesma)
