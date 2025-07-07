@@ -1,6 +1,5 @@
-
 import React, { useRef } from "react";
-import { Award, Clock, Star, Shield, Coffee, Scissors } from "lucide-react";
+import { Scissors } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,39 +61,6 @@ const Services: React.FC = () => {
     },
   });
 
-  const features = [
-    {
-      icon: <Award size={36} className="text-urbana-gold" />,
-      title: "Profissionais Certificados",
-      description: "Equipe com certificações e anos de experiência em técnicas modernas e clássicas.",
-    },
-    {
-      icon: <Clock size={36} className="text-urbana-gold" />,
-      title: "Pontualidade Garantida",
-      description: "Agendamentos precisos e serviços eficientes, respeitando seu tempo.",
-    },
-    {
-      icon: <Coffee size={36} className="text-urbana-gold" />,
-      title: "Experiência Completa",
-      description: "Ambiente relaxante com bebidas cortesia e música ambiente selecionada.",
-    },
-    {
-      icon: <Shield size={36} className="text-urbana-gold" />,
-      title: "Higiene Premium",
-      description: "Protocolos rigorosos de limpeza e esterilização para sua segurança.",
-    },
-    {
-      icon: <Star size={36} className="text-urbana-gold" />,
-      title: "Atendimento Personalizado",
-      description: "Cada cliente é único. Serviços adaptados ao seu estilo pessoal.",
-    },
-    {
-      icon: <Scissors size={36} className="text-urbana-gold" />,
-      title: "Técnicas Modernas",
-      description: "Combinamos tradição com as mais modernas técnicas e equipamentos.",
-    },
-  ];
-
   const formatPrice = (price: number) =>
     `R$ ${price.toFixed(2).replace(".", ",")}`;
 
@@ -129,38 +95,9 @@ const Services: React.FC = () => {
           </h2>
           <p className="text-urbana-light/90 font-raleway text-lg md:text-xl leading-relaxed">
             Descubra uma experiência única onde tradição e modernidade se
-            encontram. Cada serviço é uma obra de arte dedicada ao seu estilo
-            pessoal.
+            encontram.
           </p>
         </motion.div>
-
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {features.map(({ icon, title, description }, i) => {
-            const ref = React.createRef<HTMLDivElement>();
-            const isInView = useInView(ref, { once: true, margin: "-50px" });
-            return (
-              <motion.div
-                ref={ref}
-                key={i}
-                initial={{ opacity: 0, y: 40 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: i * 0.15, ease: "easeOut" }}
-                className="group text-center p-4 rounded-xl bg-urbana-black/50 backdrop-blur-lg border border-urbana-gold/20 shadow-lg hover:shadow-[0_0_25px_rgba(255,215,0,0.2)] hover:border-urbana-gold/40 transition-all duration-500 hover:scale-105"
-              >
-                <div className="mb-4 inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-yellow-400/20 text-urbana-gold mx-auto group-hover:scale-110 transition-transform duration-300">
-                  {icon}
-                </div>
-                <h3 className="text-xl font-bold mb-3 font-playfair text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
-                  {title}
-                </h3>
-                <p className="text-urbana-light/70 font-raleway text-base leading-relaxed">
-                  {description}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
 
         {/* Services Grid */}
         {isLoading ? (
