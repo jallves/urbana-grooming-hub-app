@@ -1,3 +1,4 @@
+
 import React, { useRef } from "react";
 import { Medal, Clock, Star, ShieldCheck, Coffee, Scissors } from "phosphor-react";
 import { Card } from "@/components/ui/card";
@@ -203,4 +204,20 @@ const Services: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-20 max-w-md mx-auto"
           >
-            <div className="w-20 h-20 bg-yellow-900 rounded-full flex items-center justify
+            <div className="w-20 h-20 bg-yellow-900 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-yellow-400 text-4xl">📋</span>
+            </div>
+            <p className="text-2xl font-mono font-semibold text-yellow-600 mb-3">
+              Nenhum serviço disponível
+            </p>
+            <p className="text-yellow-700 font-sans">
+              Em breve teremos novos serviços disponíveis.
+            </p>
+          </motion.div>
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default Services;
