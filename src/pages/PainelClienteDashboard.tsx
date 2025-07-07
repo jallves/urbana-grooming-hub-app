@@ -11,13 +11,33 @@ import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
 
+interface PainelServico {
+  nome: string;
+  preco: number;
+  duracao: number;
+}
+
+interface PainelBarbeiro {
+  nome: string;
+}
+
+interface Agendamento {
+  id: string;
+  data: string;
+  hora: string;
+  status: string;
+  observacoes?: string;
+  painel_servicos: PainelServico;
+  painel_barbeiros: PainelBarbeiro;
+}
+
 export default function PainelClienteDashboard() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
-  const [agendamentos, setAgendamentos] = useState([]);
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedAgendamento, setSelectedAgendamento] = useState(null);
+  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -27,30 +47,31 @@ export default function PainelClienteDashboard() {
   async function fetchAgendamentos() {
     setLoading(true);
     const { data, error } = await supabase
-      .from('agendamentos')
-      .select(`id, data, hora, status, painel_servicos ( nome, preco ), painel_barbeiros ( nome )`)
+      .from('painel_agendamentos')
+      .select(`id, data, hora, status, painel_servicos ( nome, preco, duracao ), painel_barbeiros ( nome )`)
       .eq('cliente_id', cliente?.id)
       .order('data', { ascending: false });
 
     if (error) {
+      console.error('Error fetching agendamentos:', error);
       toast({ title: 'Erro ao carregar agendamentos', description: error.message });
     } else {
-      setAgendamentos(data);
+      setAgendamentos(data || []);
     }
     setLoading(false);
   }
 
-  function handleEditAgendamento(agendamento) {
+  function handleEditAgendamento(agendamento: Agendamento) {
     setSelectedAgendamento(agendamento);
     setEditModalOpen(true);
   }
 
-  async function handleDeleteAgendamento(agendamento) {
+  async function handleDeleteAgendamento(agendamento: Agendamento) {
     const confirm = window.confirm("Deseja cancelar este agendamento?");
     if (!confirm) return;
 
     const { error } = await supabase
-      .from('agendamentos')
+      .from('painel_agendamentos')
       .update({ status: 'cancelado' })
       .eq('id', agendamento.id);
 
