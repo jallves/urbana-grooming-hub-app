@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,28 @@ import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
 
+interface Agendamento {
+  id: string;
+  data: string;
+  hora: string;
+  status: string;
+  painel_servicos: {
+    nome: string;
+    preco: number;
+    duracao: number;
+  };
+  painel_barbeiros: {
+    nome: string;
+  };
+}
+
 export default function PainelClienteDashboard() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
-  const [agendamentos, setAgendamentos] = useState([]);
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedAgendamento, setSelectedAgendamento] = useState(null);
+  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -27,30 +43,30 @@ export default function PainelClienteDashboard() {
   async function fetchAgendamentos() {
     setLoading(true);
     const { data, error } = await supabase
-      .from('agendamentos')
-      .select(`id, data, hora, status, painel_servicos ( nome, preco ), painel_barbeiros ( nome )`)
+      .from('painel_agendamentos')
+      .select(`id, data, hora, status, painel_servicos ( nome, preco, duracao ), painel_barbeiros ( nome )`)
       .eq('cliente_id', cliente?.id)
       .order('data', { ascending: false });
 
     if (error) {
       toast({ title: 'Erro ao carregar agendamentos', description: error.message });
     } else {
-      setAgendamentos(data);
+      setAgendamentos(data || []);
     }
     setLoading(false);
   }
 
-  function handleEditAgendamento(agendamento) {
+  function handleEditAgendamento(agendamento: Agendamento) {
     setSelectedAgendamento(agendamento);
     setEditModalOpen(true);
   }
 
-  async function handleDeleteAgendamento(agendamento) {
+  async function handleDeleteAgendamento(agendamento: Agendamento) {
     const confirm = window.confirm("Deseja cancelar este agendamento?");
     if (!confirm) return;
 
     const { error } = await supabase
-      .from('agendamentos')
+      .from('painel_agendamentos')
       .update({ status: 'cancelado' })
       .eq('id', agendamento.id);
 
@@ -62,14 +78,14 @@ export default function PainelClienteDashboard() {
     }
   }
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: string) => {
     const statusConfig = {
       agendado: { label: 'Agendado', color: 'bg-blue-900/50 text-blue-400 border-blue-800' },
       confirmado: { label: 'Confirmado', color: 'bg-green-900/50 text-green-400 border-green-800' },
       concluido: { label: 'Concluído', color: 'bg-purple-900/50 text-purple-400 border-purple-800' },
       cancelado: { label: 'Cancelado', color: 'bg-red-900/50 text-red-400 border-red-800' },
     };
-    const config = statusConfig[status] || { label: status, color: 'bg-gray-900/50 text-gray-400 border-gray-800' };
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'bg-gray-900/50 text-gray-400 border-gray-800' };
     return (
       <span className={`px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-md ${config.color}`}>
         {config.label}
@@ -86,7 +102,7 @@ export default function PainelClienteDashboard() {
               onClick={() => navigate('/')}
               variant="outline"
               size="sm"
-              className="border-gray-800 text-gray-300 rounded-lg px-4 py-2 backdrop-blur-md flex items-center gap-2 hover:bg-transparent hover:text-gray-300"
+              className="border-gray-800 text-gray-300 bg-transparent rounded-lg px-4 py-2 backdrop-blur-md flex items-center gap-2 hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Voltar</span>
@@ -106,7 +122,7 @@ export default function PainelClienteDashboard() {
               </div>
               <Button
                 onClick={() => navigate('/painel-cliente/agendar')}
-                className="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-medium px-8 py-4 rounded-lg shadow-xl"
+                className="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-medium px-8 py-4 rounded-lg shadow-xl hover:from-cyan-700 hover:to-purple-700"
                 size="lg"
               >
                 <span className="relative z-10 flex items-center gap-2">
@@ -155,7 +171,7 @@ export default function PainelClienteDashboard() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/painel-cliente/agendamentos')}
-                className="border-gray-800 text-gray-300 rounded-lg backdrop-blur-md hover:bg-transparent hover:text-gray-300"
+                className="border-gray-800 text-gray-300 bg-transparent rounded-lg backdrop-blur-md hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
               >
                 Ver Todos
               </Button>
@@ -201,7 +217,7 @@ export default function PainelClienteDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEditAgendamento(agendamento)}
-                          className="flex-1 text-xs border-gray-800 text-gray-300 backdrop-blur-sm hover:bg-transparent hover:text-gray-300"
+                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
                         >
                           <Edit className="w-3 h-3 mr-1" />
                           Editar
@@ -210,7 +226,7 @@ export default function PainelClienteDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteAgendamento(agendamento)}
-                          className="flex-1 text-xs border-gray-800 text-gray-300 backdrop-blur-sm hover:bg-transparent hover:text-gray-300"
+                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
                         >
                           <Trash2 className="w-3 h-3 mr-1" />
                           Cancelar
