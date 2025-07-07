@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,82 @@ export default function PainelClienteDashboard() {
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
-  // ... (código de fetchData e fetchAgendamentos permanece o mesmo)
+  useEffect(() => {
+    if (cliente) {
+      fetchAgendamentos();
+    }
+  }, [cliente]);
+
+  const fetchAgendamentos = async () => {
+    if (!cliente) return;
+    
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_barbeiros!inner(nome),
+          painel_servicos!inner(nome, preco, duracao)
+        `)
+        .eq('cliente_id', cliente.id)
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false });
+
+      if (error) throw error;
+      setAgendamentos(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os agendamentos.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditAgendamento = (agendamento: Agendamento) => {
+    setSelectedAgendamento(agendamento);
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteAgendamento = async (agendamento: Agendamento) => {
+    if (agendamento.status === 'concluido') {
+      toast({
+        variant: "destructive",
+        title: "Não é possível cancelar",
+        description: "Agendamentos concluídos não podem ser cancelados.",
+      });
+      return;
+    }
+
+    if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
+      try {
+        const { error } = await supabase
+          .from('painel_agendamentos')
+          .update({ status: 'cancelado' })
+          .eq('id', agendamento.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Agendamento cancelado!",
+          description: "Seu agendamento foi cancelado com sucesso.",
+        });
+
+        fetchAgendamentos();
+      } catch (error) {
+        console.error('Erro ao cancelar agendamento:', error);
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Não foi possível cancelar o agendamento.",
+        });
+      }
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -37,8 +113,6 @@ export default function PainelClienteDashboard() {
       </span>
     );
   };
-
-  // ... (código de handleEditAgendamento e handleDeleteAgendamento permanece o mesmo)
 
   return (
     <div className="min-h-screen w-screen bg-gray-950 overflow-x-hidden">
