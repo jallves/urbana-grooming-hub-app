@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import { Award, Clock, Star, Shield, Coffee, Scissors } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -101,12 +100,15 @@ const Services: React.FC = () => {
   return (
     <section
       id="services"
-      className="relative py-32 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
+      className="relative py-20 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
     >
       {/* Modern background elements */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-32 left-20 w-96 h-96 bg-urbana-gold rounded-full blur-3xl mix-blend-screen animate-pulse" />
-        <div className="absolute bottom-32 right-20 w-80 h-80 bg-yellow-400 rounded-full blur-3xl mix-blend-screen animate-pulse" style={{ animationDelay: '1s' }} />
+        <div
+          className="absolute bottom-32 right-20 w-80 h-80 bg-yellow-400 rounded-full blur-3xl mix-blend-screen animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
       </div>
 
       <div className="urbana-container relative z-10">
@@ -116,7 +118,7 @@ const Services: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center max-w-4xl mx-auto mb-24"
+          className="text-center max-w-4xl mx-auto mb-16"
         >
           <h2 className="text-6xl md:text-7xl font-playfair font-bold text-urbana-gold mb-8">
             Nossos{" "}
@@ -132,7 +134,7 @@ const Services: React.FC = () => {
         </motion.div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-32">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-20">
           {features.map(({ icon, title, description }, i) => {
             const ref = React.createRef<HTMLDivElement>();
             const isInView = useInView(ref, { once: true, margin: "-50px" });
@@ -151,7 +153,9 @@ const Services: React.FC = () => {
                 <h3 className="text-2xl font-bold mb-6 font-playfair text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
                   {title}
                 </h3>
-                <p className="text-urbana-light/70 font-raleway text-lg leading-relaxed">{description}</p>
+                <p className="text-urbana-light/70 font-raleway text-lg leading-relaxed">
+                  {description}
+                </p>
               </motion.div>
             );
           })}
