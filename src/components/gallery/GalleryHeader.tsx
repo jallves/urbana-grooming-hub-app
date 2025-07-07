@@ -57,10 +57,16 @@ const GalleryHeader: React.FC = () => {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.4 }}
         viewport={{ once: true }}
-        className="text-xl md:text-2xl text-black max-w-3xl mx-auto leading-relaxed mt-8"
+        className="text-xl md:text-2xl text-black max-w-3xl mx-auto leading-relaxed mt-8 font-medium"
       >
-        Cada imagem conta uma história de <strong className="text-black-500 font-semibold">maestria</strong> e <strong className="text-black-500 font-semibold">paixão</strong>. 
-        Descubra o resultado do nosso trabalho meticuloso e da dedicação em cada detalhe.
+        Cada imagem conta uma história de{" "}
+        <strong className="text-black drop-shadow-[0_0_4px_rgba(255,215,0,0.6)] font-semibold">
+          maestria
+        </strong>{" "}
+        e{" "}
+        <strong className="text-black drop-shadow-[0_0_4px_rgba(255,215,0,0.6)] font-semibold">
+          paixão
+        </strong>. Descubra o resultado do nosso trabalho meticuloso e da dedicação em cada detalhe.
       </motion.p>
 
       {/* Decorative line with central gold dot */}
@@ -73,7 +79,7 @@ const GalleryHeader: React.FC = () => {
       >
         <div className="h-px bg-gradient-to-r from-transparent via-yellow-500 to-transparent rounded-full" 
           style={{ filter: 'drop-shadow(0 0 4px rgba(255,215,0,0.6))' }}
-        ></div>
+        />
         <div className="absolute left-1/2 top-1/2 w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_6px_rgba(255,215,0,0.7)]" 
           style={{ transform: 'translate(-50%, -50%)' }} 
         />
