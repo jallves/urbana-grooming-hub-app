@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Scissors, User } from 'lucide-react';
+import { Scissors } from 'lucide-react';
 
 interface NavbarLogoProps {
   shopName: string;
@@ -30,11 +30,10 @@ const NavbarLogo: React.FC<NavbarLogoProps> = ({ shopName }) => {
       {/* Link para Painel do Cliente */}
       <Link
         to="/cliente/login"
-        className="flex items-center gap-1 text-urbana-gold hover:text-yellow-300 transition-all duration-300 hover:scale-110"
+        className="text-urbana-gold font-semibold hover:text-yellow-300 transition-all duration-300 hover:scale-110"
         title="Painel do Cliente"
       >
-        <User className="h-6 w-6 drop-shadow-sm" />
-        <span className="font-semibold">Painel Cliente</span>
+        Painel Cliente
       </Link>
 
       {/* Nome da Barbearia */}
