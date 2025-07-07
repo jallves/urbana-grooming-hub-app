@@ -20,21 +20,20 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
     viewport={{ once: true }}
     className="group"
   >
-    <Card className="relative bg-[#1c1a16] border border-yellow-500 rounded-xl shadow-[0_0_15px_rgb(255,215,0,0.4)] hover:shadow-[0_0_25px_rgb(255,215,0,0.9)] transition-shadow duration-400 h-full flex flex-col p-6">
+    <Card className="relative bg-white border border-yellow-400 rounded-xl shadow-[0_0_15px_rgba(255,215,0,0.25)] hover:shadow-[0_0_25px_rgba(255,215,0,0.5)] transition-shadow duration-400 h-full flex flex-col p-6">
       <div className="mb-5 flex items-center justify-between">
-        <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
-          <Scissors className="w-7 h-7 text-[#fff7d1]" />
+        <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-lg shadow-md group-hover:scale-110 transition-transform duration-300">
+          <Scissors className="w-7 h-7 text-yellow-700" />
         </div>
-        <span className="text-yellow-400 font-mono font-semibold text-lg">{price}</span>
+        <span className="text-yellow-600 font-mono font-semibold text-lg">{price}</span>
       </div>
 
-      <h3 className="text-2xl font-semibold text-[#fff7d1] group-hover:text-yellow-400 transition-colors duration-300 mb-3 font-mono">
+      <h3 className="text-2xl font-semibold text-gray-900 group-hover:text-yellow-600 transition-colors duration-300 mb-3 font-mono">
         {title}
       </h3>
 
-      <p className="text-yellow-200 flex-grow font-sans">{description ?? "Serviço premium de barbearia com atenção aos detalhes."}</p>
+      <p className="text-gray-600 flex-grow font-sans">{description ?? "Serviço premium de barbearia com atenção aos detalhes."}</p>
 
-      {/* Accent underline */}
       <div className="mt-6 h-1 w-16 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 rounded-full group-hover:scale-x-110 transition-transform duration-300" />
     </Card>
   </motion.div>
@@ -57,32 +56,32 @@ const Services: React.FC = () => {
 
   const features = [
     {
-      icon: <Award className="h-9 w-9 text-yellow-400" />,
+      icon: <Award className="h-9 w-9 text-yellow-500" />,
       title: "Profissionais Certificados",
       description: "Equipe com certificações e anos de experiência em técnicas modernas e clássicas."
     },
     {
-      icon: <Clock className="h-9 w-9 text-yellow-400" />,
+      icon: <Clock className="h-9 w-9 text-yellow-500" />,
       title: "Pontualidade Garantida",
       description: "Agendamentos precisos e serviços eficientes, respeitando seu tempo."
     },
     {
-      icon: <Coffee className="h-9 w-9 text-yellow-400" />,
+      icon: <Coffee className="h-9 w-9 text-yellow-500" />,
       title: "Experiência Completa",
       description: "Ambiente relaxante com bebidas cortesia e música ambiente selecionada."
     },
     {
-      icon: <Shield className="h-9 w-9 text-yellow-400" />,
+      icon: <Shield className="h-9 w-9 text-yellow-500" />,
       title: "Higiene Premium",
       description: "Protocolos rigorosos de limpeza e esterilização para sua segurança."
     },
     {
-      icon: <Star className="h-9 w-9 text-yellow-400" />,
+      icon: <Star className="h-9 w-9 text-yellow-500" />,
       title: "Atendimento Personalizado",
       description: "Cada cliente é único. Serviços adaptados ao seu estilo pessoal."
     },
     {
-      icon: <Scissors className="h-9 w-9 text-yellow-400" />,
+      icon: <Scissors className="h-9 w-9 text-yellow-500" />,
       title: "Técnicas Modernas",
       description: "Combinamos tradição com as mais modernas técnicas e equipamentos."
     }
@@ -91,15 +90,13 @@ const Services: React.FC = () => {
   const formatPrice = (price: number) => `R$ ${price.toFixed(2).replace('.', ',')}`;
 
   return (
-    <section id="services" className="relative py-20 bg-gradient-to-b from-[#12100c] via-[#1c1a16] to-[#12100c] overflow-hidden text-[#fff7d1]">
-      {/* Background highlights */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <div className="absolute top-24 left-12 w-72 h-72 bg-yellow-600 rounded-full blur-3xl mix-blend-screen"></div>
-        <div className="absolute bottom-24 right-12 w-96 h-96 bg-yellow-500 rounded-full blur-3xl mix-blend-screen"></div>
+    <section id="services" className="relative py-20 bg-gradient-to-b from-yellow-50 via-white to-yellow-50 overflow-hidden text-gray-900">
+      <div className="absolute inset-0 pointer-events-none opacity-10">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-300 rounded-full blur-3xl mix-blend-overlay"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-200 rounded-full blur-3xl mix-blend-overlay"></div>
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -107,15 +104,14 @@ const Services: React.FC = () => {
           viewport={{ once: true }}
           className="text-center max-w-3xl mx-auto mb-16"
         >
-          <h2 className="text-5xl font-playfair font-extrabold text-yellow-400 mb-4">
-            Nossos <span className="text-[#fff7d1]">Serviços</span>
+          <h2 className="text-5xl font-playfair font-extrabold text-yellow-600 mb-4">
+            Nossos <span className="text-gray-900">Serviços</span>
           </h2>
-          <p className="text-yellow-300 font-mono text-lg">
+          <p className="text-gray-700 font-mono text-lg">
             Descubra uma experiência única onde tradição e modernidade se encontram. Cada serviço é uma obra de arte dedicada ao seu estilo pessoal.
           </p>
         </motion.div>
 
-        {/* Features Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 mb-20">
           {features.map(({ icon, title, description }, i) => (
             <motion.div
@@ -124,18 +120,17 @@ const Services: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
               viewport={{ once: true }}
-              className="text-center p-6 rounded-xl bg-[#1c1a16] border border-yellow-500 shadow-[0_0_10px_rgb(255,215,0,0.3)] hover:shadow-[0_0_18px_rgb(255,215,0,0.7)] transition-shadow duration-300"
+              className="text-center p-6 rounded-xl bg-white border border-yellow-300 shadow-md hover:shadow-[0_0_18px_rgba(255,215,0,0.4)] transition-shadow duration-300"
             >
-              <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-lg bg-yellow-900 text-yellow-400 mx-auto text-4xl">
+              <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-lg bg-yellow-100 text-yellow-600 mx-auto text-4xl">
                 {icon}
               </div>
               <h3 className="text-xl font-semibold mb-3 font-mono">{title}</h3>
-              <p className="text-yellow-300 font-sans">{description}</p>
+              <p className="text-gray-700 font-sans">{description}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* Services Grid */}
         {isLoading ? (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -143,7 +138,7 @@ const Services: React.FC = () => {
             className="flex flex-col items-center justify-center py-24"
           >
             <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-yellow-500 border-r-transparent mb-6"></div>
-            <p className="text-yellow-300 text-lg font-medium font-mono">Carregando serviços premium...</p>
+            <p className="text-yellow-600 text-lg font-medium font-mono">Carregando serviços premium...</p>
           </motion.div>
         ) : error ? (
           <motion.div 
@@ -151,11 +146,11 @@ const Services: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-20 max-w-md mx-auto"
           >
-            <div className="w-20 h-20 bg-red-900 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-red-500 text-4xl">⚠</span>
             </div>
             <p className="text-2xl font-mono font-semibold text-red-500 mb-3">Erro ao carregar serviços</p>
-            <p className="text-yellow-300 font-sans">Por favor, tente novamente mais tarde.</p>
+            <p className="text-gray-600 font-sans">Por favor, tente novamente mais tarde.</p>
           </motion.div>
         ) : services && services.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -175,11 +170,11 @@ const Services: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-20 max-w-md mx-auto"
           >
-            <div className="w-20 h-20 bg-yellow-900 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Scissors className="h-10 w-10 text-yellow-400" />
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Scissors className="h-10 w-10 text-yellow-500" />
             </div>
             <p className="text-2xl font-mono mb-3">Em breve, novos serviços</p>
-            <p className="text-yellow-300 font-sans">Estamos preparando experiências incríveis para você!</p>
+            <p className="text-gray-700 font-sans">Estamos preparando experiências incríveis para você!</p>
           </motion.div>
         )}
       </div>
