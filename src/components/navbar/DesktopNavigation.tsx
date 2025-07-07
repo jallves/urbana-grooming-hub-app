@@ -54,7 +54,7 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
         <NavigationMenuItem>
           <Link 
             to="/painel-cliente/login"
-            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+            className="text-gold hover:text-urbana-gold transition-colors px-4 py-2 block"
             title="Painel do Cliente"
           >
             <User size={18} className="inline-block mr-1 text-urbana-gold" />
