@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ interface Agendamento {
   painel_servicos: {
     nome: string;
     preco: number;
+    duracao: number;
   };
   painel_barbeiros: {
     nome: string;
@@ -41,7 +41,7 @@ export default function PainelClienteDashboard() {
     setLoading(true);
     const { data, error } = await supabase
       .from('painel_agendamentos')
-      .select(`id, data, hora, status, painel_servicos ( nome, preco ), painel_barbeiros ( nome )`)
+      .select(`id, data, hora, status, painel_servicos ( nome, preco, duracao ), painel_barbeiros ( nome )`)
       .eq('cliente_id', cliente.id)
       .order('data', { ascending: false });
 
