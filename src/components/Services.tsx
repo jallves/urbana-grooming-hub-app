@@ -1,3 +1,4 @@
+
 import React, { useRef } from "react";
 import { Award, Clock, Star, Shield, Coffee, Scissors } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -24,23 +25,23 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
       transition={{ duration: 0.6, delay: index * 0.15, ease: "easeOut" }}
       className="group"
     >
-      <Card className="relative bg-urbana-black/90 backdrop-blur-lg border border-urbana-gold/30 rounded-xl shadow-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] transition-all duration-500 h-full flex flex-col p-8 hover:scale-105 hover:border-urbana-gold/60">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-urbana-gold to-yellow-400 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-            <Scissors size={32} className="text-urbana-black" />
+      <Card className="relative bg-urbana-black/90 backdrop-blur-lg border border-urbana-gold/30 rounded-xl shadow-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] transition-all duration-500 h-full flex flex-col p-6 hover:scale-105 hover:border-urbana-gold/60">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-urbana-gold to-yellow-400 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+            <Scissors size={28} className="text-urbana-black" />
           </div>
-          <span className="text-urbana-gold font-playfair font-bold text-2xl">{price}</span>
+          <span className="text-urbana-gold font-playfair font-bold text-xl">{price}</span>
         </div>
 
-        <h3 className="text-3xl font-bold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300 mb-4 font-playfair">
+        <h3 className="text-2xl font-bold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300 mb-3 font-playfair">
           {title}
         </h3>
 
-        <p className="text-urbana-light/80 flex-grow font-raleway text-lg leading-relaxed">
+        <p className="text-urbana-light/80 flex-grow font-raleway text-base leading-relaxed">
           {description ?? "Serviço premium de barbearia com atenção aos detalhes e técnicas modernas."}
         </p>
 
-        <div className="mt-8 h-1 w-20 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-full group-hover:scale-x-125 transition-transform duration-500" />
+        <div className="mt-6 h-1 w-16 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-full group-hover:scale-x-125 transition-transform duration-500" />
       </Card>
     </motion.div>
   );
@@ -63,32 +64,32 @@ const Services: React.FC = () => {
 
   const features = [
     {
-      icon: <Award size={40} className="text-urbana-gold" />,
+      icon: <Award size={36} className="text-urbana-gold" />,
       title: "Profissionais Certificados",
       description: "Equipe com certificações e anos de experiência em técnicas modernas e clássicas.",
     },
     {
-      icon: <Clock size={40} className="text-urbana-gold" />,
+      icon: <Clock size={36} className="text-urbana-gold" />,
       title: "Pontualidade Garantida",
       description: "Agendamentos precisos e serviços eficientes, respeitando seu tempo.",
     },
     {
-      icon: <Coffee size={40} className="text-urbana-gold" />,
+      icon: <Coffee size={36} className="text-urbana-gold" />,
       title: "Experiência Completa",
       description: "Ambiente relaxante com bebidas cortesia e música ambiente selecionada.",
     },
     {
-      icon: <Shield size={40} className="text-urbana-gold" />,
+      icon: <Shield size={36} className="text-urbana-gold" />,
       title: "Higiene Premium",
       description: "Protocolos rigorosos de limpeza e esterilização para sua segurança.",
     },
     {
-      icon: <Star size={40} className="text-urbana-gold" />,
+      icon: <Star size={36} className="text-urbana-gold" />,
       title: "Atendimento Personalizado",
       description: "Cada cliente é único. Serviços adaptados ao seu estilo pessoal.",
     },
     {
-      icon: <Scissors size={40} className="text-urbana-gold" />,
+      icon: <Scissors size={36} className="text-urbana-gold" />,
       title: "Técnicas Modernas",
       description: "Combinamos tradição com as mais modernas técnicas e equipamentos.",
     },
@@ -100,13 +101,13 @@ const Services: React.FC = () => {
   return (
     <section
       id="services"
-      className="relative py-20 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
+      className="relative py-16 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
     >
       {/* Modern background elements */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-32 left-20 w-96 h-96 bg-urbana-gold rounded-full blur-3xl mix-blend-screen animate-pulse" />
+        <div className="absolute top-20 left-20 w-80 h-80 bg-urbana-gold rounded-full blur-3xl mix-blend-screen animate-pulse" />
         <div
-          className="absolute bottom-32 right-20 w-80 h-80 bg-yellow-400 rounded-full blur-3xl mix-blend-screen animate-pulse"
+          className="absolute bottom-20 right-20 w-72 h-72 bg-yellow-400 rounded-full blur-3xl mix-blend-screen animate-pulse"
           style={{ animationDelay: "1s" }}
         />
       </div>
@@ -118,15 +119,15 @@ const Services: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center max-w-4xl mx-auto mb-16"
+          className="text-center max-w-4xl mx-auto mb-12"
         >
-          <h2 className="text-6xl md:text-7xl font-playfair font-bold text-urbana-gold mb-8">
+          <h2 className="text-5xl md:text-6xl font-playfair font-bold text-urbana-gold mb-6">
             Nossos{" "}
             <span className="text-urbana-light drop-shadow-[0_0_8px_rgba(255,215,0,0.3)]">
               Serviços
             </span>
           </h2>
-          <p className="text-urbana-light/90 font-raleway text-xl md:text-2xl leading-relaxed">
+          <p className="text-urbana-light/90 font-raleway text-lg md:text-xl leading-relaxed">
             Descubra uma experiência única onde tradição e modernidade se
             encontram. Cada serviço é uma obra de arte dedicada ao seu estilo
             pessoal.
@@ -134,7 +135,7 @@ const Services: React.FC = () => {
         </motion.div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {features.map(({ icon, title, description }, i) => {
             const ref = React.createRef<HTMLDivElement>();
             const isInView = useInView(ref, { once: true, margin: "-50px" });
@@ -145,15 +146,15 @@ const Services: React.FC = () => {
                 initial={{ opacity: 0, y: 40 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: i * 0.15, ease: "easeOut" }}
-                className="group text-center p-8 rounded-xl bg-urbana-black/50 backdrop-blur-lg border border-urbana-gold/20 shadow-lg hover:shadow-[0_0_25px_rgba(255,215,0,0.2)] hover:border-urbana-gold/40 transition-all duration-500 hover:scale-105"
+                className="group text-center p-6 rounded-xl bg-urbana-black/50 backdrop-blur-lg border border-urbana-gold/20 shadow-lg hover:shadow-[0_0_25px_rgba(255,215,0,0.2)] hover:border-urbana-gold/40 transition-all duration-500 hover:scale-105"
               >
-                <div className="mb-8 inline-flex items-center justify-center w-20 h-20 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-yellow-400/20 text-urbana-gold mx-auto group-hover:scale-110 transition-transform duration-300">
+                <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-yellow-400/20 text-urbana-gold mx-auto group-hover:scale-110 transition-transform duration-300">
                   {icon}
                 </div>
-                <h3 className="text-2xl font-bold mb-6 font-playfair text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
+                <h3 className="text-xl font-bold mb-4 font-playfair text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
                   {title}
                 </h3>
-                <p className="text-urbana-light/70 font-raleway text-lg leading-relaxed">
+                <p className="text-urbana-light/70 font-raleway text-base leading-relaxed">
                   {description}
                 </p>
               </motion.div>
@@ -166,10 +167,10 @@ const Services: React.FC = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-32"
+            className="flex flex-col items-center justify-center py-24"
           >
-            <div className="inline-block h-20 w-20 animate-spin rounded-full border-4 border-urbana-gold border-r-transparent mb-8"></div>
-            <p className="text-urbana-gold text-2xl font-bold font-playfair">
+            <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-urbana-gold border-r-transparent mb-6"></div>
+            <p className="text-urbana-gold text-xl font-bold font-playfair">
               Carregando serviços premium...
             </p>
           </motion.div>
@@ -177,20 +178,20 @@ const Services: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-32 max-w-md mx-auto"
+            className="text-center py-24 max-w-md mx-auto"
           >
-            <div className="w-24 h-24 bg-red-900/50 rounded-full flex items-center justify-center mx-auto mb-8">
-              <span className="text-red-400 text-5xl">⚠</span>
+            <div className="w-20 h-20 bg-red-900/50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-red-400 text-4xl">⚠</span>
             </div>
-            <p className="text-3xl font-playfair font-bold text-red-400 mb-4">
+            <p className="text-2xl font-playfair font-bold text-red-400 mb-3">
               Erro ao carregar serviços
             </p>
-            <p className="text-urbana-light/70 font-raleway text-xl">
+            <p className="text-urbana-light/70 font-raleway text-lg">
               Por favor, tente novamente mais tarde.
             </p>
           </motion.div>
         ) : services && services.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, i) => (
               <ServiceCard
                 key={service.id}
@@ -205,15 +206,15 @@ const Services: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-32 max-w-md mx-auto"
+            className="text-center py-24 max-w-md mx-auto"
           >
-            <div className="w-24 h-24 bg-urbana-gold/20 rounded-full flex items-center justify-center mx-auto mb-8">
-              <span className="text-urbana-gold text-5xl">📋</span>
+            <div className="w-20 h-20 bg-urbana-gold/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-urbana-gold text-4xl">📋</span>
             </div>
-            <p className="text-3xl font-playfair font-bold text-urbana-gold mb-4">
+            <p className="text-2xl font-playfair font-bold text-urbana-gold mb-3">
               Nenhum serviço disponível
             </p>
-            <p className="text-urbana-light/70 font-raleway text-xl">
+            <p className="text-urbana-light/70 font-raleway text-lg">
               Em breve teremos novos serviços disponíveis.
             </p>
           </motion.div>

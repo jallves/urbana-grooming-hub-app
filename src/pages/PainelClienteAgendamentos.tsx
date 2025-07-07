@@ -43,9 +43,9 @@ export default function PainelClienteAgendamentos() {
         transition={{ duration: 0.5 }}
       >
         <div className="flex items-center gap-3 mb-6">
-          <Calendar className="h-8 w-8 text-amber-500" />
+          <Calendar className="h-8 w-8 text-urbana-gold" />
           <div>
-            <h1 className="text-3xl font-bold text-white">Meus Agendamentos</h1>
+            <h1 className="text-3xl font-bold text-urbana-gold font-playfair">Meus Agendamentos</h1>
             <p className="text-gray-400">Visualize e gerencie seus horários marcados</p>
           </div>
         </div>
@@ -85,16 +85,16 @@ export default function PainelClienteAgendamentos() {
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center text-gray-300">
-                        <Calendar className="h-4 w-4 mr-2 text-amber-500" />
+                        <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
                         <span className="text-sm">{agendamento.data}</span>
                       </div>
                       <div className="flex items-center text-gray-300">
-                        <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                        <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
                         <span className="text-sm">{agendamento.hora}</span>
                       </div>
                     </div>
                     <div className="flex items-center text-gray-300">
-                      <User className="h-4 w-4 mr-2 text-amber-500" />
+                      <User className="h-4 w-4 mr-2 text-urbana-gold" />
                       <span className="text-sm">{agendamento.barbeiro}</span>
                     </div>
                   </CardContent>
