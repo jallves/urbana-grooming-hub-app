@@ -1,6 +1,6 @@
 
 import React, { useRef } from "react";
-import { Medal, Clock, Star, ShieldCheck, Coffee, Scissors } from "phosphor-react";
+import { Award, Clock, Star, Shield, Coffee, Scissors } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,7 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
       <Card className="relative bg-white/10 backdrop-blur-lg border border-yellow-400/60 rounded-xl shadow-lg hover:shadow-[0_0_25px_#FFD700AA] transition-shadow duration-300 h-full flex flex-col p-6">
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
-            <Scissors size={28} weight="bold" className="text-yellow-50" />
+            <Scissors size={28} className="text-yellow-50" />
           </div>
           <span className="text-yellow-400 font-mono font-semibold text-lg">{price}</span>
         </div>
@@ -65,32 +65,32 @@ const Services: React.FC = () => {
 
   const features = [
     {
-      icon: <Medal size={36} weight="fill" className="text-yellow-400" />,
+      icon: <Award size={36} className="text-yellow-400" />,
       title: "Profissionais Certificados",
       description: "Equipe com certificações e anos de experiência em técnicas modernas e clássicas.",
     },
     {
-      icon: <Clock size={36} weight="fill" className="text-yellow-400" />,
+      icon: <Clock size={36} className="text-yellow-400" />,
       title: "Pontualidade Garantida",
       description: "Agendamentos precisos e serviços eficientes, respeitando seu tempo.",
     },
     {
-      icon: <Coffee size={36} weight="fill" className="text-yellow-400" />,
+      icon: <Coffee size={36} className="text-yellow-400" />,
       title: "Experiência Completa",
       description: "Ambiente relaxante com bebidas cortesia e música ambiente selecionada.",
     },
     {
-      icon: <ShieldCheck size={36} weight="fill" className="text-yellow-400" />,
+      icon: <Shield size={36} className="text-yellow-400" />,
       title: "Higiene Premium",
       description: "Protocolos rigorosos de limpeza e esterilização para sua segurança.",
     },
     {
-      icon: <Star size={36} weight="fill" className="text-yellow-400" />,
+      icon: <Star size={36} className="text-yellow-400" />,
       title: "Atendimento Personalizado",
       description: "Cada cliente é único. Serviços adaptados ao seu estilo pessoal.",
     },
     {
-      icon: <Scissors size={36} weight="fill" className="text-yellow-400" />,
+      icon: <Scissors size={36} className="text-yellow-400" />,
       title: "Técnicas Modernas",
       description: "Combinamos tradição com as mais modernas técnicas e equipamentos.",
     },
