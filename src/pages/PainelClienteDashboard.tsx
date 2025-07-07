@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Scissors, Calendar, Clock, CheckCircle, XCircle, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Scissors, Calendar, Clock, CheckCircle, XCircle, Edit, Trash2, ArrowLeft, BarChart3, Award } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
@@ -11,6 +11,22 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
+
+interface Agendamento {
+  id: string;
+  data: string;
+  hora: string;
+  status: string;
+  observacoes?: string;
+  painel_barbeiros: {
+    nome: string;
+  };
+  painel_servicos: {
+    nome: string;
+    preco: number;
+    duracao: number;
+  };
+}
 
 export default function PainelClienteDashboard() {
   const navigate = useNavigate();
@@ -21,7 +37,71 @@ export default function PainelClienteDashboard() {
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
-  // Efeito de partículas (simulado via CSS)
+  const fetchAgendamentos = async () => {
+    if (!cliente?.id) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_barbeiros (nome),
+          painel_servicos (nome, preco, duracao)
+        `)
+        .eq('cliente_id', cliente.id)
+        .order('data', { ascending: false });
+
+      if (error) throw error;
+      setAgendamentos(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível carregar os agendamentos.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditAgendamento = (agendamento: Agendamento) => {
+    setSelectedAgendamento(agendamento);
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteAgendamento = async (agendamento: Agendamento) => {
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('painel_agendamentos')
+        .update({ status: 'cancelado' })
+        .eq('id', agendamento.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Agendamento cancelado!",
+        description: "O agendamento foi cancelado com sucesso.",
+      });
+
+      fetchAgendamentos();
+    } catch (error) {
+      console.error('Erro ao cancelar agendamento:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível cancelar o agendamento.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchAgendamentos();
+  }, [cliente?.id]);
+
   const ParticleBackground = () => (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {[...Array(20)].map((_, i) => (
@@ -76,13 +156,10 @@ export default function PainelClienteDashboard() {
     );
   };
 
-  // ... (restante das funções permanecem iguais)
-
   return (
     <div className="min-h-screen w-screen bg-gray-950 overflow-x-hidden relative">
       <ParticleBackground />
       
-      {/* Efeito de grid futurista */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 pointer-events-none" />
 
       <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-7xl mx-auto">
@@ -92,7 +169,6 @@ export default function PainelClienteDashboard() {
           transition={{ duration: 0.5 }}
           className="w-full space-y-8"
         >
-          {/* Header futurista */}
           <motion.div 
             className="flex flex-col lg:flex-row items-start lg:items-center gap-4"
             initial={{ y: -20 }}
@@ -162,7 +238,6 @@ export default function PainelClienteDashboard() {
             </div>
           </motion.div>
 
-          {/* Stats Cards futuristas */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -198,7 +273,6 @@ export default function PainelClienteDashboard() {
             </div>
           </motion.div>
 
-          {/* Agendamentos Recentes futurista */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -323,5 +397,3 @@ export default function PainelClienteDashboard() {
     </div>
   );
 }
-
-// ... (interface Agendamento permanece a mesma)
