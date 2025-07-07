@@ -30,7 +30,7 @@ const GalleryFooter: React.FC = () => {
         whileInView={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         viewport={{ once: true }}
-        className="mt-4 text-urbana-gray text-sm"
+        className="mt-4 text-urbana-black text-sm"
       >
         Acompanhe nossos trabalhos e novidades
       </motion.p>
