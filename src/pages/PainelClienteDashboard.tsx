@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,50 +12,64 @@ import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
 
+interface Agendamento {
+  id: string;
+  data: string;
+  hora: string;
+  status: string;
+  painel_servicos: {
+    nome: string;
+    preco: number;
+  };
+  painel_barbeiros: {
+    nome: string;
+  };
+}
+
 export default function PainelClienteDashboard() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
-  const [agendamentos, setAgendamentos] = useState([]);
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedAgendamento, setSelectedAgendamento] = useState(null);
+  const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchAgendamentos();
-  }, []);
-
   async function fetchAgendamentos() {
+    if (!cliente?.id) return;
+    
     setLoading(true);
     const { data, error } = await supabase
-      .from('agendamentos')
+      .from('painel_agendamentos')
       .select(`id, data, hora, status, painel_servicos ( nome, preco ), painel_barbeiros ( nome )`)
-      .eq('cliente_id', cliente?.id)
+      .eq('cliente_id', cliente.id)
       .order('data', { ascending: false });
 
     if (error) {
+      console.error('Erro ao carregar agendamentos:', error);
       toast({ title: 'Erro ao carregar agendamentos', description: error.message });
     } else {
-      setAgendamentos(data);
+      setAgendamentos(data || []);
     }
     setLoading(false);
   }
 
-  function handleEditAgendamento(agendamento) {
+  function handleEditAgendamento(agendamento: Agendamento) {
     setSelectedAgendamento(agendamento);
     setEditModalOpen(true);
   }
 
-  async function handleDeleteAgendamento(agendamento) {
+  async function handleDeleteAgendamento(agendamento: Agendamento) {
     const confirm = window.confirm("Deseja cancelar este agendamento?");
     if (!confirm) return;
 
     const { error } = await supabase
-      .from('agendamentos')
+      .from('painel_agendamentos')
       .update({ status: 'cancelado' })
       .eq('id', agendamento.id);
 
     if (error) {
+      console.error('Erro ao cancelar agendamento:', error);
       toast({ title: 'Erro ao cancelar agendamento', description: error.message });
     } else {
       toast({ title: 'Agendamento cancelado com sucesso' });
@@ -62,14 +77,18 @@ export default function PainelClienteDashboard() {
     }
   }
 
-  const getStatusBadge = (status) => {
+  useEffect(() => {
+    fetchAgendamentos();
+  }, [cliente?.id]);
+
+  const getStatusBadge = (status: string) => {
     const statusConfig = {
       agendado: { label: 'Agendado', color: 'bg-blue-900/50 text-blue-400 border-blue-800' },
       confirmado: { label: 'Confirmado', color: 'bg-green-900/50 text-green-400 border-green-800' },
       concluido: { label: 'Concluído', color: 'bg-purple-900/50 text-purple-400 border-purple-800' },
       cancelado: { label: 'Cancelado', color: 'bg-red-900/50 text-red-400 border-red-800' },
     };
-    const config = statusConfig[status] || { label: status, color: 'bg-gray-900/50 text-gray-400 border-gray-800' };
+    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'bg-gray-900/50 text-gray-400 border-gray-800' };
     return (
       <span className={`px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur-md ${config.color}`}>
         {config.label}
