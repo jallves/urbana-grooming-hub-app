@@ -1,52 +1,117 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Scissors, User } from 'lucide-react';
 
-interface NavbarLogoProps {
-  shopName: string;
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Shield, Scissors, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
+
+interface DesktopNavigationProps {
+  user: any;
+  handlePanelClick: (e: React.MouseEvent) => void;
+  handleSignOut: () => Promise<void>;
 }
 
-const NavbarLogo: React.FC<NavbarLogoProps> = ({ shopName }) => {
+const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ 
+  user, 
+  handlePanelClick, 
+  handleSignOut 
+}) => {
+  const navigate = useNavigate();
+
+  const handleAdminLogin = () => {
+    navigate('/auth');
+  };
+
+  const handleBarberLogin = () => {
+    navigate('/barbeiro/login');
+  };
+
   return (
-    <div className="flex items-center gap-4">
-      {/* Logo da barbearia */}
-      <Link to="/" className="transition-transform duration-300 hover:scale-110">
-        <img
-          src="/lovable-uploads/201b1568-1698-4a5e-bbb8-ee35c5363960.png"
-          alt="Costa Urbana Logo"
-          className="h-12 w-12 object-contain drop-shadow-md"
-        />
-      </Link>
-
-      {/* Link para login do barbeiro */}
-      <Link
-        to="/barbeiro/login"
-        className="text-urbana-gold hover:text-yellow-300 transition-all duration-300 hover:scale-110"
-        title="Acesso para Barbeiros"
-      >
-        <Scissors className="h-6 w-6 drop-shadow-sm" />
-      </Link>
-
-      {/* Link para Painel do Cliente */}
-      <Link
-        to="/cliente/login"
-        className="flex items-center gap-1 text-urbana-gold hover:text-yellow-300 transition-all duration-300 hover:scale-110"
-        title="Painel do Cliente"
-      >
-        <User className="h-6 w-6 drop-shadow-sm" />
-        <span className="font-semibold">Painel Cliente</span>
-      </Link>
-
-      {/* Nome da Barbearia */}
-      <Link
-        to="/"
-        className="text-2xl md:text-3xl font-bold font-playfair text-urbana-gold hover:text-yellow-400 transition-all duration-300 drop-shadow-[0_0_6px_rgba(255,215,0,0.4)]"
-        title="Barbearia Costa Urbana"
-      >
-        {shopName}
-      </Link>
-    </div>
+    <NavigationMenu className="hidden md:flex">
+      <NavigationMenuList className="gap-1">
+        <NavigationMenuItem>
+          <Link 
+            to="/" 
+            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+          >
+            Home
+          </Link>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <a 
+            href="#services" 
+            className="text-white hover:text-urbana-gold transition-colors px-4 py-2 block"
+          >
+            Serviços
+          </a>
+        </NavigationMenuItem>
+        
+        {/* Painel do Cliente */}
+        <NavigationMenuItem>
+          <Link 
+            to="/painel-cliente/login"
+            className="text-gold hover:text-urbana-gold transition-colors px-4 py-2 block"
+            title="Painel do Cliente"
+          >
+            <User size={18} className="inline-block mr-1 text-urbana-gold" />
+            Painel Cliente
+          </Link>
+        </NavigationMenuItem>
+        
+        {user ? (
+          <>
+            <NavigationMenuItem>
+              <Button
+                variant="ghost"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                onClick={handlePanelClick}
+              >
+                <Shield size={18} className="inline-block mr-1" />
+                Painel
+              </Button>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSignOut}
+                className="border-urbana-gold text-urbana-gold hover:bg-urbana-gold/20"
+              >
+                Sair
+              </Button>
+            </NavigationMenuItem>
+          </>
+        ) : (
+          <>
+            <NavigationMenuItem>
+              <Button
+                variant="ghost"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                onClick={handleAdminLogin}
+                title="Admin Login"
+              >
+                <Shield size={18} className="text-urbana-gold" />
+              </Button>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Button
+                variant="ghost"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                onClick={handleBarberLogin}
+                title="Área do Barbeiro"
+              >
+                <Scissors size={18} className="text-urbana-gold" />
+              </Button>
+            </NavigationMenuItem>
+          </>
+        )}
+      </NavigationMenuList>
+    </NavigationMenu>
   );
 };
 
-export default NavbarLogo;
+export default DesktopNavigation;
