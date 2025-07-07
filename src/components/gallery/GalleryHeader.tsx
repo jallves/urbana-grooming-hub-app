@@ -59,7 +59,7 @@ const GalleryHeader: React.FC = () => {
         viewport={{ once: true }}
         className="text-xl md:text-2xl text-black max-w-3xl mx-auto leading-relaxed mt-8"
       >
-        Cada imagem conta uma história de <strong className="text-yellow-500 font-semibold">maestria</strong> e <strong className="text-yellow-500 font-semibold">paixão</strong>. 
+        Cada imagem conta uma história de <strong className="text-black-500 font-semibold">maestria</strong> e <strong className="text-black-500 font-semibold">paixão</strong>. 
         Descubra o resultado do nosso trabalho meticuloso e da dedicação em cada detalhe.
       </motion.p>
 
