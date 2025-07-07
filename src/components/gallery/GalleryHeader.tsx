@@ -12,7 +12,7 @@ const GalleryFooter: React.FC = () => {
     >
       <motion.p 
         initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
+        whileInView={{ opacity: 0 }}
         transition={{ delay: 0.3 }}
         viewport={{ once: true }}
         className="text-black text-sm"
