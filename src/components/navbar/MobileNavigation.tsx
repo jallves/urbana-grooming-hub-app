@@ -101,11 +101,11 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
             <Link 
               to="/painel-cliente/login"
-              className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
+              className="flex items-center space-x-3 text-urbana-gold hover:text-yellow-300 transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
               onClick={() => handleItemClick()}
             >
               <User size={20} className="text-urbana-gold" />
-              <span className="text-lg font-medium">Painel do Cliente</span>
+              <span className="text-lg font-medium text-urbana-gold">Painel do Cliente</span>
             </Link>
           </div>
 
