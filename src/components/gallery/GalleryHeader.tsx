@@ -8,17 +8,28 @@ const GalleryFooter: React.FC = () => {
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
       viewport={{ once: true }}
-      className="mt-16 text-center"
+      className="mt-16 text-center px-4"
     >
+      {/* Título */}
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        viewport={{ once: true }}
+        className="text-4xl font-extrabold text-black mb-4 cursor-default"
+      >
+        Nossa Galeria
+      </motion.h2>
+
+      {/* Frase profissional */}
       <motion.p 
         initial={{ opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.6, ease: "easeOut" }}
+        transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
         viewport={{ once: true }}
-        className="relative inline-block text-black text-lg font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] cursor-default"
+        className="text-black text-lg font-medium cursor-default"
       >
-        Acompanhe nossos trabalhos e novidades
-        <span className="absolute left-0 bottom-0 h-[2px] w-0 bg-urbana-gold transition-all duration-500 group-hover:w-full"></span>
+        Capturando a essência da excelência e estilo em cada detalhe.
       </motion.p>
     </motion.div>
   );
