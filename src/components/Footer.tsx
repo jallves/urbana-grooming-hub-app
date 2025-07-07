@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { motion } from "framer-motion";
-import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Twitter, Heart } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Twitter, Heart, Star } from 'lucide-react';
 import { useShopSettings } from '@/hooks/useShopSettings';
 
 const Footer: React.FC = () => {
@@ -41,39 +42,49 @@ const Footer: React.FC = () => {
   ];
 
   const socialLinks = [
-    { icon: Instagram, href: instagram, name: "Instagram" },
-    { icon: Facebook, href: facebook, name: "Facebook" },
-    { icon: Twitter, href: twitter, name: "Twitter" }
+    { icon: Instagram, href: instagram, name: "Instagram", color: "hover:text-pink-400" },
+    { icon: Facebook, href: facebook, name: "Facebook", color: "hover:text-blue-400" },
+    { icon: Twitter, href: twitter, name: "Twitter", color: "hover:text-sky-400" }
   ];
 
   return (
-    <footer id="contact" className="relative bg-gradient-to-b from-urbana-black to-urbana-brown text-white overflow-hidden">
-      {/* Modern background elements */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-urbana-gold rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-64 h-64 bg-urbana-gold rounded-full blur-3xl"></div>
+    <footer id="contact" className="relative bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden">
+      {/* Modern geometric background */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
+        <div className="absolute top-20 left-20 w-96 h-96 bg-urbana-gold rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-80 h-80 bg-yellow-400 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-urbana-gold/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      <div className="urbana-container relative z-10 pt-20 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <div className="urbana-container relative z-10 pt-24 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
           {/* Brand Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="lg:col-span-1"
+            className="lg:col-span-1 space-y-8"
           >
-            <h3 className="font-playfair text-3xl font-bold mb-6 text-urbana-gold">
-              {shopName}
-            </h3>
-            <p className="mb-8 text-gray-300 leading-relaxed text-lg">
+            <div className="space-y-6">
+              <h3 className="font-playfair text-4xl font-bold text-urbana-gold">
+                {shopName}
+              </h3>
+              <div className="flex items-center space-x-2">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-urbana-gold fill-current" />
+                ))}
+                <span className="text-urbana-light/70 font-raleway ml-2">Excelência Premium</span>
+              </div>
+            </div>
+            
+            <p className="text-urbana-light/80 leading-relaxed text-lg font-raleway">
               Tradição e modernidade se encontram em cada corte. 
               Oferecemos uma experiência premium de barbearia com foco na excelência e satisfação do cliente.
             </p>
             
             {/* Social Links */}
-            <div className="flex space-x-4">
+            <div className="flex space-x-6">
               {socialLinks.map((social, index) => (
                 <motion.a
                   key={social.name}
@@ -82,11 +93,11 @@ const Footer: React.FC = () => {
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  whileHover={{ scale: 1.1 }}
-                  className="w-12 h-12 bg-urbana-gold/10 hover:bg-urbana-gold hover:text-urbana-black rounded-full flex items-center justify-center transition-all duration-300 group"
+                  whileHover={{ scale: 1.2, rotate: 5 }}
+                  className={`w-14 h-14 bg-urbana-gold/10 backdrop-blur-lg border border-urbana-gold/20 hover:bg-urbana-gold hover:text-urbana-black rounded-xl flex items-center justify-center transition-all duration-300 group ${social.color}`}
                   aria-label={social.name}
                 >
-                  <social.icon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  <social.icon className="h-6 w-6 group-hover:scale-110 transition-transform" />
                 </motion.a>
               ))}
             </div>
@@ -100,11 +111,12 @@ const Footer: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: sectionIndex * 0.2 }}
               viewport={{ once: true }}
+              className="space-y-8"
             >
-              <h3 className="font-playfair text-xl font-bold mb-6 text-urbana-gold">
+              <h3 className="font-playfair text-2xl font-bold text-urbana-gold">
                 {section.title}
               </h3>
-              <ul className="space-y-4">
+              <ul className="space-y-6">
                 {section.items.map((item, index) => (
                   <motion.li
                     key={index}
@@ -112,14 +124,16 @@ const Footer: React.FC = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                     viewport={{ once: true }}
-                    className="flex items-start group"
+                    className="flex items-start group hover:translate-x-2 transition-transform duration-300"
                   >
-                    <item.icon className="h-5 w-5 mr-3 text-urbana-gold shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                    <div className="w-12 h-12 bg-urbana-gold/10 backdrop-blur-lg border border-urbana-gold/20 rounded-lg flex items-center justify-center mr-4 group-hover:bg-urbana-gold/20 transition-colors duration-300">
+                      <item.icon className="h-5 w-5 text-urbana-gold group-hover:scale-110 transition-transform" />
+                    </div>
                     <div>
-                      <p className="font-medium text-white group-hover:text-urbana-gold transition-colors">
+                      <p className="font-raleway font-semibold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
                         {item.label}
                       </p>
-                      <p className="text-gray-300 text-sm">
+                      <p className="text-urbana-light/70 font-raleway">
                         {item.value}
                       </p>
                     </div>
@@ -129,17 +143,18 @@ const Footer: React.FC = () => {
             </motion.div>
           ))}
 
-          {/* Quick Links */}
+          {/* Quick Links & Map */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
             viewport={{ once: true }}
+            className="space-y-8"
           >
-            <h3 className="font-playfair text-xl font-bold mb-6 text-urbana-gold">
+            <h3 className="font-playfair text-2xl font-bold text-urbana-gold">
               Links Rápidos
             </h3>
-            <ul className="space-y-3 mb-8">
+            <ul className="space-y-4">
               {quickLinks.map((link, index) => (
                 <motion.li
                   key={link.name}
@@ -150,7 +165,7 @@ const Footer: React.FC = () => {
                 >
                   <a 
                     href={link.href} 
-                    className="text-gray-300 hover:text-urbana-gold transition-colors duration-300 relative group inline-block"
+                    className="text-urbana-light/80 hover:text-urbana-gold transition-colors duration-300 relative group inline-block font-raleway text-lg"
                   >
                     {link.name}
                     <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-urbana-gold group-hover:w-full transition-all duration-300"></span>
@@ -160,14 +175,14 @@ const Footer: React.FC = () => {
             </ul>
 
             {/* Map Section */}
-            <div className="mt-8">
-              <h4 className="font-playfair text-lg font-bold mb-4 text-urbana-gold">
+            <div className="mt-12">
+              <h4 className="font-playfair text-xl font-bold mb-6 text-urbana-gold">
                 Nossa Localização
               </h4>
-              <div className="bg-urbana-gold/10 rounded-lg p-4 border border-urbana-gold/20">
+              <div className="bg-urbana-black/50 backdrop-blur-lg rounded-xl p-6 border border-urbana-gold/20 hover:border-urbana-gold/40 transition-colors duration-300">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3742.6441437707836!2d-40.28747308455458!3d-20.325849486358473!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xb83d4e5a5e5e5e5%3A0x5e5e5e5e5e5e5e5!2sRua%20Castelo%20Branco%2C%20483%20-%20Praia%20da%20Costa%2C%20Vila%20Velha%20-%20ES%2C%2029101-480!5e0!3m2!1spt!2sbr!4v1620000000000!5m2!1spt!2sbr"
-                  className="w-full h-40 rounded border-0"
+                  className="w-full h-48 rounded-lg border-0"
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
@@ -184,18 +199,18 @@ const Footer: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
           viewport={{ once: true }}
-          className="border-t border-gray-800 mt-16 pt-8"
+          className="border-t border-urbana-gold/20 mt-20 pt-12"
         >
-          <div className="text-center space-y-4">
-            <p className="text-gray-500">
-              © {new Date().getFullYear()} {shopName}. Todos os direitos reservados.
-            </p>
-            <div className="flex items-center justify-center gap-2 text-gray-500">
+          <div className="text-center space-y-6">
+            <div className="flex items-center justify-center gap-3 text-urbana-light/70 font-raleway text-lg">
               <span>Feito com</span>
-              <Heart className="w-4 h-4 text-red-500 animate-pulse" />
+              <Heart className="w-5 h-5 text-red-400 animate-pulse" />
               <span>pela equipe {shopName}</span>
             </div>
-            <div className="text-gray-400 text-sm">
+            <p className="text-urbana-light/50 font-raleway">
+              © {new Date().getFullYear()} {shopName}. Todos os direitos reservados.
+            </p>
+            <div className="text-urbana-gold/70 font-raleway">
               <span>Desenvolvido pela Beltec Soluções</span>
             </div>
           </div>
