@@ -18,7 +18,7 @@ const GalleryFooter: React.FC = () => {
         rel="noopener noreferrer"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="group inline-flex items-center gap-3 bg-gradient-to-r from-urbana-gold to-yellow-400 hover:from-urbana-gold/90 hover:to-yellow-400/90 text-urbana-black font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
+        className="group inline-flex items-center gap-3 bg-gradient-to-r from-urbana-gold to-black-400 hover:from-urbana-gold/90 hover:to-black-400/90 text-urbana-black font-bold px-8 py-4 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl"
       >
         <Instagram className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
         <span className="text-lg">Veja mais no nosso Instagram</span>
