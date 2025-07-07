@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, CheckCircle, XCircle, Edit, Trash2, ArrowLeft, Plus, Scissors, Award, BarChart3 } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
@@ -97,42 +95,42 @@ export default function PainelClienteDashboard() {
     <div className="min-h-screen w-screen bg-gray-950 overflow-x-hidden relative">
       <div className="relative w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-7xl mx-auto">
         <div className="w-full space-y-8">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+
+          {/* TOPO COM VOLTAR + NOVO AGENDAMENTO */}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 w-full">
             <Button
               onClick={() => navigate('/')}
               variant="outline"
               size="sm"
-              className="border-gray-800 text-gray-300 bg-transparent rounded-lg px-4 py-2 backdrop-blur-md flex items-center gap-2 hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
+              className="border-gray-800 text-gray-300 bg-transparent rounded-lg px-4 py-2 backdrop-blur-md flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Voltar</span>
             </Button>
 
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-4 mb-6">
-                <div className="p-3 bg-gray-900 rounded-xl border border-gray-800 shadow-lg">
-                  <Scissors className="h-6 w-6 text-cyan-400" />
-                </div>
-                <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
-                    Olá, {cliente?.nome.split(' ')[0]}!
-                  </h1>
-                  <p className="text-gray-400 text-lg mt-2">Painel de agendamentos</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => navigate('/painel-cliente/agendar')}
-                className="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-medium px-8 py-4 rounded-lg shadow-xl hover:from-cyan-700 hover:to-purple-700"
-                size="lg"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  <span>Novo Agendamento</span>
-                </span>
-              </Button>
+            <Button
+              onClick={() => navigate('/painel-cliente/agendar')}
+              className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white font-medium px-6 py-3 rounded-lg shadow-xl ml-auto"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Novo Agendamento
+            </Button>
+          </div>
+
+          {/* SAUDAÇÃO */}
+          <div className="inline-flex items-center gap-4 mb-6 mt-4">
+            <div className="p-3 bg-gray-900 rounded-xl border border-gray-800 shadow-lg">
+              <Scissors className="h-6 w-6 text-cyan-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">
+                Olá, {cliente?.nome.split(' ')[0]}!
+              </h1>
+              <p className="text-gray-400 text-lg mt-2">Painel de agendamentos</p>
             </div>
           </div>
 
+          {/* ESTATÍSTICAS */}
           <div>
             <h2 className="text-xl font-semibold text-gray-300 mb-4 flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-cyan-400" />
@@ -162,6 +160,7 @@ export default function PainelClienteDashboard() {
             </div>
           </div>
 
+          {/* AGENDAMENTOS RECENTES */}
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-300 flex items-center gap-2">
@@ -171,7 +170,7 @@ export default function PainelClienteDashboard() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/painel-cliente/agendamentos')}
-                className="border-gray-800 text-gray-300 bg-transparent rounded-lg backdrop-blur-md hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
+                className="border-gray-800 text-gray-300 bg-transparent rounded-lg backdrop-blur-md"
               >
                 Ver Todos
               </Button>
@@ -217,7 +216,7 @@ export default function PainelClienteDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEditAgendamento(agendamento)}
-                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
+                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm"
                         >
                           <Edit className="w-3 h-3 mr-1" />
                           Editar
@@ -226,7 +225,7 @@ export default function PainelClienteDashboard() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteAgendamento(agendamento)}
-                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm hover:bg-gray-800/50 hover:text-gray-300 hover:border-gray-700"
+                          className="flex-1 text-xs border-gray-800 text-gray-300 bg-transparent backdrop-blur-sm"
                         >
                           <Trash2 className="w-3 h-3 mr-1" />
                           Cancelar
