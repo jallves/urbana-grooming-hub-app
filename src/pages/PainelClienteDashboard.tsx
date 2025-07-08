@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, CheckCircle, XCircle, Edit, Trash2, ArrowLeft, Plus, Scissors, Award, BarChart3 } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, XCircle, Edit, Trash2, ArrowLeft, Plus, Scissors, Award, BarChart3, History } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -129,6 +130,32 @@ export default function PainelClienteDashboard() {
               <p className="text-gray-400 text-lg mt-2 max-w-xs sm:max-w-none">
                 Painel de agendamentos
               </p>
+            </div>
+          </div>
+
+          {/* ATALHOS RÁPIDOS */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-300 mb-4 flex items-center gap-2">
+              <Scissors className="h-5 w-5 text-cyan-400" />
+              <span>Ações Rápidas</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Button
+                onClick={() => navigate('/painel-cliente/agendar')}
+                className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 text-white font-medium px-6 py-4 rounded-lg shadow-xl h-auto flex flex-col items-center gap-2"
+              >
+                <Plus className="w-6 h-6" />
+                <span>Novo Agendamento</span>
+              </Button>
+              
+              <Button
+                onClick={() => navigate('/painel-cliente/agendamentos')}
+                variant="outline"
+                className="border-gray-700 text-gray-300 bg-gray-800/50 hover:bg-gray-700/50 font-medium px-6 py-4 rounded-lg h-auto flex flex-col items-center gap-2 backdrop-blur-md"
+              >
+                <History className="w-6 h-6" />
+                <span>Histórico Completo</span>
+              </Button>
             </div>
           </div>
 
