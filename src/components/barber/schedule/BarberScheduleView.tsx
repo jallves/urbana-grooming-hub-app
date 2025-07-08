@@ -174,7 +174,7 @@ const BarberScheduleView: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentWeek(addDays(currentWeek, -7))}
-                className="bg-gray-700/50 border-gray-600/50 text-gray-300 hover:bg-gray-600/50 hover:border-gray-500/50"
+                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
               >
                 Semana Anterior
               </Button>
@@ -182,7 +182,7 @@ const BarberScheduleView: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentWeek(addDays(currentWeek, 7))}
-                className="bg-gray-700/50 border-gray-600/50 text-gray-300 hover:bg-gray-600/50 hover:border-gray-500/50"
+                className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
               >
                 Próxima Semana
               </Button>
@@ -196,7 +196,6 @@ const BarberScheduleView: React.FC = () => {
         <CardContent className="p-6">
           {loading ? (
             <div className="text-center py-8">
-              <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <div className="text-gray-300">Carregando agenda...</div>
             </div>
           ) : (
@@ -213,18 +212,18 @@ const BarberScheduleView: React.FC = () => {
                       <div className="text-sm text-gray-400">
                         {format(date, 'dd/MM', { locale: ptBR })}
                       </div>
-                      <Badge variant="outline" className="mt-1 border-gray-600/50 text-gray-300 bg-gray-700/30 text-xs">
+                      <Badge variant="outline" className="mt-1 border-gray-600 text-gray-300 bg-gray-800 text-xs">
                         {dayAppointments.length} agendamentos
                       </Badge>
                     </div>
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                       {dayAppointments.length === 0 ? (
-                        <div className="text-center text-gray-500 text-sm py-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                        <div className="text-center text-gray-500 text-sm py-4 bg-gray-800 rounded-lg border border-gray-700">
                           Nenhum agendamento
                         </div>
                       ) : (
                         dayAppointments.map((appointment) => (
-                          <Card key={appointment.id} className="p-3 text-xs bg-gray-700/50 border-gray-600/50">
+                          <Card key={appointment.id} className="p-3 text-xs bg-gray-700 border-gray-600">
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
                                 <Badge className={getStatusColor(appointment.status) + " text-xs"}>

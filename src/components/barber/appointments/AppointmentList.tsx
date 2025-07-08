@@ -70,6 +70,27 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
     );
   };
 
+  const handleComplete = (id: string, clientName: string) => {
+    const confirmed = window.confirm(`Tem certeza que deseja marcar o agendamento de ${clientName} como concluído?`);
+    if (confirmed) {
+      onComplete(id);
+    }
+  };
+
+  const handleEdit = (id: string, startTime: string, clientName: string) => {
+    const confirmed = window.confirm(`Deseja editar o agendamento de ${clientName}?`);
+    if (confirmed) {
+      onEdit(id, startTime);
+    }
+  };
+
+  const handleCancel = (id: string, clientName: string) => {
+    const confirmed = window.confirm(`Tem certeza que deseja cancelar o agendamento de ${clientName}?`);
+    if (confirmed) {
+      onCancel(id);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -88,7 +109,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
       >
-        <Card className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg border border-gray-700/50">
+        <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Calendar className="h-16 w-16 text-gray-600 mb-6" />
             <h3 className="text-xl font-bold text-white mb-2">Nenhum agendamento encontrado</h3>
@@ -110,7 +131,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 * index }}
         >
-          <Card className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg border border-gray-700/50 hover:border-urbana-gold/50 transition-all duration-300 overflow-hidden">
+          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
             <CardHeader className="pb-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -159,7 +180,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-400"
+                    className="border-blue-600 text-blue-400 bg-gray-800 hover:bg-blue-600/10"
                   >
                     <Phone className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">Ligar</span>
@@ -168,7 +189,7 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-green-500/50 text-green-400 hover:bg-green-500/10 hover:border-green-400"
+                    className="border-green-600 text-green-400 bg-gray-800 hover:bg-green-600/10"
                   >
                     <MessageCircle className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">WhatsApp</span>
@@ -190,9 +211,9 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onEdit(appointment.id, appointment.start_time)}
+                    onClick={() => handleEdit(appointment.id, appointment.start_time, appointment.client_name)}
                     disabled={updatingId === appointment.id}
-                    className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
+                    className="border-gray-600 text-gray-300 bg-gray-800 hover:bg-gray-700"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Editar
@@ -200,20 +221,20 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                   
                   <Button
                     size="sm"
-                    onClick={() => onComplete(appointment.id)}
+                    onClick={() => handleComplete(appointment.id, appointment.client_name)}
                     disabled={updatingId === appointment.id}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0"
+                    className="bg-green-600 text-white hover:bg-green-700 border-0"
                   >
                     <Check className="h-4 w-4 mr-2" />
                     {updatingId === appointment.id ? 'Processando...' : 'Concluir'}
                   </Button>
                   
                   <Button
-                    variant="destructive"
+                    variant="outline"
                     size="sm"
-                    onClick={() => onCancel(appointment.id)}
+                    onClick={() => handleCancel(appointment.id, appointment.client_name)}
                     disabled={updatingId === appointment.id}
-                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                    className="border-red-600 text-red-400 bg-gray-800 hover:bg-red-600/10"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Cancelar

@@ -163,7 +163,7 @@ export default function BarberProfileForm() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold"
                     placeholder="Digite seu nome completo"
                     required
                   />
@@ -178,7 +178,7 @@ export default function BarberProfileForm() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold"
                     placeholder="seu@email.com"
                     required
                   />
@@ -192,7 +192,7 @@ export default function BarberProfileForm() {
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold"
                     placeholder="(11) 99999-9999"
                   />
                 </div>
@@ -206,7 +206,7 @@ export default function BarberProfileForm() {
                     type="number"
                     value={formData.commission_rate}
                     onChange={(e) => setFormData(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
-                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold"
                     min="0"
                     max="100"
                     placeholder="15"
@@ -233,7 +233,7 @@ export default function BarberProfileForm() {
                     value={formData.experience}
                     onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
                     placeholder="Descreva sua experiência profissional, formação e trajetória na área"
-                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold min-h-[100px]"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold min-h-[100px]"
                   />
                 </div>
                 
@@ -247,7 +247,7 @@ export default function BarberProfileForm() {
                     value={formData.specialties}
                     onChange={(e) => setFormData(prev => ({ ...prev, specialties: e.target.value }))}
                     placeholder="Liste suas especialidades (ex: cortes masculinos, barba, penteados, coloração)"
-                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold min-h-[100px]"
+                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold min-h-[100px]"
                   />
                 </div>
               </div>
