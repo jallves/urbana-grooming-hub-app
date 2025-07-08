@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { motion } from 'framer-motion';
+import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 
 interface Commission {
   id: string;
@@ -100,110 +102,190 @@ const BarberCommissions: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary">Pendente</Badge>;
+        return <Badge className="border-yellow-500/50 text-yellow-400 bg-yellow-500/10">Pendente</Badge>;
       case 'paid':
-        return <Badge className="bg-green-500">Pago</Badge>;
+        return <Badge className="border-green-500/50 text-green-400 bg-green-500/10">Pago</Badge>;
       default:
-        return <Badge>{status}</Badge>;
+        return <Badge className="border-gray-500/50 text-gray-400 bg-gray-500/10">{status}</Badge>;
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Carregando comissões...</div>
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+        <div className="flex justify-center items-center h-64">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full"
+          />
+        </div>
       </div>
     );
   }
 
+  const summaryCards = [
+    {
+      title: 'Total Pendente',
+      value: `R$ ${totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: Clock,
+      color: 'text-orange-400',
+      bgGradient: 'from-orange-500/10 to-red-500/10',
+      borderColor: 'border-orange-500/20'
+    },
+    {
+      title: 'Total Pago',
+      value: `R$ ${totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: CheckCircle,
+      color: 'text-green-400',
+      bgGradient: 'from-green-500/10 to-emerald-500/10',
+      borderColor: 'border-green-500/20'
+    },
+    {
+      title: 'Total Geral',
+      value: `R$ ${(totalPending + totalPaid).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: DollarSign,
+      color: 'text-urbana-gold',
+      bgGradient: 'from-urbana-gold/10 to-yellow-500/10',
+      borderColor: 'border-urbana-gold/20'
+    },
+    {
+      title: 'Comissões',
+      value: commissions.length.toString(),
+      icon: TrendingUp,
+      color: 'text-blue-400',
+      bgGradient: 'from-blue-500/10 to-cyan-500/10',
+      borderColor: 'border-blue-500/20'
+    }
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Pendente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              R$ {totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Pago</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              R$ {totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+      {/* Background Elements */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 right-10 w-64 h-64 bg-urbana-gold rounded-full blur-3xl"></div>
+        <div className="absolute bottom-32 left-10 w-80 h-80 bg-urbana-gold rounded-full blur-3xl"></div>
       </div>
 
-      {/* Commissions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Comissões</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {commissions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              Nenhuma comissão encontrada.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Serviço</TableHead>
-                  <TableHead>Valor do Serviço</TableHead>
-                  <TableHead>Taxa (%)</TableHead>
-                  <TableHead>Comissão</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data do Pagamento</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {commissions.map((commission) => (
-                  <TableRow key={commission.id}>
-                    <TableCell>
-                      {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
-                    </TableCell>
-                    <TableCell>
-                      {commission.appointment?.client?.name || 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      {commission.appointment?.service?.name || 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      R$ {(commission.appointment?.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell>
-                      {commission.commission_rate}%
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(commission.status)}
-                    </TableCell>
-                    <TableCell>
-                      {commission.payment_date 
-                        ? format(new Date(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })
-                        : '-'
-                      }
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <div className="relative z-10 p-4 sm:p-6 lg:p-8 space-y-8">
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-playfair font-bold mb-4">
+            <span className="bg-gradient-to-r from-white via-urbana-gold to-white bg-clip-text text-transparent">
+              Minhas Comissões
+            </span>
+          </h2>
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+            Acompanhe seus ganhos e histórico de comissões
+          </p>
+        </motion.div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {summaryCards.map((card, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 * index }}
+              whileHover={{ scale: 1.05 }}
+            >
+              <Card className={`bg-gradient-to-br ${card.bgGradient} backdrop-blur-lg border ${card.borderColor} hover:border-urbana-gold/40 transition-all duration-300`}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-300">{card.title}</CardTitle>
+                  <card.icon className={`h-5 w-5 ${card.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl sm:text-2xl font-bold text-white">
+                    {card.value}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Commissions Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Card className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-lg border border-gray-700/50">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-urbana-gold" />
+                Histórico de Comissões
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {commissions.length === 0 ? (
+                <div className="text-center py-12">
+                  <DollarSign className="h-16 w-16 text-gray-600 mx-auto mb-6" />
+                  <h3 className="text-xl font-bold text-white mb-2">Nenhuma comissão encontrada</h3>
+                  <p className="text-gray-400">
+                    As comissões aparecerão aqui conforme você concluir atendimentos
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-gray-700">
+                        <TableHead className="text-gray-300">Data</TableHead>
+                        <TableHead className="text-gray-300">Cliente</TableHead>
+                        <TableHead className="text-gray-300">Serviço</TableHead>
+                        <TableHead className="text-gray-300">Valor do Serviço</TableHead>
+                        <TableHead className="text-gray-300">Taxa</TableHead>
+                        <TableHead className="text-gray-300">Comissão</TableHead>
+                        <TableHead className="text-gray-300">Status</TableHead>
+                        <TableHead className="text-gray-300">Pagamento</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {commissions.map((commission) => (
+                        <TableRow key={commission.id} className="border-gray-700 hover:bg-gray-800/50">
+                          <TableCell className="text-gray-300">
+                            {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-white font-medium">
+                            {commission.appointment?.client?.name || 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-gray-300">
+                            {commission.appointment?.service?.name || 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-gray-300">
+                            R$ {(commission.appointment?.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="text-urbana-gold">
+                            {commission.commission_rate}%
+                          </TableCell>
+                          <TableCell className="font-bold text-white">
+                            R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(commission.status)}
+                          </TableCell>
+                          <TableCell className="text-gray-300">
+                            {commission.payment_date 
+                              ? format(new Date(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })
+                              : '-'
+                            }
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   );
 };
