@@ -230,7 +230,7 @@ const BarberClients: React.FC = () => {
                             <p className="text-sm text-gray-400 truncate">{client.email}</p>
                           </div>
                           <Badge className="ml-2 bg-urbana-gold/10 text-urbana-gold border-urbana-gold/50">
-                            {client.total_appointments} agendamentos
+                            {client.total_appointments} agendamento{client.total_appointments !== 1 ? 's' : ''}
                           </Badge>
                         </div>
 

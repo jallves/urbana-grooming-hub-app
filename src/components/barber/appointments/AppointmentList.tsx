@@ -7,6 +7,7 @@ import { Calendar, Clock, User, Scissors, Edit, Check, X, Phone, MessageCircle }
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { useToast } from "@/hooks/use-toast";
 
 interface AppointmentWithDetails {
   id: string;
@@ -38,6 +39,8 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
   onEdit,
   onCancel
 }) => {
+  const { toast } = useToast();
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'scheduled': { 
@@ -74,6 +77,11 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
     const confirmed = window.confirm(`Tem certeza que deseja marcar o agendamento de ${clientName} como concluído?`);
     if (confirmed) {
       onComplete(id);
+      toast({
+        title: "Agendamento Concluído",
+        description: `O agendamento de ${clientName} foi marcado como concluído.`,
+        duration: 3000,
+      });
     }
   };
 
@@ -81,6 +89,11 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
     const confirmed = window.confirm(`Deseja editar o agendamento de ${clientName}?`);
     if (confirmed) {
       onEdit(id, startTime);
+      toast({
+        title: "Agendamento Editado",
+        description: `O agendamento de ${clientName} foi modificado.`,
+        duration: 3000,
+      });
     }
   };
 
@@ -88,6 +101,11 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
     const confirmed = window.confirm(`Tem certeza que deseja cancelar o agendamento de ${clientName}?`);
     if (confirmed) {
       onCancel(id);
+      toast({
+        title: "Agendamento Cancelado",
+        description: `O agendamento de ${clientName} foi cancelado.`,
+        duration: 3000,
+      });
     }
   };
 
