@@ -61,7 +61,6 @@ export const useBarberAppointments = () => {
       if (!user?.email) return;
 
       try {
-        // Buscar na tabela painel_barbeiros usando o email do usuário logado
         const { data } = await supabase
           .from('painel_barbeiros')
           .select('id')
@@ -111,7 +110,6 @@ export const useBarberAppointments = () => {
         console.log('Barber appointments found:', data.length);
         
         const appointmentsWithDetails = data.map((appointment: PainelAgendamento) => {
-          // Criar timestamp combinando data e hora
           const startTime = new Date(`${appointment.data}T${appointment.hora}`);
           const endTime = new Date(startTime.getTime() + (appointment.painel_servicos.duracao * 60000));
 
@@ -146,9 +144,32 @@ export const useBarberAppointments = () => {
     }
   };
 
+  // Real-time subscription
   useEffect(() => {
     if (barberId) {
       fetchAppointments();
+
+      // Subscribe to real-time changes
+      const channel = supabase
+        .channel('painel_agendamentos_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'painel_agendamentos',
+            filter: `barbeiro_id=eq.${barberId}`
+          },
+          (payload) => {
+            console.log('Real-time update received:', payload);
+            fetchAppointments(); // Refresh appointments when changes occur
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [barberId]);
 
@@ -194,6 +215,20 @@ export const useBarberAppointments = () => {
         });
         return;
       }
+
+      // Create commission entry
+      const servicePrice = appointment.service?.price || 0;
+      const commissionRate = 30; // Default commission rate
+
+      await supabase
+        .from('barber_commissions')
+        .insert({
+          barber_id: barberId,
+          appointment_id: appointmentId,
+          amount: servicePrice * (commissionRate / 100),
+          commission_rate: commissionRate,
+          status: 'pending'
+        });
 
       toast({
         title: "✅ Agendamento Concluído!",

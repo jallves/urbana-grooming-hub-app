@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +9,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
+import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
 
 interface Agendamento {
   id: string;
@@ -35,11 +35,7 @@ export default function PainelClienteDashboard() {
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchAgendamentos();
-  }, []);
-
-  async function fetchAgendamentos() {
+  const fetchAgendamentos = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('painel_agendamentos')
@@ -53,7 +49,16 @@ export default function PainelClienteDashboard() {
       setAgendamentos(data || []);
     }
     setLoading(false);
-  }
+  }, [cliente?.id, toast]);
+
+  useEffect(() => {
+    if (cliente?.id) {
+      fetchAgendamentos();
+    }
+  }, [cliente?.id, fetchAgendamentos]);
+
+  // Setup real-time updates
+  useClientDashboardRealtime(fetchAgendamentos);
 
   function handleEditAgendamento(agendamento: Agendamento) {
     setSelectedAgendamento(agendamento);
