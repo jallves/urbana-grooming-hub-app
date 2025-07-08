@@ -148,7 +148,7 @@ const BarberCommissions: React.FC = () => {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {summaryCards.map((card, index) => (
-            <Card key={index} className="bg-gray-900 border-gray-700">
+            <Card key={index} className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-gray-300">{card.title}</CardTitle>
                 <card.icon className={`h-4 w-4 ${card.color}`} />
@@ -163,7 +163,7 @@ const BarberCommissions: React.FC = () => {
         </div>
 
         {/* Commissions Table */}
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-urbana-gold" />
@@ -183,7 +183,7 @@ const BarberCommissions: React.FC = () => {
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-700">
+                    <TableRow className="border-gray-700/50">
                       <TableHead className="text-gray-300">Data</TableHead>
                       <TableHead className="text-gray-300">Cliente</TableHead>
                       <TableHead className="text-gray-300">Serviço</TableHead>
@@ -196,7 +196,7 @@ const BarberCommissions: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {commissions.map((commission) => (
-                      <TableRow key={commission.id} className="border-gray-700">
+                      <TableRow key={commission.id} className="border-gray-700/50">
                         <TableCell className="text-gray-300">
                           {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>

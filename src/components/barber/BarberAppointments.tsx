@@ -30,24 +30,24 @@ const BarberAppointmentsComponent: React.FC = () => {
         <AppointmentStats stats={stats} />
         
         <Tabs defaultValue="proximos" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-900 border border-gray-700">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-800/50 border border-gray-700/50">
             <TabsTrigger 
               value="proximos" 
-              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-gray-300"
+              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-white"
             >
               <Clock className="h-4 w-4 mr-2" />
               Próximos
             </TabsTrigger>
             <TabsTrigger 
               value="concluidos" 
-              className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-gray-300"
+              className="data-[state=active]:bg-green-600 data-[state=active]:text-white text-white"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               Concluídos
             </TabsTrigger>
             <TabsTrigger 
               value="todos" 
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-gray-300"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-white"
             >
               <Calendar className="h-4 w-4 mr-2" />
               Todos

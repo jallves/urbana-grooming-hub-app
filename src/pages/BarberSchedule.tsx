@@ -13,12 +13,18 @@ const BarberSchedule: React.FC = () => {
   }
 
   if (!barber) {
-    return <div>Acesso negado</div>;
+    return (
+      <BarberLayout title="Minha Agenda">
+        <div className="text-center py-12">
+          <div className="text-red-400">Acesso negado</div>
+        </div>
+      </BarberLayout>
+    );
   }
 
   return (
     <BarberLayout title="Minha Agenda">
-      <div className="panel-content-responsive">
+      <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm">
         <BarberScheduleView />
       </div>
     </BarberLayout>

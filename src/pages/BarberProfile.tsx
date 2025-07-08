@@ -13,12 +13,18 @@ const BarberProfile: React.FC = () => {
   }
 
   if (!barber) {
-    return <div>Acesso negado</div>;
+    return (
+      <BarberLayout title="Meu Perfil">
+        <div className="text-center py-12">
+          <div className="text-red-400">Acesso negado</div>
+        </div>
+      </BarberLayout>
+    );
   }
 
   return (
     <BarberLayout title="Meu Perfil">
-      <div className="panel-content-responsive">
+      <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm p-6">
         <BarberProfileForm />
       </div>
     </BarberLayout>

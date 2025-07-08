@@ -44,7 +44,6 @@ export default function BarberProfileForm() {
     if (!barber?.id) return;
 
     try {
-      // Fetch barber profile from staff table
       const { data, error } = await supabase
         .from('staff')
         .select('*')
@@ -107,7 +106,7 @@ export default function BarberProfileForm() {
         description: "Suas informações foram salvas com sucesso.",
       });
 
-      loadProfile(); // Reload to get updated data
+      loadProfile();
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -121,15 +120,19 @@ export default function BarberProfileForm() {
   };
 
   if (!barber) {
-    return <div>Acesso negado</div>;
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-400">Acesso negado</div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle>Perfil do Barbeiro</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-white">Perfil do Barbeiro</CardTitle>
+          <CardDescription className="text-gray-400">
             Gerencie suas informações pessoais e profissionais
           </CardDescription>
         </CardHeader>
@@ -137,39 +140,43 @@ export default function BarberProfileForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name" className="text-white">Nome</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-white">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="phone" className="text-white">Telefone</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
                 />
               </div>
               <div>
-                <Label htmlFor="commission_rate">Taxa de Comissão (%)</Label>
+                <Label htmlFor="commission_rate" className="text-white">Taxa de Comissão (%)</Label>
                 <Input
                   id="commission_rate"
                   type="number"
                   value={formData.commission_rate}
                   onChange={(e) => setFormData(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
+                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
                   min="0"
                   max="100"
                 />
@@ -177,26 +184,32 @@ export default function BarberProfileForm() {
             </div>
             
             <div>
-              <Label htmlFor="experience">Experiência</Label>
+              <Label htmlFor="experience" className="text-white">Experiência</Label>
               <Textarea
                 id="experience"
                 value={formData.experience}
                 onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
                 placeholder="Descreva sua experiência profissional"
+                className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
               />
             </div>
             
             <div>
-              <Label htmlFor="specialties">Especialidades</Label>
+              <Label htmlFor="specialties" className="text-white">Especialidades</Label>
               <Textarea
                 id="specialties"
                 value={formData.specialties}
                 onChange={(e) => setFormData(prev => ({ ...prev, specialties: e.target.value }))}
                 placeholder="Liste suas especialidades (ex: cortes masculinos, barba, penteados)"
+                className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
               />
             </div>
 
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
+            >
               {loading ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
           </form>

@@ -96,7 +96,7 @@ const BarberClients: React.FC = () => {
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input 
                 placeholder="Buscar clientes..." 
-                className="pl-10 bg-gray-900 border-gray-700 text-white placeholder-gray-400 focus:border-urbana-gold"
+                className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder-gray-400 focus:border-urbana-gold backdrop-blur-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -110,8 +110,8 @@ const BarberClients: React.FC = () => {
           ) : filteredClients.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredClients.map((client) => (
-                <Card key={client.id} className="bg-gray-900 border-gray-700">
-                  <CardHeader className="bg-gray-800 border-b border-gray-700">
+                <Card key={client.id} className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+                  <CardHeader className="bg-gray-700/50 border-b border-gray-600/50">
                     <CardTitle className="flex items-center gap-3 text-lg text-white">
                       <div className="p-2 bg-urbana-gold/20 rounded-full">
                         <User className="h-4 w-4 text-urbana-gold" />
@@ -145,7 +145,7 @@ const BarberClients: React.FC = () => {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="flex-1 border-urbana-gold/50 text-urbana-gold hover:bg-urbana-gold hover:text-black"
+                        className="flex-1 border-urbana-gold/50 text-urbana-gold hover:bg-urbana-gold/20"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Histórico
@@ -155,7 +155,7 @@ const BarberClients: React.FC = () => {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="flex-1 border-green-500/50 text-green-400 hover:bg-green-600 hover:text-white"
+                          className="flex-1 border-green-500/50 text-green-400 hover:bg-green-500/20"
                         >
                           <MessageCircle className="h-4 w-4 mr-1" />
                           WhatsApp
@@ -169,13 +169,15 @@ const BarberClients: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <div className="max-w-md mx-auto">
-                <div className="p-6 bg-gray-900 rounded-lg border border-gray-700">
-                  <User className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-white mb-2">Nenhum cliente encontrado</h3>
-                  <p className="text-gray-400 text-center">
-                    Os clientes aparecerão aqui conforme você receber agendamentos
-                  </p>
-                </div>
+                <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <User className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-bold text-white mb-2">Nenhum cliente encontrado</h3>
+                    <p className="text-gray-400 text-center">
+                      Os clientes aparecerão aqui conforme você receber agendamentos
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           )}
