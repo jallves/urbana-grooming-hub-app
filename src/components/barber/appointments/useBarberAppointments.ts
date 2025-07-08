@@ -201,13 +201,14 @@ export const useBarberAppointments = () => {
 
       const appointmentDate = new Date(appointment.start_time);
       
-      const { error } = await supabase
+      // Atualizar status do agendamento
+      const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ status: 'concluido' })
         .eq('id', appointmentId);
 
-      if (error) {
-        console.error('Erro ao marcar agendamento como concluído:', error);
+      if (updateError) {
+        console.error('Erro ao marcar agendamento como concluído:', updateError);
         toast({
           title: "Erro",
           description: "Não foi possível marcar o agendamento como concluído.",
@@ -216,23 +217,30 @@ export const useBarberAppointments = () => {
         return;
       }
 
-      // Create commission entry
+      // Criar entrada de comissão
       const servicePrice = appointment.service?.price || 0;
-      const commissionRate = 30; // Default commission rate
+      const commissionRate = 30; // Taxa de comissão padrão de 30%
+      const commissionAmount = servicePrice * (commissionRate / 100);
 
-      await supabase
+      const { error: commissionError } = await supabase
         .from('barber_commissions')
         .insert({
           barber_id: barberId,
           appointment_id: appointmentId,
-          amount: servicePrice * (commissionRate / 100),
+          amount: commissionAmount,
           commission_rate: commissionRate,
           status: 'pending'
         });
 
+      if (commissionError) {
+        console.error('Erro ao criar comissão:', commissionError);
+        // Não vamos bloquear o processo se falhar ao criar a comissão
+        // Mas vamos logar o erro
+      }
+
       toast({
         title: "✅ Agendamento Concluído!",
-        description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.`,
+        description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído. Comissão de R$ ${commissionAmount.toFixed(2)} adicionada.`,
         duration: 4000,
       });
 

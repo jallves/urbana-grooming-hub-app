@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Commission {
   id: string;
@@ -16,60 +17,69 @@ interface Commission {
   status: string;
   created_at: string;
   payment_date: string | null;
-  appointment: {
-    id: string;
-    service: {
-      name: string;
-      price: number;
-    };
-    client: {
-      name: string;
-    };
+  appointment_id: string;
+}
+
+interface CommissionWithDetails extends Commission {
+  appointment_details?: {
+    client_name: string;
+    service_name: string;
+    service_price: number;
+    appointment_date: string;
+    appointment_time: string;
   };
 }
 
 const BarberCommissions: React.FC = () => {
-  const [commissions, setCommissions] = useState<Commission[]>([]);
+  const { user } = useAuth();
+  const [commissions, setCommissions] = useState<CommissionWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPending, setTotalPending] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
+  const [barberId, setBarberId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCommissions();
-  }, []);
+    const fetchBarberId = async () => {
+      if (!user?.email) return;
+
+      try {
+        const { data } = await supabase
+          .from('painel_barbeiros')
+          .select('id')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        if (data?.id) {
+          setBarberId(data.id);
+        }
+      } catch (error) {
+        console.error('Error fetching barber ID:', error);
+      }
+    };
+
+    fetchBarberId();
+  }, [user?.email]);
+
+  useEffect(() => {
+    if (barberId) {
+      fetchCommissions();
+    }
+  }, [barberId]);
 
   const fetchCommissions = async () => {
+    if (!barberId) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (staffError || !staffData) {
-        console.error('Error fetching staff data:', staffError);
-        return;
-      }
-
-      const { data, error } = await supabase
+      // Buscar comissões do barbeiro
+      const { data: commissionsData, error: commissionsError } = await supabase
         .from('barber_commissions')
-        .select(`
-          *,
-          appointment:appointments (
-            id,
-            service:services (name, price),
-            client:clients (name)
-          )
-        `)
-        .eq('barber_id', staffData.id)
+        .select('*')
+        .eq('barber_id', barberId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching commissions:', error);
+      if (commissionsError) {
+        console.error('Error fetching commissions:', commissionsError);
         toast({
           title: "Erro ao carregar comissões",
           description: "Não foi possível carregar suas comissões.",
@@ -78,16 +88,62 @@ const BarberCommissions: React.FC = () => {
         return;
       }
 
-      setCommissions(data || []);
+      // Para cada comissão, buscar detalhes do agendamento
+      const commissionsWithDetails = await Promise.all(
+        (commissionsData || []).map(async (commission) => {
+          try {
+            const { data: appointmentData } = await supabase
+              .from('painel_agendamentos')
+              .select(`
+                id,
+                data,
+                hora,
+                painel_clientes!inner(nome),
+                painel_servicos!inner(nome, preco)
+              `)
+              .eq('id', commission.appointment_id)
+              .maybeSingle();
 
-      const pending = data?.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0) || 0;
-      const paid = data?.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0) || 0;
+            if (appointmentData) {
+              return {
+                ...commission,
+                appointment_details: {
+                  client_name: appointmentData.painel_clientes?.nome || 'Cliente',
+                  service_name: appointmentData.painel_servicos?.nome || 'Serviço',
+                  service_price: appointmentData.painel_servicos?.preco || 0,
+                  appointment_date: appointmentData.data,
+                  appointment_time: appointmentData.hora
+                }
+              };
+            }
+            return commission;
+          } catch (error) {
+            console.error('Error fetching appointment details:', error);
+            return commission;
+          }
+        })
+      );
+
+      setCommissions(commissionsWithDetails);
+
+      // Calcular totais
+      const pending = commissionsWithDetails
+        .filter(c => c.status === 'pending')
+        .reduce((sum, c) => sum + c.amount, 0);
+      const paid = commissionsWithDetails
+        .filter(c => c.status === 'paid')
+        .reduce((sum, c) => sum + c.amount, 0);
       
       setTotalPending(pending);
       setTotalPaid(paid);
 
     } catch (error) {
       console.error('Error:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao carregar as comissões.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -186,10 +242,10 @@ const BarberCommissions: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <h4 className="font-medium text-white">
-                              {commission.appointment?.client?.name || 'N/A'}
+                              {commission.appointment_details?.client_name || 'Cliente'}
                             </h4>
                             <p className="text-sm text-gray-400">
-                              {commission.appointment?.service?.name || 'N/A'}
+                              {commission.appointment_details?.service_name || 'Serviço'}
                             </p>
                           </div>
                           {getStatusBadge(commission.status)}
@@ -199,7 +255,16 @@ const BarberCommissions: React.FC = () => {
                           <div>
                             <p className="text-gray-400">Data</p>
                             <p className="text-white">
-                              {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                              {commission.appointment_details?.appointment_date 
+                                ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
+                                : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
+                              }
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400">Horário</p>
+                            <p className="text-white">
+                              {commission.appointment_details?.appointment_time || '--:--'}
                             </p>
                           </div>
                           <div>
@@ -209,22 +274,23 @@ const BarberCommissions: React.FC = () => {
                           <div>
                             <p className="text-gray-400">Valor Serviço</p>
                             <p className="text-white">
-                              R$ {(commission.appointment?.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400">Comissão</p>
-                            <p className="text-white font-bold">
-                              R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                         </div>
                         
+                        <div className="pt-2 border-t border-gray-600/50">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-gray-400">Comissão</span>
+                            <span className="text-lg font-bold text-urbana-gold">
+                              R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                        
                         {commission.payment_date && (
-                          <div className="pt-2 border-t border-gray-600/50">
-                            <p className="text-xs text-gray-400">
-                              Pago em: {format(new Date(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })}
-                            </p>
+                          <div className="text-xs text-gray-400">
+                            Pago em: {format(new Date(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })}
                           </div>
                         )}
                       </div>
@@ -252,21 +318,24 @@ const BarberCommissions: React.FC = () => {
                     {commissions.map((commission) => (
                       <TableRow key={commission.id} className="border-gray-700/50">
                         <TableCell className="text-gray-300">
-                          {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                          {commission.appointment_details?.appointment_date 
+                            ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
+                            : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
+                          }
                         </TableCell>
                         <TableCell className="text-white font-medium">
-                          {commission.appointment?.client?.name || 'N/A'}
+                          {commission.appointment_details?.client_name || 'Cliente'}
                         </TableCell>
                         <TableCell className="text-gray-300">
-                          {commission.appointment?.service?.name || 'N/A'}
+                          {commission.appointment_details?.service_name || 'Serviço'}
                         </TableCell>
                         <TableCell className="text-gray-300">
-                          R$ {(commission.appointment?.service?.price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="text-urbana-gold">
                           {commission.commission_rate}%
                         </TableCell>
-                        <TableCell className="font-bold text-white">
+                        <TableCell className="font-bold text-urbana-gold">
                           R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -231,10 +232,10 @@ export default function PainelClienteAgendar() {
               onClick={() => navigate('/painel-cliente/dashboard')}
               variant="outline"
               size="sm"
-              className="border text-white px-4 py-2"
+              className="border-gray-800 text-gray-300 bg-transparent rounded-lg px-4 py-3 backdrop-blur-md flex items-center gap-2"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+              <ArrowLeft className="h-4 w-4" />
+              <span>Voltar</span>
             </Button>
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-green-400 bg-clip-text text-transparent">
@@ -244,8 +245,151 @@ export default function PainelClienteAgendar() {
             </div>
           </div>
 
-          {/* ... restante do formulário (sem alterações) ... */}
-          
+          {/* Formulário */}
+          <Card className="bg-gradient-to-br from-gray-900/90 to-gray-950/90 border-gray-800/50 backdrop-blur-md shadow-2xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-white flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg">
+                  <Scissors className="h-5 w-5 text-white" />
+                </div>
+                Detalhes do Agendamento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Cliente Info */}
+                <div className="p-4 bg-gradient-to-r from-green-900/20 to-blue-900/20 rounded-lg border border-green-800/30">
+                  <div className="flex items-center gap-3 mb-2">
+                    <User className="h-5 w-5 text-green-400" />
+                    <span className="text-green-400 font-medium">Cliente</span>
+                  </div>
+                  <p className="text-white font-semibold text-lg">{cliente.nome}</p>
+                  <p className="text-gray-400">{cliente.email}</p>
+                </div>
+
+                {/* Serviço */}
+                <div className="space-y-2">
+                  <Label htmlFor="servico" className="text-gray-300 font-medium">
+                    Serviço *
+                  </Label>
+                  <Select value={formData.servico_id} onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}>
+                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                      <SelectValue placeholder="Selecione um serviço" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      {servicos.map((servico) => (
+                        <SelectItem key={servico.id} value={servico.id} className="text-white">
+                          {servico.nome} - R$ {servico.preco.toFixed(2)} ({servico.duracao}min)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Barbeiro */}
+                <div className="space-y-2">
+                  <Label htmlFor="barbeiro" className="text-gray-300 font-medium">
+                    Barbeiro *
+                  </Label>
+                  <Select value={formData.barbeiro_id} onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}>
+                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                      <SelectValue placeholder="Selecione um barbeiro" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      {barbeiros.map((barbeiro) => (
+                        <SelectItem key={barbeiro.id} value={barbeiro.id} className="text-white">
+                          {barbeiro.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Data */}
+                <div className="space-y-2">
+                  <Label htmlFor="data" className="text-gray-300 font-medium">
+                    Data *
+                  </Label>
+                  <Select value={formData.data} onValueChange={(value) => setFormData(prev => ({ ...prev, data: value }))}>
+                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                      <SelectValue placeholder="Selecione uma data" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      {gerarDatasDisponiveis().map((data) => (
+                        <SelectItem key={data.value} value={data.value} className="text-white">
+                          {data.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Hora */}
+                <div className="space-y-2">
+                  <Label htmlFor="hora" className="text-gray-300 font-medium">
+                    Horário *
+                  </Label>
+                  <Select value={formData.hora} onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}>
+                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                      <SelectValue placeholder="Selecione um horário" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      {gerarHorariosDisponiveis().map((hora) => (
+                        <SelectItem key={hora} value={hora} className="text-white">
+                          {hora}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Observações */}
+                <div className="space-y-2">
+                  <Label htmlFor="observacoes" className="text-gray-300 font-medium">
+                    Observações
+                  </Label>
+                  <Textarea
+                    id="observacoes"
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
+                    placeholder="Digite suas observações (opcional)"
+                    className="bg-gray-800/50 border-gray-700 text-white placeholder-gray-500"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Botões */}
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/painel-cliente/dashboard')}
+                    className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800/50"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-medium px-8 py-3 rounded-lg shadow-xl flex-1"
+                  >
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Agendando...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Plus className="w-5 h-5" />
+                        Confirmar Agendamento
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
           {/* Modal de Confirmação */}
           <ConfirmacaoAgendamento
             isOpen={confirmacao.isOpen}
