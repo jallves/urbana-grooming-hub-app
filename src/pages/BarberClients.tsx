@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, Search, Phone, MessageCircle, Calendar, User } from 'lucide-react';
+import { Users, Search, Phone, MessageCircle, Calendar, User, Star, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import BarberLayout from '@/components/barber/BarberLayout';
@@ -155,37 +154,37 @@ const BarberClients: React.FC = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 border-blue-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Total de Clientes</p>
+                  <p className="text-sm text-blue-300">Total de Clientes</p>
                   <p className="text-2xl font-bold text-white">{clients.length}</p>
                 </div>
-                <Users className="h-8 w-8 text-urbana-gold" />
+                <Users className="h-8 w-8 text-blue-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 border-green-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Agendamentos Totais</p>
+                  <p className="text-sm text-green-300">Agendamentos Totais</p>
                   <p className="text-2xl font-bold text-white">
                     {clients.reduce((sum, client) => sum + client.total_appointments, 0)}
                   </p>
                 </div>
-                <Calendar className="h-8 w-8 text-urbana-gold" />
+                <Calendar className="h-8 w-8 text-green-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 border-purple-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Clientes Ativos</p>
+                  <p className="text-sm text-purple-300">Clientes Ativos</p>
                   <p className="text-2xl font-bold text-white">
                     {clients.filter(client => {
                       if (!client.last_appointment) return false;
@@ -196,7 +195,7 @@ const BarberClients: React.FC = () => {
                     }).length}
                   </p>
                 </div>
-                <User className="h-8 w-8 text-urbana-gold" />
+                <TrendingUp className="h-8 w-8 text-purple-400" />
               </div>
             </CardContent>
           </Card>
@@ -221,22 +220,26 @@ const BarberClients: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredClients.map((client) => (
-                  <Card key={client.id} className="bg-gray-700/50 border-gray-600/50">
+                  <Card key={client.id} className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 border-gray-600/50 hover:from-gray-600/50 hover:to-gray-700/50 transition-all duration-200">
                     <CardContent className="p-4">
                       <div className="space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="font-medium text-white truncate">{client.nome}</h4>
-                            <p className="text-sm text-gray-400 truncate">{client.email}</p>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-urbana-gold" />
+                              <h4 className="font-medium text-white truncate">{client.nome}</h4>
+                            </div>
+                            <p className="text-sm text-gray-400 truncate ml-6">{client.email}</p>
                           </div>
-                          <Badge className="ml-2 bg-urbana-gold/10 text-urbana-gold border-urbana-gold/50">
+                          <Badge className="ml-2 bg-urbana-gold/20 text-urbana-gold border-urbana-gold/50">
                             {client.total_appointments} agendamento{client.total_appointments !== 1 ? 's' : ''}
                           </Badge>
                         </div>
 
                         {client.last_appointment && (
-                          <div className="text-xs text-gray-400">
-                            Último agendamento: {format(new Date(client.last_appointment), 'dd/MM/yyyy', { locale: ptBR })}
+                          <div className="flex items-center gap-2 text-xs text-gray-400 ml-6">
+                            <Calendar className="h-3 w-3" />
+                            Último: {format(new Date(client.last_appointment), 'dd/MM/yyyy', { locale: ptBR })}
                           </div>
                         )}
 
@@ -244,7 +247,7 @@ const BarberClients: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 border-blue-600 text-blue-400 bg-gray-800 hover:bg-blue-600/10"
+                            className="flex-1 border-blue-600 text-blue-400 bg-gray-800 hover:bg-blue-600/20 hover:border-blue-500"
                             onClick={() => window.open(`tel:${client.whatsapp}`, '_self')}
                           >
                             <Phone className="h-3 w-3 mr-1" />
@@ -253,7 +256,7 @@ const BarberClients: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 border-green-600 text-green-400 bg-gray-800 hover:bg-green-600/10"
+                            className="flex-1 border-green-600 text-green-400 bg-gray-800 hover:bg-green-600/20 hover:border-green-500"
                             onClick={() => window.open(`https://wa.me/${client.whatsapp.replace(/\D/g, '')}`, '_blank')}
                           >
                             <MessageCircle className="h-3 w-3 mr-1" />

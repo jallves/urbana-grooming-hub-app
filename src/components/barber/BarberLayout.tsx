@@ -72,8 +72,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   return (
     <div className="min-h-screen bg-black text-white flex">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700">
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
               <BarChart2 className="w-5 h-5 text-black" />
@@ -84,7 +84,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700/50"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -105,7 +105,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-colors ${
                   active 
                     ? 'bg-urbana-gold text-black font-medium' 
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -115,7 +115,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700/50">
           <div className="flex items-center space-x-3 mb-4">
             <Avatar className="w-10 h-10">
               <AvatarFallback className="bg-urbana-gold text-black">
@@ -134,7 +134,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
           <Button
             onClick={handleLogout}
             variant="outline"
-            className="w-full border-gray-600 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600"
+            className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white hover:border-gray-500"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Sair
@@ -145,14 +145,14 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       {/* Main Content */}
       <div className="flex-1 lg:ml-0">
         {/* Top Header */}
-        <header className="bg-gray-900 border-b border-gray-700 px-4 lg:px-6 py-4">
+        <header className="bg-gray-900/95 backdrop-blur-lg border-b border-gray-700/50 px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-gray-400 hover:text-white"
+                className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700/50"
               >
                 <Menu className="w-5 h-5" />
               </Button>
@@ -161,7 +161,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 <Button
                   variant="ghost"
                   onClick={() => navigate('/barbeiro')}
-                  className="text-gray-400 hover:text-white"
+                  className="text-gray-400 hover:text-white hover:bg-gray-700/50"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Voltar
