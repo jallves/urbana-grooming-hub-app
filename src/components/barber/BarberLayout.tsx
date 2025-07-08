@@ -1,146 +1,196 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import BarberSidebar from './BarberSidebar';
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Bell, Menu } from 'lucide-react';
+import { LogOut, Menu, X, BarChart2, Calendar, Clock, Users, DollarSign, Settings, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from '@/components/ui/badge';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useState } from 'react';
 
 interface BarberLayoutProps {
   children: React.ReactNode;
   title?: string;
 }
 
-const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel do Barbeiro" }) => {
+const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const menuItems = [
+    { 
+      name: 'Dashboard', 
+      href: '/barbeiro', 
+      icon: BarChart2,
+      exact: true
+    },
+    { 
+      name: 'Agendamentos', 
+      href: '/barbeiro/agendamentos', 
+      icon: Calendar 
+    },
+    { 
+      name: 'Minha Agenda', 
+      href: '/barbeiro/agenda', 
+      icon: Clock 
+    },
+    { 
+      name: 'Clientes', 
+      href: '/barbeiro/clientes', 
+      icon: Users 
+    },
+    { 
+      name: 'Comissões', 
+      href: '/barbeiro/comissoes', 
+      icon: DollarSign 
+    },
+    { 
+      name: 'Perfil', 
+      href: '/barbeiro/perfil', 
+      icon: Settings 
+    }
+  ];
 
   const handleLogout = async () => {
     try {
       await signOut();
+      navigate('/barbeiro/login');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
-  const userInitials = user?.email?.charAt(0).toUpperCase() || 'B';
+  const isActive = (href: string, exact = false) => {
+    if (exact) {
+      return location.pathname === href;
+    }
+    return location.pathname.startsWith(href);
+  };
+
+  const isDashboard = location.pathname === '/barbeiro';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
-      {/* Modern Background Pattern */}
-      <div className="fixed inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/api/placeholder/1920/1080')] bg-cover bg-center mix-blend-overlay"></div>
-        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-3xl opacity-20"></div>
-        <div className="absolute bottom-20 right-20 w-64 h-64 bg-gradient-to-r from-green-500 to-blue-500 rounded-full blur-3xl opacity-20"></div>
-      </div>
-
-      <div className="relative z-10 flex min-h-screen">
-        {/* Sidebar - Hidden on mobile */}
-        <div className={`${isMobile ? 'hidden' : 'block'} w-64 flex-shrink-0`}>
-          <BarberSidebar />
+    <div className="min-h-screen bg-black text-white flex">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
+              <BarChart2 className="w-5 h-5 text-black" />
+            </div>
+            <span className="text-xl font-bold text-urbana-gold">Barbeiro</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-gray-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
-        {/* Mobile Sidebar Overlay */}
-        {isMobile && sidebarOpen && (
-          <>
-            <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
-            <div className="fixed inset-y-0 left-0 w-64 z-50">
-              <BarberSidebar onClose={() => setSidebarOpen(false)} />
+        <nav className="mt-8 px-4">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href, item.exact);
+            
+            return (
+              <button
+                key={item.name}
+                onClick={() => {
+                  navigate(item.href);
+                  setSidebarOpen(false);
+                }}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-colors ${
+                  active 
+                    ? 'bg-urbana-gold text-black font-medium' 
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{item.name}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
+          <div className="flex items-center space-x-3 mb-4">
+            <Avatar className="w-10 h-10">
+              <AvatarFallback className="bg-urbana-gold text-black">
+                {user?.email?.charAt(0).toUpperCase() || 'B'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white truncate">
+                {user?.email?.split('@')[0] || 'Barbeiro'}
+              </p>
+              <p className="text-xs text-gray-400 truncate">
+                {user?.email}
+              </p>
             </div>
-          </>
-        )}
-        
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col min-h-screen">
-          {/* Header */}
-          <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 sticky top-0 z-30">
-            <div className="px-4 lg:px-8 py-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  {isMobile && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSidebarOpen(true)}
-                      className="text-white hover:bg-white/10"
-                    >
-                      <Menu className="h-6 w-6" />
-                    </Button>
-                  )}
-                  <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                      {title}
-                    </h1>
-                    <p className="text-sm text-gray-400">Urbana Barbearia</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="relative text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                  >
-                    <Bell className="h-5 w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 p-0 border-0 text-xs"></Badge>
-                  </Button>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10 transition-all">
-                        <Avatar className="h-10 w-10 ring-2 ring-white/20">
-                          <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-semibold">
-                            {userInitials}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 bg-black/90 backdrop-blur-lg border-white/20 text-white" align="end">
-                      <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-white/20" />
-                      <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-white/10 transition-colors"
-                        onClick={() => navigate('/barbeiro/perfil')}
-                      >
-                        Perfil
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/20" />
-                      <DropdownMenuItem 
-                        className="cursor-pointer text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors"
-                        onClick={handleLogout}
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Sair
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="w-full border-gray-600 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-0">
+        {/* Top Header */}
+        <header className="bg-gray-900 border-b border-gray-700 px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden text-gray-400 hover:text-white"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              
+              {!isDashboard && (
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/barbeiro')}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar
+                </Button>
+              )}
+              
+              <div>
+                <h1 className="text-xl lg:text-2xl font-bold text-white">
+                  {title || 'Painel do Barbeiro'}
+                </h1>
+                <p className="text-sm text-gray-400">Costa Urbana Barbearia</p>
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
-          {/* Main Content Area */}
-          <main className="flex-1 p-4 lg:p-8 overflow-auto">
-            <div className="max-w-7xl mx-auto">
-              {children}
-            </div>
-          </main>
-        </div>
+        {/* Page Content */}
+        <main className="p-4 lg:p-6">
+          {children}
+        </main>
       </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };
