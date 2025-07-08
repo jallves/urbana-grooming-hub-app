@@ -115,15 +115,15 @@ const BarberScheduleView: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500/20 text-blue-300 border-blue-500/50';
       case 'confirmed':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-500/20 text-green-300 border-green-500/50';
       case 'completed':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-500/20 text-gray-300 border-gray-500/50';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-500/20 text-red-300 border-red-500/50';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-500/20 text-gray-300 border-gray-500/50';
     }
   };
 
@@ -145,22 +145,23 @@ const BarberScheduleView: React.FC = () => {
   if (!user) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">Faça login para ver sua agenda</p>
+        <p className="text-gray-400">Faça login para ver sua agenda</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <Card>
+      {/* Header Card */}
+      <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-amber-500" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Calendar className="h-5 w-5 text-urbana-gold" />
             Minha Agenda
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-medium text-white">Agenda da Semana</h3>
               <p className="text-sm text-gray-400">
@@ -173,7 +174,7 @@ const BarberScheduleView: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentWeek(addDays(currentWeek, -7))}
-                className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                className="bg-gray-700/50 border-gray-600/50 text-gray-300 hover:bg-gray-600/50 hover:border-gray-500/50"
               >
                 Semana Anterior
               </Button>
@@ -181,7 +182,7 @@ const BarberScheduleView: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentWeek(addDays(currentWeek, 7))}
-                className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                className="bg-gray-700/50 border-gray-600/50 text-gray-300 hover:bg-gray-600/50 hover:border-gray-500/50"
               >
                 Próxima Semana
               </Button>
@@ -190,10 +191,12 @@ const BarberScheduleView: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      {/* Calendar Grid */}
+      <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
         <CardContent className="p-6">
           {loading ? (
             <div className="text-center py-8">
+              <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <div className="text-gray-300">Carregando agenda...</div>
             </div>
           ) : (
@@ -206,25 +209,25 @@ const BarberScheduleView: React.FC = () => {
                 return (
                   <div key={index} className="space-y-3">
                     <div className="text-center">
-                      <div className="font-medium capitalize text-white">{dayName}</div>
+                      <div className="font-medium capitalize text-white text-sm">{dayName}</div>
                       <div className="text-sm text-gray-400">
                         {format(date, 'dd/MM', { locale: ptBR })}
                       </div>
-                      <Badge variant="outline" className="mt-1 border-gray-600 text-gray-300">
+                      <Badge variant="outline" className="mt-1 border-gray-600/50 text-gray-300 bg-gray-700/30 text-xs">
                         {dayAppointments.length} agendamentos
                       </Badge>
                     </div>
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                       {dayAppointments.length === 0 ? (
-                        <div className="text-center text-gray-400 text-sm py-4">
+                        <div className="text-center text-gray-500 text-sm py-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
                           Nenhum agendamento
                         </div>
                       ) : (
                         dayAppointments.map((appointment) => (
-                          <Card key={appointment.id} className="p-3 text-xs bg-gray-800 border-gray-700">
+                          <Card key={appointment.id} className="p-3 text-xs bg-gray-700/50 border-gray-600/50">
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
-                                <Badge className={getStatusColor(appointment.status)}>
+                                <Badge className={getStatusColor(appointment.status) + " text-xs"}>
                                   {getStatusLabel(appointment.status)}
                                 </Badge>
                                 <div className="flex items-center text-gray-400">
@@ -233,12 +236,12 @@ const BarberScheduleView: React.FC = () => {
                                 </div>
                               </div>
                               <div>
-                                <div className="font-medium text-white flex items-center">
+                                <div className="font-medium text-white flex items-center text-sm">
                                   <User className="h-3 w-3 mr-1" />
                                   {appointment.client_name}
                                 </div>
-                                <div className="text-gray-300">{appointment.service_name}</div>
-                                <div className="text-amber-400 text-xs">
+                                <div className="text-gray-300 text-xs">{appointment.service_name}</div>
+                                <div className="text-urbana-gold text-xs font-medium">
                                   R$ {appointment.service_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </div>
                               </div>

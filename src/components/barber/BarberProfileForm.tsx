@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
+import { User, Mail, Phone, Award, Briefcase, Percent } from 'lucide-react';
 
 interface BarberProfile {
   id: string;
@@ -129,89 +130,139 @@ export default function BarberProfileForm() {
 
   return (
     <div className="space-y-6">
+      {/* Header Card */}
       <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-white">Perfil do Barbeiro</CardTitle>
+          <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+            <User className="h-5 w-5 text-urbana-gold" />
+            Perfil do Barbeiro
+          </CardTitle>
           <CardDescription className="text-gray-400">
             Gerencie suas informações pessoais e profissionais
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name" className="text-white">Nome</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
-                  required
-                />
+      </Card>
+
+      {/* Profile Form */}
+      <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <User className="h-5 w-5 text-urbana-gold" />
+                Informações Pessoais
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-white flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-400" />
+                    Nome Completo
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    placeholder="Digite seu nome completo"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-white flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    placeholder="seu@email.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-white flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-400" />
+                    Telefone
+                  </Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="commission_rate" className="text-white flex items-center gap-2">
+                    <Percent className="h-4 w-4 text-gray-400" />
+                    Taxa de Comissão (%)
+                  </Label>
+                  <Input
+                    id="commission_rate"
+                    type="number"
+                    value={formData.commission_rate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
+                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    min="0"
+                    max="100"
+                    placeholder="15"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="email" className="text-white">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone" className="text-white">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
-                />
-              </div>
-              <div>
-                <Label htmlFor="commission_rate" className="text-white">Taxa de Comissão (%)</Label>
-                <Input
-                  id="commission_rate"
-                  type="number"
-                  value={formData.commission_rate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
-                  className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
-                  min="0"
-                  max="100"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="experience" className="text-white">Experiência</Label>
-              <Textarea
-                id="experience"
-                value={formData.experience}
-                onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
-                placeholder="Descreva sua experiência profissional"
-                className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="specialties" className="text-white">Especialidades</Label>
-              <Textarea
-                id="specialties"
-                value={formData.specialties}
-                onChange={(e) => setFormData(prev => ({ ...prev, specialties: e.target.value }))}
-                placeholder="Liste suas especialidades (ex: cortes masculinos, barba, penteados)"
-                className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold"
-              />
             </div>
 
-            <Button 
-              type="submit" 
-              disabled={loading}
-              className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
-            >
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
+            {/* Professional Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-urbana-gold" />
+                Informações Profissionais
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="experience" className="text-white flex items-center gap-2">
+                    <Award className="h-4 w-4 text-gray-400" />
+                    Experiência Profissional
+                  </Label>
+                  <Textarea
+                    id="experience"
+                    value={formData.experience}
+                    onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
+                    placeholder="Descreva sua experiência profissional, formação e trajetória na área"
+                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold min-h-[100px]"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="specialties" className="text-white flex items-center gap-2">
+                    <Award className="h-4 w-4 text-gray-400" />
+                    Especialidades
+                  </Label>
+                  <Textarea
+                    id="specialties"
+                    value={formData.specialties}
+                    onChange={(e) => setFormData(prev => ({ ...prev, specialties: e.target.value }))}
+                    placeholder="Liste suas especialidades (ex: cortes masculinos, barba, penteados, coloração)"
+                    className="bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-400 focus:border-urbana-gold min-h-[100px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="flex justify-end pt-6 border-t border-gray-700/50">
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-medium px-8"
+              >
+                {loading ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

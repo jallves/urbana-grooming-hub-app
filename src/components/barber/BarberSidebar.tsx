@@ -14,50 +14,45 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
       name: 'Dashboard', 
       href: '/barbeiro', 
       icon: <BarChart2 className="h-5 w-5" />,
-      color: 'from-blue-500 to-cyan-500'
+      exact: true
     },
     { 
       name: 'Agendamentos', 
       href: '/barbeiro/agendamentos', 
-      icon: <Calendar className="h-5 w-5" />,
-      color: 'from-green-500 to-emerald-500'
+      icon: <Calendar className="h-5 w-5" />
     },
     { 
       name: 'Minha Agenda', 
       href: '/barbeiro/agenda', 
-      icon: <Clock className="h-5 w-5" />,
-      color: 'from-purple-500 to-violet-500'
+      icon: <Clock className="h-5 w-5" />
     },
     { 
       name: 'Clientes', 
       href: '/barbeiro/clientes', 
-      icon: <Users className="h-5 w-5" />,
-      color: 'from-orange-500 to-red-500'
+      icon: <Users className="h-5 w-5" />
     },
     { 
       name: 'Comissões', 
       href: '/barbeiro/comissoes', 
-      icon: <DollarSign className="h-5 w-5" />,
-      color: 'from-yellow-500 to-orange-500'
+      icon: <DollarSign className="h-5 w-5" />
     },
     { 
       name: 'Perfil', 
       href: '/barbeiro/perfil', 
-      icon: <Settings className="h-5 w-5" />,
-      color: 'from-gray-500 to-gray-600'
+      icon: <Settings className="h-5 w-5" />
     }
   ];
 
   return (
-    <div className="h-full bg-black/40 backdrop-blur-lg border-r border-white/10 flex flex-col">
+    <div className="h-full bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 flex flex-col">
       {/* Header */}
-      <div className="p-6 border-b border-white/10 flex items-center justify-between">
+      <div className="p-6 border-b border-gray-700/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-            <Scissors className="h-6 w-6 text-white" />
+          <div className="w-10 h-10 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center shadow-lg">
+            <Scissors className="h-6 w-6 text-black" />
           </div>
           <div>
-            <h2 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h2 className="text-lg font-bold text-white">
               Barbeiro
             </h2>
             <p className="text-xs text-gray-400">Painel Profissional</p>
@@ -68,7 +63,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="text-gray-400 hover:text-white hover:bg-white/10 lg:hidden"
+            className="text-gray-400 hover:text-white hover:bg-gray-700/50 lg:hidden"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -82,30 +77,27 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             key={item.name}
             to={item.href}
             onClick={onClose}
+            end={item.exact}
             className={({ isActive }) =>
-              `group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
+              `group flex items-center gap-3 p-4 rounded-xl transition-all duration-200 relative overflow-hidden ${
                 isActive
-                  ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-lg scale-105'
-                  : 'hover:bg-white/10 text-gray-300 hover:text-white hover:scale-105'
+                  ? 'bg-urbana-gold text-black shadow-lg font-medium'
+                  : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
               }`
             }
-            end={item.href === '/barbeiro'}
           >
             <div className="relative z-10 flex items-center gap-3">
               {item.icon}
               <span className="font-medium">{item.name}</span>
             </div>
-            
-            {/* Hover effect background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </NavLink>
         ))}
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-white/10">
+      <div className="p-4 border-t border-gray-700/50">
         <div className="text-xs text-gray-500 text-center">
-          <p>Urbana Barbearia</p>
+          <p className="font-medium text-gray-400">Costa Urbana Barbearia</p>
           <p>Sistema Profissional</p>
         </div>
       </div>
