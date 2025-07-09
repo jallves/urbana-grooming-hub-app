@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminMetricsCards from './dashboard/AdminMetricsCards';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminRealtimeNotifications } from '@/hooks/useAdminRealtimeNotifications';
 
 interface RecentActivity {
   id: string;
@@ -22,6 +22,9 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Ativar notificações em tempo real
+  useAdminRealtimeNotifications();
 
   useEffect(() => {
     loadRecentActivities();

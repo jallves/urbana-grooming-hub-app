@@ -14,7 +14,7 @@ export const useAdminRealtimeNotifications = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'painel_agendamentos'
         },
@@ -22,7 +22,7 @@ export const useAdminRealtimeNotifications = () => {
           console.log('Admin: Appointment update received:', payload);
           
           // Notificar quando agendamento for finalizado
-          if (payload.new?.status === 'concluido' && payload.old?.status !== 'concluido') {
+          if (payload.eventType === 'UPDATE' && payload.new?.status === 'concluido' && payload.old?.status !== 'concluido') {
             toast({
               title: "🎉 Agendamento Finalizado",
               description: "Um agendamento foi marcado como concluído pelo barbeiro.",
@@ -31,10 +31,19 @@ export const useAdminRealtimeNotifications = () => {
           }
           
           // Notificar quando agendamento for cancelado
-          if (payload.new?.status === 'cancelado' && payload.old?.status !== 'cancelado') {
+          if (payload.eventType === 'UPDATE' && payload.new?.status === 'cancelado' && payload.old?.status !== 'cancelado') {
             toast({
               title: "❌ Agendamento Cancelado",
               description: "Um agendamento foi cancelado.",
+              duration: 5000,
+            });
+          }
+
+          // Notificar quando novo agendamento for criado
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "📅 Novo Agendamento",
+              description: "Um novo agendamento foi criado.",
               duration: 5000,
             });
           }

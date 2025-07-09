@@ -198,64 +198,83 @@ export const useBarberAppointments = () => {
     try {
       setUpdatingId(appointmentId);
       const appointment = appointments.find(a => a.id === appointmentId);
-      if (!appointment) return;
+      if (!appointment) {
+        toast({
+          title: "Erro",
+          description: "Agendamento não encontrado.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      const appointmentDate = new Date(appointment.start_time);
+      console.log('Attempting to complete appointment:', appointmentId);
       
       // Atualizar status do agendamento para concluído
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
-        .update({ status: 'concluido' })
+        .update({ 
+          status: 'concluido',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', appointmentId);
 
       if (updateError) {
         console.error('Erro ao marcar agendamento como concluído:', updateError);
         toast({
           title: "Erro",
-          description: "Não foi possível marcar o agendamento como concluído.",
+          description: `Não foi possível marcar o agendamento como concluído: ${updateError.message}`,
           variant: "destructive",
         });
         return;
       }
+
+      console.log('Appointment marked as completed successfully');
 
       // Criar entrada de comissão
       const servicePrice = appointment.service?.price || 0;
       const commissionRate = 30; // Taxa de comissão padrão de 30%
       const commissionAmount = servicePrice * (commissionRate / 100);
 
-      const { error: commissionError } = await supabase
-        .from('barber_commissions')
-        .insert({
-          barber_id: barberId,
-          appointment_id: appointmentId,
-          amount: commissionAmount,
-          commission_rate: commissionRate,
-          status: 'pending'
-        });
+      if (barberId && servicePrice > 0) {
+        const { error: commissionError } = await supabase
+          .from('barber_commissions')
+          .insert({
+            barber_id: barberId,
+            appointment_id: appointmentId,
+            amount: commissionAmount,
+            commission_rate: commissionRate,
+            status: 'pending'
+          });
 
-      if (commissionError) {
-        console.error('Erro ao criar comissão:', commissionError);
-        // Não vamos bloquear o processo se falhar ao criar a comissão
-        // Mas vamos logar o erro
+        if (commissionError) {
+          console.error('Erro ao criar comissão:', commissionError);
+          // Não vamos bloquear o processo se falhar ao criar a comissão
+        } else {
+          console.log('Commission created successfully:', commissionAmount);
+        }
       }
+
+      const appointmentDate = new Date(appointment.start_time);
 
       toast({
         title: "✅ Agendamento Concluído!",
-        description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído. Comissão de R$ ${commissionAmount.toFixed(2)} adicionada.`,
+        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.${servicePrice > 0 ? ` Comissão de R$ ${commissionAmount.toFixed(2)} adicionada.` : ''}`,
         duration: 4000,
       });
+
+      // Atualizar a lista local
+      fetchAppointments();
 
       // Navegar para a tela principal de agendamentos após finalizar
       setTimeout(() => {
         navigate('/barbeiro/agendamentos');
-      }, 1500);
+      }, 1000);
 
-      fetchAppointments();
     } catch (error) {
       console.error('Erro ao marcar agendamento como concluído:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível marcar o agendamento como concluído.",
+        description: "Não foi possível marcar o agendamento como concluído. Tente novamente.",
         variant: "destructive",
       });
     } finally {
