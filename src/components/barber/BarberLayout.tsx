@@ -1,10 +1,20 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, Menu, X, BarChart2, Calendar, Clock, Users, DollarSign, Settings, ArrowLeft } from 'lucide-react';
+import {
+  LogOut,
+  Menu,
+  X,
+  BarChart2,
+  Calendar,
+  Clock,
+  Users,
+  DollarSign,
+  Settings,
+  ArrowLeft,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface BarberLayoutProps {
   children: React.ReactNode;
@@ -18,37 +28,12 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const menuItems = [
-    { 
-      name: 'Dashboard', 
-      href: '/barbeiro', 
-      icon: BarChart2,
-      exact: true
-    },
-    { 
-      name: 'Agendamentos', 
-      href: '/barbeiro/agendamentos', 
-      icon: Calendar 
-    },
-    { 
-      name: 'Minha Agenda', 
-      href: '/barbeiro/agenda', 
-      icon: Clock 
-    },
-    { 
-      name: 'Clientes', 
-      href: '/barbeiro/clientes', 
-      icon: Users 
-    },
-    { 
-      name: 'Comissões', 
-      href: '/barbeiro/comissoes', 
-      icon: DollarSign 
-    },
-    { 
-      name: 'Perfil', 
-      href: '/barbeiro/perfil', 
-      icon: Settings 
-    }
+    { name: 'Dashboard', href: '/barbeiro', icon: BarChart2, exact: true },
+    { name: 'Agendamentos', href: '/barbeiro/agendamentos', icon: Calendar },
+    { name: 'Minha Agenda', href: '/barbeiro/agenda', icon: Clock },
+    { name: 'Clientes', href: '/barbeiro/clientes', icon: Users },
+    { name: 'Comissões', href: '/barbeiro/comissoes', icon: DollarSign },
+    { name: 'Perfil', href: '/barbeiro/perfil', icon: Settings },
   ];
 
   const handleLogout = async () => {
@@ -72,7 +57,11 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   return (
     <div className="min-h-screen bg-black text-white flex">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 transform ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
+      >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
@@ -94,7 +83,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href, item.exact);
-            
+
             return (
               <button
                 key={item.name}
@@ -103,8 +92,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                   setSidebarOpen(false);
                 }}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-colors ${
-                  active 
-                    ? 'bg-urbana-gold text-black font-medium' 
+                  active
+                    ? 'bg-urbana-gold text-black font-medium'
                     : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
                 }`}
               >
@@ -126,15 +115,13 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
               <p className="text-sm font-medium text-white truncate">
                 {user?.email?.split('@')[0] || 'Barbeiro'}
               </p>
-              <p className="text-xs text-gray-400 truncate">
-                {user?.email}
-              </p>
+              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>
           <Button
             onClick={handleLogout}
             variant="outline"
-            className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white hover:border-gray-500"
+            className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Sair
@@ -156,7 +143,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
               >
                 <Menu className="w-5 h-5" />
               </Button>
-              
+
               {!isDashboard && (
                 <Button
                   variant="ghost"
@@ -167,7 +154,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                   Voltar
                 </Button>
               )}
-              
+
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-white">
                   {title || 'Painel do Barbeiro'}
@@ -179,14 +166,12 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-6">
-          {children}
-        </main>
+        <main className="p-4 lg:p-6">{children}</main>
       </div>
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
