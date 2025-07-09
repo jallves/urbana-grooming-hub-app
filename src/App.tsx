@@ -28,6 +28,7 @@ import PainelClienteRegister from './pages/PainelClienteRegister';
 import PainelClienteDashboard from './pages/PainelClienteDashboard';
 import PainelClienteAgendar from './pages/PainelClienteAgendar';
 import PainelClienteAgendamentos from './pages/PainelClienteAgendamentos';
+import PainelClienteMeusAgendamentos from './pages/PainelClienteMeusAgendamentos';
 import PainelClientePerfil from './pages/PainelClientePerfil';
 import BarberAuth from './pages/BarberAuth';
 import BarberDashboard from './pages/BarberDashboard';
@@ -62,7 +63,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   
-                  {/* Admin Routes - Simplified */}
+                  {/* Admin Routes */}
                   <Route path="/auth" element={<AdminLogin />} />
                   <Route path="/admin" element={
                     <AdminRoute>
@@ -140,7 +141,7 @@ function App() {
                     </AdminRoute>
                   } />
                   
-                  {/* Barber Routes - Simplified */}
+                  {/* Barber Routes */}
                   <Route path="/barbeiro/login" element={<BarberAuth />} />
                   <Route path="/barbeiro" element={
                     <BarberRoute allowBarber={true}>
@@ -194,7 +195,7 @@ function App() {
                   }>
                     <Route path="dashboard" element={<PainelClienteDashboard />} />
                     <Route path="agendar" element={<PainelClienteAgendar />} />
-                    <Route path="agendamentos" element={<PainelClienteAgendamentos />} />
+                    <Route path="agendamentos" element={<PainelClienteMeusAgendamentos />} />
                     <Route path="perfil" element={<PainelClientePerfil />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
                   </Route>

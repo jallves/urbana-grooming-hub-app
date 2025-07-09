@@ -180,10 +180,8 @@ export default function PainelClienteMeusAgendamentos() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-pink-600/5 to-purple-600/5" />
-      
-      <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
+    <div className="w-full h-full bg-transparent">
+      <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -192,15 +190,6 @@ export default function PainelClienteMeusAgendamentos() {
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Button
-              onClick={() => navigate('/painel-cliente/dashboard')}
-              variant="outline"
-              size="sm"
-              className="border-slate-600 text-gray-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-500 rounded-xl px-4 py-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
                 Meus Agendamentos
