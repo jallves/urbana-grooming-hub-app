@@ -1,5 +1,12 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Calendar, Clock, CheckCircle, TrendingUp, Settings, LogOut } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  CheckCircle,
+  TrendingUp,
+  Settings,
+  LogOut,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardContainer from '@/components/ui/containers/DashboardContainer';
@@ -118,120 +125,128 @@ export default function PainelClienteDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="space-y-10"
       >
-        <div className="flex items-center gap-3 mb-8">
-          <TrendingUp className="h-8 w-8 text-urbana-gold" />
+        {/* Saudação */}
+        <div className="flex items-center gap-4 mb-2">
+          <TrendingUp className="h-9 w-9 text-urbana-gold" />
           <div>
-            <h1 className="text-3xl font-bold text-urbana-gold font-playfair">
+            <h1 className="text-4xl font-extrabold text-urbana-gold font-playfair">
               Olá, {cliente?.nome}!
             </h1>
-            <p className="text-gray-400">Bem-vindo ao seu painel de controle</p>
+            <p className="text-gray-400 text-sm">
+              Bem-vindo ao seu painel personalizado
+            </p>
           </div>
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gray-900 border border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">
-                Total de Agendamentos
-              </CardTitle>
-              <Calendar className="h-4 w-4 text-urbana-gold" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.total}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900 border border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">
-                Próximos Agendamentos
-              </CardTitle>
-              <Clock className="h-4 w-4 text-blue-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.proximos}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900 border border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">
-                Atendimentos Concluídos
-              </CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stats.concluidos}</div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              label: 'Total de Agendamentos',
+              value: stats.total,
+              icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
+            },
+            {
+              label: 'Próximos Agendamentos',
+              value: stats.proximos,
+              icon: <Clock className="h-5 w-5 text-blue-400" />,
+            },
+            {
+              label: 'Atendimentos Concluídos',
+              value: stats.concluidos,
+              icon: <CheckCircle className="h-5 w-5 text-green-400" />,
+            },
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.02 }}
+              className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm"
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-1 px-5 pt-5">
+                <CardTitle className="text-sm font-medium text-gray-300">
+                  {stat.label}
+                </CardTitle>
+                {stat.icon}
+              </CardHeader>
+              <CardContent className="px-5 pb-5">
+                <div className="text-3xl font-bold text-white">{stat.value}</div>
+              </CardContent>
+            </motion.div>
+          ))}
         </div>
 
         {/* Próximo Agendamento */}
         {stats.proximoAgendamento && (
-          <Card className="bg-gradient-to-r from-urbana-gold/10 to-transparent border border-urbana-gold/20 mb-10">
-            <CardHeader>
-              <CardTitle className="text-urbana-gold">Próximo Agendamento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-urbana-gold" />
-                <span className="text-white">
-                  {new Date(stats.proximoAgendamento.data).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-urbana-gold" />
-                <span className="text-white">{stats.proximoAgendamento.hora}</span>
-              </div>
-              <div className="text-gray-300">
-                <strong>Barbeiro:</strong> {stats.proximoAgendamento.barbeiro}
-              </div>
-              <div className="text-gray-300">
-                <strong>Serviço:</strong> {stats.proximoAgendamento.servico}
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className="bg-gradient-to-r from-urbana-gold/10 to-transparent border border-urbana-gold/20 rounded-xl shadow-inner">
+              <CardHeader>
+                <CardTitle className="text-urbana-gold text-lg">
+                  Próximo Agendamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-gray-300">
+                <div className="flex gap-2 items-center">
+                  <Calendar className="h-4 w-4 text-urbana-gold" />
+                  <span className="text-white">
+                    {new Date(stats.proximoAgendamento.data).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <Clock className="h-4 w-4 text-urbana-gold" />
+                  <span className="text-white">{stats.proximoAgendamento.hora}</span>
+                </div>
+                <p>
+                  <strong>Barbeiro:</strong> {stats.proximoAgendamento.barbeiro}
+                </p>
+                <p>
+                  <strong>Serviço:</strong> {stats.proximoAgendamento.servico}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         {/* Atalhos Rápidos */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          <Button
-            variant="ghost"
-            className="flex flex-col items-center justify-center bg-gray-800 hover:bg-urbana-gold/10 border border-gray-700 py-6"
-            onClick={() => navigate('/cliente/agendar')}
-          >
-            <Calendar className="h-6 w-6 text-urbana-gold mb-2" />
-            <span className="text-sm text-gray-200">Novo Agendamento</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="flex flex-col items-center justify-center bg-gray-800 hover:bg-urbana-gold/10 border border-gray-700 py-6"
-            onClick={() => navigate('/cliente/agendamentos')}
-          >
-            <Clock className="h-6 w-6 text-blue-400 mb-2" />
-            <span className="text-sm text-gray-200">Meus Agendamentos</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="flex flex-col items-center justify-center bg-gray-800 hover:bg-urbana-gold/10 border border-gray-700 py-6"
-            onClick={() => navigate('/cliente/perfil')}
-          >
-            <Settings className="h-6 w-6 text-gray-300 mb-2" />
-            <span className="text-sm text-gray-200">Meu Perfil</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="flex flex-col items-center justify-center bg-gray-800 hover:bg-red-500/10 border border-gray-700 py-6"
-            onClick={handleLogout}
-          >
-            <LogOut className="h-6 w-6 text-red-500 mb-2" />
-            <span className="text-sm text-red-400">Sair</span>
-          </Button>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+          {[
+            {
+              label: 'Novo Agendamento',
+              icon: <Calendar className="h-6 w-6 text-urbana-gold" />,
+              action: () => navigate('/cliente/agendar'),
+            },
+            {
+              label: 'Meus Agendamentos',
+              icon: <Clock className="h-6 w-6 text-blue-400" />,
+              action: () => navigate('/cliente/agendamentos'),
+            },
+            {
+              label: 'Meu Perfil',
+              icon: <Settings className="h-6 w-6 text-gray-300" />,
+              action: () => navigate('/cliente/perfil'),
+            },
+            {
+              label: 'Sair',
+              icon: <LogOut className="h-6 w-6 text-red-500" />,
+              action: handleLogout,
+            },
+          ].map((item, index) => (
+            <motion.button
+              key={index}
+              onClick={item.action}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-gray-800 hover:bg-urbana-gold/10 transition-all border border-gray-700 rounded-xl p-5 flex flex-col items-center justify-center text-gray-200 space-y-2"
+            >
+              {item.icon}
+              <span className="text-sm font-medium">{item.label}</span>
+            </motion.button>
+          ))}
         </div>
       </motion.div>
     </DashboardContainer>
