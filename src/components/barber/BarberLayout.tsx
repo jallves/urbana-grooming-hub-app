@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,12 +56,12 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   const isDashboard = location.pathname === '/barbeiro';
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-black text-white w-full">
+      {/* Mobile Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
+        } transition-transform duration-300 ease-in-out lg:hidden`}
       >
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700/50">
           <div className="flex items-center space-x-3">
@@ -73,7 +74,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700/50"
+            className="text-gray-400 hover:text-white hover:bg-gray-700/50"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -129,11 +130,11 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 lg:ml-0">
-        {/* Top Header */}
-        <header className="bg-gray-900/95 backdrop-blur-lg border-b border-gray-700/50 px-4 lg:px-6 py-4">
-          <div className="flex items-center justify-between">
+      {/* Full Screen Layout */}
+      <div className="w-full min-h-screen">
+        {/* Top Header - Full Width */}
+        <header className="bg-gray-900/95 backdrop-blur-lg border-b border-gray-700/50 px-4 lg:px-6 py-4 w-full">
+          <div className="flex items-center justify-between w-full max-w-full">
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
@@ -144,11 +145,43 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 <Menu className="w-5 h-5" />
               </Button>
 
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center space-x-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
+                    <BarChart2 className="w-5 h-5 text-black" />
+                  </div>
+                  <span className="text-xl font-bold text-urbana-gold">Barbeiro</span>
+                </div>
+
+                <nav className="flex items-center space-x-1">
+                  {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href, item.exact);
+
+                    return (
+                      <button
+                        key={item.name}
+                        onClick={() => navigate(item.href)}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                          active
+                            ? 'bg-urbana-gold text-black font-medium'
+                            : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-sm">{item.name}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
               {!isDashboard && (
                 <Button
                   variant="ghost"
                   onClick={() => navigate('/barbeiro')}
-                  className="text-gray-400 hover:text-white hover:bg-gray-700/50"
+                  className="text-gray-400 hover:text-white hover:bg-gray-700/50 lg:ml-6"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Voltar
@@ -162,11 +195,37 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 <p className="text-sm text-gray-400">Costa Urbana Barbearia</p>
               </div>
             </div>
+
+            {/* User Menu */}
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:flex items-center space-x-3">
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback className="bg-urbana-gold text-black text-sm">
+                    {user?.email?.charAt(0).toUpperCase() || 'B'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium text-white">
+                    {user?.email?.split('@')[0] || 'Barbeiro'}
+                  </p>
+                  <p className="text-xs text-gray-400">{user?.email}</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                size="sm"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="p-4 lg:p-6">{children}</main>
+        {/* Page Content - Full Width */}
+        <main className="w-full max-w-full p-4 lg:p-6">{children}</main>
       </div>
 
       {/* Mobile Sidebar Overlay */}

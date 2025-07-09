@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,7 +60,6 @@ const BarberClients: React.FC = () => {
     
     setLoading(true);
     try {
-      // Buscar clientes que já tiveram agendamentos com este barbeiro
       const { data, error } = await supabase
         .from('painel_clientes')
         .select(`
@@ -78,7 +76,6 @@ const BarberClients: React.FC = () => {
         return;
       }
 
-      // Para cada cliente, buscar informações de agendamentos
       const clientsWithStats = await Promise.all(
         (data || []).map(async (client) => {
           const { data: appointments, error: appointmentsError } = await supabase
@@ -103,7 +100,6 @@ const BarberClients: React.FC = () => {
         })
       );
 
-      // Filtrar apenas clientes que já tiveram agendamentos
       const clientsWithAppointments = clientsWithStats.filter(client => client.total_appointments > 0);
       
       setClients(clientsWithAppointments);
@@ -138,9 +134,9 @@ const BarberClients: React.FC = () => {
 
   return (
     <BarberLayout title="Meus Clientes">
-      <div className="space-y-8">
-        {/* Header com gradiente melhorado */}
-        <Card className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/50 backdrop-blur-sm shadow-2xl">
+      <div className="w-full max-w-full space-y-6">
+        {/* Header Card - Full Width */}
+        <Card className="w-full bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-600/50 backdrop-blur-sm shadow-2xl">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-3 text-white text-2xl font-bold">
               <div className="p-2 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg">
@@ -157,52 +153,52 @@ const BarberClients: React.FC = () => {
                 placeholder="Buscar por nome ou email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 bg-gray-700/50 border-gray-500/50 text-white placeholder-gray-400 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl text-lg"
+                className="pl-12 h-12 bg-gray-700/50 border-gray-500/50 text-white placeholder-gray-400 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl text-lg w-full"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Stats melhorados */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Stats Cards - Full Width Grid */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="bg-gradient-to-br from-blue-600/25 to-blue-800/25 border-blue-500/40 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-8">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-blue-300 uppercase tracking-wide">Total de Clientes</p>
-                  <p className="text-4xl font-bold text-white mt-2">{clients.length}</p>
+                  <p className="text-3xl font-bold text-white mt-2">{clients.length}</p>
                   <p className="text-xs text-blue-200 mt-1">Base ativa</p>
                 </div>
-                <div className="p-4 bg-blue-500/20 rounded-2xl">
-                  <Users className="h-10 w-10 text-blue-300" />
+                <div className="p-3 bg-blue-500/20 rounded-2xl">
+                  <Users className="h-8 w-8 text-blue-300" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-green-600/25 to-green-800/25 border-green-500/40 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-8">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-green-300 uppercase tracking-wide">Agendamentos Totais</p>
-                  <p className="text-4xl font-bold text-white mt-2">
+                  <p className="text-3xl font-bold text-white mt-2">
                     {clients.reduce((sum, client) => sum + client.total_appointments, 0)}
                   </p>
                   <p className="text-xs text-green-200 mt-1">Atendimentos realizados</p>
                 </div>
-                <div className="p-4 bg-green-500/20 rounded-2xl">
-                  <Calendar className="h-10 w-10 text-green-300" />
+                <div className="p-3 bg-green-500/20 rounded-2xl">
+                  <Calendar className="h-8 w-8 text-green-300" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-600/25 to-purple-800/25 border-purple-500/40 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-8">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-purple-300 uppercase tracking-wide">Clientes Ativos</p>
-                  <p className="text-4xl font-bold text-white mt-2">
+                  <p className="text-3xl font-bold text-white mt-2">
                     {clients.filter(client => {
                       if (!client.last_appointment) return false;
                       const lastDate = new Date(client.last_appointment);
@@ -213,17 +209,17 @@ const BarberClients: React.FC = () => {
                   </p>
                   <p className="text-xs text-purple-200 mt-1">Últimos 30 dias</p>
                 </div>
-                <div className="p-4 bg-purple-500/20 rounded-2xl">
-                  <TrendingUp className="h-10 w-10 text-purple-300" />
+                <div className="p-3 bg-purple-500/20 rounded-2xl">
+                  <TrendingUp className="h-8 w-8 text-purple-300" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Lista de clientes melhorada */}
-        <Card className="bg-gradient-to-br from-gray-800/60 to-gray-900/60 border-gray-600/50 backdrop-blur-sm shadow-2xl">
-          <CardContent className="p-8">
+        {/* Clients Grid - Full Width */}
+        <Card className="w-full bg-gradient-to-br from-gray-800/60 to-gray-900/60 border-gray-600/50 backdrop-blur-sm shadow-2xl">
+          <CardContent className="p-6">
             {filteredClients.length === 0 ? (
               <div className="text-center py-16">
                 <div className="p-6 bg-gray-700/30 rounded-full w-24 h-24 mx-auto mb-6 flex items-center justify-center">
@@ -240,20 +236,20 @@ const BarberClients: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                 {filteredClients.map((client) => {
                   const category = getClientCategory(client.total_appointments);
                   const CategoryIcon = category.icon;
                   
                   return (
                     <Card key={client.id} className="bg-gradient-to-br from-gray-700/60 to-gray-800/60 border-gray-500/30 hover:from-gray-600/60 hover:to-gray-700/60 transition-all duration-300 hover:scale-105 hover:shadow-xl group">
-                      <CardContent className="p-6">
+                      <CardContent className="p-5">
                         <div className="space-y-4">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <div className="p-2 bg-gradient-to-r from-urbana-gold/20 to-yellow-500/20 rounded-lg">
-                                  <User className="h-5 w-5 text-urbana-gold" />
+                                  <User className="h-4 w-4 text-urbana-gold" />
                                 </div>
                                 <div>
                                   <h4 className="font-bold text-white text-lg group-hover:text-urbana-gold transition-colors">{client.nome}</h4>
