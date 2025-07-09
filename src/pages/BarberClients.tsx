@@ -1,183 +1,215 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  LogOut,
-  Menu,
-  X,
-  BarChart2,
-  Calendar,
-  Clock,
-  Users,
-  DollarSign,
-  Settings,
-  ArrowLeft,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-interface BarberLayoutProps {
-  children: React.ReactNode;
-  title?: string;
-}
+import React from 'react';
+import BarberLayout from '@/components/barber/BarberLayout';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Users, UserCheck, UserX, Calendar, Phone, Mail } from 'lucide-react';
 
-const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const menuItems = [
-    { name: 'Dashboard', href: '/barbeiro', icon: BarChart2, exact: true },
-    { name: 'Agendamentos', href: '/barbeiro/agendamentos', icon: Calendar },
-    { name: 'Minha Agenda', href: '/barbeiro/agenda', icon: Clock },
-    { name: 'Clientes', href: '/barbeiro/clientes', icon: Users },
-    { name: 'Comissões', href: '/barbeiro/comissoes', icon: DollarSign },
-    { name: 'Perfil', href: '/barbeiro/perfil', icon: Settings },
+const BarberClients: React.FC = () => {
+  // Mock data for now - in a real app this would come from the database
+  const clients = [
+    {
+      id: '1',
+      name: 'João Silva',
+      email: 'joao@email.com',
+      phone: '(11) 99999-9999',
+      lastVisit: '2024-01-15',
+      totalAppointments: 8,
+      status: 'active'
+    },
+    {
+      id: '2',
+      name: 'Maria Santos',
+      email: 'maria@email.com',
+      phone: '(11) 88888-8888',
+      lastVisit: '2024-01-10',
+      totalAppointments: 12,
+      status: 'active'
+    },
+    {
+      id: '3',
+      name: 'Pedro Costa',
+      email: 'pedro@email.com',
+      phone: '(11) 77777-7777',
+      lastVisit: '2023-12-20',
+      totalAppointments: 3,
+      status: 'inactive'
+    }
   ];
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate('/barbeiro/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+  const stats = {
+    total: clients.length,
+    active: clients.filter(c => c.status === 'active').length,
+    inactive: clients.filter(c => c.status === 'inactive').length,
+    thisMonth: 5
   };
 
-  const isActive = (href: string, exact = false) => {
-    if (exact) {
-      return location.pathname === href;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="border-green-500/50 text-green-400 bg-green-500/10">Ativo</Badge>;
+      case 'inactive':
+        return <Badge className="border-gray-500/50 text-gray-400 bg-gray-500/10">Inativo</Badge>;
+      default:
+        return <Badge className="border-blue-500/50 text-blue-400 bg-blue-500/10">{status}</Badge>;
     }
-    return location.pathname.startsWith(href);
   };
-
-  const isDashboard = location.pathname === '/barbeiro';
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 border-r border-gray-700/50 transform ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
-      >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700/50">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
-              <BarChart2 className="w-5 h-5 text-black" />
-            </div>
-            <span className="text-xl font-bold text-urbana-gold">Barbeiro</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700/50"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+    <BarberLayout title="Meus Clientes">
+      <div className="space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Total de Clientes</CardTitle>
+              <Users className="h-4 w-4 text-urbana-gold" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.total}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Clientes Ativos</CardTitle>
+              <UserCheck className="h-4 w-4 text-green-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.active}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Clientes Inativos</CardTitle>
+              <UserX className="h-4 w-4 text-red-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.inactive}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Novos Este Mês</CardTitle>
+              <Calendar className="h-4 w-4 text-blue-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.thisMonth}</div>
+            </CardContent>
+          </Card>
         </div>
 
-        <nav className="mt-8 px-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href, item.exact);
-
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  navigate(item.href);
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg mb-2 text-left transition-colors ${
-                  active
-                    ? 'bg-urbana-gold text-black font-medium'
-                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700/50">
-          <div className="flex items-center space-x-3 mb-4">
-            <Avatar className="w-10 h-10">
-              <AvatarFallback className="bg-urbana-gold text-black">
-                {user?.email?.charAt(0).toUpperCase() || 'B'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                {user?.email?.split('@')[0] || 'Barbeiro'}
-              </p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-            </div>
-          </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:border-gray-500"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 lg:ml-0">
-        {/* Top Header */}
-        <header className="bg-gray-900 border-b border-gray-700/50 px-4 lg:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700/50"
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-
-              {!isDashboard && (
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/barbeiro')}
-                  className="text-gray-400 hover:text-white hover:bg-gray-700/50"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Voltar
-                </Button>
-              )}
-
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-white">
-                  {title || 'Painel do Barbeiro'}
-                </h1>
-                <p className="text-sm text-gray-400">Costa Urbana Barbearia</p>
+        {/* Clients List */}
+        <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+              <Users className="h-5 w-5 text-urbana-gold" />
+              Lista de Clientes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clients.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">Nenhum cliente encontrado</h3>
+                <p className="text-gray-400">
+                  Os clientes aparecerão aqui conforme você atende agendamentos
+                </p>
               </div>
-            </div>
-          </div>
-        </header>
+            ) : (
+              <div className="space-y-4">
+                {/* Mobile View */}
+                <div className="lg:hidden space-y-4">
+                  {clients.map((client) => (
+                    <Card key={client.id} className="bg-gray-700/50 border-gray-600/50">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-medium text-white">{client.name}</h4>
+                              <p className="text-sm text-gray-400 flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {client.email}
+                              </p>
+                              <p className="text-sm text-gray-400 flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {client.phone}
+                              </p>
+                            </div>
+                            {getStatusBadge(client.status)}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-400">Última Visita</p>
+                              <p className="text-white">{new Date(client.lastVisit).toLocaleDateString('pt-BR')}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400">Total de Visitas</p>
+                              <p className="text-urbana-gold font-medium">{client.totalAppointments}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
 
-        {/* Page Content */}
-        <main className="p-4 lg:p-6">{children}</main>
+                {/* Desktop View */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-700/50">
+                        <th className="text-left py-3 px-4 text-gray-300 font-medium">Cliente</th>
+                        <th className="text-left py-3 px-4 text-gray-300 font-medium">Contato</th>
+                        <th className="text-left py-3 px-4 text-gray-300 font-medium">Última Visita</th>
+                        <th className="text-left py-3 px-4 text-gray-300 font-medium">Total de Visitas</th>
+                        <th className="text-left py-3 px-4 text-gray-300 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {clients.map((client) => (
+                        <tr key={client.id} className="border-b border-gray-700/50 hover:bg-gray-700/30 transition-colors">
+                          <td className="py-3 px-4">
+                            <div>
+                              <p className="font-medium text-white">{client.name}</p>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-300 flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {client.email}
+                              </p>
+                              <p className="text-sm text-gray-300 flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {client.phone}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-gray-300">
+                            {new Date(client.lastVisit).toLocaleDateString('pt-BR')}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-medium text-urbana-gold">{client.totalAppointments}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {getStatusBadge(client.status)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-    </div>
+    </BarberLayout>
   );
 };
 
-export default BarberLayout;
+export default BarberClients;
