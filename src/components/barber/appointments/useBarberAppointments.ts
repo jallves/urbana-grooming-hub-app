@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // Interface para agendamentos do painel do cliente adaptada para o barbeiro
 interface PainelAgendamento {
@@ -47,6 +47,7 @@ interface AppointmentWithDetails {
 export const useBarberAppointments = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -201,7 +202,7 @@ export const useBarberAppointments = () => {
 
       const appointmentDate = new Date(appointment.start_time);
       
-      // Atualizar status do agendamento
+      // Atualizar status do agendamento para concluído
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ status: 'concluido' })
@@ -243,6 +244,11 @@ export const useBarberAppointments = () => {
         description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído. Comissão de R$ ${commissionAmount.toFixed(2)} adicionada.`,
         duration: 4000,
       });
+
+      // Navegar para a tela principal de agendamentos após finalizar
+      setTimeout(() => {
+        navigate('/barbeiro/agendamentos');
+      }, 1500);
 
       fetchAppointments();
     } catch (error) {
