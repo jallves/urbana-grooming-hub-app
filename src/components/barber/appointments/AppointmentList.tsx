@@ -73,15 +73,11 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
     );
   };
 
-  const handleComplete = (id: string, clientName: string) => {
+  const handleComplete = async (id: string, clientName: string) => {
     const confirmed = window.confirm(`Tem certeza que deseja marcar o agendamento de ${clientName} como concluído?`);
     if (confirmed) {
-      onComplete(id);
-      toast({
-        title: "Agendamento Concluído",
-        description: `O agendamento de ${clientName} foi marcado como concluído.`,
-        duration: 3000,
-      });
+      console.log('User confirmed completion for appointment:', id);
+      await onComplete(id);
     }
   };
 
@@ -89,23 +85,14 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
     const confirmed = window.confirm(`Deseja editar o agendamento de ${clientName}?`);
     if (confirmed) {
       onEdit(id, startTime);
-      toast({
-        title: "Agendamento Editado",
-        description: `O agendamento de ${clientName} foi modificado.`,
-        duration: 3000,
-      });
     }
   };
 
-  const handleCancel = (id: string, clientName: string) => {
+  const handleCancel = async (id: string, clientName: string) => {
     const confirmed = window.confirm(`Tem certeza que deseja cancelar o agendamento de ${clientName}?`);
     if (confirmed) {
-      onCancel(id);
-      toast({
-        title: "Agendamento Cancelado",
-        description: `O agendamento de ${clientName} foi cancelado.`,
-        duration: 3000,
-      });
+      console.log('User confirmed cancellation for appointment:', id);
+      await onCancel(id);
     }
   };
 
@@ -241,10 +228,17 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                     size="sm"
                     onClick={() => handleComplete(appointment.id, appointment.client_name)}
                     disabled={updatingId === appointment.id}
-                    className="bg-green-600 text-white hover:bg-green-700 border-0"
+                    className="bg-green-600 text-white hover:bg-green-700 border-0 min-w-[120px]"
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    {updatingId === appointment.id ? 'Processando...' : 'Concluir'}
+                    {updatingId === appointment.id ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Processando...
+                      </span>
+                    ) : (
+                      'Concluir'
+                    )}
                   </Button>
                   
                   <Button

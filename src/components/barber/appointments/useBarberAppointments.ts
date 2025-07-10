@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -209,7 +210,7 @@ export const useBarberAppointments = () => {
 
       console.log('Attempting to complete appointment:', appointmentId);
       
-      // Atualizar status do agendamento para concluído
+      // Atualizar status do agendamento para concluído na tabela painel_agendamentos
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ 
@@ -229,6 +230,15 @@ export const useBarberAppointments = () => {
       }
 
       console.log('Appointment marked as completed successfully');
+
+      // Atualizar o estado local imediatamente
+      setAppointments(prevAppointments => 
+        prevAppointments.map(appt => 
+          appt.id === appointmentId 
+            ? { ...appt, status: 'completed' }
+            : appt
+        )
+      );
 
       // Criar entrada de comissão
       const servicePrice = appointment.service?.price || 0;
@@ -262,13 +272,10 @@ export const useBarberAppointments = () => {
         duration: 4000,
       });
 
-      // Atualizar a lista local
-      fetchAppointments();
-
-      // Navegar para a tela principal de agendamentos após finalizar
+      // Recarregar a lista para garantir sincronização completa
       setTimeout(() => {
-        navigate('/barbeiro/agendamentos');
-      }, 1000);
+        fetchAppointments();
+      }, 500);
 
     } catch (error) {
       console.error('Erro ao marcar agendamento como concluído:', error);
@@ -305,13 +312,25 @@ export const useBarberAppointments = () => {
         return;
       }
 
+      // Atualizar o estado local imediatamente
+      setAppointments(prevAppointments => 
+        prevAppointments.map(appt => 
+          appt.id === appointmentId 
+            ? { ...appt, status: 'cancelled' }
+            : appt
+        )
+      );
+
       toast({
         title: "❌ Agendamento Cancelado",
         description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi cancelado.`,
         duration: 4000,
       });
 
-      fetchAppointments();
+      // Recarregar a lista para garantir sincronização completa
+      setTimeout(() => {
+        fetchAppointments();
+      }, 500);
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
       toast({
