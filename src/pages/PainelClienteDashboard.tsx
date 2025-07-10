@@ -29,7 +29,7 @@ interface AgendamentoStats {
 }
 
 export default function PainelClienteDashboard() {
-  const { cliente, signOut } = usePainelClienteAuth();
+  const { cliente, logout } = usePainelClienteAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<AgendamentoStats>({
     total: 0,
@@ -105,8 +105,8 @@ export default function PainelClienteDashboard() {
   useClientDashboardRealtime(fetchStats);
 
   const handleLogout = async () => {
-    await signOut();
-    navigate('/cliente/login');
+    await logout();
+    navigate('/painel-cliente/login');
   };
 
   if (loading) {
@@ -218,17 +218,17 @@ export default function PainelClienteDashboard() {
             {
               label: 'Novo Agendamento',
               icon: <Calendar className="h-6 w-6 text-urbana-gold" />,
-              action: () => navigate('/cliente/agendar'),
+              action: () => navigate('/painel-cliente/agendar'),
             },
             {
               label: 'Meus Agendamentos',
               icon: <Clock className="h-6 w-6 text-blue-400" />,
-              action: () => navigate('/cliente/agendamentos'),
+              action: () => navigate('/painel-cliente/agendamentos'),
             },
             {
               label: 'Meu Perfil',
               icon: <Settings className="h-6 w-6 text-gray-300" />,
-              action: () => navigate('/cliente/perfil'),
+              action: () => navigate('/painel-cliente/perfil'),
             },
             {
               label: 'Sair',
