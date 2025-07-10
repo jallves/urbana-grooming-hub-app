@@ -88,10 +88,10 @@ export const useAdvancedAvailability = () => {
       const availability = await Promise.all(
         staffMembers.map(async (staff) => {
           try {
-            const { data: isAvailable } = await supabase.rpc('check_barber_availability', {
+            const { data: isAvailable } = await supabase.rpc('check_new_barber_availability', {
               p_barber_id: staff.id,
               p_date: date.toISOString().split('T')[0],
-              p_start_time: time,
+              p_time: time,
               p_duration_minutes: serviceDuration
             });
 

@@ -464,6 +464,80 @@ export type Database = {
           },
         ]
       }
+      barber_schedules: {
+        Row: {
+          barber_id: string | null
+          created_at: string | null
+          end_time: string
+          id: string
+          is_active: boolean | null
+          start_time: string
+          weekday: number | null
+        }
+        Insert: {
+          barber_id?: string | null
+          created_at?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean | null
+          start_time: string
+          weekday?: number | null
+        }
+        Update: {
+          barber_id?: string | null
+          created_at?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean | null
+          start_time?: string
+          weekday?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_schedules_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      barbers: {
+        Row: {
+          commission_type: string | null
+          commission_value: number | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          specialty: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commission_type?: string | null
+          commission_value?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          specialty?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commission_type?: string | null
+          commission_value?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          specialty?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       barbers_2: {
         Row: {
           created_at: string | null
@@ -1523,6 +1597,115 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "navigation_menu"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      new_appointments: {
+        Row: {
+          barber_id: string | null
+          client_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          scheduled_date: string
+          scheduled_time: string
+          service_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          barber_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_date: string
+          scheduled_time: string
+          service_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          barber_id?: string | null
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          scheduled_date?: string
+          scheduled_time?: string
+          service_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_appointments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      new_commissions: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          barber_id: string | null
+          created_at: string | null
+          id: string
+          paid_at: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          barber_id?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          barber_id?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_commissions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "new_appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "new_commissions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
             referencedColumns: ["id"]
           },
         ]
@@ -2712,21 +2895,21 @@ export type Database = {
         }
         Returns: boolean
       }
-      check_barber_availability: {
-        Args: {
-          p_barber_id: string
-          p_date: string
-          p_start_time: string
-          p_duration_minutes: number
-        }
-        Returns: boolean
-      }
       check_client_appointment_conflict: {
         Args: {
           p_client_id: string
           p_start_time: string
           p_end_time: string
           p_exclude_appointment_id?: string
+        }
+        Returns: boolean
+      }
+      check_new_barber_availability: {
+        Args: {
+          p_barber_id: string
+          p_date: string
+          p_time: string
+          p_duration_minutes: number
         }
         Returns: boolean
       }
