@@ -6,6 +6,8 @@ import {
   TrendingUp,
   Settings,
   LogOut,
+  User,
+  Scissors,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -20,12 +22,12 @@ interface AgendamentoStats {
   total: number;
   proximos: number;
   concluidos: number;
-  proximoAgendamento?: {
+  agendamentosFuturos?: {
     data: string;
     hora: string;
     barbeiro: string;
     servico: string;
-  };
+  }[];
 }
 
 export default function PainelClienteDashboard() {
@@ -61,34 +63,32 @@ export default function PainelClienteDashboard() {
         const hoje = agora.toISOString().split('T')[0];
         const horaAtual = agora.toTimeString().split(' ')[0].substring(0, 5);
 
-        const proximos = agendamentos.filter(
-          (a) =>
+        const hojeDate = new Date(hoje);
+        const dataLimite = new Date(hojeDate);
+        dataLimite.setDate(dataLimite.getDate() + 30);
+
+        const proximos = agendamentos.filter((a) => {
+          const agendamentoDate = new Date(`${a.data}T${a.hora}`);
+          return (
             a.status !== 'cancelado' &&
             a.status !== 'concluido' &&
-            (a.data > hoje || (a.data === hoje && a.hora > horaAtual))
-        );
+            agendamentoDate >= agora &&
+            agendamentoDate <= dataLimite
+          );
+        });
 
         const concluidos = agendamentos.filter((a) => a.status === 'concluido');
-
-        const proximoAgendamento = proximos
-          .sort((a, b) => {
-            const dataA = new Date(`${a.data}T${a.hora}`);
-            const dataB = new Date(`${b.data}T${b.hora}`);
-            return dataA.getTime() - dataB.getTime();
-          })[0];
 
         setStats({
           total: agendamentos.length,
           proximos: proximos.length,
           concluidos: concluidos.length,
-          proximoAgendamento: proximoAgendamento
-            ? {
-                data: proximoAgendamento.data,
-                hora: proximoAgendamento.hora,
-                barbeiro: proximoAgendamento.painel_barbeiros.nome,
-                servico: proximoAgendamento.painel_servicos.nome,
-              }
-            : undefined,
+          agendamentosFuturos: proximos.map((a) => ({
+            data: a.data,
+            hora: a.hora,
+            barbeiro: a.painel_barbeiros.nome,
+            servico: a.painel_servicos.nome,
+          })),
         });
       }
     } catch (error) {
@@ -139,6 +139,7 @@ export default function PainelClienteDashboard() {
           </div>
         </div>
 
+        {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
@@ -147,7 +148,7 @@ export default function PainelClienteDashboard() {
               icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
             },
             {
-              label: 'Próximos Agendamentos',
+              label: 'Próximos 30 Dias',
               value: stats.proximos,
               icon: <Clock className="h-5 w-5 text-blue-400" />,
             },
@@ -175,7 +176,8 @@ export default function PainelClienteDashboard() {
           ))}
         </div>
 
-        {stats.proximoAgendamento && (
+        {/* Lista dos próximos agendamentos */}
+        {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -184,31 +186,41 @@ export default function PainelClienteDashboard() {
             <Card className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm">
               <CardHeader>
                 <CardTitle className="text-urbana-gold text-lg">
-                  Próximo Agendamento
+                  Próximos Agendamentos (30 dias)
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm text-gray-300">
-                <div className="flex gap-2 items-center">
-                  <Calendar className="h-4 w-4 text-urbana-gold" />
-                  <span className="text-white">
-                    {new Date(stats.proximoAgendamento.data).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Clock className="h-4 w-4 text-urbana-gold" />
-                  <span className="text-white">{stats.proximoAgendamento.hora}</span>
-                </div>
-                <p>
-                  <strong>Barbeiro:</strong> {stats.proximoAgendamento.barbeiro}
-                </p>
-                <p>
-                  <strong>Serviço:</strong> {stats.proximoAgendamento.servico}
-                </p>
+              <CardContent className="space-y-4 text-sm text-gray-300">
+                {stats.agendamentosFuturos.map((ag, index) => (
+                  <div
+                    key={index}
+                    className="border-b border-gray-700 pb-3 last:border-b-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-urbana-gold" />
+                      <span className="text-white">
+                        {new Date(ag.data).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-urbana-gold" />
+                      <span className="text-white">{ag.hora}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-urbana-gold" />
+                      <span>{ag.barbeiro}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Scissors className="h-4 w-4 text-urbana-gold" />
+                      <span>{ag.servico}</span>
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           </motion.div>
         )}
 
+        {/* Ações */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
           {[
             {
