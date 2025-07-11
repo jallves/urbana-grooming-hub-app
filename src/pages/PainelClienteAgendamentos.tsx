@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, User, AlertCircle, CheckCircle } from 'lucide-react';
@@ -64,7 +63,6 @@ export default function PainelClienteAgendamentos() {
     fetchAgendamentos();
   }, [fetchAgendamentos]);
 
-  // Setup real-time updates
   useClientDashboardRealtime(fetchAgendamentos);
 
   const getStatusColor = (status: string) => {
@@ -136,7 +134,7 @@ export default function PainelClienteAgendamentos() {
           <div className="space-y-4">
             {agendamentos.map((agendamento, index) => {
               const StatusIcon = getStatusIcon(agendamento.status);
-              
+
               return (
                 <motion.div
                   key={agendamento.id}
@@ -144,7 +142,7 @@ export default function PainelClienteAgendamentos() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
-                  <Card className="bg-gray-900 border border-gray-700 hover:border-gray-600 transition-colors">
+                  <Card className="bg-gray-900 border border-gray-700 hover:border-gray-500 transition-colors">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-white text-lg flex items-center gap-2">
