@@ -1,365 +1,250 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ArrowLeft, User, Save, Mail, Phone, Edit3, Shield, Calendar, Clock, Scissors } from 'lucide-react';
-import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  Calendar,
+  Clock,
+  CheckCircle,
+  TrendingUp,
+  Settings,
+  LogOut,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import DashboardContainer from '@/components/ui/containers/DashboardContainer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
 
-export default function PainelClientePerfil() {
+interface AgendamentoStats {
+  total: number;
+  proximos: number;
+  concluidos: number;
+  proximoAgendamento?: {
+    data: string;
+    hora: string;
+    barbeiro: string;
+    servico: string;
+  };
+}
+
+export default function PainelClienteDashboard() {
+  const { cliente, logout } = usePainelClienteAuth();
   const navigate = useNavigate();
-  const { cliente, atualizarPerfil } = usePainelClienteAuth();
-  const { toast } = useToast();
-
-  const [formData, setFormData] = useState({
-    nome: cliente?.nome || '',
-    email: cliente?.email || '',
-    whatsapp: cliente?.whatsapp || ''
+  const [stats, setStats] = useState<AgendamentoStats>({
+    total: 0,
+    proximos: 0,
+    concluidos: 0,
   });
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState('');
+  const fetchStats = useCallback(async () => {
+    if (!cliente?.id) return;
 
-  // Dados mockados de agendamentos (substituir por dados reais da API)
-  const agendamentos = [
-    {
-      id: 1,
-      servico: "Corte Masculino",
-      profissional: "Carlos Silva",
-      data: "15/07/2023",
-      horario: "14:30",
-      status: "confirmado"
-    },
-    {
-      id: 2,
-      servico: "Barba",
-      profissional: "João Santos",
-      data: "20/07/2023",
-      horario: "10:00",
-      status: "pendente"
+    try {
+      const { data: agendamentos, error } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_barbeiros!inner(nome),
+          painel_servicos!inner(nome)
+        `)
+        .eq('cliente_id', cliente.id);
+
+      if (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        return;
+      }
+
+      if (agendamentos) {
+        const agora = new Date();
+        const hoje = agora.toISOString().split('T')[0];
+        const horaAtual = agora.toTimeString().split(' ')[0].substring(0, 5);
+
+        const proximos = agendamentos.filter(
+          (a) =>
+            a.status !== 'cancelado' &&
+            a.status !== 'concluido' &&
+            (a.data > hoje || (a.data === hoje && a.hora > horaAtual))
+        );
+
+        const concluidos = agendamentos.filter((a) => a.status === 'concluido');
+
+        const proximoAgendamento = proximos
+          .sort((a, b) => {
+            const dataA = new Date(`${a.data}T${a.hora}`);
+            const dataB = new Date(`${b.data}T${b.hora}`);
+            return dataA.getTime() - dataB.getTime();
+          })[0];
+
+        setStats({
+          total: agendamentos.length,
+          proximos: proximos.length,
+          concluidos: concluidos.length,
+          proximoAgendamento: proximoAgendamento
+            ? {
+                data: proximoAgendamento.data,
+                hora: proximoAgendamento.hora,
+                barbeiro: proximoAgendamento.painel_barbeiros.nome,
+                servico: proximoAgendamento.painel_servicos.nome,
+              }
+            : undefined,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  }, [cliente?.id]);
 
-  const formatarWhatsApp = (valor: string) => {
-    const numero = valor.replace(/\D/g, '');
-    if (numero.length <= 2) return numero;
-    if (numero.length <= 7) return `(${numero.slice(0, 2)}) ${numero.slice(2)}`;
-    if (numero.length <= 11) return `(${numero.slice(0, 2)}) ${numero.slice(2, 7)}-${numero.slice(7)}`;
-    return `(${numero.slice(0, 2)}) ${numero.slice(2, 7)}-${numero.slice(7, 11)}`;
-  };
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
-  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valorFormatado = formatarWhatsApp(e.target.value);
-    setFormData(prev => ({ ...prev, whatsapp: valorFormatado }));
-  };
+  useClientDashboardRealtime(fetchStats);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErro('');
-    setLoading(true);
-
-    const { error } = await atualizarPerfil({
-      nome: formData.nome,
-      email: formData.email,
-      whatsapp: formData.whatsapp
-    });
-
-    if (error) {
-      setErro(error);
-    } else {
-      toast({
-        title: "Perfil atualizado!",
-        description: "Suas informações foram salvas com sucesso.",
-        variant: "success"
-      });
-    }
-
-    setLoading(false);
-  };
-
-  if (!cliente) {
+  const handleLogout = async () => {
+    await logout();
     navigate('/painel-cliente/login');
-    return null;
+  };
+
+  if (loading) {
+    return (
+      <DashboardContainer>
+        <div className="flex justify-center items-center h-64">
+          <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
+        </div>
+      </DashboardContainer>
+    );
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100
-      }
-    }
-  };
-
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-r from-orange-600/10 via-red-600/10 to-orange-600/10" />
-      <div className="absolute top-20 left-10 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-10 w-80 h-80 bg-red-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      
-      <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="max-w-4xl mx-auto space-y-8"
-        >
-          {/* Header */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Button
-              onClick={() => navigate('/painel-cliente/dashboard')}
-              variant="ghost"
-              size="sm"
-              className="text-orange-400 hover:text-white hover:bg-orange-500/20 rounded-2xl px-6 py-3 transition-all duration-300 border border-orange-500/30"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 bg-clip-text text-transparent">
-                Meu Perfil
-              </h1>
-              <p className="text-gray-400 text-lg mt-2">Gerencie suas informações e agendamentos</p>
-            </div>
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Seção de Perfil */}
-            <motion.div variants={itemVariants}>
-              <Card className="bg-slate-900/70 border border-slate-700/50 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden h-full">
-                <CardHeader className="pb-6 bg-gradient-to-r from-orange-500/20 to-red-500/20">
-                  <CardTitle className="text-2xl text-white flex items-center gap-4">
-                    <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-lg">
-                      <User className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">Informações Pessoais</div>
-                      <div className="text-sm text-gray-400 font-normal mt-1">Atualize seus dados de contato</div>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent className="p-8">
-                  <form onSubmit={handleSubmit} className="space-y-8">
-                    {erro && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-sm"
-                      >
-                        <p className="text-red-400 text-sm font-medium">{erro}</p>
-                      </motion.div>
-                    )}
-
-                    <div className="space-y-8">
-                      {/* Nome */}
-                      <motion.div 
-                        variants={itemVariants}
-                        className="space-y-3"
-                      >
-                        <Label htmlFor="nome" className="text-white text-base font-semibold flex items-center gap-3">
-                          <div className="p-2 bg-orange-500/20 rounded-xl">
-                            <User className="h-4 w-4 text-orange-400" />
-                          </div>
-                          Nome Completo
-                        </Label>
-                        <Input
-                          id="nome"
-                          type="text"
-                          value={formData.nome}
-                          onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                          className="bg-slate-800/70 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                          placeholder="Seu nome completo"
-                          required
-                        />
-                      </motion.div>
-
-                      {/* Email */}
-                      <motion.div 
-                        variants={itemVariants}
-                        className="space-y-3"
-                      >
-                        <Label htmlFor="email" className="text-white text-base font-semibold flex items-center gap-3">
-                          <div className="p-2 bg-orange-500/20 rounded-xl">
-                            <Mail className="h-4 w-4 text-orange-400" />
-                          </div>
-                          E-mail
-                        </Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                          className="bg-slate-800/70 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                          placeholder="seu.email@exemplo.com"
-                          required
-                        />
-                      </motion.div>
-
-                      {/* WhatsApp */}
-                      <motion.div 
-                        variants={itemVariants}
-                        className="space-y-3"
-                      >
-                        <Label htmlFor="whatsapp" className="text-white text-base font-semibold flex items-center gap-3">
-                          <div className="p-2 bg-orange-500/20 rounded-xl">
-                            <Phone className="h-4 w-4 text-orange-400" />
-                          </div>
-                          WhatsApp
-                        </Label>
-                        <Input
-                          id="whatsapp"
-                          type="tel"
-                          value={formData.whatsapp}
-                          onChange={handleWhatsAppChange}
-                          className="bg-slate-800/70 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                          placeholder="(11) 99999-9999"
-                          maxLength={15}
-                          required
-                        />
-                      </motion.div>
-                    </div>
-
-                    {/* Submit Button */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="pt-6"
-                    >
-                      <Button
-                        type="submit"
-                        className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold h-16 text-lg rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            className="w-6 h-6 border-2 border-white border-t-transparent rounded-full mr-3"
-                          />
-                        ) : (
-                          <Save className="h-5 w-5 mr-3" />
-                        )}
-                        {loading ? 'Salvando...' : 'Salvar Alterações'}
-                      </Button>
-                    </motion.div>
-                  </form>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Seção de Agendamentos */}
-            <motion.div variants={itemVariants}>
-              <Card className="bg-slate-900/70 border border-slate-700/50 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden h-full">
-                <CardHeader className="pb-6 bg-gradient-to-r from-orange-500/20 to-red-500/20">
-                  <CardTitle className="text-2xl text-white flex items-center gap-4">
-                    <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-lg">
-                      <Calendar className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold">Próximos Agendamentos</div>
-                      <div className="text-sm text-gray-400 font-normal mt-1">Seus compromissos marcados</div>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent className="p-8">
-                  {agendamentos.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <Calendar className="h-12 w-12 text-gray-500 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-400">Nenhum agendamento encontrado</h3>
-                      <p className="text-sm text-gray-500 mt-2">Você ainda não possui agendamentos marcados.</p>
-                      <Button 
-                        className="mt-6 bg-gradient-to-r from-orange-500 to-red-500 text-white"
-                        onClick={() => navigate('/painel-cliente/agendamento')}
-                      >
-                        Agendar Serviço
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {agendamentos.map((agendamento) => (
-                        <motion.div 
-                          key={agendamento.id}
-                          variants={itemVariants}
-                          whileHover={{ scale: 1.02 }}
-                          className="bg-slate-800/70 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-sm"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <div className="flex items-center gap-3 mb-2">
-                                <Scissors className="h-5 w-5 text-orange-400" />
-                                <h3 className="text-lg font-semibold text-white">{agendamento.servico}</h3>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  agendamento.status === 'confirmado' 
-                                    ? 'bg-green-500/20 text-green-400' 
-                                    : 'bg-yellow-500/20 text-yellow-400'
-                                }`}>
-                                  {agendamento.status === 'confirmado' ? 'Confirmado' : 'Pendente'}
-                                </span>
-                              </div>
-                              <p className="text-gray-400 text-sm mb-1">Profissional: {agendamento.profissional}</p>
-                              <div className="flex items-center gap-4 mt-3">
-                                <div className="flex items-center gap-2 text-orange-400">
-                                  <Calendar className="h-4 w-4" />
-                                  <span className="text-sm">{agendamento.data}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-orange-400">
-                                  <Clock className="h-4 w-4" />
-                                  <span className="text-sm">{agendamento.horario}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <Button 
-                              variant="outline"
-                              size="sm"
-                              className="border-orange-500/50 text-orange-400 hover:bg-orange-500/20 hover:text-white"
-                              onClick={() => console.log('Editar agendamento', agendamento.id)}
-                            >
-                              Detalhes
-                            </Button>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
+    <DashboardContainer>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="space-y-10"
+      >
+        <div className="flex items-center gap-4 mb-2">
+          <TrendingUp className="h-9 w-9 text-urbana-gold" />
+          <div>
+            <h1 className="text-4xl font-extrabold text-urbana-gold font-playfair">
+              Olá, {cliente?.nome}!
+            </h1>
+            <p className="text-gray-400 text-sm">
+              Bem-vindo ao seu painel personalizado
+            </p>
           </div>
+        </div>
 
-          {/* Security Notice */}
-          <motion.div variants={itemVariants}>
-            <Card className="bg-blue-500/10 border border-blue-500/30 backdrop-blur-xl rounded-2xl">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-blue-400" />
-                  <div>
-                    <h3 className="text-white font-semibold">Informações Seguras</h3>
-                    <p className="text-blue-300 text-sm">Seus dados são protegidos e criptografados.</p>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              label: 'Total de Agendamentos',
+              value: stats.total,
+              icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
+            },
+            {
+              label: 'Próximos Agendamentos',
+              value: stats.proximos,
+              icon: <Clock className="h-5 w-5 text-blue-400" />,
+            },
+            {
+              label: 'Atendimentos Concluídos',
+              value: stats.concluidos,
+              icon: <CheckCircle className="h-5 w-5 text-green-400" />,
+            },
+          ].map((stat, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.02 }}
+              className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm"
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-1 px-5 pt-5">
+                <CardTitle className="text-sm font-medium text-gray-300">
+                  {stat.label}
+                </CardTitle>
+                {stat.icon}
+              </CardHeader>
+              <CardContent className="px-5 pb-5">
+                <div className="text-3xl font-bold text-white">{stat.value}</div>
+              </CardContent>
+            </motion.div>
+          ))}
+        </div>
+
+        {stats.proximoAgendamento && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-urbana-gold text-lg">
+                  Próximo Agendamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-gray-300">
+                <div className="flex gap-2 items-center">
+                  <Calendar className="h-4 w-4 text-urbana-gold" />
+                  <span className="text-white">
+                    {new Date(stats.proximoAgendamento.data).toLocaleDateString('pt-BR')}
+                  </span>
                 </div>
+                <div className="flex gap-2 items-center">
+                  <Clock className="h-4 w-4 text-urbana-gold" />
+                  <span className="text-white">{stats.proximoAgendamento.hora}</span>
+                </div>
+                <p>
+                  <strong>Barbeiro:</strong> {stats.proximoAgendamento.barbeiro}
+                </p>
+                <p>
+                  <strong>Serviço:</strong> {stats.proximoAgendamento.servico}
+                </p>
               </CardContent>
             </Card>
           </motion.div>
-        </motion.div>
-      </div>
-    </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+          {[
+            {
+              label: 'Novo Agendamento',
+              icon: <Calendar className="h-6 w-6 text-urbana-gold" />,
+              action: () => navigate('/painel-cliente/agendar'),
+            },
+            {
+              label: 'Meus Agendamentos',
+              icon: <Clock className="h-6 w-6 text-blue-400" />,
+              action: () => navigate('/painel-cliente/agendamentos'),
+            },
+            {
+              label: 'Meu Perfil',
+              icon: <Settings className="h-6 w-6 text-gray-300" />,
+              action: () => navigate('/painel-cliente/perfil'),
+            },
+            {
+              label: 'Sair',
+              icon: <LogOut className="h-6 w-6 text-red-500" />,
+              action: handleLogout,
+            },
+          ].map((item, index) => (
+            <motion.button
+              key={index}
+              onClick={item.action}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-gray-800 hover:bg-urbana-gold/10 transition-all border border-gray-700 rounded-xl p-5 flex flex-col items-center justify-center text-gray-200 space-y-2"
+            >
+              {item.icon}
+              <span className="text-sm font-medium">{item.label}</span>
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
+    </DashboardContainer>
   );
 }
