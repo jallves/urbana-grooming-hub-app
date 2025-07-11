@@ -44,10 +44,12 @@ const BarberCommissions: React.FC = () => {
       if (!user?.email) return;
 
       try {
+        // Buscar o ID do staff (barber) baseado no email do usuário
         const { data } = await supabase
-          .from('painel_barbeiros')
+          .from('staff')
           .select('id')
           .eq('email', user.email)
+          .eq('role', 'barber')
           .maybeSingle();
 
         if (data?.id) {

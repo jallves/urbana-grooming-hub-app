@@ -23,7 +23,7 @@ interface Commission {
     id: string;
     name: string;
   };
-  appointments: {
+  appointments?: {
     id: string;
     start_time: string;
     services: {
@@ -64,13 +64,7 @@ const CommissionPayments: React.FC = () => {
         .from('barber_commissions')
         .select(`
           *,
-          staff!barber_id(id, name),
-          appointments!appointment_id(
-            id,
-            start_time,
-            services(name, price),
-            clients(name)
-          )
+          staff!barber_id(id, name)
         `)
         .order('created_at', { ascending: false });
 
@@ -86,7 +80,63 @@ const CommissionPayments: React.FC = () => {
 
       if (error) throw error;
 
-      setCommissions(data || []);
+      // Para cada comissão, buscar detalhes do agendamento
+      const commissionsWithDetails = await Promise.all(
+        (data || []).map(async (commission) => {
+          try {
+            const { data: appointmentData } = await supabase
+              .from('painel_agendamentos')
+              .select(`
+                id,
+                data,
+                hora,
+                painel_clientes!inner(nome),
+                painel_servicos!inner(nome, preco)
+              `)
+              .eq('id', commission.appointment_id)
+              .maybeSingle();
+
+            if (appointmentData) {
+              return {
+                ...commission,
+                appointments: {
+                  id: appointmentData.id,
+                  start_time: appointmentData.data + 'T' + appointmentData.hora,
+                  services: {
+                    name: appointmentData.painel_servicos?.nome || 'Serviço',
+                    price: appointmentData.painel_servicos?.preco || 0
+                  },
+                  clients: {
+                    name: appointmentData.painel_clientes?.nome || 'Cliente'
+                  }
+                }
+              };
+            }
+            return {
+              ...commission,
+              appointments: {
+                id: commission.appointment_id,
+                start_time: new Date().toISOString(),
+                services: { name: 'Serviço', price: 0 },
+                clients: { name: 'Cliente' }
+              }
+            };
+          } catch (error) {
+            console.error('Error fetching appointment details:', error);
+            return {
+              ...commission,
+              appointments: {
+                id: commission.appointment_id,
+                start_time: new Date().toISOString(),
+                services: { name: 'Serviço', price: 0 },
+                clients: { name: 'Cliente' }
+              }
+            };
+          }
+        })
+      );
+
+      setCommissions(commissionsWithDetails);
     } catch (error) {
       console.error('Error fetching commissions:', error);
       toast({

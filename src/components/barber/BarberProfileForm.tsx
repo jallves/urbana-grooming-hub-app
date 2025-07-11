@@ -96,7 +96,7 @@ export default function BarberProfileForm() {
           email: formData.email,
           experience: formData.experience,
           specialties: formData.specialties,
-          commission_rate: formData.commission_rate,
+          // commission_rate removido - apenas admin pode alterar
         })
         .eq('id', barber.id);
 
@@ -205,12 +205,15 @@ export default function BarberProfileForm() {
                     id="commission_rate"
                     type="number"
                     value={formData.commission_rate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, commission_rate: Number(e.target.value) }))}
-                    className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-urbana-gold"
+                    disabled
+                    className="bg-gray-600 border-gray-500 text-gray-400 cursor-not-allowed"
                     min="0"
                     max="100"
                     placeholder="15"
                   />
+                  <p className="text-xs text-gray-400">
+                    * Apenas o administrador pode alterar a taxa de comissão
+                  </p>
                 </div>
               </div>
             </div>
