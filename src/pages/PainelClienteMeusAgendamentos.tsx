@@ -227,13 +227,9 @@ export default function PainelClienteMeusAgendamentos() {
                 <Button
                   key={filtro.key}
                   onClick={() => setFiltroStatus(filtro.key)}
-                  variant={filtroStatus === filtro.key ? "default" : "outline"}
                   size="sm"
-                  className={`flex-shrink-0 rounded-xl px-4 py-2 transition-all duration-300 ${
-                    filtroStatus === filtro.key 
-                      ? `bg-gradient-to-r ${filtro.color} text-white shadow-lg` 
-                      : 'border-slate-600 text-gray-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-500'
-                  }`}
+                  // TODOS os botões com mesmo estilo gradiente
+                  className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm bg-gradient-to-r ${filtro.color} text-white shadow-lg transition-all duration-300`}
                 >
                   {filtro.label}
                 </Button>
