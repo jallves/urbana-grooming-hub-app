@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, User, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  User,
+  AlertCircle,
+  CheckCircle,
+  Filter,
+  Plus,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import DashboardContainer from '@/components/ui/containers/DashboardContainer';
-import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
+import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 interface PainelAgendamento {
   id: string;
@@ -22,41 +30,45 @@ interface PainelAgendamento {
   };
 }
 
+const statusLabels = {
+  todos: 'Todos',
+  confirmado: 'Confirmado',
+  agendado: 'Agendado',
+  concluido: 'Concluído',
+  cancelado: 'Cancelado',
+};
+
+const statusClasses = {
+  todos: 'bg-gray-800 text-gray-300 hover:bg-gray-700',
+  confirmado: 'bg-blue-400/10 text-blue-400 hover:bg-blue-400/20',
+  agendado: 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20',
+  concluido: 'bg-green-400/10 text-green-400 hover:bg-green-400/20',
+  cancelado: 'bg-red-400/10 text-red-400 hover:bg-red-400/20',
+};
+
 export default function PainelClienteAgendamentos() {
   const { cliente } = usePainelClienteAuth();
-  const { toast } = useToast();
+  const navigate = useNavigate();
   const [agendamentos, setAgendamentos] = useState<PainelAgendamento[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState<keyof typeof statusLabels>('todos');
 
   const fetchAgendamentos = useCallback(async () => {
     if (!cliente?.id) return;
 
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('painel_agendamentos')
-        .select(`
-          *,
-          painel_barbeiros!inner(nome),
-          painel_servicos!inner(nome, preco)
-        `)
-        .eq('cliente_id', cliente.id)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false });
+    setLoading(true);
 
-      if (error) {
-        console.error('Erro ao buscar agendamentos:', error);
-        return;
-      }
+    const { data, error } = await supabase
+      .from('painel_agendamentos')
+      .select(`*, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco)`)
+      .eq('cliente_id', cliente.id)
+      .order('data', { ascending: false })
+      .order('hora', { ascending: false });
 
-      if (data) {
-        setAgendamentos(data);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar agendamentos:', error);
-    } finally {
-      setLoading(false);
-    }
+    if (data) setAgendamentos(data);
+    if (error) console.error('Erro ao buscar agendamentos:', error);
+
+    setLoading(false);
   }, [cliente?.id]);
 
   useEffect(() => {
@@ -65,31 +77,19 @@ export default function PainelClienteAgendamentos() {
 
   useClientDashboardRealtime(fetchAgendamentos);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmado': return 'text-blue-400 bg-blue-400/10';
-      case 'agendado': return 'text-amber-400 bg-amber-400/10';
-      case 'concluido': return 'text-green-400 bg-green-400/10';
-      case 'cancelado': return 'text-red-400 bg-red-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
-    }
-  };
+  const filteredAgendamentos =
+    filtro === 'todos'
+      ? agendamentos
+      : agendamentos.filter((a) => a.status === filtro);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'concluido': return CheckCircle;
-      case 'cancelado': return AlertCircle;
-      default: return Calendar;
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'confirmado': return 'Confirmado';
-      case 'agendado': return 'Agendado';
-      case 'concluido': return 'Concluído';
-      case 'cancelado': return 'Cancelado';
-      default: return status;
+      case 'concluido':
+        return CheckCircle;
+      case 'cancelado':
+        return AlertCircle;
+      default:
+        return Calendar;
     }
   };
 
@@ -110,15 +110,39 @@ export default function PainelClienteAgendamentos() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="flex items-center gap-3 mb-6">
-          <Calendar className="h-8 w-8 text-urbana-gold" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-urbana-gold font-playfair">Meus Agendamentos</h1>
-            <p className="text-gray-400">Visualize e acompanhe seus horários marcados</p>
+            <h1 className="text-3xl font-bold text-urbana-gold font-playfair">
+              Meus Agendamentos
+            </h1>
+            <p className="text-gray-400">Acompanhe todos os seus agendamentos</p>
           </div>
+          <button
+            onClick={() => navigate('/painel-cliente/agendar')}
+            className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium px-4 py-2 rounded-md hover:brightness-110 transition"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Agendamento
+          </button>
         </div>
 
-        {agendamentos.length === 0 ? (
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-3 mb-6">
+          {Object.entries(statusLabels).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setFiltro(key as keyof typeof statusLabels)}
+              className={`px-4 py-2 text-sm font-medium rounded-md border border-gray-700 transition ${
+                statusClasses[key as keyof typeof statusClasses]
+              } ${filtro === key ? 'ring-1 ring-urbana-gold' : ''}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Lista de agendamentos */}
+        {filteredAgendamentos.length === 0 ? (
           <Card className="bg-gray-900 border border-gray-700">
             <CardContent className="p-8 text-center">
               <AlertCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
@@ -126,13 +150,13 @@ export default function PainelClienteAgendamentos() {
                 Nenhum agendamento encontrado
               </h3>
               <p className="text-gray-400">
-                Você ainda não possui agendamentos. Que tal marcar um horário?
+                Você ainda não possui agendamentos neste status.
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {agendamentos.map((agendamento, index) => {
+            {filteredAgendamentos.map((agendamento, index) => {
               const StatusIcon = getStatusIcon(agendamento.status);
 
               return (
@@ -149,8 +173,12 @@ export default function PainelClienteAgendamentos() {
                           <StatusIcon className="h-5 w-5 text-urbana-gold" />
                           {agendamento.painel_servicos.nome}
                         </CardTitle>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(agendamento.status)}`}>
-                          {getStatusLabel(agendamento.status)}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            statusClasses[agendamento.status as keyof typeof statusClasses]
+                          }`}
+                        >
+                          {statusLabels[agendamento.status as keyof typeof statusLabels]}
                         </span>
                       </div>
                     </CardHeader>
@@ -158,7 +186,9 @@ export default function PainelClienteAgendamentos() {
                       <div className="flex items-center gap-4">
                         <div className="flex items-center text-gray-300">
                           <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
-                          <span className="text-sm">{new Date(agendamento.data).toLocaleDateString('pt-BR')}</span>
+                          <span className="text-sm">
+                            {new Date(agendamento.data).toLocaleDateString('pt-BR')}
+                          </span>
                         </div>
                         <div className="flex items-center text-gray-300">
                           <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
