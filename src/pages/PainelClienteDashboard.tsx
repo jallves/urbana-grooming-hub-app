@@ -127,7 +127,6 @@ export default function PainelClienteDashboard() {
         transition={{ duration: 0.5 }}
         className="space-y-10"
       >
-        {/* Saudação */}
         <div className="flex items-center gap-4 mb-2">
           <TrendingUp className="h-9 w-9 text-urbana-gold" />
           <div>
@@ -140,7 +139,6 @@ export default function PainelClienteDashboard() {
           </div>
         </div>
 
-        {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
@@ -177,14 +175,13 @@ export default function PainelClienteDashboard() {
           ))}
         </div>
 
-        {/* Próximo Agendamento */}
         {stats.proximoAgendamento && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
           >
-            <Card className="bg-gradient-to-r from-urbana-gold/10 to-transparent border border-urbana-gold/20 rounded-xl shadow-inner">
+            <Card className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm">
               <CardHeader>
                 <CardTitle className="text-urbana-gold text-lg">
                   Próximo Agendamento
@@ -212,7 +209,6 @@ export default function PainelClienteDashboard() {
           </motion.div>
         )}
 
-        {/* Atalhos Rápidos */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
           {[
             {
