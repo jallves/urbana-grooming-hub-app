@@ -336,20 +336,18 @@ export default function PainelClienteMeusAgendamentos() {
                             <div className="flex gap-2 pt-2">
                               <Button
                                 size="sm"
-                                variant="outline"
                                 onClick={() => handleEditAgendamento(agendamento)}
-                                className="flex-1 text-xs border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500"
+                                className="flex-1 rounded-xl px-4 py-2 text-sm bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transition-all duration-300"
                               >
-                                <Edit className="w-3 h-3 mr-1" />
+                                <Edit className="w-4 h-4 mr-1" />
                                 Editar
                               </Button>
                               <Button
                                 size="sm"
-                                variant="outline"
                                 onClick={() => handleDeleteAgendamento(agendamento)}
-                                className="flex-1 text-xs border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500"
+                                className="flex-1 rounded-xl px-4 py-2 text-sm bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transition-all duration-300"
                               >
-                                <Trash2 className="w-3 h-3 mr-1" />
+                                <Trash2 className="w-4 h-4 mr-1" />
                                 Cancelar
                               </Button>
                             </div>
