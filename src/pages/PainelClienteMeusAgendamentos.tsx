@@ -195,13 +195,22 @@ export default function PainelClienteMeusAgendamentos() {
               </h1>
               <p className="text-gray-400 text-base sm:text-lg mt-2">Acompanhe todos os seus agendamentos</p>
             </div>
-            <Button
-              onClick={() => navigate('/painel-cliente/agendar')}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Agendamento
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => navigate('/painel-cliente/agendar')}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Agendamento
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/painel-cliente/dashboard')}
+                className="text-gray-300 border border-gray-600 hover:bg-slate-700 hover:text-white rounded-xl px-6 py-3 font-semibold transition-colors"
+              >
+                Voltar
+              </Button>
+            </div>
           </motion.div>
 
           {/* Filters */}
