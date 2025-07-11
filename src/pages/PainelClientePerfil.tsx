@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -108,7 +107,7 @@ export default function PainelClientePerfil() {
               onClick={() => navigate('/painel-cliente/dashboard')}
               variant="outline"
               size="sm"
-              className="border-slate-600 text-gray-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-500 rounded-2xl px-6 py-3 transition-all duration-300"
+              className="border border-gray-600 text-gray-300 rounded-2xl px-6 py-3 transition-none hover:bg-transparent hover:text-gray-300 hover:border-gray-600 flex items-center"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
