@@ -69,16 +69,11 @@ export default function PainelClientePerfil() {
 
     if (error) {
       setErro(error);
-      toast({
-        title: "Erro ao atualizar",
-        description: error,
-        variant: "destructive"
-      });
     } else {
       toast({
-        title: "✅ Perfil atualizado!",
+        title: "Perfil atualizado!",
         description: "Suas informações foram salvas com sucesso.",
-        className: "bg-green-500 text-white border-0"
+        variant: "success"
       });
     }
 
