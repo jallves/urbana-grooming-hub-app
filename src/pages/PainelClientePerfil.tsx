@@ -105,9 +105,9 @@ export default function PainelClientePerfil() {
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button
               onClick={() => navigate('/painel-cliente/dashboard')}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="border border-gray-600 text-gray-300 rounded-2xl px-6 py-3 transition-none hover:bg-transparent hover:text-gray-300 hover:border-gray-600 flex items-center"
+              className="text-gray-300 hover:bg-slate-800/50 hover:text-white rounded-2xl px-6 py-3 transition-all duration-300"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
