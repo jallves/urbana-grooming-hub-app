@@ -6,6 +6,7 @@ import {
   TrendingUp,
   Settings,
   LogOut,
+  Scissors,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -20,12 +21,12 @@ interface AgendamentoStats {
   total: number;
   proximos: number;
   concluidos: number;
-  proximoAgendamento?: {
+  proximosAgendamentos?: {
     data: string;
     hora: string;
     barbeiro: string;
     servico: string;
-  };
+  }[];
 }
 
 export default function PainelClienteDashboard() {
@@ -61,34 +62,44 @@ export default function PainelClienteDashboard() {
         const hoje = agora.toISOString().split('T')[0];
         const horaAtual = agora.toTimeString().split(' ')[0].substring(0, 5);
 
-        const proximos = agendamentos.filter(
-          (a) =>
+        const trintaDiasDepois = new Date();
+        trintaDiasDepois.setDate(agora.getDate() + 30);
+        const dataLimite = trintaDiasDepois.toISOString().split('T')[0];
+
+        const proximos = agendamentos.filter((a) => {
+          const agendamentoData = a.data;
+          const agendamentoHora = a.hora;
+
+          const ehFuturo =
+            agendamentoData > hoje ||
+            (agendamentoData === hoje && agendamentoHora > horaAtual);
+
+          const estaNoIntervalo =
+            agendamentoData <= dataLimite &&
             a.status !== 'cancelado' &&
-            a.status !== 'concluido' &&
-            (a.data > hoje || (a.data === hoje && a.hora > horaAtual))
-        );
+            a.status !== 'concluido';
+
+          return ehFuturo && estaNoIntervalo;
+        });
 
         const concluidos = agendamentos.filter((a) => a.status === 'concluido');
-
-        const proximoAgendamento = proximos
-          .sort((a, b) => {
-            const dataA = new Date(`${a.data}T${a.hora}`);
-            const dataB = new Date(`${b.data}T${b.hora}`);
-            return dataA.getTime() - dataB.getTime();
-          })[0];
 
         setStats({
           total: agendamentos.length,
           proximos: proximos.length,
           concluidos: concluidos.length,
-          proximoAgendamento: proximoAgendamento
-            ? {
-                data: proximoAgendamento.data,
-                hora: proximoAgendamento.hora,
-                barbeiro: proximoAgendamento.painel_barbeiros.nome,
-                servico: proximoAgendamento.painel_servicos.nome,
-              }
-            : undefined,
+          proximosAgendamentos: proximos
+            .sort((a, b) => {
+              const dataA = new Date(`${a.data}T${a.hora}`);
+              const dataB = new Date(`${b.data}T${b.hora}`);
+              return dataA.getTime() - dataB.getTime();
+            })
+            .map((ag) => ({
+              data: ag.data,
+              hora: ag.hora,
+              barbeiro: ag.painel_barbeiros.nome,
+              servico: ag.painel_servicos.nome,
+            })),
         });
       }
     } catch (error) {
@@ -147,14 +158,14 @@ export default function PainelClienteDashboard() {
               icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
             },
             {
-              label: 'Próximos Agendamentos',
+              label: 'Próximos 30 dias',
               value: stats.proximos,
               icon: <Clock className="h-5 w-5 text-blue-400" />,
             },
             {
-              label: 'Atendimentos Concluídos',
+              label: 'Concluídos',
               value: stats.concluidos,
-              icon: <CheckCircle className="h-5 w-5 text-green-400" />,
+              icon: <CheckCircle className="h-5 w-5 text-green-500" />,
             },
           ].map((stat, i) => (
             <motion.div
@@ -175,37 +186,44 @@ export default function PainelClienteDashboard() {
           ))}
         </div>
 
-        {stats.proximoAgendamento && (
+        {stats.proximosAgendamentos?.length > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
+            className="space-y-4"
           >
-            <Card className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-urbana-gold text-lg">
-                  Próximo Agendamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-gray-300">
-                <div className="flex gap-2 items-center">
-                  <Calendar className="h-4 w-4 text-urbana-gold" />
-                  <span className="text-white">
-                    {new Date(stats.proximoAgendamento.data).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Clock className="h-4 w-4 text-urbana-gold" />
-                  <span className="text-white">{stats.proximoAgendamento.hora}</span>
-                </div>
-                <p>
-                  <strong>Barbeiro:</strong> {stats.proximoAgendamento.barbeiro}
-                </p>
-                <p>
-                  <strong>Serviço:</strong> {stats.proximoAgendamento.servico}
-                </p>
-              </CardContent>
-            </Card>
+            {stats.proximosAgendamentos.map((agendamento, idx) => (
+              <Card
+                key={idx}
+                className="bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 rounded-xl shadow-md hover:shadow-lg transition-shadow"
+              >
+                <CardHeader className="flex items-center gap-3">
+                  <Scissors className="text-urbana-gold w-5 h-5" />
+                  <CardTitle className="text-urbana-gold text-base">
+                    Agendamento #{idx + 1}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1 text-sm text-gray-300">
+                  <div className="flex gap-2 items-center">
+                    <Calendar className="h-4 w-4 text-yellow-400" />
+                    <span className="text-white">
+                      {new Date(agendamento.data).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Clock className="h-4 w-4 text-blue-400" />
+                    <span className="text-white">{agendamento.hora}</span>
+                  </div>
+                  <p>
+                    <strong className="text-white">Barbeiro:</strong> {agendamento.barbeiro}
+                  </p>
+                  <p>
+                    <strong className="text-white">Serviço:</strong> {agendamento.servico}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
           </motion.div>
         )}
 
@@ -214,37 +232,4 @@ export default function PainelClienteDashboard() {
             {
               label: 'Novo Agendamento',
               icon: <Calendar className="h-6 w-6 text-urbana-gold" />,
-              action: () => navigate('/painel-cliente/agendar'),
-            },
-            {
-              label: 'Meus Agendamentos',
-              icon: <Clock className="h-6 w-6 text-blue-400" />,
-              action: () => navigate('/painel-cliente/agendamentos'),
-            },
-            {
-              label: 'Meu Perfil',
-              icon: <Settings className="h-6 w-6 text-gray-300" />,
-              action: () => navigate('/painel-cliente/perfil'),
-            },
-            {
-              label: 'Sair',
-              icon: <LogOut className="h-6 w-6 text-red-500" />,
-              action: handleLogout,
-            },
-          ].map((item, index) => (
-            <motion.button
-              key={index}
-              onClick={item.action}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-gray-800 hover:bg-urbana-gold/10 transition-all border border-gray-700 rounded-xl p-5 flex flex-col items-center justify-center text-gray-200 space-y-2"
-            >
-              {item.icon}
-              <span className="text-sm font-medium">{item.label}</span>
-            </motion.button>
-          ))}
-        </div>
-      </motion.div>
-    </DashboardContainer>
-  );
-}
+              action:
