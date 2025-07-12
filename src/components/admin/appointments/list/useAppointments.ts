@@ -240,8 +240,8 @@ export const useAppointments = () => {
         
         // Atualizar agendamento do painel do cliente
         const painelStatus = newStatus === 'cancelled' ? 'cancelado' : 
-                           newStatus === 'confirmed' ? 'confirmado' : 
-                           newStatus === 'completed' ? 'concluido' : 'pendente';
+                            newStatus === 'confirmed' ? 'confirmado' : 
+                            newStatus === 'completed' ? 'concluido' : 'confirmado';
 
         const { error } = await supabase
           .from('painel_agendamentos')

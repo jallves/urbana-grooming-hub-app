@@ -61,13 +61,12 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
 }) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'pendente': { variant: 'secondary' as const, label: 'Pendente' },
       'confirmado': { variant: 'default' as const, label: 'Confirmado' },
       'concluido': { variant: 'outline' as const, label: 'Concluído' },
       'cancelado': { variant: 'destructive' as const, label: 'Cancelado' },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pendente;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.confirmado;
     return <Badge variant={config.variant} className="text-[10px] sm:text-xs">{config.label}</Badge>;
   };
 

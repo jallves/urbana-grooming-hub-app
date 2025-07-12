@@ -35,7 +35,6 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos os Status</SelectItem>
-          <SelectItem value="pendente">Pendente</SelectItem>
           <SelectItem value="confirmado">Confirmado</SelectItem>
           <SelectItem value="concluido">Concluído</SelectItem>
           <SelectItem value="cancelado">Cancelado</SelectItem>

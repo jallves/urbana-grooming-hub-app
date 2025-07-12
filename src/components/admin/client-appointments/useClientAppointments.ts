@@ -101,8 +101,8 @@ export const useClientAppointments = () => {
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
       const painelStatus = newStatus === 'cancelled' ? 'cancelado' : 
-                         newStatus === 'confirmed' ? 'confirmado' : 
-                         newStatus === 'completed' ? 'concluido' : 'pendente';
+                          newStatus === 'confirmed' ? 'confirmado' : 
+                          newStatus === 'completed' ? 'concluido' : 'confirmado';
 
       const { error } = await supabase
         .from('painel_agendamentos')
