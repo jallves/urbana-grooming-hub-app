@@ -815,13 +815,6 @@ export type Database = {
             referencedRelation: "class_types"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "classes_instructor_id_fkey"
-            columns: ["instructor_id"]
-            isOneToOne: false
-            referencedRelation: "instructors"
-            referencedColumns: ["id"]
-          },
         ]
       }
       client_reviews: {
@@ -1440,50 +1433,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      instructors: {
-        Row: {
-          active: boolean | null
-          availability: Json | null
-          bio: string | null
-          certifications: string[] | null
-          created_at: string
-          id: string
-          profile_id: string
-          specialties: string[] | null
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean | null
-          availability?: Json | null
-          bio?: string | null
-          certifications?: string[] | null
-          created_at?: string
-          id?: string
-          profile_id: string
-          specialties?: string[] | null
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean | null
-          availability?: Json | null
-          bio?: string | null
-          certifications?: string[] | null
-          created_at?: string
-          id?: string
-          profile_id?: string
-          specialties?: string[] | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "instructors_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       job_roles: {
         Row: {

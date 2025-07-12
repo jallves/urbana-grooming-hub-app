@@ -48,7 +48,7 @@ export const useClientAppointmentSubmit = ({
         staff_id: data.staff_id,
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
-        status: 'scheduled',
+        status: 'confirmed',
         notes: data.notes || null,
       };
       

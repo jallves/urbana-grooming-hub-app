@@ -33,7 +33,6 @@ interface PainelAgendamento {
 const statusLabels = {
   todos: 'Todos',
   confirmado: 'Confirmado',
-  agendado: 'Agendado',
   concluido: 'Concluído',
   cancelado: 'Cancelado',
 };
@@ -41,7 +40,6 @@ const statusLabels = {
 const statusClasses = {
   todos: 'bg-gray-800 text-gray-300 hover:bg-gray-700',
   confirmado: 'bg-blue-400/10 text-blue-400 hover:bg-blue-400/20',
-  agendado: 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20',
   concluido: 'bg-green-400/10 text-green-400 hover:bg-green-400/20',
   cancelado: 'bg-red-400/10 text-red-400 hover:bg-red-400/20',
 };

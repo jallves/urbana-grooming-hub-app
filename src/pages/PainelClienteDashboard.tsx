@@ -141,39 +141,42 @@ export default function PainelClienteDashboard() {
 
         {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              label: 'Total de Agendamentos',
-              value: stats.total,
-              icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
-            },
-            {
-              label: 'Próximos 30 Dias',
-              value: stats.proximos,
-              icon: <Clock className="h-5 w-5 text-blue-400" />,
-            },
-            {
-              label: 'Atendimentos Concluídos',
-              value: stats.concluidos,
-              icon: <CheckCircle className="h-5 w-5 text-green-400" />,
-            },
-          ].map((stat, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.02 }}
-              className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm"
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-1 px-5 pt-5">
-                <CardTitle className="text-sm font-medium text-gray-300">
-                  {stat.label}
-                </CardTitle>
-                {stat.icon}
-              </CardHeader>
-              <CardContent className="px-5 pb-5">
-                <div className="text-3xl font-bold text-white">{stat.value}</div>
-              </CardContent>
-            </motion.div>
-          ))}
+            {[
+              {
+                label: 'Total de Agendamentos',
+                value: stats.total,
+                icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
+                bgColor: 'bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border-amber-500/20',
+              },
+              {
+                label: 'Próximos 30 Dias',
+                value: stats.proximos,
+                icon: <Clock className="h-5 w-5 text-blue-400" />,
+                bgColor: 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-blue-500/20',
+              },
+              {
+                label: 'Atendimentos Concluídos',
+                value: stats.concluidos,
+                icon: <CheckCircle className="h-5 w-5 text-green-400" />,
+                bgColor: 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20',
+              },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ scale: 1.02 }}
+                className={`${stat.bgColor} rounded-xl shadow-sm border`}
+              >
+                <CardHeader className="flex flex-row items-center justify-between pb-1 px-5 pt-5">
+                  <CardTitle className="text-sm font-medium text-gray-300">
+                    {stat.label}
+                  </CardTitle>
+                  {stat.icon}
+                </CardHeader>
+                <CardContent className="px-5 pb-5">
+                  <div className="text-3xl font-bold text-white">{stat.value}</div>
+                </CardContent>
+              </motion.div>
+            ))}
         </div>
 
         {/* Lista dos próximos agendamentos */}
