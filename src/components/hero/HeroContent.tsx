@@ -15,7 +15,7 @@ const HeroContent: React.FC<HeroContentProps> = ({ slide, shopName }) => {
   const displayTitle = slide?.title || shopName || 'Barbearia Premium';
   const displaySubtitle = slide?.subtitle || 'Tradição e estilo em cada corte';
   const displayButtonText = slide?.button_text || 'Agendar Agora';
-  const buttonLink = slide?.button_link || '/cliente/login';
+  const buttonLink = slide?.button_link || '/painel-cliente/login';
 
   return (
     <motion.div
@@ -51,7 +51,7 @@ const HeroContent: React.FC<HeroContentProps> = ({ slide, shopName }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.8 }}
       >
-        <Link to={buttonLink}>
+        <Link to="/painel-cliente/login">
           <Button 
             size="lg" 
             className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold px-8 py-4 text-lg rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-urbana-gold hover:border-white"

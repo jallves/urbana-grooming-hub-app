@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -48,9 +49,33 @@ export default function PainelClienteCadastro() {
     setFormData(prev => ({ ...prev, whatsapp: valorFormatado }));
   };
 
+  const validarCamposObrigatorios = () => {
+    if (!formData.nome.trim()) {
+      setErro('Nome é obrigatório');
+      return false;
+    }
+    if (!formData.email.trim()) {
+      setErro('E-mail é obrigatório');
+      return false;
+    }
+    if (!formData.whatsapp.trim()) {
+      setErro('WhatsApp é obrigatório');
+      return false;
+    }
+    if (!formData.senha.trim()) {
+      setErro('Senha é obrigatória');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
+
+    if (!validarCamposObrigatorios()) {
+      return;
+    }
 
     if (!senhaValida) {
       setErro('Senha não atende aos critérios de segurança');
@@ -65,8 +90,8 @@ export default function PainelClienteCadastro() {
     setLoading(true);
 
     const { error } = await cadastrar({
-      nome: formData.nome,
-      email: formData.email,
+      nome: formData.nome.trim(),
+      email: formData.email.trim(),
       whatsapp: formData.whatsapp,
       senha: formData.senha
     });
@@ -101,7 +126,7 @@ export default function PainelClienteCadastro() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="nome" className="text-white">Nome Completo</Label>
+              <Label htmlFor="nome" className="text-white">Nome Completo *</Label>
               <Input
                 id="nome"
                 type="text"
@@ -114,7 +139,7 @@ export default function PainelClienteCadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">E-mail</Label>
+              <Label htmlFor="email" className="text-white">E-mail *</Label>
               <Input
                 id="email"
                 type="email"
@@ -127,7 +152,7 @@ export default function PainelClienteCadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="whatsapp" className="text-white">WhatsApp</Label>
+              <Label htmlFor="whatsapp" className="text-white">WhatsApp *</Label>
               <Input
                 id="whatsapp"
                 type="tel"
@@ -141,7 +166,7 @@ export default function PainelClienteCadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="senha" className="text-white">Senha</Label>
+              <Label htmlFor="senha" className="text-white">Senha *</Label>
               <div className="relative">
                 <Input
                   id="senha"
@@ -186,7 +211,7 @@ export default function PainelClienteCadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmarSenha" className="text-white">Confirmar Senha</Label>
+              <Label htmlFor="confirmarSenha" className="text-white">Confirmar Senha *</Label>
               <div className="relative">
                 <Input
                   id="confirmarSenha"
