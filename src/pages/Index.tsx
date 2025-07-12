@@ -1,4 +1,3 @@
-
 import { User } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
@@ -9,7 +8,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-yellow">
+    <div className="w-full min-h-screen bg-urbana-black overflow-x-hidden">
       <Navbar />
       <Hero />
       <Services />
@@ -21,3 +20,4 @@ const Index = () => {
 };
 
 export default Index;
+
