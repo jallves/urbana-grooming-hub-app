@@ -386,11 +386,17 @@ export default function PainelClienteAgendar() {
                       />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      {horariosDisponiveis.map((hora) => (
-                        <SelectItem key={hora} value={hora} className="text-white">
-                          {hora}
-                        </SelectItem>
-                      ))}
+                      {horariosDisponiveis.length > 0 ? (
+                        horariosDisponiveis.map((hora) => (
+                          <SelectItem key={hora} value={hora} className="text-white">
+                            {hora}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-2 text-gray-500 text-sm text-center">
+                          {!formData.data ? 'Selecione uma data primeiro' : 'Nenhum horário disponível'}
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
