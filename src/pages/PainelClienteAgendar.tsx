@@ -248,6 +248,8 @@ export default function PainelClienteAgendar() {
     );
   }
 
+  const horariosDisponiveis = gerarHorariosDisponiveis();
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
       <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-blue-600/5 to-green-600/5" />
@@ -373,20 +375,22 @@ export default function PainelClienteAgendar() {
                     disabled={!formData.data}
                   >
                     <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
-                      <SelectValue placeholder="Selecione um horário" />
+                      <SelectValue 
+                        placeholder={
+                          !formData.data 
+                            ? "Selecione uma data primeiro" 
+                            : horariosDisponiveis.length === 0 
+                              ? "Nenhum horário disponível" 
+                              : "Selecione um horário"
+                        } 
+                      />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      {gerarHorariosDisponiveis().length > 0 ? (
-                        gerarHorariosDisponiveis().map((hora) => (
-                          <SelectItem key={hora} value={hora} className="text-white">
-                            {hora}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="" disabled className="text-gray-500">
-                          {formData.data ? 'Nenhum horário disponível' : 'Selecione uma data primeiro'}
+                      {horariosDisponiveis.map((hora) => (
+                        <SelectItem key={hora} value={hora} className="text-white">
+                          {hora}
                         </SelectItem>
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
