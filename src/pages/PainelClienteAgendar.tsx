@@ -83,21 +83,53 @@ export default function PainelClienteAgendar() {
     }
   };
 
+  // Gerar horários disponíveis com base no horário atual e data selecionada
   const gerarHorariosDisponiveis = () => {
+    if (!formData.data) return [];
+    
+    const selectedDate = new Date(formData.data);
+    const now = new Date();
+    const isToday = selectedDate.getDate() === now.getDate() &&
+                   selectedDate.getMonth() === now.getMonth() &&
+                   selectedDate.getFullYear() === now.getFullYear();
+
     const horarios = [];
-    for (let hora = 8; hora <= 18; hora++) {
+    
+    // Horário de funcionamento: 09:00 às 20:00
+    for (let hora = 9; hora < 20; hora++) {
       for (let minuto = 0; minuto < 60; minuto += 30) {
         const horaFormatada = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
+        
+        // Se for hoje, só mostrar horários futuros
+        if (isToday) {
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          
+          if (hora < currentHour || (hora === currentHour && minuto <= currentMinute)) {
+            continue;
+          }
+        }
+        
         horarios.push(horaFormatada);
       }
     }
+    
     return horarios;
   };
 
+  // Gerar datas disponíveis com base nas regras de negócio
   const gerarDatasDisponiveis = () => {
     const datas = [];
-    for (let i = 1; i <= 30; i++) {
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Se já passou das 20h, começar de amanhã
+    const startDay = currentHour >= 20 ? 1 : 0;
+    
+    for (let i = startDay; i <= 30; i++) {
       const data = addDays(new Date(), i);
+      
+      // Não incluir domingos (0 = domingo)
       if (data.getDay() !== 0) {
         datas.push({
           value: format(data, 'yyyy-MM-dd'),
@@ -105,6 +137,7 @@ export default function PainelClienteAgendar() {
         });
       }
     }
+    
     return datas;
   };
 
@@ -310,7 +343,12 @@ export default function PainelClienteAgendar() {
                   <Label htmlFor="data" className="text-gray-300 font-medium">
                     Data *
                   </Label>
-                  <Select value={formData.data} onValueChange={(value) => setFormData(prev => ({ ...prev, data: value }))}>
+                  <Select 
+                    value={formData.data} 
+                    onValueChange={(value) => {
+                      setFormData(prev => ({ ...prev, data: value, hora: '' })); // Limpar hora ao mudar data
+                    }}
+                  >
                     <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
                       <SelectValue placeholder="Selecione uma data" />
                     </SelectTrigger>
@@ -329,16 +367,26 @@ export default function PainelClienteAgendar() {
                   <Label htmlFor="hora" className="text-gray-300 font-medium">
                     Horário *
                   </Label>
-                  <Select value={formData.hora} onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}>
+                  <Select 
+                    value={formData.hora} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}
+                    disabled={!formData.data}
+                  >
                     <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
                       <SelectValue placeholder="Selecione um horário" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      {gerarHorariosDisponiveis().map((hora) => (
-                        <SelectItem key={hora} value={hora} className="text-white">
-                          {hora}
+                      {gerarHorariosDisponiveis().length > 0 ? (
+                        gerarHorariosDisponiveis().map((hora) => (
+                          <SelectItem key={hora} value={hora} className="text-white">
+                            {hora}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled className="text-gray-500">
+                          {formData.data ? 'Nenhum horário disponível' : 'Selecione uma data primeiro'}
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

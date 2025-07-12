@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { format } from 'date-fns';
+import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -15,32 +16,71 @@ interface ClientDateTimePickerProps {
 }
 
 const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => {
-  // Generate time slots in 30-minute intervals from 9:00 to 20:00
-  const generateTimeSlots = () => {
+  // Gerar horários disponíveis com base no horário atual
+  const generateTimeSlots = (selectedDate?: Date) => {
     const slots = [];
+    const now = new Date();
+    const isToday = selectedDate && 
+      selectedDate.getDate() === now.getDate() &&
+      selectedDate.getMonth() === now.getMonth() &&
+      selectedDate.getFullYear() === now.getFullYear();
+
+    // Horário de funcionamento: 09:00 às 20:00
     for (let hour = 9; hour < 20; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const formattedHour = hour.toString().padStart(2, '0');
-        const formattedMinute = minute.toString().padStart(2, '0');
-        slots.push(`${formattedHour}:${formattedMinute}`);
+        const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        // Se for hoje, só mostrar horários futuros
+        if (isToday) {
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          
+          if (hour < currentHour || (hour === currentHour && minute <= currentMinute)) {
+            continue;
+          }
+        }
+        
+        slots.push(slotTime);
       }
     }
+    
     return slots;
   };
 
-  const timeSlots = generateTimeSlots();
-
-  // Function to disable dates (Sunday = 0, only allow Monday to Saturday)
-  const isDateDisabled = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  // Função para determinar data mínima disponível
+  const getMinimumDate = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
     
+    // Se já passou das 20h, o próximo dia disponível é amanhã
+    if (currentHour >= 20) {
+      return addDays(startOfDay(now), 1);
+    }
+    
+    // Caso contrário, pode agendar ainda hoje
+    return startOfDay(now);
+  };
+
+  // Função para verificar se uma data deve ser desabilitada
+  const isDateDisabled = (date: Date) => {
+    const today = getMinimumDate();
+    const maxDate = addDays(today, 30); // Limite de 30 dias
+    
+    // Desabilitar domingos (0 = domingo)
     const dayOfWeek = date.getDay();
-    const isPastDate = date < today;
     const isSunday = dayOfWeek === 0;
     
-    return isPastDate || isSunday;
+    // Desabilitar datas anteriores ao mínimo permitido
+    const isPastDate = isBefore(date, today);
+    
+    // Desabilitar datas muito distantes
+    const isTooFarAhead = isAfter(date, maxDate);
+    
+    return isPastDate || isSunday || isTooFarAhead;
   };
+
+  const selectedDate = form.watch('date');
+  const timeSlots = generateTimeSlots(selectedDate);
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -73,10 +113,15 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => 
                 <Calendar
                   mode="single"
                   selected={field.value}
-                  onSelect={field.onChange}
+                  onSelect={(date) => {
+                    field.onChange(date);
+                    // Limpar horário selecionado quando mudar a data
+                    form.setValue('time', '');
+                  }}
                   disabled={isDateDisabled}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
+                  fromDate={getMinimumDate()}
                 />
               </PopoverContent>
             </Popover>
@@ -96,7 +141,8 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => 
             <FormLabel className="text-black">Hora</FormLabel>
             <Select
               onValueChange={field.onChange}
-              defaultValue={field.value}
+              value={field.value}
+              disabled={!selectedDate}
             >
               <FormControl>
                 <SelectTrigger className="text-black">
@@ -104,11 +150,17 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => 
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {timeSlots.map((time) => (
-                  <SelectItem key={time} value={time} className="text-black">
-                    {time}
+                {timeSlots.length > 0 ? (
+                  timeSlots.map((time) => (
+                    <SelectItem key={time} value={time} className="text-black">
+                      {time}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="" disabled className="text-gray-500">
+                    {selectedDate ? 'Nenhum horário disponível' : 'Selecione uma data primeiro'}
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
             <FormMessage />
