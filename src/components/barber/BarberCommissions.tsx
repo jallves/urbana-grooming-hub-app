@@ -13,11 +13,13 @@ import { useAuth } from '@/contexts/AuthContext';
 interface Commission {
   id: string;
   amount: number;
-  commission_rate: number;
+  commission_rate?: number;
   status: string;
   created_at: string;
-  payment_date: string | null;
+  payment_date?: string | null;
+  paid_at?: string | null;
   appointment_id: string;
+  source: 'barber_commissions' | 'new_commissions';
 }
 
 interface CommissionWithDetails extends Commission {
@@ -37,62 +39,106 @@ const BarberCommissions: React.FC = () => {
   const [totalPending, setTotalPending] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
   const [barberId, setBarberId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchBarberId = async () => {
+    const fetchBarberIds = async () => {
       if (!user?.email) return;
 
       try {
-        // Buscar o ID do staff (barber) baseado no email do usuário
-        const { data } = await supabase
+        // Buscar barbeiro na tabela painel_barbeiros
+        const { data: painelBarber } = await supabase
+          .from('painel_barbeiros')
+          .select('id, staff_id')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        // Buscar barbeiro na tabela barbers
+        const { data: barber } = await supabase
+          .from('barbers')
+          .select('id')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        // Buscar staff
+        const { data: staff } = await supabase
           .from('staff')
           .select('id')
           .eq('email', user.email)
           .eq('role', 'barber')
           .maybeSingle();
 
-        if (data?.id) {
-          setBarberId(data.id);
-        }
+        if (painelBarber?.id) setBarberId(painelBarber.id);
+        if (painelBarber?.staff_id) setStaffId(painelBarber.staff_id);
+        if (staff?.id && !staffId) setStaffId(staff.id);
+
+        console.log('Barber IDs found:', { 
+          barberId: painelBarber?.id || barber?.id, 
+          staffId: painelBarber?.staff_id || staff?.id 
+        });
       } catch (error) {
-        console.error('Error fetching barber ID:', error);
+        console.error('Error fetching barber IDs:', error);
       }
     };
 
-    fetchBarberId();
+    fetchBarberIds();
   }, [user?.email]);
 
   useEffect(() => {
-    if (barberId) {
+    if (barberId || staffId) {
       fetchCommissions();
     }
-  }, [barberId]);
+  }, [barberId, staffId]);
 
   const fetchCommissions = async () => {
-    if (!barberId) return;
-    
     try {
-      // Buscar comissões do barbeiro
-      const { data: commissionsData, error: commissionsError } = await supabase
-        .from('barber_commissions')
-        .select('*')
-        .eq('barber_id', barberId)
-        .order('created_at', { ascending: false });
+      console.log('Fetching commissions for barberId:', barberId, 'staffId:', staffId);
+      
+      const allCommissions: CommissionWithDetails[] = [];
 
-      if (commissionsError) {
-        console.error('Error fetching commissions:', commissionsError);
-        toast({
-          title: "Erro ao carregar comissões",
-          description: "Não foi possível carregar suas comissões.",
-          variant: "destructive",
-        });
-        return;
+      // Buscar comissões da tabela barber_commissions (se tiver staffId)
+      if (staffId) {
+        const { data: barberCommissions, error: barberError } = await supabase
+          .from('barber_commissions')
+          .select('*')
+          .eq('barber_id', staffId)
+          .order('created_at', { ascending: false });
+
+        if (barberError) {
+          console.error('Error fetching barber_commissions:', barberError);
+        } else if (barberCommissions) {
+          const formattedBarberCommissions = barberCommissions.map(commission => ({
+            ...commission,
+            source: 'barber_commissions' as const,
+            paid_at: commission.payment_date
+          }));
+          allCommissions.push(...formattedBarberCommissions);
+        }
       }
 
-      // Para cada comissão, buscar detalhes do agendamento
+      // Buscar comissões da tabela new_commissions (se tiver barberId)
+      if (barberId) {
+        const { data: newCommissions, error: newError } = await supabase
+          .from('new_commissions')
+          .select('*')
+          .eq('barber_id', barberId)
+          .order('created_at', { ascending: false });
+
+        if (newError) {
+          console.error('Error fetching new_commissions:', newError);
+        } else if (newCommissions) {
+          const formattedNewCommissions = newCommissions.map(commission => ({
+            ...commission,
+            source: 'new_commissions' as const
+          }));
+          allCommissions.push(...formattedNewCommissions);
+        }
+      }
+
+      // Buscar detalhes dos agendamentos para cada comissão
       const commissionsWithDetails = await Promise.all(
-        (commissionsData || []).map(async (commission) => {
+        allCommissions.map(async (commission) => {
           try {
             const { data: appointmentData } = await supabase
               .from('painel_agendamentos')
@@ -126,6 +172,11 @@ const BarberCommissions: React.FC = () => {
         })
       );
 
+      // Ordenar por data de criação (mais recente primeiro)
+      commissionsWithDetails.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
       setCommissions(commissionsWithDetails);
 
       // Calcular totais
@@ -139,6 +190,8 @@ const BarberCommissions: React.FC = () => {
       setTotalPending(pending);
       setTotalPaid(paid);
 
+      console.log('Commissions loaded:', commissionsWithDetails.length);
+
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -150,6 +203,57 @@ const BarberCommissions: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Real-time subscription para atualizações
+  useEffect(() => {
+    const channels: any[] = [];
+
+    if (staffId) {
+      const barberCommissionsChannel = supabase
+        .channel('barber_commissions_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'barber_commissions',
+            filter: `barber_id=eq.${staffId}`
+          },
+          () => {
+            console.log('Barber commissions updated');
+            fetchCommissions();
+          }
+        )
+        .subscribe();
+      
+      channels.push(barberCommissionsChannel);
+    }
+
+    if (barberId) {
+      const newCommissionsChannel = supabase
+        .channel('new_commissions_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'new_commissions',
+            filter: `barber_id=eq.${barberId}`
+          },
+          () => {
+            console.log('New commissions updated');
+            fetchCommissions();
+          }
+        )
+        .subscribe();
+      
+      channels.push(newCommissionsChannel);
+    }
+
+    return () => {
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
+  }, [barberId, staffId]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -238,7 +342,7 @@ const BarberCommissions: React.FC = () => {
               {/* Mobile View */}
               <div className="lg:hidden space-y-4">
                 {commissions.map((commission) => (
-                  <Card key={commission.id} className="bg-gray-700/50 border-gray-600/50">
+                  <Card key={`${commission.source}-${commission.id}`} className="bg-gray-700/50 border-gray-600/50">
                     <CardContent className="p-4">
                       <div className="space-y-3">
                         <div className="flex justify-between items-start">
@@ -248,6 +352,9 @@ const BarberCommissions: React.FC = () => {
                             </h4>
                             <p className="text-sm text-gray-400">
                               {commission.appointment_details?.service_name || 'Serviço'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Origem: {commission.source === 'barber_commissions' ? 'Comissões' : 'Novo Sistema'}
                             </p>
                           </div>
                           {getStatusBadge(commission.status)}
@@ -269,10 +376,12 @@ const BarberCommissions: React.FC = () => {
                               {commission.appointment_details?.appointment_time || '--:--'}
                             </p>
                           </div>
-                          <div>
-                            <p className="text-gray-400">Taxa</p>
-                            <p className="text-urbana-gold">{commission.commission_rate}%</p>
-                          </div>
+                          {commission.commission_rate && (
+                            <div>
+                              <p className="text-gray-400">Taxa</p>
+                              <p className="text-urbana-gold">{commission.commission_rate}%</p>
+                            </div>
+                          )}
                           <div>
                             <p className="text-gray-400">Valor Serviço</p>
                             <p className="text-white">
@@ -290,9 +399,9 @@ const BarberCommissions: React.FC = () => {
                           </div>
                         </div>
                         
-                        {commission.payment_date && (
+                        {(commission.payment_date || commission.paid_at) && (
                           <div className="text-xs text-gray-400">
-                            Pago em: {format(new Date(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })}
+                            Pago em: {format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })}
                           </div>
                         )}
                       </div>
@@ -314,11 +423,12 @@ const BarberCommissions: React.FC = () => {
                       <TableHead className="text-gray-300">Comissão</TableHead>
                       <TableHead className="text-gray-300">Status</TableHead>
                       <TableHead className="text-gray-300">Pagamento</TableHead>
+                      <TableHead className="text-gray-300">Origem</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {commissions.map((commission) => (
-                      <TableRow key={commission.id} className="border-gray-700/50">
+                      <TableRow key={`${commission.source}-${commission.id}`} className="border-gray-700/50">
                         <TableCell className="text-gray-300">
                           {commission.appointment_details?.appointment_date 
                             ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
@@ -335,7 +445,7 @@ const BarberCommissions: React.FC = () => {
                           R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell className="text-urbana-gold">
-                          {commission.commission_rate}%
+                          {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
                         </TableCell>
                         <TableCell className="font-bold text-urbana-gold">
                           R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -344,10 +454,13 @@ const BarberCommissions: React.FC = () => {
                           {getStatusBadge(commission.status)}
                         </TableCell>
                         <TableCell className="text-gray-300">
-                          {commission.payment_date 
-                            ? format(new Date(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })
+                          {(commission.payment_date || commission.paid_at)
+                            ? format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
                             : '-'
                           }
+                        </TableCell>
+                        <TableCell className="text-gray-400 text-xs">
+                          {commission.source === 'barber_commissions' ? 'Comissões' : 'Novo Sistema'}
                         </TableCell>
                       </TableRow>
                     ))}
