@@ -57,6 +57,7 @@ export const useBarberAppointments = () => {
   const [selectedAppointmentDate, setSelectedAppointmentDate] = useState<Date | null>(null);
 
   const [barberId, setBarberId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBarberId = async () => {
@@ -65,12 +66,14 @@ export const useBarberAppointments = () => {
       try {
         const { data } = await supabase
           .from('painel_barbeiros')
-          .select('id')
+          .select('id, staff_id')
           .eq('email', user.email)
           .maybeSingle();
 
         if (data?.id) {
           setBarberId(data.id);
+          setStaffId(data.staff_id);
+          console.log('Barber data found:', { barberId: data.id, staffId: data.staff_id });
         }
       } catch (error) {
         console.error('Error fetching barber ID:', error);
@@ -196,6 +199,15 @@ export const useBarberAppointments = () => {
   }, [appointments]);
 
   const handleCompleteAppointment = async (appointmentId: string) => {
+    if (!barberId || !staffId) {
+      toast({
+        title: "Erro",
+        description: "Dados do barbeiro não encontrados.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setUpdatingId(appointmentId);
       const appointment = appointments.find(a => a.id === appointmentId);
@@ -209,8 +221,9 @@ export const useBarberAppointments = () => {
       }
 
       console.log('Attempting to complete appointment:', appointmentId);
+      console.log('Barber ID:', barberId, 'Staff ID:', staffId);
       
-      // Primeiro atualizar o status do agendamento para concluído
+      // 1. Atualizar o status do agendamento para concluído
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ 
@@ -231,7 +244,51 @@ export const useBarberAppointments = () => {
 
       console.log('Appointment marked as completed successfully');
 
-      // Atualizar o estado local IMEDIATAMENTE para mover o agendamento para a aba correta
+      // 2. Criar a comissão IMEDIATAMENTE após marcar como concluído
+      const servicePrice = appointment.service?.price || 0;
+      
+      if (servicePrice > 0) {
+        // Buscar a taxa de comissão do staff
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('commission_rate')
+          .eq('id', staffId)
+          .maybeSingle();
+
+        const commissionRate = staffData?.commission_rate || 30; // Taxa padrão de 30%
+        const commissionAmount = servicePrice * (commissionRate / 100);
+
+        console.log('Creating commission:', {
+          appointmentId,
+          barberId: staffId,
+          amount: commissionAmount,
+          commissionRate,
+          servicePrice
+        });
+
+        const { error: commissionError } = await supabase
+          .from('barber_commissions')
+          .insert({
+            barber_id: staffId,
+            appointment_id: appointmentId,
+            amount: commissionAmount,
+            commission_rate: commissionRate,
+            status: 'pending'
+          });
+
+        if (commissionError) {
+          console.error('Erro ao criar comissão:', commissionError);
+          toast({
+            title: "⚠️ Aviso",
+            description: "Agendamento concluído, mas houve erro ao registrar a comissão.",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Commission created successfully:', commissionAmount);
+        }
+      }
+
+      // 3. Atualizar o estado local IMEDIATAMENTE
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
@@ -239,51 +296,6 @@ export const useBarberAppointments = () => {
             : appt
         )
       );
-
-      // Buscar dados do barbeiro (staff) para obter a comissão
-      const { data: barberData } = await supabase
-        .from('painel_barbeiros')
-        .select('staff_id')
-        .eq('id', barberId)
-        .maybeSingle();
-
-      if (barberData?.staff_id) {
-        // Buscar taxa de comissão do staff
-        const { data: staffData } = await supabase
-          .from('staff')
-          .select('commission_rate')
-          .eq('id', barberData.staff_id)
-          .maybeSingle();
-
-        const servicePrice = appointment.service?.price || 0;
-        const commissionRate = staffData?.commission_rate || 30; // Taxa padrão de 30%
-        const commissionAmount = servicePrice * (commissionRate / 100);
-
-        // Criar entrada de comissão na tabela barber_commissions
-        if (servicePrice > 0) {
-          const { error: commissionError } = await supabase
-            .from('barber_commissions')
-            .insert({
-              barber_id: barberData.staff_id,
-              appointment_id: appointmentId,
-              amount: commissionAmount,
-              commission_rate: commissionRate,
-              status: 'pending'
-            });
-
-          if (commissionError) {
-            console.error('Erro ao criar comissão:', commissionError);
-            // Não vamos bloquear o processo se falhar ao criar a comissão
-            toast({
-              title: "⚠️ Aviso",
-              description: "Agendamento concluído, mas houve erro ao registrar a comissão.",
-              variant: "destructive",
-            });
-          } else {
-            console.log('Commission created successfully:', commissionAmount);
-          }
-        }
-      }
 
       const appointmentDate = new Date(appointment.start_time);
 
