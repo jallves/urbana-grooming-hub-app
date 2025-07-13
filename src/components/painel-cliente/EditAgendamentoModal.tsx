@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +15,6 @@ interface Agendamento {
   data: string;
   hora: string;
   status: string;
-  observacoes?: string;
   painel_barbeiros: {
     nome: string;
   };
@@ -56,8 +54,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     data: '',
     hora: '',
     barbeiro_id: '',
-    servico_id: '',
-    observacoes: ''
+    servico_id: ''
   });
 
   useEffect(() => {
@@ -66,8 +63,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         data: agendamento.data,
         hora: agendamento.hora,
         barbeiro_id: '',
-        servico_id: '',
-        observacoes: agendamento.observacoes || ''
+        servico_id: ''
       });
     }
   }, [agendamento]);
@@ -94,22 +90,30 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     setLoading(true);
 
     try {
+      const updateData: any = {
+        data: formData.data,
+        hora: formData.hora
+      };
+
+      // Só incluir barbeiro_id e servico_id se foram selecionados
+      if (formData.barbeiro_id) {
+        updateData.barbeiro_id = formData.barbeiro_id;
+      }
+      if (formData.servico_id) {
+        updateData.servico_id = formData.servico_id;
+      }
+
       const { error } = await supabase
         .from('painel_agendamentos')
-        .update({
-          data: formData.data,
-          hora: formData.hora,
-          barbeiro_id: formData.barbeiro_id || undefined,
-          servico_id: formData.servico_id || undefined,
-          observacoes: formData.observacoes || null
-        })
+        .update(updateData)
         .eq('id', agendamento?.id);
 
       if (error) throw error;
 
       toast({
-        title: "Agendamento atualizado!",
-        description: "Suas alterações foram salvas com sucesso.",
+        title: "✅ Alterado com sucesso!",
+        description: "Seu agendamento foi atualizado com sucesso.",
+        duration: 4000,
       });
 
       onUpdate();
@@ -171,13 +175,13 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
           </div>
 
           <div className="space-y-2">
-            <Label className="text-white">Barbeiro</Label>
+            <Label className="text-white">Barbeiro (Opcional)</Label>
             <Select
               value={formData.barbeiro_id}
               onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}
             >
               <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder="Selecione um barbeiro" />
+                <SelectValue placeholder="Manter barbeiro atual ou selecionar novo" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
                 {barbeiros.map((barbeiro) => (
@@ -190,13 +194,13 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
           </div>
 
           <div className="space-y-2">
-            <Label className="text-white">Serviço</Label>
+            <Label className="text-white">Serviço (Opcional)</Label>
             <Select
               value={formData.servico_id}
               onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}
             >
               <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder="Selecione um serviço" />
+                <SelectValue placeholder="Manter serviço atual ou selecionar novo" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
                 {servicos.map((servico) => (
@@ -206,18 +210,6 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="observacoes" className="text-white">Observações</Label>
-            <Textarea
-              id="observacoes"
-              value={formData.observacoes}
-              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-              className="bg-slate-800 border-slate-600 text-white"
-              placeholder="Observações adicionais..."
-              rows={3}
-            />
           </div>
 
           <div className="flex gap-3 pt-4">

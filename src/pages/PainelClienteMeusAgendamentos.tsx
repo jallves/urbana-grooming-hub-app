@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,6 @@ interface Agendamento {
   data: string;
   hora: string;
   status: string;
-  observacoes?: string;
   created_at: string;
   painel_barbeiros: {
     nome: string;
@@ -228,7 +228,6 @@ export default function PainelClienteMeusAgendamentos() {
                   key={filtro.key}
                   onClick={() => setFiltroStatus(filtro.key)}
                   size="sm"
-                  // TODOS os botões com mesmo estilo gradiente
                   className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm bg-gradient-to-r ${filtro.color} text-white shadow-lg transition-all duration-300`}
                 >
                   {filtro.label}
@@ -337,7 +336,7 @@ export default function PainelClienteMeusAgendamentos() {
                               <Button
                                 size="sm"
                                 onClick={() => handleEditAgendamento(agendamento)}
-                                className="flex-1 rounded-xl px-4 py-2 text-sm bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transition-all duration-300"
+                                className="flex-1 rounded-xl px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transition-all duration-300"
                               >
                                 <Edit className="w-4 h-4 mr-1" />
                                 Editar
