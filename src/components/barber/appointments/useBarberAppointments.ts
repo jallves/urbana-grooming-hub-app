@@ -210,7 +210,7 @@ export const useBarberAppointments = () => {
 
       console.log('Attempting to complete appointment:', appointmentId);
       
-      // Atualizar status do agendamento para concluído na tabela painel_agendamentos
+      // Primeiro atualizar o status do agendamento para concluído
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ 
@@ -231,7 +231,7 @@ export const useBarberAppointments = () => {
 
       console.log('Appointment marked as completed successfully');
 
-      // Atualizar o estado local imediatamente
+      // Atualizar o estado local IMEDIATAMENTE para mover o agendamento para a aba correta
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
@@ -240,27 +240,48 @@ export const useBarberAppointments = () => {
         )
       );
 
-      // Criar entrada de comissão
-      const servicePrice = appointment.service?.price || 0;
-      const commissionRate = 30; // Taxa de comissão padrão de 30%
-      const commissionAmount = servicePrice * (commissionRate / 100);
+      // Buscar dados do barbeiro (staff) para obter a comissão
+      const { data: barberData } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', barberId)
+        .maybeSingle();
 
-      if (barberId && servicePrice > 0) {
-        const { error: commissionError } = await supabase
-          .from('barber_commissions')
-          .insert({
-            barber_id: barberId,
-            appointment_id: appointmentId,
-            amount: commissionAmount,
-            commission_rate: commissionRate,
-            status: 'pending'
-          });
+      if (barberData?.staff_id) {
+        // Buscar taxa de comissão do staff
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('commission_rate')
+          .eq('id', barberData.staff_id)
+          .maybeSingle();
 
-        if (commissionError) {
-          console.error('Erro ao criar comissão:', commissionError);
-          // Não vamos bloquear o processo se falhar ao criar a comissão
-        } else {
-          console.log('Commission created successfully:', commissionAmount);
+        const servicePrice = appointment.service?.price || 0;
+        const commissionRate = staffData?.commission_rate || 30; // Taxa padrão de 30%
+        const commissionAmount = servicePrice * (commissionRate / 100);
+
+        // Criar entrada de comissão na tabela barber_commissions
+        if (servicePrice > 0) {
+          const { error: commissionError } = await supabase
+            .from('barber_commissions')
+            .insert({
+              barber_id: barberData.staff_id,
+              appointment_id: appointmentId,
+              amount: commissionAmount,
+              commission_rate: commissionRate,
+              status: 'pending'
+            });
+
+          if (commissionError) {
+            console.error('Erro ao criar comissão:', commissionError);
+            // Não vamos bloquear o processo se falhar ao criar a comissão
+            toast({
+              title: "⚠️ Aviso",
+              description: "Agendamento concluído, mas houve erro ao registrar a comissão.",
+              variant: "destructive",
+            });
+          } else {
+            console.log('Commission created successfully:', commissionAmount);
+          }
         }
       }
 
@@ -268,14 +289,9 @@ export const useBarberAppointments = () => {
 
       toast({
         title: "✅ Agendamento Concluído!",
-        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.${servicePrice > 0 ? ` Comissão de R$ ${commissionAmount.toFixed(2)} adicionada.` : ''}`,
+        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído e movido para a aba "Concluídos".`,
         duration: 4000,
       });
-
-      // Recarregar a lista para garantir sincronização completa
-      setTimeout(() => {
-        fetchAppointments();
-      }, 500);
 
     } catch (error) {
       console.error('Erro ao marcar agendamento como concluído:', error);
@@ -327,10 +343,6 @@ export const useBarberAppointments = () => {
         duration: 4000,
       });
 
-      // Recarregar a lista para garantir sincronização completa
-      setTimeout(() => {
-        fetchAppointments();
-      }, 500);
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
       toast({
