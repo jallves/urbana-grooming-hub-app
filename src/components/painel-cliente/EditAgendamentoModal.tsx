@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, Save, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { format, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface Agendamento {
   id: string;
@@ -85,6 +86,64 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     if (data) setServicos(data);
   };
 
+  // Gerar horários disponíveis com base no horário atual e data selecionada
+  const gerarHorariosDisponiveis = () => {
+    if (!formData.data) return [];
+    
+    const selectedDate = new Date(formData.data);
+    const now = new Date();
+    const isToday = selectedDate.getDate() === now.getDate() &&
+                   selectedDate.getMonth() === now.getMonth() &&
+                   selectedDate.getFullYear() === now.getFullYear();
+
+    const horarios = [];
+    
+    // Horário de funcionamento: 09:00 às 20:00
+    for (let hora = 9; hora < 20; hora++) {
+      for (let minuto = 0; minuto < 60; minuto += 30) {
+        const horaFormatada = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
+        
+        // Se for hoje, só mostrar horários futuros
+        if (isToday) {
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          
+          if (hora < currentHour || (hora === currentHour && minuto <= currentMinute)) {
+            continue;
+          }
+        }
+        
+        horarios.push(horaFormatada);
+      }
+    }
+    
+    return horarios;
+  };
+
+  // Gerar datas disponíveis com base nas regras de negócio
+  const gerarDatasDisponiveis = () => {
+    const datas = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    // Se já passou das 20h, começar de amanhã
+    const startDay = currentHour >= 20 ? 1 : 0;
+    
+    for (let i = startDay; i <= 30; i++) {
+      const data = addDays(new Date(), i);
+      
+      // Não incluir domingos (0 = domingo)
+      if (data.getDay() !== 0) {
+        datas.push({
+          value: format(data, 'yyyy-MM-dd'),
+          label: format(data, "EEEE, dd 'de' MMMM", { locale: ptBR })
+        });
+      }
+    }
+    
+    return datas;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -132,6 +191,9 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
 
   if (!agendamento) return null;
 
+  const horariosDisponiveis = gerarHorariosDisponiveis();
+  const datasDisponiveis = gerarDatasDisponiveis();
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700 text-white">
@@ -144,33 +206,64 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="data" className="text-white flex items-center gap-2">
+              <Label className="text-white flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-purple-400" />
                 Data
               </Label>
-              <Input
-                id="data"
-                type="date"
-                value={formData.data}
-                onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                className="bg-slate-800 border-slate-600 text-white"
-                required
-              />
+              <Select 
+                value={formData.data} 
+                onValueChange={(value) => {
+                  setFormData(prev => ({ ...prev, data: value, hora: '' })); // Limpar hora ao mudar data
+                }}
+              >
+                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                  <SelectValue placeholder="Selecione uma data" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600">
+                  {datasDisponiveis.map((data) => (
+                    <SelectItem key={data.value} value={data.value} className="text-white">
+                      {data.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hora" className="text-white flex items-center gap-2">
+              <Label className="text-white flex items-center gap-2">
                 <Clock className="h-4 w-4 text-purple-400" />
                 Hora
               </Label>
-              <Input
-                id="hora"
-                type="time"
-                value={formData.hora}
-                onChange={(e) => setFormData(prev => ({ ...prev, hora: e.target.value }))}
-                className="bg-slate-800 border-slate-600 text-white"
-                required
-              />
+              <Select 
+                value={formData.hora} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}
+                disabled={!formData.data}
+              >
+                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                  <SelectValue 
+                    placeholder={
+                      !formData.data 
+                        ? "Selecione uma data primeiro" 
+                        : horariosDisponiveis.length === 0 
+                          ? "Nenhum horário disponível" 
+                          : "Selecione um horário"
+                    } 
+                  />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600">
+                  {horariosDisponiveis.length > 0 ? (
+                    horariosDisponiveis.map((hora) => (
+                      <SelectItem key={hora} value={hora} className="text-white">
+                        {hora}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-gray-500 text-sm text-center">
+                      {!formData.data ? 'Selecione uma data primeiro' : 'Nenhum horário disponível'}
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
