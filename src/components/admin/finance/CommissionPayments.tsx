@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -80,7 +79,6 @@ const CommissionPayments: React.FC = () => {
 
       if (error) throw error;
 
-      // Para cada comissão, buscar detalhes do agendamento
       const commissionsWithDetails = await Promise.all(
         (data || []).map(async (commission) => {
           try {
@@ -256,54 +254,54 @@ const CommissionPayments: React.FC = () => {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-gray-900 border-gray-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Comissões Pendentes</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-300">Comissões Pendentes</CardTitle>
+            <DollarSign className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {totalPendingAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-white">R$ {totalPendingAmount.toFixed(2)}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gray-900 border-gray-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Comissões Pagas</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-300">Comissões Pagas</CardTitle>
+            <TrendingUp className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ {totalPaidAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold text-white">R$ {totalPaidAmount.toFixed(2)}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gray-900 border-gray-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Comissões</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-300">Total de Comissões</CardTitle>
+            <Users className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{commissions.length}</div>
+            <div className="text-2xl font-bold text-white">{commissions.length}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-gray-900 border-gray-800">
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle className="text-white">Filtros</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="staff-select">Profissional</Label>
+              <Label htmlFor="staff-select" className="text-gray-300">Profissional</Label>
               <Select value={selectedStaff} onValueChange={setSelectedStaff}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os profissionais" />
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Todos os profissionais" className="text-white" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os profissionais</SelectItem>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  <SelectItem value="all" className="hover:bg-gray-700">Todos os profissionais</SelectItem>
                   {staffMembers.map((staff) => (
-                    <SelectItem key={staff.id} value={staff.id}>
+                    <SelectItem key={staff.id} value={staff.id} className="hover:bg-gray-700">
                       {staff.name}
                     </SelectItem>
                   ))}
@@ -312,16 +310,16 @@ const CommissionPayments: React.FC = () => {
             </div>
 
             <div>
-              <Label htmlFor="status-select">Status</Label>
+              <Label htmlFor="status-select" className="text-gray-300">Status</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os status</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  <SelectItem value="all" className="hover:bg-gray-700">Todos os status</SelectItem>
+                  <SelectItem value="pending" className="hover:bg-gray-700">Pendente</SelectItem>
+                  <SelectItem value="paid" className="hover:bg-gray-700">Pago</SelectItem>
+                  <SelectItem value="cancelled" className="hover:bg-gray-700">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -329,10 +327,14 @@ const CommissionPayments: React.FC = () => {
 
           {selectedCommissions.length > 0 && (
             <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-gray-400">
                 {selectedCommissions.length} comissões selecionadas
               </span>
-              <Button onClick={handleBulkPayment} size="sm">
+              <Button 
+                onClick={handleBulkPayment} 
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+              >
                 Marcar como Pagas
               </Button>
             </div>
@@ -341,25 +343,26 @@ const CommissionPayments: React.FC = () => {
       </Card>
 
       {/* Commissions Table */}
-      <Card>
+      <Card className="bg-gray-900 border-gray-800">
         <CardHeader>
-          <CardTitle>Comissões</CardTitle>
+          <CardTitle className="text-white">Comissões</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-4">Carregando...</div>
+            <div className="text-center py-4 text-gray-400">Carregando...</div>
           ) : commissions.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="text-center py-4 text-gray-400">
               Nenhuma comissão encontrada.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">
+                  <tr className="border-b border-gray-800">
+                    <th className="text-left p-2 text-gray-300">
                       <input
                         type="checkbox"
+                        className="bg-gray-700 border-gray-600"
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedCommissions(commissions.map(c => c.id));
@@ -369,23 +372,24 @@ const CommissionPayments: React.FC = () => {
                         }}
                       />
                     </th>
-                    <th className="text-left p-2">Profissional</th>
-                    <th className="text-left p-2">Cliente</th>
-                    <th className="text-left p-2">Serviço</th>
-                    <th className="text-left p-2">Data</th>
-                    <th className="text-left p-2">Valor</th>
-                    <th className="text-left p-2">Taxa</th>
-                    <th className="text-left p-2">Comissão</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Ações</th>
+                    <th className="text-left p-2 text-gray-300">Profissional</th>
+                    <th className="text-left p-2 text-gray-300">Cliente</th>
+                    <th className="text-left p-2 text-gray-300">Serviço</th>
+                    <th className="text-left p-2 text-gray-300">Data</th>
+                    <th className="text-left p-2 text-gray-300">Valor</th>
+                    <th className="text-left p-2 text-gray-300">Taxa</th>
+                    <th className="text-left p-2 text-gray-300">Comissão</th>
+                    <th className="text-left p-2 text-gray-300">Status</th>
+                    <th className="text-left p-2 text-gray-300">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {commissions.map((commission) => (
-                    <tr key={commission.id} className="border-b hover:bg-muted/50">
+                    <tr key={commission.id} className="border-b border-gray-800 hover:bg-gray-800/50">
                       <td className="p-2">
                         <input
                           type="checkbox"
+                          className="bg-gray-700 border-gray-600"
                           checked={selectedCommissions.includes(commission.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -396,20 +400,21 @@ const CommissionPayments: React.FC = () => {
                           }}
                         />
                       </td>
-                      <td className="p-2">{commission.staff?.name}</td>
-                      <td className="p-2">{commission.appointments?.clients?.name}</td>
-                      <td className="p-2">{commission.appointments?.services?.name}</td>
-                      <td className="p-2">
+                      <td className="p-2 text-gray-300">{commission.staff?.name}</td>
+                      <td className="p-2 text-gray-300">{commission.appointments?.clients?.name}</td>
+                      <td className="p-2 text-gray-300">{commission.appointments?.services?.name}</td>
+                      <td className="p-2 text-gray-300">
                         {format(new Date(commission.appointments?.start_time), 'dd/MM/yyyy', { locale: ptBR })}
                       </td>
-                      <td className="p-2">R$ {commission.appointments?.services?.price?.toFixed(2)}</td>
-                      <td className="p-2">{commission.commission_rate}%</td>
-                      <td className="p-2">R$ {commission.amount.toFixed(2)}</td>
+                      <td className="p-2 text-gray-300">R$ {commission.appointments?.services?.price?.toFixed(2)}</td>
+                      <td className="p-2 text-gray-300">{commission.commission_rate}%</td>
+                      <td className="p-2 text-gray-300">R$ {commission.amount.toFixed(2)}</td>
                       <td className="p-2">{getStatusBadge(commission.status)}</td>
                       <td className="p-2">
                         {commission.status === 'pending' && (
                           <Button
                             size="sm"
+                            className="bg-green-600 hover:bg-green-700"
                             onClick={() => handlePayCommission(commission.id)}
                           >
                             Pagar
