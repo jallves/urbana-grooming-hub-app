@@ -78,15 +78,27 @@ export default function PainelClienteNovoAgendamento() {
           return;
         }
 
-        // Buscar agendamentos existentes
-        const { data: existingAppointments } = await supabase
-          .from('new_appointments')
-          .select('scheduled_time')
-          .eq('barber_id', selectedBarber)
-          .eq('scheduled_date', dateStr)
-          .not('status', 'eq', 'canceled');
+        // Buscar agendamentos existentes (do painel antigo)
+        const { data: existingPainelAppointments } = await supabase
+          .from('painel_agendamentos')
+          .select('hora')
+          .eq('barbeiro_id', selectedBarber)
+          .eq('data', dateStr)
+          .not('status', 'eq', 'cancelado');
 
-        const bookedTimes = existingAppointments?.map(apt => apt.scheduled_time) || [];
+        // Buscar agendamentos do sistema novo
+        const { data: existingAppointments } = await supabase
+          .from('appointments')
+          .select('start_time')
+          .eq('staff_id', selectedBarber)
+          .gte('start_time', `${dateStr}T00:00:00`)
+          .lt('start_time', `${dateStr}T23:59:59`)
+          .not('status', 'eq', 'cancelled');
+
+        const bookedTimes = [
+          ...(existingPainelAppointments?.map(apt => apt.hora) || []),
+          ...(existingAppointments?.map(apt => new Date(apt.start_time).toTimeString().slice(0,5)) || [])
+        ];
 
         // Gerar horários disponíveis (intervalos de 30 minutos)
         const times: string[] = [];

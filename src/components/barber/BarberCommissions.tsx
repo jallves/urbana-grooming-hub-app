@@ -1,4 +1,3 @@
-// (Todo o import permanece igual)
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,11 +9,134 @@ import { ptBR } from 'date-fns/locale';
 import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface Commission { /* ... */ }
-interface CommissionWithDetails extends Commission { /* ... */ }
+interface Commission {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  payment_date?: string;
+  paid_at?: string;
+  commission_rate?: number;
+  appointment_details?: {
+    client_name?: string;
+    service_name?: string;
+    service_price?: number;
+    appointment_date?: string;
+    appointment_time?: string;
+  };
+  source: string;
+}
+
+interface CommissionWithDetails extends Commission {
+  appointment_details: {
+    client_name: string;
+    service_name: string;
+    service_price: number;
+    appointment_date: string;
+    appointment_time: string;
+  };
+}
 
 const BarberCommissions: React.FC = () => {
-  // ... (mesma lógica de estado e fetch)
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [staffId, setStaffId] = useState<string | null>(null);
+
+  // Calculate totals
+  const totalPending = commissions
+    .filter(c => c.status === 'pending')
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const totalPaid = commissions
+    .filter(c => c.status === 'paid')
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  // Get staff ID for current user
+  useEffect(() => {
+    const fetchStaffId = async () => {
+      if (!user?.email) return;
+
+      try {
+        const { data: barberData } = await supabase
+          .from('painel_barbeiros')
+          .select('staff_id')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        if (barberData?.staff_id) {
+          setStaffId(barberData.staff_id);
+        }
+      } catch (error) {
+        console.error('Error fetching staff ID:', error);
+      }
+    };
+
+    fetchStaffId();
+  }, [user?.email]);
+
+  // Fetch commissions
+  useEffect(() => {
+    const fetchCommissions = async () => {
+      if (!staffId) return;
+
+      setLoading(true);
+      try {
+        // Fetch from barber_commissions table
+        const { data: barberCommissions, error: bcError } = await supabase
+          .from('barber_commissions')
+          .select(`
+            *,
+            appointments (
+              start_time,
+              clients (name),
+              services (name, price)
+            )
+          `)
+          .eq('barber_id', staffId)
+          .order('created_at', { ascending: false });
+
+        if (bcError) {
+          console.error('Error fetching barber commissions:', bcError);
+          setCommissions([]);
+          return;
+        }
+
+        // Transform data to unified format
+        const transformedCommissions: Commission[] = (barberCommissions || []).map(commission => ({
+          id: commission.id,
+          amount: commission.amount,
+          status: commission.status,
+          created_at: commission.created_at,
+          payment_date: commission.payment_date,
+          commission_rate: commission.commission_rate,
+          source: 'barber_commissions',
+          appointment_details: commission.appointments ? {
+            client_name: commission.appointments.clients?.name || 'Cliente',
+            service_name: commission.appointments.services?.name || 'Serviço',
+            service_price: commission.appointments.services?.price || 0,
+            appointment_date: commission.appointments.start_time?.split('T')[0] || '',
+            appointment_time: commission.appointments.start_time ? 
+              format(new Date(commission.appointments.start_time), 'HH:mm') : '--:--'
+          } : undefined
+        }));
+
+        setCommissions(transformedCommissions);
+      } catch (error) {
+        console.error('Error fetching commissions:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as comissões.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCommissions();
+  }, [staffId, toast]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

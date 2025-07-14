@@ -21,38 +21,37 @@ export const useBarbershopAppointments = () => {
     setIsLoading(true);
     try {
       let query = supabase
-        .from('new_appointments')
+        .from('appointments')
         .select(`
           *,
           client:clients(id, name, email, phone),
-          barber:barbers(id, name, email, specialty),
+          barber:staff(id, name, email, specialties),
           service:services(id, name, price, duration)
         `)
-        .order('scheduled_date', { ascending: false })
-        .order('scheduled_time', { ascending: false });
+        .order('start_time', { ascending: false });
 
       if (filters?.client_id) {
         query = query.eq('client_id', filters.client_id);
       }
       if (filters?.barber_id) {
-        query = query.eq('barber_id', filters.barber_id);
+        query = query.eq('staff_id', filters.barber_id);
       }
       if (filters?.status) {
         query = query.eq('status', filters.status);
       }
       if (filters?.date_from) {
-        query = query.gte('scheduled_date', filters.date_from);
+        query = query.gte('start_time', filters.date_from);
       }
       if (filters?.date_to) {
-        query = query.lte('scheduled_date', filters.date_to);
+        query = query.lte('start_time', filters.date_to);
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      setAppointments((data || []) as NewAppointment[]);
-      return (data || []) as NewAppointment[];
+      setAppointments((data || []) as any[]);
+      return (data || []) as any[];
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
       toast({
@@ -91,20 +90,20 @@ export const useBarbershopAppointments = () => {
       }
 
       const { data, error } = await supabase
-        .from('new_appointments')
+        .from('appointments')
         .insert({
           client_id: clientId,
-          barber_id: formData.barber_id,
+          staff_id: formData.barber_id,
           service_id: formData.service_id,
-          scheduled_date: formData.scheduled_date,
-          scheduled_time: formData.scheduled_time,
+          start_time: `${formData.scheduled_date}T${formData.scheduled_time}:00`,
+          end_time: `${formData.scheduled_date}T${formData.scheduled_time}:00`,
           notes: formData.notes,
-          status: 'pending'
+          status: 'scheduled'
         })
         .select(`
           *,
           client:clients(id, name, email, phone),
-          barber:barbers(id, name, email, specialty),
+          barber:staff(id, name, email, specialties),
           service:services(id, name, price, duration)
         `)
         .single();
@@ -137,16 +136,15 @@ export const useBarbershopAppointments = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('new_appointments')
+        .from('appointments')
         .update({ 
-          status: 'completed',
-          completed_at: new Date().toISOString()
+          status: 'completed'
         })
         .eq('id', appointmentId)
         .select(`
           *,
           client:clients(id, name, email, phone),
-          barber:barbers(id, name, email, specialty),
+          barber:staff(id, name, email, specialties),
           service:services(id, name, price, duration)
         `)
         .single();
@@ -179,13 +177,13 @@ export const useBarbershopAppointments = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('new_appointments')
-        .update({ status: 'canceled' })
+        .from('appointments')
+        .update({ status: 'cancelled' })
         .eq('id', appointmentId)
         .select(`
           *,
           client:clients(id, name, email, phone),
-          barber:barbers(id, name, email, specialty),
+          barber:staff(id, name, email, specialties),
           service:services(id, name, price, duration)
         `)
         .single();
@@ -240,15 +238,15 @@ export const useBarbershopAppointments = () => {
     setIsLoading(true);
     try {
       let query = supabase
-        .from('new_commissions')
+        .from('barber_commissions')
         .select(`
           *,
-          appointment:new_appointments(
-            id, scheduled_date, scheduled_time,
+          appointment:appointments(
+            id, start_time,
             client:clients(name),
             service:services(name, price)
           ),
-          barber:barbers(id, name, email)
+          barber:staff(id, name, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -263,8 +261,8 @@ export const useBarbershopAppointments = () => {
 
       if (error) throw error;
 
-      setCommissions((data || []) as Commission[]);
-      return (data || []) as Commission[];
+      setCommissions((data || []) as any[]);
+      return (data || []) as any[];
     } catch (error) {
       console.error('Erro ao buscar comissões:', error);
       toast({
@@ -283,20 +281,20 @@ export const useBarbershopAppointments = () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('new_commissions')
+        .from('barber_commissions')
         .update({ 
           status: 'paid',
-          paid_at: new Date().toISOString()
+          payment_date: new Date().toISOString()
         })
         .eq('id', commissionId)
         .select(`
           *,
-          appointment:new_appointments(
-            id, scheduled_date, scheduled_time,
+          appointment:appointments(
+            id, start_time,
             client:clients(name),
             service:services(name, price)
           ),
-          barber:barbers(id, name, email)
+          barber:staff(id, name, email)
         `)
         .single();
 

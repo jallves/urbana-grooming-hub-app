@@ -274,11 +274,12 @@ export const useBarberAppointments = () => {
         });
 
         const { error: commissionError } = await supabase
-          .from('new_commissions')
+          .from('barber_commissions')
           .insert({
-            barber_id: barberInfo?.id || barberId,
+            barber_id: barberData.staff_id,
             appointment_id: appointmentId,
             amount: commissionAmount,
+            commission_rate: commissionAmount / servicePrice * 100,
             status: 'pending'
           });
 
