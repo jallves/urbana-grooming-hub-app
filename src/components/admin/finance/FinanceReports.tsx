@@ -18,7 +18,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
-const COLORS = ['#4ade80', '#22c55e', '#fde68a', '#f87171', '#a78bfa']; // Tons verdes, amarelos e vermelho suave para dark
+const COLORS = ['#4ade80', '#22c55e', '#fde68a', '#f87171', '#a78bfa'];
 
 const FinanceReports: React.FC = () => {
   // Fetch monthly data for the last 6 months
@@ -147,8 +147,8 @@ const FinanceReports: React.FC = () => {
     <div className="space-y-6 bg-gray-900 p-4 min-h-screen text-white">
       <Card className="w-full bg-gray-800 border border-gray-700 shadow-none">
         <CardHeader>
-          <CardTitle>Receitas vs Despesas</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-white">Receitas vs Despesas</CardTitle>
+          <CardDescription className="text-gray-400">
             Comparação de receitas e despesas dos últimos 6 meses (dados reais)
           </CardDescription>
         </CardHeader>
@@ -187,8 +187,8 @@ const FinanceReports: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="bg-gray-800 border border-gray-700 shadow-none">
           <CardHeader>
-            <CardTitle>Distribuição por Serviços</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">Distribuição por Serviços</CardTitle>
+            <CardDescription className="text-gray-400">
               Porcentagem de receita por tipo de serviço (dados reais)
             </CardDescription>
           </CardHeader>
@@ -214,7 +214,7 @@ const FinanceReports: React.FC = () => {
                     <Tooltip
                       wrapperStyle={{ backgroundColor: '#1f2937', borderRadius: 4, border: 'none' }}
                       contentStyle={{ backgroundColor: '#1f2937', borderRadius: 4 }}
-                      formatter={(value) => [`${value.toFixed(1)}%`, undefined]}
+                      formatter={(value) => [`${Number(value).toFixed(1)}%`, undefined]}
                       labelStyle={{ color: 'white' }}
                       itemStyle={{ color: 'white' }}
                     />
@@ -231,8 +231,8 @@ const FinanceReports: React.FC = () => {
 
         <Card className="bg-gray-800 border border-gray-700 shadow-none">
           <CardHeader>
-            <CardTitle>Resumo Financeiro</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">Resumo Financeiro</CardTitle>
+            <CardDescription className="text-gray-400">
               Resumo das métricas financeiras do mês atual (dados reais)
             </CardDescription>
           </CardHeader>
@@ -250,7 +250,7 @@ const FinanceReports: React.FC = () => {
                 { label: 'Ticket Médio', value: financialSummary?.averageTicket }
               ].map(({ label, value, color, isPercent }, i) => (
                 <div key={i} className="flex justify-between items-center border-b border-gray-700 pb-2">
-                  <span className="text-sm font-medium">{label}</span>
+                  <span className="text-sm font-medium text-gray-300">{label}</span>
                   <span className={`text-lg font-bold ${color ?? 'text-white'}`}>
                     {value !== undefined && value !== null ? (
                       isPercent ? `${value.toFixed(1)}%` : `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
