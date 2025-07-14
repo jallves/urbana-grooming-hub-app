@@ -139,7 +139,7 @@ const CashFlowTransactions: React.FC = () => {
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-600">
                 <SelectItem value="all">Todas as categorias</SelectItem>
-                {categories?.map((category) => (
+                {categories?.filter(category => category.name && category.name.trim() !== '').map((category) => (
                   <SelectItem key={category.id} value={category.name}>
                     {category.name}
                   </SelectItem>

@@ -162,7 +162,7 @@ const CashFlowForm: React.FC<CashFlowFormProps> = ({ onSuccess, editingTransacti
               <SelectValue placeholder="Selecione uma categoria" />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-600">
-              {filteredCategories?.map((category) => (
+              {filteredCategories?.filter(category => category.name && category.name.trim() !== '').map((category) => (
                 <SelectItem key={category.id} value={category.name}>
                   {category.name}
                 </SelectItem>
