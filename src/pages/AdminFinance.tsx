@@ -8,14 +8,16 @@ const AdminFinance: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Financeiro">
-        <div className="space-y-6 sm:space-y-8">
+        <div className="w-full space-y-4 px-4 py-2 sm:px-6 sm:py-4">
           <ModernCard
             title="Gestão Financeira"
             description="Gestão financeira e fluxo de caixa da barbearia"
-            className="w-full max-w-full bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm transition-none hover:bg-gray-800/50"
-            contentClassName="overflow-hidden transition-none"
+            gradient="from-primary/10 to-secondary/10"
+            className="w-full"
+            headerClassName="px-4 py-3 sm:px-6 sm:py-4"
+            contentClassName="overflow-x-auto"
           >
-            <div className="w-full overflow-hidden transition-none">
+            <div className="min-w-[600px] md:min-w-full">
               <FinanceManagement />
             </div>
           </ModernCard>
