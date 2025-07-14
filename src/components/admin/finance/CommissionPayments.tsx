@@ -45,7 +45,7 @@ interface StaffMember {
 const CommissionPayments: React.FC = () => {
   const [commissions, setCommissions] = useState<Commission[]>([]);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
-  const [selectedStaff, setSelectedStaff] = useState<string>('');
+  const [selectedStaff, setSelectedStaff] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
@@ -68,7 +68,7 @@ const CommissionPayments: React.FC = () => {
         `)
         .order('created_at', { ascending: false });
 
-      if (selectedStaff) {
+      if (selectedStaff && selectedStaff !== 'all') {
         query = query.eq('barber_id', selectedStaff);
       }
 
@@ -301,7 +301,7 @@ const CommissionPayments: React.FC = () => {
                   <SelectValue placeholder="Todos os profissionais" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os profissionais</SelectItem>
+                  <SelectItem value="all">Todos os profissionais</SelectItem>
                   {staffMembers.map((staff) => (
                     <SelectItem key={staff.id} value={staff.id}>
                       {staff.name}

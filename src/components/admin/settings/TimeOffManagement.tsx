@@ -39,7 +39,7 @@ const TimeOffManagement: React.FC = () => {
   const [editingTimeOff, setEditingTimeOff] = useState<TimeOff | null>(null);
   
   // Form fields
-  const [staffId, setStaffId] = useState<string>('');
+  const [staffId, setStaffId] = useState<string>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [reason, setReason] = useState<string>('');
@@ -104,7 +104,7 @@ const TimeOffManagement: React.FC = () => {
 
     try {
       const timeOffData = {
-        staff_id: staffId || null,
+        staff_id: (staffId && staffId !== 'all') ? staffId : null,
         start_date: startDate,
         end_date: endDate,
         reason,
@@ -150,7 +150,7 @@ const TimeOffManagement: React.FC = () => {
 
   const handleEdit = (timeOff: TimeOff) => {
     setEditingTimeOff(timeOff);
-    setStaffId(timeOff.staff_id || '');
+    setStaffId(timeOff.staff_id || 'all');
     setStartDate(timeOff.start_date);
     setEndDate(timeOff.end_date);
     setReason(timeOff.reason);
@@ -186,7 +186,7 @@ const TimeOffManagement: React.FC = () => {
   };
 
   const resetForm = () => {
-    setStaffId('');
+    setStaffId('all');
     setStartDate('');
     setEndDate('');
     setReason('');
@@ -248,7 +248,7 @@ const TimeOffManagement: React.FC = () => {
                       <SelectValue placeholder="Selecione um profissional (ou deixe em branco para todos)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os profissionais</SelectItem>
+                      <SelectItem value="all">Todos os profissionais</SelectItem>
                       {staffMembers.map((staff) => (
                         <SelectItem key={staff.id} value={staff.id}>
                           {staff.name}
