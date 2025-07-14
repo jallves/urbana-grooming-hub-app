@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,11 +16,124 @@ import {
   Cell
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 const COLORS = ['#4ade80', '#22c55e', '#fde68a', '#f87171', '#a78bfa']; // Tons verdes, amarelos e vermelho suave para dark
 
 const FinanceReports: React.FC = () => {
-  // ...seu código de fetch permanece igual...
+  // Fetch monthly data for the last 6 months
+  const { data: monthlyData, isLoading: isLoadingMonthly } = useQuery({
+    queryKey: ['finance-monthly-data'],
+    queryFn: async () => {
+      const months = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = subMonths(new Date(), i);
+        const startDate = format(startOfMonth(date), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(date), 'yyyy-MM-dd');
+        const monthName = format(date, 'MMM');
+
+        // Fetch income from appointments
+        const { data: appointments } = await supabase
+          .from('appointments')
+          .select('services!inner(price), discount_amount')
+          .eq('status', 'completed')
+          .gte('start_time', startDate)
+          .lte('start_time', endDate);
+
+        // Fetch expenses from cash_flow
+        const { data: expenses } = await supabase
+          .from('cash_flow')
+          .select('amount')
+          .eq('transaction_type', 'expense')
+          .gte('transaction_date', startDate)
+          .lte('transaction_date', endDate);
+
+        const income = appointments?.reduce((sum, apt) => 
+          sum + (apt.services?.price || 0) - (apt.discount_amount || 0), 0
+        ) || 0;
+
+        const expense = expenses?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
+
+        months.push({
+          month: monthName,
+          income,
+          expense
+        });
+      }
+      return months;
+    }
+  });
+
+  // Fetch service distribution data
+  const { data: serviceData, isLoading: isLoadingServices } = useQuery({
+    queryKey: ['finance-services-data'],
+    queryFn: async () => {
+      const { data: appointments } = await supabase
+        .from('appointments')
+        .select('services!inner(name, price), discount_amount')
+        .eq('status', 'completed')
+        .gte('start_time', format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+
+      if (!appointments?.length) return [];
+
+      const serviceStats: Record<string, number> = {};
+      let totalRevenue = 0;
+
+      appointments.forEach(apt => {
+        const serviceName = apt.services?.name || 'Desconhecido';
+        const revenue = (apt.services?.price || 0) - (apt.discount_amount || 0);
+        serviceStats[serviceName] = (serviceStats[serviceName] || 0) + revenue;
+        totalRevenue += revenue;
+      });
+
+      return Object.entries(serviceStats).map(([name, value]) => ({
+        name,
+        value: totalRevenue > 0 ? (value / totalRevenue) * 100 : 0
+      }));
+    }
+  });
+
+  // Fetch financial summary
+  const { data: financialSummary, isLoading: isLoadingSummary } = useQuery({
+    queryKey: ['finance-summary'],
+    queryFn: async () => {
+      const currentMonth = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+      const currentMonthEnd = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+
+      // Current month income from appointments
+      const { data: appointments } = await supabase
+        .from('appointments')
+        .select('services!inner(price), discount_amount')
+        .eq('status', 'completed')
+        .gte('start_time', currentMonth)
+        .lte('start_time', currentMonthEnd);
+
+      // Current month expenses
+      const { data: expenses } = await supabase
+        .from('cash_flow')
+        .select('amount')
+        .eq('transaction_type', 'expense')
+        .gte('transaction_date', currentMonth)
+        .lte('transaction_date', currentMonthEnd);
+
+      const totalIncome = appointments?.reduce((sum, apt) => 
+        sum + (apt.services?.price || 0) - (apt.discount_amount || 0), 0
+      ) || 0;
+
+      const totalExpense = expenses?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
+      const profit = totalIncome - totalExpense;
+      const profitMargin = totalIncome > 0 ? (profit / totalIncome) * 100 : 0;
+      const averageTicket = appointments?.length ? totalIncome / appointments.length : 0;
+
+      return {
+        totalIncome,
+        totalExpense,
+        profit,
+        profitMargin,
+        averageTicket
+      };
+    }
+  });
 
   if (isLoadingMonthly || isLoadingServices || isLoadingSummary) {
     return (
@@ -50,11 +164,11 @@ const FinanceReports: React.FC = () => {
                   bottom: 5,
                 }}
               >
-                <CartesianGrid stroke="#444" strokeDasharray="3 3" /> {/* Linhas em cinza escuro */}
-                <XAxis dataKey="month" stroke="#bbb" /> {/* Eixo em cinza claro */}
+                <CartesianGrid stroke="#444" strokeDasharray="3 3" />
+                <XAxis dataKey="month" stroke="#bbb" />
                 <YAxis stroke="#bbb" />
                 <Tooltip
-                  wrapperStyle={{ backgroundColor: '#1f2937', borderRadius: 4, border: 'none' }} // Fundo escuro tooltip
+                  wrapperStyle={{ backgroundColor: '#1f2937', borderRadius: 4, border: 'none' }}
                   contentStyle={{ backgroundColor: '#1f2937', borderRadius: 4 }}
                   formatter={(value) => [`R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, undefined]}
                   labelFormatter={(label) => `Mês: ${label}`}
@@ -100,7 +214,7 @@ const FinanceReports: React.FC = () => {
                     <Tooltip
                       wrapperStyle={{ backgroundColor: '#1f2937', borderRadius: 4, border: 'none' }}
                       contentStyle={{ backgroundColor: '#1f2937', borderRadius: 4 }}
-                      formatter={(value) => [`${value}%`, undefined]}
+                      formatter={(value) => [`${value.toFixed(1)}%`, undefined]}
                       labelStyle={{ color: 'white' }}
                       itemStyle={{ color: 'white' }}
                     />
@@ -130,7 +244,7 @@ const FinanceReports: React.FC = () => {
                 { 
                   label: 'Lucro (Mês Atual)', 
                   value: financialSummary?.profit, 
-                  color: financialSummary?.profit >= 0 ? 'text-blue-500' : 'text-red-500' 
+                  color: (financialSummary?.profit || 0) >= 0 ? 'text-blue-500' : 'text-red-500' 
                 },
                 { label: 'Margem de Lucro', value: financialSummary?.profitMargin, isPercent: true },
                 { label: 'Ticket Médio', value: financialSummary?.averageTicket }
