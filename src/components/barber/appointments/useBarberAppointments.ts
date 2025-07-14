@@ -243,34 +243,26 @@ export const useBarberAppointments = () => {
 
       console.log('Appointment marked as completed successfully');
 
-      // 2. Criar a comissão na tabela new_commissions
+      // 2. Criar a comissão diretamente na tabela barber_commissions
       const servicePrice = appointment.service?.price || 0;
       
-      if (servicePrice > 0) {
-        // Buscar dados do barbeiro na tabela barbers para new_commissions
-        const { data: barberInfo } = await supabase
-          .from('barbers')
-          .select('id, commission_type, commission_value')
-          .eq('email', user?.email)
+      if (servicePrice > 0 && barberData.staff_id) {
+        // Buscar a taxa de comissão do staff
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('commission_rate')
+          .eq('id', barberData.staff_id)
           .maybeSingle();
 
-        let commissionAmount = 0;
-        if (barberInfo) {
-          if (barberInfo.commission_type === 'percent') {
-            commissionAmount = servicePrice * (barberInfo.commission_value / 100);
-          } else {
-            commissionAmount = barberInfo.commission_value;
-          }
-        } else {
-          // Usar taxa padrão de 30% se não encontrar na tabela barbers
-          commissionAmount = servicePrice * 0.30;
-        }
+        const commissionRate = staffData?.commission_rate || 30;
+        const commissionAmount = servicePrice * (commissionRate / 100);
 
-        console.log('Creating commission in new_commissions:', {
+        console.log('Creating commission:', {
           appointmentId,
-          barberId: barberInfo?.id || barberId,
+          barberId: barberData.staff_id,
           amount: commissionAmount,
-          servicePrice
+          servicePrice,
+          commissionRate
         });
 
         const { error: commissionError } = await supabase
@@ -279,45 +271,43 @@ export const useBarberAppointments = () => {
             barber_id: barberData.staff_id,
             appointment_id: appointmentId,
             amount: commissionAmount,
-            commission_rate: commissionAmount / servicePrice * 100,
+            commission_rate: commissionRate,
             status: 'pending'
           });
 
         if (commissionError) {
-          console.error('Erro ao criar comissão na new_commissions:', commissionError);
-          
-          // Tentar criar na tabela barber_commissions como fallback
-          if (barberData.staff_id) {
-            const commissionRate = barberData.commission_rate || 30;
-            const fallbackAmount = servicePrice * (commissionRate / 100);
-            
-            const { error: fallbackError } = await supabase
-              .from('barber_commissions')
-              .insert({
-                barber_id: barberData.staff_id,
-                appointment_id: appointmentId,
-                amount: fallbackAmount,
-                commission_rate: commissionRate,
-                status: 'pending'
-              });
-
-            if (fallbackError) {
-              console.error('Erro ao criar comissão de fallback:', fallbackError);
-              toast({
-                title: "⚠️ Aviso",
-                description: "Agendamento concluído, mas houve erro ao registrar a comissão.",
-                variant: "destructive",
-              });
-            } else {
-              console.log('Fallback commission created successfully');
-            }
-          }
+          console.error('Erro ao criar comissão:', commissionError);
+          toast({
+            title: "⚠️ Aviso",
+            description: "Agendamento concluído, mas houve erro ao registrar a comissão. Entre em contato com o administrador.",
+            variant: "destructive",
+          });
         } else {
-          console.log('Commission created successfully in new_commissions:', commissionAmount);
+          console.log('Commission created successfully:', commissionAmount);
         }
       }
 
-      // 3. Atualizar o estado local IMEDIATAMENTE
+      // 3. Criar entrada no fluxo de caixa
+      if (servicePrice > 0) {
+        const { error: cashFlowError } = await supabase
+          .from('cash_flow')
+          .insert({
+            transaction_type: 'income',
+            amount: servicePrice,
+            description: `Serviço: ${appointment.service_name} - Cliente: ${appointment.client_name}`,
+            category: 'Serviços',
+            payment_method: 'Dinheiro',
+            transaction_date: new Date().toISOString().split('T')[0],
+            reference_id: appointmentId,
+            reference_type: 'appointment'
+          });
+
+        if (cashFlowError) {
+          console.error('Erro ao registrar no fluxo de caixa:', cashFlowError);
+        }
+      }
+
+      // 4. Atualizar o estado local IMEDIATAMENTE
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
@@ -330,11 +320,11 @@ export const useBarberAppointments = () => {
 
       toast({
         title: "✅ Agendamento Concluído!",
-        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído e movido para a aba "Concluídos".`,
+        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído e a comissão foi registrada.`,
         duration: 4000,
       });
 
-      // 4. Refetch appointments para garantir sincronização
+      // 5. Refetch appointments para garantir sincronização
       setTimeout(() => {
         fetchAppointments();
       }, 1000);

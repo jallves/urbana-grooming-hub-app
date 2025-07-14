@@ -79,9 +79,12 @@ const CommissionPayments: React.FC = () => {
 
       if (error) throw error;
 
+      console.log('Fetched commissions:', data);
+
       const commissionsWithDetails = await Promise.all(
         (data || []).map(async (commission) => {
           try {
+            // Tentar buscar dados do agendamento no painel_agendamentos
             const { data: appointmentData } = await supabase
               .from('painel_agendamentos')
               .select(`
@@ -110,12 +113,43 @@ const CommissionPayments: React.FC = () => {
                 }
               };
             }
+
+            // Fallback: tentar buscar em appointments (tabela principal)
+            const { data: mainAppointmentData } = await supabase
+              .from('appointments')
+              .select(`
+                id,
+                start_time,
+                clients!inner(name),
+                services!inner(name, price)
+              `)
+              .eq('id', commission.appointment_id)
+              .maybeSingle();
+
+            if (mainAppointmentData) {
+              return {
+                ...commission,
+                appointments: {
+                  id: mainAppointmentData.id,
+                  start_time: mainAppointmentData.start_time,
+                  services: {
+                    name: mainAppointmentData.services?.name || 'Serviço',
+                    price: mainAppointmentData.services?.price || 0
+                  },
+                  clients: {
+                    name: mainAppointmentData.clients?.name || 'Cliente'
+                  }
+                }
+              };
+            }
+
+            // Se não encontrar dados do agendamento, usar dados padrão
             return {
               ...commission,
               appointments: {
                 id: commission.appointment_id,
-                start_time: new Date().toISOString(),
-                services: { name: 'Serviço', price: 0 },
+                start_time: commission.created_at,
+                services: { name: 'Serviço', price: commission.amount / (commission.commission_rate / 100) },
                 clients: { name: 'Cliente' }
               }
             };
@@ -125,8 +159,8 @@ const CommissionPayments: React.FC = () => {
               ...commission,
               appointments: {
                 id: commission.appointment_id,
-                start_time: new Date().toISOString(),
-                services: { name: 'Serviço', price: 0 },
+                start_time: commission.created_at,
+                services: { name: 'Serviço', price: commission.amount / (commission.commission_rate / 100) },
                 clients: { name: 'Cliente' }
               }
             };
