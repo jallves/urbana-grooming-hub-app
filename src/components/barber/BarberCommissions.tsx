@@ -71,7 +71,7 @@ const BarberCommissions: React.FC = () => {
 
         if (painelBarber?.id) setBarberId(painelBarber.id);
         if (painelBarber?.staff_id) setStaffId(painelBarber.staff_id);
-        if (staff?.id && !staffId) setStaffId(staff.id);
+        else if (staff?.id) setStaffId(staff.id);
 
         console.log('Barber IDs found:', { 
           barberId: painelBarber?.id || barber?.id, 
