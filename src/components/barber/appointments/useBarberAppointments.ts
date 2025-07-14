@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -220,9 +221,8 @@ export const useBarberAppointments = () => {
       }
 
       console.log('Attempting to complete appointment:', appointmentId);
-      console.log('Barber data:', barberData);
       
-      // 1. Atualizar o status do agendamento para concluído
+      // 1. Update appointment status to completed FIRST
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ 
@@ -233,81 +233,10 @@ export const useBarberAppointments = () => {
 
       if (updateError) {
         console.error('Erro ao marcar agendamento como concluído:', updateError);
-        toast({
-          title: "Erro",
-          description: `Não foi possível marcar o agendamento como concluído: ${updateError.message}`,
-          variant: "destructive",
-        });
-        return;
+        throw updateError;
       }
 
-      console.log('Appointment marked as completed successfully');
-
-      // 2. Criar a comissão diretamente na tabela barber_commissions
-      const servicePrice = appointment.service?.price || 0;
-      
-      if (servicePrice > 0 && barberData.staff_id) {
-        // Buscar a taxa de comissão do staff
-        const { data: staffData } = await supabase
-          .from('staff')
-          .select('commission_rate')
-          .eq('id', barberData.staff_id)
-          .maybeSingle();
-
-        const commissionRate = staffData?.commission_rate || 30;
-        const commissionAmount = servicePrice * (commissionRate / 100);
-
-        console.log('Creating commission:', {
-          appointmentId,
-          barberId: barberData.staff_id,
-          amount: commissionAmount,
-          servicePrice,
-          commissionRate
-        });
-
-        const { error: commissionError } = await supabase
-          .from('barber_commissions')
-          .insert({
-            barber_id: barberData.staff_id,
-            appointment_id: appointmentId,
-            amount: commissionAmount,
-            commission_rate: commissionRate,
-            status: 'pending'
-          });
-
-        if (commissionError) {
-          console.error('Erro ao criar comissão:', commissionError);
-          toast({
-            title: "⚠️ Aviso",
-            description: "Agendamento concluído, mas houve erro ao registrar a comissão. Entre em contato com o administrador.",
-            variant: "destructive",
-          });
-        } else {
-          console.log('Commission created successfully:', commissionAmount);
-        }
-      }
-
-      // 3. Criar entrada no fluxo de caixa
-      if (servicePrice > 0) {
-        const { error: cashFlowError } = await supabase
-          .from('cash_flow')
-          .insert({
-            transaction_type: 'income',
-            amount: servicePrice,
-            description: `Serviço: ${appointment.service_name} - Cliente: ${appointment.client_name}`,
-            category: 'Serviços',
-            payment_method: 'Dinheiro',
-            transaction_date: new Date().toISOString().split('T')[0],
-            reference_id: appointmentId,
-            reference_type: 'appointment'
-          });
-
-        if (cashFlowError) {
-          console.error('Erro ao registrar no fluxo de caixa:', cashFlowError);
-        }
-      }
-
-      // 4. Atualizar o estado local IMEDIATAMENTE
+      // 2. Update local state IMMEDIATELY for better UX
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
@@ -316,21 +245,98 @@ export const useBarberAppointments = () => {
         )
       );
 
+      console.log('Appointment marked as completed successfully');
+
+      // 3. Create commission record in background
+      const servicePrice = appointment.service?.price || 0;
+      
+      if (servicePrice > 0 && barberData.staff_id) {
+        try {
+          // Get commission rate from staff
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('commission_rate')
+            .eq('id', barberData.staff_id)
+            .maybeSingle();
+
+          const commissionRate = staffData?.commission_rate || 30;
+          const commissionAmount = servicePrice * (commissionRate / 100);
+
+          console.log('Creating commission:', {
+            appointmentId,
+            barberId: barberData.staff_id,
+            amount: commissionAmount,
+            servicePrice,
+            commissionRate
+          });
+
+          const { error: commissionError } = await supabase
+            .from('barber_commissions')
+            .insert({
+              barber_id: barberData.staff_id,
+              appointment_id: appointmentId,
+              amount: commissionAmount,
+              commission_rate: commissionRate,
+              status: 'pending'
+            });
+
+          if (commissionError) {
+            console.error('Erro ao criar comissão:', commissionError);
+            // Don't fail the entire operation for commission error
+          } else {
+            console.log('Commission created successfully:', commissionAmount);
+          }
+        } catch (error) {
+          console.error('Error creating commission:', error);
+          // Don't fail the entire operation for commission error
+        }
+      }
+
+      // 4. Create cash flow entry in background
+      if (servicePrice > 0) {
+        try {
+          const { error: cashFlowError } = await supabase
+            .from('cash_flow')
+            .insert({
+              transaction_type: 'income',
+              amount: servicePrice,
+              description: `Serviço: ${appointment.service_name} - Cliente: ${appointment.client_name}`,
+              category: 'Serviços',
+              payment_method: 'Dinheiro',
+              transaction_date: new Date().toISOString().split('T')[0],
+              reference_id: appointmentId,
+              reference_type: 'appointment'
+            });
+
+          if (cashFlowError) {
+            console.error('Erro ao registrar no fluxo de caixa:', cashFlowError);
+          }
+        } catch (error) {
+          console.error('Error creating cash flow entry:', error);
+        }
+      }
+
       const appointmentDate = new Date(appointment.start_time);
 
+      // 5. Show success message
       toast({
         title: "✅ Agendamento Concluído!",
-        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído e a comissão foi registrada.`,
+        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.`,
         duration: 4000,
       });
 
-      // 5. Refetch appointments para garantir sincronização
-      setTimeout(() => {
-        fetchAppointments();
-      }, 1000);
-
     } catch (error) {
       console.error('Erro ao marcar agendamento como concluído:', error);
+      
+      // Revert local state change on error
+      setAppointments(prevAppointments => 
+        prevAppointments.map(appt => 
+          appt.id === appointmentId 
+            ? { ...appt, status: appt.status === 'completed' ? 'scheduled' : appt.status }
+            : appt
+        )
+      );
+      
       toast({
         title: "Erro",
         description: "Não foi possível marcar o agendamento como concluído. Tente novamente.",
@@ -364,7 +370,7 @@ export const useBarberAppointments = () => {
         return;
       }
 
-      // Atualizar o estado local imediatamente
+      // Update local state immediately
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
