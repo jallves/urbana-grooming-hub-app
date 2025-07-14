@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { useBarbershopAppointments } from '@/hooks/useBarbershopAppointments';
 import { Commission } from '@/types/barbershop';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DollarSign, Calendar, Clock, CheckCircle, AlertCircle, Search, Filter, Download } from 'lucide-react';
+import { DollarSign, Calendar, CheckCircle, AlertCircle, Search, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminCommissions() {
@@ -40,36 +40,39 @@ export default function AdminCommissions() {
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'pending') {
-      return <Badge variant="secondary">Pendente</Badge>;
-    }
-    return <Badge variant="default">Pago</Badge>;
+    return (
+      <Badge className={
+        status === 'pending'
+          ? "border-yellow-500/50 text-yellow-400 bg-yellow-500/10"
+          : "border-green-500/50 text-green-400 bg-green-500/10"
+      }>
+        {status === 'pending' ? 'Pendente' : 'Pago'}
+      </Badge>
+    );
   };
 
   const filteredCommissions = commissions.filter(commission => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       commission.barber?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       commission.appointment?.client?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = !statusFilter || commission.status === statusFilter;
     const matchesBarber = !barberFilter || commission.barber_id === barberFilter;
 
     return matchesSearch && matchesStatus && matchesBarber;
   });
 
-  const calculateStats = () => {
+  const stats = (() => {
     const pending = commissions.filter(c => c.status === 'pending');
     const paid = commissions.filter(c => c.status === 'paid');
-    
+
     return {
       totalPending: pending.reduce((sum, c) => sum + c.amount, 0),
       totalPaid: paid.reduce((sum, c) => sum + c.amount, 0),
       pendingCount: pending.length,
       paidCount: paid.length
     };
-  };
-
-  const stats = calculateStats();
+  })();
 
   const exportToCSV = () => {
     const csvData = filteredCommissions.map(commission => ({
@@ -84,7 +87,7 @@ export default function AdminCommissions() {
       'Data Pagamento': commission.paid_at ? format(new Date(commission.paid_at), 'dd/MM/yyyy HH:mm') : ''
     }));
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + Object.keys(csvData[0]).join(',') + '\n'
       + csvData.map(row => Object.values(row).join(',')).join('\n');
 
@@ -98,47 +101,47 @@ export default function AdminCommissions() {
   };
 
   const renderCommissionCard = (commission: Commission) => {
-    const appointmentDate = commission.appointment?.scheduled_date ? 
-      format(new Date(commission.appointment.scheduled_date), "dd 'de' MMMM", { locale: ptBR }) : 
+    const appointmentDate = commission.appointment?.scheduled_date ?
+      format(new Date(commission.appointment.scheduled_date), "dd 'de' MMMM", { locale: ptBR }) :
       'Data não informada';
 
     return (
-      <Card key={commission.id} className="mb-4">
+      <Card key={commission.id} className="mb-4 bg-gray-800/50 border border-gray-700/50">
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="font-semibold text-lg">
+              <h3 className="font-semibold text-lg text-white">
                 {commission.barber?.name}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-400">
                 Cliente: {commission.appointment?.client?.name}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-2xl font-bold text-urbana-gold">
                 R$ {commission.amount.toFixed(2)}
               </p>
               {getStatusBadge(commission.status)}
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-3 gap-4 mb-4 text-sm text-white">
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{appointmentDate}</span>
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <span>{appointmentDate}</span>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Serviço</p>
-              <p className="text-sm font-medium">{commission.appointment?.service?.name}</p>
+              <p className="text-gray-400">Serviço</p>
+              <p className="font-medium">{commission.appointment?.service?.name}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Valor do Serviço</p>
-              <p className="text-sm font-medium">R$ {commission.appointment?.service?.price.toFixed(2)}</p>
+              <p className="text-gray-400">Valor do Serviço</p>
+              <p className="font-medium">R$ {commission.appointment?.service?.price.toFixed(2)}</p>
             </div>
           </div>
 
-          <div className="flex justify-between items-center">
-            <div className="text-xs text-muted-foreground">
+          <div className="flex justify-between items-center text-sm">
+            <div className="text-xs text-gray-400">
               <p>Gerado: {format(new Date(commission.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
               {commission.paid_at && (
                 <p>Pago: {format(new Date(commission.paid_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
@@ -150,7 +153,7 @@ export default function AdminCommissions() {
                 onClick={() => handlePayCommission(commission.id)}
                 disabled={isLoading}
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border border-green-500 text-green-400 bg-transparent hover:bg-transparent transition-none"
               >
                 <CheckCircle className="h-4 w-4" />
                 {isLoading ? 'Pagando...' : 'Marcar como Pago'}
@@ -165,80 +168,68 @@ export default function AdminCommissions() {
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Gestão de Comissões</h1>
-        <p className="text-muted-foreground">Gerencie pagamentos de comissões para barbeiros</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Gestão de Comissões</h1>
+        <p className="text-gray-400">Gerencie pagamentos de comissões para barbeiros</p>
       </div>
 
-      {/* Estatísticas */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <Card>
+        <Card className="bg-gray-800/50 border border-gray-700/50">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-white">
               <AlertCircle className="h-5 w-5 text-yellow-500" />
               <div>
-                <p className="text-sm text-muted-foreground">Pendentes</p>
+                <p className="text-sm text-gray-400">Pendentes</p>
                 <p className="text-xl font-bold">{stats.pendingCount}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gray-800/50 border border-gray-700/50">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-white">
               <CheckCircle className="h-5 w-5 text-green-500" />
               <div>
-                <p className="text-sm text-muted-foreground">Pagas</p>
+                <p className="text-sm text-gray-400">Pagas</p>
                 <p className="text-xl font-bold">{stats.paidCount}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Pendente</p>
-              <p className="text-xl font-bold text-yellow-600">
-                R$ {stats.totalPending.toFixed(2)}
-              </p>
-            </div>
+        <Card className="bg-gray-800/50 border border-gray-700/50">
+          <CardContent className="p-4 text-white">
+            <p className="text-sm text-gray-400">Total Pendente</p>
+            <p className="text-xl font-bold text-yellow-500">R$ {stats.totalPending.toFixed(2)}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Pago</p>
-              <p className="text-xl font-bold text-green-600">
-                R$ {stats.totalPaid.toFixed(2)}
-              </p>
-            </div>
+        <Card className="bg-gray-800/50 border border-gray-700/50">
+          <CardContent className="p-4 text-white">
+            <p className="text-sm text-gray-400">Total Pago</p>
+            <p className="text-xl font-bold text-green-500">R$ {stats.totalPaid.toFixed(2)}</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros */}
-      <Card className="mb-6">
+      <Card className="mb-6 bg-gray-800/50 border border-gray-700/50">
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-64">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por barbeiro ou cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="flex-1 min-w-64 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar por barbeiro ou cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-transparent border border-gray-600 text-white"
+              />
             </div>
-            
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 bg-transparent border border-gray-600 text-white">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-900 text-white border border-gray-700">
                 <SelectItem value="">Todos</SelectItem>
                 <SelectItem value="pending">Pendente</SelectItem>
                 <SelectItem value="paid">Pago</SelectItem>
@@ -246,10 +237,10 @@ export default function AdminCommissions() {
             </Select>
 
             <Select value={barberFilter} onValueChange={setBarberFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-48 bg-transparent border border-gray-600 text-white">
                 <SelectValue placeholder="Barbeiro" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-gray-900 text-white border border-gray-700">
                 <SelectItem value="">Todos</SelectItem>
                 {barbers.map(barber => (
                   <SelectItem key={barber.id} value={barber.id}>
@@ -259,7 +250,10 @@ export default function AdminCommissions() {
               </SelectContent>
             </Select>
 
-            <Button onClick={exportToCSV} variant="outline" className="flex items-center gap-2">
+            <Button
+              onClick={exportToCSV}
+              className="flex items-center gap-2 border border-gray-600 text-gray-300 bg-transparent hover:bg-transparent transition-none"
+            >
               <Download className="h-4 w-4" />
               Exportar CSV
             </Button>
@@ -267,15 +261,14 @@ export default function AdminCommissions() {
         </CardContent>
       </Card>
 
-      {/* Lista de Comissões */}
       <div>
         {filteredCommissions.length > 0 ? (
           filteredCommissions.map(renderCommissionCard)
         ) : (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <DollarSign className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Nenhuma comissão encontrada</p>
+          <Card className="bg-gray-800/50 border border-gray-700/50">
+            <CardContent className="p-6 text-center text-gray-400">
+              <DollarSign className="h-12 w-12 mx-auto mb-4" />
+              <p>Nenhuma comissão encontrada</p>
             </CardContent>
           </Card>
         )}
