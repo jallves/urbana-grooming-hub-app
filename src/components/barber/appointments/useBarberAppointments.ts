@@ -259,7 +259,7 @@ export const useBarberAppointments = () => {
             .eq('id', barberData.staff_id)
             .maybeSingle();
 
-          const commissionRate = staffData?.commission_rate || 30;
+          const commissionRate = staffData?.commission_rate || barberData.commission_rate || 30;
           const commissionAmount = servicePrice * (commissionRate / 100);
 
           console.log('Creating commission:', {
