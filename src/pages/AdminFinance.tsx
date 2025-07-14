@@ -1,4 +1,3 @@
-
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import FinanceManagement from '@/components/admin/finance/FinanceManagement';
@@ -13,10 +12,10 @@ const AdminFinance: React.FC = () => {
           <ModernCard
             title="Gestão Financeira"
             description="Gestão financeira e fluxo de caixa da barbearia"
-            className="w-full max-w-full"
-            contentClassName="overflow-hidden"
+            className="w-full max-w-full bg-gray-800/50 border border-gray-700/50 backdrop-blur-sm transition-none hover:bg-gray-800/50"
+            contentClassName="overflow-hidden transition-none"
           >
-            <div className="w-full overflow-hidden">
+            <div className="w-full overflow-hidden transition-none">
               <FinanceManagement />
             </div>
           </ModernCard>
