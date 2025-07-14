@@ -27,10 +27,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Badge
-} from "@/components/ui/badge";
-import { Edit, MoreHorizontal, Trash2, Search, Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Edit, MoreHorizontal, Trash2, Search, Plus, ArrowUpCircle, ArrowDownCircle, CheckCircle } from 'lucide-react';
 import FinancialTransactionForm from './FinancialTransactionForm';
 import {
   AlertDialog,
@@ -150,6 +148,31 @@ const TransactionList: React.FC = () => {
     } finally {
       setTransactionToDelete(null);
       setIsDeleteDialogOpen(false);
+    }
+  };
+
+  const handleMarkAsPaid = async (transactionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('financial_transactions')
+        .update({ 
+          status: 'completed',
+          payment_date: new Date().toISOString()
+        })
+        .eq('id', transactionId);
+
+      if (error) throw error;
+
+      setTransactions(transactions.map(t => 
+        t.id === transactionId ? { ...t, status: 'completed', payment_date: new Date().toISOString() } : t
+      ));
+      
+      toast.success('Transação marcada como paga!');
+    } catch (error) {
+      console.error('Erro ao marcar transação como paga:', error);
+      toast.error('Erro ao marcar transação como paga', {
+        description: (error as Error).message
+      });
     }
   };
 
@@ -383,7 +406,19 @@ const TransactionList: React.FC = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
-                            <DropdownMenuItem onClick={() => handleEditTransaction(transaction.id)} className="text-white hover:bg-gray-700 text-xs">
+                            {transaction.status === 'pending' && (
+                              <DropdownMenuItem 
+                                onClick={() => handleMarkAsPaid(transaction.id)} 
+                                className="text-green-400 hover:bg-gray-700 text-xs"
+                              >
+                                <CheckCircle className="mr-2 h-3 w-3" />
+                                Marcar como pago
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem 
+                              onClick={() => handleEditTransaction(transaction.id)} 
+                              className="text-white hover:bg-gray-700 text-xs"
+                            >
                               <Edit className="mr-2 h-3 w-3" />
                               Editar
                             </DropdownMenuItem>
