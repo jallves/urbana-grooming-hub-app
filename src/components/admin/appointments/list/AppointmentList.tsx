@@ -59,8 +59,9 @@ const AppointmentList: React.FC = () => {
       <ModernCard
         title="Lista de Agendamentos"
         description="Visualize e gerencie todos os agendamentos"
-        className="w-full max-w-full bg-white border-gray-200"
-        contentClassName="p-0 overflow-hidden"
+        className="w-full"
+        gradient={false}
+        contentClassName="p-0"
       >
         <div className="p-4 sm:p-6">
           <AppointmentFilters
