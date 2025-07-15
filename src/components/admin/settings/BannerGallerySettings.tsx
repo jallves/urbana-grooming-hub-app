@@ -50,50 +50,56 @@ const BannerGallerySettings: React.FC = () => {
   ]);
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="database-gallery" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-300">
-          <TabsTrigger 
-            value="database-gallery" 
-            className="flex items-center gap-2 data-[state=active]:bg-gray-100 data-[state=active]:text-black text-gray-700"
-          >
-            <Database className="h-4 w-4" />
-            Galeria Permanente
-          </TabsTrigger>
-          <TabsTrigger 
-            value="banner" 
-            className="flex items-center gap-2 data-[state=active]:bg-gray-100 data-[state=active]:text-black text-gray-700"
-          >
-            <GalleryHorizontal className="h-4 w-4" />
-            Banners Rotativos
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="database-gallery" className="space-y-6 mt-6">
-          <Card className="bg-white border-gray-300">
-            <CardHeader>
-              <CardTitle className="text-black">Galeria de Fotos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DatabaseGalleryManager />
-            </CardContent>
-          </Card>
-        </TabsContent>
+    <div className="min-h-screen w-full bg-white">
+      <div className="w-full max-w-none px-6 py-6">
+        <Tabs defaultValue="database-gallery" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 h-12">
+            <TabsTrigger 
+              value="database-gallery" 
+              className="flex items-center gap-2 data-[state=active]:bg-gray-50 data-[state=active]:text-black text-gray-700 h-10"
+            >
+              <Database className="h-4 w-4" />
+              Galeria Permanente
+            </TabsTrigger>
+            <TabsTrigger 
+              value="banner" 
+              className="flex items-center gap-2 data-[state=active]:bg-gray-50 data-[state=active]:text-black text-gray-700 h-10"
+            >
+              <GalleryHorizontal className="h-4 w-4" />
+              Banners Rotativos
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="database-gallery" className="mt-6 w-full">
+            <Card className="bg-white border-gray-200 w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-black text-xl">Galeria de Fotos</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="w-full">
+                  <DatabaseGalleryManager />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="banner" className="space-y-6 mt-6">
-          <Card className="bg-white border-gray-300">
-            <CardHeader>
-              <CardTitle className="text-black">Banners da Página Inicial</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BannerManager 
-                bannerImages={bannerImages}
-                setBannerImages={setBannerImages}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="banner" className="mt-6 w-full">
+            <Card className="bg-white border-gray-200 w-full">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-black text-xl">Banners da Página Inicial</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="w-full">
+                  <BannerManager 
+                    bannerImages={bannerImages}
+                    setBannerImages={setBannerImages}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
