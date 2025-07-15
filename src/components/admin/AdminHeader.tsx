@@ -15,7 +15,6 @@ const AdminHeader: React.FC = () => {
         title: 'Logout realizado',
         description: 'Você foi desconectado do sistema',
       });
-      // Redirection is handled by the signOut function in AuthContext
     } catch (error) {
       toast({
         title: 'Erro ao fazer logout',
@@ -25,17 +24,21 @@ const AdminHeader: React.FC = () => {
     }
   };
   
-  // Obter nome do usuário das metadados ou fallback para email
   const userName = user?.user_metadata?.full_name || user?.email || 'Admin';
   
   return (
-    <header className="border-b bg-card p-4 flex justify-between items-center">
-      <h1 className="text-xl font-bold">Painel Administrativo</h1>
+    <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+      <h1 className="text-xl font-bold text-gray-900">Painel Administrativo</h1>
       <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground hidden md:inline-block">
+        <span className="text-sm text-gray-600 hidden md:inline-block">
           {userName}
         </span>
-        <Button variant="outline" size="sm" onClick={handleSignOut}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleSignOut}
+          className="border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
           Sair
         </Button>
       </div>

@@ -8,13 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { useWindowSize } from '@/hooks/useWindowSize';
 
 const ClientManagement: React.FC = () => {
   const [isAddingClient, setIsAddingClient] = useState(false);
   const [editingClient, setEditingClient] = useState<string | null>(null);
-  const { width } = useWindowSize();
-  const isMobile = width < 640;
 
   const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['clients'],
@@ -54,18 +51,22 @@ const ClientManagement: React.FC = () => {
   }
 
   return (
-    <div className="w-full p-2 sm:p-4">
-      {/* Header Section */}
-      <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-lg font-bold sm:text-xl text-gray-900 dark:text-white">
-          Gerenciamento de Clientes
-        </h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Gerenciamento de Clientes
+          </h1>
+          <p className="text-gray-600">
+            Gerencie sua base de clientes
+          </p>
+        </div>
         
         {!isAddingClient && !editingClient && (
           <Button 
             onClick={() => setIsAddingClient(true)}
-            size={isMobile ? 'sm' : 'default'}
-            className="w-full sm:w-auto"
+            className="bg-gray-900 hover:bg-gray-800 text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
             Novo Cliente
@@ -75,13 +76,13 @@ const ClientManagement: React.FC = () => {
 
       {/* Form Section */}
       {(isAddingClient || editingClient) && (
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle>
+        <Card className="bg-white border-gray-200">
+          <CardHeader className="border-b border-gray-200">
+            <CardTitle className="text-gray-900">
               {editingClient ? 'Editar Cliente' : 'Adicionar Cliente'}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <ClientForm 
               clientId={editingClient}
               onCancel={() => {
@@ -99,17 +100,19 @@ const ClientManagement: React.FC = () => {
       )}
 
       {/* Client List Section */}
-      <div className="overflow-hidden rounded-lg border">
-        <ClientList 
-          clients={clients || []}
-          isLoading={isLoading}
-          onEdit={(id) => {
-            setEditingClient(id);
-            setIsAddingClient(false);
-          }}
-          onDelete={refetch}
-        />
-      </div>
+      <Card className="bg-white border-gray-200">
+        <CardContent className="p-0">
+          <ClientList 
+            clients={clients || []}
+            isLoading={isLoading}
+            onEdit={(id) => {
+              setEditingClient(id);
+              setIsAddingClient(false);
+            }}
+            onDelete={refetch}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

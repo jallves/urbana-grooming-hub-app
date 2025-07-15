@@ -12,12 +12,12 @@ interface DashboardContainerProps {
 const DashboardContainer: React.FC<DashboardContainerProps> = ({ 
   children, 
   className,
-  maxWidth = 'screen-xl',
+  maxWidth = 'full',
   spacing = 'md'
 }) => {
   const spacingClasses = {
     sm: 'px-3 py-4 space-y-4',
-    md: 'px-4 py-6 space-y-6',
+    md: 'px-4 sm:px-6 lg:px-8 py-6 space-y-6',
     lg: 'px-6 py-8 space-y-8'
   };
 
@@ -29,7 +29,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
 
   return (
     <div className={cn(
-      'w-full mx-auto',
+      'w-full mx-auto bg-white min-h-screen',
       maxWidthClasses[maxWidth],
       spacingClasses[spacing],
       className
