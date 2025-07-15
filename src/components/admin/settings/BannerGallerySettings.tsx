@@ -1,93 +1,64 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GalleryHorizontal, Image, Database } from "lucide-react";
-import { BannerImage } from '@/types/settings';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import BannerManager from './media/BannerManager';
-import DatabaseGalleryManager from './media/components/DatabaseGalleryManager';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import UsersTab from './users/UsersTab';
+import UserRolesList from './users/UserRolesList';
+import { Users, Shield } from 'lucide-react';
 
-const BannerGallerySettings: React.FC = () => {
-  const [bannerImages, setBannerImages] = useState<BannerImage[]>([
-    {
-      id: '1',
-      image_url: '/hero-background.jpg',
-      title: 'Experiência Premium',
-      subtitle: 'em Barbearia',
-      description: 'A arte da barbearia tradicional com sofisticação moderna',
-      button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
-      is_active: true,
-      display_order: 1
-    },
-    {
-      id: '2',
-      image_url: '/banner-2.jpg',
-      title: 'Estilo & Precisão',
-      subtitle: 'para Cavalheiros',
-      description: 'Cortes clássicos com um toque contemporâneo',
-      button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
-      is_active: true,
-      display_order: 2
-    },
-    {
-      id: '3',
-      image_url: '/banner-3.jpg',
-      title: 'Ambiente Exclusivo',
-      subtitle: 'para Relaxar',
-      description: 'Um espaço onde tradição e conforto se encontram',
-      button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
-      is_active: true,
-      display_order: 3
-    }
-  ]);
+const UserManagement: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('users');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRolesListError = (err: string) => {
+    setError(err || 'Erro ao carregar cargos e permissões.');
+  };
 
   return (
-    <div className="space-y-6">
-      <Tabs defaultValue="database-gallery" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-800 border border-gray-700">
-          <TabsTrigger 
-            value="database-gallery" 
-            className="flex items-center gap-2 data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300"
-          >
-            <Database className="h-4 w-4" />
-            Galeria Permanente
-          </TabsTrigger>
-          <TabsTrigger 
-            value="banner" 
-            className="flex items-center gap-2 data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300"
-          >
-            <GalleryHorizontal className="h-4 w-4" />
-            Banners Rotativos
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="database-gallery" className="space-y-6 mt-6">
-          <DatabaseGalleryManager />
-        </TabsContent>
+    <Card className="w-full bg-gray-100 border border-gray-300">
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">
+          Gerenciamento de Usuários
+        </CardTitle>
+        <CardDescription className="text-gray-700 text-sm sm:text-base">
+          Gerencie usuários, cargos e permissões no sistema
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-4 sm:px-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6 w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-200 border border-gray-300 h-auto">
+            <TabsTrigger 
+              value="users" 
+              className="flex items-center gap-2 py-3 data-[state=active]:bg-blue-100 data-[state=active]:text-black text-black transition-none"
+            >
+              <Users className="h-4 w-4" />
+              <span className="text-sm">Usuários</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="roles" 
+              className="flex items-center gap-2 py-3 data-[state=active]:bg-purple-100 data-[state=active]:text-black text-black transition-none"
+            >
+              <Shield className="h-4 w-4" />
+              <span className="text-sm">Permissões</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="banner" className="space-y-6 mt-6">
-          <Card className="border-gray-700 bg-gray-800">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-gray-100">Banners da Página Inicial</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BannerManager 
-                bannerImages={bannerImages}
-                setBannerImages={setBannerImages}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="users" className="mt-4 sm:mt-6 w-full">
+            <UsersTab />
+          </TabsContent>
+          
+          <TabsContent value="roles" className="mt-4 sm:mt-6 w-full">
+            {error ? (
+              <div className="p-4 bg-red-100 text-red-900 rounded border border-red-300">
+                {error}
+              </div>
+            ) : (
+              <UserRolesList onError={handleRolesListError} />
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
-export default BannerGallerySettings;
+export default UserManagement;
