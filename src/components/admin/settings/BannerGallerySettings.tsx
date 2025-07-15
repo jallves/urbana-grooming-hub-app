@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GalleryHorizontal, Image, Database } from "lucide-react";
@@ -51,18 +52,12 @@ const BannerGallerySettings: React.FC = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="database-gallery" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-800 border border-gray-700">
-          <TabsTrigger 
-            value="database-gallery" 
-            className="flex items-center gap-2 data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300"
-          >
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="database-gallery" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
             Galeria Permanente
           </TabsTrigger>
-          <TabsTrigger 
-            value="banner" 
-            className="flex items-center gap-2 data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300"
-          >
+          <TabsTrigger value="banner" className="flex items-center gap-2">
             <GalleryHorizontal className="h-4 w-4" />
             Banners Rotativos
           </TabsTrigger>
@@ -73,9 +68,9 @@ const BannerGallerySettings: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="banner" className="space-y-6 mt-6">
-          <Card className="border-gray-700 bg-gray-800">
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-gray-100">Banners da Página Inicial</CardTitle>
+              <CardTitle>Banners da Página Inicial</CardTitle>
             </CardHeader>
             <CardContent>
               <BannerManager 
