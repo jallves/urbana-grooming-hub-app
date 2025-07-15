@@ -1,4 +1,3 @@
-
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ClientAppointmentList from '@/components/admin/client-appointments/ClientAppointmentList';
@@ -16,9 +15,12 @@ export default function AdminClientAppointments() {
           <ModernCard
             title="Painel de Clientes"
             description="Gerencie os agendamentos criados pelos clientes através do painel do cliente"
-            gradient="from-black-500/10 to-violet-600/10"
+            gradient={false}
+            className="bg-white border border-gray-200"
           >
-            <ClientAppointmentList />
+            <div className="p-0">
+              <ClientAppointmentList />
+            </div>
           </ModernCard>
         </div>
       </div>

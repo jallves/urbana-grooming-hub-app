@@ -10,7 +10,7 @@ export default function AdminAppointments() {
         <ModernCard
           title="Gestão de Agendamentos"
           description="Gerencie todos os agendamentos da barbearia em tempo real"
-          gradient="from-black-500/10 to-emerald-600/10"
+          gradient={false}
           className="w-full"
           headerClassName="px-4 py-3 sm:px-6 sm:py-4"
           contentClassName="overflow-x-auto"
