@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import AdminRoute from '@/components/auth/AdminRoute';
@@ -15,10 +16,10 @@ const AdminSettings: React.FC = () => {
     <AdminRoute>
       <AdminLayout title="Configurações">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-800 border border-gray-700 rounded-lg p-1">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 rounded-lg p-1">
             <TabsTrigger 
               value="shop" 
-              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white text-gray-300 py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium transition-all"
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white text-gray-700 py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium transition-all"
             >
               <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Barbearia</span>
@@ -26,7 +27,7 @@ const AdminSettings: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="media" 
-              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-blue-500 data-[state=active]:text-white text-gray-300 py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium transition-all"
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-blue-500 data-[state=active]:text-white text-gray-700 py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium transition-all"
             >
               <Image className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Banners & Galeria</span>
@@ -34,7 +35,7 @@ const AdminSettings: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="users" 
-              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white text-gray-300 py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium transition-all"
+              className="flex items-center gap-1 sm:gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white text-gray-700 py-2 px-2 sm:px-3 text-xs sm:text-sm font-medium transition-all"
             >
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Usuários</span>
@@ -46,7 +47,7 @@ const AdminSettings: React.FC = () => {
             <ModernCard
               title="Configurações da Barbearia"
               description="Gerencie as configurações gerais e personalize a aparência do seu site"
-              className="w-full max-w-full bg-gray-800 border-gray-700"
+              className="w-full max-w-full bg-white border-gray-200"
               contentClassName="overflow-hidden"
             >
               <div className="w-full overflow-hidden">
@@ -59,7 +60,7 @@ const AdminSettings: React.FC = () => {
             <ModernCard
               title="Banners e Galeria"
               description="Gerencie imagens, banners e galeria do site"
-              className="w-full max-w-full bg-gray-800 border-gray-700"
+              className="w-full max-w-full bg-white border-gray-200"
               contentClassName="overflow-hidden"
             >
               <div className="w-full overflow-hidden">
@@ -72,7 +73,7 @@ const AdminSettings: React.FC = () => {
             <ModernCard
               title="Gestão de Usuários"
               description="Gerencie usuários e permissões do sistema"
-              className="w-full max-w-full bg-gray-800 border-gray-700"
+              className="w-full max-w-full bg-white border-gray-200"
               contentClassName="overflow-hidden"
             >
               <div className="w-full overflow-hidden">
