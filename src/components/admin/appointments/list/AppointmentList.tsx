@@ -13,7 +13,7 @@ const AppointmentList: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState<string | null>(null);
-  
+
   const {
     appointments,
     isLoading,
@@ -21,45 +21,45 @@ const AppointmentList: React.FC = () => {
     handleStatusChange,
     handleDeleteAppointment
   } = useAppointments();
-  
+
   const filteredAppointments = appointments.filter(appointment => {
     if (statusFilter !== 'all' && appointment.status !== statusFilter) {
       return false;
     }
-    
+
     const clientName = appointment.client?.name?.toLowerCase() || '';
     const query = searchQuery.toLowerCase();
-    
+
     return clientName.includes(query);
   });
-  
+
   const handleEditAppointment = (appointmentId: string) => {
     setSelectedAppointment(appointmentId);
     setIsFormOpen(true);
   };
-  
+
   const confirmDeleteAppointment = (appointmentId: string) => {
     setAppointmentToDelete(appointmentId);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const executeDeleteAppointment = async () => {
     if (!appointmentToDelete) return;
-    
+
     const success = await handleDeleteAppointment(appointmentToDelete);
-    
+
     if (success) {
       setAppointmentToDelete(null);
       setIsDeleteDialogOpen(false);
     }
   };
-  
+
   return (
     <div className="w-full space-y-6">
       <ModernCard
         title="Lista de Agendamentos"
         description="Visualize e gerencie todos os agendamentos"
-        className="w-full"
+        className="w-full bg-white text-black border border-gray-200 shadow-none"
         gradient={false}
         contentClassName="p-0"
       >
@@ -71,7 +71,7 @@ const AppointmentList: React.FC = () => {
             setStatusFilter={setStatusFilter}
           />
         </div>
-        
+
         <div className="border-t border-gray-200">
           <AppointmentTable
             appointments={filteredAppointments}
@@ -82,7 +82,7 @@ const AppointmentList: React.FC = () => {
           />
         </div>
       </ModernCard>
-      
+
       {isFormOpen && selectedAppointment && (
         <AppointmentForm
           isOpen={isFormOpen}
@@ -94,7 +94,7 @@ const AppointmentList: React.FC = () => {
           appointmentId={selectedAppointment}
         />
       )}
-      
+
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
