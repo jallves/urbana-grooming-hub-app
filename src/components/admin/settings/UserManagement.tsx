@@ -15,41 +15,41 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <Card className="w-full bg-white border border-gray-200 shadow-none">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-medium text-black">
+    <Card className="w-full bg-white border border-gray-200">
+      <CardHeader>
+        <CardTitle className="text-xl font-semibold text-gray-900">
           Gerenciamento de Usuários
         </CardTitle>
-        <CardDescription className="text-gray-600 text-sm">
+        <CardDescription className="text-gray-600">
           Gerencie usuários, cargos e permissões no sistema
         </CardDescription>
       </CardHeader>
-      <CardContent className="pt-0">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-50 border border-gray-200 h-10">
+      <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200">
             <TabsTrigger 
               value="users" 
-              className="flex items-center gap-2 py-2 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm text-gray-700 text-sm font-normal"
+              className="flex items-center gap-2 py-3 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 text-gray-700"
             >
               <Users className="h-4 w-4" />
-              <span>Usuários</span>
+              <span className="text-sm">Usuários</span>
             </TabsTrigger>
             <TabsTrigger 
               value="roles" 
-              className="flex items-center gap-2 py-2 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm text-gray-700 text-sm font-normal"
+              className="flex items-center gap-2 py-3 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 text-gray-700"
             >
               <Shield className="h-4 w-4" />
-              <span>Permissões</span>
+              <span className="text-sm">Permissões</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="mt-4 w-full">
+          <TabsContent value="users" className="mt-6 w-full">
             <UsersTab />
           </TabsContent>
           
-          <TabsContent value="roles" className="mt-4 w-full">
+          <TabsContent value="roles" className="mt-6 w-full">
             {error ? (
-              <div className="p-3 bg-red-50 text-red-900 rounded border border-red-200 text-sm">
+              <div className="p-4 bg-red-50 text-red-900 rounded border border-red-200">
                 {error}
               </div>
             ) : (
