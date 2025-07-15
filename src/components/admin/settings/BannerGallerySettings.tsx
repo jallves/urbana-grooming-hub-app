@@ -1,55 +1,59 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Image, Camera } from 'lucide-react';
+import UsersTab from './users/UsersTab';
+import UserRolesList from './users/UserRolesList';
+import { Users, Shield } from 'lucide-react';
 
-const BannerGallerySettings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('banners');
+const UserManagement: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('users');
+  const [error, setError] = useState<string | null>(null);
+
+  const handleRolesListError = (err: string) => {
+    setError(err || 'Erro ao carregar cargos e permissões.');
+  };
 
   return (
-    <Card className="w-full bg-white border border-gray-200">
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold text-gray-900">
-          Banners e Galeria
+    <Card className="w-full bg-gray-100 border border-gray-300">
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-lg sm:text-xl font-bold text-gray-900">
+          Gerenciamento de Usuários
         </CardTitle>
-        <CardDescription className="text-gray-600">
-          Gerencie imagens, banners e galeria do site
+        <CardDescription className="text-gray-700 text-sm sm:text-base">
+          Gerencie usuários, cargos e permissões no sistema
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200">
+      <CardContent className="px-4 sm:px-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6 w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-200 border border-gray-300 h-auto">
             <TabsTrigger 
-              value="banners" 
-              className="flex items-center gap-2 py-3 data-[state=active]:bg-green-100 data-[state=active]:text-green-900 text-gray-700"
+              value="users" 
+              className="flex items-center gap-2 py-3 data-[state=active]:bg-blue-100 data-[state=active]:text-black text-black transition-none"
             >
-              <Image className="h-4 w-4" />
-              <span className="text-sm">Banners</span>
+              <Users className="h-4 w-4" />
+              <span className="text-sm">Usuários</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="gallery" 
-              className="flex items-center gap-2 py-3 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900 text-gray-700"
+              value="roles" 
+              className="flex items-center gap-2 py-3 data-[state=active]:bg-purple-100 data-[state=active]:text-black text-black transition-none"
             >
-              <Camera className="h-4 w-4" />
-              <span className="text-sm">Galeria</span>
+              <Shield className="h-4 w-4" />
+              <span className="text-sm">Permissões</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="banners" className="mt-6 w-full">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-              <Image className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Gerenciamento de Banners</h3>
-              <p className="text-gray-600">Configure os banners que aparecerão no site</p>
-            </div>
+          <TabsContent value="users" className="mt-4 sm:mt-6 w-full">
+            <UsersTab />
           </TabsContent>
           
-          <TabsContent value="gallery" className="mt-6 w-full">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-              <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Galeria de Fotos</h3>
-              <p className="text-gray-600">Gerencie as fotos da galeria do site</p>
-            </div>
+          <TabsContent value="roles" className="mt-4 sm:mt-6 w-full">
+            {error ? (
+              <div className="p-4 bg-red-100 text-red-900 rounded border border-red-300">
+                {error}
+              </div>
+            ) : (
+              <UserRolesList onError={handleRolesListError} />
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -57,4 +61,4 @@ const BannerGallerySettings: React.FC = () => {
   );
 };
 
-export default BannerGallerySettings;
+export default UserManagement;

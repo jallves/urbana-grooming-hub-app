@@ -80,7 +80,9 @@ const ShopSettingsForm: React.FC = () => {
         }
       } catch (error) {
         console.error('Erro ao buscar configurações:', error);
-        toast.error('Erro ao carregar configurações');
+        toast.error('Erro ao carregar configurações', { 
+          description: (error as Error).message 
+        });
       } finally {
         setIsLoading(false);
       }
@@ -106,6 +108,7 @@ const ShopSettingsForm: React.FC = () => {
       };
 
       if (settingsId) {
+        // Update existing settings
         const { error } = await supabase
           .from('shop_settings')
           .update(settingsData)
@@ -113,6 +116,7 @@ const ShopSettingsForm: React.FC = () => {
 
         if (error) throw error;
       } else {
+        // Insert new settings
         const { error } = await supabase
           .from('shop_settings')
           .insert([settingsData]);
@@ -123,7 +127,9 @@ const ShopSettingsForm: React.FC = () => {
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
-      toast.error('Erro ao salvar configurações');
+      toast.error('Erro ao salvar configurações', { 
+        description: (error as Error).message 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -131,9 +137,9 @@ const ShopSettingsForm: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card className="w-full bg-white border border-gray-200">
+      <Card className="w-full">
         <div className="flex justify-center items-center h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       </Card>
     );
@@ -142,12 +148,10 @@ const ShopSettingsForm: React.FC = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card className="w-full bg-white border border-gray-200">
+        <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-gray-900">
-              Informações da Barbearia
-            </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardTitle>Informações da Barbearia</CardTitle>
+            <CardDescription>
               Configure as informações básicas da sua barbearia
             </CardDescription>
           </CardHeader>
@@ -157,13 +161,9 @@ const ShopSettingsForm: React.FC = () => {
               name="shop_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-900 font-medium">Nome da Barbearia *</FormLabel>
+                  <FormLabel>Nome da Barbearia *</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Nome da sua barbearia" 
-                      {...field} 
-                      className="bg-white border-gray-300 text-gray-900"
-                    />
+                    <Input placeholder="Nome da sua barbearia" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -175,16 +175,11 @@ const ShopSettingsForm: React.FC = () => {
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-900 font-medium">Endereço</FormLabel>
+                  <FormLabel>Endereço</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Building className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                      <Input 
-                        className="pl-10 bg-white border-gray-300 text-gray-900" 
-                        placeholder="Endereço completo" 
-                        {...field} 
-                        value={field.value || ''} 
-                      />
+                      <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-10" placeholder="Endereço completo" {...field} value={field.value || ''} />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -198,19 +193,14 @@ const ShopSettingsForm: React.FC = () => {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-900 font-medium">Telefone</FormLabel>
+                    <FormLabel>Telefone</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input 
-                          className="pl-10 bg-white border-gray-300 text-gray-900" 
-                          placeholder="(00) 00000-0000" 
-                          {...field} 
-                          value={field.value || ''} 
-                        />
+                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-10" placeholder="(00) 00000-0000" {...field} value={field.value || ''} />
                       </div>
                     </FormControl>
-                    <FormDescription className="text-gray-600">
+                    <FormDescription>
                       Este número será usado para o botão de WhatsApp no site. Inclua o código do país e DDD.
                     </FormDescription>
                     <FormMessage />
@@ -223,16 +213,11 @@ const ShopSettingsForm: React.FC = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-900 font-medium">E-mail</FormLabel>
+                    <FormLabel>E-mail</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input 
-                          className="pl-10 bg-white border-gray-300 text-gray-900" 
-                          placeholder="contato@barbearia.com" 
-                          {...field} 
-                          value={field.value || ''} 
-                        />
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-10" placeholder="contato@barbearia.com" {...field} value={field.value || ''} />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -246,14 +231,9 @@ const ShopSettingsForm: React.FC = () => {
               name="logo_url"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-900 font-medium">URL do Logo</FormLabel>
+                  <FormLabel>URL do Logo</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="https://example.com/logo.png" 
-                      {...field} 
-                      value={field.value || ''} 
-                      className="bg-white border-gray-300 text-gray-900"
-                    />
+                    <Input placeholder="https://example.com/logo.png" {...field} value={field.value || ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -265,16 +245,11 @@ const ShopSettingsForm: React.FC = () => {
               name="website"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-900 font-medium">Website</FormLabel>
+                  <FormLabel>Website</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Globe className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                      <Input 
-                        className="pl-10 bg-white border-gray-300 text-gray-900" 
-                        placeholder="https://www.barbearia.com" 
-                        {...field} 
-                        value={field.value || ''} 
-                      />
+                      <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input className="pl-10" placeholder="https://www.barbearia.com" {...field} value={field.value || ''} />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -283,23 +258,18 @@ const ShopSettingsForm: React.FC = () => {
             />
 
             <div className="pt-4">
-              <h3 className="text-lg font-medium mb-3 text-gray-900">Redes Sociais</h3>
+              <h3 className="text-lg font-medium mb-3">Redes Sociais</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                   control={form.control}
                   name="social_instagram"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-900 font-medium">Instagram</FormLabel>
+                      <FormLabel>Instagram</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Instagram className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                          <Input 
-                            className="pl-10 bg-white border-gray-300 text-gray-900" 
-                            placeholder="@barbearia" 
-                            {...field} 
-                            value={field.value || ''} 
-                          />
+                          <Instagram className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input className="pl-10" placeholder="@barbearia" {...field} value={field.value || ''} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -312,16 +282,11 @@ const ShopSettingsForm: React.FC = () => {
                   name="social_facebook"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-900 font-medium">Facebook</FormLabel>
+                      <FormLabel>Facebook</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Facebook className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                          <Input 
-                            className="pl-10 bg-white border-gray-300 text-gray-900" 
-                            placeholder="@barbearia" 
-                            {...field} 
-                            value={field.value || ''} 
-                          />
+                          <Facebook className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input className="pl-10" placeholder="@barbearia" {...field} value={field.value || ''} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -334,16 +299,11 @@ const ShopSettingsForm: React.FC = () => {
                   name="social_twitter"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-900 font-medium">Twitter</FormLabel>
+                      <FormLabel>Twitter</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Twitter className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                          <Input 
-                            className="pl-10 bg-white border-gray-300 text-gray-900" 
-                            placeholder="@barbearia" 
-                            {...field} 
-                            value={field.value || ''} 
-                          />
+                          <Twitter className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input className="pl-10" placeholder="@barbearia" {...field} value={field.value || ''} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -354,11 +314,7 @@ const ShopSettingsForm: React.FC = () => {
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
-            <Button 
-              type="submit" 
-              disabled={isSaving}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
+            <Button type="submit" disabled={isSaving}>
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Configurações
             </Button>
