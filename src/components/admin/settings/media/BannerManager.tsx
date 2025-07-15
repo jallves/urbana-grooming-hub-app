@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { BannerFormProps, ImageUpload } from './types';
 import { useBannerOperations } from './useBannerOperations';
@@ -14,13 +13,13 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
     setEditingBanner,
     handleAddBanner: addBanner,
     handleDeleteBanner,
-    handleUpdateBanner
+    handleUpdateBanner,
   } = useBannerOperations(bannerImages, setBannerImages);
-  
+
   const [bannerUpload, setBannerUpload] = useState<ImageUpload | null>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  
+
   const [newBanner, setNewBanner] = useState<Omit<BannerImage, 'id'>>({
     image_url: '',
     title: '',
@@ -29,34 +28,33 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
     button_text: 'Agendar Agora',
     button_link: '/cliente/login',
     is_active: true,
-    display_order: 0
+    display_order: 0,
   });
+
+  const resetForm = () => {
+    setNewBanner({
+      image_url: '',
+      title: '',
+      subtitle: '',
+      description: '',
+      button_text: 'Agendar Agora',
+      button_link: '/cliente/login',
+      is_active: true,
+      display_order: 0,
+    });
+    setBannerUpload(null);
+    if (bannerFileInputRef.current) {
+      bannerFileInputRef.current.value = '';
+    }
+  };
 
   const handleAddBanner = async () => {
     setUploadError(null);
-    
     try {
       const success = await addBanner(newBanner, bannerUpload);
-      
-      if (success) {
-        setNewBanner({
-          image_url: '',
-          title: '',
-          subtitle: '',
-          description: '',
-          button_text: 'Agendar Agora',
-          button_link: '/cliente/login',
-          is_active: true,
-          display_order: 0
-        });
-        
-        setBannerUpload(null);
-        if (bannerFileInputRef.current) {
-          bannerFileInputRef.current.value = '';
-        }
-      }
+      if (success) resetForm();
     } catch (error) {
-      console.error('Error adding banner:', error);
+      console.error('Erro ao adicionar banner:', error);
       setUploadError((error as Error).message);
     }
   };
@@ -66,8 +64,8 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
   };
 
   return (
-    <div className="space-y-4">
-      <BannerTable 
+    <div className="space-y-6">
+      <BannerTable
         bannerImages={bannerImages}
         isLoading={isLoading}
         onDelete={handleDeleteBanner}
@@ -76,8 +74,8 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
         setEditingBanner={setEditingBanner}
         handleUpdateBanner={handleUpdateBanner}
       />
-      
-      <BannerForm 
+
+      <BannerForm
         newBanner={newBanner}
         setNewBanner={setNewBanner}
         bannerUpload={bannerUpload}
