@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
@@ -41,17 +40,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const userInitials = user?.email?.charAt(0).toUpperCase() || 'A';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white w-full overflow-x-hidden">
-      {/* Modern Background Pattern */}
-      <div className="fixed inset-0 opacity-5 pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/api/placeholder/1920/1080')] bg-cover bg-center mix-blend-overlay"></div>
-        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute bottom-20 right-20 w-64 h-64 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-3xl opacity-10"></div>
-      </div>
-
+    <div className="min-h-screen bg-gray-50 text-gray-900 w-full overflow-x-hidden">
+      {/* Layout Structure */}
       <div className="relative z-10 flex min-h-screen w-full">
         {/* Sidebar - Always visible on desktop */}
-        <div className={`${isMobile ? 'hidden' : 'block'} w-64 lg:w-80 flex-shrink-0`}>
+        <div className={`${isMobile ? 'hidden' : 'block'} w-64 lg:w-72 flex-shrink-0 border-r border-gray-200 bg-white`}>
           <AdminSidebar />
         </div>
 
@@ -59,7 +52,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         {isMobile && sidebarOpen && (
           <>
             <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
-            <div className="fixed inset-y-0 left-0 w-64 z-50">
+            <div className="fixed inset-y-0 left-0 w-64 z-50 bg-white">
               <AdminSidebar onClose={() => setSidebarOpen(false)} />
             </div>
           </>
@@ -67,72 +60,71 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-h-screen w-full overflow-hidden">
-          {/* Header - Otimizado para mobile */}
-          <header className="bg-black/20 backdrop-blur-lg border-b border-white/10 sticky top-0 z-30 w-full">
-            <div className="px-2 sm:px-4 lg:px-8 py-2 sm:py-3 lg:py-4 w-full">
+          {/* Header */}
+          <header className="bg-white border-b border-gray-200 sticky top-0 z-30 w-full shadow-sm">
+            <div className="px-4 sm:px-6 lg:px-8 py-3 w-full">
               <div className="flex justify-between items-center w-full">
-                <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
                   {isMobile && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setSidebarOpen(true)}
-                      className="text-white hover:bg-white/10 h-8 w-8 flex-shrink-0"
+                      className="text-gray-500 hover:bg-gray-100 h-9 w-9"
                     >
-                      <Menu className="h-4 w-4" />
+                      <Menu className="h-5 w-5" />
                     </Button>
                   )}
                   <div className="min-w-0 flex-1">
-                    <h1 className="text-sm sm:text-lg lg:text-2xl xl:text-3xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent truncate">
+                    <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-800 truncate">
                       {title}
                     </h1>
-                    <p className="text-xs sm:text-sm text-yellow-400 truncate"> Barbearia Costa Urbana </p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="relative text-gray-400 hover:text-white hover:bg-white/10 transition-all hidden sm:flex h-8 w-8 sm:h-10 sm:w-10"
+                    className="relative text-gray-500 hover:bg-gray-100 h-9 w-9"
                   >
-                    <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <Badge className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 p-0 border-0 text-xs"></Badge>
+                    <Bell className="h-5 w-5" />
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 p-0 border-0 text-xs"></Badge>
                   </Button>
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-white/10 transition-all">
-                        <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-urbana-gold/30">
-                          <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-xs sm:text-sm font-semibold">
+                      <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-gray-100">
+                        <Avatar className="h-8 w-8 border border-gray-200">
+                          <AvatarFallback className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-medium">
                             {userInitials}
                           </AvatarFallback>
                         </Avatar>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-48 sm:w-56 bg-black/90 backdrop-blur-lg border-white/20 text-white" align="end">
-                      <DropdownMenuLabel className="text-xs sm:text-sm text-white">Minha Conta</DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-white/20" />
+                    <DropdownMenuContent className="w-56 bg-white border border-gray-200 shadow-lg" align="end">
+                      <DropdownMenuLabel className="text-gray-800">Minha Conta</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-gray-200" />
                       <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm text-white focus:text-white"
+                        className="cursor-pointer hover:bg-gray-100 text-gray-700"
                         onClick={() => navigate('/admin/configuracoes')}
                       >
-                        <User className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                        <User className="mr-2 h-4 w-4" />
                         Perfil
                       </DropdownMenuItem>
                       <DropdownMenuItem 
-                        className="cursor-pointer hover:bg-white/10 transition-colors text-xs sm:text-sm text-white focus:text-white"
+                        className="cursor-pointer hover:bg-gray-100 text-gray-700"
                         onClick={() => navigate('/')}
                       >
-                        <Settings className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                        <Settings className="mr-2 h-4 w-4" />
                         Ver Site
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/20" />
+                      <DropdownMenuSeparator className="bg-gray-200" />
                       <DropdownMenuItem 
-                        className="cursor-pointer text-red-400 hover:bg-red-500/20 hover:text-red-300 focus:text-red-300 transition-colors text-xs sm:text-sm"
+                        className="cursor-pointer text-red-600 hover:bg-red-50"
                         onClick={handleLogout}
                       >
-                        <LogOut className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                        <LogOut className="mr-2 h-4 w-4" />
                         Sair
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -142,9 +134,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
             </div>
           </header>
 
-          {/* Main Content Area - PADRONIZADO com o Dashboard */}
-          <main className="flex-1 overflow-y-auto w-full">
-            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-y-auto w-full bg-gray-50">
+            <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
               {children}
             </div>
           </main>

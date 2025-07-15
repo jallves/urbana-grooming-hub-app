@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card } from "@/components/ui/card";
+import ModernCard from '@/components/ui/containers/ModernCard';
 import { useAppointments } from './useAppointments';
 import AppointmentFilters from './AppointmentFilters';
 import AppointmentTable from './AppointmentTable';
@@ -55,16 +55,23 @@ const AppointmentList: React.FC = () => {
   };
   
   return (
-    <div className="w-full space-y-4">
-      <Card className="p-4 bg-white shadow-sm border border-gray-200">
-        <AppointmentFilters
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-        />
+    <div className="w-full space-y-6">
+      <ModernCard
+        title="Lista de Agendamentos"
+        description="Visualize e gerencie todos os agendamentos"
+        className="w-full max-w-full bg-white border-gray-200"
+        contentClassName="p-0 overflow-hidden"
+      >
+        <div className="p-4 sm:p-6">
+          <AppointmentFilters
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+          />
+        </div>
         
-        <div className="mt-4 rounded-md border border-gray-200 overflow-hidden">
+        <div className="border-t border-gray-200">
           <AppointmentTable
             appointments={filteredAppointments}
             isLoading={isLoading}
@@ -73,7 +80,7 @@ const AppointmentList: React.FC = () => {
             onDelete={confirmDeleteAppointment}
           />
         </div>
-      </Card>
+      </ModernCard>
       
       {isFormOpen && selectedAppointment && (
         <AppointmentForm
