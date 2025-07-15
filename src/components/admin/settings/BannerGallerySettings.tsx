@@ -52,25 +52,38 @@ const BannerGallerySettings: React.FC = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="database-gallery" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="database-gallery" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-300">
+          <TabsTrigger 
+            value="database-gallery" 
+            className="flex items-center gap-2 data-[state=active]:bg-gray-100 data-[state=active]:text-black text-gray-700"
+          >
             <Database className="h-4 w-4" />
             Galeria Permanente
           </TabsTrigger>
-          <TabsTrigger value="banner" className="flex items-center gap-2">
+          <TabsTrigger 
+            value="banner" 
+            className="flex items-center gap-2 data-[state=active]:bg-gray-100 data-[state=active]:text-black text-gray-700"
+          >
             <GalleryHorizontal className="h-4 w-4" />
             Banners Rotativos
           </TabsTrigger>
         </TabsList>
         
         <TabsContent value="database-gallery" className="space-y-6 mt-6">
-          <DatabaseGalleryManager />
+          <Card className="bg-white border-gray-300">
+            <CardHeader>
+              <CardTitle className="text-black">Galeria de Fotos</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DatabaseGalleryManager />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="banner" className="space-y-6 mt-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle>Banners da Página Inicial</CardTitle>
+          <Card className="bg-white border-gray-300">
+            <CardHeader>
+              <CardTitle className="text-black">Banners da Página Inicial</CardTitle>
             </CardHeader>
             <CardContent>
               <BannerManager 

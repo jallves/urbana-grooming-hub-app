@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -108,7 +107,6 @@ const ShopSettingsForm: React.FC = () => {
       };
 
       if (settingsId) {
-        // Update existing settings
         const { error } = await supabase
           .from('shop_settings')
           .update(settingsData)
@@ -116,7 +114,6 @@ const ShopSettingsForm: React.FC = () => {
 
         if (error) throw error;
       } else {
-        // Insert new settings
         const { error } = await supabase
           .from('shop_settings')
           .insert([settingsData]);
@@ -137,49 +134,163 @@ const ShopSettingsForm: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card className="w-full">
-        <div className="flex justify-center items-center h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </Card>
+      <div className="flex justify-center items-center h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+      </div>
     );
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Informações da Barbearia</CardTitle>
-            <CardDescription>
-              Configure as informações básicas da sua barbearia
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <FormField
-              control={form.control}
-              name="shop_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome da Barbearia *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome da sua barbearia" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="shop_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-black">Nome da Barbearia *</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="Nome da sua barbearia" 
+                  {...field} 
+                  className="bg-white border-gray-300 text-black focus:border-gray-500"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
+        <FormField
+          control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-black">Endereço</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Building className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input 
+                    className="pl-10 bg-white border-gray-300 text-black focus:border-gray-500" 
+                    placeholder="Endereço completo" 
+                    {...field} 
+                    value={field.value || ''} 
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-black">Telefone</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input 
+                      className="pl-10 bg-white border-gray-300 text-black focus:border-gray-500" 
+                      placeholder="(00) 00000-0000" 
+                      {...field} 
+                      value={field.value || ''} 
+                    />
+                  </div>
+                </FormControl>
+                <FormDescription className="text-gray-600">
+                  Este número será usado para o botão de WhatsApp no site. Inclua o código do país e DDD.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-black">E-mail</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input 
+                      className="pl-10 bg-white border-gray-300 text-black focus:border-gray-500" 
+                      placeholder="contato@barbearia.com" 
+                      {...field} 
+                      value={field.value || ''} 
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="logo_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-black">URL do Logo</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="https://example.com/logo.png" 
+                  {...field} 
+                  value={field.value || ''} 
+                  className="bg-white border-gray-300 text-black focus:border-gray-500"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="website"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-black">Website</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Globe className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input 
+                    className="pl-10 bg-white border-gray-300 text-black focus:border-gray-500" 
+                    placeholder="https://www.barbearia.com" 
+                    {...field} 
+                    value={field.value || ''} 
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="pt-4">
+          <h3 className="text-lg font-medium mb-3 text-black">Redes Sociais</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FormField
               control={form.control}
-              name="address"
+              name="social_instagram"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Endereço</FormLabel>
+                  <FormLabel className="text-black">Instagram</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input className="pl-10" placeholder="Endereço completo" {...field} value={field.value || ''} />
+                      <Instagram className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                      <Input 
+                        className="pl-10 bg-white border-gray-300 text-black focus:border-gray-500" 
+                        placeholder="@barbearia" 
+                        {...field} 
+                        value={field.value || ''} 
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -187,69 +298,21 @@ const ShopSettingsForm: React.FC = () => {
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input className="pl-10" placeholder="(00) 00000-0000" {...field} value={field.value || ''} />
-                      </div>
-                    </FormControl>
-                    <FormDescription>
-                      Este número será usado para o botão de WhatsApp no site. Inclua o código do país e DDD.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input className="pl-10" placeholder="contato@barbearia.com" {...field} value={field.value || ''} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="logo_url"
+              name="social_facebook"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL do Logo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/logo.png" {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website</FormLabel>
+                  <FormLabel className="text-black">Facebook</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input className="pl-10" placeholder="https://www.barbearia.com" {...field} value={field.value || ''} />
+                      <Facebook className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                      <Input 
+                        className="pl-10 bg-white border-gray-300 text-black focus:border-gray-500" 
+                        placeholder="@barbearia" 
+                        {...field} 
+                        value={field.value || ''} 
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -257,69 +320,40 @@ const ShopSettingsForm: React.FC = () => {
               )}
             />
 
-            <div className="pt-4">
-              <h3 className="text-lg font-medium mb-3">Redes Sociais</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="social_instagram"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Instagram</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Instagram className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input className="pl-10" placeholder="@barbearia" {...field} value={field.value || ''} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="social_twitter"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-black">Twitter</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Twitter className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                      <Input 
+                        className="pl-10 bg-white border-gray-300 text-black focus:border-gray-500" 
+                        placeholder="@barbearia" 
+                        {...field} 
+                        value={field.value || ''} 
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
-                <FormField
-                  control={form.control}
-                  name="social_facebook"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Facebook</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Facebook className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input className="pl-10" placeholder="@barbearia" {...field} value={field.value || ''} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="social_twitter"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Twitter</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Twitter className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input className="pl-10" placeholder="@barbearia" {...field} value={field.value || ''} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button type="submit" disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar Configurações
-            </Button>
-          </CardFooter>
-        </Card>
+        <div className="flex justify-end pt-4">
+          <Button 
+            type="submit" 
+            disabled={isSaving}
+            className="bg-black text-white hover:bg-gray-800"
+          >
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar Configurações
+          </Button>
+        </div>
       </form>
     </Form>
   );
