@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { Card } from "@/components/ui/card";
 import { useClientAppointments } from './useClientAppointments';
 import ClientAppointmentFilters from './ClientAppointmentFilters';
 import ClientAppointmentTable from './ClientAppointmentTable';
@@ -44,29 +43,25 @@ const ClientAppointmentList: React.FC = () => {
   };
   
   return (
-    <div className="w-full space-y-3 px-2 py-2 sm:space-y-4 sm:px-4">
-      <Card className="p-2 bg-black dark:bg-black-800 shadow-sm border border-black-200 dark:border-black-700 sm:p-3 md:p-4">
+    <div className="w-full bg-white">
+      <div className="p-4 bg-white border-b border-gray-200">
         <ClientAppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
         />
-        
-        <div className="mt-3 rounded-md border border-black-200 dark:border-black-700 overflow-hidden">
-          <div className="overflow-x-auto">
-            <div className="min-w-[600px] sm:min-w-full">
-              <ClientAppointmentTable
-                appointments={filteredAppointments}
-                isLoading={isLoading}
-                onEdit={handleEditAppointment}
-                onStatusChange={handleStatusChange}
-                onDelete={handleDeleteAppointment}
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
+      </div>
+      
+      <div className="overflow-x-auto bg-white">
+        <ClientAppointmentTable
+          appointments={filteredAppointments}
+          isLoading={isLoading}
+          onEdit={handleEditAppointment}
+          onStatusChange={handleStatusChange}
+          onDelete={handleDeleteAppointment}
+        />
+      </div>
       
       {isEditDialogOpen && selectedAppointment && (
         <ClientAppointmentEditDialog

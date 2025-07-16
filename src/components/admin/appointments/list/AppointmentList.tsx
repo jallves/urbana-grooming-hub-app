@@ -1,5 +1,5 @@
+
 import React, { useState } from 'react';
-import ModernCard from '@/components/ui/containers/ModernCard';
 import { useAppointments } from './useAppointments';
 import AppointmentFilters from './AppointmentFilters';
 import AppointmentTable from './AppointmentTable';
@@ -55,33 +55,25 @@ const AppointmentList: React.FC = () => {
   };
 
   return (
-    <div className="w-full space-y-6">
-      <ModernCard
-        title="Lista de Agendamentos"
-        description="Visualize e gerencie todos os agendamentos"
-        className="w-full bg-white text-black border border-gray-200 shadow-none"
-        gradient={false}
-        contentClassName="p-0"
-      >
-        <div className="p-4 sm:p-6">
-          <AppointmentFilters
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-          />
-        </div>
+    <div className="w-full bg-white">
+      <div className="p-4 border-b border-gray-200">
+        <AppointmentFilters
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+        />
+      </div>
 
-        <div className="border-t border-gray-200">
-          <AppointmentTable
-            appointments={filteredAppointments}
-            isLoading={isLoading}
-            onEdit={handleEditAppointment}
-            onStatusChange={handleStatusChange}
-            onDelete={confirmDeleteAppointment}
-          />
-        </div>
-      </ModernCard>
+      <div className="overflow-x-auto">
+        <AppointmentTable
+          appointments={filteredAppointments}
+          isLoading={isLoading}
+          onEdit={handleEditAppointment}
+          onStatusChange={handleStatusChange}
+          onDelete={confirmDeleteAppointment}
+        />
+      </div>
 
       {isFormOpen && selectedAppointment && (
         <AppointmentForm
