@@ -3,7 +3,6 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
-  Calendar, 
   Users, 
   Settings, 
   LineChart, 
@@ -30,12 +29,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose }) => {
       icon: LayoutDashboard,
       href: "/admin",
       color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      title: "Agendamentos",
-      icon: Calendar,
-      href: "/admin/agendamentos",
-      color: 'from-green-500 to-emerald-500'
     },
     {
       title: "Agendamentos Clientes",
@@ -93,7 +86,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose }) => {
     },
     {
       title: "Escalas",
-      icon: Calendar,
+      icon: UserCheck,
       href: "/admin/escalas",
       color: 'from-green-500 to-blue-500'
     },
