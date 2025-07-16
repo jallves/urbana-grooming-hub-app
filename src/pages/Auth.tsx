@@ -19,7 +19,6 @@ const Auth: React.FC = () => {
 
   const from = location.state?.from || "/";
 
-  // Timer de redirecionamento
   useEffect(() => {
     if (!user && !authLoading && redirectTimer > 0) {
       const timer = setTimeout(() => {
@@ -31,7 +30,6 @@ const Auth: React.FC = () => {
     }
   }, [redirectTimer, user, authLoading, navigate]);
 
-  // Redireciona se autenticado
   useEffect(() => {
     if (!authLoading && user) {
       const redirectPath = from.startsWith('/admin') && isAdmin 
@@ -43,7 +41,6 @@ const Auth: React.FC = () => {
     }
   }, [user, isAdmin, navigate, authLoading, from]);
 
-  // Cria admin se não existir
   useEffect(() => {
     const createAdminUser = async () => {
       if (authLoading || user) return;
@@ -56,7 +53,7 @@ const Auth: React.FC = () => {
           .single();
 
         if (!existingUser) {
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          const { data: signUpData } = await supabase.auth.signUp({
             email: 'joao.colimoides@gmail.com',
             password: 'Jb74872701@',
             options: { data: { full_name: 'João Alves Da Silva' } }
@@ -92,36 +89,32 @@ const Auth: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black px-4 py-8">
-      <div className="w-full max-w-md space-y-8">
+    <div className="flex items-center justify-center min-h-screen bg-black px-4">
+      <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
+          <div className="flex justify-center mb-3">
+            <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
               <Scissors className="h-6 w-6 text-black" />
             </div>
           </div>
-          <h1 className="text-3xl font-serif font-bold text-white">
-            Costa Urbana
-          </h1>
-          <p className="mt-1 text-yellow-400/80">
-            Painel Administrativo
-          </p>
+          <h1 className="text-3xl font-serif font-bold text-white">Costa Urbana</h1>
+          <p className="text-sm text-yellow-400/80">Painel Administrativo</p>
         </div>
 
-        {/* Card */}
-        <div className="bg-[#0c1423] border border-[#1f2a3c] rounded-xl shadow-xl p-6">
+        {/* Tabs */}
+        <div className="bg-[#0c1423] border border-[#1f2a3c] rounded-xl shadow-lg p-6">
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-[#1f2a3c]">
+            <TabsList className="grid grid-cols-2 mb-5 bg-[#1f2a3c] rounded-lg overflow-hidden">
               <TabsTrigger 
                 value="login"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
+                className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
               >
                 Login
               </TabsTrigger>
               <TabsTrigger 
                 value="register"
-                className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
+                className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
               >
                 Cadastro
               </TabsTrigger>
@@ -136,28 +129,26 @@ const Auth: React.FC = () => {
           </Tabs>
         </div>
 
-        {/* Aviso de redirecionamento */}
+        {/* Aviso redirecionamento */}
         {!user && redirectTimer > 0 && (
-          <div className="text-center p-4 bg-yellow-900/20 border border-yellow-800/50 rounded-lg">
-            <p className="text-yellow-400 text-sm">
-              Redirecionando em {redirectTimer} segundos
-            </p>
+          <div className="text-center bg-yellow-900/10 border border-yellow-700/30 text-yellow-300 rounded-md px-4 py-3 text-sm">
+            Redirecionando em {redirectTimer} segundos...
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate('/')}
-              className="mt-2 border-yellow-500 text-yellow-400 hover:bg-yellow-900/30 hover:text-yellow-300"
+              className="mt-2 border-yellow-500 text-yellow-300 hover:bg-yellow-800/30"
             >
               Ir agora
             </Button>
           </div>
         )}
 
-        {/* Voltar */}
-        <div className="flex justify-center">
+        {/* Botão voltar */}
+        <div className="text-center">
           <Button
             variant="outline"
-            className="flex items-center gap-2 border-[#334155] text-zinc-300 hover:bg-[#1f2a3c] hover:text-white"
+            className="text-sm flex items-center gap-2 border-[#334155] text-zinc-300 hover:bg-[#1f2a3c] hover:text-white"
             onClick={() => navigate('/')}
           >
             <Home size={16} />
