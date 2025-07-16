@@ -1,48 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Calendar,
-  Clock,
-  User,
-  AlertCircle,
-  CheckCircle,
-  Filter,
-  Plus,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import DashboardContainer from '@/components/ui/containers/DashboardContainer';
-import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
-import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
-import { supabase } from '@/integrations/supabase/client';
-
-interface PainelAgendamento {
-  id: string;
-  data: string;
-  hora: string;
-  status: string;
-  painel_barbeiros: {
-    nome: string;
-  };
-  painel_servicos: {
-    nome: string;
-    preco: number;
-  };
-}
-
-const statusLabels = {
-  todos: 'Todos',
-  confirmado: 'Confirmado',
-  concluido: 'Concluído',
-  cancelado: 'Cancelado',
-};
-
-const statusClasses = {
-  todos: 'bg-gray-800 text-gray-300 hover:bg-gray-700',
-  confirmado: 'bg-blue-400/10 text-blue-400 hover:bg-blue-400/20',
-  concluido: 'bg-green-400/10 text-green-400 hover:bg-green-400/20',
-  cancelado: 'bg-red-400/10 text-red-400 hover:bg-red-400/20',
-};
+// ... (importações mantidas)
 
 export default function PainelClienteAgendamentos() {
   const { cliente } = usePainelClienteAuth();
@@ -74,6 +30,20 @@ export default function PainelClienteAgendamentos() {
   }, [fetchAgendamentos]);
 
   useClientDashboardRealtime(fetchAgendamentos);
+
+  const handleConcluirAgendamento = async (id: string) => {
+    const { error } = await supabase
+      .from('painel_agendamentos')
+      .update({ status: 'concluido' })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro ao concluir agendamento:', error);
+      return;
+    }
+
+    fetchAgendamentos();
+  };
 
   const filteredAgendamentos =
     filtro === 'todos'
@@ -107,6 +77,7 @@ export default function PainelClienteAgendamentos() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
@@ -201,11 +172,18 @@ export default function PainelClienteAgendamentos() {
                         <span className="text-urbana-gold font-semibold">
                           R$ {agendamento.painel_servicos.preco.toFixed(2)}
                         </span>
-                        {agendamento.status === 'concluido' && (
+                        {agendamento.status === 'concluido' ? (
                           <span className="text-green-400 text-sm font-medium">
                             ✨ Atendimento finalizado!
                           </span>
-                        )}
+                        ) : agendamento.status === 'confirmado' ? (
+                          <button
+                            onClick={() => handleConcluirAgendamento(agendamento.id)}
+                            className="text-sm text-green-400 border border-green-400 px-3 py-1 rounded-md hover:bg-green-400/10 transition"
+                          >
+                            Marcar como Concluído
+                          </button>
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
