@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useClientAppointments } from './useClientAppointments';
 import ClientAppointmentFilters from './ClientAppointmentFilters';
@@ -42,8 +43,8 @@ const ClientAppointmentList: React.FC = () => {
   };
   
   return (
-    <div className="w-full">
-      <div className="p-4">
+    <div className="w-full bg-black">
+      <div className="p-4 bg-black border-b border-gray-200">
         <ClientAppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -52,7 +53,7 @@ const ClientAppointmentList: React.FC = () => {
         />
       </div>
       
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto bg-black">
         <ClientAppointmentTable
           appointments={filteredAppointments}
           isLoading={isLoading}
