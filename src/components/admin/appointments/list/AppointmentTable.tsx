@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -27,32 +26,32 @@ const AppointmentTable: React.FC<AppointmentTableProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="flex justify-center py-4 sm:py-8">
-        <div className="animate-spin h-6 w-6 sm:h-8 sm:w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+      <div className="flex justify-center py-6">
+        <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-yellow-500 rounded-full" />
       </div>
     );
   }
-  
+
   if (appointments.length === 0) {
     return (
-      <div className="text-center py-4 sm:py-8">
-        <p className="text-gray-500 text-sm">Nenhum agendamento encontrado</p>
+      <div className="text-center py-6">
+        <p className="text-sm text-gray-500">Nenhum agendamento encontrado</p>
       </div>
     );
   }
-  
+
   return (
     <div className="w-full overflow-x-auto">
-      <Table className="min-w-full">
+      <Table className="min-w-[700px]">
         <TableHeader>
-          <TableRow className="text-xs sm:text-sm">
-            <TableHead className="w-[120px] sm:w-auto px-2 sm:px-4">Cliente</TableHead>
-            <TableHead className="w-[100px] sm:w-auto px-2 sm:px-4 hidden sm:table-cell">Serviço</TableHead>
-            <TableHead className="w-[100px] sm:w-auto px-2 sm:px-4 hidden md:table-cell">Barbeiro</TableHead>
-            <TableHead className="w-[80px] sm:w-auto px-2 sm:px-4">Data</TableHead>
-            <TableHead className="w-[70px] sm:w-auto px-2 sm:px-4">Hora</TableHead>
-            <TableHead className="w-[80px] sm:w-auto px-2 sm:px-4">Status</TableHead>
-            <TableHead className="w-[60px] sm:w-auto px-2 sm:px-4 text-right">Ações</TableHead>
+          <TableRow className="text-sm text-gray-700">
+            <TableHead className="px-3 py-2">Cliente</TableHead>
+            <TableHead className="px-3 py-2 hidden sm:table-cell">Serviço</TableHead>
+            <TableHead className="px-3 py-2 hidden md:table-cell">Barbeiro</TableHead>
+            <TableHead className="px-3 py-2">Data</TableHead>
+            <TableHead className="px-3 py-2">Hora</TableHead>
+            <TableHead className="px-3 py-2">Status</TableHead>
+            <TableHead className="px-3 py-2 text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

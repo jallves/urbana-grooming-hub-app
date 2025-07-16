@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppointments } from './useAppointments';
 import AppointmentFilters from './AppointmentFilters';
@@ -23,14 +22,10 @@ const AppointmentList: React.FC = () => {
   } = useAppointments();
 
   const filteredAppointments = appointments.filter(appointment => {
-    if (statusFilter !== 'all' && appointment.status !== statusFilter) {
-      return false;
-    }
+    if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
 
     const clientName = appointment.client?.name?.toLowerCase() || '';
-    const query = searchQuery.toLowerCase();
-
-    return clientName.includes(query);
+    return clientName.includes(searchQuery.toLowerCase());
   });
 
   const handleEditAppointment = (appointmentId: string) => {
@@ -47,7 +42,6 @@ const AppointmentList: React.FC = () => {
     if (!appointmentToDelete) return;
 
     const success = await handleDeleteAppointment(appointmentToDelete);
-
     if (success) {
       setAppointmentToDelete(null);
       setIsDeleteDialogOpen(false);
@@ -55,8 +49,9 @@ const AppointmentList: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-white">
-      <div className="p-4 border-b border-gray-200">
+    <div className="w-full h-full flex flex-col">
+      {/* Filtros fixos no topo */}
+      <div className="p-4 border-b border-gray-200 bg-white shrink-0">
         <AppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -65,16 +60,20 @@ const AppointmentList: React.FC = () => {
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <AppointmentTable
-          appointments={filteredAppointments}
-          isLoading={isLoading}
-          onEdit={handleEditAppointment}
-          onStatusChange={handleStatusChange}
-          onDelete={confirmDeleteAppointment}
-        />
+      {/* Tabela com rolagem interna, ocupa todo o restante da altura */}
+      <div className="flex-1 overflow-auto bg-white">
+        <div className="min-w-full">
+          <AppointmentTable
+            appointments={filteredAppointments}
+            isLoading={isLoading}
+            onEdit={handleEditAppointment}
+            onStatusChange={handleStatusChange}
+            onDelete={confirmDeleteAppointment}
+          />
+        </div>
       </div>
 
+      {/* Modal de edição */}
       {isFormOpen && selectedAppointment && (
         <AppointmentForm
           isOpen={isFormOpen}
@@ -87,6 +86,7 @@ const AppointmentList: React.FC = () => {
         />
       )}
 
+      {/* Modal de confirmação de exclusão */}
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
