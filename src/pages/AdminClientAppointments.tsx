@@ -16,7 +16,7 @@ export default function AdminClientAppointments() {
             title="Painel de Clientes"
             description="Gerencie os agendamentos criados pelos clientes através do painel do cliente"
             gradient={false}
-            className="bg-white border border-gray-200"
+            className="bg-black border border-gray-200"
           >
             <div className="p-0">
               <ClientAppointmentList />

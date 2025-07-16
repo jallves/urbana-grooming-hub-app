@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,14 +17,10 @@ const ClientAppointmentList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
 
-  // Buscar agendamentos do cliente
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['client-appointments', client?.id],
     queryFn: async () => {
       if (!client?.id) return [];
-      
-      console.log('🔍 Buscando agendamentos do cliente:', client.id);
-      
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -46,12 +41,7 @@ const ClientAppointmentList = () => {
         .eq('client_id', client.id)
         .order('start_time', { ascending: false });
 
-      if (error) {
-        console.error('❌ Erro ao buscar agendamentos:', error);
-        throw new Error(error.message);
-      }
-
-      console.log('✅ Agendamentos encontrados:', data?.length || 0);
+      if (error) throw new Error(error.message);
       return data || [];
     },
     enabled: !!client?.id,
@@ -68,16 +58,14 @@ const ClientAppointmentList = () => {
   };
 
   const handleDeleteAppointment = async (appointmentId: string) => {
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
-      return;
-    }
+    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
 
     try {
       const { error } = await supabase
         .from('appointments')
         .delete()
         .eq('id', appointmentId)
-        .eq('client_id', client?.id); // Garantir que só pode deletar próprios agendamentos
+        .eq('client_id', client?.id);
 
       if (error) throw error;
 
@@ -86,10 +74,8 @@ const ClientAppointmentList = () => {
         description: "Seu agendamento foi cancelado com sucesso.",
       });
 
-      // Refetch appointments
       queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
     } catch (error) {
-      console.error('Erro ao cancelar agendamento:', error);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -101,7 +87,6 @@ const ClientAppointmentList = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingAppointmentId(null);
-    // Refetch appointments when modal closes
     queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
   };
 
@@ -140,7 +125,7 @@ const ClientAppointmentList = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header com botão de novo agendamento */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Meus Agendamentos</h2>
@@ -157,7 +142,7 @@ const ClientAppointmentList = () => {
 
       {/* Lista de agendamentos */}
       {appointments && appointments.length === 0 ? (
-        <Card className="text-center py-12">
+        <Card className="text-center py-12 border border-gray-200">
           <CardContent>
             <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum agendamento encontrado</h3>
@@ -172,9 +157,12 @@ const ClientAppointmentList = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {appointments?.map((appointment) => (
-            <Card key={appointment.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={appointment.id}
+              className="rounded-xl border border-gray-200 bg-white"
+            >
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
@@ -182,27 +170,28 @@ const ClientAppointmentList = () => {
                       <Scissors className="h-5 w-5 text-amber-600" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-semibold">
+                      <CardTitle className="text-base font-semibold">
                         {appointment.services?.name || 'Serviço não encontrado'}
                       </CardTitle>
                       {getStatusBadge(appointment.status)}
                     </div>
                   </div>
-                  
+
                   {appointment.status === 'scheduled' && (
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleEditAppointment(appointment.id)}
+                        className="h-8 w-8"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
-                        size="sm"
+                        size="icon"
                         onClick={() => handleDeleteAppointment(appointment.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="h-8 w-8 text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -211,42 +200,29 @@ const ClientAppointmentList = () => {
                 </div>
               </CardHeader>
 
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">
-                      {format(new Date(appointment.start_time), "dd/MM/yyyy", { locale: ptBR })}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">
-                      {format(new Date(appointment.start_time), "HH:mm", { locale: ptBR })}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="font-medium">
-                      {appointment.staff?.name || 'Barbeiro não definido'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500">Preço:</span>
-                    <span className="font-semibold text-green-600">
-                      R$ {appointment.services?.price || '0,00'}
-                    </span>
-                  </div>
+              <CardContent className="pt-0 text-sm text-gray-800 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span>{format(new Date(appointment.start_time), "dd/MM/yyyy", { locale: ptBR })}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-500" />
+                  <span>{format(new Date(appointment.start_time), "HH:mm", { locale: ptBR })}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-gray-500" />
+                  <span>{appointment.staff?.name || 'Barbeiro não definido'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">Preço:</span>
+                  <span className="font-semibold text-green-600">
+                    R$ {appointment.services?.price || '0,00'}
+                  </span>
                 </div>
 
                 {appointment.notes && (
-                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <strong>Observações:</strong> {appointment.notes}
-                    </p>
+                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                    <strong>Observações:</strong> {appointment.notes}
                   </div>
                 )}
               </CardContent>
