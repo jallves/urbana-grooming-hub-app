@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Table, TableBody } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
 import { Client } from '@/types/client';
 import ClientTableHeader from './components/ClientTableHeader';
 import ClientTableRow from './components/ClientTableRow';
@@ -22,7 +21,6 @@ interface ClientListProps {
 const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onDelete }) => {
   const { width } = useWindowSize();
   const isMobile = width < 640;
-  const isTablet = width < 768;
   
   const {
     deleteDialogOpen,
@@ -42,55 +40,49 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
   }
 
   return (
-    <div className="w-full max-w-full overflow-hidden">
-      <Card className="w-full border-0 shadow-sm">
-        <CardContent className="p-2 sm:p-3 md:p-4 lg:p-6">
-          {/* Header com contador e botão de exportação - Responsivo */}
-          <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:justify-between sm:items-center sm:mb-4 lg:mb-6">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold sm:text-base md:text-lg xl:text-xl text-gray-900 dark:text-white">
-                Lista de Clientes
-              </h3>
-              <div className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs sm:text-sm font-medium">
-                {clients.length}
-              </div>
-            </div>
-            <div className="flex-shrink-0 w-full sm:w-auto">
-              <ExportButton clients={clients} />
+    <div className="h-full flex flex-col">
+      {/* Header com contador e botão de exportação */}
+      <div className="flex-shrink-0 p-4 bg-gray-50 border-b border-gray-200">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Clientes Cadastrados
+            </h3>
+            <div className="px-3 py-1 bg-gray-900 text-white rounded-full text-sm font-medium">
+              {clients.length}
             </div>
           </div>
-          
-          {/* Tabela com scroll horizontal para mobile */}
-          <div className="w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="overflow-x-auto">
-              <div className="min-w-[600px] sm:min-w-[700px] md:min-w-[800px] lg:min-w-full">
-                <Table className="w-full">
-                  <ClientTableHeader />
-                  <TableBody>
-                    {clients.map((client) => (
-                      <ClientTableRow
-                        key={client.id}
-                        client={client}
-                        onEdit={onEdit}
-                        onDelete={confirmDelete}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+          <div className="flex-shrink-0 w-full sm:w-auto">
+            <ExportButton clients={clients} />
           </div>
+        </div>
+      </div>
+      
+      {/* Tabela com scroll */}
+      <div className="flex-1 overflow-auto bg-white">
+        <Table className="w-full">
+          <ClientTableHeader />
+          <TableBody>
+            {clients.map((client) => (
+              <ClientTableRow
+                key={client.id}
+                client={client}
+                onEdit={onEdit}
+                onDelete={confirmDelete}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-          {/* Indicador de scroll para mobile */}
-          {isMobile && (
-            <div className="mt-2 text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                ← Deslize horizontalmente para ver mais informações →
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Indicador de scroll para mobile */}
+      {isMobile && (
+        <div className="flex-shrink-0 p-2 bg-gray-50 border-t border-gray-200">
+          <p className="text-xs text-center text-gray-500">
+            ← Deslize horizontalmente para ver mais informações →
+          </p>
+        </div>
+      )}
       
       <DeleteClientDialog
         open={deleteDialogOpen}
