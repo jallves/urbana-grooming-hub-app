@@ -12,7 +12,7 @@ const AdminBirthdays: React.FC = () => {
         <ModernCard
           title="Gestão de Aniversários"
           description="Gestão de aniversários dos clientes e campanhas especiais"
-          className="w-full max-w-full bg-white border-gray-200"
+          className="w-full max-w-full bg-black border-gray-200"
           contentClassName="overflow-hidden"
         >
           <div className="w-full overflow-hidden">
