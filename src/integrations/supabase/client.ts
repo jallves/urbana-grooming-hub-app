@@ -5,26 +5,13 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://bqftkknbvmggcbsubicl.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZnRra25idm1nZ2Nic3ViaWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNDQ4MjQsImV4cCI6MjA2MDkyMDgyNH0.50TxAQPb5vrvB1GQalFuLgW7WbH0xN9w6W3vU5w8PLM";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLIC_KEY, {
+// Import the supabase client like this:
+// import { supabase } from "@/integrations/supabase/client";
+
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  },
-  db: {
-    schema: 'public', // Especifique o schema se necessário
-  },
-  global: {
-    // Opções globais
   }
 });
-
-// Exemplo de função para buscar clientes
-export async function getClients() {
-  const { data, error } = await supabase
-    .from('painel_clientes')  // Alterado para painel_clientes
-    .select('*');
-  
-  if (error) throw error;
-  return data;
-}
