@@ -1,4 +1,3 @@
-
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import BirthdayManagement from '@/components/admin/birthdays/BirthdayManagement';
@@ -9,16 +8,19 @@ const AdminBirthdays: React.FC = () => {
   return (
     <AdminRoute allowBarber={true}>
       <AdminLayout title="Aniversários">
-        <ModernCard
-          title="Gestão de Aniversários"
-          description="Gestão de aniversários dos clientes e campanhas especiais"
-          className="w-full max-w-full bg-black border-gray-200"
-          contentClassName="overflow-hidden"
-        >
-          <div className="w-full overflow-hidden">
-            <BirthdayManagement />
-          </div>
-        </ModernCard>
+        <div className="flex flex-col h-full p-4 md:p-6">
+          <ModernCard
+            title="Gestão de Aniversários"
+            description="Visualize e gerencie os aniversários dos clientes para campanhas especiais"
+            className="w-full h-full border border-gray-200 rounded-lg shadow-sm bg-white"
+            contentClassName="h-full overflow-hidden p-0"
+            headerClassName="px-6 pt-6 pb-4 border-b border-gray-200"
+          >
+            <div className="h-full overflow-auto">
+              <BirthdayManagement />
+            </div>
+          </ModernCard>
+        </div>
       </AdminLayout>
     </AdminRoute>
   );
