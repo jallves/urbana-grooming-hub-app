@@ -2808,6 +2808,25 @@ export type Database = {
           whatsapp: string
         }
       }
+      create_painel_cliente_with_birth_date: {
+        Args: {
+          nome: string
+          email: string
+          whatsapp: string
+          data_nascimento: string
+          senha_hash: string
+        }
+        Returns: {
+          created_at: string
+          data_nascimento: string | null
+          email: string
+          id: string
+          nome: string
+          senha_hash: string
+          updated_at: string
+          whatsapp: string
+        }
+      }
       get_agendamentos_barbeiro_data: {
         Args: { barbeiro_id: string; data_agendamento: string }
         Returns: {
@@ -2919,6 +2938,25 @@ export type Database = {
           nome?: string
           email?: string
           whatsapp?: string
+        }
+        Returns: {
+          created_at: string
+          data_nascimento: string | null
+          email: string
+          id: string
+          nome: string
+          senha_hash: string
+          updated_at: string
+          whatsapp: string
+        }
+      }
+      update_painel_cliente_with_birth_date: {
+        Args: {
+          cliente_id: string
+          nome?: string
+          email?: string
+          whatsapp?: string
+          data_nascimento?: string
         }
         Returns: {
           created_at: string

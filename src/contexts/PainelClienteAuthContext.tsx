@@ -124,15 +124,18 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       // Criar hash da senha
       const senhaHash = btoa(dados.senha);
 
-      // Inserir cliente no painel_clientes
+      // Inserir cliente no painel_clientes usando query direta
       const { data: novoCliente, error: insertError } = await supabase
-        .rpc('create_painel_cliente_with_birth_date', {
+        .from('painel_clientes')
+        .insert({
           nome: dados.nome.trim(),
           email: dados.email.trim().toLowerCase(),
           whatsapp: dados.whatsapp.trim(),
           data_nascimento: dados.data_nascimento,
           senha_hash: senhaHash
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) {
         console.error('Erro ao inserir cliente:', insertError);
@@ -232,14 +235,19 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     if (!cliente) return { error: 'Cliente não autenticado' };
 
     try {
+      // Usar query direta ao invés de RPC function para evitar erro de tipos
       const { data: clienteAtualizado, error } = await supabase
-        .rpc('update_painel_cliente_with_birth_date', {
-          cliente_id: cliente.id,
+        .from('painel_clientes')
+        .update({
           nome: dados.nome,
           email: dados.email,
           whatsapp: dados.whatsapp,
-          data_nascimento: dados.data_nascimento
-        });
+          data_nascimento: dados.data_nascimento,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', cliente.id)
+        .select()
+        .single();
 
       if (error) {
         return { error: error.message };
