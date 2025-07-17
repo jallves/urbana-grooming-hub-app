@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,8 +24,10 @@ const BirthdayManagement: React.FC = () => {
         targetMonth = new Date().getMonth() + 1;
       }
 
+      // Alterado para usar a tabela painel_clientes
       const { data, error } = await supabase.rpc('get_birthday_clients', {
-        target_month: targetMonth
+        target_month: targetMonth,
+        table_name: 'painel_clientes' // Adicionado parâmetro para especificar a tabela
       });
       
       if (error) {
@@ -69,32 +70,34 @@ const BirthdayManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 w-full">
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Aniversariantes</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">Gerencie aniversários e campanhas especiais</p>
+    <div className="min-h-screen w-full bg-gray-50 p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Aniversariantes</h1>
+            <p className="text-sm text-gray-600 mt-1">Gerencie aniversários e campanhas especiais</p>
+          </div>
         </div>
-      </div>
 
-      <Card className="bg-white border-gray-200 w-full">
-        <CardHeader className="pb-4 px-4 sm:px-6">
-          <CardTitle className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
-            Filtros de Aniversariantes
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6">
-          <BirthdayFilters filter={filter} onFilterChange={setFilter} />
-        </CardContent>
-      </Card>
+        <Card className="bg-white border-gray-200 w-full shadow-sm">
+          <CardHeader className="pb-4 px-6">
+            <CardTitle className="text-lg font-bold text-gray-900">
+              Filtros de Aniversariantes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-6 pb-6">
+            <BirthdayFilters filter={filter} onFilterChange={setFilter} />
+          </CardContent>
+        </Card>
 
-      <div className="w-full overflow-x-auto">
-        <BirthdayList 
-          clients={clients || []}
-          isLoading={isLoading}
-          filter={filter}
-          onRefresh={() => refetch()}
-        />
+        <div className="w-full overflow-hidden rounded-lg shadow-sm border border-gray-200 bg-white">
+          <BirthdayList 
+            clients={clients || []}
+            isLoading={isLoading}
+            filter={filter}
+            onRefresh={() => refetch()}
+          />
+        </div>
       </div>
     </div>
   );
