@@ -15,10 +15,6 @@ const ClientTableHeader: React.FC = () => {
         </TableHead>
         
         <TableHead className="text-sm font-semibold text-gray-700 px-4 py-3 w-[150px]">
-          Telefone
-        </TableHead>
-        
-        <TableHead className="text-sm font-semibold text-gray-700 px-4 py-3 w-[150px] hidden md:table-cell">
           WhatsApp
         </TableHead>
         

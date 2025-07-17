@@ -1,9 +1,21 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Client } from '@/types/client';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+interface Client {
+  id: string;
+  nome?: string;
+  name?: string;
+}
 
 interface DeleteClientDialogProps {
   open: boolean;
@@ -20,52 +32,31 @@ const DeleteClientDialog: React.FC<DeleteClientDialogProps> = ({
   onConfirm,
   isDeleting
 }) => {
+  const clientName = client?.nome || client?.name || 'este cliente';
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md w-[95vw] sm:w-full mx-auto">
-        <DialogHeader className="text-center sm:text-left">
-          <div className="mx-auto sm:mx-0 mb-4 sm:mb-2 w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
-            <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
-          </div>
-          <DialogTitle className="text-base sm:text-lg text-center sm:text-left">
-            Confirmar exclusão
-          </DialogTitle>
-          <DialogDescription className="text-sm sm:text-base text-center sm:text-left leading-relaxed">
-            Tem certeza que deseja excluir o cliente <span className="font-semibold text-gray-900 dark:text-white">"{client?.name}"</span>?
-            <br />
-            <span className="text-xs sm:text-sm text-red-600 dark:text-red-400 mt-2 block">
-              Esta ação não pode ser desfeita.
-            </span>
-          </DialogDescription>
-        </DialogHeader>
-        
-        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0 sm:justify-end sm:space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)} 
-            disabled={isDeleting}
-            className="w-full sm:w-auto order-2 sm:order-1"
-          >
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja excluir {clientName}? Esta ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>
             Cancelar
-          </Button>
-          <Button 
-            variant="destructive" 
-            onClick={onConfirm} 
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
             disabled={isDeleting}
-            className="w-full sm:w-auto order-1 sm:order-2"
+            className="bg-red-600 hover:bg-red-700"
           >
-            {isDeleting ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Excluindo...
-              </div>
-            ) : (
-              'Excluir Cliente'
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            {isDeleting ? 'Excluindo...' : 'Excluir'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 

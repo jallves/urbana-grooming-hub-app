@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Table, TableBody } from '@/components/ui/table';
-import { Client } from '@/types/client';
 import ClientTableHeader from './components/ClientTableHeader';
 import ClientTableRow from './components/ClientTableRow';
 import ExportButton from './components/ExportButton';
@@ -11,8 +10,18 @@ import LoadingClientState from './components/LoadingClientState';
 import { useClientDelete } from './hooks/useClientDelete';
 import { useWindowSize } from '@/hooks/useWindowSize';
 
+interface PainelClient {
+  id: string;
+  nome: string;
+  email: string | null;
+  whatsapp: string;
+  data_nascimento: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ClientListProps {
-  clients: Client[];
+  clients: PainelClient[];
   isLoading: boolean;
   onEdit: (id: string) => void;
   onDelete: () => void;
@@ -29,7 +38,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
     isDeleting,
     handleDelete,
     confirmDelete
-  } = useClientDelete(onDelete);
+  } = useClientDelete(onDelete, 'painel_clientes');
 
   if (isLoading) {
     return <LoadingClientState />;

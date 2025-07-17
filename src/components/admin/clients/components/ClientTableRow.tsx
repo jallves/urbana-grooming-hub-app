@@ -2,15 +2,24 @@
 import React from 'react';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Phone, Mail, MessageCircle } from 'lucide-react';
-import { Client } from '@/types/client';
+import { Edit, Trash2, Mail, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+interface PainelClient {
+  id: string;
+  nome: string;
+  email: string | null;
+  whatsapp: string;
+  data_nascimento: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ClientTableRowProps {
-  client: Client;
+  client: PainelClient;
   onEdit: (id: string) => void;
-  onDelete: (client: Client) => void;
+  onDelete: (client: PainelClient) => void;
 }
 
 const ClientTableRow: React.FC<ClientTableRowProps> = ({ client, onEdit, onDelete }) => {
@@ -34,7 +43,7 @@ const ClientTableRow: React.FC<ClientTableRowProps> = ({ client, onEdit, onDelet
       <TableCell className="font-medium text-sm px-4 py-3">
         <div className="flex flex-col gap-1">
           <span className="font-semibold text-gray-900 truncate">
-            {client.name}
+            {client.nome}
           </span>
           {/* Mostra email empilhado no mobile quando coluna está oculta */}
           <div className="sm:hidden">
@@ -58,29 +67,19 @@ const ClientTableRow: React.FC<ClientTableRowProps> = ({ client, onEdit, onDelet
         </div>
       </TableCell>
       
-      {/* Telefone - sempre visível */}
+      {/* WhatsApp - sempre visível */}
       <TableCell className="text-sm px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span className="text-gray-700 font-mono text-sm">
-            {formatPhone(client.phone)}
-          </span>
-        </div>
-      </TableCell>
-      
-      {/* WhatsApp - oculto no mobile e tablet */}
-      <TableCell className="text-sm px-4 py-3 hidden md:table-cell">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
           <span className="text-gray-700 font-mono text-sm">
-            {client.whatsapp ? formatPhone(client.whatsapp) : '-'}
+            {formatPhone(client.whatsapp)}
           </span>
         </div>
       </TableCell>
       
       {/* Data de Nascimento - oculto até desktop */}
       <TableCell className="text-sm px-4 py-3 hidden lg:table-cell text-gray-700">
-        {formatDate(client.birth_date)}
+        {formatDate(client.data_nascimento)}
       </TableCell>
       
       {/* Data de Cadastro - oculto até telas grandes */}

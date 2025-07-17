@@ -14,12 +14,12 @@ const ClientManagement: React.FC = () => {
   const [editingClient, setEditingClient] = useState<string | null>(null);
 
   const { data: clients, isLoading, error, refetch } = useQuery({
-    queryKey: ['clients'],
+    queryKey: ['painel-clients'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('clients')
+        .from('painel_clientes')
         .select('*')
-        .order('name');
+        .order('nome');
       
       if (error) throw new Error(error.message);
       return data;
@@ -28,10 +28,10 @@ const ClientManagement: React.FC = () => {
 
   useEffect(() => {
     const channel = supabase
-      .channel('client-changes')
+      .channel('painel-client-changes')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'clients' },
+        { event: '*', schema: 'public', table: 'painel_clientes' },
         () => {
           toast.info('Dados de clientes atualizados');
           refetch();

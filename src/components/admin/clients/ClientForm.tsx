@@ -11,11 +11,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 const clientSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos'),
-  whatsapp: z.string().optional(),
-  birth_date: z.string().optional(),
+  whatsapp: z.string().min(10, 'WhatsApp deve ter pelo menos 10 dígitos'),
+  data_nascimento: z.string().min(1, 'Data de nascimento é obrigatória'),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -33,11 +32,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
   const form = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
-      name: '',
+      nome: '',
       email: '',
-      phone: '',
       whatsapp: '',
-      birth_date: '',
+      data_nascimento: '',
     },
   });
 
@@ -51,7 +49,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
     try {
       setIsLoadingData(true);
       const { data, error } = await supabase
-        .from('clients')
+        .from('painel_clientes')
         .select('*')
         .eq('id', clientId)
         .single();
@@ -60,11 +58,10 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
 
       if (data) {
         form.reset({
-          name: data.name || '',
+          nome: data.nome || '',
           email: data.email || '',
-          phone: data.phone || '',
           whatsapp: data.whatsapp || '',
-          birth_date: data.birth_date || '',
+          data_nascimento: data.data_nascimento || '',
         });
       }
     } catch (error) {
@@ -81,17 +78,16 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
       setIsLoading(true);
       
       const clientData = {
-        name: data.name,
+        nome: data.nome,
         email: data.email || null,
-        phone: data.phone,
-        whatsapp: data.whatsapp || null,
-        birth_date: data.birth_date || null,
+        whatsapp: data.whatsapp,
+        data_nascimento: data.data_nascimento || null,
         updated_at: new Date().toISOString(),
       };
 
       if (clientId) {
         const { error } = await supabase
-          .from('clients')
+          .from('painel_clientes')
           .update(clientData)
           .eq('id', clientId);
 
@@ -99,7 +95,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
         toast.success('Cliente atualizado com sucesso!');
       } else {
         const { error } = await supabase
-          .from('clients')
+          .from('painel_clientes')
           .insert(clientData);
 
         if (error) throw error;
@@ -132,14 +128,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="name">Nome *</Label>
+          <Label htmlFor="nome">Nome *</Label>
           <Input
-            id="name"
+            id="nome"
             placeholder="Nome completo"
-            {...form.register('name')}
+            {...form.register('nome')}
           />
-          {form.formState.errors.name && (
-            <p className="text-sm text-red-500">{form.formState.errors.name.message}</p>
+          {form.formState.errors.nome && (
+            <p className="text-sm text-red-500">{form.formState.errors.nome.message}</p>
           )}
         </div>
 
@@ -157,19 +153,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone">Telefone *</Label>
-          <Input
-            id="phone"
-            placeholder="(11) 99999-9999"
-            {...form.register('phone')}
-          />
-          {form.formState.errors.phone && (
-            <p className="text-sm text-red-500">{form.formState.errors.phone.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="whatsapp">WhatsApp</Label>
+          <Label htmlFor="whatsapp">WhatsApp *</Label>
           <Input
             id="whatsapp"
             placeholder="(11) 99999-9999"
@@ -181,14 +165,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="birth_date">Data de Nascimento</Label>
+          <Label htmlFor="data_nascimento">Data de Nascimento *</Label>
           <Input
-            id="birth_date"
+            id="data_nascimento"
             type="date"
-            {...form.register('birth_date')}
+            {...form.register('data_nascimento')}
           />
-          {form.formState.errors.birth_date && (
-            <p className="text-sm text-red-500">{form.formState.errors.birth_date.message}</p>
+          {form.formState.errors.data_nascimento && (
+            <p className="text-sm text-red-500">{form.formState.errors.data_nascimento.message}</p>
           )}
         </div>
       </div>
