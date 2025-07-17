@@ -16,6 +16,7 @@ export default function PainelClienteCadastro() {
     nome: '',
     email: '',
     whatsapp: '',
+    data_nascimento: '',
     senha: '',
     confirmarSenha: ''
   });
@@ -62,6 +63,10 @@ export default function PainelClienteCadastro() {
       setErro('WhatsApp é obrigatório');
       return false;
     }
+    if (!formData.data_nascimento.trim()) {
+      setErro('Data de nascimento é obrigatória');
+      return false;
+    }
     if (!formData.senha.trim()) {
       setErro('Senha é obrigatória');
       return false;
@@ -93,6 +98,7 @@ export default function PainelClienteCadastro() {
       nome: formData.nome.trim(),
       email: formData.email.trim(),
       whatsapp: formData.whatsapp,
+      data_nascimento: formData.data_nascimento,
       senha: formData.senha
     });
 
@@ -161,6 +167,18 @@ export default function PainelClienteCadastro() {
                 className="bg-gray-800 border-gray-600 text-white"
                 placeholder="(11) 99999-9999"
                 maxLength={15}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="data_nascimento" className="text-white">Data de Nascimento *</Label>
+              <Input
+                id="data_nascimento"
+                type="date"
+                value={formData.data_nascimento}
+                onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                className="bg-gray-800 border-gray-600 text-white"
                 required
               />
             </div>

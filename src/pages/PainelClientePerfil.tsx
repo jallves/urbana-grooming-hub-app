@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Save, Mail, Phone, Edit3, Shield } from 'lucide-react';
+import { ArrowLeft, User, Save, Mail, Phone, Edit3, Shield, Calendar } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
@@ -17,7 +18,8 @@ export default function PainelClientePerfil() {
   const [formData, setFormData] = useState({
     nome: cliente?.nome || '',
     email: cliente?.email || '',
-    whatsapp: cliente?.whatsapp || ''
+    whatsapp: cliente?.whatsapp || '',
+    data_nascimento: cliente?.data_nascimento || ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -44,7 +46,8 @@ export default function PainelClientePerfil() {
     const { error } = await atualizarPerfil({
       nome: formData.nome,
       email: formData.email,
-      whatsapp: formData.whatsapp
+      whatsapp: formData.whatsapp,
+      data_nascimento: formData.data_nascimento
     });
 
     if (error) {
@@ -211,6 +214,27 @@ export default function PainelClientePerfil() {
                         className="bg-slate-800/50 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
                         placeholder="(11) 99999-9999"
                         maxLength={15}
+                        required
+                      />
+                    </motion.div>
+
+                    {/* Data de Nascimento */}
+                    <motion.div 
+                      variants={itemVariants}
+                      className="space-y-3"
+                    >
+                      <Label htmlFor="data_nascimento" className="text-white text-base font-semibold flex items-center gap-3">
+                        <div className="p-2 bg-orange-500/20 rounded-xl">
+                          <Calendar className="h-4 w-4 text-orange-400" />
+                        </div>
+                        Data de Nascimento
+                      </Label>
+                      <Input
+                        id="data_nascimento"
+                        type="date"
+                        value={formData.data_nascimento}
+                        onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                        className="bg-slate-800/50 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
                         required
                       />
                     </motion.div>

@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Scissors, ArrowLeft, Home, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Scissors, ArrowLeft, Home, Check, X, Calendar } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,6 +23,7 @@ export default function PainelClienteLogin() {
     nome: '',
     email: '',
     whatsapp: '',
+    data_nascimento: '',
     senha: '',
     confirmarSenha: ''
   });
@@ -81,6 +83,11 @@ export default function PainelClienteLogin() {
     e.preventDefault();
     setErro('');
 
+    if (!formDataCadastro.data_nascimento.trim()) {
+      setErro('Data de nascimento é obrigatória');
+      return;
+    }
+
     if (!senhaValida) {
       setErro('Senha não atende aos critérios de segurança');
       return;
@@ -97,6 +104,7 @@ export default function PainelClienteLogin() {
       nome: formDataCadastro.nome,
       email: formDataCadastro.email,
       whatsapp: formDataCadastro.whatsapp,
+      data_nascimento: formDataCadastro.data_nascimento,
       senha: formDataCadastro.senha
     });
 
@@ -263,6 +271,18 @@ export default function PainelClienteLogin() {
                         className="bg-zinc-800 border-zinc-600 text-white"
                         placeholder="(11) 99999-9999"
                         maxLength={15}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="data_nascimento" className="text-white">Data de Nascimento *</Label>
+                      <Input
+                        id="data_nascimento"
+                        type="date"
+                        value={formDataCadastro.data_nascimento}
+                        onChange={(e) => setFormDataCadastro(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                        className="bg-zinc-800 border-zinc-600 text-white"
                         required
                       />
                     </div>

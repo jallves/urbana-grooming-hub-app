@@ -8,6 +8,7 @@ interface Cliente {
   nome: string;
   email: string;
   whatsapp: string;
+  data_nascimento?: string;
   created_at: string;
 }
 
@@ -24,6 +25,7 @@ interface CadastroData {
   nome: string;
   email: string;
   whatsapp: string;
+  data_nascimento: string;
   senha: string;
 }
 
@@ -92,6 +94,10 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'WhatsApp é obrigatório' };
       }
 
+      if (!dados.data_nascimento?.trim()) {
+        return { error: 'Data de nascimento é obrigatória' };
+      }
+
       if (!dados.senha || dados.senha.length < 8) {
         return { error: 'Senha deve ter pelo menos 8 caracteres' };
       }
@@ -118,12 +124,13 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       // Criar hash da senha
       const senhaHash = btoa(dados.senha);
 
-      // Inserir cliente
+      // Inserir cliente no painel_clientes
       const { data: novoCliente, error: insertError } = await supabase
-        .rpc('create_painel_cliente', {
+        .rpc('create_painel_cliente_with_birth_date', {
           nome: dados.nome.trim(),
           email: dados.email.trim().toLowerCase(),
           whatsapp: dados.whatsapp.trim(),
+          data_nascimento: dados.data_nascimento,
           senha_hash: senhaHash
         });
 
@@ -134,6 +141,24 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       if (!novoCliente) {
         return { error: 'Erro ao criar conta. Tente novamente.' };
+      }
+
+      // Replicar no módulo cliente do painel admin
+      const { error: replicationError } = await supabase
+        .from('clients')
+        .insert({
+          name: dados.nome.trim(),
+          email: dados.email.trim().toLowerCase(),
+          phone: dados.whatsapp.trim(),
+          whatsapp: dados.whatsapp.trim(),
+          birth_date: dados.data_nascimento,
+          password_hash: senhaHash,
+          email_verified: true
+        });
+
+      if (replicationError) {
+        console.warn('Erro ao replicar no módulo admin:', replicationError);
+        // Não falhamos o cadastro se a replicação falhar
       }
 
       // Login automático
@@ -208,11 +233,12 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
     try {
       const { data: clienteAtualizado, error } = await supabase
-        .rpc('update_painel_cliente', {
+        .rpc('update_painel_cliente_with_birth_date', {
           cliente_id: cliente.id,
           nome: dados.nome,
           email: dados.email,
-          whatsapp: dados.whatsapp
+          whatsapp: dados.whatsapp,
+          data_nascimento: dados.data_nascimento
         });
 
       if (error) {
