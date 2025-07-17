@@ -83,14 +83,40 @@ export const useEmployeeManagement = () => {
     try {
       console.log('Deleting employee:', employeeId);
       
-      const { error } = await supabase
+      // Buscar o funcionário para verificar se é barbeiro
+      const { data: employee, error: fetchError } = await supabase
         .from('employees')
-        .delete()
-        .eq('id', employeeId);
+        .select('role, email')
+        .eq('id', employeeId)
+        .single();
 
-      if (error) {
-        console.error('Error deleting employee:', error);
-        throw error;
+      if (fetchError) {
+        console.error('Error fetching employee:', fetchError);
+        throw fetchError;
+      }
+
+      // Se for barbeiro, deletar da tabela staff (o trigger vai cuidar da sincronização)
+      if (employee.role === 'barber') {
+        const { error: staffError } = await supabase
+          .from('staff')
+          .delete()
+          .eq('email', employee.email);
+
+        if (staffError) {
+          console.error('Error deleting from staff:', staffError);
+          throw staffError;
+        }
+      } else {
+        // Para outros roles, deletar diretamente da tabela employees
+        const { error } = await supabase
+          .from('employees')
+          .delete()
+          .eq('id', employeeId);
+
+        if (error) {
+          console.error('Error deleting employee:', error);
+          throw error;
+        }
       }
 
       toast({

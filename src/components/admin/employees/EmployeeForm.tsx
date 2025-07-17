@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -87,29 +88,51 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const createEmployee = async (data: EmployeeFormData) => {
     console.log('Creating new employee...');
     
-    const employeeData = {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      role: data.role,
-      status: data.status,
-      photo_url: photoUrl,
-    };
+    // Se for barbeiro, criar na tabela staff primeiro
+    if (data.role === 'barber') {
+      const staffData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        role: 'barber',
+        is_active: data.status === 'active',
+        image_url: photoUrl,
+      };
 
-    console.log('Employee data to insert:', employeeData);
+      console.log('Creating staff member:', staffData);
 
-    const { data: insertedEmployee, error } = await supabase
-      .from('employees')
-      .insert([employeeData])
-      .select()
-      .single();
+      const { error: staffError } = await supabase
+        .from('staff')
+        .insert([staffData]);
 
-    if (error) {
-      console.error('Error inserting employee:', error);
-      throw new Error(error.message);
+      if (staffError) {
+        console.error('Error inserting staff:', staffError);
+        throw new Error(staffError.message);
+      }
+    } else {
+      // Para outros roles, criar diretamente na tabela employees
+      const employeeData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        role: data.role,
+        status: data.status,
+        photo_url: photoUrl,
+      };
+
+      console.log('Employee data to insert:', employeeData);
+
+      const { error } = await supabase
+        .from('employees')
+        .insert([employeeData]);
+
+      if (error) {
+        console.error('Error inserting employee:', error);
+        throw new Error(error.message);
+      }
     }
 
-    console.log('Employee created successfully:', insertedEmployee);
+    console.log('Employee created successfully');
   };
 
   const updateEmployee = async (data: EmployeeFormData) => {
@@ -117,6 +140,39 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
     console.log('Updating employee:', employee.id);
 
+    // Se for barbeiro, verificar se existe na tabela staff e atualizar
+    if (data.role === 'barber' || employee.role === 'barber') {
+      const { data: staffData, error: staffFetchError } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('email', employee.email)
+        .single();
+
+      if (!staffFetchError && staffData) {
+        // Atualizar na tabela staff
+        const { error: staffUpdateError } = await supabase
+          .from('staff')
+          .update({
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            is_active: data.status === 'active',
+            image_url: photoUrl,
+          })
+          .eq('id', staffData.id);
+
+        if (staffUpdateError) {
+          console.error('Error updating staff:', staffUpdateError);
+          throw new Error(staffUpdateError.message);
+        }
+      } else if (data.role === 'barber') {
+        // Se não existe como staff mas o novo role é barber, criar
+        await createEmployee(data);
+        return;
+      }
+    }
+
+    // Atualizar na tabela employees
     const updateData: UpdateEmployeeData = {
       name: data.name,
       email: data.email,
