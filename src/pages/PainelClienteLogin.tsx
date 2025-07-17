@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -110,10 +109,10 @@ export default function PainelClienteLogin() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex flex-col items-center justify-center px-4 py-8">
-      {/* Header com botão voltar */}
-      <div className="w-full max-w-md mb-4">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header com botão voltar */}
+        <div className="w-full mb-6">
           <Button
             onClick={() => navigate('/')}
             variant="ghost"
@@ -124,9 +123,7 @@ export default function PainelClienteLogin() {
             Página Inicial
           </Button>
         </div>
-      </div>
 
-      <div className="w-full max-w-md">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
