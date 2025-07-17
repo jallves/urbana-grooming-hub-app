@@ -12,13 +12,13 @@ const AdminBirthdays: React.FC = () => {
           <ModernCard
             title="Gestão de Aniversários"
             description="Visualize e gerencie os aniversários dos clientes para campanhas especiais"
-            className="w-full h-full border border-gray-700 rounded-lg bg-gray-100" // Fundo claro
+            className="w-full h-full border border-gray-700 rounded-lg bg-transparent"
             contentClassName="h-full overflow-hidden p-0"
-            headerClassName="px-6 pt-6 pb-4 border-b border-gray-300"
-            titleClassName="text-gray-900 font-bold" // Texto preto
-            descriptionClassName="text-gray-700" // Texto cinza escuro
+            headerClassName="px-6 pt-6 pb-4 border-b border-gray-700"
+            titleClassName="text-gray-900 font-bold dark:text-gray-900"
+            descriptionClassName="text-gray-800 dark:text-gray-800"
           >
-            <div className="h-full overflow-auto bg-gray-100"> {/* Fundo claro */}
+            <div className="h-full overflow-auto bg-transparent">
               <BirthdayManagement />
             </div>
           </ModernCard>
