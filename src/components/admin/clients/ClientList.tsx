@@ -38,7 +38,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
     isDeleting,
     handleDelete,
     confirmDelete
-  } = useClientDelete(onDelete, 'painel_clientes');
+  } = useClientDelete(onDelete);
 
   if (isLoading) {
     return <LoadingClientState />;

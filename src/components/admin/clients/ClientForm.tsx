@@ -77,26 +77,33 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
     try {
       setIsLoading(true);
       
-      const clientData = {
-        nome: data.nome,
-        email: data.email || null,
-        whatsapp: data.whatsapp,
-        data_nascimento: data.data_nascimento || null,
-        updated_at: new Date().toISOString(),
-      };
-
       if (clientId) {
+        // Update existing client
         const { error } = await supabase
           .from('painel_clientes')
-          .update(clientData)
+          .update({
+            nome: data.nome,
+            email: data.email || null,
+            whatsapp: data.whatsapp,
+            data_nascimento: data.data_nascimento || null,
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', clientId);
 
         if (error) throw error;
         toast.success('Cliente atualizado com sucesso!');
       } else {
+        // Create new client (admin created clients get a default password hash)
         const { error } = await supabase
           .from('painel_clientes')
-          .insert(clientData);
+          .insert({
+            nome: data.nome,
+            email: data.email || '',
+            whatsapp: data.whatsapp,
+            data_nascimento: data.data_nascimento || null,
+            senha_hash: 'admin_created', // Default hash for admin-created clients
+            updated_at: new Date().toISOString(),
+          });
 
         if (error) throw error;
         toast.success('Cliente criado com sucesso!');

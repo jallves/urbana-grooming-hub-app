@@ -9,7 +9,7 @@ interface Client {
   name?: string;
 }
 
-export const useClientDelete = (onDelete: () => void, tableName: string = 'clients') => {
+export const useClientDelete = (onDelete: () => void) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -25,7 +25,7 @@ export const useClientDelete = (onDelete: () => void, tableName: string = 'clien
     try {
       setIsDeleting(true);
       const { error } = await supabase
-        .from(tableName)
+        .from('painel_clientes')
         .delete()
         .eq('id', clientToDelete.id);
 
