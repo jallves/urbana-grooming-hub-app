@@ -66,7 +66,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
             </div>
             <div>
               <h2 className="text-xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent">
-                Admin Panel
+                Painel Administrador
               </h2>
               <p className="text-xs text-gray-400">Barbearia Costa Urbana</p>
             </div>
