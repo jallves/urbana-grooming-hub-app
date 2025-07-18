@@ -112,7 +112,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
         {/* Footer */}
         <div className="p-4 border-t border-white/10">
           <div className="text-xs text-gray-500 text-center">
-            <p className="font-semibold text-urbana-gold">Urbana Barbearia</p>
+            <p className="font-semibold text-urbana-gold">Costa Urbana</p>
             <p>Sistema Administrativo</p>
           </div>
         </div>
