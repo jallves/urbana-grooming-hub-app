@@ -72,7 +72,7 @@ const BirthdayManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
         
         {/* Header */}
         <motion.div
@@ -81,8 +81,8 @@ const BirthdayManagement: React.FC = () => {
           transition={{ duration: 0.4 }}
           className="text-center sm:text-left"
         >
-          <h1 className="text-2xl font-bold">Aniversariantes</h1>
-          <p className="text-gray-400 text-sm">
+          <h1 className="text-lg sm:text-2xl font-bold">Aniversariantes</h1>
+          <p className="text-gray-400 text-xs sm:text-sm">
             Gerencie aniversários e campanhas especiais
           </p>
         </motion.div>
