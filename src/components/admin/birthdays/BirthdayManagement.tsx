@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,41 +62,31 @@ const BirthdayManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        {/* Header */}
-        <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-white">
-            Aniversariantes
-          </h1>
-          <p className="text-sm sm:text-base text-gray-400">
-            Gerencie aniversários e campanhas especiais
-          </p>
+      <div className="p-6 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-white">Aniversariantes</h1>
+          <p className="text-sm text-gray-400">Gerencie aniversários e campanhas especiais</p>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Filtros */}
-          <Card className="bg-gray-800 border-gray-700">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base sm:text-lg font-bold text-white">
-                Filtros de Aniversariantes
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BirthdayFilters filter={filter} onFilterChange={setFilter} />
-            </CardContent>
-          </Card>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-bold text-white">
+              Filtros de Aniversariantes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BirthdayFilters filter={filter} onFilterChange={setFilter} />
+          </CardContent>
+        </Card>
 
-          {/* Lista */}
-          <Card className="bg-gray-800 border-gray-700">
-            <BirthdayList 
-              clients={clients || []}
-              isLoading={isLoading}
-              filter={filter}
-              onRefresh={() => refetch()}
-            />
-          </Card>
-        </div>
+        <Card className="bg-gray-800 border-gray-700 flex-1">
+          <BirthdayList 
+            clients={clients || []}
+            isLoading={isLoading}
+            filter={filter}
+            onRefresh={() => refetch()}
+          />
+        </Card>
       </div>
     </div>
   );
