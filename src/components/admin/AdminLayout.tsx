@@ -39,12 +39,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col">
       <div className="flex min-h-screen">
-        {/* Sidebar Desktop + Drawer Mobile */}
-        <div className="hidden lg:flex w-64 flex-shrink-0 border-r border-gray-200 bg-white">
-          <AdminSidebar />
-        </div>
-
-        {/* Sidebar como Drawer no Mobile */}
+        {/* Sidebar ÚNICA (fixa no desktop, drawer no mobile) */}
         <AdminSidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
