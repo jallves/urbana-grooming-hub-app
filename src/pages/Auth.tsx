@@ -21,9 +21,7 @@ const Auth: React.FC = () => {
 
   useEffect(() => {
     if (!user && !authLoading && redirectTimer > 0) {
-      const timer = setTimeout(() => {
-        setRedirectTimer((prev) => prev - 1);
-      }, 1000);
+      const timer = setTimeout(() => setRedirectTimer(prev => prev - 1), 1000);
       return () => clearTimeout(timer);
     } else if (!user && !authLoading && redirectTimer === 0) {
       navigate('/');
@@ -32,10 +30,10 @@ const Auth: React.FC = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      const redirectPath = from.startsWith('/admin') && isAdmin 
-        ? from 
-        : isAdmin 
-          ? '/admin' 
+      const redirectPath = from.startsWith('/admin') && isAdmin
+        ? from
+        : isAdmin
+          ? '/admin'
           : '/';
       navigate(redirectPath, { replace: true });
     }
@@ -60,7 +58,7 @@ const Auth: React.FC = () => {
           });
 
           if (signUpData?.user) {
-            await supabase.from('user_roles').insert([{ 
+            await supabase.from('user_roles').insert([{
               user_id: signUpData.user.id,
               role: 'admin'
             }]);
@@ -90,71 +88,66 @@ const Auth: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-black px-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <div className="flex justify-center mb-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-              <Scissors className="h-6 w-6 text-black" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-serif font-bold text-white">Costa Urbana</h1>
-          <p className="text-sm text-yellow-400/80">Painel Administrativo</p>
+      <div className="w-full max-w-md p-8 bg-[#0c1423] rounded-xl shadow-lg space-y-6 text-center">
+        
+        {/* Logo */}
+        <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 flex items-center justify-center shadow-lg">
+          <Scissors className="h-7 w-7 text-black" />
         </div>
+
+        {/* Title */}
+        <h1 className="text-3xl font-serif font-bold text-white">Costa Urbana</h1>
+        <p className="text-yellow-400/80">Painel Administrativo</p>
 
         {/* Tabs */}
-        <div className="bg-[#0c1423] border border-[#1f2a3c] rounded-xl shadow-lg p-6">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid grid-cols-2 mb-5 bg-[#1f2a3c] rounded-lg overflow-hidden">
-              <TabsTrigger 
-                value="login"
-                className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
-              >
-                Login
-              </TabsTrigger>
-              <TabsTrigger 
-                value="register"
-                className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
-              >
-                Cadastro
-              </TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid grid-cols-2 mb-6 bg-[#1f2a3c] rounded-lg overflow-hidden">
+            <TabsTrigger
+              value="login"
+              className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
+            >
+              Login
+            </TabsTrigger>
+            <TabsTrigger
+              value="register"
+              className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
+            >
+              Cadastro
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="login">
-              <LoginForm loading={loading} setLoading={setLoading} />
-            </TabsContent>
-            <TabsContent value="register">
-              <RegisterForm loading={loading} setLoading={setLoading} />
-            </TabsContent>
-          </Tabs>
-        </div>
+          <TabsContent value="login">
+            <LoginForm loading={loading} setLoading={setLoading} />
+          </TabsContent>
+          <TabsContent value="register">
+            <RegisterForm loading={loading} setLoading={setLoading} />
+          </TabsContent>
+        </Tabs>
 
-        {/* Aviso redirecionamento */}
+        {/* Redirect notice */}
         {!user && redirectTimer > 0 && (
-          <div className="text-center bg-yellow-900/10 border border-yellow-700/30 text-yellow-300 rounded-md px-4 py-3 text-sm">
-            Redirecionando em {redirectTimer} segundos...
+          <div className="bg-yellow-900/10 border border-yellow-700/40 text-yellow-300 rounded-md p-3 text-sm">
+            Redirecionando em <strong>{redirectTimer}</strong> segundos...
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate('/')}
-              className="mt-2 border-yellow-500 text-yellow-300 hover:bg-yellow-800/30"
+              className="mt-3 border-yellow-500 text-yellow-300 hover:bg-yellow-800/30"
             >
               Ir agora
             </Button>
           </div>
         )}
 
-        {/* Botão voltar */}
-        <div className="text-center">
-          <Button
-            variant="outline"
-            className="text-sm flex items-center gap-2 border-[#334155] text-zinc-300 hover:bg-[#1f2a3c] hover:text-white"
-            onClick={() => navigate('/')}
-          >
-            <Home size={16} />
-            Voltar ao site
-          </Button>
-        </div>
+        {/* Back button */}
+        <Button
+          variant="outline"
+          className="mt-4 text-sm flex items-center justify-center gap-2 border-[#334155] text-zinc-300 hover:bg-[#1f2a3c] hover:text-white mx-auto"
+          onClick={() => navigate('/')}
+        >
+          <Home size={16} />
+          Voltar ao site
+        </Button>
       </div>
     </div>
   );
