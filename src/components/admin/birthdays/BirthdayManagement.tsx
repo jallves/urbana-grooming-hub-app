@@ -74,27 +74,18 @@ const BirthdayManagement: React.FC = () => {
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
-        {/* Header com CTA */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <h1 className="text-2xl font-bold">Aniversariantes</h1>
-            <p className="text-gray-400 text-sm">
-              Gerencie aniversários e campanhas especiais
-            </p>
-          </motion.div>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black font-bold px-4 py-2 rounded-lg shadow-md hover:opacity-90"
-          >
-            Nova Campanha
-          </motion.button>
-        </div>
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="text-center sm:text-left"
+        >
+          <h1 className="text-2xl font-bold">Aniversariantes</h1>
+          <p className="text-gray-400 text-sm">
+            Gerencie aniversários e campanhas especiais
+          </p>
+        </motion.div>
 
         {/* Barra de filtros */}
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
