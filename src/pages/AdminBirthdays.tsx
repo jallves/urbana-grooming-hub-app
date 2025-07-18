@@ -8,9 +8,7 @@ const AdminBirthdays: React.FC = () => {
   return (
     <AdminRoute allowBarber={true}>
       <AdminLayout title="Aniversários">
-        <div className="w-full h-full bg-black">
-          <BirthdayManagement />
-        </div>
+        <BirthdayManagement />
       </AdminLayout>
     </AdminRoute>
   );

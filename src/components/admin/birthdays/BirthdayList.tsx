@@ -94,123 +94,120 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="h-[400px] flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-sm text-muted-foreground">Carregando aniversariantes...</p>
-            </div>
+      <div className="bg-gray-900 text-white h-full">
+        <div className="h-[400px] flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-400">Carregando aniversariantes...</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   if (clients.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="h-[200px] flex items-center justify-center">
-            <div className="text-center">
-              <Cake className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-lg font-medium">Nenhum aniversariante {filterLabels[filter]}</p>
-              <p className="text-sm text-muted-foreground mt-1">Não há clientes fazendo aniversário no período selecionado</p>
-            </div>
+      <div className="bg-gray-900 text-white h-full">
+        <div className="h-[200px] flex items-center justify-center">
+          <div className="text-center">
+            <Cake className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg font-medium text-white">Nenhum aniversariante {filterLabels[filter]}</p>
+            <p className="text-sm text-gray-400 mt-1">Não há clientes fazendo aniversário no período selecionado</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="bg-gray-900 text-white h-full">
+      <div className="p-4 border-b border-gray-700">
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center space-x-2">
-            <Cake className="h-5 w-5" />
-            <span>Aniversariantes {filterLabels[filter]} ({clients.length})</span>
-          </CardTitle>
-          <Button onClick={exportToExcel} variant="outline" size="sm">
+          <div className="flex items-center space-x-2">
+            <Cake className="h-5 w-5 text-urbana-gold" />
+            <span className="text-lg font-semibold text-white">
+              Aniversariantes {filterLabels[filter]} ({clients.length})
+            </span>
+          </div>
+          <Button onClick={exportToExcel} variant="outline" size="sm" className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
             <Download className="h-4 w-4 mr-2" />
             Exportar Excel
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="p-4">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>E-mail</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>WhatsApp</TableHead>
-                <TableHead>Data de Nascimento</TableHead>
-                <TableHead>Idade</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {clients.map((client) => {
-                const whatsappNumber = client.whatsapp || client.phone;
-                
-                return (
-                  <TableRow key={client.id}>
-                    <TableCell className="font-medium">{client.name}</TableCell>
-                    <TableCell>
-                      {client.email ? (
-                        <div className="flex items-center space-x-1">
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-sm">{client.email}</span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
+      </div>
+      
+      <div className="p-4 overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-gray-700">
+              <TableHead className="text-white">Nome</TableHead>
+              <TableHead className="text-white">E-mail</TableHead>
+              <TableHead className="text-white">Telefone</TableHead>
+              <TableHead className="text-white">WhatsApp</TableHead>
+              <TableHead className="text-white">Data de Nascimento</TableHead>
+              <TableHead className="text-white">Idade</TableHead>
+              <TableHead className="text-right text-white">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {clients.map((client) => {
+              const whatsappNumber = client.whatsapp || client.phone;
+              
+              return (
+                <TableRow key={client.id} className="border-gray-700 hover:bg-gray-800">
+                  <TableCell className="font-medium text-white">{client.name}</TableCell>
+                  <TableCell>
+                    {client.email ? (
                       <div className="flex items-center space-x-1">
-                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm">{client.phone}</span>
+                        <Mail className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="text-sm text-white">{client.email}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="text-green-600">
-                        {whatsappNumber}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {client.birth_date ? (
-                        <span className="text-sm">
-                          {format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {client.age} anos
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        onClick={() => handleWhatsAppClick(client)}
-                        size="sm"
-                        className="bg-green-500 hover:bg-green-600 text-white"
-                      >
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Felicitar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-1">
+                      <Phone className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-sm text-white">{client.phone}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="bg-green-900 text-green-300 border-green-700">
+                      {whatsappNumber}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {client.birth_date ? (
+                      <span className="text-sm text-white">
+                        {format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="border-gray-600 text-white">
+                      {client.age} anos
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      onClick={() => handleWhatsAppClick(client)}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Felicitar
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 };
 
