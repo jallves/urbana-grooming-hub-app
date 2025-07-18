@@ -88,7 +88,7 @@ const CampaignList = () => {
   const getBadgeVariant = (status: string) => {
     switch (status) {
       case 'active':
-        return 'default'; // Changed from 'success' to 'default'
+        return 'default';
       case 'draft':
         return 'outline';
       case 'completed':
@@ -116,11 +116,11 @@ const CampaignList = () => {
   };
 
   return (
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-gray-900 border-gray-700">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle className="text-gray-900">Campanhas de Marketing</CardTitle>
-          <CardDescription className="text-gray-600">
+          <CardTitle className="text-white">Campanhas de Marketing</CardTitle>
+          <CardDescription className="text-gray-400">
             Gerencie suas campanhas de marketing
           </CardDescription>
         </div>
@@ -131,9 +131,9 @@ const CampaignList = () => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="text-center py-4 text-gray-700">Carregando...</div>
+          <div className="text-center py-4 text-white">Carregando...</div>
         ) : error ? (
-          <div className="text-center text-red-500 py-4">
+          <div className="text-center text-red-400 py-4">
             Erro ao carregar campanhas. Por favor, tente novamente.
           </div>
         ) : campaigns && campaigns.length > 0 ? (
@@ -141,20 +141,20 @@ const CampaignList = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-gray-900">Nome</TableHead>
-                  <TableHead className="text-gray-900">Data Início</TableHead>
-                  <TableHead className="text-gray-900">Data Fim</TableHead>
-                  <TableHead className="text-gray-900">Status</TableHead>
-                  <TableHead className="text-gray-900">Orçamento</TableHead>
-                  <TableHead className="text-right text-gray-900">Ações</TableHead>
+                  <TableHead className="text-white">Nome</TableHead>
+                  <TableHead className="text-white">Data Início</TableHead>
+                  <TableHead className="text-white">Data Fim</TableHead>
+                  <TableHead className="text-white">Status</TableHead>
+                  <TableHead className="text-white">Orçamento</TableHead>
+                  <TableHead className="text-right text-white">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {campaigns.map((campaign) => (
                   <TableRow key={campaign.id}>
-                    <TableCell className="font-medium text-gray-900">{campaign.name}</TableCell>
-                    <TableCell className="text-gray-700">{format(new Date(campaign.start_date), 'dd/MM/yyyy')}</TableCell>
-                    <TableCell className="text-gray-700">
+                    <TableCell className="font-medium text-white">{campaign.name}</TableCell>
+                    <TableCell className="text-gray-300">{format(new Date(campaign.start_date), 'dd/MM/yyyy')}</TableCell>
+                    <TableCell className="text-gray-300">
                       {campaign.end_date ? format(new Date(campaign.end_date), 'dd/MM/yyyy') : '-'}
                     </TableCell>
                     <TableCell>
@@ -162,11 +162,11 @@ const CampaignList = () => {
                         {getStatusName(campaign.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-gray-700">
+                    <TableCell className="text-gray-300">
                       {campaign.budget ? `R$ ${campaign.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(campaign)} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(campaign)} className="border-gray-600 text-white hover:bg-gray-800">
                         Editar
                       </Button>
                     </TableCell>
@@ -176,7 +176,7 @@ const CampaignList = () => {
             </Table>
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-600">
+          <div className="text-center py-8 text-gray-400">
             Nenhuma campanha encontrada. Crie uma nova campanha para começar.
           </div>
         )}

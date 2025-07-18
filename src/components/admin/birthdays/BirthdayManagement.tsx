@@ -70,18 +70,18 @@ const BirthdayManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="w-full h-full bg-black text-white p-4 sm:p-6">
+      <div className="w-full space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Aniversariantes</h1>
-            <p className="text-sm text-gray-600 mt-1">Gerencie aniversários e campanhas especiais</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Aniversariantes</h1>
+            <p className="text-sm text-gray-400 mt-1">Gerencie aniversários e campanhas especiais</p>
           </div>
         </div>
 
-        <Card className="bg-white border-gray-200 w-full shadow-sm">
+        <Card className="bg-gray-900 border-gray-700 w-full shadow-sm">
           <CardHeader className="pb-4 px-6">
-            <CardTitle className="text-lg font-bold text-gray-900">
+            <CardTitle className="text-lg font-bold text-white">
               Filtros de Aniversariantes
             </CardTitle>
           </CardHeader>
@@ -90,7 +90,7 @@ const BirthdayManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        <div className="w-full overflow-hidden rounded-lg shadow-sm border border-gray-200 bg-white">
+        <div className="w-full overflow-hidden rounded-lg shadow-sm border border-gray-700 bg-gray-900">
           <BirthdayList 
             clients={clients || []}
             isLoading={isLoading}
