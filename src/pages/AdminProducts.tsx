@@ -1,24 +1,27 @@
+
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import ProductManagement from '@/components/admin/products/ProductManagement';
 import AdminRoute from '@/components/auth/AdminRoute';
-import ModernCard from '@/components/ui/containers/ModernCard';
 
 const AdminProducts: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Produtos e Serviços">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
-          <ModernCard
-            title="🧴 Gestão de Produtos e Serviços"
-            description="Gerencie todos os produtos vendidos e serviços oferecidos pela barbearia com praticidade e controle."
-            className="w-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl rounded-2xl transition-all"
-            contentClassName="overflow-x-auto p-4 sm:p-6"
-          >
-            <div className="min-w-[600px] md:min-w-full">
+        <div className="space-y-6 bg-black min-h-screen p-6">
+          <div className="bg-gray-900 border-gray-700 shadow-lg rounded-lg">
+            <div className="border-b border-gray-700 p-6">
+              <h1 className="text-2xl font-playfair text-urbana-gold">
+                🧴 Gestão de Produtos e Serviços
+              </h1>
+              <p className="text-gray-300 font-raleway mt-2">
+                Gerencie todos os produtos vendidos e serviços oferecidos pela barbearia com praticidade e controle.
+              </p>
+            </div>
+            <div className="p-6">
               <ProductManagement />
             </div>
-          </ModernCard>
+          </div>
         </div>
       </AdminLayout>
     </AdminRoute>
@@ -26,4 +29,3 @@ const AdminProducts: React.FC = () => {
 };
 
 export default AdminProducts;
-
