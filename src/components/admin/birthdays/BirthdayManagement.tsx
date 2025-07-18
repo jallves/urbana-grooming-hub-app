@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,16 +61,16 @@ const BirthdayManagement: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full">
-      <div className="w-full h-full flex flex-col p-6 space-y-6">
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="p-6 space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Aniversariantes</h1>
-          <p className="text-sm text-gray-600">Gerencie aniversários e campanhas especiais</p>
+          <h1 className="text-2xl font-bold text-white">Aniversariantes</h1>
+          <p className="text-sm text-gray-400">Gerencie aniversários e campanhas especiais</p>
         </div>
 
-        <Card className="w-full">
+        <Card className="bg-gray-800 border-gray-700">
           <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-bold">
+            <CardTitle className="text-lg font-bold text-white">
               Filtros de Aniversariantes
             </CardTitle>
           </CardHeader>
@@ -78,7 +79,7 @@ const BirthdayManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="w-full flex-1">
+        <Card className="bg-gray-800 border-gray-700 flex-1">
           <BirthdayList 
             clients={clients || []}
             isLoading={isLoading}

@@ -94,10 +94,10 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
 
   if (isLoading) {
     return (
-      <div className="bg-gray-900 text-white h-full">
+      <div className="bg-gray-800 border-gray-700 rounded-lg">
         <div className="h-[400px] flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
             <p className="mt-2 text-sm text-gray-400">Carregando aniversariantes...</p>
           </div>
         </div>
@@ -107,7 +107,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
 
   if (clients.length === 0) {
     return (
-      <div className="bg-gray-900 text-white h-full">
+      <div className="bg-gray-800 border-gray-700 rounded-lg">
         <div className="h-[200px] flex items-center justify-center">
           <div className="text-center">
             <Cake className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -120,16 +120,16 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
   }
 
   return (
-    <div className="bg-gray-900 text-white h-full">
+    <div className="bg-gray-800 border-gray-700 rounded-lg">
       <div className="p-4 border-b border-gray-700">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Cake className="h-5 w-5 text-urbana-gold" />
+            <Cake className="h-5 w-5 text-blue-500" />
             <span className="text-lg font-semibold text-white">
               Aniversariantes {filterLabels[filter]} ({clients.length})
             </span>
           </div>
-          <Button onClick={exportToExcel} variant="outline" size="sm" className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700">
+          <Button onClick={exportToExcel} variant="outline" size="sm" className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600">
             <Download className="h-4 w-4 mr-2" />
             Exportar Excel
           </Button>
@@ -140,13 +140,13 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
         <Table>
           <TableHeader>
             <TableRow className="border-gray-700">
-              <TableHead className="text-white">Nome</TableHead>
-              <TableHead className="text-white">E-mail</TableHead>
-              <TableHead className="text-white">Telefone</TableHead>
-              <TableHead className="text-white">WhatsApp</TableHead>
-              <TableHead className="text-white">Data de Nascimento</TableHead>
-              <TableHead className="text-white">Idade</TableHead>
-              <TableHead className="text-right text-white">Ações</TableHead>
+              <TableHead className="text-gray-300">Nome</TableHead>
+              <TableHead className="text-gray-300">E-mail</TableHead>
+              <TableHead className="text-gray-300">Telefone</TableHead>
+              <TableHead className="text-gray-300">WhatsApp</TableHead>
+              <TableHead className="text-gray-300">Data de Nascimento</TableHead>
+              <TableHead className="text-gray-300">Idade</TableHead>
+              <TableHead className="text-right text-gray-300">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -154,7 +154,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
               const whatsappNumber = client.whatsapp || client.phone;
               
               return (
-                <TableRow key={client.id} className="border-gray-700 hover:bg-gray-800">
+                <TableRow key={client.id} className="border-gray-700 hover:bg-gray-700">
                   <TableCell className="font-medium text-white">{client.name}</TableCell>
                   <TableCell>
                     {client.email ? (
