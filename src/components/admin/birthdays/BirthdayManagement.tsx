@@ -73,7 +73,7 @@ const BirthdayManagement: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-        
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -81,21 +81,21 @@ const BirthdayManagement: React.FC = () => {
           transition={{ duration: 0.4 }}
           className="text-center sm:text-left"
         >
-          <h1 className="text-lg sm:text-2xl font-bold">Aniversariantes</h1>
-          <p className="text-gray-400 text-xs sm:text-sm">
+          <h1 className="text-lg sm:text-3xl font-bold leading-tight">Aniversariantes</h1>
+          <p className="text-gray-400 text-xs sm:text-sm max-w-xl mx-auto sm:mx-0">
             Gerencie aniversários e campanhas especiais
           </p>
         </motion.div>
 
         {/* Barra de filtros */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
           {filters.map(item => (
             <motion.button
               key={item.key}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setFilter(item.key as FilterType)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-300 ${
+              className={`flex-shrink-0 px-5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all duration-300 ${
                 filter === item.key
                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
                   : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
@@ -111,8 +111,9 @@ const BirthdayManagement: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
+          className="overflow-x-auto"
         >
-          <Card className="bg-gray-800 border border-gray-700 shadow-md rounded-xl">
+          <Card className="bg-gray-800 border border-gray-700 shadow-md rounded-xl min-w-full">
             <BirthdayList
               clients={clients || []}
               isLoading={isLoading}
@@ -121,6 +122,7 @@ const BirthdayManagement: React.FC = () => {
             />
           </Card>
         </motion.div>
+
       </div>
     </div>
   );

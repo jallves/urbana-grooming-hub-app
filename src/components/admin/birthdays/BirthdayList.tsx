@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Table,
@@ -42,7 +41,6 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
   };
 
   const handleWhatsAppClick = (client: BirthdayClient) => {
-    // Use WhatsApp number if available, otherwise use phone number
     const phoneNumber = client.whatsapp || client.phone;
     
     if (!phoneNumber) {
@@ -137,47 +135,47 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
       </div>
       
       <div className="p-4 overflow-x-auto">
-        <Table>
+        <Table className="min-w-full">
           <TableHeader>
             <TableRow className="border-gray-700">
-              <TableHead className="text-gray-300">Nome</TableHead>
-              <TableHead className="text-gray-300">E-mail</TableHead>
-              <TableHead className="text-gray-300">Telefone</TableHead>
-              <TableHead className="text-gray-300">WhatsApp</TableHead>
-              <TableHead className="text-gray-300">Data de Nascimento</TableHead>
-              <TableHead className="text-gray-300">Idade</TableHead>
-              <TableHead className="text-right text-gray-300">Ações</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap">Nome</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap hidden sm:table-cell">E-mail</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap hidden sm:table-cell">Telefone</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap">WhatsApp</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap hidden md:table-cell">Data de Nascimento</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap hidden md:table-cell">Idade</TableHead>
+              <TableHead className="text-right text-gray-300 whitespace-nowrap">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {clients.map((client) => {
               const whatsappNumber = client.whatsapp || client.phone;
-              
+
               return (
                 <TableRow key={client.id} className="border-gray-700 hover:bg-gray-700">
-                  <TableCell className="font-medium text-white">{client.name}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium text-white whitespace-nowrap">{client.name}</TableCell>
+                  <TableCell className="hidden sm:table-cell whitespace-nowrap">
                     {client.email ? (
                       <div className="flex items-center space-x-1">
                         <Mail className="h-3.5 w-3.5 text-gray-400" />
-                        <span className="text-sm text-white">{client.email}</span>
+                        <span className="text-sm text-white truncate max-w-[150px]">{client.email}</span>
                       </div>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell whitespace-nowrap">
                     <div className="flex items-center space-x-1">
                       <Phone className="h-3.5 w-3.5 text-gray-400" />
                       <span className="text-sm text-white">{client.phone}</span>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     <Badge variant="secondary" className="bg-green-900 text-green-300 border-green-700">
                       {whatsappNumber}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell whitespace-nowrap">
                     {client.birth_date ? (
                       <span className="text-sm text-white">
                         {format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
@@ -186,12 +184,12 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
                       <span className="text-gray-400 text-sm">-</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell whitespace-nowrap">
                     <Badge variant="outline" className="border-gray-600 text-white">
                       {client.age} anos
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right whitespace-nowrap">
                     <Button
                       onClick={() => handleWhatsAppClick(client)}
                       size="sm"
