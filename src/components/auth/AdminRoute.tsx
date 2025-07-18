@@ -1,8 +1,8 @@
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -14,60 +14,39 @@ interface AdminRouteProps {
 const AdminRoute: React.FC<AdminRouteProps> = ({ 
   children, 
   allowBarber = false, 
-  requiredModule,
-  allowedRoles 
 }) => {
   const { user, isAdmin, isBarber, loading } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
-  
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        if (location.pathname !== '/auth') {
-          console.log('AdminRoute: User not authenticated');
-          toast({
-            title: 'Acesso Restrito',
-            description: 'Você precisa estar logado para acessar esta página',
-            variant: 'destructive',
-          });
-        }
-      } else if (!isAdmin && !(allowBarber && isBarber)) {
-        if (location.pathname !== '/auth' && location.pathname !== '/') {
-          console.log('AdminRoute: Access denied');
-          toast({
-            title: 'Acesso Restrito',
-            description: 'Você não tem permissão para acessar o painel administrativo',
-            variant: 'destructive',
-          });
-        }
-      }
-    }
-  }, [loading, user, isAdmin, isBarber, allowBarber, toast, location.pathname]);
-  
+
   if (loading) {
-    console.log('AdminRoute: loading...');
     return (
       <div className="flex flex-col items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
         <p className="text-muted-foreground">Verificando permissões...</p>
       </div>
     );
   }
-  
+
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
+    toast({
+      title: 'Acesso Restrito',
+      description: 'Você precisa estar logado para acessar esta página',
+      variant: 'destructive',
+    });
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
-  
-  if (isAdmin) {
-    return <>{children}</>;
+
+  if (!isAdmin && !(allowBarber && isBarber)) {
+    toast({
+      title: 'Acesso Restrito',
+      description: 'Você não tem permissão para acessar esta área',
+      variant: 'destructive',
+    });
+    return <Navigate to="/" replace />;
   }
-  
-  if (allowBarber && isBarber) {
-    return <>{children}</>;
-  }
-  
-  return <Navigate to="/" replace />;
+
+  return <>{children}</>;
 };
 
 export default AdminRoute;
