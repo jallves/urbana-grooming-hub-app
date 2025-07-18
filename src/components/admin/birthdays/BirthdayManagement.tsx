@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,10 +25,9 @@ const BirthdayManagement: React.FC = () => {
         targetMonth = new Date().getMonth() + 1;
       }
 
-      // Alterado para usar a tabela painel_clientes
+      // Chamada da função RPC sem o parâmetro table_name
       const { data, error } = await supabase.rpc('get_birthday_clients', {
-        target_month: targetMonth,
-        table_name: 'painel_clientes' // Adicionado parâmetro para especificar a tabela
+        target_month: targetMonth
       });
       
       if (error) {
