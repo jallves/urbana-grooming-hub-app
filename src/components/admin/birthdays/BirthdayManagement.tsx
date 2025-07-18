@@ -14,25 +14,26 @@ const BirthdayManagement: React.FC = () => {
   const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['birthday-clients', filter],
     queryFn: async () => {
-      let targetMonth = new Date().getMonth() + 1;
-      
+      const targetMonth = new Date().getMonth() + 1;
       const { data, error } = await supabase.rpc('get_birthday_clients', {
-        target_month: targetMonth
+        target_month: targetMonth,
       });
-      
+
       if (error) {
         throw new Error(error.message);
       }
-      
+
       let filteredData = data || [];
-      
+
       if (filter === 'today') {
         const today = new Date();
         filteredData = filteredData.filter(client => {
           if (!client.birth_date) return false;
           const birthDate = new Date(client.birth_date);
-          return birthDate.getDate() === today.getDate() && 
-                 birthDate.getMonth() === today.getMonth();
+          return (
+            birthDate.getDate() === today.getDate() &&
+            birthDate.getMonth() === today.getMonth()
+          );
         });
       } else if (filter === 'week') {
         const today = new Date();
@@ -40,30 +41,37 @@ const BirthdayManagement: React.FC = () => {
         startOfWeek.setDate(today.getDate() - today.getDay());
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        
+
         filteredData = filteredData.filter(client => {
           if (!client.birth_date) return false;
           const birthDate = new Date(client.birth_date);
-          const currentYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-          return currentYearBirthday >= startOfWeek && currentYearBirthday <= endOfWeek;
+          const currentYearBirthday = new Date(
+            today.getFullYear(),
+            birthDate.getMonth(),
+            birthDate.getDate()
+          );
+          return (
+            currentYearBirthday >= startOfWeek &&
+            currentYearBirthday <= endOfWeek
+          );
         });
       }
-      
+
       return filteredData;
-    }
+    },
   });
 
   if (error) {
     toast.error('Erro ao carregar aniversariantes', {
-      description: (error as Error).message
+      description: (error as Error).message,
     });
   }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
         {/* Header */}
-        <div className="space-y-1">
+        <div className="space-y-2 text-center sm:text-left">
           <h1 className="text-xl sm:text-2xl font-bold text-white">
             Aniversariantes
           </h1>
@@ -73,9 +81,9 @@ const BirthdayManagement: React.FC = () => {
         </div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Filtros */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-gray-800 border-gray-700 shadow-md rounded-xl">
             <CardHeader className="pb-4">
               <CardTitle className="text-base sm:text-lg font-bold text-white">
                 Filtros de Aniversariantes
@@ -87,8 +95,8 @@ const BirthdayManagement: React.FC = () => {
           </Card>
 
           {/* Lista */}
-          <Card className="bg-gray-800 border-gray-700">
-            <BirthdayList 
+          <Card className="bg-gray-800 border-gray-700 shadow-md rounded-xl">
+            <BirthdayList
               clients={clients || []}
               isLoading={isLoading}
               filter={filter}
