@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle } from 'lucide-react';
@@ -61,9 +60,9 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 }) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'confirmado': { variant: 'default' as const, label: 'Confirmado', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-      'concluido': { variant: 'outline' as const, label: 'Concluído', className: 'bg-green-50 text-green-700 border-green-200' },
-      'cancelado': { variant: 'destructive' as const, label: 'Cancelado', className: 'bg-red-50 text-red-700 border-red-200' },
+      'confirmado': { label: 'Confirmado', className: 'bg-blue-600/20 text-blue-300 border-blue-500/40' },
+      'concluido': { label: 'Concluído', className: 'bg-green-600/20 text-green-300 border-green-500/40' },
+      'cancelado': { label: 'Cancelado', className: 'bg-red-600/20 text-red-300 border-red-500/40' },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.confirmado;
@@ -71,42 +70,42 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   };
 
   return (
-    <TableRow className="hover:bg-gray-50 border-b border-gray-100">
+    <TableRow className="hover:bg-gray-800 border-b border-gray-700">
       <TableCell className="py-3">
         <div className="flex flex-col">
-          <span className="font-medium text-gray-900 text-sm">
+          <span className="font-medium text-gray-100 text-sm">
             {appointment.painel_clientes?.nome || 'Nome não encontrado'}
           </span>
-          <span className="text-xs text-gray-500 sm:hidden">
+          <span className="text-xs text-gray-400 sm:hidden">
             {format(new Date(appointment.data), 'dd/MM/yyyy')} às {appointment.hora}
           </span>
-          <div className="md:hidden text-xs text-gray-500 mt-1">
+          <div className="md:hidden text-xs text-gray-400 mt-1">
             {appointment.painel_servicos?.nome || 'Serviço N/A'}
           </div>
-          <div className="lg:hidden text-xs text-gray-500">
+          <div className="lg:hidden text-xs text-gray-400">
             {appointment.painel_barbeiros?.nome || 'Barbeiro N/A'}
           </div>
         </div>
       </TableCell>
       
       <TableCell className="py-3 hidden sm:table-cell">
-        <div className="text-sm text-gray-700">
+        <div className="text-sm text-gray-300">
           <div>{format(new Date(appointment.data), 'dd/MM/yyyy')}</div>
-          <div className="text-xs text-gray-500">{appointment.hora}</div>
+          <div className="text-xs text-gray-400">{appointment.hora}</div>
         </div>
       </TableCell>
       
       <TableCell className="py-3 hidden md:table-cell">
-        <div className="text-sm text-gray-700">
+        <div className="text-sm text-gray-300">
           <div>{appointment.painel_servicos?.nome || 'N/A'}</div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-400">
             R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
           </div>
         </div>
       </TableCell>
       
       <TableCell className="py-3 hidden lg:table-cell">
-        <span className="text-sm text-gray-700">
+        <span className="text-sm text-gray-300">
           {appointment.painel_barbeiros?.nome || 'N/A'}
         </span>
       </TableCell>
@@ -118,40 +117,40 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
       <TableCell className="text-right py-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
-              <MoreHorizontal className="h-4 w-4 text-gray-600" />
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-700">
+              <MoreHorizontal className="h-4 w-4 text-gray-300" />
               <span className="sr-only">Abrir menu</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200">
-            <DropdownMenuItem onClick={() => onEdit(appointment.id)} className="hover:bg-gray-50">
-              <Edit className="mr-2 h-4 w-4 text-gray-600" />
-              <span className="text-sm text-gray-700">Editar</span>
+          <DropdownMenuContent align="end" className="w-48 bg-gray-900 border border-gray-700">
+            <DropdownMenuItem onClick={() => onEdit(appointment.id)} className="hover:bg-gray-800">
+              <Edit className="mr-2 h-4 w-4 text-gray-300" />
+              <span className="text-sm text-gray-300">Editar</span>
             </DropdownMenuItem>
             
             {appointment.status !== 'confirmado' && (
-              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmed')} className="hover:bg-gray-50">
-                <Check className="mr-2 h-4 w-4 text-blue-600" />
-                <span className="text-sm text-gray-700">Confirmar</span>
+              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmado')} className="hover:bg-gray-800">
+                <Check className="mr-2 h-4 w-4 text-blue-400" />
+                <span className="text-sm text-gray-300">Confirmar</span>
               </DropdownMenuItem>
             )}
             
             {appointment.status !== 'concluido' && (
-              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'completed')} className="hover:bg-gray-50">
-                <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                <span className="text-sm text-gray-700">Concluir</span>
+              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'concluido')} className="hover:bg-gray-800">
+                <CheckCircle className="mr-2 h-4 w-4 text-green-400" />
+                <span className="text-sm text-gray-300">Concluir</span>
               </DropdownMenuItem>
             )}
             
             {appointment.status !== 'cancelado' && (
-              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelled')} className="hover:bg-gray-50">
-                <X className="mr-2 h-4 w-4 text-red-600" />
-                <span className="text-sm text-gray-700">Cancelar</span>
+              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelado')} className="hover:bg-gray-800">
+                <X className="mr-2 h-4 w-4 text-red-400" />
+                <span className="text-sm text-gray-300">Cancelar</span>
               </DropdownMenuItem>
             )}
             
             <DropdownMenuItem 
-              className="text-red-600 hover:bg-red-50"
+              className="text-red-400 hover:bg-gray-800"
               onClick={() => onDelete(appointment.id)}
             >
               <Trash2 className="mr-2 h-4 w-4" />

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo } from 'react';
 import { useClientAppointments } from './useClientAppointments';
 import ClientAppointmentStats from './ClientAppointmentStats';
@@ -21,7 +20,7 @@ const ClientAppointmentDashboard: React.FC = () => {
     handleUpdateAppointment,
   } = useClientAppointments();
 
-  // Memoize filtered appointments to prevent unnecessary re-calculations
+  // Memoize filtered appointments
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appointment) => {
       if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
@@ -30,7 +29,6 @@ const ClientAppointmentDashboard: React.FC = () => {
     });
   }, [appointments, statusFilter, searchQuery]);
 
-  // Memoize handlers to prevent re-renders
   const handleEditAppointment = useCallback((appointmentId: string) => {
     setSelectedAppointment(appointmentId);
     setIsEditDialogOpen(true);
@@ -42,15 +40,15 @@ const ClientAppointmentDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="h-full flex flex-col gap-6 bg-gray-900 text-gray-100 p-4 sm:p-6 lg:p-8 rounded-lg">
       {/* Cards de estatísticas */}
       <ClientAppointmentStats appointments={appointments} />
 
       {/* Card principal */}
-      <Card className="flex-1 flex flex-col border border-gray-200 bg-white">
-        <CardHeader className="pb-4">
+      <Card className="flex-1 flex flex-col border border-gray-800 bg-gray-900 shadow-lg">
+        <CardHeader className="pb-4 border-b border-gray-800">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <CardTitle className="text-xl font-bold text-gray-900">
+            <CardTitle className="text-xl font-bold text-gray-100">
               Gestão de Agendamentos
             </CardTitle>
             <ClientAppointmentFilters

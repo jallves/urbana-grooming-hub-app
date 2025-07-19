@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -61,7 +60,7 @@ const ClientAppointmentCompactTable: React.FC<ClientAppointmentCompactTableProps
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-gray-400 rounded-full"></div>
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-gray-500 rounded-full"></div>
       </div>
     );
   }
@@ -69,22 +68,22 @@ const ClientAppointmentCompactTable: React.FC<ClientAppointmentCompactTableProps
   if (appointments.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
-        <p className="text-gray-500 text-sm">Nenhum agendamento encontrado</p>
+        <p className="text-gray-400 text-sm">Nenhum agendamento encontrado</p>
       </div>
     );
   }
   
   return (
-    <div className="w-full">
+    <div className="w-full bg-gray-900 rounded-lg shadow-sm border border-gray-800">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50 border-b border-gray-200">
-            <TableHead className="font-medium text-gray-700 py-3">Cliente</TableHead>
-            <TableHead className="font-medium text-gray-700 py-3 hidden sm:table-cell">Data/Hora</TableHead>
-            <TableHead className="font-medium text-gray-700 py-3 hidden md:table-cell">Serviço</TableHead>
-            <TableHead className="font-medium text-gray-700 py-3 hidden lg:table-cell">Barbeiro</TableHead>
-            <TableHead className="font-medium text-gray-700 py-3">Status</TableHead>
-            <TableHead className="font-medium text-gray-700 py-3 text-right">Ações</TableHead>
+          <TableRow className="bg-gray-800 border-b border-gray-700">
+            <TableHead className="font-medium text-gray-200 py-3">Cliente</TableHead>
+            <TableHead className="font-medium text-gray-200 py-3 hidden sm:table-cell">Data/Hora</TableHead>
+            <TableHead className="font-medium text-gray-200 py-3 hidden md:table-cell">Serviço</TableHead>
+            <TableHead className="font-medium text-gray-200 py-3 hidden lg:table-cell">Barbeiro</TableHead>
+            <TableHead className="font-medium text-gray-200 py-3">Status</TableHead>
+            <TableHead className="font-medium text-gray-200 py-3 text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
