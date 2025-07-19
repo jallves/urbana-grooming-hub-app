@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Table, TableBody } from '@/components/ui/table';
 import ClientTableHeader from './components/ClientTableHeader';
@@ -49,15 +48,15 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-gray-50">
       {/* Header com contador e botão de exportação */}
-      <div className="flex-shrink-0 p-4 bg-gray-50 border-b border-gray-200">
-        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
+      <div className="flex-shrink-0 px-4 py-3 sm:px-6 bg-gray-50 border-b border-gray-200">
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
               Clientes Cadastrados
             </h3>
-            <div className="px-3 py-1 bg-gray-900 text-white rounded-full text-sm font-medium">
+            <div className="px-3 py-1 bg-gray-900 text-white rounded-full text-sm sm:text-base font-medium">
               {clients.length}
             </div>
           </div>
@@ -69,19 +68,21 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
       
       {/* Tabela com scroll */}
       <div className="flex-1 overflow-auto bg-white">
-        <Table className="w-full">
-          <ClientTableHeader />
-          <TableBody>
-            {clients.map((client) => (
-              <ClientTableRow
-                key={client.id}
-                client={client}
-                onEdit={onEdit}
-                onDelete={confirmDelete}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <div className="min-w-full inline-block align-middle">
+          <Table className="min-w-full">
+            <ClientTableHeader />
+            <TableBody>
+              {clients.map((client) => (
+                <ClientTableRow
+                  key={client.id}
+                  client={client}
+                  onEdit={onEdit}
+                  onDelete={confirmDelete}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Indicador de scroll para mobile */}

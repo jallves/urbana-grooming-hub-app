@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -66,7 +65,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
       }
     } catch (error) {
       toast.error('Erro ao carregar dados do cliente', {
-        description: (error as Error).message
+        description: (error as Error).message,
       });
     } finally {
       setIsLoadingData(false);
@@ -76,9 +75,8 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
   const onSubmit = async (data: ClientFormData) => {
     try {
       setIsLoading(true);
-      
+
       if (clientId) {
-        // Update existing client
         const { error } = await supabase
           .from('painel_clientes')
           .update({
@@ -93,7 +91,6 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
         if (error) throw error;
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        // Create new client (admin created clients get a default password hash)
         const { error } = await supabase
           .from('painel_clientes')
           .insert({
@@ -101,7 +98,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
             email: data.email || '',
             whatsapp: data.whatsapp,
             data_nascimento: data.data_nascimento || null,
-            senha_hash: 'admin_created', // Default hash for admin-created clients
+            senha_hash: 'admin_created',
             updated_at: new Date().toISOString(),
           });
 
@@ -112,7 +109,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
       onSuccess();
     } catch (error) {
       toast.error(clientId ? 'Erro ao atualizar cliente' : 'Erro ao criar cliente', {
-        description: (error as Error).message
+        description: (error as Error).message,
       });
     } finally {
       setIsLoading(false);
@@ -132,15 +129,14 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form
+      onSubmit={form.handleSubmit(onSubmit)}
+      className="space-y-6 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="nome">Nome *</Label>
-          <Input
-            id="nome"
-            placeholder="Nome completo"
-            {...form.register('nome')}
-          />
+          <Input id="nome" placeholder="Nome completo" {...form.register('nome')} />
           {form.formState.errors.nome && (
             <p className="text-sm text-red-500">{form.formState.errors.nome.message}</p>
           )}
@@ -173,22 +169,24 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
 
         <div className="space-y-2">
           <Label htmlFor="data_nascimento">Data de Nascimento *</Label>
-          <Input
-            id="data_nascimento"
-            type="date"
-            {...form.register('data_nascimento')}
-          />
+          <Input id="data_nascimento" type="date" {...form.register('data_nascimento')} />
           {form.formState.errors.data_nascimento && (
             <p className="text-sm text-red-500">{form.formState.errors.data_nascimento.message}</p>
           )}
         </div>
       </div>
 
-      <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+      <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="w-full sm:w-auto"
+        >
           Cancelar
         </Button>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
           {isLoading ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
