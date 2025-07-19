@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback, useMemo } from 'react';
 import { useClientAppointments } from './useClientAppointments';
 import ClientAppointmentStats from './ClientAppointmentStats';
 import ClientAppointmentCompactTable from './ClientAppointmentCompactTable';
@@ -21,24 +22,26 @@ const ClientAppointmentDashboard: React.FC = () => {
     handleUpdateAppointment,
   } = useClientAppointments();
 
-  // Filtragem
-  const filteredAppointments = appointments.filter((appointment) => {
-    if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
-    const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
-    return clientName.includes(searchQuery.toLowerCase());
-  });
+  // Memoize filtered appointments to prevent unnecessary re-calculations
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter((appointment) => {
+      if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
+      const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
+      return clientName.includes(searchQuery.toLowerCase());
+    });
+  }, [appointments, statusFilter, searchQuery]);
 
-  // Handlers
-  const handleEditAppointment = (appointmentId: string) => {
+  // Memoize handlers to prevent re-renders
+  const handleEditAppointment = useCallback((appointmentId: string) => {
     setSelectedAppointment(appointmentId);
     setIsEditDialogOpen(true);
-  };
+  }, []);
 
-  const handleCloseEditDialog = () => {
+  const handleCloseEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);
     setSelectedAppointment(null);
     fetchAppointments();
-  };
+  }, [fetchAppointments]);
 
   return (
     <div className="h-full flex flex-col gap-6">

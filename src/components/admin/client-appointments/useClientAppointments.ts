@@ -165,7 +165,8 @@ export const useClientAppointments = () => {
         description: "O agendamento foi atualizado com sucesso.",
       });
       
-      fetchAppointments();
+      // Refresh appointments after update
+      await fetchAppointments();
       return true;
     } catch (error) {
       console.error('Error updating appointment:', error);
