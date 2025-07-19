@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -81,7 +82,7 @@ export const useBarberAppointments = () => {
     fetchBarberId();
   }, [user?.email]);
 
-  const fetchAppointments = async () => {
+  const fetchAppointments = useCallback(async () => {
     if (!barberId) return;
     setLoading(true);
     try {
@@ -146,7 +147,7 @@ export const useBarberAppointments = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [barberId, toast]);
 
   // Usar o hook de sincronização
   useAppointmentSync(fetchAppointments);
@@ -156,7 +157,7 @@ export const useBarberAppointments = () => {
     if (barberId) {
       fetchAppointments();
     }
-  }, [barberId]);
+  }, [barberId, fetchAppointments]);
 
   const stats = useMemo(() => {
     const total = appointments.length;
@@ -177,7 +178,7 @@ export const useBarberAppointments = () => {
     return { total, completed, upcoming, revenue };
   }, [appointments]);
 
-  const handleCompleteAppointment = async (appointmentId: string) => {
+  const handleCompleteAppointment = useCallback(async (appointmentId: string) => {
     if (!barberId || !barberData) {
       toast({
         title: "Erro",
@@ -254,9 +255,9 @@ export const useBarberAppointments = () => {
     } finally {
       setUpdatingId(null);
     }
-  };
+  }, [barberId, barberData, appointments, toast]);
 
-  const handleCancelAppointment = async (appointmentId: string) => {
+  const handleCancelAppointment = useCallback(async (appointmentId: string) => {
     try {
       setUpdatingId(appointmentId);
       const appointment = appointments.find(a => a.id === appointmentId);
@@ -304,9 +305,9 @@ export const useBarberAppointments = () => {
     } finally {
       setUpdatingId(null);
     }
-  };
+  }, [appointments, toast]);
 
-  const handleEditAppointment = async (appointmentId: string, startTime: string) => {
+  const handleEditAppointment = useCallback(async (appointmentId: string, startTime: string) => {
     try {
       const appointmentDate = new Date(startTime);
       setSelectedAppointmentId(appointmentId);
@@ -320,13 +321,13 @@ export const useBarberAppointments = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const closeEditModal = () => {
+  const closeEditModal = useCallback(() => {
     setIsEditModalOpen(false);
     setSelectedAppointmentId(null);
     setSelectedAppointmentDate(null);
-  };
+  }, []);
 
   return {
     appointments,
