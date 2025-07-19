@@ -165,8 +165,29 @@ export const useClientAppointments = () => {
         description: "O agendamento foi atualizado com sucesso.",
       });
       
-      // Refresh appointments after update
-      await fetchAppointments();
+      // Refresh appointments after update - use a separate function to avoid dependency issues
+      const refreshAppointments = async () => {
+        try {
+          const { data: refreshedData, error: refreshError } = await supabase
+            .from('painel_agendamentos')
+            .select(`
+              *,
+              painel_clientes!inner(nome, email, whatsapp),
+              painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
+              painel_servicos!inner(nome, preco, duracao)
+            `)
+            .order('data', { ascending: false })
+            .order('hora', { ascending: false });
+
+          if (!refreshError && refreshedData) {
+            setAppointments(refreshedData);
+          }
+        } catch (error) {
+          console.error('Error refreshing appointments:', error);
+        }
+      };
+      
+      await refreshAppointments();
       return true;
     } catch (error) {
       console.error('Error updating appointment:', error);
@@ -175,7 +196,7 @@ export const useClientAppointments = () => {
       });
       return false;
     }
-  }, [fetchAppointments]);
+  }, []);
 
   return {
     appointments,

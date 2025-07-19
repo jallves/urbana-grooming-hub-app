@@ -16,7 +16,6 @@ const ClientAppointmentDashboard: React.FC = () => {
   const {
     appointments,
     isLoading,
-    fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
     handleUpdateAppointment,
@@ -40,8 +39,8 @@ const ClientAppointmentDashboard: React.FC = () => {
   const handleCloseEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);
     setSelectedAppointment(null);
-    fetchAppointments();
-  }, [fetchAppointments]);
+    // Remove fetchAppointments call to prevent dependency loop
+  }, []);
 
   return (
     <div className="h-full flex flex-col gap-6">
