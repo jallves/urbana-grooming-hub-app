@@ -4,26 +4,14 @@ import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment } from '@/types/appointment';
 import { useAuth } from '@/contexts/AuthContext';
-
-// Tipo para agendamentos do painel do cliente
-interface PainelAgendamento {
-  id: string;
-  cliente_id: string;
-  barbeiro_id: string;
-  servico_id: string;
-  data: string;
-  hora: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-}
+import { useAppointmentSync } from '@/hooks/useAppointmentSync';
 
 export const useAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAdmin, isBarber } = useAuth();
   
-  // Use useCallback to memoize the fetchAppointments function to prevent infinite re-renders
+  // Função estável para buscar agendamentos
   const fetchAppointments = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -33,7 +21,7 @@ export const useAppointments = () => {
       let regularAppointments: Appointment[] = [];
       
       if (!isAdmin && isBarber && user) {
-        // First get the staff ID for the current barber user
+        // Buscar agendamentos para barbeiro específico
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
           .select('id')
@@ -50,7 +38,6 @@ export const useAppointments = () => {
         if (!staffData) {
           console.log('No staff record found for this user');
         } else {
-          // Then get appointments for this staff member
           const { data, error } = await supabase
             .from('appointments')
             .select(`
@@ -70,7 +57,7 @@ export const useAppointments = () => {
           regularAppointments = data || [];
         }
       } else {
-        // Admin user - load all appointments
+        // Admin - carregar todos os agendamentos
         const { data, error } = await supabase
           .from('appointments')
           .select(`
@@ -107,12 +94,11 @@ export const useAppointments = () => {
         } else {
           // Converter agendamentos do painel para o formato padrão
           painelAppointments = (painelData || []).map((painel: any) => {
-            // Criar timestamp combinando data e hora
             const startTime = new Date(`${painel.data}T${painel.hora}`);
             const endTime = new Date(startTime.getTime() + (painel.painel_servicos.duracao * 60000));
 
             return {
-              id: `painel_${painel.id}`, // Adicionar prefixo para identificar agendamentos do painel
+              id: `painel_${painel.id}`,
               client_id: painel.cliente_id,
               service_id: painel.servico_id,
               staff_id: painel.barbeiro_id,
@@ -126,7 +112,6 @@ export const useAppointments = () => {
               updated_at: painel.updated_at,
               coupon_code: null,
               discount_amount: null,
-              // Dados do cliente do painel
               client: {
                 id: painel.cliente_id,
                 name: painel.painel_clientes.nome,
@@ -141,7 +126,6 @@ export const useAppointments = () => {
                 email_verification_token: null,
                 email_verification_expires: null
               },
-              // Dados do serviço do painel
               service: {
                 id: painel.servico_id,
                 name: painel.painel_servicos.nome,
@@ -152,7 +136,6 @@ export const useAppointments = () => {
                 created_at: painel.created_at,
                 updated_at: painel.updated_at
               },
-              // Dados do barbeiro do painel
               staff: {
                 id: painel.barbeiro_id,
                 name: painel.painel_barbeiros.nome,
@@ -189,56 +172,21 @@ export const useAppointments = () => {
     }
   }, [isAdmin, isBarber, user]);
 
+  // Usar o hook de sincronização
+  useAppointmentSync(fetchAppointments);
+
   useEffect(() => {
     if (user) {
       fetchAppointments();
-      
-      // Add real-time subscription for appointments with proper cleanup
-      const channel = supabase
-        .channel('appointment-changes')
-        .on(
-          'postgres_changes',
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'appointments'
-          },
-          (payload) => {
-            console.log('Appointment data changed:', payload);
-            fetchAppointments(); // Refresh data when changes occur
-          }
-        )
-        .on(
-          'postgres_changes',
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'painel_agendamentos'
-          },
-          (payload) => {
-            console.log('Painel appointment data changed:', payload);
-            fetchAppointments(); // Refresh data when changes occur
-          }
-        )
-        .subscribe();
-
-      return () => {
-        console.log('Cleaning up appointments subscription');
-        supabase.removeChannel(channel);
-      };
     }
   }, [user, fetchAppointments]);
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
-      // Verificar se é um agendamento do painel do cliente pelo prefixo
       const isPainelAppointment = appointmentId.startsWith('painel_');
       
       if (isPainelAppointment) {
-        // Remove o prefixo para obter o ID real
         const realId = appointmentId.replace('painel_', '');
-        
-        // Atualizar agendamento do painel do cliente
         const painelStatus = newStatus === 'cancelled' ? 'cancelado' : 
                             newStatus === 'confirmed' ? 'confirmado' : 
                             newStatus === 'completed' ? 'concluido' : 'confirmado';
@@ -250,7 +198,6 @@ export const useAppointments = () => {
 
         if (error) throw error;
       } else {
-        // Atualizar agendamento regular
         const { error } = await supabase
           .from('appointments')
           .update({ status: newStatus })
@@ -259,14 +206,11 @@ export const useAppointments = () => {
         if (error) throw error;
       }
       
-      // Update local state
+      // Atualizar estado local
       setAppointments(prev => prev.map(appointment => 
         appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
       ));
       
-      toast.success("Status atualizado", {
-        description: "O status do agendamento foi atualizado com sucesso.",
-      });
     } catch (error) {
       console.error('Error updating appointment status:', error);
       toast.error("Erro", {
@@ -277,14 +221,10 @@ export const useAppointments = () => {
   
   const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
     try {
-      // Verificar se é um agendamento do painel do cliente pelo prefixo
       const isPainelAppointment = appointmentId.startsWith('painel_');
 
       if (isPainelAppointment) {
-        // Remove o prefixo para obter o ID real
         const realId = appointmentId.replace('painel_', '');
-        
-        // Deletar agendamento do painel do cliente
         const { error } = await supabase
           .from('painel_agendamentos')
           .delete()
@@ -292,8 +232,7 @@ export const useAppointments = () => {
 
         if (error) throw error;
       } else {
-        // Deletar agendamento regular
-        const { error } =  await supabase
+        const { error } = await supabase
           .from('appointments')
           .delete()
           .eq('id', appointmentId);

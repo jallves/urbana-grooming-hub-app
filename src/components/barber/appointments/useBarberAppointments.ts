@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useAppointmentSync } from '@/hooks/useAppointmentSync';
 
 // Interface para agendamentos do painel do cliente adaptada para o barbeiro
 interface PainelAgendamento {
@@ -48,7 +47,6 @@ interface AppointmentWithDetails {
 export const useBarberAppointments = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -149,36 +147,16 @@ export const useBarberAppointments = () => {
     }
   };
 
-  // Real-time subscription
+  // Usar o hook de sincronização
+  useAppointmentSync(fetchAppointments);
+
+  // Busca inicial quando barberId está disponível
   useEffect(() => {
     if (barberId) {
       fetchAppointments();
-
-      // Subscribe to real-time changes
-      const channel = supabase
-        .channel('painel_agendamentos_changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'painel_agendamentos',
-            filter: `barbeiro_id=eq.${barberId}`
-          },
-          (payload) => {
-            console.log('Real-time update received:', payload);
-            fetchAppointments(); // Refresh appointments when changes occur
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
   }, [barberId]);
 
-  // Calculate stats
   const stats = useMemo(() => {
     const total = appointments.length;
     const completed = appointments.filter(a => a.status === 'completed').length;
@@ -222,7 +200,7 @@ export const useBarberAppointments = () => {
 
       console.log('Attempting to complete appointment:', appointmentId);
       
-      // 1. Update appointment status to completed FIRST
+      // Atualizar status para concluído
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ 
@@ -236,7 +214,7 @@ export const useBarberAppointments = () => {
         throw updateError;
       }
 
-      // 2. Update local state IMMEDIATELY for better UX
+      // Atualizar estado local imediatamente
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
@@ -245,80 +223,8 @@ export const useBarberAppointments = () => {
         )
       );
 
-      console.log('Appointment marked as completed successfully');
-
-      // 3. Create commission record in background
-      const servicePrice = appointment.service?.price || 0;
-      
-      if (servicePrice > 0 && barberData.staff_id) {
-        try {
-          // Get commission rate from staff
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('commission_rate')
-            .eq('id', barberData.staff_id)
-            .maybeSingle();
-
-          const commissionRate = staffData?.commission_rate || barberData.commission_rate || 30;
-          const commissionAmount = servicePrice * (commissionRate / 100);
-
-          console.log('Creating commission:', {
-            appointmentId,
-            barberId: barberData.staff_id,
-            amount: commissionAmount,
-            servicePrice,
-            commissionRate
-          });
-
-          const { error: commissionError } = await supabase
-            .from('barber_commissions')
-            .insert({
-              barber_id: barberData.staff_id,
-              appointment_id: appointmentId,
-              amount: commissionAmount,
-              commission_rate: commissionRate,
-              status: 'pending'
-            });
-
-          if (commissionError) {
-            console.error('Erro ao criar comissão:', commissionError);
-            // Don't fail the entire operation for commission error
-          } else {
-            console.log('Commission created successfully:', commissionAmount);
-          }
-        } catch (error) {
-          console.error('Error creating commission:', error);
-          // Don't fail the entire operation for commission error
-        }
-      }
-
-      // 4. Create cash flow entry in background
-      if (servicePrice > 0) {
-        try {
-          const { error: cashFlowError } = await supabase
-            .from('cash_flow')
-            .insert({
-              transaction_type: 'income',
-              amount: servicePrice,
-              description: `Serviço: ${appointment.service_name} - Cliente: ${appointment.client_name}`,
-              category: 'Serviços',
-              payment_method: 'Dinheiro',
-              transaction_date: new Date().toISOString().split('T')[0],
-              reference_id: appointmentId,
-              reference_type: 'appointment'
-            });
-
-          if (cashFlowError) {
-            console.error('Erro ao registrar no fluxo de caixa:', cashFlowError);
-          }
-        } catch (error) {
-          console.error('Error creating cash flow entry:', error);
-        }
-      }
-
       const appointmentDate = new Date(appointment.start_time);
 
-      // 5. Show success message
       toast({
         title: "✅ Agendamento Concluído!",
         description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.`,
@@ -328,7 +234,7 @@ export const useBarberAppointments = () => {
     } catch (error) {
       console.error('Erro ao marcar agendamento como concluído:', error);
       
-      // Revert local state change on error
+      // Reverter mudança local em caso de erro
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
@@ -370,7 +276,7 @@ export const useBarberAppointments = () => {
         return;
       }
 
-      // Update local state immediately
+      // Atualizar estado local imediatamente
       setAppointments(prevAppointments => 
         prevAppointments.map(appt => 
           appt.id === appointmentId 
