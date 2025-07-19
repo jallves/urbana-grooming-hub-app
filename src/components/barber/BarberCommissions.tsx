@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -86,14 +87,7 @@ const BarberCommissions: React.FC = () => {
         // Fetch from barber_commissions table
         const { data: barberCommissions, error: bcError } = await supabase
           .from('barber_commissions')
-          .select(`
-            *,
-            appointments (
-              start_time,
-              clients (name),
-              services (name, price)
-            )
-          `)
+          .select('*')
           .eq('barber_id', staffId)
           .order('created_at', { ascending: false });
 
@@ -103,24 +97,75 @@ const BarberCommissions: React.FC = () => {
           return;
         }
 
-        // Transform data to unified format
-        const transformedCommissions: Commission[] = (barberCommissions || []).map(commission => ({
-          id: commission.id,
-          amount: commission.amount,
-          status: commission.status,
-          created_at: commission.created_at,
-          payment_date: commission.payment_date,
-          commission_rate: commission.commission_rate,
-          source: 'barber_commissions',
-          appointment_details: commission.appointments ? {
-            client_name: commission.appointments.clients?.name || 'Cliente',
-            service_name: commission.appointments.services?.name || 'Serviço',
-            service_price: commission.appointments.services?.price || 0,
-            appointment_date: commission.appointments.start_time?.split('T')[0] || '',
-            appointment_time: commission.appointments.start_time ? 
-              format(new Date(commission.appointments.start_time), 'HH:mm') : '--:--'
-          } : undefined
-        }));
+        if (!barberCommissions || barberCommissions.length === 0) {
+          setCommissions([]);
+          return;
+        }
+
+        // Now fetch appointment details separately based on source
+        const transformedCommissions: Commission[] = [];
+
+        for (const commission of barberCommissions) {
+          let appointmentDetails;
+
+          if (commission.appointment_source === 'painel') {
+            // Fetch from painel_agendamentos
+            const { data: painelData } = await supabase
+              .from('painel_agendamentos')
+              .select(`
+                *,
+                painel_clientes(nome),
+                painel_servicos(nome, preco),
+                painel_barbeiros(nome)
+              `)
+              .eq('id', commission.appointment_id)
+              .maybeSingle();
+
+            if (painelData) {
+              appointmentDetails = {
+                client_name: painelData.painel_clientes?.nome || 'Cliente',
+                service_name: painelData.painel_servicos?.nome || 'Serviço',
+                service_price: painelData.painel_servicos?.preco || 0,
+                appointment_date: painelData.data || '',
+                appointment_time: painelData.hora ? 
+                  format(new Date(`2000-01-01T${painelData.hora}`), 'HH:mm') : '--:--'
+              };
+            }
+          } else {
+            // Fetch from appointments table
+            const { data: appointmentData } = await supabase
+              .from('appointments')
+              .select(`
+                *,
+                clients(name),
+                services(name, price)
+              `)
+              .eq('id', commission.appointment_id)
+              .maybeSingle();
+
+            if (appointmentData) {
+              appointmentDetails = {
+                client_name: appointmentData.clients?.name || 'Cliente',
+                service_name: appointmentData.services?.name || 'Serviço',
+                service_price: appointmentData.services?.price || 0,
+                appointment_date: appointmentData.start_time?.split('T')[0] || '',
+                appointment_time: appointmentData.start_time ? 
+                  format(new Date(appointmentData.start_time), 'HH:mm') : '--:--'
+              };
+            }
+          }
+
+          transformedCommissions.push({
+            id: commission.id,
+            amount: commission.amount,
+            status: commission.status,
+            created_at: commission.created_at,
+            payment_date: commission.payment_date,
+            commission_rate: commission.commission_rate,
+            source: commission.appointment_source || 'appointments',
+            appointment_details: appointmentDetails
+          });
+        }
 
         setCommissions(transformedCommissions);
       } catch (error) {
@@ -235,7 +280,7 @@ const BarberCommissions: React.FC = () => {
                               {commission.appointment_details?.service_name || 'Serviço'}
                             </p>
                             <p className="text-xs text-gray-500">
-                              Origem: {commission.source === 'barber_commissions' ? 'Comissões' : 'Novo Sistema'}
+                              Origem: {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
                             </p>
                           </div>
                           {getStatusBadge(commission.status)}
@@ -341,7 +386,7 @@ const BarberCommissions: React.FC = () => {
                           }
                         </TableCell>
                         <TableCell className="text-gray-400 text-xs">
-                          {commission.source === 'barber_commissions' ? 'Comissões' : 'Novo Sistema'}
+                          {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
                         </TableCell>
                       </TableRow>
                     ))}
