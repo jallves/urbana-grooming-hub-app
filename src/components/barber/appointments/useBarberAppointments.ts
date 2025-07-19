@@ -82,8 +82,10 @@ export const useBarberAppointments = () => {
     fetchBarberId();
   }, [user?.email]);
 
-  const fetchAppointments = useCallback(async () => {
+  // Função principal de fetch - sem dependências desnecessárias
+  const loadAppointments = useCallback(async () => {
     if (!barberId) return;
+    
     setLoading(true);
     try {
       console.log('Fetching barber appointments from painel_agendamentos for barber:', barberId);
@@ -106,7 +108,6 @@ export const useBarberAppointments = () => {
           description: "Não foi possível carregar os agendamentos.",
           variant: "destructive",
         });
-        setLoading(false);
         return;
       }
 
@@ -149,15 +150,22 @@ export const useBarberAppointments = () => {
     }
   }, [barberId, toast]);
 
-  // Usar o hook de sincronização
-  useAppointmentSync(fetchAppointments);
+  // Função de refresh para ser usada pelo sync - sem dependências que causem loops
+  const refreshAppointments = useCallback(() => {
+    if (barberId) {
+      loadAppointments();
+    }
+  }, [barberId, loadAppointments]);
 
-  // Busca inicial quando barberId está disponível
+  // Usar o hook de sincronização com função estável
+  useAppointmentSync(refreshAppointments);
+
+  // Busca inicial quando barberId está disponível - só uma vez
   useEffect(() => {
     if (barberId) {
-      fetchAppointments();
+      loadAppointments();
     }
-  }, [barberId, fetchAppointments]);
+  }, [barberId]); // Removido loadAppointments da dependência para evitar loops
 
   const stats = useMemo(() => {
     const total = appointments.length;
@@ -337,7 +345,7 @@ export const useBarberAppointments = () => {
     isEditModalOpen,
     selectedAppointmentId,
     selectedAppointmentDate,
-    fetchAppointments,
+    fetchAppointments: refreshAppointments, // Expor função de refresh
     handleCompleteAppointment,
     handleCancelAppointment,
     handleEditAppointment,
