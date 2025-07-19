@@ -183,6 +183,7 @@ export const useClientAppointments = () => {
   return {
     appointments,
     isLoading,
+    fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
     handleUpdateAppointment
