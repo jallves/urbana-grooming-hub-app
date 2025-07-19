@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -82,13 +81,11 @@ export const useBarberAppointments = () => {
     fetchBarberId();
   }, [user?.email]);
 
-  // Função principal de fetch - sem dependências desnecessárias
-  const loadAppointments = useCallback(async () => {
-    if (!barberId) return;
-    
+  // Função de busca de agendamentos - otimizada para evitar loops
+  const fetchAppointmentsData = useCallback(async (currentBarberId: string) => {
     setLoading(true);
     try {
-      console.log('Fetching barber appointments from painel_agendamentos for barber:', barberId);
+      console.log('Fetching barber appointments from painel_agendamentos for barber:', currentBarberId);
       
       const { data, error } = await supabase
         .from('painel_agendamentos')
@@ -97,7 +94,7 @@ export const useBarberAppointments = () => {
           painel_clientes!inner(nome, email, whatsapp),
           painel_servicos!inner(nome, preco, duracao)
         `)
-        .eq('barbeiro_id', barberId)
+        .eq('barbeiro_id', currentBarberId)
         .order('data', { ascending: true })
         .order('hora', { ascending: true });
 
@@ -148,24 +145,24 @@ export const useBarberAppointments = () => {
     } finally {
       setLoading(false);
     }
-  }, [barberId, toast]);
+  }, [toast]);
 
-  // Função de refresh para ser usada pelo sync - sem dependências que causem loops
+  // Função de refresh estável - sem dependências circulares
   const refreshAppointments = useCallback(() => {
     if (barberId) {
-      loadAppointments();
+      fetchAppointmentsData(barberId);
     }
-  }, [barberId, loadAppointments]);
+  }, [barberId, fetchAppointmentsData]);
 
   // Usar o hook de sincronização com função estável
   useAppointmentSync(refreshAppointments);
 
-  // Busca inicial quando barberId está disponível - só uma vez
+  // Busca inicial quando barberId está disponível
   useEffect(() => {
     if (barberId) {
-      loadAppointments();
+      fetchAppointmentsData(barberId);
     }
-  }, [barberId]); // Removido loadAppointments da dependência para evitar loops
+  }, [barberId, fetchAppointmentsData]);
 
   const stats = useMemo(() => {
     const total = appointments.length;
@@ -345,7 +342,7 @@ export const useBarberAppointments = () => {
     isEditModalOpen,
     selectedAppointmentId,
     selectedAppointmentDate,
-    fetchAppointments: refreshAppointments, // Expor função de refresh
+    fetchAppointments: refreshAppointments,
     handleCompleteAppointment,
     handleCancelAppointment,
     handleEditAppointment,
