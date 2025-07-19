@@ -33,8 +33,10 @@ export const useClientAppointmentSubmit = ({
         return;
       }
       
-      // Format the date and time
+      // Corrigir lógica de data para evitar problemas de timezone
       const [hours, minutes] = data.time.split(':').map(Number);
+      
+      // Criar data local sem conversão de timezone
       const startDate = new Date(data.date);
       startDate.setHours(hours, minutes, 0, 0);
       
@@ -42,26 +44,43 @@ export const useClientAppointmentSubmit = ({
       const endDate = new Date(startDate);
       endDate.setMinutes(endDate.getMinutes() + selectedService.duration);
       
-      const appointmentData = {
-        client_id: clientId,
-        service_id: data.service_id,
-        staff_id: data.staff_id,
-        start_time: startDate.toISOString(),
-        end_time: endDate.toISOString(),
-        status: 'confirmed',
-        notes: data.notes || null,
+      console.log('Client appointment - Original date:', data.date, 'Original time:', data.time);
+      console.log('Client appointment - Converted startDate:', startDate);
+      
+      // Inserir diretamente no painel_agendamentos com status confirmado
+      const { data: staffData } = await supabase
+        .from('painel_barbeiros')
+        .select('id')
+        .eq('staff_id', data.staff_id)
+        .single();
+
+      if (!staffData) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "Barbeiro não encontrado.",
+        });
+        return;
+      }
+
+      const painelData = {
+        cliente_id: clientId,
+        barbeiro_id: staffData.id,
+        servico_id: data.service_id,
+        data: format(startDate, 'yyyy-MM-dd'),
+        hora: format(startDate, 'HH:mm'),
+        status: appointmentId ? 'confirmado' : 'confirmado'
       };
       
-      // Log the data being saved for debugging
-      console.log('Saving client appointment with data:', appointmentData);
+      console.log('Saving client appointment to painel_agendamentos:', painelData);
       
       // Insert or update appointment
       if (appointmentId) {
         const { error } = await supabase
-          .from('appointments')
-          .update(appointmentData)
+          .from('painel_agendamentos')
+          .update(painelData)
           .eq('id', appointmentId)
-          .eq('client_id', clientId); // Ensure client can only update own appointments
+          .eq('cliente_id', clientId); // Ensure client can only update own appointments
           
         if (error) throw error;
         
@@ -72,8 +91,8 @@ export const useClientAppointmentSubmit = ({
         });
       } else {
         const { error } = await supabase
-          .from('appointments')
-          .insert(appointmentData);
+          .from('painel_agendamentos')
+          .insert(painelData);
           
         if (error) throw error;
         

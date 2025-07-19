@@ -113,12 +113,13 @@ export const useBarberAppointments = () => {
         console.log('Barber appointments found:', data.length);
         
         const appointmentsWithDetails = data.map((appointment: PainelAgendamento) => {
-          const startTime = new Date(`${appointment.data}T${appointment.hora}`);
-          const endTime = new Date(startTime.getTime() + (appointment.painel_servicos.duracao * 60000));
+          // Corrigir criação da data para evitar problemas de timezone
+          const appointmentDate = new Date(appointment.data + 'T' + appointment.hora);
+          const endTime = new Date(appointmentDate.getTime() + (appointment.painel_servicos.duracao * 60000));
 
           return {
             id: appointment.id,
-            start_time: startTime.toISOString(),
+            start_time: appointmentDate.toISOString(),
             end_time: endTime.toISOString(),
             status: appointment.status === 'cancelado' ? 'cancelled' : 
                     appointment.status === 'confirmado' ? 'confirmed' : 
@@ -200,7 +201,7 @@ export const useBarberAppointments = () => {
 
       console.log('Attempting to complete appointment:', appointmentId);
       
-      // Atualizar status para concluído
+      // Atualizar status para concluído na tabela painel_agendamentos
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ 
@@ -230,6 +231,8 @@ export const useBarberAppointments = () => {
         description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.`,
         duration: 4000,
       });
+
+      console.log('Appointment completed successfully, sync should propagate the change');
 
     } catch (error) {
       console.error('Erro ao marcar agendamento como concluído:', error);

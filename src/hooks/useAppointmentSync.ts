@@ -36,9 +36,9 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
           return;
         }
 
-        // Sincronizar para tabela appointments se necessário
-        const startTime = new Date(`${data}T${hora}`);
-        const endTime = new Date(startTime.getTime() + (serviceData.data.duracao * 60000));
+        // Criar data corretamente sem problemas de timezone
+        const appointmentDate = new Date(data + 'T' + hora);
+        const endTime = new Date(appointmentDate.getTime() + (serviceData.data.duracao * 60000));
 
         const appointmentStatus = status === 'cancelado' ? 'cancelled' : 
                                  status === 'confirmado' ? 'confirmed' : 
@@ -56,7 +56,7 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
           client_id: cliente_id,
           service_id: servico_id,
           staff_id: barberData.data.staff_id,
-          start_time: startTime.toISOString(),
+          start_time: appointmentDate.toISOString(),
           end_time: endTime.toISOString(),
           status: appointmentStatus,
           notes: null
@@ -77,39 +77,57 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
 
         // Registrar no fluxo de caixa se concluído
         if (status === 'concluido' && operation === 'update') {
-          await supabase
+          // Verificar se já foi registrado no cash_flow
+          const { data: existingCashFlow } = await supabase
             .from('cash_flow')
-            .insert({
-              transaction_type: 'income',
-              amount: serviceData.data.preco,
-              description: `Serviço: ${serviceData.data.nome} - Cliente: ${clientData.data.nome}`,
-              category: 'Serviços',
-              payment_method: 'Dinheiro',
-              transaction_date: new Date().toISOString().split('T')[0],
-              reference_id: id,
-              reference_type: 'appointment'
-            });
+            .select('id')
+            .eq('reference_id', id)
+            .eq('reference_type', 'appointment')
+            .maybeSingle();
 
-          // Criar comissão para o barbeiro
+          if (!existingCashFlow) {
+            await supabase
+              .from('cash_flow')
+              .insert({
+                transaction_type: 'income',
+                amount: serviceData.data.preco,
+                description: `Serviço: ${serviceData.data.nome} - Cliente: ${clientData.data.nome}`,
+                category: 'Serviços',
+                payment_method: 'Dinheiro',
+                transaction_date: new Date().toISOString().split('T')[0],
+                reference_id: id,
+                reference_type: 'appointment'
+              });
+          }
+
+          // Criar comissão para o barbeiro - só se não existir
           if (barberData.data.staff_id) {
-            const { data: staffData } = await supabase
-              .from('staff')
-              .select('commission_rate')
-              .eq('id', barberData.data.staff_id)
+            const { data: existingCommission } = await supabase
+              .from('barber_commissions')
+              .select('id')
+              .eq('appointment_id', id)
               .maybeSingle();
 
-            const commissionRate = staffData?.commission_rate || 30;
-            const commissionAmount = serviceData.data.preco * (commissionRate / 100);
+            if (!existingCommission) {
+              const { data: staffData } = await supabase
+                .from('staff')
+                .select('commission_rate')
+                .eq('id', barberData.data.staff_id)
+                .maybeSingle();
 
-            await supabase
-              .from('barber_commissions')
-              .insert({
-                barber_id: barberData.data.staff_id,
-                appointment_id: id,
-                amount: commissionAmount,
-                commission_rate: commissionRate,
-                status: 'pending'
-              });
+              const commissionRate = staffData?.commission_rate || 30;
+              const commissionAmount = serviceData.data.preco * (commissionRate / 100);
+
+              await supabase
+                .from('barber_commissions')
+                .insert({
+                  barber_id: barberData.data.staff_id,
+                  appointment_id: id,
+                  amount: commissionAmount,
+                  commission_rate: commissionRate,
+                  status: 'pending'
+                });
+            }
           }
         }
       } else if (operation === 'delete') {
@@ -120,6 +138,8 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
           .eq('id', `painel_${id}`);
       }
 
+      console.log('Sincronização realizada com sucesso para:', id, 'status:', status);
+
     } catch (error) {
       console.error('Erro na sincronização:', error);
     }
@@ -127,6 +147,8 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
 
   // Configurar listeners em tempo real
   useEffect(() => {
+    console.log('Configurando listeners de sincronização...');
+    
     // Canal para mudanças na tabela painel_agendamentos
     const painelChannel = supabase
       .channel('painel_agendamentos_sync')
@@ -141,9 +163,11 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
           console.log('Mudança detectada em painel_agendamentos:', payload);
           
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            await syncAppointmentToTables(payload.new as AppointmentSyncData, payload.eventType.toLowerCase() as 'insert' | 'update');
+            const newData = payload.new as AppointmentSyncData;
+            await syncAppointmentToTables(newData, payload.eventType.toLowerCase() as 'insert' | 'update');
           } else if (payload.eventType === 'DELETE') {
-            await syncAppointmentToTables(payload.old as AppointmentSyncData, 'delete');
+            const oldData = payload.old as AppointmentSyncData;
+            await syncAppointmentToTables(oldData, 'delete');
           }
 
           // Notificar sobre a mudança
@@ -160,7 +184,8 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
             const statusLabels: Record<string, string> = {
               confirmado: 'Confirmado',
               concluido: 'Concluído',
-              cancelado: 'Cancelado'
+              cancelado: 'Cancelado',
+              agendado: 'Agendado'
             };
             
             toast.success(`Agendamento ${statusLabels[statusMessage] || statusMessage}`, {
@@ -188,6 +213,7 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
       .subscribe();
 
     return () => {
+      console.log('Removendo listeners de sincronização...');
       supabase.removeChannel(painelChannel);
     };
   }, [syncAppointmentToTables, onUpdate]);

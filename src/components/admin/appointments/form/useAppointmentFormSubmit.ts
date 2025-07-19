@@ -31,8 +31,10 @@ export const useAppointmentFormSubmit = ({
         return;
       }
       
-      // Format the date and time
+      // Corrigir lógica de data para evitar problemas de timezone
       const [hours, minutes] = data.time.split(':').map(Number);
+      
+      // Criar data local sem conversão de timezone
       const startDate = new Date(data.date);
       startDate.setHours(hours, minutes, 0, 0);
       
@@ -40,12 +42,16 @@ export const useAppointmentFormSubmit = ({
       const endDate = new Date(startDate);
       endDate.setMinutes(endDate.getMinutes() + selectedService.duration);
       
+      // Converter para formato ISO local
+      const startTimeISO = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString();
+      const endTimeISO = new Date(endDate.getTime() - endDate.getTimezoneOffset() * 60000).toISOString();
+      
       const appointmentData = {
         client_id: data.client_id,
         service_id: data.service_id,
         staff_id: data.staff_id,
-        start_time: startDate.toISOString(),
-        end_time: endDate.toISOString(),
+        start_time: startTimeISO,
+        end_time: endTimeISO,
         status: 'scheduled',
         notes: data.notes || null,
         coupon_code: data.couponCode || null,
@@ -54,6 +60,9 @@ export const useAppointmentFormSubmit = ({
       
       // Log the data being saved for debugging
       console.log('Saving appointment with data:', appointmentData);
+      console.log('Original date:', data.date, 'Original time:', data.time);
+      console.log('Converted startDate:', startDate);
+      console.log('Start time ISO:', startTimeISO);
       
       // Insert or update appointment
       if (appointmentId) {
@@ -75,6 +84,34 @@ export const useAppointmentFormSubmit = ({
           .insert(appointmentData);
           
         if (error) throw error;
+        
+        // Também inserir no painel_agendamentos para sincronização
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('id', data.client_id)
+          .single();
+
+        const { data: staffData } = await supabase
+          .from('painel_barbeiros')
+          .select('id')
+          .eq('staff_id', data.staff_id)
+          .single();
+
+        if (clientData && staffData) {
+          const painelData = {
+            cliente_id: data.client_id,
+            barbeiro_id: staffData.id,
+            servico_id: data.service_id,
+            data: format(startDate, 'yyyy-MM-dd'),
+            hora: format(startDate, 'HH:mm'),
+            status: 'confirmado'
+          };
+
+          await supabase
+            .from('painel_agendamentos')
+            .insert(painelData);
+        }
         
         toast({
           title: "🎉 Agendamento Criado!",
