@@ -56,35 +56,53 @@ export const useBarberAppointments = () => {
 
   const [barberId, setBarberId] = useState<string | null>(null);
   const [barberData, setBarberData] = useState<any>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Buscar ID do barbeiro - executar apenas uma vez quando o usuário muda
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchBarberId = async () => {
-      if (!user?.email) return;
+      if (!user?.email || isInitialized) return;
 
       try {
+        console.log('Fetching barber ID for:', user.email);
         const { data } = await supabase
           .from('painel_barbeiros')
           .select('id, staff_id, commission_rate')
           .eq('email', user.email)
           .maybeSingle();
 
-        if (data?.id) {
+        if (isMounted && data?.id) {
           setBarberId(data.id);
           setBarberData(data);
+          setIsInitialized(true);
           console.log('Barber data found:', data);
+        } else if (isMounted) {
+          setIsInitialized(true);
+          console.log('No barber data found for:', user.email);
         }
       } catch (error) {
-        console.error('Error fetching barber ID:', error);
+        if (isMounted) {
+          console.error('Error fetching barber ID:', error);
+          setIsInitialized(true);
+        }
       }
     };
 
     fetchBarberId();
-  }, [user?.email]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.email, isInitialized]);
 
   // Função de busca de agendamentos - estabilizada com useCallback
   const fetchAppointmentsData = useCallback(async () => {
-    if (!barberId) return;
+    if (!barberId || !isInitialized) {
+      console.log('Skipping fetch - barberId:', barberId, 'isInitialized:', isInitialized);
+      return;
+    }
     
     setLoading(true);
     try {
@@ -148,22 +166,25 @@ export const useBarberAppointments = () => {
     } finally {
       setLoading(false);
     }
-  }, [barberId, toast]);
+  }, [barberId, isInitialized, toast]);
 
   // Função de refresh estável
   const refreshAppointments = useCallback(() => {
-    fetchAppointmentsData();
-  }, [fetchAppointmentsData]);
-
-  // Usar o hook de sincronização
-  useAppointmentSync(refreshAppointments);
-
-  // Busca inicial - executar apenas quando barberId muda (SEM fetchAppointmentsData na dependência)
-  useEffect(() => {
-    if (barberId) {
+    if (barberId && isInitialized) {
       fetchAppointmentsData();
     }
-  }, [barberId]); // REMOVIDO fetchAppointmentsData para quebrar o ciclo
+  }, [fetchAppointmentsData, barberId, isInitialized]);
+
+  // Usar o hook de sincronização apenas quando inicializado
+  useAppointmentSync(isInitialized ? refreshAppointments : undefined);
+
+  // Busca inicial - executar apenas quando barberId está disponível e componente inicializado
+  useEffect(() => {
+    if (barberId && isInitialized) {
+      console.log('Initial fetch triggered for barberId:', barberId);
+      fetchAppointmentsData();
+    }
+  }, [barberId, isInitialized]); // Não incluir fetchAppointmentsData aqui
 
   const stats = useMemo(() => {
     const total = appointments.length;
@@ -342,7 +363,7 @@ export const useBarberAppointments = () => {
 
   return {
     appointments,
-    loading,
+    loading: loading || !isInitialized,
     stats,
     updatingId,
     isEditModalOpen,
