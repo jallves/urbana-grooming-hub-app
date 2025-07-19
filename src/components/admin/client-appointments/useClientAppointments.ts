@@ -41,6 +41,7 @@ export const useClientAppointments = () => {
   const [appointments, setAppointments] = useState<PainelAgendamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Create a stable fetch function that doesn't change on every render
   const fetchAppointments = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -70,8 +71,9 @@ export const useClientAppointments = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, []); // Empty dependency array since this function doesn't depend on any external values
 
+  // Set up the initial data fetch and real-time subscription
   useEffect(() => {
     fetchAppointments();
     
@@ -96,7 +98,7 @@ export const useClientAppointments = () => {
       console.log('Cleaning up client appointments subscription');
       supabase.removeChannel(channel);
     };
-  }, [fetchAppointments]);
+  }, []); // Only run once on mount
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
@@ -111,7 +113,7 @@ export const useClientAppointments = () => {
 
       if (error) throw error;
       
-      // Update local state
+      // Update local state immediately
       setAppointments(prev => prev.map(appointment => 
         appointment.id === appointmentId ? { ...appointment, status: painelStatus } : appointment
       ));
@@ -136,6 +138,7 @@ export const useClientAppointments = () => {
 
       if (error) throw error;
       
+      // Update local state immediately
       setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
       
       toast.success("Agendamento excluído", {
@@ -165,29 +168,8 @@ export const useClientAppointments = () => {
         description: "O agendamento foi atualizado com sucesso.",
       });
       
-      // Refresh appointments after update - use a separate function to avoid dependency issues
-      const refreshAppointments = async () => {
-        try {
-          const { data: refreshedData, error: refreshError } = await supabase
-            .from('painel_agendamentos')
-            .select(`
-              *,
-              painel_clientes!inner(nome, email, whatsapp),
-              painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
-              painel_servicos!inner(nome, preco, duracao)
-            `)
-            .order('data', { ascending: false })
-            .order('hora', { ascending: false });
-
-          if (!refreshError && refreshedData) {
-            setAppointments(refreshedData);
-          }
-        } catch (error) {
-          console.error('Error refreshing appointments:', error);
-        }
-      };
-      
-      await refreshAppointments();
+      // Refresh data by calling fetchAppointments
+      await fetchAppointments();
       return true;
     } catch (error) {
       console.error('Error updating appointment:', error);
@@ -196,12 +178,11 @@ export const useClientAppointments = () => {
       });
       return false;
     }
-  }, []);
+  }, [fetchAppointments]);
 
   return {
     appointments,
     isLoading,
-    fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
     handleUpdateAppointment
