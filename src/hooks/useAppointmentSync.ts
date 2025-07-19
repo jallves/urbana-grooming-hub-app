@@ -151,16 +151,19 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
             onUpdate();
           }
 
-          // Toast para feedback do usuário
-          const statusMessage = payload.new?.status || payload.old?.status;
-          if (statusMessage) {
-            const statusLabels = {
+          // Toast para feedback do usuário - com verificação de tipo segura
+          const newData = payload.new as AppointmentSyncData | null;
+          const oldData = payload.old as AppointmentSyncData | null;
+          const statusMessage = newData?.status || oldData?.status;
+          
+          if (statusMessage && typeof statusMessage === 'string') {
+            const statusLabels: Record<string, string> = {
               confirmado: 'Confirmado',
               concluido: 'Concluído',
               cancelado: 'Cancelado'
             };
             
-            toast.success(`Agendamento ${statusLabels[statusMessage as keyof typeof statusLabels] || statusMessage}`, {
+            toast.success(`Agendamento ${statusLabels[statusMessage] || statusMessage}`, {
               description: 'Sincronizado em todos os painéis'
             });
           }
