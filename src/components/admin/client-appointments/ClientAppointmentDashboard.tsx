@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useClientAppointments } from './useClientAppointments';
 import ClientAppointmentStats from './ClientAppointmentStats';
@@ -12,77 +11,68 @@ const ClientAppointmentDashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  
+
   const {
     appointments,
     isLoading,
     fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
-    handleUpdateAppointment
+    handleUpdateAppointment,
   } = useClientAppointments();
-  
-  const filteredAppointments = appointments.filter(appointment => {
-    if (statusFilter !== 'all' && appointment.status !== statusFilter) {
-      return false;
-    }
-    
+
+  // Filtragem
+  const filteredAppointments = appointments.filter((appointment) => {
+    if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
     const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
-    const query = searchQuery.toLowerCase();
-    
-    return clientName.includes(query);
+    return clientName.includes(searchQuery.toLowerCase());
   });
-  
+
+  // Handlers
   const handleEditAppointment = (appointmentId: string) => {
     setSelectedAppointment(appointmentId);
     setIsEditDialogOpen(true);
   };
-  
+
   const handleCloseEditDialog = () => {
     setIsEditDialogOpen(false);
     setSelectedAppointment(null);
     fetchAppointments();
   };
-  
-  return (
-    <div className="h-full flex flex-col space-y-6">
-      {/* Stats Cards */}
-      <div className="flex-shrink-0">
-        <ClientAppointmentStats appointments={appointments} />
-      </div>
 
-      {/* Main Content Card */}
-      <Card className="flex-1 flex flex-col bg-white border border-gray-200 shadow-sm">
-        <CardHeader className="flex-shrink-0 pb-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <CardTitle className="text-xl font-semibold text-gray-900">
+  return (
+    <div className="h-full flex flex-col gap-6">
+      {/* Cards de estatísticas */}
+      <ClientAppointmentStats appointments={appointments} />
+
+      {/* Card principal */}
+      <Card className="flex-1 flex flex-col border border-gray-200 bg-white">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <CardTitle className="text-xl font-bold text-gray-900">
               Gestão de Agendamentos
             </CardTitle>
-            <div className="flex-1 max-w-md">
-              <ClientAppointmentFilters
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-              />
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <div className="h-full overflow-auto">
-            <ClientAppointmentCompactTable
-              appointments={filteredAppointments}
-              isLoading={isLoading}
-              onEdit={handleEditAppointment}
-              onStatusChange={handleStatusChange}
-              onDelete={handleDeleteAppointment}
+            <ClientAppointmentFilters
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
             />
           </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 p-0">
+          <ClientAppointmentCompactTable
+            appointments={filteredAppointments}
+            isLoading={isLoading}
+            onEdit={handleEditAppointment}
+            onStatusChange={handleStatusChange}
+            onDelete={handleDeleteAppointment}
+          />
         </CardContent>
       </Card>
-      
-      {/* Edit Dialog */}
+
+      {/* Dialog de edição */}
       {isEditDialogOpen && selectedAppointment && (
         <ClientAppointmentEditDialog
           isOpen={isEditDialogOpen}
