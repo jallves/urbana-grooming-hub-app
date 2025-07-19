@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -57,6 +58,7 @@ export const useBarberAppointments = () => {
   const [barberId, setBarberId] = useState<string | null>(null);
   const [barberData, setBarberData] = useState<any>(null);
 
+  // Buscar ID do barbeiro - executar apenas uma vez quando o usuário muda
   useEffect(() => {
     const fetchBarberId = async () => {
       if (!user?.email) return;
@@ -81,11 +83,13 @@ export const useBarberAppointments = () => {
     fetchBarberId();
   }, [user?.email]);
 
-  // Função de busca de agendamentos - estabilizada para evitar loops
-  const fetchAppointmentsData = useCallback(async (currentBarberId: string) => {
+  // Função de busca de agendamentos - estabilizada com useCallback
+  const fetchAppointmentsData = useCallback(async () => {
+    if (!barberId) return;
+    
     setLoading(true);
     try {
-      console.log('Fetching barber appointments from painel_agendamentos for barber:', currentBarberId);
+      console.log('Fetching barber appointments from painel_agendamentos for barber:', barberId);
       
       const { data, error } = await supabase
         .from('painel_agendamentos')
@@ -94,7 +98,7 @@ export const useBarberAppointments = () => {
           painel_clientes!inner(nome, email, whatsapp),
           painel_servicos!inner(nome, preco, duracao)
         `)
-        .eq('barbeiro_id', currentBarberId)
+        .eq('barbeiro_id', barberId)
         .order('data', { ascending: true })
         .order('hora', { ascending: true });
 
@@ -145,24 +149,22 @@ export const useBarberAppointments = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [barberId, toast]);
 
-  // Função de refresh simplificada - sem dependências circulares
+  // Função de refresh estável
   const refreshAppointments = useCallback(() => {
-    if (barberId) {
-      fetchAppointmentsData(barberId);
-    }
-  }, [barberId, fetchAppointmentsData]);
+    fetchAppointmentsData();
+  }, [fetchAppointmentsData]);
 
-  // Usar o hook de sincronização com função estável
+  // Usar o hook de sincronização
   useAppointmentSync(refreshAppointments);
 
-  // Busca inicial quando barberId está disponível - SEM fetchAppointmentsData nas dependências
+  // Busca inicial - executar apenas quando barberId muda
   useEffect(() => {
     if (barberId) {
-      fetchAppointmentsData(barberId);
+      fetchAppointmentsData();
     }
-  }, [barberId]); // Removido fetchAppointmentsData para quebrar o ciclo
+  }, [barberId, fetchAppointmentsData]);
 
   const stats = useMemo(() => {
     const total = appointments.length;
