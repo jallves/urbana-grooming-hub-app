@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle } from 'lucide-react';
@@ -72,50 +71,65 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
 
   return (
     <TableRow className="text-xs sm:text-sm hover:bg-gray-50">
-      <TableCell className="font-medium px-2 sm:px-4 py-2 sm:py-3">
-        <div className="flex flex-col space-y-1">
-          <span className="truncate max-w-[100px] sm:max-w-none text-black">
+      <TableCell className="font-medium px-2 sm:px-4 py-2 sm:py-3 max-w-[100px] sm:max-w-none">
+        <div className="flex flex-col space-y-1 truncate">
+          <span className="truncate text-black">
             {appointment.painel_clientes?.nome || 'Nome não encontrado'}
           </span>
-          <div className="sm:hidden text-[10px] text-gray-500 space-y-0.5">
+          {/* Info adicional visível só no mobile */}
+          <div className="sm:hidden text-[10px] text-gray-500 space-y-0.5 truncate">
             <div>{appointment.painel_clientes?.whatsapp || 'N/A'}</div>
-            <div className="md:hidden">{appointment.painel_servicos?.nome || 'Serviço N/A'}</div>
-            <div className="lg:hidden">{appointment.painel_barbeiros?.nome || 'Barbeiro N/A'}</div>
+            <div className="md:hidden truncate">{appointment.painel_servicos?.nome || 'Serviço N/A'}</div>
+            <div className="lg:hidden truncate">{appointment.painel_barbeiros?.nome || 'Barbeiro N/A'}</div>
           </div>
         </div>
       </TableCell>
-      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">
-        <span className="truncate max-w-[120px] block text-gray-700">
+
+      {/* WhatsApp: visível a partir do sm */}
+      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell max-w-[120px] truncate">
+        <span className="text-gray-700 truncate">
           {appointment.painel_clientes?.whatsapp || 'Não informado'}
         </span>
       </TableCell>
-      <TableCell className="px-2 sm:px-4 py-2 sm:py-3">
-        <div className="text-[10px] sm:text-xs text-gray-700">
+
+      {/* Data */}
+      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 max-w-[70px] truncate">
+        <div className="text-[10px] sm:text-xs text-gray-700 truncate">
           {format(new Date(appointment.data), 'dd/MM')}
-          <div className="sm:hidden text-[9px] text-gray-500">
+          <div className="sm:hidden text-[9px] text-gray-500 truncate">
             {format(new Date(appointment.data), 'yyyy')}
           </div>
         </div>
       </TableCell>
-      <TableCell className="px-2 sm:px-4 py-2 sm:py-3">
-        <div className="text-[10px] sm:text-xs text-gray-700">
+
+      {/* Hora */}
+      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 max-w-[50px] truncate">
+        <div className="text-[10px] sm:text-xs text-gray-700 truncate">
           {appointment.hora}
         </div>
       </TableCell>
-      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell">
-        <span className="truncate max-w-[150px] block text-gray-700">
+
+      {/* Serviço: visível a partir do md */}
+      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell max-w-[150px] truncate">
+        <span className="text-gray-700 truncate block">
           {appointment.painel_servicos?.nome || 'Serviço não encontrado'}
         </span>
       </TableCell>
-      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell">
-        <span className="truncate max-w-[120px] block text-gray-700">
+
+      {/* Barbeiro: visível a partir do lg */}
+      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell max-w-[120px] truncate">
+        <span className="text-gray-700 truncate block">
           {appointment.painel_barbeiros?.nome || 'Barbeiro não encontrado'}
         </span>
       </TableCell>
-      <TableCell className="px-2 sm:px-4 py-2 sm:py-3">
+
+      {/* Status */}
+      <TableCell className="px-2 sm:px-4 py-2 sm:py-3 max-w-[90px] whitespace-nowrap">
         {getStatusBadge(appointment.status)}
       </TableCell>
-      <TableCell className="text-right px-2 sm:px-4 py-2 sm:py-3">
+
+      {/* Ações */}
+      <TableCell className="text-right px-2 sm:px-4 py-2 sm:py-3 max-w-[60px] whitespace-nowrap">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-6 w-6 sm:h-8 sm:w-8 hover:bg-gray-100">
@@ -130,21 +144,21 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
             </DropdownMenuItem>
             
             {appointment.status !== 'confirmado' && (
-              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmed')} className="hover:bg-gray-50">
+              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmado')} className="hover:bg-gray-50">
                 <Check className="mr-2 h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                 <span className="text-xs sm:text-sm text-gray-700">Confirmar</span>
               </DropdownMenuItem>
             )}
             
             {appointment.status !== 'concluido' && (
-              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'completed')} className="hover:bg-gray-50">
+              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'concluido')} className="hover:bg-gray-50">
                 <CheckCircle className="mr-2 h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                 <span className="text-xs sm:text-sm text-gray-700">Concluir</span>
               </DropdownMenuItem>
             )}
             
             {appointment.status !== 'cancelado' && (
-              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelled')} className="hover:bg-gray-50">
+              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelado')} className="hover:bg-gray-50">
                 <X className="mr-2 h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                 <span className="text-xs sm:text-sm text-gray-700">Cancelar</span>
               </DropdownMenuItem>

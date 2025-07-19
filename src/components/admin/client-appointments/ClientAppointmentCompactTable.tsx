@@ -64,7 +64,7 @@ const ClientAppointmentCompactTable: React.FC<ClientAppointmentCompactTableProps
       </div>
     );
   }
-  
+
   if (appointments.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -72,33 +72,49 @@ const ClientAppointmentCompactTable: React.FC<ClientAppointmentCompactTableProps
       </div>
     );
   }
-  
+
   return (
-    <div className="w-full bg-gray-900 rounded-lg shadow-sm border border-gray-800">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-gray-800 border-b border-gray-700">
-            <TableHead className="font-medium text-gray-200 py-3">Cliente</TableHead>
-            <TableHead className="font-medium text-gray-200 py-3 hidden sm:table-cell">Data/Hora</TableHead>
-            <TableHead className="font-medium text-gray-200 py-3 hidden md:table-cell">Serviço</TableHead>
-            <TableHead className="font-medium text-gray-200 py-3 hidden lg:table-cell">Barbeiro</TableHead>
-            <TableHead className="font-medium text-gray-200 py-3">Status</TableHead>
-            <TableHead className="font-medium text-gray-200 py-3 text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {appointments.map((appointment) => (
-            <ClientAppointmentCompactRow
-              key={appointment.id}
-              appointment={appointment}
-              onEdit={onEdit}
-              onStatusChange={onStatusChange}
-              onDelete={onDelete}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      {/* Tabela desktop/tablet */}
+      <div className="hidden sm:block w-full bg-gray-900 rounded-lg shadow-sm border border-gray-800">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-800 border-b border-gray-700">
+              <TableHead className="font-medium text-gray-200 py-3">Cliente</TableHead>
+              <TableHead className="font-medium text-gray-200 py-3 hidden sm:table-cell">Data/Hora</TableHead>
+              <TableHead className="font-medium text-gray-200 py-3 hidden md:table-cell">Serviço</TableHead>
+              <TableHead className="font-medium text-gray-200 py-3 hidden lg:table-cell">Barbeiro</TableHead>
+              <TableHead className="font-medium text-gray-200 py-3">Status</TableHead>
+              <TableHead className="font-medium text-gray-200 py-3 text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {appointments.map((appointment) => (
+              <ClientAppointmentCompactRow
+                key={appointment.id}
+                appointment={appointment}
+                onEdit={onEdit}
+                onStatusChange={onStatusChange}
+                onDelete={onDelete}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Lista mobile (cards) */}
+      <div className="sm:hidden space-y-3">
+        {appointments.map((appointment) => (
+          <ClientAppointmentCompactRow
+            key={appointment.id}
+            appointment={appointment}
+            onEdit={onEdit}
+            onStatusChange={onStatusChange}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </>
   );
 };
 

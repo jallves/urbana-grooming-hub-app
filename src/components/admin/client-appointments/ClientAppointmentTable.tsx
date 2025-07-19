@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -6,6 +5,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableCell,
+  TableHead as TableHeadCell,
 } from "@/components/ui/table";
 import ClientAppointmentRow from './ClientAppointmentRow';
 
@@ -60,7 +61,7 @@ const ClientAppointmentTable: React.FC<ClientAppointmentTableProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8 bg-white">
+      <div className="flex justify-center py-8 bg-gray-900">
         <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-gray-400 rounded-full"></div>
       </div>
     );
@@ -68,25 +69,25 @@ const ClientAppointmentTable: React.FC<ClientAppointmentTableProps> = ({
   
   if (appointments.length === 0) {
     return (
-      <div className="text-center py-8 bg-white">
-        <p className="text-gray-500 text-sm">Nenhum agendamento de cliente encontrado</p>
+      <div className="text-center py-8 bg-gray-900">
+        <p className="text-gray-400 text-sm">Nenhum agendamento de cliente encontrado</p>
       </div>
     );
   }
   
   return (
-    <div className="w-full overflow-x-auto bg-white">
+    <div className="w-full overflow-x-auto bg-gray-900 rounded-lg border border-gray-800">
       <Table className="min-w-full">
         <TableHeader>
-          <TableRow className="text-xs sm:text-sm bg-gray-50 border-b border-gray-200">
-            <TableHead className="w-[120px] sm:w-auto px-2 sm:px-4 font-medium text-gray-700">Cliente</TableHead>
-            <TableHead className="w-[100px] sm:w-auto px-2 sm:px-4 hidden sm:table-cell font-medium text-gray-700">WhatsApp</TableHead>
-            <TableHead className="w-[80px] sm:w-auto px-2 sm:px-4 font-medium text-gray-700">Data</TableHead>
-            <TableHead className="w-[70px] sm:w-auto px-2 sm:px-4 font-medium text-gray-700">Hora</TableHead>
-            <TableHead className="w-[100px] sm:w-auto px-2 sm:px-4 hidden md:table-cell font-medium text-gray-700">Serviço</TableHead>
-            <TableHead className="w-[100px] sm:w-auto px-2 sm:px-4 hidden lg:table-cell font-medium text-gray-700">Barbeiro</TableHead>
-            <TableHead className="w-[80px] sm:w-auto px-2 sm:px-4 font-medium text-gray-700">Status</TableHead>
-            <TableHead className="w-[60px] sm:w-auto px-2 sm:px-4 text-right font-medium text-gray-700">Ações</TableHead>
+          <TableRow className="text-xs sm:text-sm bg-gray-800 border-b border-gray-700">
+            <TableHeadCell className="w-[120px] sm:w-auto px-2 sm:px-4 font-medium text-gray-200">Cliente</TableHeadCell>
+            <TableHeadCell className="w-[100px] sm:w-auto px-2 sm:px-4 hidden sm:table-cell font-medium text-gray-200">WhatsApp</TableHeadCell>
+            <TableHeadCell className="w-[80px] sm:w-auto px-2 sm:px-4 font-medium text-gray-200">Data</TableHeadCell>
+            <TableHeadCell className="w-[70px] sm:w-auto px-2 sm:px-4 font-medium text-gray-200">Hora</TableHeadCell>
+            <TableHeadCell className="w-[100px] sm:w-auto px-2 sm:px-4 hidden md:table-cell font-medium text-gray-200">Serviço</TableHeadCell>
+            <TableHeadCell className="w-[100px] sm:w-auto px-2 sm:px-4 hidden lg:table-cell font-medium text-gray-200">Barbeiro</TableHeadCell>
+            <TableHeadCell className="w-[80px] sm:w-auto px-2 sm:px-4 font-medium text-gray-200">Status</TableHeadCell>
+            <TableHeadCell className="w-[60px] sm:w-auto px-2 sm:px-4 text-right font-medium text-gray-200">Ações</TableHeadCell>
           </TableRow>
         </TableHeader>
         <TableBody>

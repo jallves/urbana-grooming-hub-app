@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppointmentSync } from '@/hooks/useAppointmentSync';
@@ -40,13 +39,11 @@ interface PainelAgendamento {
 export const useClientAppointments = () => {
   const [appointments, setAppointments] = useState<PainelAgendamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Função estável para buscar agendamentos
+
+  // Função para buscar agendamentos
   const fetchAppointments = useCallback(async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      console.log('Fetching client appointments from painel_agendamentos');
-      
       const { data, error } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -58,91 +55,52 @@ export const useClientAppointments = () => {
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching client appointments:', error);
-        return;
-      }
+      if (error) throw error;
 
-      console.log('Client appointments found:', data?.length || 0);
       setAppointments(data || []);
     } catch (error) {
-      console.error('Error fetching client appointments:', error);
+      console.error('Erro ao buscar agendamentos:', error);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Usar o hook de sincronização - passando a função de callback apenas uma vez
+  // Usa o hook de sincronização para atualizar lista em eventos externos
   useAppointmentSync(fetchAppointments);
 
-  // Busca inicial - sem dependência de fetchAppointments para evitar loops
+  // Busca inicial dos agendamentos
   useEffect(() => {
-    let mounted = true;
-    
-    const loadAppointments = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Initial fetch of client appointments');
-        
-        const { data, error } = await supabase
-          .from('painel_agendamentos')
-          .select(`
-            *,
-            painel_clientes!inner(nome, email, whatsapp),
-            painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
-            painel_servicos!inner(nome, preco, duracao)
-          `)
-          .order('data', { ascending: false })
-          .order('hora', { ascending: false });
+    fetchAppointments();
+  }, [fetchAppointments]);
 
-        if (error) {
-          console.error('Error fetching client appointments:', error);
-          return;
-        }
-
-        if (mounted) {
-          console.log('Client appointments found:', data?.length || 0);
-          setAppointments(data || []);
-        }
-      } catch (error) {
-        console.error('Error fetching client appointments:', error);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadAppointments();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+  // Atualiza status de agendamento
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
-    try {
-      const painelStatus = newStatus === 'cancelled' ? 'cancelado' : 
-                          newStatus === 'confirmed' ? 'confirmado' : 
-                          newStatus === 'completed' ? 'concluido' : 'confirmado';
+    // Mapeia status para valores do banco
+    const painelStatus =
+      newStatus === 'cancelled' ? 'cancelado' :
+      newStatus === 'confirmed' ? 'confirmado' :
+      newStatus === 'completed' ? 'concluido' : 'confirmado';
 
+    try {
       const { error } = await supabase
         .from('painel_agendamentos')
         .update({ status: painelStatus })
         .eq('id', appointmentId);
 
       if (error) throw error;
-      
-      // Update local state immediately
-      setAppointments(prev => prev.map(appointment => 
-        appointment.id === appointmentId ? { ...appointment, status: painelStatus } : appointment
-      ));
-      
+
+      // Atualiza localmente para refletir mudanças imediatas
+      setAppointments(prev =>
+        prev.map(appointment =>
+          appointment.id === appointmentId ? { ...appointment, status: painelStatus } : appointment
+        )
+      );
     } catch (error) {
-      console.error('Error updating appointment status:', error);
+      console.error('Erro ao atualizar status do agendamento:', error);
     }
   }, []);
-  
+
+  // Deleta agendamento
   const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
     try {
       const { error } = await supabase
@@ -151,17 +109,16 @@ export const useClientAppointments = () => {
         .eq('id', appointmentId);
 
       if (error) throw error;
-      
-      // Update local state immediately
+
       setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
-      
       return true;
     } catch (error) {
-      console.error('Error deleting appointment:', error);
+      console.error('Erro ao deletar agendamento:', error);
       return false;
     }
   }, []);
 
+  // Atualiza agendamento (data, hora, barbeiro, serviço)
   const handleUpdateAppointment = useCallback(async (appointmentId: string, data: any) => {
     try {
       const { error } = await supabase
@@ -170,12 +127,12 @@ export const useClientAppointments = () => {
         .eq('id', appointmentId);
 
       if (error) throw error;
-      
-      // Trigger a refresh by calling fetchAppointments
+
+      // Atualiza lista após edição
       fetchAppointments();
       return true;
     } catch (error) {
-      console.error('Error updating appointment:', error);
+      console.error('Erro ao atualizar agendamento:', error);
       return false;
     }
   }, [fetchAppointments]);
@@ -186,6 +143,6 @@ export const useClientAppointments = () => {
     fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
-    handleUpdateAppointment
+    handleUpdateAppointment,
   };
 };

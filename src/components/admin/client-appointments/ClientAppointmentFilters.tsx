@@ -17,15 +17,15 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
   setStatusFilter,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-3">
+    <div className="flex flex-col sm:flex-row gap-3 w-full">
       {/* Campo de busca */}
-      <div className="relative flex-1">
+      <div className="relative flex-1 w-full">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <Input
           placeholder="Buscar por cliente..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-gray-800 text-gray-200 border-gray-700 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
+          className="pl-10 bg-gray-800 text-gray-200 border-gray-700 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 w-full"
         />
       </div>
       
@@ -34,7 +34,7 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
         <SelectTrigger className="w-full sm:w-48 bg-gray-800 text-gray-200 border-gray-700">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
-        <SelectContent className="bg-gray-900 text-gray-100 border border-gray-700">
+        <SelectContent className="bg-gray-900 text-gray-100 border border-gray-700 max-h-60 overflow-auto">
           <SelectItem value="all" className="hover:bg-gray-800">Todos</SelectItem>
           <SelectItem value="confirmado" className="hover:bg-gray-800">Confirmado</SelectItem>
           <SelectItem value="concluido" className="hover:bg-gray-800">Concluído</SelectItem>

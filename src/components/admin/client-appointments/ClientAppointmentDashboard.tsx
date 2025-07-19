@@ -20,7 +20,6 @@ const ClientAppointmentDashboard: React.FC = () => {
     handleUpdateAppointment,
   } = useClientAppointments();
 
-  // Memoize filtered appointments
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appointment) => {
       if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
@@ -41,16 +40,17 @@ const ClientAppointmentDashboard: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col gap-6 bg-gray-900 text-gray-100 p-4 sm:p-6 lg:p-8 rounded-lg">
-      {/* Cards de estatísticas */}
+      {/* Estatísticas */}
       <ClientAppointmentStats appointments={appointments} />
 
-      {/* Card principal */}
-      <Card className="flex-1 flex flex-col border border-gray-800 bg-gray-900 shadow-lg">
+      {/* Card principal com filtro e tabela */}
+      <Card className="flex-1 flex flex-col border border-gray-800 bg-gray-900 shadow-lg min-h-[400px]">
         <CardHeader className="pb-4 border-b border-gray-800">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle className="text-xl font-bold text-gray-100">
               Gestão de Agendamentos
             </CardTitle>
+            {/* Filtros: empilhado no mobile, horizontal no desktop */}
             <ClientAppointmentFilters
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -60,7 +60,8 @@ const ClientAppointmentDashboard: React.FC = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 p-0">
+        <CardContent className="flex-1 p-0 overflow-auto">
+          {/* Tabela/lista responsiva */}
           <ClientAppointmentCompactTable
             appointments={filteredAppointments}
             isLoading={isLoading}
