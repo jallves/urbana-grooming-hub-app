@@ -39,13 +39,8 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
     confirmDelete
   } = useClientDelete(onDelete);
 
-  if (isLoading) {
-    return <LoadingClientState />;
-  }
-
-  if (clients.length === 0) {
-    return <EmptyClientState />;
-  }
+  if (isLoading) return <LoadingClientState />;
+  if (clients.length === 0) return <EmptyClientState />;
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -68,8 +63,8 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
       
       {/* Tabela com scroll */}
       <div className="flex-1 overflow-auto bg-white">
-        <div className="min-w-full inline-block align-middle">
-          <Table className="min-w-full">
+        <div className="w-full overflow-x-auto">
+          <Table className="w-full min-w-[600px] sm:min-w-full">
             <ClientTableHeader />
             <TableBody>
               {clients.map((client) => (
@@ -106,3 +101,4 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
 };
 
 export default ClientList;
+
