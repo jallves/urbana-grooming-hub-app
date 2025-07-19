@@ -75,7 +75,7 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
             .insert(appointmentRecord);
         }
 
-        // Registrar no fluxo de caixa se concluído
+        // Registrar no fluxo de caixa e criar comissão se concluído
         if (status === 'concluido' && operation === 'update') {
           // Verificar se já foi registrado no cash_flow
           const { data: existingCashFlow } = await supabase
@@ -100,12 +100,13 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
               });
           }
 
-          // Criar comissão para o barbeiro - só se não existir
+          // Criar comissão para o barbeiro - usar o ID do painel diretamente
           if (barberData.data.staff_id) {
             const { data: existingCommission } = await supabase
               .from('barber_commissions')
               .select('id')
-              .eq('appointment_id', id)
+              .eq('appointment_id', id) // Usar o ID do painel_agendamentos diretamente
+              .eq('appointment_source', 'painel')
               .maybeSingle();
 
             if (!existingCommission) {
@@ -122,10 +123,11 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
                 .from('barber_commissions')
                 .insert({
                   barber_id: barberData.data.staff_id,
-                  appointment_id: id,
+                  appointment_id: id, // ID do painel_agendamentos
                   amount: commissionAmount,
                   commission_rate: commissionRate,
-                  status: 'pending'
+                  status: 'pending',
+                  appointment_source: 'painel' // Especificar a origem
                 });
             }
           }

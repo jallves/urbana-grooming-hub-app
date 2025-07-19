@@ -417,6 +417,7 @@ export type Database = {
         Row: {
           amount: number
           appointment_id: string | null
+          appointment_source: string | null
           barber_id: string
           commission_rate: number
           created_at: string
@@ -428,6 +429,7 @@ export type Database = {
         Insert: {
           amount: number
           appointment_id?: string | null
+          appointment_source?: string | null
           barber_id: string
           commission_rate: number
           created_at?: string
@@ -439,6 +441,7 @@ export type Database = {
         Update: {
           amount?: number
           appointment_id?: string | null
+          appointment_source?: string | null
           barber_id?: string
           commission_rate?: number
           created_at?: string
@@ -448,13 +451,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "barber_commissions_appointment_id_fkey"
-            columns: ["appointment_id"]
-            isOneToOne: false
-            referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "barber_commissions_barber_id_fkey"
             columns: ["barber_id"]

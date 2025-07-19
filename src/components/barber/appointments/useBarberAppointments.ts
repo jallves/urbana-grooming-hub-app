@@ -234,11 +234,16 @@ export const useBarberAppointments = () => {
 
       toast({
         title: "✅ Agendamento Concluído!",
-        description: `Agendamento de ${appointment.client_name} de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi marcado como concluído.`,
+        description: `Agendamento de ${appointment.client_name} foi marcado como concluído e sincronizado.`,
         duration: 4000,
       });
 
-      console.log('Appointment completed successfully, sync should propagate the change');
+      console.log('Appointment completed successfully, sync will propagate the change');
+
+      // Forçar refresh após um pequeno delay para garantir sincronização
+      setTimeout(() => {
+        refreshAppointments();
+      }, 1000);
 
     } catch (error) {
       console.error('Erro ao marcar agendamento como concluído:', error);
@@ -260,7 +265,7 @@ export const useBarberAppointments = () => {
     } finally {
       setUpdatingId(null);
     }
-  }, [barberId, barberData, appointments, toast]);
+  }, [barberId, barberData, appointments, toast, refreshAppointments]);
 
   const handleCancelAppointment = useCallback(async (appointmentId: string) => {
     try {
