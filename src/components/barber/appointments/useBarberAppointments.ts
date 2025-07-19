@@ -81,7 +81,7 @@ export const useBarberAppointments = () => {
     fetchBarberId();
   }, [user?.email]);
 
-  // Função de busca de agendamentos - otimizada para evitar loops
+  // Função de busca de agendamentos - estabilizada para evitar loops
   const fetchAppointmentsData = useCallback(async (currentBarberId: string) => {
     setLoading(true);
     try {
@@ -147,7 +147,7 @@ export const useBarberAppointments = () => {
     }
   }, [toast]);
 
-  // Função de refresh estável - sem dependências circulares
+  // Função de refresh simplificada - sem dependências circulares
   const refreshAppointments = useCallback(() => {
     if (barberId) {
       fetchAppointmentsData(barberId);
@@ -157,12 +157,12 @@ export const useBarberAppointments = () => {
   // Usar o hook de sincronização com função estável
   useAppointmentSync(refreshAppointments);
 
-  // Busca inicial quando barberId está disponível
+  // Busca inicial quando barberId está disponível - SEM fetchAppointmentsData nas dependências
   useEffect(() => {
     if (barberId) {
       fetchAppointmentsData(barberId);
     }
-  }, [barberId, fetchAppointmentsData]);
+  }, [barberId]); // Removido fetchAppointmentsData para quebrar o ciclo
 
   const stats = useMemo(() => {
     const total = appointments.length;
