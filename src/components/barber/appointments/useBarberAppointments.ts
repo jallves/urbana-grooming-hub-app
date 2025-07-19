@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -159,12 +158,12 @@ export const useBarberAppointments = () => {
   // Usar o hook de sincronização
   useAppointmentSync(refreshAppointments);
 
-  // Busca inicial - executar apenas quando barberId muda
+  // Busca inicial - executar apenas quando barberId muda (SEM fetchAppointmentsData na dependência)
   useEffect(() => {
     if (barberId) {
       fetchAppointmentsData();
     }
-  }, [barberId, fetchAppointmentsData]);
+  }, [barberId]); // REMOVIDO fetchAppointmentsData para quebrar o ciclo
 
   const stats = useMemo(() => {
     const total = appointments.length;
