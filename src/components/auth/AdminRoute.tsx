@@ -21,9 +21,11 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin mb-4" />
-        <p className="text-muted-foreground">Verificando permissões...</p>
+      <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-gray-50">
+        <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-gray-700 mb-4" />
+        <p className="text-gray-600 text-base sm:text-lg font-medium">
+          Verificando permissões...
+        </p>
       </div>
     );
   }

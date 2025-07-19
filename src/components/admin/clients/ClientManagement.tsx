@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,15 +50,15 @@ const ClientManagement: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-6 bg-gray-50">
+    <div className="h-full flex flex-col space-y-6 bg-gray-50 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
-      <div className="flex-shrink-0">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="flex-shrink-0 w-full max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               Gerenciamento de Clientes
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm sm:text-base">
               Gerencie sua base de clientes
             </p>
           </div>
@@ -67,7 +66,7 @@ const ClientManagement: React.FC = () => {
           {!isAddingClient && !editingClient && (
             <Button 
               onClick={() => setIsAddingClient(true)}
-              className="bg-gray-900 hover:bg-gray-800 text-white flex items-center gap-2"
+              className="bg-gray-900 hover:bg-gray-800 text-white flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               Novo Cliente
@@ -79,11 +78,11 @@ const ClientManagement: React.FC = () => {
         {(isAddingClient || editingClient) && (
           <Card className="mt-6 bg-white border border-gray-200 shadow-sm">
             <CardHeader className="border-b border-gray-200">
-              <CardTitle className="text-gray-900">
+              <CardTitle className="text-gray-900 text-base sm:text-lg">
                 {editingClient ? 'Editar Cliente' : 'Adicionar Cliente'}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <ClientForm 
                 clientId={editingClient}
                 onCancel={() => {
@@ -102,9 +101,9 @@ const ClientManagement: React.FC = () => {
       </div>
 
       {/* Main Content Card */}
-      <Card className="flex-1 flex flex-col bg-white border border-gray-200 shadow-sm">
-        <CardHeader className="flex-shrink-0 pb-4">
-          <CardTitle className="text-xl font-semibold text-gray-900">
+      <Card className="flex-1 flex flex-col bg-white border border-gray-200 shadow-sm w-full max-w-7xl mx-auto">
+        <CardHeader className="flex-shrink-0 pb-4 px-4 sm:px-6">
+          <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">
             Lista de Clientes
           </CardTitle>
         </CardHeader>
