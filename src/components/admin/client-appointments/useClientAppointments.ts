@@ -41,7 +41,7 @@ export const useClientAppointments = () => {
   const [appointments, setAppointments] = useState<PainelAgendamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Create a stable fetch function that doesn't change on every render
+  // Stable fetch function with proper error boundary
   const fetchAppointments = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -60,45 +60,61 @@ export const useClientAppointments = () => {
 
       if (error) {
         console.error('Error fetching client appointments:', error);
-        throw error;
+        // Don't throw here to prevent render loops
+        return;
       }
 
       console.log('Client appointments found:', data?.length || 0);
       setAppointments(data || []);
     } catch (error) {
       console.error('Error fetching client appointments:', error);
-      toast.error("Não foi possível carregar os agendamentos dos clientes.");
+      // Handle error without toast during render
     } finally {
       setIsLoading(false);
     }
-  }, []); // Empty dependency array since this function doesn't depend on any external values
+  }, []);
 
-  // Set up the initial data fetch and real-time subscription
+  // Initial fetch and subscription setup
   useEffect(() => {
-    fetchAppointments();
+    let mounted = true;
     
-    // Add real-time subscription for painel_agendamentos
-    const channel = supabase
-      .channel('client-appointment-changes')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'painel_agendamentos'
-        },
-        (payload) => {
-          console.log('Client appointment data changed:', payload);
-          fetchAppointments();
-        }
-      )
-      .subscribe();
+    const loadData = async () => {
+      await fetchAppointments();
+      
+      if (!mounted) return;
+      
+      // Set up real-time subscription
+      const channel = supabase
+        .channel('client-appointment-changes')
+        .on(
+          'postgres_changes',
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'painel_agendamentos'
+          },
+          (payload) => {
+            console.log('Client appointment data changed:', payload);
+            if (mounted) {
+              fetchAppointments();
+            }
+          }
+        )
+        .subscribe();
 
-    return () => {
-      console.log('Cleaning up client appointments subscription');
-      supabase.removeChannel(channel);
+      return () => {
+        mounted = false;
+        console.log('Cleaning up client appointments subscription');
+        supabase.removeChannel(channel);
+      };
     };
-  }, []); // Only run once on mount
+    
+    loadData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [fetchAppointments]);
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
@@ -118,14 +134,19 @@ export const useClientAppointments = () => {
         appointment.id === appointmentId ? { ...appointment, status: painelStatus } : appointment
       ));
       
-      toast.success("Status atualizado", {
-        description: "O status do agendamento foi atualizado com sucesso.",
-      });
+      // Toast after successful update
+      setTimeout(() => {
+        toast.success("Status atualizado", {
+          description: "O status do agendamento foi atualizado com sucesso.",
+        });
+      }, 0);
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      toast.error("Erro", {
-        description: "Não foi possível atualizar o status.",
-      });
+      setTimeout(() => {
+        toast.error("Erro", {
+          description: "Não foi possível atualizar o status.",
+        });
+      }, 0);
     }
   }, []);
   
@@ -141,16 +162,20 @@ export const useClientAppointments = () => {
       // Update local state immediately
       setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
       
-      toast.success("Agendamento excluído", {
-        description: "O agendamento foi excluído com sucesso.",
-      });
+      setTimeout(() => {
+        toast.success("Agendamento excluído", {
+          description: "O agendamento foi excluído com sucesso.",
+        });
+      }, 0);
       
       return true;
     } catch (error) {
       console.error('Error deleting appointment:', error);
-      toast.error("Erro", {
-        description: "Não foi possível excluir o agendamento.",
-      });
+      setTimeout(() => {
+        toast.error("Erro", {
+          description: "Não foi possível excluir o agendamento.",
+        });
+      }, 0);
       return false;
     }
   }, []);
@@ -164,18 +189,22 @@ export const useClientAppointments = () => {
 
       if (error) throw error;
       
-      toast.success("Agendamento atualizado", {
-        description: "O agendamento foi atualizado com sucesso.",
-      });
+      setTimeout(() => {
+        toast.success("Agendamento atualizado", {
+          description: "O agendamento foi atualizado com sucesso.",
+        });
+      }, 0);
       
-      // Refresh data by calling fetchAppointments
+      // Refresh data
       await fetchAppointments();
       return true;
     } catch (error) {
       console.error('Error updating appointment:', error);
-      toast.error("Erro", {
-        description: "Não foi possível atualizar o agendamento.",
-      });
+      setTimeout(() => {
+        toast.error("Erro", {
+          description: "Não foi possível atualizar o agendamento.",
+        });
+      }, 0);
       return false;
     }
   }, [fetchAppointments]);
