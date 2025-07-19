@@ -39,7 +39,6 @@ const ClientAppointmentDashboard: React.FC = () => {
   const handleCloseEditDialog = useCallback(() => {
     setIsEditDialogOpen(false);
     setSelectedAppointment(null);
-    // Remove fetchAppointments call to prevent dependency loop
   }, []);
 
   return (

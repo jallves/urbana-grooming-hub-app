@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { useAppointmentSync } from '@/hooks/useAppointmentSync';
 
@@ -73,13 +72,53 @@ export const useClientAppointments = () => {
     }
   }, []);
 
-  // Usar o hook de sincronização
+  // Usar o hook de sincronização - passando a função de callback apenas uma vez
   useAppointmentSync(fetchAppointments);
 
-  // Busca inicial
+  // Busca inicial - sem dependência de fetchAppointments para evitar loops
   useEffect(() => {
-    fetchAppointments();
-  }, [fetchAppointments]);
+    let mounted = true;
+    
+    const loadAppointments = async () => {
+      try {
+        setIsLoading(true);
+        console.log('Initial fetch of client appointments');
+        
+        const { data, error } = await supabase
+          .from('painel_agendamentos')
+          .select(`
+            *,
+            painel_clientes!inner(nome, email, whatsapp),
+            painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
+            painel_servicos!inner(nome, preco, duracao)
+          `)
+          .order('data', { ascending: false })
+          .order('hora', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching client appointments:', error);
+          return;
+        }
+
+        if (mounted) {
+          console.log('Client appointments found:', data?.length || 0);
+          setAppointments(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching client appointments:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadAppointments();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
@@ -101,11 +140,6 @@ export const useClientAppointments = () => {
       
     } catch (error) {
       console.error('Error updating appointment status:', error);
-      setTimeout(() => {
-        toast.error("Erro", {
-          description: "Não foi possível atualizar o status.",
-        });
-      }, 0);
     }
   }, []);
   
@@ -124,11 +158,6 @@ export const useClientAppointments = () => {
       return true;
     } catch (error) {
       console.error('Error deleting appointment:', error);
-      setTimeout(() => {
-        toast.error("Erro", {
-          description: "Não foi possível excluir o agendamento.",
-        });
-      }, 0);
       return false;
     }
   }, []);
@@ -142,16 +171,11 @@ export const useClientAppointments = () => {
 
       if (error) throw error;
       
-      // Refresh data
-      await fetchAppointments();
+      // Trigger a refresh by calling fetchAppointments
+      fetchAppointments();
       return true;
     } catch (error) {
       console.error('Error updating appointment:', error);
-      setTimeout(() => {
-        toast.error("Erro", {
-          description: "Não foi possível atualizar o agendamento.",
-        });
-      }, 0);
       return false;
     }
   }, [fetchAppointments]);
