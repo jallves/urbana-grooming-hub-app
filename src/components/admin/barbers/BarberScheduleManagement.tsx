@@ -1,231 +1,147 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Users, Settings, Calendar, CheckCircle } from 'lucide-react';
-import BarberScheduleManager from '@/components/barber/schedule/BarberScheduleManager';
-import BarberAvailabilityManager from './BarberAvailabilityManager';
-
-interface Staff {
-  id: string;
-  name: string;
-  email: string;
-  is_active: boolean;
-}
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Plus, Calendar, Clock, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const BarberScheduleManagement: React.FC = () => {
-  const { toast } = useToast();
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
-  const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [applyingDefault, setApplyingDefault] = useState(false);
-
-  useEffect(() => {
-    fetchStaff();
-  }, []);
-
-  const fetchStaff = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('id, name, email, is_active')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      setStaff(data || []);
-      
-      // Auto-select first staff member if available
-      if (data && data.length > 0) {
-        setSelectedStaffId(data[0].id);
-        setSelectedStaff(data[0]);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar staff:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar a lista de profissionais.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStaffSelect = (staffId: string) => {
-    const staffMember = staff.find(s => s.id === staffId);
-    setSelectedStaffId(staffId);
-    setSelectedStaff(staffMember || null);
-  };
-
-  const setupDefaultScheduleForAll = async () => {
-    setApplyingDefault(true);
-    try {
-      console.log('Aplicando horário padrão para todos os profissionais...');
-      
-      const defaultSchedule = [
-        { day_of_week: 1, start_time: '09:00', end_time: '20:00', is_active: true }, // Segunda
-        { day_of_week: 2, start_time: '09:00', end_time: '20:00', is_active: true }, // Terça
-        { day_of_week: 3, start_time: '09:00', end_time: '20:00', is_active: true }, // Quarta
-        { day_of_week: 4, start_time: '09:00', end_time: '20:00', is_active: true }, // Quinta
-        { day_of_week: 5, start_time: '09:00', end_time: '20:00', is_active: true }, // Sexta
-        { day_of_week: 6, start_time: '09:00', end_time: '20:00', is_active: true }, // Sábado
-        // Domingo (0) não é incluído, ficando fechado
-      ];
-
-      for (const staffMember of staff) {
-        console.log(`Configurando horários para ${staffMember.name}...`);
-        
-        // Deletar horários existentes do profissional
-        await supabase
-          .from('working_hours')
-          .delete()
-          .eq('staff_id', staffMember.id);
-
-        // Inserir novos horários padrão
-        const workingHours = defaultSchedule.map(schedule => ({
-          staff_id: staffMember.id,
-          ...schedule
-        }));
-
-        const { error } = await supabase
-          .from('working_hours')
-          .insert(workingHours);
-
-        if (error) {
-          console.error(`Erro ao configurar horários para ${staffMember.name}:`, error);
-          throw error;
-        }
-        
-        console.log(`✓ Horários configurados para ${staffMember.name}`);
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: `Horário padrão aplicado para ${staff.length} profissional(is): Segunda a Sábado (09:00-20:00), Domingo fechado.`,
-        action: <CheckCircle className="h-4 w-4 text-green-500" />
-      });
-    } catch (error) {
-      console.error('Erro ao configurar horários padrão:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível configurar os horários padrão para todos os profissionais.",
-        variant: "destructive",
-      });
-    } finally {
-      setApplyingDefault(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center">
-            <div className="animate-pulse text-muted-foreground">
-              Carregando profissionais...
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const [activeTab, setActiveTab] = useState('schedule');
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-urbana-gold" />
-            Gerenciamento de Horários dos Profissionais
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-              <div className="text-sm text-green-800">
-                <p className="font-medium mb-1">Horário Padrão Configurado</p>
-                <p>
-                  <strong>Segunda a Sábado:</strong> 09:00 às 20:00<br />
-                  <strong>Domingo:</strong> Fechado
-                </p>
-                <p className="mt-2 text-xs">
-                  Este horário será aplicado automaticamente para novos profissionais e pode ser ajustado individualmente conforme necessário.
-                </p>
-              </div>
+    <div className="h-full min-h-0 flex flex-col bg-gray-950 text-gray-100">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 sm:p-4 border-b border-gray-800">
+        <div>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-100">Gestão de Escalas</h1>
+          <p className="text-xs sm:text-sm text-gray-400">Configure horários de trabalho dos barbeiros</p>
+        </div>
+        
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm">
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Nova Escala</span>
+              <span className="sm:hidden">Nova</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-gray-900 border-gray-700 text-gray-100">
+            <DialogHeader>
+              <DialogTitle>Nova Escala</DialogTitle>
+            </DialogHeader>
+            <div className="p-4">
+              <p className="text-gray-400">Formulário para criar nova escala será implementado</p>
             </div>
-          </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">
-                Selecionar Profissional:
-              </label>
-              <Select value={selectedStaffId} onValueChange={handleStaffSelect}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um profissional" />
-                </SelectTrigger>
-                <SelectContent>
-                  {staff.map((staffMember) => (
-                    <SelectItem key={staffMember.id} value={staffMember.id}>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {staffMember.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={setupDefaultScheduleForAll}
-                disabled={applyingDefault}
-                className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black"
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                {applyingDefault ? 'Aplicando...' : 'Aplicar Padrão para Todos'}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {selectedStaff && (
-        <Tabs defaultValue="schedule" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="schedule" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Horários Padrão
+      <div className="flex-1 min-h-0 p-3 sm:p-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-800 border border-gray-700 h-auto mb-3">
+            <TabsTrigger 
+              value="schedule" 
+              className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300"
+            >
+              <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Escalas</span>
+              <span className="sm:hidden">Esc</span>
             </TabsTrigger>
-            <TabsTrigger value="availability" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Disponibilidade Específica
+            <TabsTrigger 
+              value="availability" 
+              className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white text-gray-300"
+            >
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Disponibilidade</span>
+              <span className="sm:hidden">Disp</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="barbers" 
+              className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white text-gray-300"
+            >
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Barbeiros</span>
+              <span className="sm:hidden">Barb</span>
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="schedule" className="mt-6">
-            <BarberScheduleManager 
-              barberId={selectedStaffId} 
-              barberName={selectedStaff.name}
-            />
-          </TabsContent>
-          
-          <TabsContent value="availability" className="mt-6">
-            <BarberAvailabilityManager
-              barberId={selectedStaffId}
-              barberName={selectedStaff.name}
-            />
-          </TabsContent>
+          <div className="flex-1 min-h-0">
+            <TabsContent value="schedule" className="h-full m-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 h-full">
+                {[1, 2, 3, 4, 5, 6].map((day) => (
+                  <div key={day} className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-100 text-sm">Segunda-feira</h3>
+                      <span className="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">Ativo</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-gray-300">
+                        <span>João Silva</span>
+                        <span>08:00 - 18:00</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-300">
+                        <span>Carlos Santos</span>
+                        <span>14:00 - 22:00</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="availability" className="h-full m-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 h-full">
+                {[1, 2, 3, 4, 5, 6].map((barber) => (
+                  <div key={barber} className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">JS</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-100 text-sm">João Silva</h3>
+                        <p className="text-xs text-gray-400">Barbeiro Senior</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-300">Hoje</span>
+                        <span className="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded">Disponível</span>
+                      </div>
+                      <div className="text-xs text-gray-400">08:00 - 18:00</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="barbers" className="h-full m-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 h-full">
+                {[1, 2, 3, 4].map((barber) => (
+                  <div key={barber} className="bg-gray-900/50 border border-gray-700 rounded-lg p-3">
+                    <div className="text-center mb-3">
+                      <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mx-auto mb-2 flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">JS</span>
+                      </div>
+                      <h3 className="font-semibold text-gray-100 text-sm">João Silva</h3>
+                      <p className="text-xs text-gray-400">Barbeiro Senior</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400">Agendamentos</span>
+                        <span className="text-green-400">12</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-400">Comissão</span>
+                        <span className="text-urbana-gold">R$ 1.250</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          </div>
         </Tabs>
-      )}
+      </div>
     </div>
   );
 };
