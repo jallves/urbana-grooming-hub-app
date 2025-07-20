@@ -4,22 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Edit, MoreHorizontal, Trash2, Search, Plus } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, MoreVertical } from 'lucide-react';
 import ProductForm from './ProductForm';
 import {
   AlertDialog,
@@ -31,6 +17,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Product } from '@/types/product';
 
 const ProductList: React.FC = () => {
@@ -110,111 +102,121 @@ const ProductList: React.FC = () => {
   );
 
   return (
-    <>
-      <Card className="p-4 bg-gray-900 border-gray-700">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-urbana-gold" />
+    <div className="h-full flex flex-col bg-gray-800 text-white">
+      {/* Header compacto */}
+      <div className="p-3 sm:p-4 border-b border-gray-700 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-urbana-gold" />
             <Input
               placeholder="Buscar produtos..."
-              className="pl-10 bg-black border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold"
+              className="pl-8 sm:pl-10 bg-gray-700 border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Button 
             onClick={handleCreateProduct} 
-            className="w-full sm:w-auto bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium"
+            className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Produto
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Produto</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
+      </div>
 
-        <div className="rounded-md border border-gray-700">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-700">
-                <TableHead className="text-urbana-gold">Nome</TableHead>
-                <TableHead className="text-urbana-gold">Preço</TableHead>
-                <TableHead className="text-urbana-gold">Custo</TableHead>
-                <TableHead className="text-urbana-gold">Estoque</TableHead>
-                <TableHead className="text-urbana-gold">Status</TableHead>
-                <TableHead className="text-right text-urbana-gold">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-white">
-                    Carregando produtos...
-                  </TableCell>
-                </TableRow>
-              ) : filteredProducts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-white">
-                    Nenhum produto encontrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredProducts.map((product) => (
-                  <TableRow key={product.id} className="border-gray-700 hover:bg-gray-800">
-                    <TableCell className="font-medium text-white">
-                      {product.name}
-                    </TableCell>
-                    <TableCell className="text-white">
-                      R$ {product.price.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-white">
-                      {product.cost_price 
-                        ? `R$ ${product.cost_price.toFixed(2)}`
-                        : '-'}
-                    </TableCell>
-                    <TableCell className="text-white">
-                      {product.stock_quantity ?? 0}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={product.is_active ? "default" : "outline"}
-                        className={product.is_active ? "bg-urbana-gold text-black" : "text-gray-400"}
-                      >
-                        {product.is_active ? "Ativo" : "Inativo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
+      {/* Lista de produtos - Grid responsivo */}
+      <div className="flex-1 min-h-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-400">
+            <div className="text-center">
+              <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm sm:text-base">Nenhum produto encontrado</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 sm:p-4 h-full overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {filteredProducts.map((product) => (
+                <Card key={product.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors">
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-medium text-white text-sm sm:text-base truncate mr-2">
+                        {product.name}
+                      </h3>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-white hover:text-urbana-gold">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Abrir menu</span>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                            <MoreVertical className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
                           <DropdownMenuItem 
                             onClick={() => handleEditProduct(product.id)}
-                            className="text-white hover:bg-gray-800"
+                            className="text-white hover:bg-gray-700 text-xs sm:text-sm"
                           >
-                            <Edit className="mr-2 h-4 w-4" />
+                            <Edit className="h-3 w-3 mr-2" />
                             Editar
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => confirmDeleteProduct(product.id)}
-                            className="text-red-400 hover:bg-gray-800"
+                            className="text-red-400 hover:bg-gray-700 text-xs sm:text-sm"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            <Trash2 className="h-3 w-3 mr-2" />
                             Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+                    </div>
+                    
+                    <div className="space-y-2 text-xs sm:text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Preço:</span>
+                        <span className="text-urbana-gold font-medium">
+                          R$ {product.price.toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      {product.cost_price && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Custo:</span>
+                          <span className="text-white">
+                            R$ {product.cost_price.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Estoque:</span>
+                        <span className="text-white">
+                          {product.stock_quantity ?? 0}
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Status:</span>
+                        <Badge 
+                          variant={product.is_active ? "default" : "outline"}
+                          className={`text-xs ${product.is_active ? "bg-urbana-gold text-black" : "text-gray-400 border-gray-600"}`}
+                        >
+                          {product.is_active ? "Ativo" : "Inativo"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
+      {/* Formulário e Dialog */}
       {isFormOpen && (
         <ProductForm
           productId={selectedProduct}
@@ -227,7 +229,7 @@ const ProductList: React.FC = () => {
       )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-gray-900 border-gray-700">
+        <AlertDialogContent className="bg-gray-800 border-gray-700">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Excluir produto</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-300">
@@ -235,7 +237,7 @@ const ProductList: React.FC = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700">
+            <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction 
@@ -247,7 +249,7 @@ const ProductList: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };
 

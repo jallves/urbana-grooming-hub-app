@@ -1,466 +1,228 @@
+
 import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Edit, MoreHorizontal, Trash2, Search, Plus, ArrowUpCircle, ArrowDownCircle, CheckCircle } from 'lucide-react';
-import FinancialTransactionForm from './FinancialTransactionForm';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { FinancialTransaction } from '@/types/financial';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Plus, DollarSign, TrendingUp, TrendingDown, Calendar, Filter } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface Transaction {
+  id: string;
+  transaction_type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  category: string;
+  payment_method: string;
+  transaction_date: string;
+  status: 'pending' | 'completed' | 'canceled';
+  created_at: string;
+}
 
 const TransactionList: React.FC = () => {
-  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState<Date | undefined>(new Date());
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Estilos para status
-  const statusStyles: Record<string, string> = {
-    pending: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-    completed: 'bg-green-500/20 text-green-300 border-green-500/30',
-    canceled: 'bg-red-500/20 text-red-300 border-red-500/30',
-  };
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
-  // Obter intervalo do mês
-  const getMonthRange = (date: Date) => {
-    return {
-      start: startOfMonth(date),
-      end: endOfMonth(date)
-    };
-  };
-
-  // Buscar transações
   const fetchTransactions = async () => {
     try {
       setIsLoading(true);
-      const { start, end } = dateFilter ? getMonthRange(dateFilter) : getMonthRange(new Date());
-      
-      let query = supabase
+      const { data, error } = await supabase
         .from('financial_transactions')
         .select('*')
-        .gte('transaction_date', start.toISOString())
-        .lte('transaction_date', end.toISOString());
-      
-      if (typeFilter !== 'all') query = query.eq('transaction_type', typeFilter);
-      if (statusFilter !== 'all') query = query.eq('status', statusFilter);
-      
-      const { data, error } = await query.order('transaction_date', { ascending: false });
-      
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
       setTransactions(data || []);
     } catch (error) {
-      toast.error('Erro ao carregar transações', {
-        description: (error as Error).message
-      });
+      console.error('Erro ao buscar transações:', error);
+      toast.error('Erro ao carregar transações');
     } finally {
       setIsLoading(false);
     }
   };
-  
-  useEffect(() => {
-    fetchTransactions();
-  }, [dateFilter, typeFilter, statusFilter]);
 
-  // Marcar como pago
-  const handleMarkAsPaid = async (transactionId: string) => {
-    try {
-      const { error } = await supabase
-        .from('financial_transactions')
-        .update({ 
-          status: 'completed',
-          payment_date: new Date().toISOString()
-        })
-        .eq('id', transactionId);
-
-      if (error) throw error;
-
-      setTransactions(transactions.map(t => 
-        t.id === transactionId ? { ...t, status: 'completed', payment_date: new Date().toISOString() } : t
-      ));
-      
-      toast.success('Transação marcada como paga!');
-    } catch (error) {
-      toast.error('Erro ao marcar transação como paga', {
-        description: (error as Error).message
-      });
-    }
-  };
-
-  // Navegação entre meses
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    if (!dateFilter) return;
-    setDateFilter(direction === 'prev' ? subMonths(dateFilter, 1) : addMonths(dateFilter, 1));
-  };
-
-  // Filtrar transações
   const filteredTransactions = transactions.filter(transaction => {
-    if (!searchQuery) return true;
-    const search = searchQuery.toLowerCase();
-    return (
-      transaction.description?.toLowerCase().includes(search) ||
-      transaction.category?.toLowerCase().includes(search) ||
-      transaction.payment_method?.toLowerCase().includes(search)
-    );
+    const matchesSearch = transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         transaction.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === 'all' || transaction.transaction_type === typeFilter;
+    const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
+    
+    return matchesSearch && matchesType && matchesStatus;
   });
 
-  // Calcular totais
-  const { totalIncome, totalExpense, balance } = filteredTransactions.reduce((acc, t) => {
-    if (t.status === 'canceled') return acc;
-    
-    if (t.transaction_type === 'income') {
-      acc.totalIncome += Number(t.amount);
-    } else {
-      acc.totalExpense += Number(t.amount);
-    }
-    
-    acc.balance = acc.totalIncome - acc.totalExpense;
-    return acc;
-  }, { totalIncome: 0, totalExpense: 0, balance: 0 });
+  const totalIncome = transactions
+    .filter(t => t.transaction_type === 'income' && t.status === 'completed')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalExpense = transactions
+    .filter(t => t.transaction_type === 'expense' && t.status === 'completed')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const balance = totalIncome - totalExpense;
 
   return (
-    <div className="h-full w-full p-0 sm:p-4 bg-gray-950 overflow-hidden">
-      <Card className="h-full w-full bg-gray-900/80 border-gray-800 rounded-none sm:rounded-lg overflow-hidden">
-        {/* Cabeçalho e Filtros */}
-        <div className="p-3 sm:p-4 border-b border-gray-800">
-          {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            {[
-              { 
-                title: 'Receitas', 
-                value: totalIncome, 
-                icon: ArrowUpCircle, 
-                color: 'green' 
-              },
-              { 
-                title: 'Despesas', 
-                value: totalExpense, 
-                icon: ArrowDownCircle, 
-                color: 'red' 
-              },
-              { 
-                title: 'Balanço', 
-                value: balance, 
-                color: balance >= 0 ? 'yellow' : 'red' 
-              }
-            ].map((item, index) => (
-              <div 
-                key={index}
-                className={`bg-gradient-to-r p-3 rounded-lg border ${
-                  item.color === 'green' ? 'from-green-500/20 to-green-600/20 border-green-500/30' :
-                  item.color === 'red' ? 'from-red-500/20 to-red-600/20 border-red-500/30' :
-                  'from-yellow-500/20 to-yellow-600/20 border-yellow-500/30'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  {item.icon && (
-                    <item.icon className={`h-4 w-4 text-${item.color}-400`} />
-                  )}
-                  <h3 className={`text-xs font-medium text-${item.color}-300`}>
-                    {item.title}
-                  </h3>
-                </div>
-                <p className={`text-lg font-bold text-${item.color}-400`}>
-                  R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+    <div className="h-full flex flex-col bg-gray-800 text-white">
+      {/* Header com resumo */}
+      <div className="p-3 sm:p-4 border-b border-gray-700 flex-shrink-0">
+        {/* Métricas */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+          <Card className="bg-green-900/20 border-green-700/30 p-2 sm:p-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-400" />
+              <div className="min-w-0">
+                <p className="text-xs text-green-400">Receitas</p>
+                <p className="text-sm sm:text-base font-bold text-green-400 truncate">
+                  R$ {totalIncome.toLocaleString('pt-BR')}
                 </p>
               </div>
-            ))}
-          </div>
+            </div>
+          </Card>
+          
+          <Card className="bg-red-900/20 border-red-700/30 p-2 sm:p-3">
+            <div className="flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-400" />
+              <div className="min-w-0">
+                <p className="text-xs text-red-400">Despesas</p>
+                <p className="text-sm sm:text-base font-bold text-red-400 truncate">
+                  R$ {totalExpense.toLocaleString('pt-BR')}
+                </p>
+              </div>
+            </div>
+          </Card>
+          
+          <Card className={`${balance >= 0 ? 'bg-urbana-gold/20 border-urbana-gold/30' : 'bg-red-900/20 border-red-700/30'} p-2 sm:p-3`}>
+            <div className="flex items-center gap-2">
+              <DollarSign className={`h-4 w-4 ${balance >= 0 ? 'text-urbana-gold' : 'text-red-400'}`} />
+              <div className="min-w-0">
+                <p className={`text-xs ${balance >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>Saldo</p>
+                <p className={`text-sm sm:text-base font-bold ${balance >= 0 ? 'text-urbana-gold' : 'text-red-400'} truncate`}>
+                  R$ {balance.toLocaleString('pt-BR')}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
 
-          {/* Barra de Pesquisa */}
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+        {/* Filtros */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-urbana-gold" />
             <Input
               placeholder="Buscar transações..."
-              className="pl-10 bg-gray-800/50 border-gray-700 text-white placeholder-gray-400"
+              className="pl-8 sm:pl-10 bg-gray-700 border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-32 bg-gray-700 border-urbana-gold/30 text-white h-8 sm:h-10 text-xs sm:text-sm">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-700 border-gray-600">
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="income">Receita</SelectItem>
+              <SelectItem value="expense">Despesa</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-32 bg-gray-700 border-urbana-gold/30 text-white h-8 sm:h-10 text-xs sm:text-sm">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-700 border-gray-600">
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="completed">Completo</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="canceled">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          {/* Filtros */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="all" className="hover:bg-gray-700">Todos</SelectItem>
-                <SelectItem value="income" className="hover:bg-gray-700">Receitas</SelectItem>
-                <SelectItem value="expense" className="hover:bg-gray-700">Despesas</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white text-sm">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="all" className="hover:bg-gray-700">Todos</SelectItem>
-                <SelectItem value="pending" className="hover:bg-gray-700">Pendentes</SelectItem>
-                <SelectItem value="completed" className="hover:bg-gray-700">Concluídos</SelectItem>
-                <SelectItem value="canceled" className="hover:bg-gray-700">Cancelados</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="flex col-span-2 sm:col-span-1 gap-1">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigateMonth('prev')}
-                className="bg-gray-800/50 border-gray-700 text-white hover:bg-gray-700"
-              >
-                &lt;
-              </Button>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1 bg-gray-800/50 border-gray-700 text-white hover:bg-gray-700"
-                  >
-                    {dateFilter ? format(dateFilter, "MMM/yy", { locale: ptBR }) : "Mês"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
-                  <Calendar
-                    mode="single"
-                    selected={dateFilter}
-                    onSelect={setDateFilter}
-                    initialFocus
-                    className="text-white"
-                  />
-                </PopoverContent>
-              </Popover>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigateMonth('next')}
-                className="bg-gray-800/50 border-gray-700 text-white hover:bg-gray-700"
-              >
-                &gt;
-              </Button>
-            </div>
-
-            <Button 
-              onClick={() => {
-                setSelectedTransaction(null);
-                setIsFormOpen(true);
-              }}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium col-span-2 sm:col-span-1"
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Nova Transação
-            </Button>
+      {/* Lista de transações */}
+      <div className="flex-1 min-h-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
           </div>
-        </div>
-
-        {/* Tabela */}
-        <div className="h-[calc(100%-180px)] overflow-auto">
-          <Table className="min-w-full">
-            <TableHeader className="sticky top-0 bg-gray-800 z-10">
-              <TableRow>
-                <TableHead className="w-[80px]">Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead className="hidden sm:table-cell">Categoria</TableHead>
-                <TableHead className="w-[80px]">Tipo</TableHead>
-                <TableHead className="text-right w-[100px]">Valor</TableHead>
-                <TableHead className="hidden md:table-cell w-[80px]">Status</TableHead>
-                <TableHead className="text-right w-[60px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-400">
-                    Carregando transações...
-                  </TableCell>
-                </TableRow>
-              ) : filteredTransactions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-400">
-                    Nenhuma transação encontrada
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id} className="hover:bg-gray-800/50">
-                    <TableCell className="font-medium">
-                      {format(new Date(transaction.transaction_date), 'dd/MM')}
-                    </TableCell>
-                    <TableCell className="max-w-[150px] truncate">
-                      {transaction.description || '-'}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell max-w-[120px] truncate">
-                      {transaction.category || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="outline" 
-                        className={
-                          transaction.transaction_type === 'income' 
-                            ? 'bg-green-500/20 text-green-300 border-green-500/30' 
-                            : 'bg-red-500/20 text-red-300 border-red-500/30'
-                        }
-                      >
-                        {transaction.transaction_type === 'income' ? 'Rec.' : 'Desp.'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className={`text-right ${
-                      transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      R$ {Number(transaction.amount).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge className={`${statusStyles[transaction.status]}`}>
-                        {transaction.status === 'pending' && 'Pend.'}
-                        {transaction.status === 'completed' && 'Pago'}
-                        {transaction.status === 'canceled' && 'Canc.'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-gray-800 border-gray-700 w-40">
-                          {transaction.status === 'pending' && (
-                            <DropdownMenuItem 
-                              onClick={() => handleMarkAsPaid(transaction.id)}
-                              className="text-green-400 hover:bg-gray-700"
+        ) : filteredTransactions.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-400">
+            <div className="text-center">
+              <DollarSign className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm sm:text-base">Nenhuma transação encontrada</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 sm:p-4 h-full overflow-y-auto">
+            <div className="space-y-2 sm:space-y-3">
+              {filteredTransactions.map((transaction) => (
+                <Card key={transaction.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors">
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`p-2 rounded-full ${transaction.transaction_type === 'income' ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
+                          {transaction.transaction_type === 'income' ? 
+                            <TrendingUp className="h-4 w-4 text-green-400" /> : 
+                            <TrendingDown className="h-4 w-4 text-red-400" />
+                          }
+                        </div>
+                        
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-white text-sm sm:text-base truncate">
+                              {transaction.description}
+                            </h3>
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs flex-shrink-0 ${
+                                transaction.status === 'completed' ? 'border-green-600 text-green-400' :
+                                transaction.status === 'pending' ? 'border-yellow-600 text-yellow-400' :
+                                'border-red-600 text-red-400'
+                              }`}
                             >
-                              <CheckCircle className="mr-2 h-4 w-4" />
-                              Marcar pago
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              setSelectedTransaction(transaction.id);
-                              setIsFormOpen(true);
-                            }}
-                            className="hover:bg-gray-700"
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              setTransactionToDelete(transaction.id);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                            className="text-red-400 hover:bg-gray-700"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
-
-      {/* Modal de Formulário */}
-      {isFormOpen && (
-        <FinancialTransactionForm
-          transactionId={selectedTransaction}
-          onClose={() => setIsFormOpen(false)}
-          onSuccess={() => {
-            setIsFormOpen(false);
-            fetchTransactions();
-          }}
-        />
-      )}
-
-      {/* Modal de Confirmação */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-gray-600 hover:bg-gray-700">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={async () => {
-                if (!transactionToDelete) return;
-                try {
-                  await supabase
-                    .from('financial_transactions')
-                    .delete()
-                    .eq('id', transactionToDelete);
-                  setTransactions(transactions.filter(t => t.id !== transactionToDelete));
-                  toast.success('Transação excluída com sucesso!');
-                } catch (error) {
-                  toast.error('Erro ao excluir transação');
-                } finally {
-                  setIsDeleteDialogOpen(false);
-                }
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                              {transaction.status === 'completed' ? 'Completo' :
+                               transaction.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-xs sm:text-sm text-gray-400">
+                            <span>{transaction.category}</span>
+                            <span>{transaction.payment_method}</span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right flex-shrink-0 ml-3">
+                        <p className={`font-bold text-sm sm:text-base ${
+                          transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
