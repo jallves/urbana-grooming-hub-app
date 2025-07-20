@@ -1,15 +1,22 @@
 
 import React from 'react';
-import { Loader2, UserCog, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Barber } from '@/types/barber';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Pencil, Trash2, Loader2, Users } from 'lucide-react';
+import { Staff } from '@/types/barber';
 
 interface BarberListProps {
-  barbers: Barber[];
+  barbers: Staff[];
   isLoading: boolean;
   onEdit: (id: string) => void;
-  onDelete: (barberId: string) => void;
+  onDelete: (id: string) => void;
 }
 
 const BarberList: React.FC<BarberListProps> = ({
@@ -22,130 +29,184 @@ const BarberList: React.FC<BarberListProps> = ({
 
   if (isLoading) {
     return (
-      <Card className="p-10">
-        <div className="flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="ml-2">Carregando barbeiros...</span>
+      <div className="flex justify-center items-center p-8 sm:p-12 bg-gray-900 rounded-lg border border-gray-700">
+        <div className="flex flex-col items-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
+          <p className="text-gray-300 font-raleway text-sm">Carregando barbeiros...</p>
         </div>
-      </Card>
-    );
-  }
-
-  if (!barbers || barbers.length === 0) {
-    return (
-      <Card className="p-10">
-        <div className="text-center">
-          <UserCog className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Nenhum barbeiro cadastrado</h3>
-          <p className="text-gray-500 mb-4">
-            Clique em "Novo Barbeiro" para adicionar o primeiro barbeiro à equipe.
-          </p>
-        </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="border-0 shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Barbeiro
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contato
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Especialidade
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {barbers
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((barber) => (
-                <tr key={barber.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {barber.image_url ? (
-                        <img
-                          className="h-10 w-10 rounded-full object-cover"
-                          src={barber.image_url}
-                          alt={barber.name}
-                        />
-                      ) : (
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <UserCog className="h-5 w-5 text-gray-500" />
-                        </div>
-                      )}
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {barber.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {barber.role || 'Barbeiro'}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{barber.email || '-'}</div>
-                    <div className="text-sm text-gray-500">{barber.phone || '-'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {barber.specialties || '-'}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {barber.experience ? `${barber.experience}` : '-'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {barber.is_active ? (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Ativo
-                      </span>
-                    ) : (
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                        Inativo
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(barber.id)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => onDelete(barber.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Excluir
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+    <div className="w-full">
+      {/* View Desktop/Tablet */}
+      <div className="hidden md:block bg-gray-900 border border-gray-700 rounded-lg">
+        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-700 bg-black text-urbana-gold font-playfair font-medium text-sm">
+          <div>Barbeiro</div>
+          <div>Email</div>
+          <div>Especialidades</div>
+          <div>Experiência</div>
+          <div>Comissão</div>
+          <div className="text-right">Ações</div>
+        </div>
+        
+        {barbers.length > 0 ? (
+          barbers.map((barber) => (
+            <div key={barber.id} className="grid grid-cols-6 gap-4 p-4 border-b border-gray-700 hover:bg-gray-800/50 transition-colors items-center">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 border-2 border-urbana-gold/30">
+                  <AvatarImage src={barber.image_url} />
+                  <AvatarFallback className="bg-urbana-gold/10 text-urbana-gold font-playfair">
+                    {barber.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <span className="text-white font-raleway font-medium text-sm block truncate">{barber.name}</span>
+                  <Badge 
+                    className={`text-xs mt-1 ${
+                      barber.is_active 
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                        : 'bg-red-500/20 text-red-400 border-red-500/30'
+                    }`}
+                  >
+                    {barber.is_active ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+              </div>
+              <div className="text-gray-300 font-raleway text-sm truncate">{barber.email}</div>
+              <div className="text-gray-300 font-raleway text-sm truncate">{barber.specialties}</div>
+              <div className="text-gray-300 font-raleway text-sm">{barber.experience}</div>
+              <div className="text-gray-300 font-raleway text-sm">{barber.commission_rate}%</div>
+              <div className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-gray-400 hover:text-urbana-gold hover:bg-urbana-gold/10"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                    <DropdownMenuItem 
+                      onClick={() => onEdit(barber.id)}
+                      className="text-white hover:bg-gray-700 font-raleway"
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onDelete(barber.id)}
+                      className="text-red-400 hover:bg-gray-700 font-raleway"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-16 h-16 bg-urbana-gold/10 rounded-full flex items-center justify-center">
+                <Users className="h-8 w-8 text-urbana-gold" />
+              </div>
+              <p className="text-gray-400 font-raleway">Nenhum barbeiro encontrado</p>
+            </div>
+          </div>
+        )}
       </div>
-    </Card>
+
+      {/* View Mobile */}
+      <div className="md:hidden space-y-3">
+        {barbers.length > 0 ? (
+          barbers.map((barber) => (
+            <div key={barber.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Avatar className="h-12 w-12 border-2 border-urbana-gold/30">
+                    <AvatarImage src={barber.image_url} />
+                    <AvatarFallback className="bg-urbana-gold/10 text-urbana-gold font-playfair">
+                      {barber.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-white font-raleway font-medium text-sm truncate">{barber.name}</h3>
+                    <p className="text-gray-300 font-raleway text-xs truncate">{barber.email}</p>
+                    <Badge 
+                      className={`text-xs mt-1 ${
+                        barber.is_active 
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                          : 'bg-red-500/20 text-red-400 border-red-500/30'
+                      }`}
+                    >
+                      {barber.is_active ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-gray-400 hover:text-urbana-gold hover:bg-urbana-gold/10"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                    <DropdownMenuItem 
+                      onClick={() => onEdit(barber.id)}
+                      className="text-white hover:bg-gray-700 font-raleway"
+                    >
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onDelete(barber.id)}
+                      className="text-red-400 hover:bg-gray-700 font-raleway"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              <div className="space-y-2 text-xs">
+                <div>
+                  <span className="text-gray-400 font-raleway">Especialidades:</span>
+                  <span className="text-white font-raleway ml-1 block truncate">{barber.specialties}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-gray-400 font-raleway">Experiência:</span>
+                    <span className="text-white font-raleway ml-1">{barber.experience}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 font-raleway">Comissão:</span>
+                    <span className="text-white font-raleway ml-1">{barber.commission_rate}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12 bg-gray-900 rounded-lg border border-gray-700">
+            <div className="flex flex-col items-center space-y-3">
+              <div className="w-16 h-16 bg-urbana-gold/10 rounded-full flex items-center justify-center">
+                <Users className="h-8 w-8 text-urbana-gold" />
+              </div>
+              <p className="text-gray-400 font-raleway">Nenhum barbeiro encontrado</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -115,83 +115,78 @@ const BarberManagement: React.FC = () => {
 
   const isFormVisible = mode === 'adding' || mode === 'editing';
 
-  console.log('Estado atual:', { barbers, isLoading, error, mode });
-
   return (
-    <div className="space-y-4 sm:space-y-6 w-full max-w-full">
-      {/* Header Section - Responsivo */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="space-y-1">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
-            Gerenciamento de Barbeiros
+    <div className="w-full max-w-full space-y-4 p-2 sm:p-4 bg-black min-h-screen">
+      {/* Header responsivo */}
+      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div>
+          <h1 className="text-lg sm:text-2xl font-bold text-urbana-gold font-playfair">
+            Barbeiros
           </h1>
-          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-            Gerencie os barbeiros e suas permissões no sistema
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-raleway">
+            Gerencie barbeiros e suas permissões
           </p>
         </div>
         {mode === 'viewing' && (
           <Button 
             onClick={handleAddBarber}
-            className="w-full sm:w-auto text-xs sm:text-sm px-3 py-2 sm:px-4"
+            className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway w-full sm:w-auto"
           >
-            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="text-xs sm:text-sm">Novo Barbeiro</span>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Barbeiro
           </Button>
         )}
       </div>
 
-      {/* Alerts e Cards informativos - Responsivos */}
+      {/* Alerts responsivos */}
       {mode === 'viewing' && (
-        <>
+        <div className="space-y-3">
           <Alert className="border-blue-200 bg-blue-50">
-            <Info className="h-3 w-3 sm:h-4 sm:w-4" />
+            <Info className="h-4 w-4" />
             <AlertDescription className="text-xs sm:text-sm leading-relaxed text-blue-800">
-              Este módulo exibe todos os profissionais cadastrados como "Barbeiro" na tabela staff.
+              Este módulo exibe todos os profissionais cadastrados como "Barbeiro".
             </AlertDescription>
           </Alert>
           
-          <Card className="w-full bg-white border-gray-200">
-            <CardHeader className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg md:text-xl text-gray-900">
+          <Card className="bg-gray-900 border-gray-700">
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-lg text-urbana-gold font-playfair">
                 <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-sm sm:text-base md:text-lg">Controle de Acesso aos Módulos</span>
+                Controle de Acesso
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
-                Cada barbeiro pode ter permissões diferentes para acessar os módulos do sistema.
-                Edite um barbeiro e acesse a aba "Permissões de Acesso" para configurar.
+              <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-300">
+                Configure permissões de acesso aos módulos do sistema editando um barbeiro.
               </CardDescription>
             </CardHeader>
           </Card>
-        </>
+        </div>
       )}
 
-      {/* Formulário de Barbeiro - Responsivo */}
+      {/* Formulário responsivo */}
       {isFormVisible && (
-        <Card className="w-full bg-white border-gray-200">
-          <CardHeader className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-            <CardTitle className="text-base sm:text-lg md:text-xl text-gray-900">
+        <Card className="bg-gray-900 border-gray-700">
+          <CardHeader className="p-3 sm:p-6">
+            <CardTitle className="text-sm sm:text-lg text-urbana-gold font-playfair">
               {mode === 'editing' ? 'Editar Barbeiro' : 'Novo Barbeiro'}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
+            <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-300">
               {mode === 'editing'
                 ? 'Edite as informações e permissões do barbeiro'
-                : 'Preencha as informações para cadastrar um novo barbeiro no sistema. A categoria será automaticamente definida como "Barbeiro".'}
+                : 'Cadastre um novo barbeiro no sistema'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6">
-            <div className="w-full overflow-x-auto">
-              <BarberForm
-                barberId={editingBarberId || undefined}
-                onCancel={handleCancelForm}
-                onSuccess={handleSuccess}
-              />
-            </div>
+          <CardContent className="p-3 sm:p-6">
+            <BarberForm
+              barberId={editingBarberId || undefined}
+              onCancel={handleCancelForm}
+              onSuccess={handleSuccess}
+            />
           </CardContent>
         </Card>
       )}
 
-      {/* Lista de Barbeiros - Responsiva */}
-      <div className="w-full overflow-x-auto">
+      {/* Lista responsiva */}
+      <div className="w-full">
         <BarberList
           barbers={barbers || []}
           isLoading={isLoading}
