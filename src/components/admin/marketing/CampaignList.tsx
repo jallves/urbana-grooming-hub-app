@@ -2,25 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Plus } from 'lucide-react';
+import { Plus, Calendar, DollarSign, TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MarketingCampaign } from '@/types/marketing';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import CampaignForm from './CampaignForm';
@@ -60,7 +46,7 @@ const CampaignList = () => {
             title: 'Atualização',
             description: 'Dados de campanhas atualizados'
           });
-          refetch(); // Refresh data when changes occur
+          refetch();
         }
       )
       .subscribe();
@@ -87,100 +73,126 @@ const CampaignList = () => {
 
   const getBadgeVariant = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'default';
-      case 'draft':
-        return 'outline';
-      case 'completed':
-        return 'secondary';
-      case 'canceled':
-        return 'destructive';
-      default:
-        return 'default';
+      case 'active': return 'default';
+      case 'draft': return 'outline';
+      case 'completed': return 'secondary';
+      case 'canceled': return 'destructive';
+      default: return 'default';
     }
   };
 
   const getStatusName = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'Ativa';
-      case 'draft':
-        return 'Rascunho';
-      case 'completed':
-        return 'Concluída';
-      case 'canceled':
-        return 'Cancelada';
-      default:
-        return status;
+      case 'active': return 'Ativa';
+      case 'draft': return 'Rascunho';
+      case 'completed': return 'Concluída';
+      case 'canceled': return 'Cancelada';
+      default: return status;
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-400 py-8">
+        <p className="text-sm">Erro ao carregar campanhas</p>
+      </div>
+    );
+  }
+
   return (
-    <Card className="bg-gray-900 border-gray-700">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <CardTitle className="text-white">Campanhas de Marketing</CardTitle>
-          <CardDescription className="text-gray-400">
-            Gerencie suas campanhas de marketing
-          </CardDescription>
+          <h3 className="text-sm font-medium text-white">Campanhas de Marketing</h3>
+          <p className="text-xs text-gray-400">Gerencie suas campanhas</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Campanha
+        <Button 
+          onClick={() => setIsDialogOpen(true)} 
+          size="sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 h-auto"
+        >
+          <Plus className="mr-1 h-3 w-3" />
+          Nova
         </Button>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="text-center py-4 text-white">Carregando...</div>
-        ) : error ? (
-          <div className="text-center text-red-400 py-4">
-            Erro ao carregar campanhas. Por favor, tente novamente.
-          </div>
-        ) : campaigns && campaigns.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-white">Nome</TableHead>
-                  <TableHead className="text-white">Data Início</TableHead>
-                  <TableHead className="text-white">Data Fim</TableHead>
-                  <TableHead className="text-white">Status</TableHead>
-                  <TableHead className="text-white">Orçamento</TableHead>
-                  <TableHead className="text-right text-white">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {campaigns.map((campaign) => (
-                  <TableRow key={campaign.id}>
-                    <TableCell className="font-medium text-white">{campaign.name}</TableCell>
-                    <TableCell className="text-gray-300">{format(new Date(campaign.start_date), 'dd/MM/yyyy')}</TableCell>
-                    <TableCell className="text-gray-300">
-                      {campaign.end_date ? format(new Date(campaign.end_date), 'dd/MM/yyyy') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getBadgeVariant(campaign.status)}>
-                        {getStatusName(campaign.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-gray-300">
-                      {campaign.budget ? `R$ ${campaign.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(campaign)} className="border-gray-600 text-white hover:bg-gray-800">
-                        Editar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-400">
-            Nenhuma campanha encontrada. Crie uma nova campanha para começar.
-          </div>
-        )}
-      </CardContent>
+      </div>
+
+      {/* Campaigns Grid */}
+      {campaigns && campaigns.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {campaigns.map((campaign) => (
+            <Card 
+              key={campaign.id} 
+              className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+              onClick={() => handleEdit(campaign)}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-sm font-medium text-white line-clamp-2">
+                    {campaign.name}
+                  </CardTitle>
+                  <Badge variant={getBadgeVariant(campaign.status)} className="text-xs">
+                    {getStatusName(campaign.status)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {campaign.description && (
+                  <p className="text-xs text-gray-400 line-clamp-2">
+                    {campaign.description}
+                  </p>
+                )}
+                
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-gray-300">
+                    <Calendar className="h-3 w-3" />
+                    <span>{format(new Date(campaign.start_date), 'dd/MM/yyyy')}</span>
+                    {campaign.end_date && (
+                      <>
+                        <span>-</span>
+                        <span>{format(new Date(campaign.end_date), 'dd/MM/yyyy')}</span>
+                      </>
+                    )}
+                  </div>
+                  
+                  {campaign.budget && (
+                    <div className="flex items-center gap-2 text-xs text-gray-300">
+                      <DollarSign className="h-3 w-3" />
+                      <span>R$ {campaign.budget.toLocaleString('pt-BR')}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <TrendingUp className="mx-auto h-8 w-8 text-gray-600 mb-3" />
+          <h3 className="text-sm font-medium text-gray-400 mb-2">
+            Nenhuma campanha encontrada
+          </h3>
+          <p className="text-xs text-gray-600 mb-4">
+            Crie uma nova campanha para começar
+          </p>
+          <Button 
+            onClick={() => setIsDialogOpen(true)}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Criar Primeira Campanha
+          </Button>
+        </div>
+      )}
       
       <CampaignForm
         isOpen={isDialogOpen}
@@ -191,7 +203,7 @@ const CampaignList = () => {
         onSubmit={handleFormSubmit}
         campaign={selectedCampaign}
       />
-    </Card>
+    </div>
   );
 };
 
