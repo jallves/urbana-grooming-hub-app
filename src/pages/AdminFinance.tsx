@@ -1,5 +1,4 @@
-
-imimport React from 'react';
+import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import FinanceManagement from '@/components/admin/finance/FinanceManagement';
 import AdminRoute from '@/components/auth/AdminRoute';
