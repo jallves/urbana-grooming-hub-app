@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Search, Plus, MoreVertical } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, MoreVertical, Package } from 'lucide-react';
 import ProductForm from './ProductForm';
 import {
   AlertDialog,
@@ -104,8 +105,8 @@ const ProductList: React.FC = () => {
   return (
     <div className="h-full flex flex-col bg-gray-800 text-white">
       {/* Header compacto */}
-      <div className="p-3 sm:p-4 border-b border-gray-700 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+      <div className="p-2 sm:p-4 border-b border-gray-700 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-urbana-gold" />
             <Input
@@ -127,7 +128,7 @@ const ProductList: React.FC = () => {
       </div>
 
       {/* Lista de produtos - Grid responsivo */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
@@ -140,77 +141,79 @@ const ProductList: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="p-3 sm:p-4 h-full overflow-y-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-              {filteredProducts.map((product) => (
-                <Card key={product.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors">
-                  <div className="p-3 sm:p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-medium text-white text-sm sm:text-base truncate mr-2">
-                        {product.name}
-                      </h3>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
-                          <DropdownMenuItem 
-                            onClick={() => handleEditProduct(product.id)}
-                            className="text-white hover:bg-gray-700 text-xs sm:text-sm"
-                          >
-                            <Edit className="h-3 w-3 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => confirmDeleteProduct(product.id)}
-                            className="text-red-400 hover:bg-gray-700 text-xs sm:text-sm"
-                          >
-                            <Trash2 className="h-3 w-3 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    
-                    <div className="space-y-2 text-xs sm:text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Preço:</span>
-                        <span className="text-urbana-gold font-medium">
-                          R$ {product.price.toFixed(2)}
-                        </span>
+          <div className="h-full overflow-y-auto">
+            <div className="p-2 sm:p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
+                {filteredProducts.map((product) => (
+                  <Card key={product.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors">
+                    <div className="p-2 sm:p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-medium text-white text-xs sm:text-base truncate mr-2">
+                          {product.name}
+                        </h3>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
+                            <DropdownMenuItem 
+                              onClick={() => handleEditProduct(product.id)}
+                              className="text-white hover:bg-gray-700 text-xs sm:text-sm"
+                            >
+                              <Edit className="h-3 w-3 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => confirmDeleteProduct(product.id)}
+                              className="text-red-400 hover:bg-gray-700 text-xs sm:text-sm"
+                            >
+                              <Trash2 className="h-3 w-3 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                       
-                      {product.cost_price && (
+                      <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Custo:</span>
-                          <span className="text-white">
-                            R$ {product.cost_price.toFixed(2)}
+                          <span className="text-gray-400">Preço:</span>
+                          <span className="text-urbana-gold font-medium">
+                            R$ {product.price.toFixed(2)}
                           </span>
                         </div>
-                      )}
-                      
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Estoque:</span>
-                        <span className="text-white">
-                          {product.stock_quantity ?? 0}
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Status:</span>
-                        <Badge 
-                          variant={product.is_active ? "default" : "outline"}
-                          className={`text-xs ${product.is_active ? "bg-urbana-gold text-black" : "text-gray-400 border-gray-600"}`}
-                        >
-                          {product.is_active ? "Ativo" : "Inativo"}
-                        </Badge>
+                        
+                        {product.cost_price && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Custo:</span>
+                            <span className="text-white">
+                              R$ {product.cost_price.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Estoque:</span>
+                          <span className="text-white">
+                            {product.stock_quantity ?? 0}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Status:</span>
+                          <Badge 
+                            variant={product.is_active ? "default" : "outline"}
+                            className={`text-xs ${product.is_active ? "bg-urbana-gold text-black" : "text-gray-400 border-gray-600"}`}
+                          >
+                            {product.is_active ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         )}
