@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -62,7 +61,6 @@ export const useEmployeeManagement = () => {
       console.log('Employees set successfully');
     } catch (error: any) {
       console.error('Erro ao buscar funcionários:', error);
-      // Use toast directly here instead of from dependency
       toast({
         title: 'Erro',
         description: 'Erro ao carregar funcionários',
@@ -71,7 +69,7 @@ export const useEmployeeManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [roleFilter, statusFilter, searchQuery]); // Remove toast from dependencies
+  }, [roleFilter, statusFilter, searchQuery, toast]);
 
   const handleDeleteEmployee = useCallback(async (employeeId: string) => {
     if (!window.confirm('Tem certeza que deseja excluir este funcionário?')) {
@@ -117,7 +115,6 @@ export const useEmployeeManagement = () => {
         }
       }
 
-      // Use toast directly here instead of from dependency
       toast({
         title: 'Sucesso',
         description: 'Funcionário excluído com sucesso!',
@@ -126,19 +123,24 @@ export const useEmployeeManagement = () => {
       fetchEmployees();
     } catch (error: any) {
       console.error('Error in handleDeleteEmployee:', error);
-      // Use toast directly here instead of from dependency
       toast({
         title: 'Erro',
         description: 'Erro ao excluir funcionário',
         variant: 'destructive',
       });
     }
-  }, [fetchEmployees]); // Remove toast from dependencies
+  }, [fetchEmployees, toast]);
 
-  // Initial fetch
+  // Initial fetch - only runs once on mount
   useEffect(() => {
     fetchEmployees();
-  }, [fetchEmployees]);
+  }, []); // Empty dependency array for initial fetch
+
+  // Separate effect for filter changes - runs when filters change
+  useEffect(() => {
+    if (loading) return; // Don't refetch if still loading initial data
+    fetchEmployees();
+  }, [roleFilter, statusFilter, searchQuery]); // Only filters, not fetchEmployees
 
   return {
     employees,
@@ -153,4 +155,3 @@ export const useEmployeeManagement = () => {
     handleDeleteEmployee,
   };
 };
-
