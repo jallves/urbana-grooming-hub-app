@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Employee } from '../types';
@@ -12,11 +12,7 @@ export const useEmployeeManagement = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
+  const fetchEmployees = useCallback(async () => {
     try {
       setLoading(true);
       console.log('Fetching employees...');
@@ -73,9 +69,9 @@ export const useEmployeeManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [roleFilter, statusFilter, searchQuery, toast]);
 
-  const handleDeleteEmployee = async (employeeId: string) => {
+  const handleDeleteEmployee = useCallback(async (employeeId: string) => {
     if (!window.confirm('Tem certeza que deseja excluir este funcionário?')) {
       return;
     }
@@ -133,12 +129,12 @@ export const useEmployeeManagement = () => {
         variant: 'destructive',
       });
     }
-  };
+  }, [fetchEmployees, toast]);
 
-  // Recarregar quando filtros mudarem
+  // Initial fetch
   useEffect(() => {
     fetchEmployees();
-  }, [roleFilter, statusFilter, searchQuery]);
+  }, [fetchEmployees]);
 
   return {
     employees,
