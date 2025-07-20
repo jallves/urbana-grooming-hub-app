@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -61,6 +62,7 @@ export const useEmployeeManagement = () => {
       console.log('Employees set successfully');
     } catch (error: any) {
       console.error('Erro ao buscar funcionários:', error);
+      // Use toast directly here instead of from dependency
       toast({
         title: 'Erro',
         description: 'Erro ao carregar funcionários',
@@ -69,7 +71,7 @@ export const useEmployeeManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [roleFilter, statusFilter, searchQuery, toast]);
+  }, [roleFilter, statusFilter, searchQuery]); // Remove toast from dependencies
 
   const handleDeleteEmployee = useCallback(async (employeeId: string) => {
     if (!window.confirm('Tem certeza que deseja excluir este funcionário?')) {
@@ -115,6 +117,7 @@ export const useEmployeeManagement = () => {
         }
       }
 
+      // Use toast directly here instead of from dependency
       toast({
         title: 'Sucesso',
         description: 'Funcionário excluído com sucesso!',
@@ -123,13 +126,14 @@ export const useEmployeeManagement = () => {
       fetchEmployees();
     } catch (error: any) {
       console.error('Error in handleDeleteEmployee:', error);
+      // Use toast directly here instead of from dependency
       toast({
         title: 'Erro',
         description: 'Erro ao excluir funcionário',
         variant: 'destructive',
       });
     }
-  }, [fetchEmployees, toast]);
+  }, [fetchEmployees]); // Remove toast from dependencies
 
   // Initial fetch
   useEffect(() => {
@@ -149,3 +153,4 @@ export const useEmployeeManagement = () => {
     handleDeleteEmployee,
   };
 };
+
