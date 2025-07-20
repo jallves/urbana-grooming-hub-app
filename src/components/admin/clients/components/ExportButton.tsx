@@ -12,6 +12,7 @@ interface PainelClient {
   whatsapp: string;
   data_nascimento: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface ExportButtonProps {
@@ -19,41 +20,41 @@ interface ExportButtonProps {
 }
 
 const ExportButton: React.FC<ExportButtonProps> = ({ clients }) => {
-  const exportToExcel = () => {
+  const handleExport = () => {
     try {
       const exportData = clients.map(client => ({
-        'Nome': client.nome,
-        'E-mail': client.email || '',
-        'WhatsApp': client.whatsapp,
-        'Data de Nascimento': client.data_nascimento || '',
+        Nome: client.nome,
+        Email: client.email || '',
+        WhatsApp: client.whatsapp,
+        'Data de Nascimento': client.data_nascimento ? 
+          new Date(client.data_nascimento).toLocaleDateString('pt-BR') : '',
         'Data de Cadastro': new Date(client.created_at).toLocaleDateString('pt-BR')
       }));
 
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Clientes');
+      
       const fileName = `clientes_${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
-
-      toast.success('Planilha exportada com sucesso!');
+      XLSX.writeFile(wb, fileName);
+      
+      toast.success('Relatório exportado com sucesso!');
     } catch (error) {
-      toast.error('Erro ao exportar planilha', {
-        description: (error as Error).message
-      });
+      toast.error('Erro ao exportar relatório');
     }
   };
 
   return (
     <Button
-      onClick={exportToExcel}
+      onClick={handleExport}
       variant="outline"
       size="sm"
-      className="flex items-center gap-2 border-gray-300 hover:border-gray-400"
+      className="panel-button-responsive border-gray-600 hover:border-urbana-gold hover:text-urbana-gold"
       disabled={clients.length === 0}
     >
-      <Download className="h-4 w-4" />
-      Exportar Excel
+      <Download className="h-4 w-4 mr-2" />
+      <span className="hidden sm:inline">Exportar</span>
+      <span className="sm:hidden">Excel</span>
     </Button>
   );
 };

@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ClientList from './ClientList';
 import ClientForm from './ClientForm';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 
@@ -50,39 +51,42 @@ const ClientManagement: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-6 bg-gray-50 px-4 sm:px-6 lg:px-8">
-      {/* Header Section */}
-      <div className="flex-shrink-0 w-full max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              Gerenciamento de Clientes
-            </h1>
-            <p className="text-gray-600 text-sm sm:text-base">
-              Gerencie sua base de clientes
-            </p>
+    <div className="panel-responsive">
+      {/* Header - Mobile First */}
+      <div className="panel-header-responsive">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-urbana-gold/10 rounded-lg">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-urbana-gold" />
+            </div>
+            <div>
+              <h1 className="panel-title-responsive">Clientes</h1>
+              <p className="panel-text-responsive text-gray-400">
+                {clients?.length || 0} clientes cadastrados
+              </p>
+            </div>
           </div>
           
           {!isAddingClient && !editingClient && (
             <Button 
               onClick={() => setIsAddingClient(true)}
-              className="bg-gray-900 hover:bg-gray-800 text-white flex items-center justify-center gap-2 w-full sm:w-auto"
+              className="panel-button-responsive bg-urbana-gold hover:bg-urbana-gold/90 text-black font-medium"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 mr-2" />
               Novo Cliente
             </Button>
           )}
         </div>
 
-        {/* Form Section */}
+        {/* Form Section - Responsivo */}
         {(isAddingClient || editingClient) && (
-          <Card className="mt-6 bg-white border border-gray-200 shadow-sm">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle className="text-gray-900 text-base sm:text-lg">
-                {editingClient ? 'Editar Cliente' : 'Adicionar Cliente'}
+          <Card className="panel-card-responsive mt-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="panel-text-responsive">
+                {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6">
+            <CardContent className="pt-0">
               <ClientForm 
                 clientId={editingClient}
                 onCancel={() => {
@@ -100,28 +104,18 @@ const ClientManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Main Content Card */}
-      <Card className="flex-1 flex flex-col bg-white border border-gray-200 shadow-sm w-full max-w-7xl mx-auto">
-        <CardHeader className="flex-shrink-0 pb-4 px-4 sm:px-6">
-          <CardTitle className="text-lg sm:text-xl font-semibold text-gray-900">
-            Lista de Clientes
-          </CardTitle>
-        </CardHeader>
-        
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <div className="h-full overflow-auto">
-            <ClientList 
-              clients={clients || []}
-              isLoading={isLoading}
-              onEdit={(id) => {
-                setEditingClient(id);
-                setIsAddingClient(false);
-              }}
-              onDelete={refetch}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Lista de Clientes - Sem Scroll */}
+      <div className="panel-content-responsive">
+        <ClientList 
+          clients={clients || []}
+          isLoading={isLoading}
+          onEdit={(id) => {
+            setEditingClient(id);
+            setIsAddingClient(false);
+          }}
+          onDelete={refetch}
+        />
+      </div>
     </div>
   );
 };

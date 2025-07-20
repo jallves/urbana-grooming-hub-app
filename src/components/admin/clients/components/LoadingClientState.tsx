@@ -1,85 +1,52 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 const LoadingClientState: React.FC = () => {
   return (
-    <Card className="w-full">
-      <CardContent className="p-2 sm:p-3 md:p-4 lg:p-6">
-        {/* Header skeleton */}
-        <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:justify-between sm:items-center sm:mb-6">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-32 sm:h-6 sm:w-40" />
-            <Skeleton className="h-6 w-8 rounded-full" />
+    <Card className="panel-card-responsive">
+      <CardContent className="flex flex-col items-center justify-center py-12">
+        <div className="text-center space-y-4">
+          {/* Loading Spinner */}
+          <div className="mx-auto w-12 h-12 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
           </div>
-          <Skeleton className="h-8 w-full sm:h-9 sm:w-24" />
-        </div>
-        
-        {/* Table header skeleton */}
-        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex gap-4 pb-3">
-            <Skeleton className="h-4 w-20 sm:w-32" />
-            <Skeleton className="h-4 w-24 sm:w-40 hidden sm:block" />
-            <Skeleton className="h-4 w-20 sm:w-28" />
-            <Skeleton className="h-4 w-20 sm:w-28 hidden md:block" />
-            <Skeleton className="h-4 w-24 sm:w-32 hidden lg:block" />
-            <Skeleton className="h-4 w-24 sm:w-32 hidden xl:block" />
-            <div className="ml-auto">
-              <Skeleton className="h-4 w-16" />
-            </div>
+          
+          {/* Loading Text */}
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium text-white">
+              Carregando clientes...
+            </h3>
+            <p className="text-sm text-gray-400">
+              Aguarde enquanto buscamos os dados
+            </p>
           </div>
-        </div>
-        
-        {/* Table rows skeleton */}
-        <div className="space-y-3 sm:space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center gap-4 p-2 sm:p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
-              {/* Nome */}
-              <div className="flex-1 min-w-0">
-                <Skeleton className="h-4 w-full max-w-[120px] mb-1" />
-                <div className="sm:hidden">
-                  <Skeleton className="h-3 w-full max-w-[100px]" />
+
+          {/* Loading Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8 max-w-4xl">
+            {[1, 2, 3, 4, 5, 6].map((index) => (
+              <div
+                key={index}
+                className="bg-gray-800/50 rounded-lg p-4 space-y-3 animate-pulse"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                  </div>
+                  <div className="flex gap-1">
+                    <div className="h-8 w-8 bg-gray-700 rounded"></div>
+                    <div className="h-8 w-8 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-8 bg-gray-700 rounded"></div>
+                  <div className="h-8 bg-gray-700 rounded"></div>
                 </div>
               </div>
-              
-              {/* Email - hidden on mobile */}
-              <div className="hidden sm:block flex-1 min-w-0">
-                <Skeleton className="h-4 w-full max-w-[140px]" />
-              </div>
-              
-              {/* Telefone */}
-              <div className="flex-1 min-w-0">
-                <Skeleton className="h-4 w-full max-w-[100px]" />
-              </div>
-              
-              {/* WhatsApp - hidden on mobile/tablet */}
-              <div className="hidden md:block flex-1 min-w-0">
-                <Skeleton className="h-4 w-full max-w-[100px]" />
-              </div>
-              
-              {/* Birth date - hidden until desktop */}
-              <div className="hidden lg:block flex-1 min-w-0">
-                <Skeleton className="h-4 w-full max-w-[110px]" />
-              </div>
-              
-              {/* Created date - hidden until xl */}
-              <div className="hidden xl:block flex-1 min-w-0">
-                <Skeleton className="h-4 w-full max-w-[110px]" />
-              </div>
-              
-              {/* Actions */}
-              <div className="flex gap-1 flex-shrink-0">
-                <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
-                <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Mobile scroll hint skeleton */}
-        <div className="mt-4 text-center sm:hidden">
-          <Skeleton className="h-3 w-48 mx-auto" />
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>
