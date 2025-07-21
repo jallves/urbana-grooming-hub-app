@@ -704,6 +704,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_register_sessions: {
+        Row: {
+          closed_at: string | null
+          closing_balance: number | null
+          created_at: string
+          date: string
+          id: string
+          opened_at: string
+          opening_balance: number
+          status: string
+          total_commissions: number
+          total_expenses: number
+          total_sales: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closing_balance?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          opened_at: string
+          opening_balance?: number
+          status?: string
+          total_commissions?: number
+          total_expenses?: number
+          total_sales?: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closing_balance?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          opened_at?: string
+          opening_balance?: number
+          status?: string
+          total_commissions?: number
+          total_expenses?: number
+          total_sales?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       class_bookings: {
         Row: {
           class_id: string | null

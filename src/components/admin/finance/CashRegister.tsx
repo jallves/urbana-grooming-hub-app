@@ -23,21 +23,30 @@ interface CashRegisterSession {
   status: 'open' | 'closed';
 }
 
+interface TodayTransactions {
+  sales: number;
+  expenses: number;
+  commissions: number;
+  transactions: any[];
+}
+
 const CashRegister: React.FC = () => {
-  const [currentSession, setCurrentSession] = useState<CashRegisterSession | null>(null);
   const queryClient = useQueryClient();
 
   const { data: todaySession, isLoading } = useQuery({
     queryKey: ['cash-register-today'],
-    queryFn: async () => {
+    queryFn: async (): Promise<CashRegisterSession | null> => {
       const today = format(new Date(), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('cash_register_sessions')
         .select('*')
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        console.error('Error fetching cash register session:', error);
+        throw error;
+      }
       return data;
     },
     refetchInterval: 30000, // Atualiza a cada 30 segundos
@@ -45,7 +54,7 @@ const CashRegister: React.FC = () => {
 
   const { data: todayTransactions } = useQuery({
     queryKey: ['today-transactions'],
-    queryFn: async () => {
+    queryFn: async (): Promise<TodayTransactions> => {
       const today = format(new Date(), 'yyyy-MM-dd');
       
       // Buscar transações do fluxo de caixa
@@ -54,7 +63,10 @@ const CashRegister: React.FC = () => {
         .select('*')
         .eq('transaction_date', today);
 
-      if (cfError) throw cfError;
+      if (cfError) {
+        console.error('Error fetching cash flow:', cfError);
+        throw cfError;
+      }
 
       // Buscar comissões do dia
       const { data: commissions, error: commError } = await supabase
@@ -63,7 +75,10 @@ const CashRegister: React.FC = () => {
         .gte('created_at', `${today}T00:00:00`)
         .lte('created_at', `${today}T23:59:59`);
 
-      if (commError) throw commError;
+      if (commError) {
+        console.error('Error fetching commissions:', commError);
+        throw commError;
+      }
 
       const sales = cashFlow?.filter(t => t.transaction_type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
       const expenses = cashFlow?.filter(t => t.transaction_type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
@@ -92,14 +107,18 @@ const CashRegister: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error opening cash register:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-register-today'] });
       toast.success('Caixa aberto com sucesso!');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error opening cash register:', error);
       toast.error('Erro ao abrir caixa');
     }
   });
@@ -123,13 +142,17 @@ const CashRegister: React.FC = () => {
         })
         .eq('id', todaySession.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error closing cash register:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cash-register-today'] });
       toast.success('Caixa fechado com sucesso!');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error closing cash register:', error);
       toast.error('Erro ao fechar caixa');
     }
   });

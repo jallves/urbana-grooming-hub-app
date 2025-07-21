@@ -56,7 +56,7 @@ const FinanceManagement: React.FC = () => {
         <TabsContent value="cash-register" className="flex-1 min-h-0">
           <div className="h-full space-y-4">
             <CashRegister />
-            <div className="h-full bg-gray-800 border border-gray-700 rounded-lg">
+            <div className="flex-1 bg-gray-800 border border-gray-700 rounded-lg min-h-0">
               <TransactionList />
             </div>
           </div>
