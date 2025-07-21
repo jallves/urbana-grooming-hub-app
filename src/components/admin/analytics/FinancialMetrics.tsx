@@ -10,37 +10,68 @@ const FinancialMetrics: React.FC = () => {
   const { data: financialData, isLoading } = useQuery({
     queryKey: ['financial-metrics'],
     queryFn: async () => {
+      // Buscar agendamentos do painel com serviços
       const { data: appointments } = await supabase
-        .from('appointments')
-        .select('*, services(price)')
-        .eq('status', 'completed')
-        .order('start_time', { ascending: true });
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_servicos(preco),
+          painel_clientes(nome)
+        `)
+        .eq('status', 'concluido')
+        .order('data', { ascending: true });
+
+      // Buscar fluxo de caixa
+      const { data: cashFlow } = await supabase
+        .from('cash_flow')
+        .select('*')
+        .eq('transaction_type', 'income')
+        .order('transaction_date', { ascending: true });
 
       // Agrupar por mês
       const monthlyData = appointments?.reduce((acc, apt) => {
-        const month = new Date(apt.start_time).toLocaleString('pt-BR', { month: 'short' });
+        const month = new Date(apt.data).toLocaleString('pt-BR', { month: 'short' });
         if (!acc[month]) {
           acc[month] = { month, revenue: 0, count: 0 };
         }
-        acc[month].revenue += apt.services?.price || 0;
+        acc[month].revenue += apt.painel_servicos?.preco || 0;
         acc[month].count += 1;
         return acc;
       }, {} as Record<string, any>) || {};
 
+      // Adicionar receita do cash flow
+      cashFlow?.forEach(transaction => {
+        const month = new Date(transaction.transaction_date).toLocaleString('pt-BR', { month: 'short' });
+        if (monthlyData[month]) {
+          monthlyData[month].revenue += transaction.amount;
+        } else {
+          monthlyData[month] = { month, revenue: transaction.amount, count: 0 };
+        }
+      });
+
       const monthlyRevenue = Object.values(monthlyData);
 
       // Calcular métricas
-      const totalRevenue = appointments?.reduce((sum, apt) => sum + (apt.services?.price || 0), 0) || 0;
+      const totalRevenue = appointments?.reduce((sum, apt) => sum + (apt.painel_servicos?.preco || 0), 0) || 0;
+      const cashFlowRevenue = cashFlow?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
+      const totalCombinedRevenue = totalRevenue + cashFlowRevenue;
+      
       const avgTicket = appointments?.length ? totalRevenue / appointments.length : 0;
       const thisMonth = new Date().getMonth();
       const currentMonthRevenue = appointments?.filter(apt => 
-        new Date(apt.start_time).getMonth() === thisMonth
-      ).reduce((sum, apt) => sum + (apt.services?.price || 0), 0) || 0;
+        new Date(apt.data).getMonth() === thisMonth
+      ).reduce((sum, apt) => sum + (apt.painel_servicos?.preco || 0), 0) || 0;
+
+      const currentMonthCashFlow = cashFlow?.filter(transaction => 
+        new Date(transaction.transaction_date).getMonth() === thisMonth
+      ).reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
 
       return {
-        totalRevenue,
+        totalRevenue: totalCombinedRevenue,
+        serviceRevenue: totalRevenue,
+        cashFlowRevenue,
         avgTicket,
-        currentMonthRevenue,
+        currentMonthRevenue: currentMonthRevenue + currentMonthCashFlow,
         monthlyRevenue: monthlyRevenue.slice(-6), // Últimos 6 meses
         growth: 12.5 // Simulado
       };
@@ -57,20 +88,28 @@ const FinancialMetrics: React.FC = () => {
       color: 'text-green-400'
     },
     {
-      title: 'Ticket Médio',
-      value: `R$ ${financialData?.avgTicket?.toFixed(2) || '0'}`,
+      title: 'Receita Serviços',
+      value: `R$ ${financialData?.serviceRevenue?.toLocaleString('pt-BR') || '0'}`,
       change: '+8.3%',
       trend: 'up',
       icon: Target,
       color: 'text-blue-400'
     },
     {
-      title: 'Receita Mensal',
-      value: `R$ ${financialData?.currentMonthRevenue?.toLocaleString('pt-BR') || '0'}`,
+      title: 'Receita Adicional',
+      value: `R$ ${financialData?.cashFlowRevenue?.toLocaleString('pt-BR') || '0'}`,
       change: '+15.2%',
       trend: 'up',
       icon: TrendingUp,
       color: 'text-purple-400'
+    },
+    {
+      title: 'Ticket Médio',
+      value: `R$ ${financialData?.avgTicket?.toFixed(2) || '0'}`,
+      change: '+5.1%',
+      trend: 'up',
+      icon: Target,
+      color: 'text-cyan-400'
     }
   ];
 
@@ -84,7 +123,7 @@ const FinancialMetrics: React.FC = () => {
       <div className="h-full overflow-y-auto">
         <div className="p-4 space-y-4">
           {/* Métricas Principais */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {metrics.map((metric, index) => (
               <Card key={index} className="bg-gray-800 border-gray-700">
                 <CardContent className="p-4">

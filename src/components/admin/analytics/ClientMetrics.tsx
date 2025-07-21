@@ -10,13 +10,18 @@ const ClientMetrics: React.FC = () => {
   const { data: clientData, isLoading } = useQuery({
     queryKey: ['client-metrics'],
     queryFn: async () => {
+      // Buscar clientes do painel
       const { data: clients } = await supabase
-        .from('clients')
+        .from('painel_clientes')
         .select('*');
 
+      // Buscar agendamentos do painel
       const { data: appointments } = await supabase
-        .from('appointments')
-        .select('*, clients(name)');
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_clientes(nome)
+        `);
 
       // Clientes por mês
       const monthlyClients = clients?.reduce((acc, client) => {
@@ -32,7 +37,7 @@ const ClientMetrics: React.FC = () => {
 
       // Clientes frequentes
       const clientFrequency = appointments?.reduce((acc, apt) => {
-        const clientName = apt.clients?.name || 'Sem nome';
+        const clientName = apt.painel_clientes?.nome || 'Sem nome';
         acc[clientName] = (acc[clientName] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {};
@@ -51,10 +56,10 @@ const ClientMetrics: React.FC = () => {
                clientDate.getFullYear() === thisMonth.getFullYear();
       }).length || 0;
 
-      const activeClients = appointments?.filter(apt => apt.status === 'completed')
+      const activeClients = appointments?.filter(apt => apt.status === 'concluido')
         .reduce((acc, apt) => {
-          if (apt.clients?.name) {
-            acc.add(apt.clients.name);
+          if (apt.painel_clientes?.nome) {
+            acc.add(apt.painel_clientes.nome);
           }
           return acc;
         }, new Set()).size || 0;

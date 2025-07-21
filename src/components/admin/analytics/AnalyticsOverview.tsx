@@ -16,50 +16,71 @@ const AnalyticsOverview: React.FC = () => {
       const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
 
-      // Buscar dados do mês atual
+      // Buscar dados do painel de agendamentos do mês atual
       const { data: currentAppointments } = await supabase
-        .from('appointments')
-        .select('*, services(price)')
-        .gte('start_time', firstDayOfMonth.toISOString())
-        .lte('start_time', today.toISOString());
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_servicos(preco),
+          painel_clientes(nome)
+        `)
+        .gte('data', firstDayOfMonth.toISOString().split('T')[0])
+        .lte('data', today.toISOString().split('T')[0]);
 
       // Buscar dados do mês anterior
       const { data: lastMonthAppointments } = await supabase
-        .from('appointments')
-        .select('*, services(price)')
-        .gte('start_time', lastMonth.toISOString())
-        .lte('start_time', lastMonthEnd.toISOString());
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_servicos(preco)
+        `)
+        .gte('data', lastMonth.toISOString().split('T')[0])
+        .lte('data', lastMonthEnd.toISOString().split('T')[0]);
 
-      // Buscar clientes
+      // Buscar clientes do painel
       const { data: clients } = await supabase
-        .from('clients')
+        .from('painel_clientes')
         .select('*');
+
+      // Buscar fluxo de caixa do mês atual
+      const { data: cashFlow } = await supabase
+        .from('cash_flow')
+        .select('*')
+        .gte('transaction_date', firstDayOfMonth.toISOString().split('T')[0])
+        .lte('transaction_date', today.toISOString().split('T')[0]);
 
       // Calcular métricas
       const currentRevenue = currentAppointments?.reduce((sum, apt) => 
-        sum + (apt.status === 'completed' ? (apt.services?.price || 0) : 0), 0) || 0;
+        sum + (apt.status === 'concluido' ? (apt.painel_servicos?.preco || 0) : 0), 0) || 0;
       
       const lastMonthRevenue = lastMonthAppointments?.reduce((sum, apt) => 
-        sum + (apt.status === 'completed' ? (apt.services?.price || 0) : 0), 0) || 0;
+        sum + (apt.status === 'concluido' ? (apt.painel_servicos?.preco || 0) : 0), 0) || 0;
 
       const revenueGrowth = lastMonthRevenue > 0 ? 
         ((currentRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
 
-      const completedAppointments = currentAppointments?.filter(apt => apt.status === 'completed').length || 0;
+      const completedAppointments = currentAppointments?.filter(apt => apt.status === 'concluido').length || 0;
       const totalAppointments = currentAppointments?.length || 0;
       const conversionRate = totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0;
 
       const newClientsThisMonth = clients?.filter(client => 
         new Date(client.created_at) >= firstDayOfMonth).length || 0;
 
+      // Calcular receita do cash flow
+      const cashFlowRevenue = cashFlow?.reduce((sum, transaction) => 
+        sum + (transaction.transaction_type === 'income' ? transaction.amount : 0), 0) || 0;
+
+      const totalRevenue = currentRevenue + cashFlowRevenue;
+
       return {
-        revenue: currentRevenue,
+        revenue: totalRevenue,
         revenueGrowth,
         appointments: totalAppointments,
         completedAppointments,
         conversionRate,
         newClients: newClientsThisMonth,
-        totalClients: clients?.length || 0
+        totalClients: clients?.length || 0,
+        cashFlowRevenue
       };
     }
   });
@@ -169,6 +190,7 @@ const AnalyticsOverview: React.FC = () => {
                 <p>• Agendamentos realizados: <span className="text-blue-400">{kpis?.completedAppointments || '0'}</span></p>
                 <p>• Taxa de conversão: <span className="text-purple-400">{kpis?.conversionRate?.toFixed(1) || '0'}%</span></p>
                 <p>• Novos clientes: <span className="text-orange-400">{kpis?.newClients || '0'}</span></p>
+                <p>• Receita adicional (caixa): <span className="text-cyan-400">R$ {kpis?.cashFlowRevenue?.toLocaleString('pt-BR') || '0'}</span></p>
               </div>
             </CardContent>
           </Card>

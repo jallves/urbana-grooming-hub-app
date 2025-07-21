@@ -10,17 +10,32 @@ const PerformanceMetrics: React.FC = () => {
   const { data: performanceData, isLoading } = useQuery({
     queryKey: ['performance-metrics'],
     queryFn: async () => {
+      // Buscar agendamentos do painel
       const { data: appointments } = await supabase
-        .from('appointments')
-        .select('*, services(name, price), staff(name)');
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_servicos(nome, preco),
+          painel_barbeiros(nome),
+          painel_clientes(nome)
+        `);
 
-      const { data: clients } = await supabase
-        .from('clients')
+      // Buscar dados do cash flow
+      const { data: cashFlow } = await supabase
+        .from('cash_flow')
         .select('*');
+
+      // Buscar comissões
+      const { data: commissions } = await supabase
+        .from('barber_commissions')
+        .select(`
+          *,
+          staff:staff_id(name)
+        `);
 
       // Performance por barbeiro
       const staffPerformance = appointments?.reduce((acc, apt) => {
-        const staffName = apt.staff?.name || 'Não atribuído';
+        const staffName = apt.painel_barbeiros?.nome || 'Não atribuído';
         if (!acc[staffName]) {
           acc[staffName] = { 
             name: staffName, 
@@ -31,9 +46,9 @@ const PerformanceMetrics: React.FC = () => {
           };
         }
         acc[staffName].appointments += 1;
-        if (apt.status === 'completed') {
+        if (apt.status === 'concluido') {
           acc[staffName].completed += 1;
-          acc[staffName].revenue += apt.services?.price || 0;
+          acc[staffName].revenue += apt.painel_servicos?.preco || 0;
         }
         return acc;
       }, {} as Record<string, any>) || {};
@@ -46,13 +61,19 @@ const PerformanceMetrics: React.FC = () => {
 
       // Métricas de performance geral
       const totalAppointments = appointments?.length || 0;
-      const completedAppointments = appointments?.filter(apt => apt.status === 'completed').length || 0;
+      const completedAppointments = appointments?.filter(apt => apt.status === 'concluido').length || 0;
       const totalRevenue = appointments?.reduce((sum, apt) => 
-        sum + (apt.status === 'completed' ? (apt.services?.price || 0) : 0), 0) || 0;
+        sum + (apt.status === 'concluido' ? (apt.painel_servicos?.preco || 0) : 0), 0) || 0;
+      
+      // Adicionar receita do cash flow
+      const cashFlowRevenue = cashFlow?.reduce((sum, transaction) => 
+        sum + (transaction.transaction_type === 'income' ? transaction.amount : 0), 0) || 0;
+
+      const totalCombinedRevenue = totalRevenue + cashFlowRevenue;
 
       const performanceRadar = [
         { metric: 'Eficiência', value: completedAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0 },
-        { metric: 'Receita', value: totalRevenue > 0 ? Math.min((totalRevenue / 50000) * 100, 100) : 0 },
+        { metric: 'Receita', value: totalCombinedRevenue > 0 ? Math.min((totalCombinedRevenue / 50000) * 100, 100) : 0 },
         { metric: 'Satisfação', value: 85 }, // Simulado
         { metric: 'Retenção', value: 78 }, // Simulado
         { metric: 'Pontualidade', value: 92 }, // Simulado
@@ -62,7 +83,9 @@ const PerformanceMetrics: React.FC = () => {
       return {
         totalAppointments,
         completedAppointments,
-        totalRevenue,
+        totalRevenue: totalCombinedRevenue,
+        serviceRevenue: totalRevenue,
+        cashFlowRevenue,
         avgTicket: completedAppointments > 0 ? totalRevenue / completedAppointments : 0,
         efficiency: totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0,
         staffData,
@@ -207,6 +230,29 @@ const PerformanceMetrics: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Breakdown de Receita */}
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-gray-100">Breakdown de Receita</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                  <span className="text-gray-300">Receita de Serviços</span>
+                  <span className="text-green-400 font-semibold">R$ {performanceData?.serviceRevenue?.toLocaleString('pt-BR') || '0'}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                  <span className="text-gray-300">Receita Adicional (Caixa)</span>
+                  <span className="text-blue-400 font-semibold">R$ {performanceData?.cashFlowRevenue?.toLocaleString('pt-BR') || '0'}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border-t border-gray-600">
+                  <span className="text-gray-300 font-bold">Total</span>
+                  <span className="text-yellow-400 font-bold">R$ {performanceData?.totalRevenue?.toLocaleString('pt-BR') || '0'}</span>
+                </div>
               </div>
             </CardContent>
           </Card>

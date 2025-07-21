@@ -12,9 +12,15 @@ const AppointmentMetrics: React.FC = () => {
   const { data: appointmentData, isLoading } = useQuery({
     queryKey: ['appointment-metrics'],
     queryFn: async () => {
+      // Buscar agendamentos do painel
       const { data: appointments } = await supabase
-        .from('appointments')
-        .select('*, services(name, price), staff(name)');
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_servicos(nome, preco),
+          painel_barbeiros(nome),
+          painel_clientes(nome)
+        `);
 
       // Status distribution
       const statusCount = appointments?.reduce((acc, apt) => {
@@ -23,18 +29,18 @@ const AppointmentMetrics: React.FC = () => {
       }, {} as Record<string, number>) || {};
 
       const statusData = [
-        { name: 'Concluído', value: statusCount.completed || 0, color: '#10B981' },
-        { name: 'Agendado', value: statusCount.scheduled || 0, color: '#F59E0B' },
-        { name: 'Cancelado', value: statusCount.cancelled || 0, color: '#EF4444' },
-        { name: 'Confirmado', value: statusCount.confirmed || 0, color: '#6B7280' }
+        { name: 'Concluído', value: statusCount.concluido || 0, color: '#10B981' },
+        { name: 'Agendado', value: statusCount.agendado || 0, color: '#F59E0B' },
+        { name: 'Cancelado', value: statusCount.cancelado || 0, color: '#EF4444' },
+        { name: 'Confirmado', value: statusCount.confirmado || 0, color: '#6B7280' }
       ];
 
       // Horários mais procurados
       const hourlyData = appointments?.reduce((acc, apt) => {
-        const hour = new Date(apt.start_time).getHours();
+        const hour = apt.hora.split(':')[0];
         acc[hour] = (acc[hour] || 0) + 1;
         return acc;
-      }, {} as Record<number, number>) || {};
+      }, {} as Record<string, number>) || {};
 
       const hourlyChart = Object.entries(hourlyData).map(([hour, count]) => ({
         hour: `${hour}:00`,
@@ -43,12 +49,12 @@ const AppointmentMetrics: React.FC = () => {
 
       // Performance por barbeiro
       const staffPerformance = appointments?.reduce((acc, apt) => {
-        const staffName = apt.staff?.name || 'Não atribuído';
+        const staffName = apt.painel_barbeiros?.nome || 'Não atribuído';
         if (!acc[staffName]) {
           acc[staffName] = { name: staffName, completed: 0, total: 0 };
         }
         acc[staffName].total += 1;
-        if (apt.status === 'completed') {
+        if (apt.status === 'concluido') {
           acc[staffName].completed += 1;
         }
         return acc;
@@ -61,9 +67,9 @@ const AppointmentMetrics: React.FC = () => {
 
       return {
         totalAppointments: appointments?.length || 0,
-        completedAppointments: statusCount.completed || 0,
-        cancelledAppointments: statusCount.cancelled || 0,
-        conversionRate: appointments?.length ? (statusCount.completed / appointments.length) * 100 : 0,
+        completedAppointments: statusCount.concluido || 0,
+        cancelledAppointments: statusCount.cancelado || 0,
+        conversionRate: appointments?.length ? ((statusCount.concluido || 0) / appointments.length) * 100 : 0,
         statusData,
         hourlyChart,
         staffData
