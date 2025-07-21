@@ -14,69 +14,75 @@ const AdminSettings: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Configurações">
-        <div className="h-full min-h-0 flex flex-col bg-gray-950 text-gray-100">
-          <div className="p-3 sm:p-4">
+        <div className="h-full w-full bg-gray-950 text-gray-100 overflow-hidden">
+          <div className="h-full flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-3 bg-gray-800 border border-gray-700 h-auto mb-3">
+              <TabsList className="grid w-full grid-cols-3 bg-gray-800 border border-gray-700 h-14 mb-4 rounded-lg">
                 <TabsTrigger 
                   value="shop" 
-                  className="flex items-center gap-1 sm:gap-2 py-2 px-3 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300"
+                  className="flex items-center gap-2 py-3 px-4 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-cyan-600 data-[state=active]:text-white text-gray-300 hover:text-white transition-all duration-200"
                 >
-                  <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <Settings className="h-4 w-4" />
                   <span className="hidden sm:inline">Barbearia</span>
                   <span className="sm:hidden">Barb.</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="media" 
-                  className="flex items-center gap-1 sm:gap-2 py-2 px-3 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white text-gray-300"
+                  className="flex items-center gap-2 py-3 px-4 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-emerald-600 data-[state=active]:text-white text-gray-300 hover:text-white transition-all duration-200"
                 >
-                  <Image className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <Image className="h-4 w-4" />
                   <span className="hidden sm:inline">Banners & Galeria</span>
                   <span className="sm:hidden">Mídia</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="users" 
-                  className="flex items-center gap-1 sm:gap-2 py-2 px-3 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white text-gray-300"
+                  className="flex items-center gap-2 py-3 px-4 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white text-gray-300 hover:text-white transition-all duration-200"
                 >
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <Users className="h-4 w-4" />
                   <span className="hidden sm:inline">Usuários</span>
                   <span className="sm:hidden">User.</span>
                 </TabsTrigger>
               </TabsList>
               
-              <div className="flex-1 min-h-0">
-                <TabsContent value="shop" className="h-full m-0">
-                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg h-full overflow-auto">
-                    <div className="p-3 sm:p-4 border-b border-gray-700">
+              <div className="flex-1 overflow-hidden">
+                <TabsContent value="shop" className="h-full m-0 overflow-hidden">
+                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg h-full flex flex-col">
+                    <div className="p-4 border-b border-gray-700 flex-shrink-0">
                       <h3 className="text-lg font-semibold text-urbana-gold">Configurações da Barbearia</h3>
                       <p className="text-sm text-gray-400">Gerencie as configurações gerais e personalize a aparência do seu site</p>
                     </div>
-                    <div className="p-3 sm:p-4">
-                      <ShopSettingsForm />
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="p-4">
+                        <ShopSettingsForm />
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="media" className="h-full m-0">
-                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg h-full overflow-auto">
-                    <div className="p-3 sm:p-4 border-b border-gray-700">
+                <TabsContent value="media" className="h-full m-0 overflow-hidden">
+                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg h-full flex flex-col">
+                    <div className="p-4 border-b border-gray-700 flex-shrink-0">
                       <h3 className="text-lg font-semibold text-urbana-gold">Banners e Galeria</h3>
                       <p className="text-sm text-gray-400">Gerencie imagens, banners e galeria do site</p>
                     </div>
-                    <div className="p-3 sm:p-4">
-                      <BannerGallerySettings />
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="p-4">
+                        <BannerGallerySettings />
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="users" className="h-full m-0">
-                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg h-full overflow-auto">
-                    <div className="p-3 sm:p-4 border-b border-gray-700">
+                <TabsContent value="users" className="h-full m-0 overflow-hidden">
+                  <div className="bg-gray-900/50 border border-gray-700 rounded-lg h-full flex flex-col">
+                    <div className="p-4 border-b border-gray-700 flex-shrink-0">
                       <h3 className="text-lg font-semibold text-urbana-gold">Gestão de Usuários</h3>
                       <p className="text-sm text-gray-400">Gerencie usuários e permissões do sistema</p>
                     </div>
-                    <div className="p-3 sm:p-4">
-                      <UserManagement />
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="p-4">
+                        <UserManagement />
+                      </div>
                     </div>
                   </div>
                 </TabsContent>

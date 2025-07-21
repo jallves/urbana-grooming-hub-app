@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { GalleryHorizontal, Image, Database } from "lucide-react";
+import { GalleryHorizontal, Database } from "lucide-react";
 import { BannerImage } from '@/types/settings';
 import {
   Tabs,
@@ -50,54 +50,58 @@ const BannerGallerySettings: React.FC = () => {
   ]);
 
   return (
-    <div className="min-h-screen w-full bg-white">
-      <div className="w-full max-w-none px-6 py-6">
-        <Tabs defaultValue="database-gallery" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 h-12">
+    <div className="h-full w-full bg-transparent overflow-hidden">
+      <div className="h-full flex flex-col">
+        <Tabs defaultValue="database-gallery" className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-800 border border-gray-700 h-12 mb-4 rounded-lg">
             <TabsTrigger 
               value="database-gallery" 
-              className="flex items-center gap-2 data-[state=active]:bg-gray-50 data-[state=active]:text-black text-gray-700 h-10"
+              className="flex items-center gap-2 py-2 px-3 text-sm font-medium data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300 hover:text-white transition-all duration-200"
             >
               <Database className="h-4 w-4" />
-              Galeria Permanente
+              <span className="hidden sm:inline">Galeria Permanente</span>
+              <span className="sm:hidden">Galeria</span>
             </TabsTrigger>
             <TabsTrigger 
               value="banner" 
-              className="flex items-center gap-2 data-[state=active]:bg-gray-50 data-[state=active]:text-black text-gray-700 h-10"
+              className="flex items-center gap-2 py-2 px-3 text-sm font-medium data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300 hover:text-white transition-all duration-200"
             >
               <GalleryHorizontal className="h-4 w-4" />
-              Banners Rotativos
+              <span className="hidden sm:inline">Banners Rotativos</span>
+              <span className="sm:hidden">Banners</span>
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="database-gallery" className="mt-6 w-full">
-            <Card className="bg-white border-gray-200 w-full">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-black text-xl">Galeria de Fotos</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="w-full">
-                  <DatabaseGalleryManager />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <div className="flex-1 overflow-hidden">
+            <TabsContent value="database-gallery" className="h-full m-0 overflow-hidden">
+              <Card className="bg-gray-800/50 border-gray-700 h-full flex flex-col">
+                <CardHeader className="pb-3 px-4 flex-shrink-0">
+                  <CardTitle className="text-white text-lg">Galeria de Fotos</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 flex-1 overflow-hidden">
+                  <div className="h-full overflow-y-auto">
+                    <DatabaseGalleryManager />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="banner" className="mt-6 w-full">
-            <Card className="bg-white border-gray-200 w-full">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-black text-xl">Banners da Página Inicial</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="w-full">
-                  <BannerManager 
-                    bannerImages={bannerImages}
-                    setBannerImages={setBannerImages}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="banner" className="h-full m-0 overflow-hidden">
+              <Card className="bg-gray-800/50 border-gray-700 h-full flex flex-col">
+                <CardHeader className="pb-3 px-4 flex-shrink-0">
+                  <CardTitle className="text-white text-lg">Banners da Página Inicial</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 flex-1 overflow-hidden">
+                  <div className="h-full overflow-y-auto">
+                    <BannerManager 
+                      bannerImages={bannerImages}
+                      setBannerImages={setBannerImages}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>

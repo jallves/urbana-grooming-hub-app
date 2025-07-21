@@ -65,27 +65,31 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
   };
 
   return (
-    <div className="w-full min-h-screen bg-white">
-      <div className="w-full space-y-6 p-6">
-        <BannerTable
-          bannerImages={bannerImages}
-          isLoading={isLoading}
-          onDelete={handleDeleteBanner}
-          onEdit={handleEditBanner}
-          editingBanner={editingBanner}
-          setEditingBanner={setEditingBanner}
-          handleUpdateBanner={handleUpdateBanner}
-        />
+    <div className="h-full w-full bg-transparent overflow-hidden">
+      <div className="h-full flex flex-col space-y-4 p-4">
+        <div className="flex-1 overflow-hidden">
+          <BannerTable
+            bannerImages={bannerImages}
+            isLoading={isLoading}
+            onDelete={handleDeleteBanner}
+            onEdit={handleEditBanner}
+            editingBanner={editingBanner}
+            setEditingBanner={setEditingBanner}
+            handleUpdateBanner={handleUpdateBanner}
+          />
+        </div>
 
-        <BannerForm
-          newBanner={newBanner}
-          setNewBanner={setNewBanner}
-          bannerUpload={bannerUpload}
-          setBannerUpload={setBannerUpload}
-          handleAddBanner={handleAddBanner}
-          uploading={uploading}
-          uploadError={uploadError}
-        />
+        <div className="flex-shrink-0">
+          <BannerForm
+            newBanner={newBanner}
+            setNewBanner={setNewBanner}
+            bannerUpload={bannerUpload}
+            setBannerUpload={setBannerUpload}
+            handleAddBanner={handleAddBanner}
+            uploading={uploading}
+            uploadError={uploadError}
+          />
+        </div>
       </div>
     </div>
   );
