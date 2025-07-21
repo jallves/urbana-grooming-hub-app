@@ -62,10 +62,15 @@ const EnhancedFinanceReports: React.FC = () => {
 
       if (cfError) throw cfError;
 
-      // Buscar comissões
+      // Buscar comissões com join correto para staff
       const { data: commissions, error: commError } = await supabase
         .from('barber_commissions')
-        .select('*, staff:staff_id(name)')
+        .select(`
+          *,
+          staff:staff_id (
+            name
+          )
+        `)
         .gte('created_at', `${startDate}T00:00:00`)
         .lte('created_at', `${endDate}T23:59:59`);
 
@@ -165,9 +170,9 @@ const EnhancedFinanceReports: React.FC = () => {
     saldo: data.income - data.expense,
   }));
 
-  // Análise de comissões por barbeiro
+  // Análise de comissões por barbeiro - corrigindo o acesso ao nome
   const barberCommissions = financialData?.commissions?.reduce((acc, commission) => {
-    const barberName = commission.staff?.name || 'Barbeiro';
+    const barberName = (commission.staff as any)?.name || 'Barbeiro';
     if (!acc[barberName]) {
       acc[barberName] = { total: 0, count: 0 };
     }

@@ -47,7 +47,14 @@ const CashRegister: React.FC = () => {
         console.error('Error fetching cash register session:', error);
         throw error;
       }
-      return data;
+      
+      if (!data) return null;
+      
+      // Type assertion to ensure status is the correct type
+      return {
+        ...data,
+        status: data.status as 'open' | 'closed'
+      };
     },
     refetchInterval: 30000, // Atualiza a cada 30 segundos
   });
