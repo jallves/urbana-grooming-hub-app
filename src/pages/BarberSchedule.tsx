@@ -24,8 +24,10 @@ const BarberSchedule: React.FC = () => {
 
   return (
     <BarberLayout title="Minha Agenda">
-      <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm">
-        <BarberScheduleView />
+      <div className="w-full h-full bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm">
+        <div className="p-4 sm:p-6 w-full h-full">
+          <BarberScheduleView />
+        </div>
       </div>
     </BarberLayout>
   );
