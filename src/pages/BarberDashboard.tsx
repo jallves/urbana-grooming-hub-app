@@ -88,64 +88,66 @@ const BarberDashboard: React.FC = () => {
 
   return (
     <BarberLayout title="Dashboard">
-      <div className="space-y-4 sm:space-y-6 lg:space-y-8 max-w-full overflow-hidden">
-        {/* Welcome Section - Responsivo */}
-        <div className="text-center mb-4 sm:mb-6 lg:mb-8 px-2">
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2">
-            Bem-vindo, {user?.email?.split('@')[0]}
-          </h2>
-          <p className="text-sm sm:text-base text-gray-400">Gerencie seu trabalho com excelência profissional</p>
-        </div>
+      <div className="w-full h-full min-h-screen bg-gray-900">
+        <div className="w-full space-y-6 p-6">
+          {/* Welcome Section */}
+          <div className="w-full text-center mb-8">
+            <h2 className="text-3xl font-bold text-white mb-2">
+              Bem-vindo, {user?.email?.split('@')[0]}
+            </h2>
+            <p className="text-base text-gray-400">Gerencie seu trabalho com excelência profissional</p>
+          </div>
 
-        {/* Stats Cards - Grid responsivo */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {statsCards.map((stat, index) => (
-            <Card key={index} className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/70 transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-                <CardTitle className="text-xs sm:text-sm font-medium text-gray-300 leading-tight">
-                  {stat.title}
-                </CardTitle>
-                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
-                  <stat.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${stat.color}`} />
-                </div>
-              </CardHeader>
-              <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-                <div className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1">
-                  {stat.value}
-                </div>
-                <p className="text-xs text-gray-400">{stat.subtitle}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+          {/* Stats Cards - Grid responsivo sem limitação de largura */}
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {statsCards.map((stat, index) => (
+              <Card key={index} className="w-full bg-gray-800/50 border-gray-700/50 backdrop-blur-sm hover:bg-gray-800/70 transition-all duration-300">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-6">
+                  <CardTitle className="text-sm font-medium text-gray-300">
+                    {stat.title}
+                  </CardTitle>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
+                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                </CardHeader>
+                <CardContent className="px-6 pb-6">
+                  <div className="text-2xl font-bold text-white mb-1">
+                    {stat.value}
+                  </div>
+                  <p className="text-xs text-gray-400">{stat.subtitle}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        {/* Quick Access Cards - Grid responsivo */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
-          {quickAccessItems.map((item, index) => (
-            <Card 
-              key={index}
-              className="bg-gray-800/30 border-gray-700/50 backdrop-blur-sm cursor-pointer transition-all duration-300 hover:bg-gray-800/50 hover:border-urbana-gold/30 hover:shadow-lg hover:shadow-urbana-gold/5 group"
-              onClick={() => navigate(item.path)}
-            >
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${item.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <item.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${item.color}`} />
+          {/* Quick Access Cards - Grid responsivo sem limitação de largura */}
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6">
+            {quickAccessItems.map((item, index) => (
+              <Card 
+                key={index}
+                className="w-full bg-gray-800/30 border-gray-700/50 backdrop-blur-sm cursor-pointer transition-all duration-300 hover:bg-gray-800/50 hover:border-urbana-gold/30 hover:shadow-lg hover:shadow-urbana-gold/5 group"
+                onClick={() => navigate(item.path)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${item.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                      <item.icon className={`h-6 w-6 ${item.color}`} />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`text-lg font-bold ${item.color}`}>
+                        {item.stats}
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-urbana-gold group-hover:translate-x-1 transition-all duration-300" />
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`text-sm sm:text-lg font-bold ${item.color}`}>
-                      {item.stats}
-                    </span>
-                    <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-urbana-gold group-hover:translate-x-1 transition-all duration-300" />
-                  </div>
-                </div>
-                <h3 className="font-bold text-white text-base sm:text-lg mb-1 sm:mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">{item.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+                  <h3 className="font-bold text-white text-lg mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </BarberLayout>
