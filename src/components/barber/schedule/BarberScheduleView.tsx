@@ -63,17 +63,17 @@ const BarberScheduleView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex-1 flex justify-center items-center">
         <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full">
-      <div className="space-y-4 sm:space-y-6">
+    <div className="flex-1 flex flex-col h-full min-h-0">
+      <div className="flex-1 flex flex-col space-y-4 sm:space-y-6">
         {/* Header com navegação */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex-shrink-0 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-urbana-gold" />
             <h2 className="text-lg sm:text-xl font-bold text-white">
@@ -112,78 +112,82 @@ const BarberScheduleView: React.FC = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4">
-          {weekDays.map((day) => {
-            const dayKey = format(day, 'yyyy-MM-dd');
-            const dayAppointments = appointmentsByDay[dayKey] || [];
-            const isCurrentDay = isToday(day);
+        <div className="flex-1 min-h-0 overflow-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4 min-h-full">
+            {weekDays.map((day) => {
+              const dayKey = format(day, 'yyyy-MM-dd');
+              const dayAppointments = appointmentsByDay[dayKey] || [];
+              const isCurrentDay = isToday(day);
 
-            return (
-              <Card 
-                key={dayKey} 
-                className={`bg-gray-800/30 border-gray-700/50 hover:bg-gray-800/50 transition-all duration-200 w-full ${
-                  isCurrentDay ? 'ring-2 ring-urbana-gold/50' : ''
-                }`}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    <div className="flex items-center justify-between">
-                      <span className={`${isCurrentDay ? 'text-urbana-gold' : 'text-white'}`}>
-                        {format(day, 'EEE', { locale: ptBR })}
-                      </span>
-                      <span className={`text-xs ${isCurrentDay ? 'text-urbana-gold' : 'text-gray-400'}`}>
-                        {format(day, 'dd')}
-                      </span>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                
-                <CardContent className="space-y-2">
-                  {dayAppointments.length === 0 ? (
-                    <p className="text-xs text-gray-500 text-center py-2">
-                      Sem agendamentos
-                    </p>
-                  ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {dayAppointments.map((appointment) => (
-                        <div
-                          key={appointment.id}
-                          className="bg-gray-700/30 rounded-lg p-2 space-y-1"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-white flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-urbana-gold" />
-                              {appointment.hora}
-                            </span>
-                            <Badge className={`text-xs ${getStatusColor(appointment.status)}`}>
-                              {appointment.status}
-                            </Badge>
+              return (
+                <Card 
+                  key={dayKey} 
+                  className={`bg-gray-800/30 border-gray-700/50 hover:bg-gray-800/50 transition-all duration-200 flex flex-col min-h-[300px] ${
+                    isCurrentDay ? 'ring-2 ring-urbana-gold/50' : ''
+                  }`}
+                >
+                  <CardHeader className="pb-2 flex-shrink-0">
+                    <CardTitle className="text-sm font-medium">
+                      <div className="flex items-center justify-between">
+                        <span className={`${isCurrentDay ? 'text-urbana-gold' : 'text-white'}`}>
+                          {format(day, 'EEE', { locale: ptBR })}
+                        </span>
+                        <span className={`text-xs ${isCurrentDay ? 'text-urbana-gold' : 'text-gray-400'}`}>
+                          {format(day, 'dd')}
+                        </span>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  
+                  <CardContent className="flex-1 flex flex-col space-y-2">
+                    {dayAppointments.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center">
+                        <p className="text-xs text-gray-500 text-center">
+                          Sem agendamentos
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 flex-1 overflow-y-auto">
+                        {dayAppointments.map((appointment) => (
+                          <div
+                            key={appointment.id}
+                            className="bg-gray-700/30 rounded-lg p-2 space-y-1 flex-shrink-0"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-white flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-urbana-gold" />
+                                {appointment.hora}
+                              </span>
+                              <Badge className={`text-xs ${getStatusColor(appointment.status)}`}>
+                                {appointment.status}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <p className="text-xs text-gray-300 flex items-center gap-1">
+                                <User className="w-3 h-3 text-blue-400" />
+                                {appointment.painel_clientes?.nome || 'Cliente não encontrado'}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate">
+                                {appointment.painel_servicos?.nome || 'Serviço não encontrado'}
+                              </p>
+                              <p className="text-xs text-urbana-gold font-medium">
+                                R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
+                              </p>
+                            </div>
                           </div>
-                          
-                          <div className="space-y-1">
-                            <p className="text-xs text-gray-300 flex items-center gap-1">
-                              <User className="w-3 h-3 text-blue-400" />
-                              {appointment.painel_clientes?.nome || 'Cliente não encontrado'}
-                            </p>
-                            <p className="text-xs text-gray-400 truncate">
-                              {appointment.painel_servicos?.nome || 'Serviço não encontrado'}
-                            </p>
-                            <p className="text-xs text-urbana-gold font-medium">
-                              R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
 
         {/* Resumo da semana - Mobile */}
-        <div className="sm:hidden w-full">
+        <div className="sm:hidden flex-shrink-0">
           <Card className="bg-gray-800/30 border-gray-700/50">
             <CardHeader>
               <CardTitle className="text-sm text-white">Resumo da Semana</CardTitle>

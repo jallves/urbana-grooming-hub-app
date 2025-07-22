@@ -15,8 +15,10 @@ const BarberSchedule: React.FC = () => {
   if (!barber) {
     return (
       <BarberLayout title="Minha Agenda">
-        <div className="text-center py-12">
-          <div className="text-red-400">Acesso negado</div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center py-12">
+            <div className="text-red-400">Acesso negado</div>
+          </div>
         </div>
       </BarberLayout>
     );
@@ -24,8 +26,8 @@ const BarberSchedule: React.FC = () => {
 
   return (
     <BarberLayout title="Minha Agenda">
-      <div className="w-full h-full bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm">
-        <div className="p-4 sm:p-6 w-full h-full">
+      <div className="flex-1 flex flex-col h-full min-h-0 bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm">
+        <div className="flex-1 flex flex-col p-4 sm:p-6 min-h-0">
           <BarberScheduleView />
         </div>
       </div>
