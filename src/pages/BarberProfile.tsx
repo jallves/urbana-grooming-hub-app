@@ -1,4 +1,3 @@
-
 import React from 'react';
 import BarberLayout from '@/components/barber/BarberLayout';
 import BarberProfileForm from '@/components/barber/BarberProfileForm';
@@ -15,8 +14,10 @@ const BarberProfile: React.FC = () => {
   if (!barber) {
     return (
       <BarberLayout title="Meu Perfil">
-        <div className="text-center py-12">
-          <div className="text-red-400">Acesso negado</div>
+        <div className="w-full h-full min-h-screen bg-gray-900 flex items-center justify-center p-6">
+          <div className="text-center py-12">
+            <div className="text-red-400 text-lg font-semibold">Acesso negado</div>
+          </div>
         </div>
       </BarberLayout>
     );
@@ -24,8 +25,12 @@ const BarberProfile: React.FC = () => {
 
   return (
     <BarberLayout title="Meu Perfil">
-      <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm p-6">
-        <BarberProfileForm />
+      <div className="w-full h-full min-h-screen bg-gray-900">
+        <div className="w-full space-y-6 p-6">
+          <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm p-6">
+            <BarberProfileForm />
+          </div>
+        </div>
       </div>
     </BarberLayout>
   );
