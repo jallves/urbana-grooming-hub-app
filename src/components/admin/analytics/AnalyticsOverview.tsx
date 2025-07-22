@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, Users, Calendar, DollarSign, Target, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -8,14 +8,23 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const AnalyticsOverview: React.FC = () => {
-  const { data: kpis, isLoading } = useQuery({
-    queryKey: ['analytics-overview'],
-    queryFn: async () => {
-      const today = new Date();
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+  const queryDates = useMemo(() => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    
+    return {
+      today: today.toISOString().split('T')[0],
+      firstDayOfMonth: firstDayOfMonth.toISOString().split('T')[0],
+      lastMonth: lastMonth.toISOString().split('T')[0],
+      lastMonthEnd: lastMonthEnd.toISOString().split('T')[0]
+    };
+  }, []);
 
+  const { data: kpis, isLoading } = useQuery({
+    queryKey: ['analytics-overview', queryDates],
+    queryFn: async () => {
       // Buscar dados do painel de agendamentos do mês atual
       const { data: currentAppointments } = await supabase
         .from('painel_agendamentos')
@@ -24,8 +33,8 @@ const AnalyticsOverview: React.FC = () => {
           painel_servicos(preco),
           painel_clientes(nome)
         `)
-        .gte('data', firstDayOfMonth.toISOString().split('T')[0])
-        .lte('data', today.toISOString().split('T')[0]);
+        .gte('data', queryDates.firstDayOfMonth)
+        .lte('data', queryDates.today);
 
       // Buscar dados do mês anterior
       const { data: lastMonthAppointments } = await supabase
@@ -34,8 +43,8 @@ const AnalyticsOverview: React.FC = () => {
           *,
           painel_servicos(preco)
         `)
-        .gte('data', lastMonth.toISOString().split('T')[0])
-        .lte('data', lastMonthEnd.toISOString().split('T')[0]);
+        .gte('data', queryDates.lastMonth)
+        .lte('data', queryDates.lastMonthEnd);
 
       // Buscar clientes do painel
       const { data: clients } = await supabase
@@ -46,8 +55,8 @@ const AnalyticsOverview: React.FC = () => {
       const { data: cashFlow } = await supabase
         .from('cash_flow')
         .select('*')
-        .gte('transaction_date', firstDayOfMonth.toISOString().split('T')[0])
-        .lte('transaction_date', today.toISOString().split('T')[0]);
+        .gte('transaction_date', queryDates.firstDayOfMonth)
+        .lte('transaction_date', queryDates.today);
 
       // Calcular métricas
       const currentRevenue = currentAppointments?.reduce((sum, apt) => 
@@ -63,8 +72,11 @@ const AnalyticsOverview: React.FC = () => {
       const totalAppointments = currentAppointments?.length || 0;
       const conversionRate = totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0;
 
-      const newClientsThisMonth = clients?.filter(client => 
-        new Date(client.created_at) >= firstDayOfMonth).length || 0;
+      const newClientsThisMonth = clients?.filter(client => {
+        const clientDate = new Date(client.created_at);
+        const firstDay = new Date(queryDates.firstDayOfMonth);
+        return clientDate >= firstDay;
+      }).length || 0;
 
       // Calcular receita do cash flow
       const cashFlowRevenue = cashFlow?.reduce((sum, transaction) => 
@@ -82,10 +94,12 @@ const AnalyticsOverview: React.FC = () => {
         totalClients: clients?.length || 0,
         cashFlowRevenue
       };
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 1000 * 60 * 5 // 5 minutes
   });
 
-  const kpiCards = [
+  const kpiCards = useMemo(() => [
     {
       title: 'Receita Mensal',
       value: `R$ ${kpis?.revenue?.toLocaleString('pt-BR') || '0'}`,
@@ -118,9 +132,9 @@ const AnalyticsOverview: React.FC = () => {
       icon: Users,
       color: 'from-orange-500 to-red-600'
     }
-  ];
+  ], [kpis]);
 
-  const alerts = [
+  const alerts = useMemo(() => [
     {
       type: 'success',
       message: 'Receita em crescimento este mês',
@@ -131,7 +145,15 @@ const AnalyticsOverview: React.FC = () => {
       message: 'Acompanhe a taxa de conversão',
       icon: AlertCircle
     }
-  ];
+  ], []);
+
+  if (isLoading) {
+    return (
+      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
+        <p className="text-gray-400">Carregando métricas...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">

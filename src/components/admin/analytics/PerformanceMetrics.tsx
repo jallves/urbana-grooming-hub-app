@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +7,10 @@ import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadius
 import { Target, TrendingUp, Award, Zap } from 'lucide-react';
 
 const PerformanceMetrics: React.FC = () => {
+  const queryKey = useMemo(() => ['performance-metrics'], []);
+
   const { data: performanceData, isLoading } = useQuery({
-    queryKey: ['performance-metrics'],
+    queryKey,
     queryFn: async () => {
       // Buscar agendamentos do painel
       const { data: appointments } = await supabase
@@ -91,10 +93,12 @@ const PerformanceMetrics: React.FC = () => {
         staffData,
         performanceRadar
       };
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 1000 * 60 * 5 // 5 minutes
   });
 
-  const metrics = [
+  const metrics = useMemo(() => [
     {
       title: 'Eficiência Geral',
       value: `${performanceData?.efficiency?.toFixed(1) || '0'}%`,
@@ -119,7 +123,15 @@ const PerformanceMetrics: React.FC = () => {
       icon: Zap,
       color: 'text-yellow-400'
     }
-  ];
+  ], [performanceData]);
+
+  if (isLoading) {
+    return (
+      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
+        <p className="text-gray-400">Carregando métricas de performance...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">

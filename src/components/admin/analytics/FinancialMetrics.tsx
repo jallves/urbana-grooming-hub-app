@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +7,10 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
 
 const FinancialMetrics: React.FC = () => {
+  const queryKey = useMemo(() => ['financial-metrics'], []);
+
   const { data: financialData, isLoading } = useQuery({
-    queryKey: ['financial-metrics'],
+    queryKey,
     queryFn: async () => {
       // Buscar agendamentos do painel com serviços
       const { data: appointments } = await supabase
@@ -75,10 +77,12 @@ const FinancialMetrics: React.FC = () => {
         monthlyRevenue: monthlyRevenue.slice(-6), // Últimos 6 meses
         growth: 12.5 // Simulado
       };
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 1000 * 60 * 5 // 5 minutes
   });
 
-  const metrics = [
+  const metrics = useMemo(() => [
     {
       title: 'Receita Total',
       value: `R$ ${financialData?.totalRevenue?.toLocaleString('pt-BR') || '0'}`,
@@ -111,7 +115,15 @@ const FinancialMetrics: React.FC = () => {
       icon: Target,
       color: 'text-cyan-400'
     }
-  ];
+  ], [financialData]);
+
+  if (isLoading) {
+    return (
+      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
+        <p className="text-gray-400">Carregando métricas financeiras...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">

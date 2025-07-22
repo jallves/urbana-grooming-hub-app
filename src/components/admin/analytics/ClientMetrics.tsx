@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +7,10 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { Users, UserPlus, UserCheck, Star } from 'lucide-react';
 
 const ClientMetrics: React.FC = () => {
+  const queryKey = useMemo(() => ['client-metrics'], []);
+
   const { data: clientData, isLoading } = useQuery({
-    queryKey: ['client-metrics'],
+    queryKey,
     queryFn: async () => {
       // Buscar clientes do painel
       const { data: clients } = await supabase
@@ -72,10 +74,12 @@ const ClientMetrics: React.FC = () => {
         monthlyData,
         topClients
       };
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 1000 * 60 * 5 // 5 minutes
   });
 
-  const metrics = [
+  const metrics = useMemo(() => [
     {
       title: 'Total Clientes',
       value: clientData?.totalClients?.toString() || '0',
@@ -100,7 +104,15 @@ const ClientMetrics: React.FC = () => {
       icon: Star,
       color: 'text-yellow-400'
     }
-  ];
+  ], [clientData]);
+
+  if (isLoading) {
+    return (
+      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
+        <p className="text-gray-400">Carregando métricas de clientes...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">

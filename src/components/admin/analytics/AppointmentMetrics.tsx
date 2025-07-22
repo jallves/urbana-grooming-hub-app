@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,8 +9,10 @@ import { Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#6B7280'];
 
 const AppointmentMetrics: React.FC = () => {
+  const queryKey = useMemo(() => ['appointment-metrics'], []);
+
   const { data: appointmentData, isLoading } = useQuery({
-    queryKey: ['appointment-metrics'],
+    queryKey,
     queryFn: async () => {
       // Buscar agendamentos do painel
       const { data: appointments } = await supabase
@@ -74,10 +76,12 @@ const AppointmentMetrics: React.FC = () => {
         hourlyChart,
         staffData
       };
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchInterval: 1000 * 60 * 5 // 5 minutes
   });
 
-  const metrics = [
+  const metrics = useMemo(() => [
     {
       title: 'Total Agendamentos',
       value: appointmentData?.totalAppointments?.toString() || '0',
@@ -102,7 +106,15 @@ const AppointmentMetrics: React.FC = () => {
       icon: Clock,
       color: 'text-purple-400'
     }
-  ];
+  ], [appointmentData]);
+
+  if (isLoading) {
+    return (
+      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
+        <p className="text-gray-400">Carregando métricas de agendamentos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">
@@ -149,7 +161,7 @@ const AppointmentMetrics: React.FC = () => {
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
                         {appointmentData?.statusData?.map((entry, index) => (
-                          <Cell key={index} fill={entry.color} />
+                          <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip />
