@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -196,7 +195,7 @@ const BarberCommissions: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="w-full h-full flex justify-center items-center min-h-[50vh]">
         <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -230,173 +229,181 @@ const BarberCommissions: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {summaryCards.map((card, index) => (
-          <Card key={index} className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm transition-none">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-300">{card.title}</CardTitle>
-              <card.icon className={`h-4 w-4 ${card.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg sm:text-xl font-bold text-white truncate">
-                {card.value}
+    <div className="w-full h-full min-h-screen flex flex-col">
+      <div className="w-full flex-1 space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
+        {/* Summary Cards - Totalmente Responsivo */}
+        <div className="w-full grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {summaryCards.map((card, index) => (
+            <Card key={index} className="w-full bg-gray-800/50 border-gray-700/50 backdrop-blur-sm transition-none">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-3 sm:p-4 pb-2">
+                <CardTitle className="text-xs sm:text-sm font-medium text-gray-300 truncate pr-2">{card.title}</CardTitle>
+                <card.icon className={`h-4 w-4 flex-shrink-0 ${card.color}`} />
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <div className="text-sm sm:text-lg lg:text-xl font-bold text-white truncate">
+                  {card.value}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Histórico de Comissões - Totalmente Responsivo */}
+        <Card className="w-full bg-gray-800/50 border-gray-700/50 backdrop-blur-sm transition-none">
+          <CardHeader className="p-3 sm:p-4 lg:p-6">
+            <CardTitle className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-urbana-gold flex-shrink-0" />
+              <span className="truncate">Histórico de Comissões</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+            {commissions.length === 0 ? (
+              <div className="w-full text-center py-8 sm:py-12">
+                <DollarSign className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Nenhuma comissão encontrada</h3>
+                <p className="text-sm sm:text-base text-gray-400">
+                  As comissões aparecerão aqui conforme você concluir atendimentos
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card className="bg-gray-800/50 border-gray-700/50 backdrop-blur-sm transition-none">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-urbana-gold" />
-            Histórico de Comissões
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {commissions.length === 0 ? (
-            <div className="text-center py-12">
-              <DollarSign className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Nenhuma comissão encontrada</h3>
-              <p className="text-gray-400">
-                As comissões aparecerão aqui conforme você concluir atendimentos
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Mobile View */}
-              <div className="lg:hidden space-y-4">
-                {commissions.map((commission) => (
-                  <Card key={`${commission.source}-${commission.id}`} className="bg-gray-700/50 border-gray-600/50 transition-none">
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium text-white">
-                              {commission.appointment_details?.client_name || 'Cliente'}
-                            </h4>
-                            <p className="text-sm text-gray-400">
-                              {commission.appointment_details?.service_name || 'Serviço'}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Origem: {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
-                            </p>
+            ) : (
+              <div className="w-full space-y-4">
+                {/* Mobile View - Cards Responsivos */}
+                <div className="w-full lg:hidden space-y-3 sm:space-y-4">
+                  {commissions.map((commission) => (
+                    <Card key={`${commission.source}-${commission.id}`} className="w-full bg-gray-700/50 border-gray-600/50 transition-none">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-white text-sm sm:text-base truncate">
+                                {commission.appointment_details?.client_name || 'Cliente'}
+                              </h4>
+                              <p className="text-xs sm:text-sm text-gray-400 truncate">
+                                {commission.appointment_details?.service_name || 'Serviço'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Origem: {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
+                              </p>
+                            </div>
+                            <div className="flex-shrink-0">
+                              {getStatusBadge(commission.status)}
+                            </div>
                           </div>
-                          {getStatusBadge(commission.status)}
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-400">Data</p>
-                            <p className="text-white">
+                          <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                            <div>
+                              <p className="text-gray-400">Data</p>
+                              <p className="text-white truncate">
+                                {commission.appointment_details?.appointment_date
+                                  ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
+                                  : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400">Horário</p>
+                              <p className="text-white">
+                                {commission.appointment_details?.appointment_time || '--:--'}
+                              </p>
+                            </div>
+                            {commission.commission_rate && (
+                              <div>
+                                <p className="text-gray-400">Taxa</p>
+                                <p className="text-urbana-gold">{commission.commission_rate}%</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-gray-400">Valor Serviço</p>
+                              <p className="text-white truncate">
+                                R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="pt-2 border-t border-gray-600/50">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-400">Comissão</span>
+                              <span className="text-base sm:text-lg font-bold text-urbana-gold">
+                                R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          </div>
+
+                          {(commission.payment_date || commission.paid_at) && (
+                            <div className="text-xs text-gray-400">
+                              Pago em: {format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Desktop View - Tabela Responsiva */}
+                <div className="w-full hidden lg:block">
+                  <div className="w-full overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-gray-700/50 transition-none">
+                          <TableHead className="text-gray-300 whitespace-nowrap">Data</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Cliente</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Serviço</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Valor do Serviço</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Taxa</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Comissão</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Status</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Pagamento</TableHead>
+                          <TableHead className="text-gray-300 whitespace-nowrap">Origem</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {commissions.map((commission) => (
+                          <TableRow key={`${commission.source}-${commission.id}`} className="border-gray-700/50 transition-none">
+                            <TableCell className="text-gray-300 whitespace-nowrap">
                               {commission.appointment_details?.appointment_date
                                 ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
                                 : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
                               }
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400">Horário</p>
-                            <p className="text-white">
-                              {commission.appointment_details?.appointment_time || '--:--'}
-                            </p>
-                          </div>
-                          {commission.commission_rate && (
-                            <div>
-                              <p className="text-gray-400">Taxa</p>
-                              <p className="text-urbana-gold">{commission.commission_rate}%</p>
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-gray-400">Valor Serviço</p>
-                            <p className="text-white">
+                            </TableCell>
+                            <TableCell className="text-white font-medium">
+                              {commission.appointment_details?.client_name || 'Cliente'}
+                            </TableCell>
+                            <TableCell className="text-gray-300">
+                              {commission.appointment_details?.service_name || 'Serviço'}
+                            </TableCell>
+                            <TableCell className="text-gray-300 whitespace-nowrap">
                               R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-gray-600/50">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-gray-400">Comissão</span>
-                            <span className="text-lg font-bold text-urbana-gold">
+                            </TableCell>
+                            <TableCell className="text-urbana-gold whitespace-nowrap">
+                              {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
+                            </TableCell>
+                            <TableCell className="font-bold text-urbana-gold whitespace-nowrap">
                               R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        </div>
-
-                        {(commission.payment_date || commission.paid_at) && (
-                          <div className="text-xs text-gray-400">
-                            Pago em: {format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })}
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(commission.status)}
+                            </TableCell>
+                            <TableCell className="text-gray-300 whitespace-nowrap">
+                              {(commission.payment_date || commission.paid_at)
+                                ? format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
+                                : '-'
+                              }
+                            </TableCell>
+                            <TableCell className="text-gray-400 text-xs whitespace-nowrap">
+                              {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
-
-              {/* Desktop View */}
-              <div className="hidden lg:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-700/50 transition-none">
-                      <TableHead className="text-gray-300">Data</TableHead>
-                      <TableHead className="text-gray-300">Cliente</TableHead>
-                      <TableHead className="text-gray-300">Serviço</TableHead>
-                      <TableHead className="text-gray-300">Valor do Serviço</TableHead>
-                      <TableHead className="text-gray-300">Taxa</TableHead>
-                      <TableHead className="text-gray-300">Comissão</TableHead>
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Pagamento</TableHead>
-                      <TableHead className="text-gray-300">Origem</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {commissions.map((commission) => (
-                      <TableRow key={`${commission.source}-${commission.id}`} className="border-gray-700/50 transition-none">
-                        <TableCell className="text-gray-300">
-                          {commission.appointment_details?.appointment_date
-                            ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
-                            : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
-                          }
-                        </TableCell>
-                        <TableCell className="text-white font-medium">
-                          {commission.appointment_details?.client_name || 'Cliente'}
-                        </TableCell>
-                        <TableCell className="text-gray-300">
-                          {commission.appointment_details?.service_name || 'Serviço'}
-                        </TableCell>
-                        <TableCell className="text-gray-300">
-                          R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="text-urbana-gold">
-                          {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
-                        </TableCell>
-                        <TableCell className="font-bold text-urbana-gold">
-                          R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(commission.status)}
-                        </TableCell>
-                        <TableCell className="text-gray-300">
-                          {(commission.payment_date || commission.paid_at)
-                            ? format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
-                            : '-'
-                          }
-                        </TableCell>
-                        <TableCell className="text-gray-400 text-xs">
-                          {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
