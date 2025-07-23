@@ -23,9 +23,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isBarber, setIsBarber] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   
-  // Use refs to prevent infinite loops
-  const hasCheckedRoles = useRef<boolean>(false);
-  const lastCheckedUserId = useRef<string | null>(null);
+  // Use ref to track if roles have been checked to prevent infinite loops
+  const rolesChecked = useRef<boolean>(false);
+  const currentUserId = useRef<string | null>(null);
 
   const signOut = useCallback(async () => {
     console.log('Starting logout process');
@@ -35,8 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsBarber(false);
       setUser(null);
       setSession(null);
-      hasCheckedRoles.current = false;
-      lastCheckedUserId.current = null;
+      rolesChecked.current = false;
+      currentUserId.current = null;
       
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
@@ -54,17 +54,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Stabilized role checking function
+  // Memoized role checking function
   const checkUserRoles = useCallback(async (userId: string) => {
     // Prevent duplicate checks for the same user
-    if (hasCheckedRoles.current && lastCheckedUserId.current === userId) {
+    if (rolesChecked.current && currentUserId.current === userId) {
       console.log('Roles already checked for user:', userId);
       return;
     }
     
     console.log('Checking roles for user:', userId);
-    hasCheckedRoles.current = true;
-    lastCheckedUserId.current = userId;
+    rolesChecked.current = true;
+    currentUserId.current = userId;
     
     try {
       const { data: roles, error } = await supabase
@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAdmin(false);
       setIsBarber(false);
     }
-  }, []); // Empty dependency array since we use refs
+  }, []);
 
   // Initialize auth and set up listener
   useEffect(() => {
@@ -115,13 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Reset role check flags when session changes
         if (!initialSession?.user) {
-          hasCheckedRoles.current = false;
-          lastCheckedUserId.current = null;
+          rolesChecked.current = false;
+          currentUserId.current = null;
           setIsAdmin(false);
           setIsBarber(false);
-        } else if (lastCheckedUserId.current !== initialSession.user.id) {
-          hasCheckedRoles.current = false;
-          lastCheckedUserId.current = null;
         }
         
         setLoading(false);
@@ -140,13 +137,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               // Clear roles on sign out
               setIsAdmin(false);
               setIsBarber(false);
-              hasCheckedRoles.current = false;
-              lastCheckedUserId.current = null;
+              rolesChecked.current = false;
+              currentUserId.current = null;
             } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
               // Reset roles check for new session
-              if (lastCheckedUserId.current !== newSession.user.id) {
-                hasCheckedRoles.current = false;
-                lastCheckedUserId.current = null;
+              if (currentUserId.current !== newSession.user.id) {
+                rolesChecked.current = false;
+                currentUserId.current = null;
               }
             }
             
@@ -171,11 +168,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array
+  }, []);
 
   // Check roles when user changes (but only once per user)
   useEffect(() => {
-    if (user?.id && !loading && !hasCheckedRoles.current) {
+    if (user?.id && !loading && !rolesChecked.current) {
       console.log('Triggering role check for user:', user.email);
       checkUserRoles(user.id);
     }
