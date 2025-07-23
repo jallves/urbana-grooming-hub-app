@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,33 +12,19 @@ import { Home, Scissors } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [redirectTimer, setRedirectTimer] = useState(10);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
 
-  const from = location.state?.from || "/";
+  const from = location.state?.from || "/admin";
 
+  // Só redireciona se o usuário está tentando acessar uma rota protegida
   useEffect(() => {
-    if (!user && !authLoading && redirectTimer > 0) {
-      const timer = setTimeout(() => setRedirectTimer(prev => prev - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (!user && !authLoading && redirectTimer === 0) {
-      navigate('/');
+    if (!authLoading && user && isAdmin && location.state?.from) {
+      navigate(from, { replace: true });
     }
-  }, [redirectTimer, user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (!authLoading && user) {
-      const redirectPath = from.startsWith('/admin') && isAdmin
-        ? from
-        : isAdmin
-          ? '/admin'
-          : '/';
-      navigate(redirectPath, { replace: true });
-    }
-  }, [user, isAdmin, navigate, authLoading, from]);
+  }, [user, isAdmin, navigate, authLoading, from, location.state]);
 
   useEffect(() => {
     const createAdminUser = async () => {
@@ -123,21 +110,6 @@ const Auth: React.FC = () => {
             <RegisterForm loading={loading} setLoading={setLoading} />
           </TabsContent>
         </Tabs>
-
-        {/* Redirect notice */}
-        {!user && redirectTimer > 0 && (
-          <div className="bg-yellow-900/10 border border-yellow-700/40 text-yellow-300 rounded-md p-3 text-sm">
-            Redirecionando em <strong>{redirectTimer}</strong> segundos...
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/')}
-              className="mt-3 border-yellow-500 text-yellow-300 hover:bg-yellow-800/30"
-            >
-              Ir agora
-            </Button>
-          </div>
-        )}
 
         {/* Back button */}
         <Button

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,11 +32,6 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   }
 
   if (!user) {
-    toast({
-      title: 'Acesso Restrito',
-      description: 'Você precisa estar logado para acessar esta página',
-      variant: 'destructive',
-    });
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
