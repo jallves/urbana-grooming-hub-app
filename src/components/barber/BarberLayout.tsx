@@ -114,7 +114,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 group ${
                     active
                       ? 'bg-urbana-gold text-black shadow-lg font-medium'
-                      : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                      : 'text-gray-300'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -143,7 +143,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="w-full border-gray-600 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-gray-500"
+              className="w-full border-gray-600 text-gray-300"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sair
@@ -180,7 +180,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
             variant="ghost"
             size="icon"
             onClick={() => setSidebarOpen(false)}
-            className="text-gray-400 hover:text-white hover:bg-gray-700/50"
+            className="text-gray-400 hover:text-white"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -201,7 +201,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
                   active
                     ? 'bg-urbana-gold text-black shadow-lg font-medium'
-                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                    : 'text-gray-300'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -216,7 +216,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
             onClick={handleLogout}
             variant="outline"
             size="sm"
-            className="w-full border-gray-600 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-gray-500"
+            className="w-full border-gray-600 text-gray-300"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Sair
@@ -227,29 +227,29 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       {/* Main Content Area */}
       <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
         {/* Top Header Bar */}
-        <header className="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700/50 h-14 sm:h-16 px-3 sm:px-4 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center space-x-3 sm:space-x-4">
+        <header className="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700/50 h-12 sm:h-14 lg:h-16 px-2 sm:px-3 lg:px-4 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-400 hover:text-white hover:bg-gray-700/50 w-8 h-8 sm:w-9 sm:h-9"
+              className="lg:hidden text-gray-400 hover:text-white w-8 h-8"
             >
-              <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Menu className="w-4 h-4" />
             </Button>
             
             <div>
-              <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white">
+              <h1 className="text-sm sm:text-base lg:text-lg font-bold text-white">
                 {title || getCurrentModuleName()}
               </h1>
               <p className="text-xs text-gray-400 hidden sm:block">Costa Urbana Barbearia</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 sm:space-x-4">
-            <div className="hidden sm:flex items-center space-x-3">
-              <Avatar className="w-7 h-7 sm:w-8 sm:h-8">
-                <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-xs sm:text-sm">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="hidden sm:flex items-center space-x-2 sm:space-x-3">
+              <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
+                <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-xs">
                   {user?.email?.charAt(0).toUpperCase() || 'B'}
                 </AvatarFallback>
               </Avatar>
@@ -263,8 +263,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-3 sm:p-4 lg:p-6 bg-gray-900 overflow-auto">
-          <div className="max-w-full mx-auto">
+        <main className="flex-1 bg-gray-900 overflow-auto">
+          <div className="w-full h-full">
             {children}
           </div>
         </main>
