@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -36,17 +36,26 @@ const BarberCommissions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [staffId, setStaffId] = useState<string | null>(null);
 
-  const totalPending = commissions
-    .filter(c => c.status === 'pending')
-    .reduce((sum, c) => sum + c.amount, 0);
+  // Memoize calculations to prevent unnecessary re-renders
+  const { totalPending, totalPaid } = useMemo(() => {
+    const pending = commissions
+      .filter(c => c.status === 'pending')
+      .reduce((sum, c) => sum + c.amount, 0);
+    
+    const paid = commissions
+      .filter(c => c.status === 'paid')
+      .reduce((sum, c) => sum + c.amount, 0);
+    
+    return { totalPending: pending, totalPaid: paid };
+  }, [commissions]);
 
-  const totalPaid = commissions
-    .filter(c => c.status === 'paid')
-    .reduce((sum, c) => sum + c.amount, 0);
-
+  // Fetch staff ID only once when user email changes
   useEffect(() => {
     const fetchStaffId = async () => {
-      if (!user?.email) return;
+      if (!user?.email) {
+        setStaffId(null);
+        return;
+      }
 
       try {
         const { data: barberData } = await supabase
@@ -57,18 +66,26 @@ const BarberCommissions: React.FC = () => {
 
         if (barberData?.staff_id) {
           setStaffId(barberData.staff_id);
+        } else {
+          setStaffId(null);
         }
       } catch (error) {
         console.error('Error fetching staff ID:', error);
+        setStaffId(null);
       }
     };
 
     fetchStaffId();
-  }, [user?.email]);
+  }, [user?.email]); // Only depend on user email
 
+  // Fetch commissions only when staffId changes
   useEffect(() => {
     const fetchCommissions = async () => {
-      if (!staffId) return;
+      if (!staffId) {
+        setCommissions([]);
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
       try {
@@ -165,7 +182,7 @@ const BarberCommissions: React.FC = () => {
     };
 
     fetchCommissions();
-  }, [staffId, toast]);
+  }, [staffId, toast]); // Only depend on staffId and toast
 
   const getStatusBadge = (status: string) => {
     switch (status) {
