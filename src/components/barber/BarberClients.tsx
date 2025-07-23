@@ -1,306 +1,283 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Users, Search, Phone, Mail, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Users, Search, Phone, Mail, Calendar, UserPlus } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import StandardCard from './layouts/StandardCard';
 
 interface Client {
   id: string;
   nome: string;
-  email: string | null;
+  email: string;
   whatsapp: string;
-  data_nascimento: string | null;
+  data_nascimento?: string;
   created_at: string;
-  total_appointments?: number;
-  last_appointment?: string;
+}
+
+interface AppointmentHistory {
+  id: string;
+  data: string;
+  hora: string;
+  status: string;
+  servico_nome: string;
+  servico_preco: number;
 }
 
 const BarberClients: React.FC = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [appointmentHistory, setAppointmentHistory] = useState<{ [clientId: string]: AppointmentHistory[] }>({});
 
-  // Fetch clients
   useEffect(() => {
-    const fetchClients = async () => {
-      setLoading(true);
+    const fetchClientsAndHistory = async () => {
+      if (!user?.email) return;
+
       try {
-        // Buscar clientes do painel
-        const { data: painelClients, error: painelError } = await supabase
-          .from('painel_clientes')
-          .select('*')
-          .order('nome');
+        setLoading(true);
 
-        if (painelError) {
-          console.error('Error fetching painel clients:', painelError);
+        const { data: barberData, error: barberError } = await supabase
+          .from('painel_barbeiros')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+
+        if (barberError || !barberData) {
+          console.error('Erro ao buscar barbeiro:', barberError);
+          return;
         }
 
-        // Buscar clientes do sistema novo
-        const { data: newClients, error: newError } = await supabase
-          .from('clients')
-          .select('*')
-          .order('name');
+        const { data: appointmentsData, error: appointmentsError } = await supabase
+          .from('painel_agendamentos')
+          .select(`
+            *,
+            painel_clientes!inner(id, nome, email, whatsapp, birth_date, created_at),
+            painel_servicos!inner(nome, preco)
+          `)
+          .eq('barbeiro_id', barberData.id)
+          .order('data', { ascending: false });
 
-        if (newError) {
-          console.error('Error fetching new clients:', newError);
+        if (appointmentsError) {
+          console.error('Erro ao buscar agendamentos:', appointmentsError);
+          return;
         }
 
-        // Combinar e transformar dados
-        const allClients: Client[] = [];
+        const clientsMap = new Map<string, Client>();
+        const historyMap: { [clientId: string]: AppointmentHistory[] } = {};
 
-        // Adicionar clientes do painel
-        if (painelClients) {
-          painelClients.forEach(client => {
-            allClients.push({
-              id: `painel-${client.id}`,
+        appointmentsData?.forEach((appointment) => {
+          const client = appointment.painel_clientes;
+          const service = appointment.painel_servicos;
+
+          if (client && !clientsMap.has(client.id)) {
+            clientsMap.set(client.id, {
+              id: client.id,
               nome: client.nome,
               email: client.email,
               whatsapp: client.whatsapp,
-              data_nascimento: client.data_nascimento,
-              created_at: client.created_at
-            });
-          });
-        }
-
-        // Adicionar clientes do sistema novo
-        if (newClients) {
-          newClients.forEach(client => {
-            allClients.push({
-              id: `new-${client.id}`,
-              nome: client.name,
-              email: client.email,
-              whatsapp: client.phone,
               data_nascimento: client.birth_date,
               created_at: client.created_at
             });
-          });
-        }
+          }
 
-        setClients(allClients);
-        setFilteredClients(allClients);
-      } catch (error) {
-        console.error('Error fetching clients:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os clientes.",
-          variant: "destructive",
+          if (client && service) {
+            if (!historyMap[client.id]) {
+              historyMap[client.id] = [];
+            }
+
+            historyMap[client.id].push({
+              id: appointment.id,
+              data: appointment.data,
+              hora: appointment.hora,
+              status: appointment.status,
+              servico_nome: service.nome,
+              servico_preco: service.preco
+            });
+          }
         });
+
+        setClients(Array.from(clientsMap.values()));
+        setAppointmentHistory(historyMap);
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchClients();
-  }, [toast]);
+    fetchClientsAndHistory();
+  }, [user?.email]);
 
-  // Filter clients based on search term
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredClients(clients);
-      return;
-    }
-
-    const filtered = clients.filter(client =>
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => 
       client.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.whatsapp.includes(searchTerm)
     );
-    setFilteredClients(filtered);
-  }, [searchTerm, clients]);
+  }, [clients, searchTerm]);
 
-  const formatPhoneNumber = (phone: string) => {
-    // Remove tudo que não é número
-    const numbers = phone.replace(/\D/g, '');
+  const getStatusBadge = (status: string) => {
+    const configs = {
+      'confirmado': { label: 'Confirmado', className: 'bg-blue-500/20 text-blue-300' },
+      'concluido': { label: 'Concluído', className: 'bg-green-500/20 text-green-300' },
+      'cancelado': { label: 'Cancelado', className: 'bg-red-500/20 text-red-300' }
+    };
     
-    // Formata como (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
-    if (numbers.length === 11) {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
-    } else if (numbers.length === 10) {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
-    }
-    return phone;
+    const config = configs[status as keyof typeof configs] || configs.confirmado;
+    return <Badge className={`text-xs ${config.className}`}>{config.label}</Badge>;
   };
 
   if (loading) {
     return (
-      <div className="w-full h-full flex justify-center items-center min-h-[50vh]">
+      <div className="w-full h-full flex justify-center items-center min-h-screen">
         <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full min-h-screen flex flex-col">
-      <div className="w-full flex-1 space-y-4 sm:space-y-6 p-2 sm:p-4 lg:p-6">
-        {/* Header com Busca - Totalmente Responsivo */}
-        <div className="w-full space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="w-full h-full min-h-screen">
+      <div className="w-full space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
+        {/* Header */}
+        <StandardCard>
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-urbana-gold/10 rounded-lg flex-shrink-0">
-                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-urbana-gold" />
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500/10 to-blue-600/5 rounded-lg flex items-center justify-center">
+                <Users className="h-5 w-5 text-blue-400" />
               </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">Meus Clientes</h1>
-                <p className="text-xs sm:text-sm text-gray-400">
-                  {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''} encontrado{filteredClients.length !== 1 ? 's' : ''}
-                </p>
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-white">Meus Clientes</h2>
+                <p className="text-xs sm:text-sm text-gray-400">{clients.length} clientes atendidos</p>
+              </div>
+            </div>
+            
+            <div className="w-full sm:w-auto sm:min-w-[300px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder-gray-400"
+                />
               </div>
             </div>
           </div>
+        </StandardCard>
 
-          {/* Barra de Busca - Responsiva */}
-          <div className="w-full max-w-md">
-            <div className="relative">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <Input
-                placeholder="Buscar cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder:text-gray-400"
-              />
+        {/* Clients Grid */}
+        {filteredClients.length === 0 ? (
+          <StandardCard>
+            <div className="text-center py-8 sm:py-12">
+              <Users className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                {clients.length === 0 ? 'Nenhum cliente encontrado' : 'Nenhum resultado'}
+              </h3>
+              <p className="text-sm sm:text-base text-gray-400">
+                {clients.length === 0 
+                  ? 'Os clientes aparecerão aqui conforme você realizar atendimentos'
+                  : 'Tente ajustar sua busca'
+                }
+              </p>
             </div>
-          </div>
-        </div>
+          </StandardCard>
+        ) : (
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+            {filteredClients.map((client) => {
+              const history = appointmentHistory[client.id] || [];
+              const totalAppointments = history.length;
+              const completedAppointments = history.filter(h => h.status === 'concluido').length;
+              const totalSpent = history
+                .filter(h => h.status === 'concluido')
+                .reduce((sum, h) => sum + h.servico_preco, 0);
 
-        {/* Lista de Clientes - Totalmente Responsivo */}
-        <Card className="w-full bg-gray-800/50 border-gray-700/50 backdrop-blur-sm transition-none">
-          <CardHeader className="p-3 sm:p-4 lg:p-6">
-            <CardTitle className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <Users className="h-5 w-5 text-urbana-gold flex-shrink-0" />
-              <span className="truncate">Lista de Clientes</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-            {filteredClients.length === 0 ? (
-              <div className="w-full text-center py-8 sm:py-12">
-                <Users className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
-                  {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
-                </h3>
-                <p className="text-sm sm:text-base text-gray-400">
-                  {searchTerm 
-                    ? 'Tente alterar os termos da busca.'
-                    : 'Os clientes aparecerão aqui conforme você atender novos clientes.'
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="w-full space-y-4">
-                {/* Mobile View - Cards Responsivos */}
-                <div className="w-full lg:hidden space-y-3 sm:space-y-4">
-                  {filteredClients.map((client) => (
-                    <Card key={client.id} className="w-full bg-gray-700/50 border-gray-600/50 transition-none">
-                      <CardContent className="p-3 sm:p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-white text-sm sm:text-base truncate">
-                                {client.nome}
-                              </h4>
-                              <div className="flex items-center gap-1 mt-1">
-                                <Badge variant="outline" className="text-xs border-urbana-gold/30 text-urbana-gold">
-                                  {client.id.startsWith('painel-') ? 'Painel' : 'Sistema Novo'}
-                                </Badge>
-                              </div>
-                            </div>
+              return (
+                <StandardCard key={client.id}>
+                  <div className="space-y-4">
+                    {/* Client Info */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-white text-base sm:text-lg truncate">
+                          {client.nome}
+                        </h3>
+                        <div className="space-y-1 mt-2">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                            <Mail className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{client.email}</span>
                           </div>
-
-                          <div className="space-y-2 text-xs sm:text-sm">
-                            {client.email && (
-                              <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                <span className="text-white truncate">{client.email}</span>
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                              <span className="text-white">{formatPhoneNumber(client.whatsapp)}</span>
-                            </div>
-
-                            {client.data_nascimento && (
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                                <span className="text-white">
-                                  {format(new Date(client.data_nascimento), 'dd/MM/yyyy', { locale: ptBR })}
-                                </span>
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-2">
-                              <UserPlus className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                              <span className="text-gray-400">
-                                Cliente desde {format(new Date(client.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                            <Phone className="h-3 w-3 flex-shrink-0" />
+                            <span>{client.whatsapp}</span>
+                          </div>
+                          {client.data_nascimento && (
+                            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                              <Calendar className="h-3 w-3 flex-shrink-0" />
+                              <span>
+                                {format(new Date(client.data_nascimento), 'dd/MM/yyyy', { locale: ptBR })}
                               </span>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      </div>
+                    </div>
 
-                {/* Desktop View - Tabela Responsiva */}
-                <div className="w-full hidden lg:block">
-                  <div className="w-full overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-gray-700/50 transition-none">
-                          <TableHead className="text-gray-300 whitespace-nowrap">Nome</TableHead>
-                          <TableHead className="text-gray-300 whitespace-nowrap">Email</TableHead>
-                          <TableHead className="text-gray-300 whitespace-nowrap">WhatsApp</TableHead>
-                          <TableHead className="text-gray-300 whitespace-nowrap">Data Nascimento</TableHead>
-                          <TableHead className="text-gray-300 whitespace-nowrap">Cliente desde</TableHead>
-                          <TableHead className="text-gray-300 whitespace-nowrap">Origem</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredClients.map((client) => (
-                          <TableRow key={client.id} className="border-gray-700/50 transition-none">
-                            <TableCell className="text-white font-medium">
-                              {client.nome}
-                            </TableCell>
-                            <TableCell className="text-gray-300">
-                              {client.email || '-'}
-                            </TableCell>
-                            <TableCell className="text-gray-300 whitespace-nowrap">
-                              {formatPhoneNumber(client.whatsapp)}
-                            </TableCell>
-                            <TableCell className="text-gray-300 whitespace-nowrap">
-                              {client.data_nascimento
-                                ? format(new Date(client.data_nascimento), 'dd/MM/yyyy', { locale: ptBR })
-                                : '-'
-                              }
-                            </TableCell>
-                            <TableCell className="text-gray-300 whitespace-nowrap">
-                              {format(new Date(client.created_at), 'dd/MM/yyyy', { locale: ptBR })}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="border-urbana-gold/30 text-urbana-gold whitespace-nowrap">
-                                {client.id.startsWith('painel-') ? 'Painel' : 'Sistema Novo'}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-3 py-3 border-t border-gray-700/50">
+                      <div className="text-center">
+                        <div className="text-sm sm:text-base font-bold text-white">{totalAppointments}</div>
+                        <div className="text-xs text-gray-400">Total</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm sm:text-base font-bold text-green-400">{completedAppointments}</div>
+                        <div className="text-xs text-gray-400">Concluídos</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm sm:text-base font-bold text-urbana-gold">
+                          R$ {totalSpent.toFixed(0)}
+                        </div>
+                        <div className="text-xs text-gray-400">Gasto</div>
+                      </div>
+                    </div>
+
+                    {/* Recent History */}
+                    {history.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-300">Últimos atendimentos</h4>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {history.slice(0, 3).map((appointment) => (
+                            <div key={appointment.id} className="flex items-center justify-between p-2 bg-gray-700/30 rounded text-xs">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                  <span className="text-white truncate">{appointment.servico_nome}</span>
+                                </div>
+                                <div className="text-gray-400 mt-1">
+                                  {format(new Date(appointment.data), 'dd/MM/yyyy', { locale: ptBR })} às {appointment.hora}
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 ml-2">
+                                {getStatusBadge(appointment.status)}
+                                <span className="text-urbana-gold font-medium">
+                                  R$ {appointment.servico_preco.toFixed(0)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </StandardCard>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
