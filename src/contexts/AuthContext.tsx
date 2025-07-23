@@ -26,11 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasCheckedRoles, setHasCheckedRoles] = useState<boolean>(false);
 
   const checkUserRole = useCallback(async (userId: string, userEmail: string) => {
-    if (!userId || !userEmail || hasCheckedRoles) {
-      return;
-    }
-    
-    console.log('Checking roles for user:', userId, userEmail);
+    console.log('Checking roles for user:', userId, userEmail, 'hasCheckedRoles:', hasCheckedRoles);
     
     try {
       // Check user roles
@@ -63,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsBarber(false);
       setHasCheckedRoles(true);
     }
-  }, [hasCheckedRoles]);
+  }, []); // Remove hasCheckedRoles from dependencies to prevent infinite loop
 
   const signOut = useCallback(async () => {
     console.log('Starting logout');
@@ -150,12 +146,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []); // Empty dependency array to run only once
 
-  // Separate useEffect for checking roles
+  // Separate useEffect for checking roles - only runs when user changes and roles haven't been checked
   useEffect(() => {
     if (user && !hasCheckedRoles && !loading) {
+      console.log('Triggering role check for user:', user.email);
       checkUserRole(user.id, user.email || '');
     }
-  }, [user, hasCheckedRoles, loading, checkUserRole]);
+  }, [user?.id, hasCheckedRoles, loading, checkUserRole]); // Use user.id instead of user object
 
   const contextValue = {
     session,
