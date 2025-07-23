@@ -10,34 +10,6 @@ import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import StandardCard from './layouts/StandardCard';
 
-interface Commission {
-  id: string;
-  amount: number;
-  status: string;
-  created_at: string;
-  payment_date?: string;
-  paid_at?: string;
-  commission_rate?: number;
-  appointment_details?: {
-    client_name?: string;
-    service_name?: string;
-    service_price?: number;
-    appointment_date?: string;
-    appointment_time?: string;
-  };
-  source: string;
-}
-
-interface CommissionWithDetails extends Commission {
-  appointment_details: {
-    client_name: string;
-    service_name: string;
-    service_price: number;
-    appointment_date: string;
-    appointment_time: string;
-  };
-}
-
 const BarberCommissions: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
