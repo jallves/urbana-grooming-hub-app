@@ -1,270 +1,146 @@
 
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import BarberSidebar from './BarberSidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  LogOut,
-  Menu,
-  X,
-  BarChart3,
-  Calendar,
-  Clock,
-  Users,
-  DollarSign,
-  Settings,
-  Scissors,
-} from 'lucide-react';
+import { LogOut, Bell, Settings, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 interface BarberLayoutProps {
   children: React.ReactNode;
   title?: string;
 }
 
-const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
+const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel do Barbeiro" }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const menuItems = [
-    { 
-      name: 'Dashboard', 
-      href: '/barbeiro', 
-      icon: BarChart3, 
-      exact: true,
-    },
-    { 
-      name: 'Agendamentos', 
-      href: '/barbeiro/agendamentos', 
-      icon: Calendar,
-    },
-    { 
-      name: 'Minha Agenda', 
-      href: '/barbeiro/agenda', 
-      icon: Clock,
-    },
-    { 
-      name: 'Clientes', 
-      href: '/barbeiro/clientes', 
-      icon: Users,
-    },
-    { 
-      name: 'Comissões', 
-      href: '/barbeiro/comissoes', 
-      icon: DollarSign,
-    },
-    { 
-      name: 'Perfil', 
-      href: '/barbeiro/perfil', 
-      icon: Settings,
-    },
-  ];
 
   const handleLogout = async () => {
     try {
+      console.log('BarberLayout - Starting logout');
+      toast({
+        title: 'Saindo...',
+        description: 'Você está sendo desconectado do sistema',
+      });
+      
       await signOut();
-      navigate('/barbeiro/login');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error during logout:', error);
+      toast({
+        title: 'Erro ao sair',
+        description: 'Ocorreu um erro ao tentar sair. Tente novamente.',
+        variant: 'destructive',
+      });
+      // Force redirect even if there's an error
+      window.location.href = '/';
     }
   };
 
-  const isActive = (href: string, exact = false) => {
-    if (exact) {
-      return location.pathname === href;
-    }
-    return location.pathname.startsWith(href);
-  };
-
-  const getCurrentModuleName = () => {
-    const currentItem = menuItems.find(item => isActive(item.href, item.exact));
-    return currentItem?.name || 'Painel do Barbeiro';
-  };
+  const userInitials = user?.email?.charAt(0).toUpperCase() || 'B';
 
   return (
-    <div className="min-h-screen bg-gray-900 flex overflow-hidden">
-      {/* Fixed Sidebar - Desktop */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 z-30">
-        <div className="flex flex-col flex-grow bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 shadow-xl">
-          {/* Sidebar Header */}
-          <div className="flex items-center h-16 px-6 border-b border-gray-700/50">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Scissors className="w-6 h-6 text-black" />
-              </div>
-              <div>
-                <span className="text-lg font-bold text-white">Barbeiro</span>
-                <p className="text-xs text-gray-400">Costa Urbana</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation Menu */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href, item.exact);
-
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => navigate(item.href)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 group ${
-                    active
-                      ? 'bg-urbana-gold text-black shadow-lg font-medium'
-                      : 'text-gray-300'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.name}</span>
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-700/50">
-            <div className="flex items-center space-x-3 mb-4">
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black">
-                  {user?.email?.charAt(0).toUpperCase() || 'B'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">
-                  {user?.email?.split('@')[0] || 'Barbeiro'}
-                </p>
-                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-              </div>
-            </div>
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              size="sm"
-              className="w-full border-gray-600 text-gray-300"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Sidebar Overlay */}
+    <div className="min-h-screen flex bg-gray-950 text-gray-100">
+      {/* Overlay no mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Mobile Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900/95 backdrop-blur-lg shadow-xl border-r border-gray-700/50 transform ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-300 ease-in-out lg:hidden`}
-      >
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700/50">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Scissors className="w-6 h-6 text-black" />
-            </div>
-            <div>
-              <span className="text-lg font-bold text-white">Barbeiro</span>
-              <p className="text-xs text-gray-400">Costa Urbana</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(false)}
-            className="text-gray-400 hover:text-white"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.href, item.exact);
-
-            return (
-              <button
-                key={item.name}
-                onClick={() => {
-                  navigate(item.href);
-                  setSidebarOpen(false);
-                }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 ${
-                  active
-                    ? 'bg-urbana-gold text-black shadow-lg font-medium'
-                    : 'text-gray-300'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.name}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-gray-700/50">
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            size="sm"
-            className="w-full border-gray-600 text-gray-300"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
-        </div>
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 transform ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 lg:static lg:inset-0 transition-transform duration-200 ease-in-out`}>
+        <BarberSidebar onClose={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-        {/* Top Header Bar */}
-        <header className="bg-gray-800/50 backdrop-blur-lg border-b border-gray-700/50 h-12 sm:h-14 lg:h-16 px-2 sm:px-3 lg:px-4 flex items-center justify-between sticky top-0 z-20">
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-400 hover:text-white w-8 h-8"
-            >
-              <Menu className="w-4 h-4" />
-            </Button>
-            
-            <div>
-              <h1 className="text-sm sm:text-base lg:text-lg font-bold text-white">
-                {title || getCurrentModuleName()}
+      {/* Conteúdo */}
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-30 shadow-sm">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              {/* Botão menu mobile */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-gray-300 hover:bg-gray-800"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-100">
+                {title}
               </h1>
-              <p className="text-xs text-gray-400 hidden sm:block">Costa Urbana Barbearia</p>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="hidden sm:flex items-center space-x-2 sm:space-x-3">
-              <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
-                <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-xs">
-                  {user?.email?.charAt(0).toUpperCase() || 'B'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium text-white">
-                  {user?.email?.split('@')[0] || 'Barbeiro'}
-                </p>
-              </div>
+            <div className="flex items-center gap-4">
+              {/* Notificações */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-gray-300 hover:bg-gray-800"
+              >
+                <Bell className="h-5 w-5" />
+                <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 p-0 border-0 text-xs" />
+              </Button>
+
+              {/* Menu Usuário */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-gray-800">
+                    <Avatar className="h-8 w-8 border border-gray-700">
+                      <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-black text-sm font-medium">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-gray-900 border border-gray-700 shadow-lg" align="end">
+                  <DropdownMenuLabel className="text-gray-100">Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem 
+                    className="hover:bg-gray-800"
+                    onClick={() => navigate('/barbeiro/perfil')}
+                  >
+                    <User className="mr-2 h-4 w-4" /> Perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="hover:bg-gray-800"
+                    onClick={() => navigate('/')}
+                  >
+                    <Settings className="mr-2 h-4 w-4" /> Ver Site
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem
+                    className="text-red-400 hover:bg-red-800 hover:text-red-200"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" /> Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 bg-gray-900 overflow-auto">
-          <div className="w-full h-full">
+        {/* Área principal */}
+        <main className="flex-1 overflow-y-auto bg-gray-950">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {children}
           </div>
         </main>

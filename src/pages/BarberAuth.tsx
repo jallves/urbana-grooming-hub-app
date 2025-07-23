@@ -20,7 +20,6 @@ const BarberAuth: React.FC = () => {
 
       return () => clearTimeout(timer);
     } else if (!authLoading && !user && timeLeft === 0) {
-      // Redirect to homepage when timer reaches 0
       navigate('/');
     }
   }, [timeLeft, user, authLoading, navigate]);
@@ -41,9 +40,13 @@ const BarberAuth: React.FC = () => {
   }, [user, authLoading, isBarber, isAdmin, navigate]);
 
   const handleLoginSuccess = async (userId: string) => {
-    // Redirect to dashboard after successful login
     navigate('/barbeiro');
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return <AuthLoadingScreen message="Verificando acesso..." />;
+  }
 
   // Show access denied message if user is logged in but doesn't have access
   if (!authLoading && user && !isAdmin && !isBarber) {

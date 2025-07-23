@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 
 type AppRole = 'admin' | 'user' | 'barber';
 
@@ -23,76 +22,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isBarber, setIsBarber] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [hasCheckedRoles, setHasCheckedRoles] = useState<boolean>(false);
-
-  const checkUserRole = useCallback(async (userId: string, userEmail: string) => {
-    console.log('Checking roles for user:', userId, userEmail, 'hasCheckedRoles:', hasCheckedRoles);
-    
-    try {
-      // Check user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-      
-      if (rolesError) {
-        console.error('Error checking user roles:', rolesError);
-        return;
-      }
-      
-      const roleArray = roles?.map(r => r.role) || [];
-      const hasAdminRole = roleArray.includes('admin');
-      const hasBarberRole = roleArray.includes('barber');
-      
-      console.log('User roles found:', roleArray);
-      
-      // Update roles
-      setIsAdmin(hasAdminRole);
-      setIsBarber(hasBarberRole);
-      setHasCheckedRoles(true);
-      
-      console.log('Final role assignment:', { hasAdminRole, hasBarberRole });
-      
-    } catch (error) {
-      console.error('Error in checkUserRole:', error);
-      setIsAdmin(false);
-      setIsBarber(false);
-      setHasCheckedRoles(true);
-    }
-  }, []); // Remove hasCheckedRoles from dependencies to prevent infinite loop
+  const [rolesChecked, setRolesChecked] = useState<boolean>(false);
 
   const signOut = useCallback(async () => {
-    console.log('Starting logout');
+    console.log('Starting logout process');
     try {
-      // Clear state first
+      // Clear state immediately
       setIsAdmin(false);
       setIsBarber(false);
       setUser(null);
       setSession(null);
-      setHasCheckedRoles(false);
+      setRolesChecked(false);
       
-      // Then sign out
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Error during logout:', error);
       } else {
         console.log('Logout completed successfully');
-        // Redirect to homepage after successful logout
+        // Force redirect to home page
         window.location.href = '/';
       }
     } catch (error) {
       console.error('Error during logout:', error);
+      // Force redirect even if there's an error
+      window.location.href = '/';
     }
   }, []);
 
+  const checkUserRoles = useCallback(async (userId: string) => {
+    if (rolesChecked) return;
+    
+    console.log('Checking roles for user:', userId);
+    
+    try {
+      const { data: roles, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error checking user roles:', error);
+        setIsAdmin(false);
+        setIsBarber(false);
+      } else {
+        const roleArray = roles?.map(r => r.role) || [];
+        const hasAdminRole = roleArray.includes('admin');
+        const hasBarberRole = roleArray.includes('barber');
+        
+        console.log('User roles found:', roleArray);
+        console.log('Setting roles - Admin:', hasAdminRole, 'Barber:', hasBarberRole);
+        
+        setIsAdmin(hasAdminRole);
+        setIsBarber(hasBarberRole);
+      }
+      
+      setRolesChecked(true);
+    } catch (error) {
+      console.error('Error in checkUserRoles:', error);
+      setIsAdmin(false);
+      setIsBarber(false);
+      setRolesChecked(true);
+    }
+  }, [rolesChecked]);
+
   // Initialize auth and set up listener
   useEffect(() => {
-    console.log('AuthProvider initialized');
+    console.log('AuthProvider initializing');
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        // Set up auth state listener first
+        // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
             console.log('Auth event:', event, 'Session:', newSession?.user?.email);
@@ -102,15 +103,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(newSession);
             setUser(newSession?.user ?? null);
             
-            if (newSession?.user && event !== 'SIGNED_OUT') {
-              // Reset role check flag when new session starts
-              setHasCheckedRoles(false);
-            } else {
+            if (event === 'SIGNED_OUT' || !newSession?.user) {
               // Clear roles on sign out
               setIsAdmin(false);
               setIsBarber(false);
-              setHasCheckedRoles(false);
+              setRolesChecked(false);
+            } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              // Reset roles check for new session
+              setRolesChecked(false);
             }
+            
+            setLoading(false);
           }
         );
 
@@ -144,15 +147,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array to run only once
+  }, []);
 
-  // Separate useEffect for checking roles - only runs when user changes and roles haven't been checked
+  // Check roles when user changes
   useEffect(() => {
-    if (user && !hasCheckedRoles && !loading) {
+    if (user?.id && !rolesChecked && !loading) {
       console.log('Triggering role check for user:', user.email);
-      checkUserRole(user.id, user.email || '');
+      checkUserRoles(user.id);
     }
-  }, [user?.id, hasCheckedRoles, loading, checkUserRole]); // Use user.id instead of user object
+  }, [user?.id, rolesChecked, loading, checkUserRoles]);
 
   const contextValue = {
     session,

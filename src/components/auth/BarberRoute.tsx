@@ -13,7 +13,7 @@ interface BarberRouteProps {
 
 const BarberRoute: React.FC<BarberRouteProps> = ({ 
   children, 
-  allowBarber = false, 
+  allowBarber = true, 
   requiredModule 
 }) => {
   const { user, loading, isAdmin, isBarber } = useAuth();
@@ -22,7 +22,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
 
   // Show loading screen while checking authentication
   if (loading) {
-    console.log('BarberRoute: loading...');
+    console.log('BarberRoute: loading authentication...');
     return <AuthLoadingScreen message="Verificando acesso..." />;
   }
 
@@ -36,22 +36,23 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   const hasAccess = isAdmin || (allowBarber && isBarber);
 
   if (!hasAccess) {
-    // Para evitar loop infinito de toast + redirect:
+    console.log('BarberRoute - Access DENIED. User:', {
+      email: user.email,
+      isAdmin,
+      isBarber,
+      allowBarber,
+      requiredModule
+    });
+    
+    // Show toast only once and redirect
     if (location.pathname !== '/barbeiro/login') {
-      console.log('BarberRoute - Access DENIED. User:', {
-        email: user.email,
-        isAdmin,
-        isBarber,
-        allowBarber,
-        requiredModule
-      });
       toast({
         title: 'Acesso Negado',
         description: 'Você não tem permissão para acessar esta área. Verifique se você possui o papel de barbeiro.',
         variant: 'destructive',
       });
     }
-    // Redirecionamento único
+    
     return <Navigate to="/barbeiro/login" replace />;
   }
 
