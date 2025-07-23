@@ -81,7 +81,7 @@ const BarberClients: React.FC = () => {
               nome: client.name,
               email: client.email,
               whatsapp: client.phone,
-              data_nascimento: client.date_of_birth,
+              data_nascimento: client.birth_date,
               created_at: client.created_at
             });
           });
