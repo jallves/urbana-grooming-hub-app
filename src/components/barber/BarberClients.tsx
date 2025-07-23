@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Users, Search, Phone, Mail, Calendar, Clock } from 'lucide-react';
@@ -57,7 +56,7 @@ const BarberClients: React.FC = () => {
           .from('painel_agendamentos')
           .select(`
             *,
-            painel_clientes!inner(id, nome, email, whatsapp, birth_date, created_at),
+            painel_clientes!inner(id, nome, email, whatsapp, data_nascimento, created_at),
             painel_servicos!inner(nome, preco)
           `)
           .eq('barbeiro_id', barberData.id)
@@ -81,7 +80,7 @@ const BarberClients: React.FC = () => {
               nome: client.nome,
               email: client.email,
               whatsapp: client.whatsapp,
-              data_nascimento: client.birth_date,
+              data_nascimento: client.data_nascimento,
               created_at: client.created_at
             });
           }
