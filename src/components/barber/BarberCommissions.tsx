@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,6 +10,24 @@ import { ptBR } from 'date-fns/locale';
 import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import StandardCard from './layouts/StandardCard';
+
+interface Commission {
+  id: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  payment_date?: string;
+  paid_at?: string;
+  commission_rate?: number;
+  appointment_details?: {
+    client_name?: string;
+    service_name?: string;
+    service_price?: number;
+    appointment_date?: string;
+    appointment_time?: string;
+  };
+  source: string;
+}
 
 const BarberCommissions: React.FC = () => {
   const { user } = useAuth();
@@ -195,16 +214,16 @@ const BarberCommissions: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full flex flex-col space-y-3">
+    <div className="w-full h-full flex flex-col space-y-2 p-1 sm:p-2 lg:p-4">
       {/* Summary Cards */}
-      <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="w-full grid grid-cols-2 gap-1.5 sm:gap-2">
         {summaryCards.map((card, index) => (
           <StandardCard key={index}>
-            <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div className="text-xs font-medium text-gray-300 truncate pr-2">{card.title}</div>
-              <card.icon className={`h-4 w-4 flex-shrink-0 ${card.color}`} />
+            <div className="flex flex-row items-center justify-between space-y-0 pb-1">
+              <div className="text-xs font-medium text-gray-300 truncate pr-1">{card.title}</div>
+              <card.icon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${card.color}`} />
             </div>
-            <div className="text-sm sm:text-base lg:text-lg font-bold text-white truncate">
+            <div className="text-xs sm:text-sm lg:text-base font-bold text-white truncate">
               {card.value}
             </div>
           </StandardCard>
@@ -214,24 +233,24 @@ const BarberCommissions: React.FC = () => {
       {/* Histórico de Comissões */}
       <StandardCard title="Histórico de Comissões">
         {commissions.length === 0 ? (
-          <div className="w-full text-center py-8">
-            <DollarSign className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-white mb-2">Nenhuma comissão encontrada</h3>
-            <p className="text-sm text-gray-400">
+          <div className="w-full text-center py-4 sm:py-8">
+            <DollarSign className="h-8 w-8 sm:h-12 sm:w-12 text-gray-600 mx-auto mb-2 sm:mb-4" />
+            <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">Nenhuma comissão encontrada</h3>
+            <p className="text-xs sm:text-sm text-gray-400">
               As comissões aparecerão aqui conforme você concluir atendimentos
             </p>
           </div>
         ) : (
-          <div className="w-full space-y-3">
+          <div className="w-full space-y-2 sm:space-y-3">
             {/* Mobile View - Cards */}
-            <div className="w-full lg:hidden space-y-2">
+            <div className="w-full lg:hidden space-y-1.5 sm:space-y-2">
               {commissions.map((commission) => (
                 <Card key={`${commission.source}-${commission.id}`} className="w-full bg-gray-700/50 border-gray-600/50">
-                  <CardContent className="p-3">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-start gap-3">
+                  <CardContent className="p-2 sm:p-3">
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex justify-between items-start gap-2 sm:gap-3">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white text-sm truncate">
+                          <h4 className="font-medium text-white text-xs sm:text-sm truncate">
                             {commission.appointment_details?.client_name || 'Cliente'}
                           </h4>
                           <p className="text-xs text-gray-400 truncate">
@@ -246,7 +265,7 @@ const BarberCommissions: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs">
                         <div>
                           <p className="text-gray-400">Data</p>
                           <p className="text-white truncate">
@@ -276,10 +295,10 @@ const BarberCommissions: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-gray-600/50">
+                      <div className="pt-1.5 sm:pt-2 border-t border-gray-600/50">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-400">Comissão</span>
-                          <span className="text-base font-bold text-urbana-gold">
+                          <span className="text-sm sm:text-base font-bold text-urbana-gold">
                             R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -320,40 +339,39 @@ const BarberCommissions: React.FC = () => {
                           {commission.appointment_details?.appointment_date
                             ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
                             : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
-                            }
-                          </TableCell>
-                          <TableCell className="text-white font-medium">
-                            {commission.appointment_details?.client_name || 'Cliente'}
-                          </TableCell>
-                          <TableCell className="text-gray-300">
-                            {commission.appointment_details?.service_name || 'Serviço'}
-                          </TableCell>
-                          <TableCell className="text-gray-300 whitespace-nowrap">
-                            R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </TableCell>
-                          <TableCell className="text-urbana-gold whitespace-nowrap">
-                            {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
-                          </TableCell>
-                          <TableCell className="font-bold text-urbana-gold whitespace-nowrap">
-                            R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(commission.status)}
-                          </TableCell>
-                          <TableCell className="text-gray-300 whitespace-nowrap">
-                            {(commission.payment_date || commission.paid_at)
-                              ? format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
-                              : '-'
-                            }
-                          </TableCell>
-                          <TableCell className="text-gray-400 text-xs whitespace-nowrap">
-                            {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                          }
+                        </TableCell>
+                        <TableCell className="text-white font-medium">
+                          {commission.appointment_details?.client_name || 'Cliente'}
+                        </TableCell>
+                        <TableCell className="text-gray-300">
+                          {commission.appointment_details?.service_name || 'Serviço'}
+                        </TableCell>
+                        <TableCell className="text-gray-300 whitespace-nowrap">
+                          R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-urbana-gold whitespace-nowrap">
+                          {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
+                        </TableCell>
+                        <TableCell className="font-bold text-urbana-gold whitespace-nowrap">
+                          R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(commission.status)}
+                        </TableCell>
+                        <TableCell className="text-gray-300 whitespace-nowrap">
+                          {(commission.payment_date || commission.paid_at)
+                            ? format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
+                            : '-'
+                          }
+                        </TableCell>
+                        <TableCell className="text-gray-400 text-xs whitespace-nowrap">
+                          {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </div>
           </div>
