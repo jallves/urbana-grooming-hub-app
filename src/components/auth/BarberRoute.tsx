@@ -44,15 +44,6 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
       requiredModule
     });
     
-    // Show toast only once and redirect
-    if (location.pathname !== '/barbeiro/login') {
-      toast({
-        title: 'Acesso Negado',
-        description: 'Você não tem permissão para acessar esta área. Verifique se você possui o papel de barbeiro.',
-        variant: 'destructive',
-      });
-    }
-    
     return <Navigate to="/barbeiro/login" replace />;
   }
 

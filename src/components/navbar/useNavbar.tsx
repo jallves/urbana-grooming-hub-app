@@ -11,10 +11,18 @@ export const useNavbar = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
+
     // Check current session
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted) {
+          setUser(session?.user || null);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
     };
 
     checkSession();
@@ -22,11 +30,16 @@ export const useNavbar = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user || null);
+        if (mounted) {
+          setUser(session?.user || null);
+        }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

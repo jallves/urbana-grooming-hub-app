@@ -8,38 +8,35 @@ import { useNavigate } from 'react-router-dom';
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(10);
+  const [redirected, setRedirected] = useState<boolean>(false);
   const { user, isBarber, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // Timer countdown effect
   useEffect(() => {
-    if (!authLoading && !user && timeLeft > 0) {
+    if (!authLoading && !user && timeLeft > 0 && !redirected) {
       const timer = setTimeout(() => {
         setTimeLeft(timeLeft - 1);
       }, 1000);
 
       return () => clearTimeout(timer);
-    } else if (!authLoading && !user && timeLeft === 0) {
+    } else if (!authLoading && !user && timeLeft === 0 && !redirected) {
+      setRedirected(true);
       navigate('/');
     }
-  }, [timeLeft, user, authLoading, navigate]);
-
-  // Reset timer when user changes
-  useEffect(() => {
-    if (!authLoading && !user) {
-      setTimeLeft(10);
-    }
-  }, [user, authLoading]);
+  }, [timeLeft, user, authLoading, navigate, redirected]);
 
   // Redirect authenticated users with proper access
   useEffect(() => {
-    if (!authLoading && user && (isAdmin || isBarber)) {
+    if (!authLoading && user && (isAdmin || isBarber) && !redirected) {
       console.log('✅ User has access - redirecting to dashboard');
+      setRedirected(true);
       navigate('/barbeiro');
     }
-  }, [user, authLoading, isBarber, isAdmin, navigate]);
+  }, [user, authLoading, isBarber, isAdmin, navigate, redirected]);
 
   const handleLoginSuccess = async (userId: string) => {
+    setRedirected(true);
     navigate('/barbeiro');
   };
 
@@ -91,13 +88,16 @@ const BarberAuth: React.FC = () => {
           <p className="mt-2 text-gray-400">
             Acesso para barbeiros cadastrados
           </p>
-          {!user && timeLeft > 0 && (
+          {!user && timeLeft > 0 && !redirected && (
             <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
               <p className="text-yellow-400 text-sm">
                 Redirecionando para a página inicial em {timeLeft} segundos
               </p>
               <button
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  setRedirected(true);
+                  navigate('/');
+                }}
                 className="mt-2 text-yellow-300 hover:text-yellow-100 underline text-sm"
               >
                 Clique aqui para ir agora
@@ -106,7 +106,7 @@ const BarberAuth: React.FC = () => {
           )}
         </div>
         
-        {!user && (
+        {!user && !redirected && (
           <div className="bg-zinc-900 shadow-lg rounded-lg p-6 border border-zinc-800">
             <BarberLoginForm 
               loading={loading}

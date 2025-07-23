@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -22,10 +22,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isBarber, setIsBarber] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  
-  // Use refs to prevent infinite loops
-  const isCheckingRoles = useRef(false);
-  const lastCheckedUserId = useRef<string | null>(null);
 
   const signOut = useCallback(async () => {
     console.log('Starting logout process');
@@ -36,10 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       setSession(null);
       setLoading(false);
-      
-      // Reset refs
-      isCheckingRoles.current = false;
-      lastCheckedUserId.current = null;
       
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
@@ -58,53 +50,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Stable function to check user roles
-  const checkUserRoles = useCallback(async (userId: string) => {
-    // Prevent multiple simultaneous checks for the same user
-    if (isCheckingRoles.current || lastCheckedUserId.current === userId) {
-      return;
-    }
-    
-    isCheckingRoles.current = true;
-    lastCheckedUserId.current = userId;
-    
-    console.log('Checking roles for user:', userId);
-    
-    try {
-      const { data: roles, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-      
-      if (error) {
-        console.error('Error checking user roles:', error);
-        setIsAdmin(false);
-        setIsBarber(false);
-        return;
-      }
-      
-      const roleArray = roles?.map(r => r.role) || [];
-      const hasAdminRole = roleArray.includes('admin');
-      const hasBarberRole = roleArray.includes('barber');
-      
-      console.log('User roles found:', roleArray);
-      console.log('Setting roles - Admin:', hasAdminRole, 'Barber:', hasBarberRole);
-      
-      setIsAdmin(hasAdminRole);
-      setIsBarber(hasBarberRole);
-    } catch (error) {
-      console.error('Error in checkUserRoles:', error);
-      setIsAdmin(false);
-      setIsBarber(false);
-    } finally {
-      isCheckingRoles.current = false;
-    }
-  }, []);
-
   // Initialize auth and set up listener
   useEffect(() => {
     console.log('AuthProvider initializing');
     let mounted = true;
+
+    const checkUserRoles = async (userId: string) => {
+      if (!mounted) return;
+      
+      console.log('Checking roles for user:', userId);
+      
+      try {
+        const { data: roles, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+        
+        if (error) {
+          console.error('Error checking user roles:', error);
+          if (mounted) {
+            setIsAdmin(false);
+            setIsBarber(false);
+          }
+          return;
+        }
+        
+        if (!mounted) return;
+        
+        const roleArray = roles?.map(r => r.role) || [];
+        const hasAdminRole = roleArray.includes('admin');
+        const hasBarberRole = roleArray.includes('barber');
+        
+        console.log('User roles found:', roleArray);
+        console.log('Setting roles - Admin:', hasAdminRole, 'Barber:', hasBarberRole);
+        
+        setIsAdmin(hasAdminRole);
+        setIsBarber(hasBarberRole);
+      } catch (error) {
+        console.error('Error in checkUserRoles:', error);
+        if (mounted) {
+          setIsAdmin(false);
+          setIsBarber(false);
+        }
+      }
+    };
 
     const initializeAuth = async () => {
       try {
@@ -122,16 +111,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
         
-        // Check roles if user exists and we haven't checked yet
-        if (initialSession?.user && lastCheckedUserId.current !== initialSession.user.id) {
+        // Check roles if user exists
+        if (initialSession?.user) {
           await checkUserRoles(initialSession.user.id);
-        } else if (!initialSession?.user) {
+        } else {
           setIsAdmin(false);
           setIsBarber(false);
-          lastCheckedUserId.current = null;
         }
         
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error in initializeAuth:', error);
         if (mounted) {
@@ -154,16 +144,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Clear roles on sign out
           setIsAdmin(false);
           setIsBarber(false);
-          lastCheckedUserId.current = null;
-          isCheckingRoles.current = false;
         } else if (event === 'SIGNED_IN' && newSession?.user) {
-          // Check roles for new user only if we haven't checked this user yet
-          if (lastCheckedUserId.current !== newSession.user.id) {
-            await checkUserRoles(newSession.user.id);
-          }
+          // Check roles for new user
+          await checkUserRoles(newSession.user.id);
         }
         
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     );
 
