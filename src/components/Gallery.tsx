@@ -67,7 +67,7 @@ const Gallery: React.FC = () => {
           // Transform the data to match GalleryImage interface
           const transformedImages: GalleryImage[] = data.map(img => ({
             id: img.id,
-            image_url: img.src || img.image_url,
+            image_url: img.src, // Map src to image_url
             alt: img.alt,
             display_order: img.display_order,
             is_active: img.is_active,
