@@ -1,272 +1,208 @@
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Input } from '@/components/ui/input';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Eye, EyeOff, Mail, Lock, User, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Mail, Lock, Eye, EyeOff, Check, AlertTriangle } from 'lucide-react';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { validatePasswordStrength, sanitizeInput } from '@/lib/security';
+import { useNavigate } from 'react-router-dom';
 
-// Enhanced schema with stronger validation
-const registerSchema = z.object({
-  fullName: z.string()
-    .min(3, 'O nome completo deve ter pelo menos 3 caracteres')
-    .max(100, 'O nome completo deve ter no máximo 100 caracteres')
-    .transform(val => sanitizeInput(val)),
-  email: z.string()
-    .email('Digite um e-mail válido')
-    .transform(val => sanitizeInput(val)),
-  password: z.string()
-    .min(12, 'A senha deve ter pelo menos 12 caracteres')
-    .refine(
-      (password) => validatePasswordStrength(password).isValid,
-      'A senha não atende aos critérios de segurança'
-    ),
-});
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
-
-export interface RegisterFormProps {
+interface RegisterFormProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ loading, setLoading }) => {
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
-  const [showPassword, setShowPassword] = React.useState(false);
-  
-  const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      fullName: '',
-      email: '',
-      password: '',
-    },
-  });
+  const navigate = useNavigate();
 
-  const onSubmit = async (data: RegisterFormValues) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Erro no cadastro",
+        description: "As senhas não coincidem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
-    try {
-      // Additional password validation
-      const passwordValidation = validatePasswordStrength(data.password);
-      if (!passwordValidation.isValid) {
-        toast({
-          title: 'Senha insegura',
-          description: passwordValidation.errors.join(', '),
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
 
-      // Registrar o usuário
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
           data: {
-            full_name: data.fullName,
+            full_name: fullName,
           },
-          emailRedirectTo: `${window.location.origin}/auth`
-        }
+        },
       });
 
-      if (signUpError) {
-        toast({
-          title: 'Erro ao criar conta',
-          description: signUpError.message,
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-      
-      if (!signUpData.user) {
-        toast({
-          title: 'Erro ao criar conta',
-          description: 'Não foi possível obter os dados do usuário',
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Add user role as regular user (NOT admin by default)
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert([
-          { 
-            user_id: signUpData.user.id,
-            role: 'user' // Default to user role for security
-          }
-        ]);
+      if (error) throw error;
 
-      if (roleError) {
-        console.error('Error setting user role:', roleError);
-        // Don't fail registration for role error, just log it
+      if (data.user) {
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Verifique seu email para confirmar sua conta.",
+        });
+        
+        // Reset form
+        setFullName('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
       }
-
-      toast({
-        title: 'Conta criada com sucesso',
-        description: 'Verifique seu email para confirmar a conta antes de fazer login.',
-      });
     } catch (error: any) {
+      console.error('Erro no cadastro:', error);
       toast({
-        title: 'Erro ao criar conta',
-        description: error.message || 'Ocorreu um erro inesperado',
-        variant: 'destructive',
+        title: "Erro no cadastro",
+        description: error.message || "Ocorreu um erro ao criar sua conta.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to check password conditions
-  const checkPassword = (password: string) => {
-    const validation = validatePasswordStrength(password);
-    return {
-      length: password.length >= 12,
-      uppercase: /[A-Z]/.test(password),
-      lowercase: /[a-z]/.test(password),
-      number: /[0-9]/.test(password),
-      special: /[^A-Za-z0-9]/.test(password),
-      noCommon: !validation.errors.some(error => error.includes('palavras comuns')),
-    };
-  };
-
-  const passwordConditions = checkPassword(form.watch('password') || '');
-
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome Completo</FormLabel>
-              <div className="relative">
-                <FormControl>
-                  <Input 
-                    placeholder="João da Silva" 
-                    {...field} 
-                    className="pl-10" 
-                    disabled={loading}
-                    maxLength={100}
-                  />
-                </FormControl>
-                <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>E-mail</FormLabel>
-              <div className="relative">
-                <FormControl>
-                  <Input 
-                    placeholder="seu@email.com" 
-                    {...field} 
-                    className="pl-10" 
-                    disabled={loading}
-                    autoComplete="email"
-                  />
-                </FormControl>
-                <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Senha</FormLabel>
-              <div className="relative">
-                <FormControl>
-                  <Input 
-                    type={showPassword ? 'text' : 'password'} 
-                    placeholder="******" 
-                    {...field} 
-                    className="pl-10 pr-10" 
-                    disabled={loading}
-                    autoComplete="new-password"
-                  />
-                </FormControl>
-                <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-10 w-10 px-0"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-              <FormMessage />
-              
-              {/* Enhanced password requirements indicator */}
-              <div className="mt-2 space-y-1 text-xs">
-                <div className={`flex items-center ${passwordConditions.length ? 'text-green-600' : 'text-muted-foreground'}`}>
-                  {passwordConditions.length ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
-                  Mínimo de 12 caracteres
-                </div>
-                <div className={`flex items-center ${passwordConditions.uppercase ? 'text-green-600' : 'text-muted-foreground'}`}>
-                  {passwordConditions.uppercase ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
-                  Pelo menos uma letra maiúscula
-                </div>
-                <div className={`flex items-center ${passwordConditions.lowercase ? 'text-green-600' : 'text-muted-foreground'}`}>
-                  {passwordConditions.lowercase ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
-                  Pelo menos uma letra minúscula
-                </div>
-                <div className={`flex items-center ${passwordConditions.number ? 'text-green-600' : 'text-muted-foreground'}`}>
-                  {passwordConditions.number ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
-                  Pelo menos um número
-                </div>
-                <div className={`flex items-center ${passwordConditions.special ? 'text-green-600' : 'text-muted-foreground'}`}>
-                  {passwordConditions.special ? <Check className="h-3 w-3 mr-1" /> : <span className="w-3 h-3 mr-1" />}
-                  Pelo menos um caractere especial
-                </div>
-                <div className={`flex items-center ${passwordConditions.noCommon ? 'text-green-600' : 'text-muted-foreground'}`}>
-                  {passwordConditions.noCommon ? <Check className="h-3 w-3 mr-1" /> : <AlertTriangle className="h-3 w-3 mr-1" />}
-                  Não conter palavras comuns
-                </div>
-              </div>
-            </FormItem>
-          )}
-        />
-        
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Cadastrando...' : 'Criar Conta'}
-        </Button>
-      </form>
-    </Form>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Full Name Field */}
+      <div className="space-y-2">
+        <Label htmlFor="fullName" className="text-sm font-medium text-slate-300">
+          Nome Completo
+        </Label>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="fullName"
+            type="text"
+            placeholder="Seu nome completo"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            required
+            disabled={loading}
+          />
+        </div>
+      </div>
+
+      {/* Email Field */}
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-sm font-medium text-slate-300">
+          Email
+        </Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            required
+            disabled={loading}
+          />
+        </div>
+      </div>
+
+      {/* Password Field */}
+      <div className="space-y-2">
+        <Label htmlFor="password" className="text-sm font-medium text-slate-300">
+          Senha
+        </Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Digite sua senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="pl-10 pr-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            required
+            disabled={loading}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-12 px-3 hover:bg-transparent"
+            onClick={() => setShowPassword(!showPassword)}
+            disabled={loading}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4 text-slate-400" />
+            ) : (
+              <Eye className="h-4 w-4 text-slate-400" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Confirm Password Field */}
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-300">
+          Confirmar Senha
+        </Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="confirmPassword"
+            type={showConfirmPassword ? 'text' : 'password'}
+            placeholder="Confirme sua senha"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="pl-10 pr-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            required
+            disabled={loading}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-12 px-3 hover:bg-transparent"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            disabled={loading}
+          >
+            {showConfirmPassword ? (
+              <EyeOff className="h-4 w-4 text-slate-400" />
+            ) : (
+              <Eye className="h-4 w-4 text-slate-400" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <Button 
+        type="submit" 
+        className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black font-semibold py-3 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02] h-12" 
+        disabled={loading}
+      >
+        {loading ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+            Cadastrando...
+          </>
+        ) : (
+          <>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Criar Conta
+          </>
+        )}
+      </Button>
+    </form>
   );
 };
 

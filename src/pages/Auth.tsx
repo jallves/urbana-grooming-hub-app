@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Home, Scissors } from 'lucide-react';
+import { Home, Scissors, Shield, User, LogIn } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -66,60 +66,90 @@ const Auth: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mb-4"></div>
-        <p className="text-zinc-400">Verificando autenticação...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-slate-400">Verificando autenticação...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black px-4">
-      <div className="w-full max-w-md p-8 bg-[#0c1423] rounded-xl shadow-lg space-y-6 text-center">
-        
-        {/* Logo */}
-        <div className="mx-auto w-14 h-14 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 flex items-center justify-center shadow-lg">
-          <Scissors className="h-7 w-7 text-black" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          {/* Logo */}
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-2xl">
+            <Scissors className="h-10 w-10 text-black" />
+          </div>
+
+          {/* Title */}
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
+              Costa Urbana
+            </h1>
+            <p className="text-slate-400 text-lg">
+              Painel Administrativo
+            </p>
+          </div>
         </div>
 
-        {/* Title */}
-        <h1 className="text-3xl font-serif font-bold text-white">Costa Urbana</h1>
-        <p className="text-yellow-400/80">Painel Administrativo</p>
+        {/* Auth Card */}
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl">
+          <div className="space-y-6">
+            {/* Form Header */}
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
+                <Shield className="h-6 w-6 text-amber-400" />
+              </div>
+              <h2 className="text-xl font-semibold text-white">Acesso Administrativo</h2>
+              <p className="text-slate-400 text-sm">
+                Entre com suas credenciais para acessar o painel
+              </p>
+            </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-6 bg-[#1f2a3c] rounded-lg overflow-hidden">
-            <TabsTrigger
-              value="login"
-              className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
-            >
-              Login
-            </TabsTrigger>
-            <TabsTrigger
-              value="register"
-              className="text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-yellow-500 data-[state=active]:text-black"
-            >
-              Cadastro
-            </TabsTrigger>
-          </TabsList>
+            {/* Tabs */}
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid grid-cols-2 w-full bg-slate-800/50 rounded-xl p-1">
+                <TabsTrigger
+                  value="login"
+                  className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black data-[state=active]:shadow-lg transition-all duration-200"
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Login
+                </TabsTrigger>
+                <TabsTrigger
+                  value="register"
+                  className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black data-[state=active]:shadow-lg transition-all duration-200"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Cadastro
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="login">
-            <LoginForm loading={loading} setLoading={setLoading} />
-          </TabsContent>
-          <TabsContent value="register">
-            <RegisterForm loading={loading} setLoading={setLoading} />
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="login" className="mt-6">
+                <LoginForm loading={loading} setLoading={setLoading} />
+              </TabsContent>
+              <TabsContent value="register" className="mt-6">
+                <RegisterForm loading={loading} setLoading={setLoading} />
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
 
         {/* Back button */}
-        <Button
-          variant="outline"
-          className="mt-4 text-sm flex items-center justify-center gap-2 border-[#334155] text-zinc-300 hover:bg-[#1f2a3c] hover:text-white mx-auto"
-          onClick={() => navigate('/')}
-        >
-          <Home size={16} />
-          Voltar ao site
-        </Button>
+        <div className="text-center">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl px-6 py-3 transition-all duration-200"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Voltar ao site
+          </Button>
+        </div>
       </div>
     </div>
   );

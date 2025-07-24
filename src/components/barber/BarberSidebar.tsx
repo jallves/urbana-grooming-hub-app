@@ -17,11 +17,6 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
       exact: true
     },
     { 
-      name: 'Minha Agenda', 
-      href: '/barbeiro/agenda', 
-      icon: <Clock className="h-5 w-5" />
-    },
-    { 
       name: 'Agendamentos', 
       href: '/barbeiro/agendamentos', 
       icon: <Calendar className="h-5 w-5" />

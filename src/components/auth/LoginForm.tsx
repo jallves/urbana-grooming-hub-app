@@ -1,91 +1,51 @@
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
+import { Eye, EyeOff, Mail, Lock, LogIn, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import ForgotPasswordForm from './ForgotPasswordForm';
 
-const loginSchema = z.object({
-  email: z.string().email('Por favor, insira um email válido'),
-  password: z.string().min(1, 'A senha é obrigatória'),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
-
-export interface LoginFormProps {
+interface LoginFormProps {
   loading: boolean;
   setLoading: (loading: boolean) => void;
-  onLoginSuccess?: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ 
-  loading, 
-  setLoading, 
-  onLoginSuccess 
-}) => {
+const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const form = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  const onSubmit = async (data: LoginForm) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+
     try {
-      console.log('🔐 Attempting login for:', data.email);
-      
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (authError) {
-        console.error('❌ Login error:', authError);
-        throw authError;
-      }
+      if (error) throw error;
 
-      if (!authData.user) {
-        throw new Error('Falha na autenticação');
+      if (data.user) {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Redirecionando para o painel administrativo...",
+        });
+        navigate('/admin');
       }
-
-      console.log('✅ Login successful for:', authData.user.email);
-      
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta!",
-      });
-
-      // Call success callback if provided
-      if (onLoginSuccess) {
-        onLoginSuccess();
-      }
-      
     } catch (error: any) {
       console.error('Erro no login:', error);
-      
-      let errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
-      
-      if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = "Email ou senha incorretos. Tente novamente.";
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = "Por favor, confirme seu email antes de fazer login.";
-      }
-      
       toast({
         title: "Erro no login",
-        description: errorMessage,
+        description: error.message || "Verifique suas credenciais e tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -103,83 +63,93 @@ const LoginForm: React.FC<LoginFormProps> = ({
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white">Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="seu@email.com"
-                  {...field}
-                  disabled={loading}
-                  className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Email Field */}
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-sm font-medium text-slate-300">
+          Email
+        </Label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            required
+            disabled={loading}
+          />
+        </div>
+      </div>
 
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-white">Senha</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Sua senha"
-                    {...field}
-                    disabled={loading}
-                    className="bg-zinc-800 border-zinc-600 text-white placeholder:text-zinc-400 focus:border-urbana-gold focus:ring-urbana-gold/20"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-zinc-400 hover:text-white"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="space-y-3">
-          <Button 
-            type="submit" 
-            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold" 
+      {/* Password Field */}
+      <div className="space-y-2">
+        <Label htmlFor="password" className="text-sm font-medium text-slate-300">
+          Senha
+        </Label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="Digite sua senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="pl-10 pr-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            required
+            disabled={loading}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-12 px-3 hover:bg-transparent"
+            onClick={() => setShowPassword(!showPassword)}
             disabled={loading}
           >
-            {loading ? "Entrando..." : "Entrar"}
-          </Button>
-          
-          <Button 
-            type="button"
-            variant="ghost" 
-            className="w-full text-sm text-zinc-400 hover:text-white hover:bg-zinc-800"
-            onClick={() => setShowForgotPassword(true)}
-          >
-            Esqueceu sua senha?
+            {showPassword ? (
+              <EyeOff className="h-4 w-4 text-slate-400" />
+            ) : (
+              <Eye className="h-4 w-4 text-slate-400" />
+            )}
           </Button>
         </div>
-      </form>
-    </Form>
+      </div>
+
+      <div className="space-y-4">
+        {/* Submit Button */}
+        <Button 
+          type="submit" 
+          className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black font-semibold py-3 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02] h-12" 
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+              Entrando...
+            </>
+          ) : (
+            <>
+              <LogIn className="h-4 w-4 mr-2" />
+              Entrar
+            </>
+          )}
+        </Button>
+        
+        {/* Forgot Password */}
+        <Button 
+          type="button"
+          variant="ghost" 
+          className="w-full text-sm text-slate-400 hover:text-amber-400 hover:bg-slate-800/50 py-2 rounded-xl transition-colors h-10"
+          onClick={() => setShowForgotPassword(true)}
+        >
+          <KeyRound className="h-4 w-4 mr-2" />
+          Esqueceu sua senha?
+        </Button>
+      </div>
+    </form>
   );
 };
 
