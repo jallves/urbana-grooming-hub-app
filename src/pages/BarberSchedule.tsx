@@ -17,8 +17,8 @@ const BarberSchedule: React.FC = () => {
     return (
       <BarberLayout title="Minha Agenda">
         <StandardBarberLayout>
-          <div className="w-full flex-1 flex items-center justify-center">
-            <div className="text-center py-12">
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center py-8">
               <div className="text-red-400 text-lg font-semibold">Acesso negado</div>
             </div>
           </div>
@@ -30,7 +30,7 @@ const BarberSchedule: React.FC = () => {
   return (
     <BarberLayout title="Minha Agenda">
       <StandardBarberLayout>
-        <div className="w-full flex-1 min-h-0">
+        <div className="w-full h-full">
           <BarberScheduleView />
         </div>
       </StandardBarberLayout>
