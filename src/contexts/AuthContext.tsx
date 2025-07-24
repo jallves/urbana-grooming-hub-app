@@ -42,7 +42,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (mounted) {
           setUser(session?.user || null);
           if (session?.user) {
-            await checkUserRoles(session.user);
+            // Use setTimeout to avoid blocking the UI
+            setTimeout(() => {
+              checkUserRoles(session.user);
+            }, 100);
           }
           setLoading(false);
         }
@@ -59,18 +62,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (mounted) {
-          setUser(session?.user || null);
-          
-          if (session?.user) {
-            await checkUserRoles(session.user);
-          } else {
-            setIsAdmin(false);
-            setIsBarber(false);
-          }
-          
-          setLoading(false);
+        if (!mounted) return;
+        
+        setUser(session?.user || null);
+        
+        if (session?.user) {
+          // Use setTimeout to avoid blocking the auth state change
+          setTimeout(() => {
+            checkUserRoles(session.user);
+          }, 100);
+        } else {
+          setIsAdmin(false);
+          setIsBarber(false);
         }
+        
+        setLoading(false);
       }
     );
 
@@ -81,6 +87,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const checkUserRoles = async (user: User) => {
+    if (!user) return;
+    
     try {
       // Check admin role
       const { data: adminRole } = await supabase
@@ -90,9 +98,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .eq('role', 'admin')
         .maybeSingle();
 
-      setIsAdmin(!!adminRole);
+      // Check barber role - both from user_roles and painel_barbeiros
+      const { data: barberRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'barber')
+        .maybeSingle();
 
-      // Check barber role
       const { data: barberData } = await supabase
         .from('painel_barbeiros')
         .select('id')
@@ -100,7 +113,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .eq('is_active', true)
         .maybeSingle();
 
-      setIsBarber(!!barberData);
+      setIsAdmin(!!adminRole);
+      setIsBarber(!!barberRole || !!barberData);
     } catch (error) {
       console.error('Error checking user roles:', error);
       setIsAdmin(false);
@@ -131,4 +145,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export default AuthProvider;
+// Export both named and default
+export { AuthProvider as default };

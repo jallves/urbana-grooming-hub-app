@@ -7,37 +7,49 @@ import { useNavigate } from 'react-router-dom';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [timeLeft, setTimeLeft] = useState<number>(10);
-  const [redirected, setRedirected] = useState<boolean>(false);
+  const [redirectTimer, setRedirectTimer] = useState<number>(0);
   const { user, isBarber, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Timer countdown effect
+  // Timer for redirect to home
   useEffect(() => {
-    if (!authLoading && !user && timeLeft > 0 && !redirected) {
-      const timer = setTimeout(() => {
-        setTimeLeft(timeLeft - 1);
+    let timer: NodeJS.Timeout;
+    
+    if (!authLoading && !user && redirectTimer > 0) {
+      timer = setTimeout(() => {
+        setRedirectTimer(redirectTimer - 1);
       }, 1000);
-
-      return () => clearTimeout(timer);
-    } else if (!authLoading && !user && timeLeft === 0 && !redirected) {
-      setRedirected(true);
+    } else if (!authLoading && !user && redirectTimer === 0) {
       navigate('/');
     }
-  }, [timeLeft, user, authLoading, navigate, redirected]);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [redirectTimer, user, authLoading, navigate]);
+
+  // Start redirect timer when component mounts and user is not authenticated
+  useEffect(() => {
+    if (!authLoading && !user && redirectTimer === 0) {
+      setRedirectTimer(15); // 15 seconds countdown
+    }
+  }, [authLoading, user, redirectTimer]);
 
   // Redirect authenticated users with proper access
   useEffect(() => {
-    if (!authLoading && user && (isAdmin || isBarber) && !redirected) {
+    if (!authLoading && user && (isAdmin || isBarber)) {
       console.log('✅ User has access - redirecting to dashboard');
-      setRedirected(true);
-      navigate('/barbeiro');
+      navigate('/barbeiro', { replace: true });
     }
-  }, [user, authLoading, isBarber, isAdmin, navigate, redirected]);
+  }, [user, authLoading, isBarber, isAdmin, navigate]);
 
   const handleLoginSuccess = async (userId: string) => {
-    setRedirected(true);
-    navigate('/barbeiro');
+    // The redirect will be handled by the useEffect above
+    console.log('Login successful for user:', userId);
+  };
+
+  const handleGoHome = () => {
+    navigate('/');
   };
 
   // Show loading while checking auth
@@ -68,8 +80,8 @@ const BarberAuth: React.FC = () => {
             </div>
             <div className="mt-4 space-y-2">
               <button
-                onClick={() => navigate('/')}
-                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded"
+                onClick={handleGoHome}
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded transition-colors"
               >
                 Voltar para Home
               </button>
@@ -88,16 +100,13 @@ const BarberAuth: React.FC = () => {
           <p className="mt-2 text-gray-400">
             Acesso para barbeiros cadastrados
           </p>
-          {!user && timeLeft > 0 && !redirected && (
+          {!user && redirectTimer > 0 && (
             <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
               <p className="text-yellow-400 text-sm">
-                Redirecionando para a página inicial em {timeLeft} segundos
+                Redirecionando para a página inicial em {redirectTimer} segundos
               </p>
               <button
-                onClick={() => {
-                  setRedirected(true);
-                  navigate('/');
-                }}
+                onClick={handleGoHome}
                 className="mt-2 text-yellow-300 hover:text-yellow-100 underline text-sm"
               >
                 Clique aqui para ir agora
@@ -106,7 +115,7 @@ const BarberAuth: React.FC = () => {
           )}
         </div>
         
-        {!user && !redirected && (
+        {!user && (
           <div className="bg-zinc-900 shadow-lg rounded-lg p-6 border border-zinc-800">
             <BarberLoginForm 
               loading={loading}

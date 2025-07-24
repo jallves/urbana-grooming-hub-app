@@ -30,11 +30,13 @@ export const useBarberLogin = ({ loading, setLoading, onLoginSuccess }: UseBarbe
   });
 
   const onSubmit = async (data: BarberLoginForm) => {
+    if (loading) return;
+    
     setLoading(true);
     try {
       console.log('🔐 Attempting barber login for:', data.email);
       
-      // STEP 1: Attempt authentication first
+      // STEP 1: Attempt authentication
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
@@ -51,54 +53,13 @@ export const useBarberLogin = ({ loading, setLoading, onLoginSuccess }: UseBarbe
 
       console.log('✅ Authentication successful for:', authData.user.email);
       
-      // Give the AuthContext time to update the user roles
-      setTimeout(async () => {
-        try {
-          // Check if user has barber or admin role
-          const { data: roles, error: rolesError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', authData.user.id);
-          
-          if (rolesError) {
-            console.error('❌ Error checking roles:', rolesError);
-            await supabase.auth.signOut();
-            throw new Error('Erro ao verificar permissões');
-          }
-          
-          const userRoles = roles?.map(r => r.role) || [];
-          const hasAccess = userRoles.includes('admin') || userRoles.includes('barber');
-          
-          console.log('User roles:', userRoles, 'Has access:', hasAccess);
-          
-          if (!hasAccess) {
-            console.log('❌ User does NOT have barber or admin role - access denied');
-            await supabase.auth.signOut();
-            toast({
-              title: "Acesso Negado",
-              description: "Você não possui permissão de barbeiro. Entre em contato com o administrador.",
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          console.log('✅ User has proper access - login successful');
-          toast({
-            title: "Login realizado com sucesso!",
-            description: "Bem-vindo ao painel do barbeiro!",
-          });
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo ao painel do barbeiro!",
+      });
 
-          onLoginSuccess(authData.user.id);
-          
-        } catch (error: any) {
-          console.error('Error in role check:', error);
-          toast({
-            title: "Erro na verificação",
-            description: error.message || "Erro ao verificar permissões",
-            variant: "destructive",
-          });
-        }
-      }, 1000); // Wait 1 second for AuthContext to update
+      // Let the AuthContext handle the role verification
+      onLoginSuccess(authData.user.id);
       
     } catch (error: any) {
       console.error('Erro no login do barbeiro:', error);
@@ -109,8 +70,6 @@ export const useBarberLogin = ({ loading, setLoading, onLoginSuccess }: UseBarbe
         errorMessage = "Email ou senha incorretos. Tente novamente.";
       } else if (error.message?.includes('Email not confirmed')) {
         errorMessage = "Por favor, confirme seu email antes de fazer login.";
-      } else if (error.message?.includes('verificar')) {
-        errorMessage = error.message;
       }
       
       toast({
@@ -118,6 +77,7 @@ export const useBarberLogin = ({ loading, setLoading, onLoginSuccess }: UseBarbe
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
