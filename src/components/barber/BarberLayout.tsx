@@ -138,9 +138,9 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title = "Painel d
           </div>
         </header>
 
-        {/* Área principal */}
+        {/* Área principal - removendo padding no mobile */}
         <main className="flex-1 overflow-y-auto bg-gray-950">
-          <div className="w-full h-full p-0 sm:p-2 lg:p-4">
+          <div className="w-full h-full">
             {children}
           </div>
         </main>
