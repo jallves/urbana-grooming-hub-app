@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Control } from 'react-hook-form';
 import PasswordToggle from './PasswordToggle';
 import { BarberLoginForm } from '../hooks/useBarberLogin';
+import { Mail, Lock } from 'lucide-react';
 
 interface BarberLoginFieldsProps {
   control: Control<BarberLoginForm>;
@@ -19,23 +21,26 @@ const BarberLoginFields: React.FC<BarberLoginFieldsProps> = ({
   onTogglePassword,
 }) => {
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={control}
         name="email"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-white">Email</FormLabel>
+          <FormItem className="space-y-2">
+            <FormLabel className="text-white font-medium flex items-center gap-2">
+              <Mail className="h-4 w-4 text-amber-400" />
+              Email
+            </FormLabel>
             <FormControl>
               <Input
                 type="email"
                 placeholder="seu@email.com"
                 {...field}
                 disabled={loading}
-                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-400"
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12 transition-colors"
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-red-400" />
           </FormItem>
         )}
       />
@@ -44,8 +49,11 @@ const BarberLoginFields: React.FC<BarberLoginFieldsProps> = ({
         control={control}
         name="password"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-white">Senha</FormLabel>
+          <FormItem className="space-y-2">
+            <FormLabel className="text-white font-medium flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-400" />
+              Senha
+            </FormLabel>
             <FormControl>
               <div className="relative">
                 <Input
@@ -53,7 +61,7 @@ const BarberLoginFields: React.FC<BarberLoginFieldsProps> = ({
                   placeholder="Sua senha"
                   {...field}
                   disabled={loading}
-                  className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-400"
+                  className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12 pr-12 transition-colors"
                 />
                 <PasswordToggle
                   showPassword={showPassword}
@@ -61,11 +69,11 @@ const BarberLoginFields: React.FC<BarberLoginFieldsProps> = ({
                 />
               </div>
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-red-400" />
           </FormItem>
         )}
       />
-    </>
+    </div>
   );
 };
 

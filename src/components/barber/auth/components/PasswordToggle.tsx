@@ -14,7 +14,7 @@ const PasswordToggle: React.FC<PasswordToggleProps> = ({ showPassword, onToggle 
       type="button"
       variant="ghost"
       size="sm"
-      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-zinc-400 hover:text-white"
+      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-zinc-700/50 text-zinc-400 hover:text-amber-400 rounded-lg transition-colors"
       onClick={onToggle}
     >
       {showPassword ? (

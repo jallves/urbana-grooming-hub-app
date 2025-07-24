@@ -4,36 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import BarberLoginForm from '@/components/barber/auth/BarberLoginForm';
 import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Home, Scissors, Shield } from 'lucide-react';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [redirectTimer, setRedirectTimer] = useState<number>(0);
   const { user, isBarber, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-
-  // Timer for redirect to home
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    
-    if (!authLoading && !user && redirectTimer > 0) {
-      timer = setTimeout(() => {
-        setRedirectTimer(redirectTimer - 1);
-      }, 1000);
-    } else if (!authLoading && !user && redirectTimer === 0) {
-      navigate('/');
-    }
-
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [redirectTimer, user, authLoading, navigate]);
-
-  // Start redirect timer when component mounts and user is not authenticated
-  useEffect(() => {
-    if (!authLoading && !user && redirectTimer === 0) {
-      setRedirectTimer(15); // 15 seconds countdown
-    }
-  }, [authLoading, user, redirectTimer]);
 
   // Redirect authenticated users with proper access
   useEffect(() => {
@@ -44,7 +21,6 @@ const BarberAuth: React.FC = () => {
   }, [user, authLoading, isBarber, isAdmin, navigate]);
 
   const handleLoginSuccess = async (userId: string) => {
-    // The redirect will be handled by the useEffect above
     console.log('Login successful for user:', userId);
   };
 
@@ -60,31 +36,46 @@ const BarberAuth: React.FC = () => {
   // Show access denied message if user is logged in but doesn't have access
   if (!authLoading && user && !isAdmin && !isBarber) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black px-4">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-red-400">Acesso Negado</h1>
-            <div className="mt-6 p-4 bg-red-900/30 border border-red-600 rounded-lg">
-              <p className="text-red-400 text-sm font-medium mb-2">
-                ❌ Você não tem permissão para acessar esta área
-              </p>
-              <p className="text-red-300 text-xs mb-2">
-                <strong>Apenas barbeiros cadastrados pelo administrador</strong> podem acessar este painel.
-              </p>
-              <p className="text-red-300 text-xs mb-2">
-                Email detectado: <strong>{user.email}</strong>
-              </p>
-              <p className="text-red-300 text-xs">
-                Se você é barbeiro, entre em contato com o administrador para ser cadastrado no sistema.
-              </p>
-            </div>
-            <div className="mt-4 space-y-2">
-              <button
+      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+            <div className="text-center space-y-6">
+              {/* Icon */}
+              <div className="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                <Shield className="h-8 w-8 text-red-400" />
+              </div>
+
+              {/* Title */}
+              <div>
+                <h1 className="text-2xl font-bold text-red-400 mb-2">Acesso Negado</h1>
+                <p className="text-zinc-400 text-sm">
+                  Você não tem permissão para acessar esta área
+                </p>
+              </div>
+
+              {/* Error details */}
+              <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 text-left">
+                <div className="space-y-2 text-sm">
+                  <p className="text-red-300">
+                    <strong>Apenas barbeiros cadastrados</strong> podem acessar este painel.
+                  </p>
+                  <p className="text-red-400">
+                    Email: <span className="font-mono">{user.email}</span>
+                  </p>
+                  <p className="text-red-300">
+                    Entre em contato com o administrador para ser cadastrado no sistema.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action button */}
+              <Button
                 onClick={handleGoHome}
-                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded transition-colors"
+                className="w-full bg-zinc-700 hover:bg-zinc-600 text-white font-medium"
               >
+                <Home className="h-4 w-4 mr-2" />
                 Voltar para Home
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -93,37 +84,48 @@ const BarberAuth: React.FC = () => {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white">Costa Urbana</h1>
-          <p className="mt-2 text-gray-400">
-            Acesso para barbeiros cadastrados
-          </p>
-          {!user && redirectTimer > 0 && (
-            <div className="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
-              <p className="text-yellow-400 text-sm">
-                Redirecionando para a página inicial em {redirectTimer} segundos
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            {/* Logo */}
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
+              <Scissors className="h-8 w-8 text-black" />
+            </div>
+
+            {/* Title */}
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Costa Urbana</h1>
+              <p className="text-zinc-400">
+                Painel do Barbeiro
               </p>
-              <button
-                onClick={handleGoHome}
-                className="mt-2 text-yellow-300 hover:text-yellow-100 underline text-sm"
-              >
-                Clique aqui para ir agora
-              </button>
+            </div>
+          </div>
+
+          {/* Login Form */}
+          {!user && (
+            <div className="bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl p-8 shadow-2xl">
+              <BarberLoginForm 
+                loading={loading}
+                setLoading={setLoading}
+                onLoginSuccess={handleLoginSuccess}
+              />
             </div>
           )}
-        </div>
-        
-        {!user && (
-          <div className="bg-zinc-900 shadow-lg rounded-lg p-6 border border-zinc-800">
-            <BarberLoginForm 
-              loading={loading}
-              setLoading={setLoading}
-              onLoginSuccess={handleLoginSuccess}
-            />
+
+          {/* Back to home button */}
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              onClick={handleGoHome}
+              className="text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-xl"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Voltar para o site
+            </Button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
