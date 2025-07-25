@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -35,12 +35,20 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  if (!isAdmin && !(allowBarber && isBarber)) {
-    toast({
-      title: 'Acesso Restrito',
-      description: 'Você não tem permissão para acessar esta área',
-      variant: 'destructive',
-    });
+  const hasAccess = isAdmin || (allowBarber && isBarber);
+
+  // Use useEffect to show toast to avoid calling setState during render
+  useEffect(() => {
+    if (user && !hasAccess) {
+      toast({
+        title: 'Acesso Restrito',
+        description: 'Você não tem permissão para acessar esta área',
+        variant: 'destructive',
+      });
+    }
+  }, [user, hasAccess, toast]);
+
+  if (!hasAccess) {
     return <Navigate to="/" replace />;
   }
 
