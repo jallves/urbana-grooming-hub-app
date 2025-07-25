@@ -20,6 +20,19 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   const location = useLocation();
   const { toast } = useToast();
 
+  const hasAccess = user ? (isAdmin || (allowBarber && isBarber)) : false;
+
+  // Always call useEffect, but only show toast when conditions are met
+  useEffect(() => {
+    if (user && !loading && !hasAccess) {
+      toast({
+        title: 'Acesso Restrito',
+        description: 'Você não tem permissão para acessar esta área',
+        variant: 'destructive',
+      });
+    }
+  }, [user, loading, hasAccess, toast]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-gray-50">
@@ -34,19 +47,6 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
-
-  const hasAccess = isAdmin || (allowBarber && isBarber);
-
-  // Use useEffect to show toast to avoid calling setState during render
-  useEffect(() => {
-    if (user && !hasAccess) {
-      toast({
-        title: 'Acesso Restrito',
-        description: 'Você não tem permissão para acessar esta área',
-        variant: 'destructive',
-      });
-    }
-  }, [user, hasAccess, toast]);
 
   if (!hasAccess) {
     return <Navigate to="/" replace />;
