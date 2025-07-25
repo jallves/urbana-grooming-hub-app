@@ -1,83 +1,186 @@
 
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import TransactionList from './TransactionList';
-import EnhancedFinanceReports from './EnhancedFinanceReports';
-import CommissionPayments from './CommissionPayments';
-import CashRegister from './CashRegister';
-import { DollarSign, Receipt, TrendingUp, Calculator } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DollarSign, TrendingUp, TrendingDown, Calculator } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import CaixaTab from './CaixaTab';
+import TransacoesTab from './TransacoesTab';
+import ComissoesTab from './ComissoesTab';
+import RelatoriosTab from './RelatoriosTab';
+import FiltrosFinanceiros from './FiltrosFinanceiros';
+
+interface FinancialSummary {
+  receitaTotal: number;
+  despesaTotal: number;
+  comissaoTotal: number;
+  lucroLiquido: number;
+  margem: number;
+}
 
 const FinanceManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('cash-register');
+  const [activeTab, setActiveTab] = useState('caixa');
+  const [filters, setFilters] = useState({
+    mes: new Date().getMonth() + 1,
+    ano: new Date().getFullYear(),
+    tipo: 'todos',
+    barbeiro: 'todos'
+  });
+
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ['financial-summary', filters],
+    queryFn: async (): Promise<FinancialSummary> => {
+      const startDate = new Date(filters.ano, filters.mes - 1, 1);
+      const endDate = new Date(filters.ano, filters.mes, 0);
+
+      // Buscar todas as transações do período
+      const { data: transactions } = await supabase
+        .from('finance_transactions')
+        .select('*')
+        .gte('data', format(startDate, 'yyyy-MM-dd'))
+        .lte('data', format(endDate, 'yyyy-MM-dd'));
+
+      // Calcular totais
+      const receitas = transactions?.filter(t => t.tipo === 'receita') || [];
+      const despesas = transactions?.filter(t => t.tipo === 'despesa') || [];
+      const comissoes = despesas.filter(d => d.categoria === 'comissao') || [];
+
+      const receitaTotal = receitas.reduce((sum, t) => sum + Number(t.valor), 0);
+      const despesaTotal = despesas.reduce((sum, t) => sum + Number(t.valor), 0);
+      const comissaoTotal = comissoes.reduce((sum, t) => sum + Number(t.valor), 0);
+      const lucroLiquido = receitaTotal - despesaTotal;
+      const margem = receitaTotal > 0 ? (lucroLiquido / receitaTotal) * 100 : 0;
+
+      return {
+        receitaTotal,
+        despesaTotal,
+        comissaoTotal,
+        lucroLiquido,
+        margem
+      };
+    }
+  });
+
+  const summaryCards = [
+    {
+      title: 'Receita Total',
+      value: `R$ ${summary?.receitaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      icon: DollarSign,
+      color: 'text-green-500',
+      bgColor: 'bg-green-500/10'
+    },
+    {
+      title: 'Despesas',
+      value: `R$ ${summary?.despesaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      icon: TrendingDown,
+      color: 'text-red-500',
+      bgColor: 'bg-red-500/10'
+    },
+    {
+      title: 'Comissões',
+      value: `R$ ${summary?.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      icon: Calculator,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10'
+    },
+    {
+      title: 'Lucro Líquido',
+      value: `R$ ${summary?.lucroLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      icon: TrendingUp,
+      color: summary?.lucroLiquido >= 0 ? 'text-green-500' : 'text-red-500',
+      bgColor: summary?.lucroLiquido >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'
+    }
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-white">
-      <Tabs 
-        defaultValue="cash-register" 
-        value={activeTab} 
-        onValueChange={setActiveTab} 
-        className="flex-1 flex flex-col min-h-0"
-      >
-        <TabsList className="grid w-full grid-cols-4 bg-gray-800 border border-urbana-gold/20 rounded-lg p-1 mb-4 h-auto flex-shrink-0">
+    <div className="space-y-6">
+      {/* Filtros */}
+      <FiltrosFinanceiros 
+        filters={filters} 
+        onFiltersChange={setFilters} 
+      />
+
+      {/* Cards de Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {summaryCards.map((card, index) => (
+          <Card key={index} className="bg-gray-800 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">
+                {card.title}
+              </CardTitle>
+              <div className={`p-2 rounded-full ${card.bgColor}`}>
+                <card.icon className={`h-4 w-4 ${card.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${card.color}`}>
+                {card.value}
+              </div>
+              {card.title === 'Lucro Líquido' && summary && (
+                <p className={`text-xs ${summary.margem >= 20 ? 'text-green-500' : 'text-red-500'}`}>
+                  Margem: {summary.margem.toFixed(1)}%
+                  {summary.margem < 20 && ' ⚠️'}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs do Módulo */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-800">
           <TabsTrigger 
-            value="cash-register" 
-            className="flex items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-white hover:text-urbana-gold font-raleway font-medium transition-all duration-300"
+            value="caixa" 
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            <Calculator className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Caixa</span>
-            <span className="sm:hidden">Caixa</span>
+            Caixa
           </TabsTrigger>
           <TabsTrigger 
-            value="transactions" 
-            className="flex items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-white hover:text-urbana-gold font-raleway font-medium transition-all duration-300"
+            value="transacoes"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Transações</span>
-            <span className="sm:hidden">Trans</span>
+            Transações
           </TabsTrigger>
           <TabsTrigger 
-            value="commissions" 
-            className="flex items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-white hover:text-urbana-gold font-raleway font-medium transition-all duration-300"
+            value="comissoes"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Comissões</span>
-            <span className="sm:hidden">Com</span>
+            Comissões
           </TabsTrigger>
           <TabsTrigger 
-            value="reports" 
-            className="flex items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-white hover:text-urbana-gold font-raleway font-medium transition-all duration-300"
+            value="relatorios"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Relatórios</span>
-            <span className="sm:hidden">Rel</span>
+            Relatórios
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="cash-register" className="flex-1 min-h-0">
-          <div className="h-full space-y-4">
-            <CashRegister />
-            <div className="flex-1 bg-gray-800 border border-gray-700 rounded-lg min-h-0">
-              <TransactionList />
-            </div>
-          </div>
+        <TabsContent value="caixa" className="mt-6">
+          <CaixaTab filters={filters} />
         </TabsContent>
 
-        <TabsContent value="transactions" className="flex-1 min-h-0">
-          <div className="h-full bg-gray-800 border border-gray-700 rounded-lg">
-            <TransactionList />
-          </div>
+        <TabsContent value="transacoes" className="mt-6">
+          <TransacoesTab filters={filters} />
         </TabsContent>
 
-        <TabsContent value="commissions" className="flex-1 min-h-0">
-          <div className="h-full bg-gray-800 border border-gray-700 rounded-lg">
-            <CommissionPayments />
-          </div>
+        <TabsContent value="comissoes" className="mt-6">
+          <ComissoesTab filters={filters} />
         </TabsContent>
 
-        <TabsContent value="reports" className="flex-1 min-h-0">
-          <div className="h-full bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-            <EnhancedFinanceReports />
-          </div>
+        <TabsContent value="relatorios" className="mt-6">
+          <RelatoriosTab filters={filters} />
         </TabsContent>
       </Tabs>
     </div>

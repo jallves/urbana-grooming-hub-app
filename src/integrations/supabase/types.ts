@@ -1003,6 +1003,57 @@ export type Database = {
         }
         Relationships: []
       }
+      comissoes: {
+        Row: {
+          agendamento_id: string
+          barbeiro_id: string
+          created_at: string
+          data: string
+          id: string
+          percentual: number
+          status: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          agendamento_id: string
+          barbeiro_id: string
+          created_at?: string
+          data?: string
+          id?: string
+          percentual: number
+          status?: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          agendamento_id?: string
+          barbeiro_id?: string
+          created_at?: string
+          data?: string
+          id?: string
+          percentual?: number
+          status?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comissoes_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comissoes_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuration_backups: {
         Row: {
           backup_data: Json
@@ -1308,6 +1359,63 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_transactions: {
+        Row: {
+          agendamento_id: string | null
+          barbeiro_id: string | null
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          status: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          agendamento_id?: string | null
+          barbeiro_id?: string | null
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          status?: string
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          agendamento_id?: string | null
+          barbeiro_id?: string | null
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_transactions_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -1357,6 +1465,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fixed_expenses: {
+        Row: {
+          created_at: string
+          id: string
+          pago_em: string | null
+          recorrente: boolean
+          tipo: string
+          updated_at: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pago_em?: string | null
+          recorrente?: boolean
+          tipo: string
+          updated_at?: string
+          valor: number
+          vencimento: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pago_em?: string | null
+          recorrente?: boolean
+          tipo?: string
+          updated_at?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: []
       }
       food_analysis: {
         Row: {
