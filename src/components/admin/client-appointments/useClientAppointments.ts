@@ -1,6 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppointmentSync } from '@/hooks/useAppointmentSync';
+import { toast } from 'sonner';
 
 interface PainelAgendamento {
   id: string;
@@ -60,6 +62,7 @@ export const useClientAppointments = () => {
       setAppointments(data || []);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
+      toast.error('Erro ao carregar agendamentos');
     } finally {
       setIsLoading(false);
     }
@@ -73,18 +76,17 @@ export const useClientAppointments = () => {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // Atualiza status de agendamento
+  // Atualiza status de agendamento com feedback visual
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
-    // Mapeia status para valores do banco
-    const painelStatus =
-      newStatus === 'cancelled' ? 'cancelado' :
-      newStatus === 'confirmed' ? 'confirmado' :
-      newStatus === 'completed' ? 'concluido' : 'confirmado';
-
     try {
+      console.log('Updating appointment status:', appointmentId, 'to:', newStatus);
+      
       const { error } = await supabase
         .from('painel_agendamentos')
-        .update({ status: painelStatus })
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', appointmentId);
 
       if (error) throw error;
@@ -92,11 +94,22 @@ export const useClientAppointments = () => {
       // Atualiza localmente para refletir mudanças imediatas
       setAppointments(prev =>
         prev.map(appointment =>
-          appointment.id === appointmentId ? { ...appointment, status: painelStatus } : appointment
+          appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
         )
       );
+
+      // Feedback visual baseado no status
+      const statusMessages = {
+        'confirmado': 'Agendamento confirmado com sucesso!',
+        'concluido': 'Agendamento marcado como concluído!',
+        'cancelado': 'Agendamento cancelado!'
+      };
+
+      toast.success(statusMessages[newStatus as keyof typeof statusMessages] || 'Status atualizado!');
+      
     } catch (error) {
       console.error('Erro ao atualizar status do agendamento:', error);
+      toast.error('Erro ao atualizar status do agendamento');
     }
   }, []);
 
@@ -111,9 +124,11 @@ export const useClientAppointments = () => {
       if (error) throw error;
 
       setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
+      toast.success('Agendamento excluído com sucesso!');
       return true;
     } catch (error) {
       console.error('Erro ao deletar agendamento:', error);
+      toast.error('Erro ao excluir agendamento');
       return false;
     }
   }, []);
@@ -123,16 +138,21 @@ export const useClientAppointments = () => {
     try {
       const { error } = await supabase
         .from('painel_agendamentos')
-        .update(data)
+        .update({
+          ...data,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', appointmentId);
 
       if (error) throw error;
 
       // Atualiza lista após edição
       fetchAppointments();
+      toast.success('Agendamento atualizado com sucesso!');
       return true;
     } catch (error) {
       console.error('Erro ao atualizar agendamento:', error);
+      toast.error('Erro ao atualizar agendamento');
       return false;
     }
   }, [fetchAppointments]);

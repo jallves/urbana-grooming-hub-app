@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle } from 'lucide-react';
+import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -63,6 +65,7 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
       'confirmado': { variant: 'default' as const, label: 'Confirmado', className: 'bg-blue-50 text-blue-700 border-blue-200' },
       'concluido': { variant: 'outline' as const, label: 'Concluído', className: 'bg-green-50 text-green-700 border-green-200' },
       'cancelado': { variant: 'destructive' as const, label: 'Cancelado', className: 'bg-red-50 text-red-700 border-red-200' },
+      'agendado': { variant: 'outline' as const, label: 'Agendado', className: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.confirmado;
@@ -137,11 +140,20 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
               <span className="sr-only">Abrir menu</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40 sm:w-48 bg-white border border-gray-200">
+          <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200">
             <DropdownMenuItem onClick={() => onEdit(appointment.id)} className="hover:bg-gray-50">
               <Edit className="mr-2 h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
               <span className="text-xs sm:text-sm text-gray-700">Editar</span>
             </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            {appointment.status !== 'agendado' && (
+              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'agendado')} className="hover:bg-gray-50">
+                <Clock className="mr-2 h-3 w-3 sm:h-4 sm:w-4 text-yellow-600" />
+                <span className="text-xs sm:text-sm text-gray-700">Marcar como Agendado</span>
+              </DropdownMenuItem>
+            )}
             
             {appointment.status !== 'confirmado' && (
               <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmado')} className="hover:bg-gray-50">
@@ -163,6 +175,8 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
                 <span className="text-xs sm:text-sm text-gray-700">Cancelar</span>
               </DropdownMenuItem>
             )}
+            
+            <DropdownMenuSeparator />
             
             <DropdownMenuItem 
               className="text-red-600 hover:bg-red-50"
