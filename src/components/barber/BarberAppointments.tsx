@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -8,8 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBarberAppointments } from '@/hooks/useBarberAppointments';
-import BarberLayout from './BarberLayout';
-import StandardBarberLayout from './layouts/StandardBarberLayout';
 import StandardCard from './layouts/StandardCard';
 
 const BarberAppointments: React.FC = () => {
@@ -87,10 +86,10 @@ const BarberAppointments: React.FC = () => {
   }, [appointments]);
 
   return (
-    <BarberLayout title="Meus Agendamentos">
-      <StandardBarberLayout>
+    <div className="w-full h-full min-h-screen">
+      <div className="w-full space-y-3 p-3 sm:p-4 lg:p-6">
         {/* Header com filtros */}
-        <div className="w-full space-y-3">
+        <StandardCard>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div className="flex-1">
               <Input
@@ -114,7 +113,7 @@ const BarberAppointments: React.FC = () => {
               </Select>
             </div>
           </div>
-        </div>
+        </StandardCard>
 
         {/* Tabs para filtrar por período */}
         <div className="w-full flex-1 min-h-0 flex flex-col">
@@ -221,8 +220,8 @@ const BarberAppointments: React.FC = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </StandardBarberLayout>
-    </BarberLayout>
+      </div>
+    </div>
   );
 };
 

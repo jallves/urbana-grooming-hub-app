@@ -142,28 +142,28 @@ const BarberClients: React.FC = () => {
 
   return (
     <div className="w-full h-full min-h-screen">
-      <div className="w-full space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="w-full space-y-3 p-2 sm:p-3 lg:p-4">
         {/* Header */}
         <StandardCard>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-r from-blue-500/10 to-blue-600/5 rounded-lg flex items-center justify-center">
                 <Users className="h-5 w-5 text-blue-400" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-bold text-white">Meus Clientes</h2>
+                <h2 className="text-base sm:text-lg font-bold text-white">Meus Clientes</h2>
                 <p className="text-xs sm:text-sm text-gray-400">{clients.length} clientes atendidos</p>
               </div>
             </div>
             
-            <div className="w-full sm:w-auto sm:min-w-[300px]">
+            <div className="w-full sm:w-auto sm:min-w-[250px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Buscar cliente..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder-gray-400"
+                  className="pl-10 bg-gray-800/50 border-gray-700/50 text-white placeholder-gray-400 h-10"
                 />
               </div>
             </div>
@@ -173,12 +173,12 @@ const BarberClients: React.FC = () => {
         {/* Clients Grid */}
         {filteredClients.length === 0 ? (
           <StandardCard>
-            <div className="text-center py-8 sm:py-12">
-              <Users className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-white mb-2">
                 {clients.length === 0 ? 'Nenhum cliente encontrado' : 'Nenhum resultado'}
               </h3>
-              <p className="text-sm sm:text-base text-gray-400">
+              <p className="text-sm text-gray-400">
                 {clients.length === 0 
                   ? 'Os clientes aparecerão aqui conforme você realizar atendimentos'
                   : 'Tente ajustar sua busca'
@@ -187,7 +187,7 @@ const BarberClients: React.FC = () => {
             </div>
           </StandardCard>
         ) : (
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
             {filteredClients.map((client) => {
               const history = appointmentHistory[client.id] || [];
               const totalAppointments = history.length;
@@ -198,24 +198,24 @@ const BarberClients: React.FC = () => {
 
               return (
                 <StandardCard key={client.id}>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {/* Client Info */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-white text-base sm:text-lg truncate">
+                        <h3 className="font-semibold text-white text-sm sm:text-base truncate">
                           {client.nome}
                         </h3>
                         <div className="space-y-1 mt-2">
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
                             <Mail className="h-3 w-3 flex-shrink-0" />
                             <span className="truncate">{client.email}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
                             <Phone className="h-3 w-3 flex-shrink-0" />
                             <span>{client.whatsapp}</span>
                           </div>
                           {client.data_nascimento && (
-                            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
                               <Calendar className="h-3 w-3 flex-shrink-0" />
                               <span>
                                 {format(new Date(client.data_nascimento), 'dd/MM/yyyy', { locale: ptBR })}
@@ -227,17 +227,17 @@ const BarberClients: React.FC = () => {
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-3 gap-3 py-3 border-t border-gray-700/50">
+                    <div className="grid grid-cols-3 gap-2 py-2 border-t border-gray-700/50">
                       <div className="text-center">
-                        <div className="text-sm sm:text-base font-bold text-white">{totalAppointments}</div>
+                        <div className="text-sm font-bold text-white">{totalAppointments}</div>
                         <div className="text-xs text-gray-400">Total</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-sm sm:text-base font-bold text-green-400">{completedAppointments}</div>
+                        <div className="text-sm font-bold text-green-400">{completedAppointments}</div>
                         <div className="text-xs text-gray-400">Concluídos</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-sm sm:text-base font-bold text-urbana-gold">
+                        <div className="text-sm font-bold text-urbana-gold">
                           R$ {totalSpent.toFixed(0)}
                         </div>
                         <div className="text-xs text-gray-400">Gasto</div>
@@ -247,9 +247,9 @@ const BarberClients: React.FC = () => {
                     {/* Recent History */}
                     {history.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-xs sm:text-sm font-medium text-gray-300">Últimos atendimentos</h4>
-                        <div className="space-y-2 max-h-32 overflow-y-auto">
-                          {history.slice(0, 3).map((appointment) => (
+                        <h4 className="text-xs font-medium text-gray-300">Últimos atendimentos</h4>
+                        <div className="space-y-1 max-h-24 overflow-y-auto">
+                          {history.slice(0, 2).map((appointment) => (
                             <div key={appointment.id} className="flex items-center justify-between p-2 bg-gray-700/30 rounded text-xs">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
