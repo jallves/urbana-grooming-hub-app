@@ -32,14 +32,37 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
         const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
-        const { data: transactions } = await supabase
-          .from('finance_transactions')
-          .select('tipo, valor')
+        // Receitas dos agendamentos concluídos
+        const { data: agendamentos } = await supabase
+          .from('painel_agendamentos')
+          .select(`
+            painel_servicos!inner(preco)
+          `)
+          .eq('status', 'concluido')
           .gte('data', format(startDate, 'yyyy-MM-dd'))
           .lte('data', format(endDate, 'yyyy-MM-dd'));
 
-        const receitas = transactions?.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + Number(t.valor), 0) || 0;
-        const despesas = transactions?.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + Number(t.valor), 0) || 0;
+        const receitas = agendamentos?.reduce((sum, a) => 
+          sum + Number(a.painel_servicos?.preco || 0), 0) || 0;
+
+        // Despesas do fluxo de caixa + comissões pagas
+        const { data: despesasCaixa } = await supabase
+          .from('cash_flow')
+          .select('amount')
+          .eq('transaction_type', 'expense')
+          .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))
+          .lte('transaction_date', format(endDate, 'yyyy-MM-dd'));
+
+        const { data: comissoesPagas } = await supabase
+          .from('barber_commissions')
+          .select('amount')
+          .eq('status', 'paid')
+          .gte('paid_at', startDate.toISOString())
+          .lte('paid_at', endDate.toISOString());
+
+        const despesasCaixaTotal = despesasCaixa?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
+        const comissoesTotal = comissoesPagas?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+        const despesas = despesasCaixaTotal + comissoesTotal;
 
         months.push({
           month: format(date, 'MMM', { locale: ptBR }),
@@ -59,22 +82,38 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
-      const { data: transactions } = await supabase
-        .from('finance_transactions')
-        .select('categoria, valor, tipo')
-        .gte('data', format(startDate, 'yyyy-MM-dd'))
-        .lte('data', format(endDate, 'yyyy-MM-dd'));
+      // Categorias de despesas
+      const { data: despesas } = await supabase
+        .from('cash_flow')
+        .select('category, amount')
+        .eq('transaction_type', 'expense')
+        .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))
+        .lte('transaction_date', format(endDate, 'yyyy-MM-dd'));
 
-      const categories = transactions?.reduce((acc, transaction) => {
-        const key = transaction.categoria;
+      // Comissões como categoria
+      const { data: comissoes } = await supabase
+        .from('barber_commissions')
+        .select('amount')
+        .eq('status', 'paid')
+        .gte('paid_at', startDate.toISOString())
+        .lte('paid_at', endDate.toISOString());
+
+      const categories = despesas?.reduce((acc, despesa) => {
+        const key = despesa.category;
         if (!acc[key]) {
           acc[key] = 0;
         }
-        acc[key] += Number(transaction.valor);
+        acc[key] += Number(despesa.amount);
         return acc;
-      }, {} as Record<string, number>);
+      }, {} as Record<string, number>) || {};
 
-      return Object.entries(categories || {}).map(([name, value]) => ({
+      // Adicionar comissões
+      const comissaoTotal = comissoes?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      if (comissaoTotal > 0) {
+        categories['Comissões'] = comissaoTotal;
+      }
+
+      return Object.entries(categories).map(([name, value]) => ({
         name,
         value
       }));
@@ -87,25 +126,82 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
-      const { data: transactions } = await supabase
-        .from('finance_transactions')
+      // Receitas dos agendamentos
+      const { data: agendamentos } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          data,
+          painel_servicos!inner(nome, preco),
+          painel_barbeiros!inner(nome)
+        `)
+        .eq('status', 'concluido')
+        .gte('data', format(startDate, 'yyyy-MM-dd'))
+        .lte('data', format(endDate, 'yyyy-MM-dd'));
+
+      // Despesas do fluxo de caixa
+      const { data: despesas } = await supabase
+        .from('cash_flow')
+        .select('*')
+        .eq('transaction_type', 'expense')
+        .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))
+        .lte('transaction_date', format(endDate, 'yyyy-MM-dd'));
+
+      // Comissões
+      const { data: comissoes } = await supabase
+        .from('barber_commissions')
         .select(`
           *,
-          staff:barbeiro_id(name)
+          staff:barber_id(name)
         `)
-        .gte('data', format(startDate, 'yyyy-MM-dd'))
-        .lte('data', format(endDate, 'yyyy-MM-dd'))
-        .order('data', { ascending: false });
+        .eq('status', 'paid')
+        .gte('paid_at', startDate.toISOString())
+        .lte('paid_at', endDate.toISOString());
 
-      return transactions?.map(transaction => ({
-        Data: format(new Date(transaction.data), 'dd/MM/yyyy'),
-        Tipo: transaction.tipo,
-        Categoria: transaction.categoria,
-        Descrição: transaction.descricao,
-        Valor: Number(transaction.valor),
-        Barbeiro: transaction.staff?.name || 'Sistema',
-        Status: transaction.status
-      })) || [];
+      const exportData = [];
+
+      // Adicionar receitas
+      agendamentos?.forEach(agendamento => {
+        exportData.push({
+          Data: format(new Date(agendamento.data), 'dd/MM/yyyy'),
+          Tipo: 'Receita',
+          Categoria: 'Serviços',
+          Descrição: agendamento.painel_servicos?.nome,
+          Valor: Number(agendamento.painel_servicos?.preco || 0),
+          Barbeiro: agendamento.painel_barbeiros?.nome,
+          'Forma de Pagamento': '',
+          Observações: ''
+        });
+      });
+
+      // Adicionar despesas
+      despesas?.forEach(despesa => {
+        exportData.push({
+          Data: format(new Date(despesa.transaction_date), 'dd/MM/yyyy'),
+          Tipo: 'Despesa',
+          Categoria: despesa.category,
+          Descrição: despesa.description,
+          Valor: Number(despesa.amount),
+          Barbeiro: '',
+          'Forma de Pagamento': despesa.payment_method || '',
+          Observações: despesa.notes || ''
+        });
+      });
+
+      // Adicionar comissões
+      comissoes?.forEach(comissao => {
+        exportData.push({
+          Data: format(new Date(comissao.paid_at!), 'dd/MM/yyyy'),
+          Tipo: 'Despesa',
+          Categoria: 'Comissões',
+          Descrição: `Comissão - ${comissao.staff?.name}`,
+          Valor: Number(comissao.amount),
+          Barbeiro: comissao.staff?.name,
+          'Forma de Pagamento': comissao.payment_method || '',
+          Observações: comissao.notes || ''
+        });
+      });
+
+      return exportData.sort((a, b) => new Date(b.Data.split('/').reverse().join('-')).getTime() - new Date(a.Data.split('/').reverse().join('-')).getTime());
     }
   });
 
@@ -114,7 +210,7 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Transações');
+    XLSX.utils.book_append_sheet(wb, ws, 'Relatório Financeiro');
 
     // Adicionar formatação
     const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
@@ -152,7 +248,7 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         </CardHeader>
         <CardContent>
           <p className="text-gray-400">
-            Exporte todas as transações do período selecionado para uma planilha Excel.
+            Exporte todas as transações do período selecionado incluindo receitas automáticas dos agendamentos, despesas manuais e comissões pagas.
           </p>
         </CardContent>
       </Card>
@@ -162,7 +258,7 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         <CardHeader>
           <CardTitle className="text-white flex items-center">
             <TrendingUp className="h-5 w-5 mr-2" />
-            Evolução Mensal
+            Evolução Mensal (Últimos 6 Meses)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -207,12 +303,12 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         </CardContent>
       </Card>
 
-      {/* Gráfico de Categorias */}
+      {/* Gráfico de Categorias de Despesas */}
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center">
             <BarChart3 className="h-5 w-5 mr-2" />
-            Distribuição por Categoria
+            Distribuição de Despesas por Categoria
           </CardTitle>
         </CardHeader>
         <CardContent>

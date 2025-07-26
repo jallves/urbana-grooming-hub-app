@@ -4,6 +4,7 @@ import { Database } from '@/integrations/supabase/types';
 export type CashFlow = Database['public']['Tables']['cash_flow']['Row'];
 export type NewCashFlow = Omit<CashFlow, 'id' | 'created_at' | 'updated_at'>;
 export type CashFlowCategory = Database['public']['Tables']['cash_flow_categories']['Row'];
+export type BarberCommission = Database['public']['Tables']['barber_commissions']['Row'];
 
 export interface CashFlowFormData {
   transaction_type: 'income' | 'expense';
@@ -29,4 +30,11 @@ export interface CategoryStats {
   amount: number;
   percentage: number;
   color: string;
+}
+
+export interface CommissionPayment {
+  id: string;
+  amount: number;
+  payment_method: string;
+  notes?: string;
 }

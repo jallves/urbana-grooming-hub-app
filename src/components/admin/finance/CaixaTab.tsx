@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Calendar, Scissors } from 'lucide-react';
 
 interface CaixaTabProps {
   filters: {
@@ -19,48 +19,88 @@ interface CaixaTabProps {
 
 interface Transaction {
   id: string;
-  tipo: 'receita' | 'despesa';
-  categoria: string;
-  descricao: string;
-  valor: number;
-  data: string;
-  status: string;
-  barbeiro_id?: string;
-  staff?: { name: string };
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  category: string;
+  time: string;
+  payment_method?: string;
+  barber?: string;
 }
 
 const CaixaTab: React.FC<CaixaTabProps> = ({ filters }) => {
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['caixa-transactions', filters],
+    queryKey: ['daily-transactions', filters],
     queryFn: async () => {
       const today = new Date();
-      const startDate = format(today, 'yyyy-MM-dd');
+      const todayStr = format(today, 'yyyy-MM-dd');
 
-      let query = supabase
-        .from('finance_transactions')
+      // Buscar agendamentos concluídos do dia (receitas)
+      const { data: agendamentos } = await supabase
+        .from('painel_agendamentos')
         .select(`
-          *,
-          staff:barbeiro_id(name)
+          id,
+          data,
+          hora,
+          status,
+          painel_servicos!inner(nome, preco),
+          painel_barbeiros!inner(nome)
         `)
-        .eq('data', startDate)
-        .order('created_at', { ascending: false });
+        .eq('status', 'concluido')
+        .eq('data', todayStr);
 
-      if (filters.tipo !== 'todos') {
-        query = query.eq('tipo', filters.tipo);
-      }
+      // Buscar transações do fluxo de caixa do dia (despesas)
+      const { data: cashFlow } = await supabase
+        .from('cash_flow')
+        .select('*')
+        .eq('transaction_date', todayStr);
 
-      if (filters.barbeiro !== 'todos') {
-        query = query.eq('barbeiro_id', filters.barbeiro);
-      }
+      const transactions: Transaction[] = [];
 
-      const { data } = await query;
-      return data as Transaction[] || [];
+      // Adicionar receitas dos agendamentos
+      agendamentos?.forEach(agendamento => {
+        transactions.push({
+          id: `agendamento-${agendamento.id}`,
+          type: 'income',
+          amount: Number(agendamento.painel_servicos?.preco || 0),
+          description: `Serviço: ${agendamento.painel_servicos?.nome}`,
+          category: 'Serviços',
+          time: agendamento.hora || '',
+          barber: agendamento.painel_barbeiros?.nome
+        });
+      });
+
+      // Adicionar transações do fluxo de caixa
+      cashFlow?.forEach(transaction => {
+        transactions.push({
+          id: `cash-${transaction.id}`,
+          type: transaction.transaction_type as 'income' | 'expense',
+          amount: Number(transaction.amount),
+          description: transaction.description,
+          category: transaction.category,
+          time: format(new Date(transaction.created_at), 'HH:mm'),
+          payment_method: transaction.payment_method
+        });
+      });
+
+      // Ordenar por horário
+      return transactions.sort((a, b) => b.time.localeCompare(a.time));
     }
   });
 
-  const totalReceitas = transactions?.filter(t => t.tipo === 'receita').reduce((sum, t) => sum + Number(t.valor), 0) || 0;
-  const totalDespesas = transactions?.filter(t => t.tipo === 'despesa').reduce((sum, t) => sum + Number(t.valor), 0) || 0;
-  const saldoDiario = totalReceitas - totalDespesas;
+  const totals = transactions?.reduce(
+    (acc, transaction) => {
+      if (transaction.type === 'income') {
+        acc.receitas += transaction.amount;
+      } else {
+        acc.despesas += transaction.amount;
+      }
+      return acc;
+    },
+    { receitas: 0, despesas: 0 }
+  ) || { receitas: 0, despesas: 0 };
+
+  const saldoDiario = totals.receitas - totals.despesas;
 
   if (isLoading) {
     return (
@@ -83,7 +123,7 @@ const CaixaTab: React.FC<CaixaTabProps> = ({ filters }) => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-500">
-              R$ {totalReceitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {totals.receitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -97,7 +137,7 @@ const CaixaTab: React.FC<CaixaTabProps> = ({ filters }) => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-500">
-              R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {totals.despesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -133,30 +173,35 @@ const CaixaTab: React.FC<CaixaTabProps> = ({ filters }) => {
                 <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${
-                      transaction.tipo === 'receita' ? 'bg-green-500/20' : 'bg-red-500/20'
+                      transaction.type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'
                     }`}>
-                      {transaction.tipo === 'receita' ? (
+                      {transaction.category === 'Serviços' ? (
+                        <Scissors className="h-4 w-4 text-green-500" />
+                      ) : transaction.type === 'income' ? (
                         <ArrowUpRight className="h-4 w-4 text-green-500" />
                       ) : (
                         <ArrowDownRight className="h-4 w-4 text-red-500" />
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-white">{transaction.descricao}</p>
+                      <p className="font-medium text-white">{transaction.description}</p>
                       <p className="text-sm text-gray-400">
-                        {transaction.categoria} • {transaction.staff?.name || 'Sistema'}
+                        {transaction.category} • {transaction.barber || 'Sistema'}
+                        {transaction.time && ` • ${transaction.time}`}
                       </p>
+                      {transaction.payment_method && (
+                        <p className="text-xs text-gray-500">
+                          Via: {transaction.payment_method}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="text-right">
                     <p className={`font-bold ${
-                      transaction.tipo === 'receita' ? 'text-green-500' : 'text-red-500'
+                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
                     }`}>
-                      {transaction.tipo === 'receita' ? '+' : '-'}R$ {Number(transaction.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {transaction.type === 'income' ? '+' : '-'}R$ {transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
-                    <Badge variant={transaction.status === 'pago' ? 'default' : 'secondary'}>
-                      {transaction.status}
-                    </Badge>
                   </div>
                 </div>
               ))

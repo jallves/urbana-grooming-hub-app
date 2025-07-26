@@ -17,6 +17,7 @@ interface FinancialSummary {
   receitaTotal: number;
   despesaTotal: number;
   comissaoTotal: number;
+  comissaoPendente: number;
   lucroLiquido: number;
   margem: number;
 }
@@ -36,21 +37,44 @@ const FinanceManagement: React.FC = () => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
-      // Buscar todas as transações do período
-      const { data: transactions } = await supabase
-        .from('finance_transactions')
-        .select('*')
+      // Buscar receitas do painel de agendamentos concluídos
+      const { data: agendamentos } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_servicos!inner(preco)
+        `)
+        .eq('status', 'concluido')
         .gte('data', format(startDate, 'yyyy-MM-dd'))
         .lte('data', format(endDate, 'yyyy-MM-dd'));
 
-      // Calcular totais
-      const receitas = transactions?.filter(t => t.tipo === 'receita') || [];
-      const despesas = transactions?.filter(t => t.tipo === 'despesa') || [];
-      const comissoes = despesas.filter(d => d.categoria === 'comissao') || [];
+      // Calcular receita total dos serviços
+      const receitaTotal = agendamentos?.reduce((sum, agendamento) => 
+        sum + Number(agendamento.painel_servicos?.preco || 0), 0) || 0;
 
-      const receitaTotal = receitas.reduce((sum, t) => sum + Number(t.valor), 0);
-      const despesaTotal = despesas.reduce((sum, t) => sum + Number(t.valor), 0);
-      const comissaoTotal = comissoes.reduce((sum, t) => sum + Number(t.valor), 0);
+      // Buscar comissões do período
+      const { data: comissoes } = await supabase
+        .from('barber_commissions')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      const comissaoTotal = comissoes?.filter(c => c.status === 'paid')
+        .reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+
+      const comissaoPendente = comissoes?.filter(c => c.status === 'pending')
+        .reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+
+      // Buscar despesas do fluxo de caixa
+      const { data: despesas } = await supabase
+        .from('cash_flow')
+        .select('amount')
+        .eq('transaction_type', 'expense')
+        .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))
+        .lte('transaction_date', format(endDate, 'yyyy-MM-dd'));
+
+      const despesasCaixa = despesas?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
+      const despesaTotal = despesasCaixa + comissaoTotal;
       const lucroLiquido = receitaTotal - despesaTotal;
       const margem = receitaTotal > 0 ? (lucroLiquido / receitaTotal) * 100 : 0;
 
@@ -58,6 +82,7 @@ const FinanceManagement: React.FC = () => {
         receitaTotal,
         despesaTotal,
         comissaoTotal,
+        comissaoPendente,
         lucroLiquido,
         margem
       };
@@ -73,18 +98,18 @@ const FinanceManagement: React.FC = () => {
       bgColor: 'bg-green-500/10'
     },
     {
-      title: 'Despesas',
+      title: 'Despesas + Comissões',
       value: `R$ ${summary?.despesaTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
       icon: TrendingDown,
       color: 'text-red-500',
       bgColor: 'bg-red-500/10'
     },
     {
-      title: 'Comissões',
-      value: `R$ ${summary?.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
+      title: 'Comissões Pendentes',
+      value: `R$ ${summary?.comissaoPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`,
       icon: Calculator,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10'
+      color: 'text-yellow-500',
+      bgColor: 'bg-yellow-500/10'
     },
     {
       title: 'Lucro Líquido',
@@ -105,7 +130,6 @@ const FinanceManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Filtros */}
       <FiltrosFinanceiros 
         filters={filters} 
         onFiltersChange={setFilters} 

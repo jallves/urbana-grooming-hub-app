@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -23,90 +23,96 @@ interface TransacoesTabProps {
   };
 }
 
-interface Transaction {
+interface CashFlowTransaction {
   id: string;
-  tipo: 'receita' | 'despesa';
-  categoria: string;
-  descricao: string;
-  valor: number;
-  data: string;
-  status: string;
-  barbeiro_id?: string;
-  staff?: { name: string };
+  transaction_type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  category: string;
+  payment_method?: string;
+  notes?: string;
+  transaction_date: string;
+  created_at: string;
 }
 
 const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [newTransaction, setNewTransaction] = useState({
-    tipo: 'receita' as 'receita' | 'despesa',
-    categoria: '',
-    descricao: '',
-    valor: '',
-    data: format(new Date(), 'yyyy-MM-dd'),
-    status: 'pago'
-  });
-
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<CashFlowTransaction | null>(null);
+  const [formData, setFormData] = useState({
+    transaction_type: 'expense' as 'income' | 'expense',
+    amount: '',
+    description: '',
+    category: '',
+    payment_method: '',
+    notes: '',
+    transaction_date: format(new Date(), 'yyyy-MM-dd')
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ['cash-flow-categories'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('cash_flow_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      return data || [];
+    }
+  });
 
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['all-transactions', filters],
+    queryKey: ['cash-flow-transactions', filters],
     queryFn: async () => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
       let query = supabase
-        .from('finance_transactions')
-        .select(`
-          *,
-          staff:barbeiro_id(name)
-        `)
-        .gte('data', format(startDate, 'yyyy-MM-dd'))
-        .lte('data', format(endDate, 'yyyy-MM-dd'))
-        .order('data', { ascending: false });
+        .from('cash_flow')
+        .select('*')
+        .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))
+        .lte('transaction_date', format(endDate, 'yyyy-MM-dd'))
+        .order('transaction_date', { ascending: false });
 
       if (filters.tipo !== 'todos') {
-        query = query.eq('tipo', filters.tipo);
-      }
-
-      if (filters.barbeiro !== 'todos') {
-        query = query.eq('barbeiro_id', filters.barbeiro);
+        const tipo = filters.tipo === 'receita' ? 'income' : 'expense';
+        query = query.eq('transaction_type', tipo);
       }
 
       const { data } = await query;
-      return data as Transaction[] || [];
+      return data as CashFlowTransaction[] || [];
     }
   });
 
   const createTransactionMutation = useMutation({
-    mutationFn: async (transaction: any) => {
-      const { data, error } = await supabase
-        .from('finance_transactions')
-        .insert([transaction])
-        .select();
+    mutationFn: async (data: typeof formData) => {
+      const { error } = await supabase
+        .from('cash_flow')
+        .insert({
+          transaction_type: data.transaction_type,
+          amount: parseFloat(data.amount),
+          description: data.description,
+          category: data.category,
+          payment_method: data.payment_method || null,
+          notes: data.notes || null,
+          transaction_date: data.transaction_date
+        });
 
       if (error) throw error;
-      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-flow-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
       setIsDialogOpen(false);
-      setNewTransaction({
-        tipo: 'receita',
-        categoria: '',
-        descricao: '',
-        valor: '',
-        data: format(new Date(), 'yyyy-MM-dd'),
-        status: 'pago'
-      });
+      resetForm();
       toast({
         title: 'Transação criada',
-        description: 'A transação foi criada com sucesso.',
+        description: 'A transação foi registrada com sucesso.',
       });
     },
     onError: (error) => {
+      console.error('Erro ao criar transação:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível criar a transação.',
@@ -115,48 +121,98 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
     }
   });
 
+  const updateTransactionMutation = useMutation({
+    mutationFn: async (data: typeof formData & { id: string }) => {
+      const { error } = await supabase
+        .from('cash_flow')
+        .update({
+          transaction_type: data.transaction_type,
+          amount: parseFloat(data.amount),
+          description: data.description,
+          category: data.category,
+          payment_method: data.payment_method || null,
+          notes: data.notes || null,
+          transaction_date: data.transaction_date
+        })
+        .eq('id', data.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-flow-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      setIsDialogOpen(false);
+      setEditingTransaction(null);
+      resetForm();
+      toast({
+        title: 'Transação atualizada',
+        description: 'A transação foi atualizada com sucesso.',
+      });
+    }
+  });
+
   const deleteTransactionMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('finance_transactions')
+        .from('cash_flow')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-flow-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
       toast({
         title: 'Transação excluída',
         description: 'A transação foi excluída com sucesso.',
       });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível excluir a transação.',
-        variant: 'destructive',
-      });
     }
   });
+
+  const resetForm = () => {
+    setFormData({
+      transaction_type: 'expense',
+      amount: '',
+      description: '',
+      category: '',
+      payment_method: '',
+      notes: '',
+      transaction_date: format(new Date(), 'yyyy-MM-dd')
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newTransaction.descricao || !newTransaction.valor || !newTransaction.categoria) {
+    if (!formData.amount || !formData.description || !formData.category) {
       toast({
-        title: 'Erro',
+        title: 'Campos obrigatórios',
         description: 'Preencha todos os campos obrigatórios.',
         variant: 'destructive',
       });
       return;
     }
 
-    createTransactionMutation.mutate({
-      ...newTransaction,
-      valor: parseFloat(newTransaction.valor.replace(',', '.'))
+    if (editingTransaction) {
+      updateTransactionMutation.mutate({ ...formData, id: editingTransaction.id });
+    } else {
+      createTransactionMutation.mutate(formData);
+    }
+  };
+
+  const openEditDialog = (transaction: CashFlowTransaction) => {
+    setEditingTransaction(transaction);
+    setFormData({
+      transaction_type: transaction.transaction_type,
+      amount: transaction.amount.toString(),
+      description: transaction.description,
+      category: transaction.category,
+      payment_method: transaction.payment_method || '',
+      notes: transaction.notes || '',
+      transaction_date: transaction.transaction_date
     });
+    setIsDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -175,148 +231,207 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-white">Todas as Transações</CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Transação
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-gray-800 border-gray-700">
-              <DialogHeader>
-                <DialogTitle className="text-white">Nova Transação</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="tipo" className="text-white">Tipo</Label>
-                    <Select
-                      value={newTransaction.tipo}
-                      onValueChange={(value: 'receita' | 'despesa') => 
-                        setNewTransaction({ ...newTransaction, tipo: value })
-                      }
-                    >
-                      <SelectTrigger className="bg-gray-700 border-gray-600">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="receita">Receita</SelectItem>
-                        <SelectItem value="despesa">Despesa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="categoria" className="text-white">Categoria</Label>
-                    <Input
-                      id="categoria"
-                      value={newTransaction.categoria}
-                      onChange={(e) => setNewTransaction({ ...newTransaction, categoria: e.target.value })}
-                      className="bg-gray-700 border-gray-600 text-white"
-                      placeholder="Ex: água, luz, produto"
-                    />
-                  </div>
+      {/* Header com botão de nova transação */}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium text-white">Transações Manuais</h3>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+              setEditingTransaction(null);
+              resetForm();
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Transação
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-gray-900 border-gray-700 text-gray-100 max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Tipo *</label>
+                  <Select
+                    value={formData.transaction_type}
+                    onValueChange={(value) => setFormData({ ...formData, transaction_type: value as 'income' | 'expense' })}
+                  >
+                    <SelectTrigger className="bg-gray-800 border-gray-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="income">Receita</SelectItem>
+                      <SelectItem value="expense">Despesa</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="descricao" className="text-white">Descrição</Label>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Valor *</label>
                   <Input
-                    id="descricao"
-                    value={newTransaction.descricao}
-                    onChange={(e) => setNewTransaction({ ...newTransaction, descricao: e.target.value })}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    placeholder="Descrição da transação"
+                    type="number"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    className="bg-gray-800 border-gray-700"
+                    placeholder="0,00"
                   />
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="valor" className="text-white">Valor</Label>
-                    <Input
-                      id="valor"
-                      type="number"
-                      step="0.01"
-                      value={newTransaction.valor}
-                      onChange={(e) => setNewTransaction({ ...newTransaction, valor: e.target.value })}
-                      className="bg-gray-700 border-gray-600 text-white"
-                      placeholder="0,00"
-                    />
-                  </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Descrição *</label>
+                <Input
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="bg-gray-800 border-gray-700"
+                  placeholder="Descrição da transação"
+                />
+              </div>
 
-                  <div>
-                    <Label htmlFor="data" className="text-white">Data</Label>
-                    <Input
-                      id="data"
-                      type="date"
-                      value={newTransaction.data}
-                      onChange={(e) => setNewTransaction({ ...newTransaction, data: e.target.value })}
-                      className="bg-gray-700 border-gray-600 text-white"
-                    />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Categoria *</label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger className="bg-gray-800 border-gray-700">
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.filter(c => c.type === formData.transaction_type).map(category => (
+                      <SelectItem key={category.id} value={category.name}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Forma de Pagamento</label>
+                  <Select
+                    value={formData.payment_method}
+                    onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
                   >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={createTransactionMutation.isPending}>
-                    {createTransactionMutation.isPending ? 'Salvando...' : 'Salvar'}
-                  </Button>
+                    <SelectTrigger className="bg-gray-800 border-gray-700">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                      <SelectItem value="pix">PIX</SelectItem>
+                      <SelectItem value="cartao">Cartão</SelectItem>
+                      <SelectItem value="transferencia">Transferência</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Data *</label>
+                  <Input
+                    type="date"
+                    value={formData.transaction_date}
+                    onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+                    className="bg-gray-800 border-gray-700"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Observações</label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="bg-gray-800 border-gray-700"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="border-gray-600 text-gray-300"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createTransactionMutation.isPending || updateTransactionMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {editingTransaction ? 'Atualizar' : 'Criar'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Lista de Transações */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white">Histórico de Transações</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {transactions?.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
-                Nenhuma transação encontrada para o período selecionado.
+                Nenhuma transação manual encontrada para o período selecionado.
               </div>
             ) : (
               transactions?.map((transaction) => (
                 <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${
-                      transaction.tipo === 'receita' ? 'bg-green-500/20' : 'bg-red-500/20'
+                      transaction.transaction_type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'
                     }`}>
-                      {transaction.tipo === 'receita' ? (
+                      {transaction.transaction_type === 'income' ? (
                         <ArrowUpRight className="h-4 w-4 text-green-500" />
                       ) : (
                         <ArrowDownRight className="h-4 w-4 text-red-500" />
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-white">{transaction.descricao}</p>
+                      <p className="font-medium text-white">{transaction.description}</p>
                       <p className="text-sm text-gray-400">
-                        {transaction.categoria} • {format(new Date(transaction.data), 'dd/MM/yyyy', { locale: ptBR })}
+                        {transaction.category} • {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
                       </p>
+                      {transaction.payment_method && (
+                        <p className="text-xs text-gray-500">Via: {transaction.payment_method}</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <p className={`font-bold ${
-                        transaction.tipo === 'receita' ? 'text-green-500' : 'text-red-500'
+                        transaction.transaction_type === 'income' ? 'text-green-500' : 'text-red-500'
                       }`}>
-                        {transaction.tipo === 'receita' ? '+' : '-'}R$ {Number(transaction.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </p>
-                      <Badge variant={transaction.status === 'pago' ? 'default' : 'secondary'}>
-                        {transaction.status}
+                      <Badge variant="outline" className="text-xs">
+                        Manual
                       </Badge>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1">
                       <Button
-                        variant="ghost"
                         size="sm"
+                        variant="ghost"
+                        onClick={() => openEditDialog(transaction)}
+                        className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() => handleDelete(transaction.id)}
-                        className="text-red-500 hover:text-red-400"
+                        className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
