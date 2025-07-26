@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,14 +46,14 @@ const BarberAccessManagement: React.FC = () => {
       }
 
       // Buscar usuários do auth
-      const { data: authUsers } = await supabase.auth.admin.listUsers({
+      const { data: authResponse } = await supabase.auth.admin.listUsers({
         page: 1,
         perPage: 1000
       });
 
       // Combinar dados
       const barbersWithAccess = (barbersData || []).map((barber: Staff) => {
-        const authUser = authUsers?.users?.find(user => user.email === barber.email);
+        const authUser = authResponse?.users?.find(user => user.email === barber.email);
         
         return {
           id: barber.id,

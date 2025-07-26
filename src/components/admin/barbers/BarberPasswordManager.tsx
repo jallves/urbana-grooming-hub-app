@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,12 +100,12 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
 
     try {
       // Verificar se o usuário já existe no auth
-      const { data: users } = await supabase.auth.admin.listUsers({
+      const { data: authResponse } = await supabase.auth.admin.listUsers({
         page: 1,
         perPage: 1000
       });
       
-      const existingUser = users?.users?.find(user => user.email === barberEmail);
+      const existingUser = authResponse?.users?.find(user => user.email === barberEmail);
 
       if (existingUser) {
         // Atualizar senha do usuário existente
@@ -175,12 +174,12 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
     setLoading(true);
 
     try {
-      const { data: users } = await supabase.auth.admin.listUsers({
+      const { data: authResponse } = await supabase.auth.admin.listUsers({
         page: 1,
         perPage: 1000
       });
       
-      const existingUser = users?.users?.find(user => user.email === barberEmail);
+      const existingUser = authResponse?.users?.find(user => user.email === barberEmail);
 
       if (existingUser) {
         const { error } = await supabase.auth.admin.deleteUser(existingUser.id);
