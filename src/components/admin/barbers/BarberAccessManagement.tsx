@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { User, Key, CheckCircle, XCircle, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 import BarberPasswordManager from './BarberPasswordManager';
 import {
   Dialog,
@@ -29,6 +30,10 @@ interface AuthUser {
   last_sign_in_at?: string;
 }
 
+interface AuthResponse {
+  users: AuthUser[];
+}
+
 const BarberAccessManagement: React.FC = () => {
   const { toast } = useToast();
   const [barbers, setBarbers] = useState<BarberAccessInfo[]>([]);
@@ -51,15 +56,19 @@ const BarberAccessManagement: React.FC = () => {
         throw barbersError;
       }
 
-      // Buscar usuários do auth
-      const { data: authResponse } = await supabase.auth.admin.listUsers({
+      // Buscar usuários do auth usando service role key
+      const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
         page: 1,
         perPage: 1000
       });
 
+      if (authError) {
+        console.error('Erro ao buscar usuários:', authError);
+      }
+
       // Combinar dados
       const barbersWithAccess = (barbersData || []).map((barber: Staff) => {
-        const authUser = (authResponse?.users as AuthUser[] || []).find(
+        const authUser = (authData?.users as AuthUser[] || []).find(
           (user: AuthUser) => user.email === barber.email
         );
         
@@ -99,7 +108,8 @@ const BarberAccessManagement: React.FC = () => {
   const handleClosePasswordDialog = () => {
     setIsPasswordDialogOpen(false);
     setSelectedBarber(null);
-    fetchBarbersAccessInfo(); // Recarregar dados
+    // Recarregar dados após fechar o dialog
+    fetchBarbersAccessInfo();
   };
 
   if (loading) {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Eye, EyeOff, Key, UserPlus, RefreshCw, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 import { validatePasswordStrength } from '@/lib/security';
 import {
   Dialog,
@@ -26,6 +27,10 @@ interface BarberPasswordManagerProps {
 interface AuthUser {
   id: string;
   email?: string;
+}
+
+interface AuthResponse {
+  users: AuthUser[];
 }
 
 const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
@@ -104,24 +109,33 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
     setLoading(true);
 
     try {
+      console.log('Iniciando processo de criação/atualização de usuário para:', barberEmail);
+      
       // Verificar se o usuário já existe no auth
-      const { data: authResponse } = await supabase.auth.admin.listUsers({
+      const { data: authResponse, error: listError } = await supabase.auth.admin.listUsers({
         page: 1,
         perPage: 1000
       });
+
+      if (listError) {
+        console.error('Erro ao listar usuários:', listError);
+        throw new Error(`Erro ao verificar usuários existentes: ${listError.message}`);
+      }
       
       const existingUser = (authResponse?.users as AuthUser[] || []).find(
         (user: AuthUser) => user.email === barberEmail
       );
 
       if (existingUser) {
+        console.log('Atualizando senha do usuário existente:', existingUser.id);
         // Atualizar senha do usuário existente
-        const { error } = await supabase.auth.admin.updateUserById(existingUser.id, {
+        const { error: updateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
           password: password
         });
 
-        if (error) {
-          throw error;
+        if (updateError) {
+          console.error('Erro ao atualizar senha:', updateError);
+          throw new Error(`Erro ao atualizar senha: ${updateError.message}`);
         }
 
         toast({
@@ -129,8 +143,9 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
           description: `A senha do barbeiro ${barberName} foi redefinida com sucesso.`,
         });
       } else {
+        console.log('Criando novo usuário para:', barberEmail);
         // Criar novo usuário
-        const { error } = await supabase.auth.admin.createUser({
+        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
           email: barberEmail,
           password: password,
           email_confirm: true,
@@ -140,9 +155,12 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
           }
         });
 
-        if (error) {
-          throw error;
+        if (createError) {
+          console.error('Erro ao criar usuário:', createError);
+          throw new Error(`Erro ao criar usuário: ${createError.message}`);
         }
+
+        console.log('Usuário criado com sucesso:', newUser?.user?.id);
 
         toast({
           title: "Usuário criado!",
@@ -181,20 +199,29 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
     setLoading(true);
 
     try {
-      const { data: authResponse } = await supabase.auth.admin.listUsers({
+      console.log('Iniciando processo de exclusão do usuário:', barberEmail);
+      
+      const { data: authResponse, error: listError } = await supabase.auth.admin.listUsers({
         page: 1,
         perPage: 1000
       });
+
+      if (listError) {
+        console.error('Erro ao listar usuários:', listError);
+        throw new Error(`Erro ao verificar usuários existentes: ${listError.message}`);
+      }
       
       const existingUser = (authResponse?.users as AuthUser[] || []).find(
         (user: AuthUser) => user.email === barberEmail
       );
 
       if (existingUser) {
-        const { error } = await supabase.auth.admin.deleteUser(existingUser.id);
+        console.log('Excluindo usuário:', existingUser.id);
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(existingUser.id);
 
-        if (error) {
-          throw error;
+        if (deleteError) {
+          console.error('Erro ao excluir usuário:', deleteError);
+          throw new Error(`Erro ao excluir usuário: ${deleteError.message}`);
         }
 
         toast({
