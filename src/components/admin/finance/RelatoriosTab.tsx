@@ -19,6 +19,22 @@ interface RelatoriosTabProps {
   };
 }
 
+interface Commission {
+  id: string;
+  amount: number;
+  commission_rate: number;
+  status: 'pending' | 'paid';
+  created_at: string;
+  payment_date?: string;
+  paid_at?: string;
+  payment_method?: string;
+  notes?: string;
+  appointment_id: string;
+  barber_id: string;
+  staff?: { name: string };
+  appointment_source?: string;
+}
+
 const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6'];
 
 const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
@@ -57,8 +73,8 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
           .from('barber_commissions')
           .select('amount')
           .eq('status', 'paid')
-          .gte('paid_at', startDate.toISOString())
-          .lte('paid_at', endDate.toISOString());
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString());
 
         const despesasCaixaTotal = despesasCaixa?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
         const comissoesTotal = comissoesPagas?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
@@ -95,8 +111,8 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         .from('barber_commissions')
         .select('amount')
         .eq('status', 'paid')
-        .gte('paid_at', startDate.toISOString())
-        .lte('paid_at', endDate.toISOString());
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
       const categories = despesas?.reduce((acc, despesa) => {
         const key = despesa.category;
@@ -146,16 +162,18 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         .gte('transaction_date', format(startDate, 'yyyy-MM-dd'))
         .lte('transaction_date', format(endDate, 'yyyy-MM-dd'));
 
-      // Comissões
-      const { data: comissoes } = await supabase
+      // Comissões com cast explícito
+      const { data: comissoesData } = await supabase
         .from('barber_commissions')
         .select(`
           *,
           staff:barber_id(name)
         `)
         .eq('status', 'paid')
-        .gte('paid_at', startDate.toISOString())
-        .lte('paid_at', endDate.toISOString());
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      const comissoes = comissoesData as Commission[];
 
       const exportData = [];
 
@@ -187,10 +205,11 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         });
       });
 
-      // Adicionar comissões
+      // Adicionar comissões com verificação de propriedades opcionais
       comissoes?.forEach(comissao => {
+        const paidDate = comissao.paid_at || comissao.created_at;
         exportData.push({
-          Data: format(new Date(comissao.paid_at!), 'dd/MM/yyyy'),
+          Data: format(new Date(paidDate), 'dd/MM/yyyy'),
           Tipo: 'Despesa',
           Categoria: 'Comissões',
           Descrição: `Comissão - ${comissao.staff?.name}`,
