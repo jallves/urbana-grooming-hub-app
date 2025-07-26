@@ -23,6 +23,12 @@ interface BarberAccessInfo {
   isActive: boolean;
 }
 
+interface AuthUser {
+  id: string;
+  email?: string;
+  last_sign_in_at?: string;
+}
+
 const BarberAccessManagement: React.FC = () => {
   const { toast } = useToast();
   const [barbers, setBarbers] = useState<BarberAccessInfo[]>([]);
@@ -53,7 +59,9 @@ const BarberAccessManagement: React.FC = () => {
 
       // Combinar dados
       const barbersWithAccess = (barbersData || []).map((barber: Staff) => {
-        const authUser = authResponse?.users?.find(user => user.email === barber.email);
+        const authUser = (authResponse?.users as AuthUser[] || []).find(
+          (user: AuthUser) => user.email === barber.email
+        );
         
         return {
           id: barber.id,

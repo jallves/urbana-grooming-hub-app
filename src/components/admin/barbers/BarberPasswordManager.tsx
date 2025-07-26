@@ -23,6 +23,11 @@ interface BarberPasswordManagerProps {
   onClose?: () => void;
 }
 
+interface AuthUser {
+  id: string;
+  email?: string;
+}
+
 const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
   barberId,
   barberName,
@@ -105,7 +110,9 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
         perPage: 1000
       });
       
-      const existingUser = authResponse?.users?.find(user => user.email === barberEmail);
+      const existingUser = (authResponse?.users as AuthUser[] || []).find(
+        (user: AuthUser) => user.email === barberEmail
+      );
 
       if (existingUser) {
         // Atualizar senha do usuário existente
@@ -179,7 +186,9 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
         perPage: 1000
       });
       
-      const existingUser = authResponse?.users?.find(user => user.email === barberEmail);
+      const existingUser = (authResponse?.users as AuthUser[] || []).find(
+        (user: AuthUser) => user.email === barberEmail
+      );
 
       if (existingUser) {
         const { error } = await supabase.auth.admin.deleteUser(existingUser.id);
