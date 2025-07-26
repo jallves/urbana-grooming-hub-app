@@ -8,13 +8,6 @@ import { Eye, EyeOff, Key, RefreshCw, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { validatePasswordStrength } from '@/lib/security';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface BarberPasswordManagerProps {
@@ -22,11 +15,6 @@ interface BarberPasswordManagerProps {
   barberName?: string;
   barberEmail?: string;
   onClose?: () => void;
-}
-
-interface AuthUser {
-  id: string;
-  email?: string;
 }
 
 const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
@@ -107,7 +95,7 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
     try {
       console.log('Iniciando processo de criação/atualização de usuário para:', barberEmail);
       
-      // Primeiro, verificar se o usuário já existe na tabela staff
+      // Verificar se o barbeiro existe na tabela staff
       const { data: staffData, error: staffError } = await supabase
         .from('staff')
         .select('*')
@@ -115,88 +103,34 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
         .eq('role', 'barber')
         .single();
 
-      if (staffError && staffError.code !== 'PGRST116') {
-        console.error('Erro ao buscar staff:', staffError);
-        throw new Error(`Erro ao verificar barbeiro: ${staffError.message}`);
-      }
-
-      if (!staffData) {
-        throw new Error('Barbeiro não encontrado na base de dados. Configure o barbeiro primeiro.');
+      if (staffError) {
+        console.error('Erro ao buscar barbeiro:', staffError);
+        throw new Error('Barbeiro não encontrado na base de dados');
       }
 
       console.log('Barbeiro encontrado:', staffData);
 
-      // Tentar criar usuário diretamente com signUp
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: barberEmail,
-        password: password,
-        options: {
-          data: {
-            name: barberName,
-            role: 'barber',
-            staff_id: staffData.id
-          }
-        }
+      // Usar RPC para criar/atualizar usuário admin
+      const { data: userData, error: userError } = await supabase.rpc('create_barber_user', {
+        p_email: barberEmail,
+        p_password: password,
+        p_name: barberName || staffData.name,
+        p_staff_id: staffData.id
       });
 
-      console.log('Resultado do signUp:', { signUpData, signUpError });
-
-      if (signUpError) {
-        // Se o erro for que o usuário já existe, tentar fazer login para verificar
-        if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
-          console.log('Usuário já existe, tentando resetar senha...');
-          
-          // Solicitar reset de senha para o usuário existente
-          const { error: resetError } = await supabase.auth.resetPasswordForEmail(barberEmail, {
-            redirectTo: `${window.location.origin}/barbeiro/login`
-          });
-
-          if (resetError) {
-            console.error('Erro ao solicitar reset de senha:', resetError);
-            throw new Error(`Erro ao resetar senha: ${resetError.message}`);
-          }
-
-          toast({
-            title: "Email de reset enviado!",
-            description: `Um email de reset de senha foi enviado para ${barberEmail}. O barbeiro deve seguir as instruções do email para definir uma nova senha.`,
-          });
-        } else {
-          throw new Error(`Erro ao criar usuário: ${signUpError.message}`);
-        }
-      } else {
-        // Se criou com sucesso
-        if (signUpData.user) {
-          console.log('Usuário criado com sucesso:', signUpData.user.id);
-          
-          // Adicionar role do usuário na tabela user_roles se necessário
-          try {
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert([
-                {
-                  user_id: signUpData.user.id,
-                  role: 'barber'
-                }
-              ]);
-            
-            if (roleError) {
-              console.warn('Erro ao adicionar role (pode já existir):', roleError);
-            }
-          } catch (roleErr) {
-            console.warn('Erro ao adicionar role:', roleErr);
-          }
-
-          toast({
-            title: "Usuário criado!",
-            description: `Conta de acesso criada para ${barberName} com sucesso. ${signUpData.user.email_confirmed_at ? 'Login liberado.' : 'Um email de confirmação foi enviado.'}`,
-          });
-        } else {
-          toast({
-            title: "Atenção",
-            description: `Usuário criado, mas é necessário confirmar o email antes do primeiro login.`,
-          });
-        }
+      if (userError) {
+        console.error('Erro ao criar usuário:', userError);
+        
+        // Se a função RPC falhar, tentar método alternativo
+        return await createUserAlternative();
       }
+
+      console.log('Usuário criado/atualizado com sucesso:', userData);
+
+      toast({
+        title: "Acesso configurado!",
+        description: `Acesso ao painel criado/atualizado para ${barberName} com sucesso.`,
+      });
 
       // Limpar formulário
       setPassword('');
@@ -213,11 +147,85 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
       console.error('Erro ao gerenciar senha:', error);
       toast({
         title: "Erro",
-        description: error.message || "Erro ao gerenciar senha do barbeiro",
+        description: error.message || "Erro ao configurar acesso do barbeiro",
         variant: "destructive",
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createUserAlternative = async () => {
+    try {
+      console.log('Tentando método alternativo de criação...');
+      
+      // Tentar criar usuário com signUp
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: barberEmail!,
+        password: password,
+        options: {
+          data: {
+            name: barberName,
+            role: 'barber'
+          }
+        }
+      });
+
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          // Usuário já existe, tentar atualizar senha via admin
+          await updateExistingUser();
+        } else {
+          throw signUpError;
+        }
+      } else if (signUpData.user) {
+        // Criar role para o usuário
+        await createUserRole(signUpData.user.id);
+        
+        toast({
+          title: "Acesso criado!",
+          description: `Conta criada para ${barberName}. ${signUpData.user.email_confirmed_at ? 'Login liberado.' : 'Email de confirmação enviado.'}`,
+        });
+      }
+    } catch (error: any) {
+      throw new Error(`Erro no método alternativo: ${error.message}`);
+    }
+  };
+
+  const updateExistingUser = async () => {
+    try {
+      // Para usuário existente, enviar reset de senha
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(barberEmail!, {
+        redirectTo: `${window.location.origin}/barbeiro/login`
+      });
+
+      if (resetError) {
+        throw resetError;
+      }
+
+      toast({
+        title: "Email de reset enviado!",
+        description: `Um email para redefinir a senha foi enviado para ${barberEmail}`,
+      });
+    } catch (error: any) {
+      throw new Error(`Erro ao enviar reset: ${error.message}`);
+    }
+  };
+
+  const createUserRole = async (userId: string) => {
+    try {
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: userId,
+          role: 'barber'
+        }]);
+
+      if (roleError && !roleError.message.includes('already exists')) {
+        console.warn('Erro ao criar role:', roleError);
+      }
+    } catch (error) {
+      console.warn('Erro ao criar role:', error);
     }
   };
 
@@ -233,16 +241,14 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
     try {
       console.log('Iniciando processo de remoção de acesso para:', barberEmail);
       
-      // Para remover o acesso, vamos desabilitar o barbeiro na tabela staff
-      const { error: updateError } = await supabase
-        .from('staff')
-        .update({ is_active: false })
-        .eq('email', barberEmail)
-        .eq('role', 'barber');
+      // Usar RPC para desabilitar usuário
+      const { error: deleteError } = await supabase.rpc('disable_barber_user', {
+        p_email: barberEmail
+      });
 
-      if (updateError) {
-        console.error('Erro ao desabilitar barbeiro:', updateError);
-        throw new Error(`Erro ao remover acesso: ${updateError.message}`);
+      if (deleteError) {
+        console.error('Erro ao desabilitar barbeiro:', deleteError);
+        throw new Error(`Erro ao remover acesso: ${deleteError.message}`);
       }
 
       toast({

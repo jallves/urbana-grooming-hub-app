@@ -31,28 +31,54 @@ const BarberAccessManagement: React.FC = () => {
   const [selectedBarber, setSelectedBarber] = useState<BarberAccessInfo | null>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
-  const checkUserAuthStatus = async (email: string) => {
+  const checkUserAuthStatus = async (email: string): Promise<boolean> => {
     try {
-      // Verificar se existe um usuário autenticado com este email
-      // Fazemos isso tentando fazer signIn com credenciais inválidas
-      // Se o usuário existe, receberemos um erro específico
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: 'test-invalid-password-check-existence'
+      console.log('Verificando status de autenticação para:', email);
+      
+      // Usar a função RPC para verificar se existe um usuário auth com este email
+      const { data, error } = await supabase.rpc('check_auth_user_exists', {
+        user_email: email
       });
 
-      // Se o erro for "Invalid login credentials", significa que o usuário existe
-      // Se for "Email not confirmed" ou similar, também existe
-      // Se for outro tipo de erro, pode não existir
-      const userExists = error?.message?.includes('Invalid login credentials') || 
-                        error?.message?.includes('Email not confirmed') ||
-                        error?.message?.includes('Password') ||
-                        error?.message?.includes('invalid') ||
-                        error?.message?.includes('wrong');
+      if (error) {
+        console.error('Erro ao verificar usuário:', error);
+        // Se a função RPC não existir, usar método alternativo
+        return await checkUserByRole(email);
+      }
 
-      return userExists || false;
+      console.log('Status do usuário:', data);
+      return data || false;
     } catch (error) {
-      console.log('Erro ao verificar usuário:', error);
+      console.error('Erro ao verificar status:', error);
+      return await checkUserByRole(email);
+    }
+  };
+
+  const checkUserByRole = async (email: string): Promise<boolean> => {
+    try {
+      // Verificar se existe uma role de barbeiro para este email
+      const { data: userRoles, error } = await supabase
+        .from('user_roles')
+        .select(`
+          *,
+          users:user_id (email)
+        `)
+        .eq('role', 'barber');
+
+      if (error) {
+        console.error('Erro ao buscar roles:', error);
+        return false;
+      }
+
+      // Verificar se algum dos usuários com role barber tem este email
+      const hasUser = userRoles?.some((role: any) => 
+        role.users?.email === email
+      ) || false;
+
+      console.log('Usuário encontrado por role:', hasUser);
+      return hasUser;
+    } catch (error) {
+      console.error('Erro ao verificar por role:', error);
       return false;
     }
   };
@@ -90,7 +116,7 @@ const BarberAccessManagement: React.FC = () => {
             name: barber.name,
             email: barber.email || '',
             hasAuthUser,
-            lastLogin: undefined, // Não conseguimos obter esta info facilmente
+            lastLogin: undefined,
             isActive: barber.is_active
           };
         })
