@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Key, CheckCircle, XCircle, Settings } from 'lucide-react';
+import { User, Key, CheckCircle, XCircle, Settings, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import BarberPasswordManager from './BarberPasswordManager';
 import {
   Dialog,
@@ -24,16 +24,6 @@ interface BarberAccessInfo {
   isActive: boolean;
 }
 
-interface AuthUser {
-  id: string;
-  email?: string;
-  last_sign_in_at?: string;
-}
-
-interface AuthResponse {
-  users: AuthUser[];
-}
-
 const BarberAccessManagement: React.FC = () => {
   const { toast } = useToast();
   const [barbers, setBarbers] = useState<BarberAccessInfo[]>([]);
@@ -41,9 +31,36 @@ const BarberAccessManagement: React.FC = () => {
   const [selectedBarber, setSelectedBarber] = useState<BarberAccessInfo | null>(null);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
+  const checkUserAuthStatus = async (email: string) => {
+    try {
+      // Verificar se existe um usuário autenticado com este email
+      // Fazemos isso tentando fazer signIn com credenciais inválidas
+      // Se o usuário existe, receberemos um erro específico
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: 'test-invalid-password-check-existence'
+      });
+
+      // Se o erro for "Invalid login credentials", significa que o usuário existe
+      // Se for "Email not confirmed" ou similar, também existe
+      // Se for outro tipo de erro, pode não existir
+      const userExists = error?.message?.includes('Invalid login credentials') || 
+                        error?.message?.includes('Email not confirmed') ||
+                        error?.message?.includes('Password') ||
+                        error?.message?.includes('invalid') ||
+                        error?.message?.includes('wrong');
+
+      return userExists || false;
+    } catch (error) {
+      console.log('Erro ao verificar usuário:', error);
+      return false;
+    }
+  };
+
   const fetchBarbersAccessInfo = async () => {
     try {
       setLoading(true);
+      console.log('Buscando informações de acesso dos barbeiros...');
 
       // Buscar todos os barbeiros
       const { data: barbersData, error: barbersError } = await supabase
@@ -53,35 +70,33 @@ const BarberAccessManagement: React.FC = () => {
         .order('name');
 
       if (barbersError) {
+        console.error('Erro ao buscar barbeiros:', barbersError);
         throw barbersError;
       }
 
-      // Buscar usuários do auth usando service role key
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000
-      });
+      console.log('Barbeiros encontrados:', barbersData);
 
-      if (authError) {
-        console.error('Erro ao buscar usuários:', authError);
-      }
+      // Verificar status de autenticação para cada barbeiro
+      const barbersWithAccess = await Promise.all(
+        (barbersData || []).map(async (barber: Staff) => {
+          let hasAuthUser = false;
+          
+          if (barber.email) {
+            hasAuthUser = await checkUserAuthStatus(barber.email);
+          }
 
-      // Combinar dados
-      const barbersWithAccess = (barbersData || []).map((barber: Staff) => {
-        const authUser = (authData?.users as AuthUser[] || []).find(
-          (user: AuthUser) => user.email === barber.email
-        );
-        
-        return {
-          id: barber.id,
-          name: barber.name,
-          email: barber.email || '',
-          hasAuthUser: !!authUser,
-          lastLogin: authUser?.last_sign_in_at || undefined,
-          isActive: barber.is_active
-        };
-      });
+          return {
+            id: barber.id,
+            name: barber.name,
+            email: barber.email || '',
+            hasAuthUser,
+            lastLogin: undefined, // Não conseguimos obter esta info facilmente
+            isActive: barber.is_active
+          };
+        })
+      );
 
+      console.log('Barbeiros com status de acesso:', barbersWithAccess);
       setBarbers(barbersWithAccess);
 
     } catch (error: any) {
@@ -112,6 +127,10 @@ const BarberAccessManagement: React.FC = () => {
     fetchBarbersAccessInfo();
   };
 
+  const handleRefresh = () => {
+    fetchBarbersAccessInfo();
+  };
+
   if (loading) {
     return (
       <Card className="bg-gray-900 border-gray-700">
@@ -126,13 +145,26 @@ const BarberAccessManagement: React.FC = () => {
     <>
       <Card className="bg-gray-900 border-gray-700">
         <CardHeader className="border-b border-gray-700">
-          <CardTitle className="flex items-center gap-2 text-urbana-gold font-playfair">
-            <Settings className="h-5 w-5" />
-            Gerenciamento de Acesso ao Painel
-          </CardTitle>
-          <p className="text-gray-300 text-sm font-raleway">
-            Controle o acesso dos barbeiros ao painel administrativo
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-urbana-gold font-playfair">
+                <Settings className="h-5 w-5" />
+                Gerenciamento de Acesso ao Painel
+              </CardTitle>
+              <p className="text-gray-300 text-sm font-raleway mt-1">
+                Controle o acesso dos barbeiros ao painel administrativo
+              </p>
+            </div>
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold hover:text-black"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Atualizar
+            </Button>
+          </div>
         </CardHeader>
 
         <CardContent className="p-6">
@@ -189,7 +221,7 @@ const BarberAccessManagement: React.FC = () => {
                     onClick={() => handleManagePassword(barber)}
                     size="sm"
                     className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
-                    disabled={!barber.email}
+                    disabled={!barber.email || !barber.isActive}
                   >
                     <Key className="h-4 w-4 mr-2" />
                     {barber.hasAuthUser ? 'Gerenciar' : 'Criar Acesso'}
