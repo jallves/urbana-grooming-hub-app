@@ -75,7 +75,8 @@ export const supabaseRPC = {
 
   checkAuthUserExists: async (email: string) => {
     try {
-      const { data, error } = await supabase.rpc('check_auth_user_exists', {
+      // Use any to bypass strict typing for custom RPC functions
+      const { data, error } = await (supabase.rpc as any)('check_auth_user_exists', {
         user_email: email
       });
       
@@ -91,7 +92,8 @@ export const supabaseRPC = {
 
   createBarberUser: async (email: string, password: string, name: string, staffId: string) => {
     try {
-      const { data, error } = await supabase.rpc('create_barber_user', {
+      // Use any to bypass strict typing for custom RPC functions
+      const { data, error } = await (supabase.rpc as any)('create_barber_user', {
         p_email: email,
         p_password: password,
         p_name: name,
@@ -110,7 +112,8 @@ export const supabaseRPC = {
 
   disableBarberUser: async (email: string) => {
     try {
-      const { data, error } = await supabase.rpc('disable_barber_user', {
+      // Use any to bypass strict typing for custom RPC functions
+      const { data, error } = await (supabase.rpc as any)('disable_barber_user', {
         p_email: email
       });
       
