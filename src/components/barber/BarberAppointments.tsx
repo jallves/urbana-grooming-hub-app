@@ -15,6 +15,7 @@ const BarberAppointments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('today');
+  const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
   
   const { appointments, loading, updateAppointmentStatus } = useBarberAppointments();
 
@@ -35,6 +36,25 @@ const BarberAppointments: React.FC = () => {
       return matchesSearch && matchesStatus && matchesTab;
     });
   }, [appointments, searchTerm, statusFilter, activeTab]);
+
+  const handleStatusUpdate = async (appointmentId: string, newStatus: string) => {
+    setUpdatingIds(prev => new Set(prev).add(appointmentId));
+    
+    try {
+      const success = await updateAppointmentStatus(appointmentId, newStatus);
+      if (!success) {
+        console.error('Falha ao atualizar status do agendamento');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+    } finally {
+      setUpdatingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(appointmentId);
+        return newSet;
+      });
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const configs = {
@@ -194,19 +214,29 @@ const BarberAppointments: React.FC = () => {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => updateAppointmentStatus(appointment.id, 'concluido')}
-                                className="flex-1 bg-green-600 text-white h-8"
+                                onClick={() => handleStatusUpdate(appointment.id, 'concluido')}
+                                disabled={updatingIds.has(appointment.id)}
+                                className="flex-1 bg-green-600 text-white h-8 hover:bg-green-700"
                               >
-                                <CheckCircle className="w-3 h-3 mr-1" />
+                                {updatingIds.has(appointment.id) ? (
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+                                ) : (
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                )}
                                 Concluir
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateAppointmentStatus(appointment.id, 'cancelado')}
-                                className="flex-1 border-red-500/50 text-red-400 h-8"
+                                onClick={() => handleStatusUpdate(appointment.id, 'cancelado')}
+                                disabled={updatingIds.has(appointment.id)}
+                                className="flex-1 border-red-500/50 text-red-400 h-8 hover:bg-red-500/10"
                               >
-                                <XCircle className="w-3 h-3 mr-1" />
+                                {updatingIds.has(appointment.id) ? (
+                                  <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-1" />
+                                ) : (
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                )}
                                 Cancelar
                               </Button>
                             </div>

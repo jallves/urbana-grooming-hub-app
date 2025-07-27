@@ -78,6 +78,8 @@ export const useBarberAppointments = () => {
 
   const updateAppointmentStatus = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
+      console.log('Tentando atualizar agendamento:', appointmentId, 'para status:', newStatus);
+      
       const { error } = await supabase
         .from('painel_agendamentos')
         .update({ 
@@ -89,7 +91,7 @@ export const useBarberAppointments = () => {
       if (error) {
         console.error('Erro ao atualizar status:', error);
         toast.error('Erro ao atualizar agendamento');
-        return;
+        return false;
       }
 
       // Atualizar estado local
@@ -108,9 +110,11 @@ export const useBarberAppointments = () => {
       };
 
       toast.success(statusMessages[newStatus as keyof typeof statusMessages] || 'Status atualizado');
+      return true;
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast.error('Erro ao atualizar agendamento');
+      return false;
     }
   }, []);
 
