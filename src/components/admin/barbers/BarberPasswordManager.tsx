@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, EyeOff, Key, RefreshCw, Trash2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseRPC } from '@/types/supabase-rpc';
 import { validatePasswordStrength } from '@/lib/security';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -111,12 +111,12 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
       console.log('Barbeiro encontrado:', staffData);
 
       // Usar RPC para criar/atualizar usuário admin
-      const { data: userData, error: userError } = await supabase.rpc('create_barber_user', {
-        p_email: barberEmail,
-        p_password: password,
-        p_name: barberName || staffData.name,
-        p_staff_id: staffData.id
-      });
+      const { data: userData, error: userError } = await supabaseRPC.createBarberUser(
+        barberEmail,
+        password,
+        barberName || staffData.name,
+        staffData.id
+      );
 
       if (userError) {
         console.error('Erro ao criar usuário:', userError);
@@ -242,9 +242,7 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
       console.log('Iniciando processo de remoção de acesso para:', barberEmail);
       
       // Usar RPC para desabilitar usuário
-      const { error: deleteError } = await supabase.rpc('disable_barber_user', {
-        p_email: barberEmail
-      });
+      const { error: deleteError } = await supabaseRPC.disableBarberUser(barberEmail);
 
       if (deleteError) {
         console.error('Erro ao desabilitar barbeiro:', deleteError);

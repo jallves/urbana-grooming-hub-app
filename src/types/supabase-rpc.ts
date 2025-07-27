@@ -16,7 +16,10 @@ type RpcFunctionName =
   | 'get_painel_barbeiros'
   | 'get_painel_servicos'
   | 'get_agendamentos_barbeiro_data'
-  | 'create_painel_agendamento';
+  | 'create_painel_agendamento'
+  | 'check_auth_user_exists'
+  | 'create_barber_user'
+  | 'disable_barber_user';
 
 export const supabaseRPC = {
   getStaffModuleAccess: async (staffId: string) => {
@@ -66,6 +69,57 @@ export const supabaseRPC = {
       return { 
         data: null, 
         error: new Error('Failed to get available time slots') 
+      };
+    }
+  },
+
+  checkAuthUserExists: async (email: string) => {
+    try {
+      const { data, error } = await supabase.rpc('check_auth_user_exists', {
+        user_email: email
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Error in checkAuthUserExists RPC:', error);
+      return { 
+        data: null, 
+        error: new Error('Failed to check auth user exists') 
+      };
+    }
+  },
+
+  createBarberUser: async (email: string, password: string, name: string, staffId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('create_barber_user', {
+        p_email: email,
+        p_password: password,
+        p_name: name,
+        p_staff_id: staffId
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Error in createBarberUser RPC:', error);
+      return { 
+        data: null, 
+        error: new Error('Failed to create barber user') 
+      };
+    }
+  },
+
+  disableBarberUser: async (email: string) => {
+    try {
+      const { data, error } = await supabase.rpc('disable_barber_user', {
+        p_email: email
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Error in disableBarberUser RPC:', error);
+      return { 
+        data: null, 
+        error: new Error('Failed to disable barber user') 
       };
     }
   }

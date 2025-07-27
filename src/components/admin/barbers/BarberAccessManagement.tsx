@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, Key, CheckCircle, XCircle, Settings, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseRPC } from '@/types/supabase-rpc';
 import BarberPasswordManager from './BarberPasswordManager';
 import {
   Dialog,
@@ -36,9 +36,7 @@ const BarberAccessManagement: React.FC = () => {
       console.log('Verificando status de autenticação para:', email);
       
       // Usar a função RPC para verificar se existe um usuário auth com este email
-      const { data, error } = await supabase.rpc('check_auth_user_exists', {
-        user_email: email
-      });
+      const { data, error } = await supabaseRPC.checkAuthUserExists(email);
 
       if (error) {
         console.error('Erro ao verificar usuário:', error);
@@ -47,7 +45,7 @@ const BarberAccessManagement: React.FC = () => {
       }
 
       console.log('Status do usuário:', data);
-      return data || false;
+      return Boolean(data);
     } catch (error) {
       console.error('Erro ao verificar status:', error);
       return await checkUserByRole(email);
