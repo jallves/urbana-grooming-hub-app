@@ -158,6 +158,14 @@ export default function PainelClienteAgendar() {
     setLoading(true);
 
     try {
+      console.log('Dados antes de enviar:', {
+        cliente_id: cliente?.id,
+        barbeiro_id: formData.barbeiro_id,
+        servico_id: formData.servico_id,
+        data: formData.data,
+        hora: formData.hora
+      });
+
       const { data: novoAgendamento, error } = await supabase
         .rpc('create_painel_agendamento', {
           cliente_id: cliente?.id,
@@ -184,6 +192,8 @@ export default function PainelClienteAgendar() {
         });
         return;
       }
+
+      console.log('Agendamento criado:', novoAgendamento);
 
       const barbeiro = barbeiros.find(b => b.id === formData.barbeiro_id);
       const servico = servicos.find(s => s.id === formData.servico_id);
@@ -348,6 +358,7 @@ export default function PainelClienteAgendar() {
                   <Select 
                     value={formData.data} 
                     onValueChange={(value) => {
+                      console.log('Data selecionada:', value);
                       setFormData(prev => ({ ...prev, data: value, hora: '' })); // Limpar hora ao mudar data
                     }}
                   >
@@ -371,7 +382,10 @@ export default function PainelClienteAgendar() {
                   </Label>
                   <Select 
                     value={formData.hora} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}
+                    onValueChange={(value) => {
+                      console.log('Horário selecionado:', value);
+                      setFormData(prev => ({ ...prev, hora: value }));
+                    }}
                     disabled={!formData.data}
                   >
                     <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
