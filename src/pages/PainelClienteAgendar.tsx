@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { ArrowLeft, Calendar, Clock, User, Scissors, Plus } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
-import { format, addDays } from 'date-fns';
+import { format, addDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ConfirmacaoAgendamento from '@/components/painel-cliente/ConfirmacaoAgendamento';
 import { useToast } from '@/hooks/use-toast';
@@ -87,7 +86,7 @@ export default function PainelClienteAgendar() {
   const gerarHorariosDisponiveis = () => {
     if (!formData.data) return [];
     
-    const selectedDate = new Date(formData.data);
+    const selectedDate = new Date(formData.data + 'T00:00:00'); // Garantir que seja interpretado como horário local
     const now = new Date();
     const isToday = selectedDate.getDate() === now.getDate() &&
                    selectedDate.getMonth() === now.getMonth() &&
@@ -127,7 +126,7 @@ export default function PainelClienteAgendar() {
     const startDay = currentHour >= 20 ? 1 : 0;
     
     for (let i = startDay; i <= 30; i++) {
-      const data = addDays(new Date(), i);
+      const data = addDays(startOfDay(now), i); // Usar startOfDay para evitar problemas de timezone
       
       // Não incluir domingos (0 = domingo)
       if (data.getDay() !== 0) {
@@ -158,11 +157,17 @@ export default function PainelClienteAgendar() {
     setLoading(true);
 
     try {
+      // Criar objeto Date para garantir que a data seja interpretada corretamente
+      const selectedDate = new Date(formData.data + 'T00:00:00');
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      console.log('Data original:', formData.data);
+      console.log('Data formatada:', formattedDate);
       console.log('Dados antes de enviar:', {
         cliente_id: cliente?.id,
         barbeiro_id: formData.barbeiro_id,
         servico_id: formData.servico_id,
-        data: formData.data,
+        data: formattedDate,
         hora: formData.hora
       });
 
@@ -171,7 +176,7 @@ export default function PainelClienteAgendar() {
           cliente_id: cliente?.id,
           barbeiro_id: formData.barbeiro_id,
           servico_id: formData.servico_id,
-          data: formData.data,
+          data: formattedDate,
           hora: formData.hora
         });
 
@@ -206,7 +211,7 @@ export default function PainelClienteAgendar() {
         detalhes: {
           servico: servico?.nome || '',
           barbeiro: barbeiro?.nome || '',
-          data: format(new Date(formData.data), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }),
+          data: format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }),
           hora: formData.hora,
           preco: servico?.preco || 0
         }
