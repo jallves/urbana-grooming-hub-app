@@ -37,6 +37,8 @@ export const useBarberAppointments = () => {
     try {
       setLoading(true);
       
+      console.log('Buscando agendamentos para:', user.email);
+      
       // Primeiro, buscar o barbeiro pela email
       const { data: barberData, error: barberError } = await supabase
         .from('painel_barbeiros')
@@ -48,6 +50,8 @@ export const useBarberAppointments = () => {
         console.error('Erro ao buscar barbeiro:', barberError);
         return;
       }
+
+      console.log('Barbeiro encontrado:', barberData.id);
 
       // Buscar agendamentos do barbeiro
       const { data: appointmentsData, error: appointmentsError } = await supabase
@@ -67,6 +71,7 @@ export const useBarberAppointments = () => {
         return;
       }
 
+      console.log('Agendamentos encontrados:', appointmentsData?.length || 0);
       setAppointments(appointmentsData || []);
     } catch (error) {
       console.error('Erro no useBarberAppointments:', error);
@@ -80,19 +85,22 @@ export const useBarberAppointments = () => {
     try {
       console.log('Tentando atualizar agendamento:', appointmentId, 'para status:', newStatus);
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('painel_agendamentos')
         .update({ 
           status: newStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', appointmentId);
+        .eq('id', appointmentId)
+        .select();
 
       if (error) {
         console.error('Erro ao atualizar status:', error);
-        toast.error('Erro ao atualizar agendamento');
+        toast.error('Erro ao atualizar agendamento: ' + error.message);
         return false;
       }
+
+      console.log('Agendamento atualizado com sucesso:', data);
 
       // Atualizar estado local
       setAppointments(prev => 

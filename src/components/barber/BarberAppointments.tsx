@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -10,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBarberAppointments } from '@/hooks/useBarberAppointments';
 import StandardCard from './layouts/StandardCard';
+import { toast } from 'sonner';
 
 const BarberAppointments: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,15 +38,23 @@ const BarberAppointments: React.FC = () => {
   }, [appointments, searchTerm, statusFilter, activeTab]);
 
   const handleStatusUpdate = async (appointmentId: string, newStatus: string) => {
+    console.log('Iniciando atualização de status:', { appointmentId, newStatus });
+    
     setUpdatingIds(prev => new Set(prev).add(appointmentId));
     
     try {
       const success = await updateAppointmentStatus(appointmentId, newStatus);
-      if (!success) {
+      
+      if (success) {
+        console.log('Status atualizado com sucesso');
+        toast.success('Agendamento atualizado com sucesso!');
+      } else {
         console.error('Falha ao atualizar status do agendamento');
+        toast.error('Falha ao atualizar agendamento');
       }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar agendamento');
     } finally {
       setUpdatingIds(prev => {
         const newSet = new Set(prev);
@@ -216,7 +224,7 @@ const BarberAppointments: React.FC = () => {
                                 size="sm"
                                 onClick={() => handleStatusUpdate(appointment.id, 'concluido')}
                                 disabled={updatingIds.has(appointment.id)}
-                                className="flex-1 bg-green-600 text-white h-8 hover:bg-green-700"
+                                className="flex-1 bg-green-600 text-white h-8 hover:bg-green-700 disabled:opacity-50"
                               >
                                 {updatingIds.has(appointment.id) ? (
                                   <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
@@ -230,7 +238,7 @@ const BarberAppointments: React.FC = () => {
                                 variant="outline"
                                 onClick={() => handleStatusUpdate(appointment.id, 'cancelado')}
                                 disabled={updatingIds.has(appointment.id)}
-                                className="flex-1 border-red-500/50 text-red-400 h-8 hover:bg-red-500/10"
+                                className="flex-1 border-red-500/50 text-red-400 h-8 hover:bg-red-500/10 disabled:opacity-50"
                               >
                                 {updatingIds.has(appointment.id) ? (
                                   <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-1" />
