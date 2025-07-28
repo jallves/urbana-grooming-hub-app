@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Calendar, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import StandardCard from './layouts/StandardCard';

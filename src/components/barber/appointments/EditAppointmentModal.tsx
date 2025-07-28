@@ -11,8 +11,9 @@ import { toast } from 'sonner';
 interface EditAppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  appointmentId: string;
-  onUpdate: () => void;
+  appointmentId: string | null;
+  currentDate: Date | null;
+  onSuccess: () => void;
 }
 
 interface PainelServico {
@@ -26,7 +27,8 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
   isOpen,
   onClose,
   appointmentId,
-  onUpdate
+  currentDate,
+  onSuccess
 }) => {
   const [appointment, setAppointment] = useState<any>(null);
   const [services, setServices] = useState<PainelServico[]>([]);
@@ -46,6 +48,8 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
   }, [isOpen, appointmentId]);
 
   const fetchAppointment = async () => {
+    if (!appointmentId) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -89,6 +93,8 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
   };
 
   const handleSave = async () => {
+    if (!appointmentId) return;
+    
     setSaving(true);
     try {
       const { error } = await supabase
@@ -104,7 +110,7 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
       if (error) throw error;
 
       toast.success('Agendamento atualizado com sucesso!');
-      onUpdate();
+      onSuccess();
       onClose();
     } catch (error) {
       console.error('Erro ao atualizar agendamento:', error);
@@ -113,6 +119,8 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
       setSaving(false);
     }
   };
+
+  if (!isOpen || !appointmentId) return null;
 
   if (loading) {
     return (
