@@ -1,7 +1,10 @@
+
 import React from 'react';
 import { Calendar, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import StandardCard from './layouts/StandardCard';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
+import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
+import ActionFeedback from '@/components/ui/feedback/ActionFeedback';
 import EditAppointmentModal from './appointments/EditAppointmentModal';
 import { useBarberAppointmentsOptimized } from '@/hooks/barber/useBarberAppointmentsOptimized';
 
@@ -11,14 +14,14 @@ const BarberAppointments: React.FC = () => {
     loading,
     stats,
     updatingId,
-    fetchAppointments,
     handleCompleteAppointment,
     handleCancelAppointment,
-    isEditModalOpen,
+    isModalOpen,
     selectedAppointmentId,
-    selectedAppointmentDate,
-    handleEditAppointment,
-    closeEditModal
+    selectedDate,
+    openModal,
+    closeModal,
+    fetchAppointments
   } = useBarberAppointmentsOptimized();
 
   const statsCards = [
@@ -32,49 +35,56 @@ const BarberAppointments: React.FC = () => {
     {
       title: 'Concluídos',
       value: stats.completed,
-      icon: TrendingUp,
+      icon: Clock,
       color: 'text-green-400',
       bgGradient: 'from-green-500/10 to-green-600/5'
     },
     {
       title: 'Próximos',
       value: stats.upcoming,
-      icon: Clock,
+      icon: TrendingUp,
       color: 'text-orange-400',
-      bgGradient: 'from-orange-500/10 to-red-600/5'
+      bgGradient: 'from-orange-500/10 to-orange-600/5'
     },
     {
       title: 'Receita',
-      value: `R$ ${stats.revenue.toFixed(0)}`,
+      value: `R$ ${stats.revenue.toFixed(2)}`,
       icon: DollarSign,
-      color: 'text-green-400',
-      bgGradient: 'from-green-500/10 to-emerald-600/5'
+      color: 'text-urbana-gold',
+      bgGradient: 'from-yellow-500/10 to-amber-600/5'
     }
   ];
 
   if (loading) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Carregando agendamentos...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <StandardCard key={i}>
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-gray-700 rounded w-1/2"></div>
+              </div>
+            </StandardCard>
+          ))}
         </div>
+        <AppointmentSkeleton count={5} />
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full space-y-6">
+    <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statsCards.map((stat, index) => (
           <StandardCard key={index}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-400">{stat.title}</p>
+                <p className="text-sm font-medium text-gray-300">{stat.title}</p>
                 <p className="text-2xl font-bold text-white">{stat.value}</p>
               </div>
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
+              <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
                 <stat.icon className={`h-6 w-6 ${stat.color}`} />
               </div>
             </div>
@@ -84,45 +94,46 @@ const BarberAppointments: React.FC = () => {
 
       {/* Appointments List */}
       <StandardCard>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Meus Agendamentos</h2>
-            <button
-              onClick={fetchAppointments}
-              className="text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              Atualizar
-            </button>
-          </div>
-          
-          {appointments.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum agendamento encontrado</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {appointments.map((appointment) => (
-                <AppointmentCardOptimized
-                  key={appointment.id}
-                  appointment={appointment}
-                  updatingId={updatingId}
-                  onComplete={handleCompleteAppointment}
-                  onCancel={handleCancelAppointment}
-                  onEdit={handleEditAppointment}
-                />
-              ))}
-            </div>
-          )}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white">Meus Agendamentos</h2>
+          <ActionFeedback 
+            status={updatingId ? 'loading' : 'idle'}
+            message="Atualizando agendamento..."
+          />
         </div>
+        
+        {appointments.length === 0 ? (
+          <div className="text-center py-12">
+            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-300 mb-2">
+              Nenhum agendamento encontrado
+            </h3>
+            <p className="text-gray-500">
+              Seus agendamentos aparecerão aqui quando forem criados.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {appointments.map((appointment) => (
+              <AppointmentCardOptimized
+                key={appointment.id}
+                appointment={appointment}
+                updatingId={updatingId}
+                onComplete={handleCompleteAppointment}
+                onCancel={handleCancelAppointment}
+                onEdit={openModal}
+              />
+            ))}
+          </div>
+        )}
       </StandardCard>
 
       {/* Edit Modal */}
       <EditAppointmentModal
-        isOpen={isEditModalOpen}
-        onClose={closeEditModal}
+        isOpen={isModalOpen}
+        onClose={closeModal}
         appointmentId={selectedAppointmentId}
-        currentDate={selectedAppointmentDate}
+        currentDate={selectedDate}
         onSuccess={fetchAppointments}
       />
     </div>
