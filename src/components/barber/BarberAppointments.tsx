@@ -16,11 +16,11 @@ const BarberAppointments: React.FC = () => {
     updatingId,
     handleCompleteAppointment,
     handleCancelAppointment,
-    isModalOpen,
+    isEditModalOpen,
     selectedAppointmentId,
-    selectedDate,
-    openModal,
-    closeModal,
+    selectedAppointmentDate,
+    handleEditAppointment,
+    closeEditModal,
     fetchAppointments
   } = useBarberAppointmentsOptimized();
 
@@ -121,7 +121,7 @@ const BarberAppointments: React.FC = () => {
                 updatingId={updatingId}
                 onComplete={handleCompleteAppointment}
                 onCancel={handleCancelAppointment}
-                onEdit={openModal}
+                onEdit={handleEditAppointment}
               />
             ))}
           </div>
@@ -130,10 +130,10 @@ const BarberAppointments: React.FC = () => {
 
       {/* Edit Modal */}
       <EditAppointmentModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
+        isOpen={isEditModalOpen}
+        onClose={closeEditModal}
         appointmentId={selectedAppointmentId}
-        currentDate={selectedDate}
+        currentDate={selectedAppointmentDate}
         onSuccess={fetchAppointments}
       />
     </div>
