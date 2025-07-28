@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 
 interface EditAppointmentModalProps {
   isOpen: boolean;
@@ -36,8 +35,7 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
   const [formData, setFormData] = useState({
     data: '',
     hora: '',
-    servico_id: '',
-    notes: ''
+    servico_id: ''
   });
 
   useEffect(() => {
@@ -66,8 +64,7 @@ const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
       setFormData({
         data: data.data,
         hora: data.hora,
-        servico_id: data.servico_id,
-        notes: data.notes || ''
+        servico_id: data.servico_id
       });
     } catch (error) {
       console.error('Erro ao buscar agendamento:', error);
