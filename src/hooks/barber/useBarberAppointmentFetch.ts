@@ -1,0 +1,103 @@
+
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface PainelAgendamento {
+  id: string;
+  cliente_id: string;
+  barbeiro_id: string;
+  servico_id: string;
+  data: string;
+  hora: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  painel_clientes: {
+    nome: string;
+    email: string;
+    whatsapp: string;
+  };
+  painel_servicos: {
+    nome: string;
+    preco: number;
+    duracao: number;
+  };
+}
+
+interface AppointmentWithDetails {
+  id: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  notes?: string;
+  client_name: string;
+  service_name: string;
+  service?: {
+    price?: number;
+  };
+  data: string;
+  hora: string;
+}
+
+export const useBarberAppointmentFetch = (barberId: string | null) => {
+  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchAppointments = useCallback(async () => {
+    if (!barberId) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_clientes!inner(nome, email, whatsapp),
+          painel_servicos!inner(nome, preco, duracao)
+        `)
+        .eq('barbeiro_id', barberId)
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        const appointmentsWithDetails = data.map((appointment: PainelAgendamento) => {
+          const appointmentDate = new Date(appointment.data + 'T' + appointment.hora);
+          const endTime = new Date(appointmentDate.getTime() + (appointment.painel_servicos.duracao * 60000));
+
+          return {
+            id: appointment.id,
+            start_time: appointmentDate.toISOString(),
+            end_time: endTime.toISOString(),
+            status: appointment.status === 'cancelado' ? 'cancelled' : 
+                    appointment.status === 'confirmado' ? 'confirmed' : 
+                    appointment.status === 'concluido' ? 'completed' : 'scheduled',
+            client_name: appointment.painel_clientes.nome,
+            service_name: appointment.painel_servicos.nome,
+            service: {
+              price: appointment.painel_servicos.preco
+            },
+            data: appointment.data,
+            hora: appointment.hora
+          } as AppointmentWithDetails;
+        });
+        
+        setAppointments(appointmentsWithDetails);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar agendamentos:', error);
+      toast.error('Erro ao carregar agendamentos');
+    } finally {
+      setLoading(false);
+    }
+  }, [barberId]);
+
+  return {
+    appointments,
+    loading,
+    fetchAppointments,
+    setAppointments
+  };
+};
