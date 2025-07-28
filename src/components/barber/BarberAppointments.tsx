@@ -1,7 +1,8 @@
+
 import React, { useState, useMemo } from 'react';
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, Clock, User, Phone, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CheckCircle, XCircle, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBarberAppointments } from '@/hooks/useBarberAppointments';
 import StandardCard from './layouts/StandardCard';
+import EditAppointmentModal from './appointments/EditAppointmentModal';
 import { toast } from 'sonner';
 
 const BarberAppointments: React.FC = () => {
@@ -16,8 +18,9 @@ const BarberAppointments: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('today');
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+  const [editingAppointmentId, setEditingAppointmentId] = useState<string | null>(null);
   
-  const { appointments, loading, updateAppointmentStatus } = useBarberAppointments();
+  const { appointments, loading, updateAppointmentStatus, completeAppointment, refetch } = useBarberAppointments();
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter(appointment => {
@@ -47,14 +50,11 @@ const BarberAppointments: React.FC = () => {
       
       if (success) {
         console.log('Status atualizado com sucesso');
-        toast.success('Agendamento atualizado com sucesso!');
       } else {
         console.error('Falha ao atualizar status do agendamento');
-        toast.error('Falha ao atualizar agendamento');
       }
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      toast.error('Erro ao atualizar agendamento');
     } finally {
       setUpdatingIds(prev => {
         const newSet = new Set(prev);
@@ -62,6 +62,43 @@ const BarberAppointments: React.FC = () => {
         return newSet;
       });
     }
+  };
+
+  const handleCompleteAppointment = async (appointmentId: string) => {
+    console.log('Concluindo agendamento:', appointmentId);
+    
+    setUpdatingIds(prev => new Set(prev).add(appointmentId));
+    
+    try {
+      const success = await completeAppointment(appointmentId);
+      
+      if (success) {
+        console.log('Agendamento concluído com sucesso');
+      } else {
+        console.error('Falha ao concluir agendamento');
+      }
+    } catch (error) {
+      console.error('Erro ao concluir agendamento:', error);
+    } finally {
+      setUpdatingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(appointmentId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleEditAppointment = (appointmentId: string) => {
+    setEditingAppointmentId(appointmentId);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingAppointmentId(null);
+  };
+
+  const handleUpdateComplete = () => {
+    refetch();
+    handleCloseEditModal();
   };
 
   const getStatusBadge = (status: string) => {
@@ -222,7 +259,17 @@ const BarberAppointments: React.FC = () => {
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                onClick={() => handleStatusUpdate(appointment.id, 'concluido')}
+                                variant="outline"
+                                onClick={() => handleEditAppointment(appointment.id)}
+                                disabled={updatingIds.has(appointment.id)}
+                                className="border-urbana-gold/50 text-urbana-gold h-8 hover:bg-urbana-gold/10 disabled:opacity-50"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Editar
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleCompleteAppointment(appointment.id)}
                                 disabled={updatingIds.has(appointment.id)}
                                 className="flex-1 bg-green-600 text-white h-8 hover:bg-green-700 disabled:opacity-50"
                               >
@@ -238,7 +285,7 @@ const BarberAppointments: React.FC = () => {
                                 variant="outline"
                                 onClick={() => handleStatusUpdate(appointment.id, 'cancelado')}
                                 disabled={updatingIds.has(appointment.id)}
-                                className="flex-1 border-red-500/50 text-red-400 h-8 hover:bg-red-500/10 disabled:opacity-50"
+                                className="border-red-500/50 text-red-400 h-8 hover:bg-red-500/10 disabled:opacity-50"
                               >
                                 {updatingIds.has(appointment.id) ? (
                                   <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-1" />
@@ -259,6 +306,14 @@ const BarberAppointments: React.FC = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Modal de edição */}
+      <EditAppointmentModal
+        isOpen={editingAppointmentId !== null}
+        onClose={handleCloseEditModal}
+        appointmentId={editingAppointmentId || ''}
+        onUpdate={handleUpdateComplete}
+      />
     </div>
   );
 };

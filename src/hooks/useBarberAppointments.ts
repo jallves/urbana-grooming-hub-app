@@ -126,6 +126,45 @@ export const useBarberAppointments = () => {
     }
   }, []);
 
+  const completeAppointment = useCallback(async (appointmentId: string) => {
+    try {
+      console.log('Concluindo agendamento:', appointmentId);
+      
+      const { data, error } = await supabase
+        .from('painel_agendamentos')
+        .update({ 
+          status: 'concluido',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', appointmentId)
+        .select();
+
+      if (error) {
+        console.error('Erro ao concluir agendamento:', error);
+        toast.error('Erro ao concluir agendamento: ' + error.message);
+        return false;
+      }
+
+      console.log('Agendamento concluído com sucesso:', data);
+
+      // Atualizar estado local
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId 
+            ? { ...apt, status: 'concluido', updated_at: new Date().toISOString() }
+            : apt
+        )
+      );
+
+      toast.success('Agendamento concluído com sucesso!');
+      return true;
+    } catch (error) {
+      console.error('Erro ao concluir agendamento:', error);
+      toast.error('Erro ao concluir agendamento');
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
@@ -158,6 +197,7 @@ export const useBarberAppointments = () => {
     appointments,
     loading,
     updateAppointmentStatus,
+    completeAppointment,
     refetch: fetchAppointments
   };
 };
