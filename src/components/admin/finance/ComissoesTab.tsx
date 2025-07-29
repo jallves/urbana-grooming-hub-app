@@ -34,7 +34,7 @@ interface Commission {
   notes?: string;
   appointment_id: string;
   barber_id: string;
-  staff?: { name: string };
+  barber?: { name: string };
   appointment_source?: string;
 }
 
@@ -52,7 +52,8 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
-      let query = supabase
+      // Buscar comissões do sistema novo
+      const { data: newCommissions } = await supabase
         .from('barber_commissions')
         .select(`
           *,
@@ -62,12 +63,37 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         .lte('created_at', endDate.toISOString())
         .order('created_at', { ascending: false });
 
+      // Buscar comissões do painel antigo
+      const { data: painelCommissions } = await supabase
+        .from('barber_commissions')
+        .select(`
+          *,
+          painel_barbeiros:barber_id(nome)
+        `)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
+        .eq('appointment_source', 'painel')
+        .order('created_at', { ascending: false });
+
+      const allCommissions = [
+        ...(newCommissions || []).map(c => ({
+          ...c,
+          barber: { name: c.staff?.name || 'Barbeiro' }
+        })),
+        ...(painelCommissions || []).map(c => ({
+          ...c,
+          barber: { name: c.painel_barbeiros?.nome || 'Barbeiro' }
+        }))
+      ];
+
+      // Aplicar filtros
+      let filteredCommissions = allCommissions;
+      
       if (filters.barbeiro !== 'todos') {
-        query = query.eq('barber_id', filters.barbeiro);
+        filteredCommissions = filteredCommissions.filter(c => c.barber_id === filters.barbeiro);
       }
 
-      const { data } = await query;
-      return data as Commission[] || [];
+      return filteredCommissions as Commission[];
     }
   });
 
@@ -77,33 +103,48 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
-      let query = supabase
+      // Buscar dados do sistema novo
+      const { data: newData } = await supabase
         .from('barber_commissions')
         .select('amount, status, barber_id, staff:barber_id(name)')
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+        .lte('created_at', endDate.toISOString())
+        .neq('appointment_source', 'painel');
 
-      if (filters.barbeiro !== 'todos') {
-        query = query.eq('barber_id', filters.barbeiro);
-      }
+      // Buscar dados do painel antigo
+      const { data: painelData } = await supabase
+        .from('barber_commissions')
+        .select('amount, status, barber_id, painel_barbeiros:barber_id(nome)')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString())
+        .eq('appointment_source', 'painel');
 
-      const { data } = await query;
-      
-      const stats = data?.reduce((acc, commission) => {
-        const staffName = commission.staff?.name || 'Desconhecido';
-        if (!acc[staffName]) {
-          acc[staffName] = { total: 0, pago: 0, pendente: 0 };
+      const allData = [
+        ...(newData || []).map(c => ({
+          ...c,
+          barber_name: c.staff?.name || 'Barbeiro'
+        })),
+        ...(painelData || []).map(c => ({
+          ...c,
+          barber_name: c.painel_barbeiros?.nome || 'Barbeiro'
+        }))
+      ];
+
+      const stats = allData.reduce((acc, commission) => {
+        const barberName = commission.barber_name;
+        if (!acc[barberName]) {
+          acc[barberName] = { total: 0, pago: 0, pendente: 0 };
         }
-        acc[staffName].total += Number(commission.amount);
+        acc[barberName].total += Number(commission.amount);
         if (commission.status === 'paid') {
-          acc[staffName].pago += Number(commission.amount);
+          acc[barberName].pago += Number(commission.amount);
         } else {
-          acc[staffName].pendente += Number(commission.amount);
+          acc[barberName].pendente += Number(commission.amount);
         }
         return acc;
       }, {} as Record<string, { total: number; pago: number; pendente: number }>);
 
-      return stats || {};
+      return stats;
     }
   });
 
@@ -131,19 +172,22 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         .from('barber_commissions')
         .select(`
           *,
-          staff:barber_id(name)
+          staff:barber_id(name),
+          painel_barbeiros:barber_id(nome)
         `)
         .eq('id', commissionId)
         .single();
 
       if (commission) {
+        const barberName = commission.staff?.name || commission.painel_barbeiros?.nome || 'Barbeiro';
+        
         // Registrar despesa no fluxo de caixa
         const { error: cashFlowError } = await supabase
           .from('cash_flow')
           .insert({
             transaction_type: 'expense',
             amount: commission.amount,
-            description: `Comissão paga - ${commission.staff?.name}`,
+            description: `Comissão paga - ${barberName}`,
             category: 'Comissões',
             payment_method: paymentMethod,
             reference_id: commissionId,
@@ -271,7 +315,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-white">{commission.staff?.name}</p>
+                      <p className="font-medium text-white">{commission.barber?.name}</p>
                       <p className="text-sm text-gray-400">
                         Taxa: {commission.commission_rate}% • {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
                       </p>
@@ -320,7 +364,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
           {selectedCommission && (
             <div className="space-y-4">
               <div className="p-4 bg-gray-800 rounded-lg">
-                <p className="font-medium text-white">{selectedCommission.staff?.name}</p>
+                <p className="font-medium text-white">{selectedCommission.barber?.name}</p>
                 <p className="text-green-500 font-bold">
                   R$ {Number(selectedCommission.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>

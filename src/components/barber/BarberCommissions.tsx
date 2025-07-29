@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +8,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import StandardCard from './layouts/StandardCard';
+import ResponsiveCard from './layouts/ResponsiveCard';
+import MobileCommissionCard from './layouts/MobileCommissionCard';
 
 interface Commission {
   id: string;
@@ -36,7 +36,6 @@ const BarberCommissions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [staffId, setStaffId] = useState<string | null>(null);
 
-  // Memoize calculations to prevent unnecessary re-renders
   const { totalPending, totalPaid } = useMemo(() => {
     const pending = commissions
       .filter(c => c.status === 'pending')
@@ -49,7 +48,6 @@ const BarberCommissions: React.FC = () => {
     return { totalPending: pending, totalPaid: paid };
   }, [commissions]);
 
-  // Fetch staff ID only once when user email changes
   useEffect(() => {
     const fetchStaffId = async () => {
       if (!user?.email) {
@@ -76,9 +74,8 @@ const BarberCommissions: React.FC = () => {
     };
 
     fetchStaffId();
-  }, [user?.email]); // Only depend on user email
+  }, [user?.email]);
 
-  // Fetch commissions only when staffId changes
   useEffect(() => {
     const fetchCommissions = async () => {
       if (!staffId) {
@@ -182,16 +179,16 @@ const BarberCommissions: React.FC = () => {
     };
 
     fetchCommissions();
-  }, [staffId, toast]); // Only depend on staffId and toast
+  }, [staffId, toast]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="border-yellow-500/50 text-yellow-400 bg-yellow-500/10">Pendente</Badge>;
+        return <Badge className="border-yellow-500/50 text-yellow-400 bg-yellow-500/10 text-xs">Pendente</Badge>;
       case 'paid':
-        return <Badge className="border-green-500/50 text-green-400 bg-green-500/10">Pago</Badge>;
+        return <Badge className="border-green-500/50 text-green-400 bg-green-500/10 text-xs">Pago</Badge>;
       default:
-        return <Badge className="border-gray-500/50 text-gray-400 bg-gray-500/10">{status}</Badge>;
+        return <Badge className="border-gray-500/50 text-gray-400 bg-gray-500/10 text-xs">{status}</Badge>;
     }
   };
 
@@ -205,19 +202,19 @@ const BarberCommissions: React.FC = () => {
 
   const summaryCards = [
     {
-      title: 'Total Pendente',
+      title: 'Pendente',
       value: `R$ ${totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: Clock,
       color: 'text-orange-400'
     },
     {
-      title: 'Total Pago',
+      title: 'Pago',
       value: `R$ ${totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: CheckCircle,
       color: 'text-green-400'
     },
     {
-      title: 'Total Geral',
+      title: 'Total',
       value: `R$ ${(totalPending + totalPaid).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
       color: 'text-urbana-gold'
@@ -231,128 +228,68 @@ const BarberCommissions: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full flex flex-col space-y-2 p-1 sm:p-2 lg:p-4">
-      {/* Summary Cards */}
-      <div className="w-full grid grid-cols-2 gap-1.5 sm:gap-2">
+    <div className="w-full h-full flex flex-col space-y-3 p-2 sm:p-4">
+      {/* Summary Cards - 2x2 Grid on Mobile */}
+      <div className="w-full grid grid-cols-2 gap-2 sm:gap-3">
         {summaryCards.map((card, index) => (
-          <StandardCard key={index}>
-            <div className="flex flex-row items-center justify-between space-y-0 pb-1">
-              <div className="text-xs font-medium text-gray-300 truncate pr-1">{card.title}</div>
-              <card.icon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${card.color}`} />
+          <ResponsiveCard key={index} className="min-h-[80px] sm:min-h-[100px]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full">
+              <div className="flex-1 min-w-0">
+                <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1 truncate">{card.title}</div>
+                <div className="text-sm sm:text-base lg:text-lg font-bold text-white truncate">
+                  {card.value}
+                </div>
+              </div>
+              <card.icon className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${card.color} mt-1 sm:mt-0`} />
             </div>
-            <div className="text-xs sm:text-sm lg:text-base font-bold text-white truncate">
-              {card.value}
-            </div>
-          </StandardCard>
+          </ResponsiveCard>
         ))}
       </div>
 
-      {/* Histórico de Comissões */}
-      <StandardCard title="Histórico de Comissões">
+      {/* Commissions History */}
+      <ResponsiveCard title="Histórico de Comissões" className="flex-1">
         {commissions.length === 0 ? (
-          <div className="w-full text-center py-4 sm:py-8">
-            <DollarSign className="h-8 w-8 sm:h-12 sm:w-12 text-gray-600 mx-auto mb-2 sm:mb-4" />
-            <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">Nenhuma comissão encontrada</h3>
-            <p className="text-xs sm:text-sm text-gray-400">
+          <div className="w-full text-center py-8 sm:py-12">
+            <DollarSign className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Nenhuma comissão encontrada</h3>
+            <p className="text-sm sm:text-base text-gray-400">
               As comissões aparecerão aqui conforme você concluir atendimentos
             </p>
           </div>
         ) : (
-          <div className="w-full space-y-2 sm:space-y-3">
+          <div className="w-full space-y-3">
             {/* Mobile View - Cards */}
-            <div className="w-full lg:hidden space-y-1.5 sm:space-y-2">
+            <div className="w-full lg:hidden">
               {commissions.map((commission) => (
-                <Card key={`${commission.source}-${commission.id}`} className="w-full bg-gray-700/50 border-gray-600/50">
-                  <CardContent className="p-2 sm:p-3">
-                    <div className="space-y-2 sm:space-y-3">
-                      <div className="flex justify-between items-start gap-2 sm:gap-3">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-white text-xs sm:text-sm truncate">
-                            {commission.appointment_details?.client_name || 'Cliente'}
-                          </h4>
-                          <p className="text-xs text-gray-400 truncate">
-                            {commission.appointment_details?.service_name || 'Serviço'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Origem: {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {getStatusBadge(commission.status)}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs">
-                        <div>
-                          <p className="text-gray-400">Data</p>
-                          <p className="text-white truncate">
-                            {commission.appointment_details?.appointment_date
-                              ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
-                              : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
-                            }
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-400">Horário</p>
-                          <p className="text-white">
-                            {commission.appointment_details?.appointment_time || '--:--'}
-                          </p>
-                        </div>
-                        {commission.commission_rate && (
-                          <div>
-                            <p className="text-gray-400">Taxa</p>
-                            <p className="text-urbana-gold">{commission.commission_rate}%</p>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-gray-400">Valor Serviço</p>
-                          <p className="text-white truncate">
-                            R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="pt-1.5 sm:pt-2 border-t border-gray-600/50">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-400">Comissão</span>
-                          <span className="text-sm sm:text-base font-bold text-urbana-gold">
-                            R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      </div>
-
-                      {(commission.payment_date || commission.paid_at) && (
-                        <div className="text-xs text-gray-400">
-                          Pago em: {format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <MobileCommissionCard
+                  key={`${commission.source}-${commission.id}`}
+                  commission={commission}
+                  getStatusBadge={getStatusBadge}
+                />
               ))}
             </div>
 
-            {/* Desktop View - Tabela */}
+            {/* Desktop View - Table */}
             <div className="w-full hidden lg:block">
               <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-700/50">
-                      <TableHead className="text-gray-300 whitespace-nowrap">Data</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Cliente</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Serviço</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Valor do Serviço</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Taxa</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Comissão</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Status</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Pagamento</TableHead>
-                      <TableHead className="text-gray-300 whitespace-nowrap">Origem</TableHead>
+                      <TableHead className="text-gray-300">Data</TableHead>
+                      <TableHead className="text-gray-300">Cliente</TableHead>
+                      <TableHead className="text-gray-300">Serviço</TableHead>
+                      <TableHead className="text-gray-300">Valor do Serviço</TableHead>
+                      <TableHead className="text-gray-300">Taxa</TableHead>
+                      <TableHead className="text-gray-300">Comissão</TableHead>
+                      <TableHead className="text-gray-300">Status</TableHead>
+                      <TableHead className="text-gray-300">Pagamento</TableHead>
+                      <TableHead className="text-gray-300">Origem</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {commissions.map((commission) => (
                       <TableRow key={`${commission.source}-${commission.id}`} className="border-gray-700/50">
-                        <TableCell className="text-gray-300 whitespace-nowrap">
+                        <TableCell className="text-gray-300">
                           {commission.appointment_details?.appointment_date
                             ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
                             : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
@@ -364,25 +301,25 @@ const BarberCommissions: React.FC = () => {
                         <TableCell className="text-gray-300">
                           {commission.appointment_details?.service_name || 'Serviço'}
                         </TableCell>
-                        <TableCell className="text-gray-300 whitespace-nowrap">
+                        <TableCell className="text-gray-300">
                           R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
-                        <TableCell className="text-urbana-gold whitespace-nowrap">
+                        <TableCell className="text-urbana-gold">
                           {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
                         </TableCell>
-                        <TableCell className="font-bold text-urbana-gold whitespace-nowrap">
+                        <TableCell className="font-bold text-urbana-gold">
                           R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell>
                           {getStatusBadge(commission.status)}
                         </TableCell>
-                        <TableCell className="text-gray-300 whitespace-nowrap">
+                        <TableCell className="text-gray-300">
                           {(commission.payment_date || commission.paid_at)
                             ? format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
                             : '-'
                           }
                         </TableCell>
-                        <TableCell className="text-gray-400 text-xs whitespace-nowrap">
+                        <TableCell className="text-gray-400 text-xs">
                           {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
                         </TableCell>
                       </TableRow>
@@ -393,7 +330,7 @@ const BarberCommissions: React.FC = () => {
             </div>
           </div>
         )}
-      </StandardCard>
+      </ResponsiveCard>
     </div>
   );
 };
