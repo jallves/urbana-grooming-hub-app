@@ -52,7 +52,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
   const [notes, setNotes] = useState('');
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
-  const { data: commissions, isLoading, refetch: refetchCommissions } = useQuery({
+  const { data: commissions = [], isLoading, refetch: refetchCommissions } = useQuery({
     queryKey: ['commissions', filters],
     queryFn: async () => {
       console.log('🔄 Buscando comissões com filtros:', filters);
@@ -118,7 +118,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
     }
   });
 
-  const { data: commissionStats, refetch: refetchStats } = useQuery({
+  const { data: commissionStats = {}, refetch: refetchStats } = useQuery({
     queryKey: ['commission-stats', filters],
     queryFn: async (): Promise<Record<string, CommissionStats>> => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
@@ -202,26 +202,67 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
     }) => {
       console.log('💰 Iniciando pagamento da comissão:', commissionId);
       console.log('💳 Método de pagamento:', paymentMethod);
+      console.log('📝 Notas:', notes);
       
+      // Verificar se o usuário atual é admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Verificar role do usuário
+      const { data: userRole, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (roleError || !userRole) {
+        console.error('❌ Erro ao verificar role do usuário:', roleError);
+        throw new Error('Usuário não tem permissão de admin');
+      }
+
+      console.log('✅ Usuário admin verificado:', userRole);
+
+      // Primeiro, buscar a comissão atual para verificar o estado
+      const { data: currentCommission, error: fetchError } = await supabase
+        .from('barber_commissions')
+        .select('*')
+        .eq('id', commissionId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Erro ao buscar comissão atual:', fetchError);
+        throw new Error(`Erro ao buscar comissão: ${fetchError.message}`);
+      }
+
+      console.log('📋 Comissão atual:', currentCommission);
+
+      if (currentCommission.status === 'paid') {
+        throw new Error('Esta comissão já foi paga');
+      }
+
       // Atualizar status da comissão
-      const { data: updatedCommission, error: commissionError } = await supabase
+      const now = new Date().toISOString();
+      const { data: updatedCommission, error: updateError } = await supabase
         .from('barber_commissions')
         .update({ 
           status: 'paid',
           payment_method: paymentMethod,
-          notes: notes,
-          paid_at: new Date().toISOString()
+          notes: notes || null,
+          paid_at: now
         })
         .eq('id', commissionId)
         .select()
         .single();
 
-      if (commissionError) {
-        console.error('❌ Erro ao atualizar comissão:', commissionError);
-        throw new Error(`Erro ao atualizar status da comissão: ${commissionError.message}`);
+      if (updateError) {
+        console.error('❌ Erro ao atualizar comissão:', updateError);
+        throw new Error(`Erro ao atualizar status da comissão: ${updateError.message}`);
       }
 
-      console.log('✅ Comissão atualizada:', updatedCommission);
+      console.log('✅ Comissão atualizada com sucesso:', updatedCommission);
 
       // Buscar nome do barbeiro para o registro no fluxo de caixa
       let barberName = 'Barbeiro';
@@ -246,23 +287,28 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       }
       
       // Registrar despesa no fluxo de caixa
-      const { error: cashFlowError } = await supabase
+      const { data: cashFlowData, error: cashFlowError } = await supabase
         .from('cash_flow')
         .insert({
           transaction_type: 'expense',
-          amount: updatedCommission.amount,
+          amount: Number(updatedCommission.amount),
           description: `Comissão paga - ${barberName}`,
           category: 'Comissões',
           payment_method: paymentMethod,
           reference_id: commissionId,
           reference_type: 'commission',
-          notes: notes,
+          notes: notes || null,
           transaction_date: new Date().toISOString().split('T')[0]
-        });
+        })
+        .select()
+        .single();
 
       if (cashFlowError) {
         console.error('❌ Erro ao registrar no fluxo de caixa:', cashFlowError);
-        throw new Error(`Erro ao registrar no fluxo de caixa: ${cashFlowError.message}`);
+        // Não falhar aqui, apenas registrar o erro
+        console.warn('⚠️ Comissão foi paga mas não foi registrada no fluxo de caixa');
+      } else {
+        console.log('✅ Registro do fluxo de caixa criado:', cashFlowData);
       }
 
       console.log('🎯 Pagamento processado com sucesso');
@@ -271,11 +317,11 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
     onSuccess: (data) => {
       console.log('🎉 Sucesso na mutation, atualizando dados...');
       
-      // Forçar reload das queries
+      // Forçar reload imediato das queries
       refetchCommissions();
       refetchStats();
       
-      // Invalidar queries relacionadas
+      // Invalidar todas as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
       queryClient.invalidateQueries({ queryKey: ['commission-stats'] });
       queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
@@ -364,7 +410,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
     <div className="space-y-6">
       {/* Resumo por Barbeiro */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Object.entries(commissionStats || {}).map(([staffName, stats]) => (
+        {Object.entries(commissionStats).map(([staffName, stats]) => (
           <Card key={staffName} className="bg-gray-800 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-300">
@@ -405,12 +451,12 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {commissions?.length === 0 ? (
+            {commissions.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
                 Nenhuma comissão encontrada para o período selecionado.
               </div>
             ) : (
-              commissions?.map((commission) => (
+              commissions.map((commission) => (
                 <div key={commission.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${
@@ -426,6 +472,9 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
                       <p className="font-medium text-white">{commission.barber?.name}</p>
                       <p className="text-sm text-gray-400">
                         Taxa: {commission.commission_rate}% • {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        ID: {commission.id.slice(0, 8)}...
                       </p>
                       {commission.payment_method && (
                         <p className="text-xs text-gray-500">
