@@ -57,10 +57,11 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         .from('barber_commissions')
         .select(`
           *,
-          staff:barber_id(name)
+          staff!barber_id(name)
         `)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
+        .neq('appointment_source', 'painel')
         .order('created_at', { ascending: false });
 
       // Buscar comissões do painel antigo
@@ -68,7 +69,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         .from('barber_commissions')
         .select(`
           *,
-          painel_barbeiros:barber_id(nome)
+          painel_barbeiros!barber_id(nome)
         `)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
@@ -106,7 +107,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       // Buscar dados do sistema novo
       const { data: newData } = await supabase
         .from('barber_commissions')
-        .select('amount, status, barber_id, staff:barber_id(name)')
+        .select('amount, status, barber_id, staff!barber_id(name)')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .neq('appointment_source', 'painel');
@@ -114,7 +115,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       // Buscar dados do painel antigo
       const { data: painelData } = await supabase
         .from('barber_commissions')
-        .select('amount, status, barber_id, painel_barbeiros:barber_id(nome)')
+        .select('amount, status, barber_id, painel_barbeiros!barber_id(nome)')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .eq('appointment_source', 'painel');
@@ -172,8 +173,8 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         .from('barber_commissions')
         .select(`
           *,
-          staff:barber_id(name),
-          painel_barbeiros:barber_id(nome)
+          staff!barber_id(name),
+          painel_barbeiros!barber_id(nome)
         `)
         .eq('id', commissionId)
         .single();
