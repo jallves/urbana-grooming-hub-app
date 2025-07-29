@@ -1,5 +1,6 @@
 
 module.exports = {
+  preset: 'ts-jest',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapping: {
@@ -25,6 +26,14 @@ module.exports = {
       functions: 80,
       lines: 80,
       statements: 80,
+    },
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  globals: {
+    'ts-jest': {
+      tsconfig: {
+        jsx: 'react-jsx',
+      },
     },
   },
 };
