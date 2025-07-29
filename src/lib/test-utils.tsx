@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -95,5 +94,4 @@ export const createMockCommission = (overrides = {}) => ({
 
 // Re-exportar tudo do testing-library
 export * from '@testing-library/react';
-export * from '@testing-library/dom';
 export { customRender as render, mockSupabase };
