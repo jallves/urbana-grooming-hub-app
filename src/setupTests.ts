@@ -1,4 +1,5 @@
 
+import React from 'react';
 import '@testing-library/jest-dom';
 
 // Mock do módulo Supabase
@@ -51,25 +52,31 @@ jest.mock('sonner', () => ({
 // Mock do Framer Motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+    div: ({ children, ...props }: { children?: React.ReactNode; [key: string]: any }) => 
+      React.createElement('div', props, children),
+    span: ({ children, ...props }: { children?: React.ReactNode; [key: string]: any }) => 
+      React.createElement('span', props, children),
+    button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: any }) => 
+      React.createElement('button', props, children),
   },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
 // Mock do Recharts
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div>{children}</div>,
-  LineChart: ({ children }: any) => <div>{children}</div>,
-  Line: () => <div />,
-  XAxis: () => <div />,
-  YAxis: () => <div />,
-  CartesianGrid: () => <div />,
-  Tooltip: () => <div />,
-  PieChart: ({ children }: any) => <div>{children}</div>,
-  Pie: () => <div />,
-  Cell: () => <div />,
+  ResponsiveContainer: ({ children }: { children?: React.ReactNode }) => 
+    React.createElement('div', {}, children),
+  LineChart: ({ children }: { children?: React.ReactNode }) => 
+    React.createElement('div', {}, children),
+  Line: () => React.createElement('div'),
+  XAxis: () => React.createElement('div'),
+  YAxis: () => React.createElement('div'),
+  CartesianGrid: () => React.createElement('div'),
+  Tooltip: () => React.createElement('div'),
+  PieChart: ({ children }: { children?: React.ReactNode }) => 
+    React.createElement('div', {}, children),
+  Pie: () => React.createElement('div'),
+  Cell: () => React.createElement('div'),
 }));
 
 // Configurações globais para testes
