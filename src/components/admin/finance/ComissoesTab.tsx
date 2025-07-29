@@ -64,27 +64,38 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         .neq('appointment_source', 'painel')
         .order('created_at', { ascending: false });
 
-      // Buscar comissões do painel antigo
+      // Buscar comissões do painel antigo - usando uma query separada para obter o nome do barbeiro
       const { data: painelCommissions } = await supabase
         .from('barber_commissions')
-        .select(`
-          *,
-          painel_barbeiros!barber_id(nome)
-        `)
+        .select('*')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .eq('appointment_source', 'painel')
         .order('created_at', { ascending: false });
+
+      // Para as comissões do painel, buscar os nomes dos barbeiros separadamente
+      const painelCommissionsWithNames = [];
+      if (painelCommissions) {
+        for (const commission of painelCommissions) {
+          const { data: barberData } = await supabase
+            .from('painel_barbeiros')
+            .select('nome')
+            .eq('id', commission.barber_id)
+            .single();
+
+          painelCommissionsWithNames.push({
+            ...commission,
+            barber: { name: barberData?.nome || 'Barbeiro' }
+          });
+        }
+      }
 
       const allCommissions = [
         ...(newCommissions || []).map(c => ({
           ...c,
           barber: { name: c.staff?.name || 'Barbeiro' }
         })),
-        ...(painelCommissions || []).map(c => ({
-          ...c,
-          barber: { name: c.painel_barbeiros?.nome || 'Barbeiro' }
-        }))
+        ...painelCommissionsWithNames
       ];
 
       // Aplicar filtros
@@ -115,20 +126,34 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       // Buscar dados do painel antigo
       const { data: painelData } = await supabase
         .from('barber_commissions')
-        .select('amount, status, barber_id, painel_barbeiros!barber_id(nome)')
+        .select('amount, status, barber_id')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .eq('appointment_source', 'painel');
+
+      // Para dados do painel, buscar nomes dos barbeiros separadamente
+      const painelDataWithNames = [];
+      if (painelData) {
+        for (const data of painelData) {
+          const { data: barberData } = await supabase
+            .from('painel_barbeiros')
+            .select('nome')
+            .eq('id', data.barber_id)
+            .single();
+
+          painelDataWithNames.push({
+            ...data,
+            barber_name: barberData?.nome || 'Barbeiro'
+          });
+        }
+      }
 
       const allData = [
         ...(newData || []).map(c => ({
           ...c,
           barber_name: c.staff?.name || 'Barbeiro'
         })),
-        ...(painelData || []).map(c => ({
-          ...c,
-          barber_name: c.painel_barbeiros?.nome || 'Barbeiro'
-        }))
+        ...painelDataWithNames
       ];
 
       const stats = allData.reduce((acc, commission) => {
@@ -171,16 +196,29 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       // Buscar dados da comissão para criar registro no fluxo de caixa
       const { data: commission } = await supabase
         .from('barber_commissions')
-        .select(`
-          *,
-          staff!barber_id(name),
-          painel_barbeiros!barber_id(nome)
-        `)
+        .select('*')
         .eq('id', commissionId)
         .single();
 
       if (commission) {
-        const barberName = commission.staff?.name || commission.painel_barbeiros?.nome || 'Barbeiro';
+        let barberName = 'Barbeiro';
+        
+        // Buscar nome do barbeiro baseado na fonte do agendamento
+        if (commission.appointment_source === 'painel') {
+          const { data: barberData } = await supabase
+            .from('painel_barbeiros')
+            .select('nome')
+            .eq('id', commission.barber_id)
+            .single();
+          barberName = barberData?.nome || 'Barbeiro';
+        } else {
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('name')
+            .eq('id', commission.barber_id)
+            .single();
+          barberName = staffData?.name || 'Barbeiro';
+        }
         
         // Registrar despesa no fluxo de caixa
         const { error: cashFlowError } = await supabase
