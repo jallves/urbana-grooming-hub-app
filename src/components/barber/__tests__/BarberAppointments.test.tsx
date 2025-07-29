@@ -1,5 +1,7 @@
+
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMockAppointment } from '@/lib/test-utils';
 import BarberAppointments from '../BarberAppointments';
 
@@ -82,11 +84,12 @@ describe('BarberAppointments', () => {
 
   it('should handle appointment completion', async () => {
     const mockHandleComplete = jest.fn();
+    const user = userEvent.setup();
     
     render(<BarberAppointments />);
     
     const completeButton = screen.getAllByText('Concluir')[0];
-    fireEvent.click(completeButton);
+    await user.click(completeButton);
 
     await waitFor(() => {
       expect(mockHandleComplete).toHaveBeenCalledWith('test-appointment-1');
@@ -95,11 +98,12 @@ describe('BarberAppointments', () => {
 
   it('should handle appointment cancellation', async () => {
     const mockHandleCancel = jest.fn();
+    const user = userEvent.setup();
     
     render(<BarberAppointments />);
     
     const cancelButton = screen.getAllByText('Cancelar')[0];
-    fireEvent.click(cancelButton);
+    await user.click(cancelButton);
 
     await waitFor(() => {
       expect(mockHandleCancel).toHaveBeenCalledWith('test-appointment-1');

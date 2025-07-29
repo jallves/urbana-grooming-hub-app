@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createMockCommission } from '@/lib/test-utils';
 import ComissoesTab from '../ComissoesTab';
 
@@ -78,11 +79,12 @@ describe('ComissoesTab', () => {
       isPending: false,
     });
 
+    const user = userEvent.setup();
     render(<ComissoesTab filters={mockFilters} />);
 
     // Encontrar e clicar no botão de pagar
     const payButton = screen.getByText('Pagar');
-    fireEvent.click(payButton);
+    await user.click(payButton);
 
     // Verificar se o modal abriu
     await waitFor(() => {
