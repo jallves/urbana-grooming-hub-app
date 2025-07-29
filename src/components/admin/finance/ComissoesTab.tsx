@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { DollarSign, User, CheckCircle, Clock, CreditCard } from 'lucide-react';
+import { DollarSign, User, CheckCircle, Clock, CreditCard, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ComissoesTabProps {
@@ -58,54 +58,50 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
-      // Buscar comissões do sistema novo
-      const { data: newCommissions } = await supabase
-        .from('barber_commissions')
-        .select(`
-          *,
-          staff!barber_id(name)
-        `)
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .neq('appointment_source', 'painel')
-        .order('created_at', { ascending: false });
-
-      // Buscar comissões do painel antigo - usando uma query separada para obter o nome do barbeiro
-      const { data: painelCommissions } = await supabase
+      // Buscar todas as comissões
+      const { data: allCommissions, error } = await supabase
         .from('barber_commissions')
         .select('*')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
-        .eq('appointment_source', 'painel')
         .order('created_at', { ascending: false });
 
-      // Para as comissões do painel, buscar os nomes dos barbeiros separadamente
-      const painelCommissionsWithNames = [];
-      if (painelCommissions) {
-        for (const commission of painelCommissions) {
+      if (error) {
+        console.error('Erro ao buscar comissões:', error);
+        return [];
+      }
+
+      // Buscar nomes dos barbeiros
+      const commissionsWithNames = [];
+      for (const commission of allCommissions || []) {
+        let barberName = 'Barbeiro';
+        
+        if (commission.appointment_source === 'painel') {
+          // Buscar nome do painel_barbeiros
           const { data: barberData } = await supabase
             .from('painel_barbeiros')
             .select('nome')
             .eq('id', commission.barber_id)
             .single();
-
-          painelCommissionsWithNames.push({
-            ...commission,
-            barber: { name: barberData?.nome || 'Barbeiro' }
-          });
+          barberName = barberData?.nome || 'Barbeiro';
+        } else {
+          // Buscar nome do staff
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('name')
+            .eq('id', commission.barber_id)
+            .single();
+          barberName = staffData?.name || 'Barbeiro';
         }
+
+        commissionsWithNames.push({
+          ...commission,
+          barber: { name: barberName }
+        });
       }
 
-      const allCommissions = [
-        ...(newCommissions || []).map(c => ({
-          ...c,
-          barber: { name: c.staff?.name || 'Barbeiro' }
-        })),
-        ...painelCommissionsWithNames
-      ];
-
       // Aplicar filtros
-      let filteredCommissions = allCommissions;
+      let filteredCommissions = commissionsWithNames;
       
       if (filters.barbeiro !== 'todos') {
         filteredCommissions = filteredCommissions.filter(c => c.barber_id === filters.barbeiro);
@@ -121,48 +117,45 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
-      // Buscar dados do sistema novo
-      const { data: newData } = await supabase
+      const { data: allData, error } = await supabase
         .from('barber_commissions')
-        .select('amount, status, barber_id, staff!barber_id(name)')
+        .select('amount, status, barber_id, appointment_source')
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .neq('appointment_source', 'painel');
+        .lte('created_at', endDate.toISOString());
 
-      // Buscar dados do painel antigo
-      const { data: painelData } = await supabase
-        .from('barber_commissions')
-        .select('amount, status, barber_id')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .eq('appointment_source', 'painel');
+      if (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        return {};
+      }
 
-      // Para dados do painel, buscar nomes dos barbeiros separadamente
-      const painelDataWithNames = [];
-      if (painelData) {
-        for (const data of painelData) {
+      // Buscar nomes dos barbeiros e processar estatísticas
+      const dataWithNames = [];
+      for (const data of allData || []) {
+        let barberName = 'Barbeiro';
+        
+        if (data.appointment_source === 'painel') {
           const { data: barberData } = await supabase
             .from('painel_barbeiros')
             .select('nome')
             .eq('id', data.barber_id)
             .single();
-
-          painelDataWithNames.push({
-            ...data,
-            barber_name: barberData?.nome || 'Barbeiro'
-          });
+          barberName = barberData?.nome || 'Barbeiro';
+        } else {
+          const { data: staffData } = await supabase
+            .from('staff')
+            .select('name')
+            .eq('id', data.barber_id)
+            .single();
+          barberName = staffData?.name || 'Barbeiro';
         }
+
+        dataWithNames.push({
+          ...data,
+          barber_name: barberName
+        });
       }
 
-      const allData = [
-        ...(newData || []).map(c => ({
-          ...c,
-          barber_name: c.staff?.name || 'Barbeiro'
-        })),
-        ...painelDataWithNames
-      ];
-
-      const stats = allData.reduce((acc, commission) => {
+      const stats = dataWithNames.reduce((acc, commission) => {
         const barberName = commission.barber_name;
         if (!acc[barberName]) {
           acc[barberName] = { total: 0, pago: 0, pendente: 0 };
@@ -181,11 +174,17 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
   });
 
   const payCommissionMutation = useMutation({
-    mutationFn: async ({ commissionId, paymentMethod, notes }: { 
+    mutationFn: async ({ 
+      commissionId, 
+      paymentMethod, 
+      notes 
+    }: { 
       commissionId: string; 
       paymentMethod: string; 
       notes?: string; 
     }) => {
+      console.log('Iniciando pagamento da comissão:', commissionId);
+      
       // Atualizar status da comissão
       const { error: commissionError } = await supabase
         .from('barber_commissions')
@@ -197,96 +196,139 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
         })
         .eq('id', commissionId);
 
-      if (commissionError) throw commissionError;
+      if (commissionError) {
+        console.error('Erro ao atualizar comissão:', commissionError);
+        throw new Error('Erro ao atualizar status da comissão');
+      }
 
       // Buscar dados da comissão para criar registro no fluxo de caixa
-      const { data: commission } = await supabase
+      const { data: commission, error: fetchError } = await supabase
         .from('barber_commissions')
         .select('*')
         .eq('id', commissionId)
         .single();
 
-      if (commission) {
-        let barberName = 'Barbeiro';
-        
-        // Buscar nome do barbeiro baseado na fonte do agendamento
-        if (commission.appointment_source === 'painel') {
-          const { data: barberData } = await supabase
-            .from('painel_barbeiros')
-            .select('nome')
-            .eq('id', commission.barber_id)
-            .single();
-          barberName = barberData?.nome || 'Barbeiro';
-        } else {
-          const { data: staffData } = await supabase
-            .from('staff')
-            .select('name')
-            .eq('id', commission.barber_id)
-            .single();
-          barberName = staffData?.name || 'Barbeiro';
-        }
-        
-        // Registrar despesa no fluxo de caixa
-        const { error: cashFlowError } = await supabase
-          .from('cash_flow')
-          .insert({
-            transaction_type: 'expense',
-            amount: commission.amount,
-            description: `Comissão paga - ${barberName}`,
-            category: 'Comissões',
-            payment_method: paymentMethod,
-            reference_id: commissionId,
-            reference_type: 'commission',
-            notes: notes,
-            transaction_date: new Date().toISOString().split('T')[0]
-          });
-
-        if (cashFlowError) throw cashFlowError;
+      if (fetchError || !commission) {
+        console.error('Erro ao buscar dados da comissão:', fetchError);
+        throw new Error('Erro ao buscar dados da comissão');
       }
+
+      // Buscar nome do barbeiro
+      let barberName = 'Barbeiro';
+      if (commission.appointment_source === 'painel') {
+        const { data: barberData } = await supabase
+          .from('painel_barbeiros')
+          .select('nome')
+          .eq('id', commission.barber_id)
+          .single();
+        barberName = barberData?.nome || 'Barbeiro';
+      } else {
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('name')
+          .eq('id', commission.barber_id)
+          .single();
+        barberName = staffData?.name || 'Barbeiro';
+      }
+      
+      // Registrar despesa no fluxo de caixa
+      const { error: cashFlowError } = await supabase
+        .from('cash_flow')
+        .insert({
+          transaction_type: 'expense',
+          amount: commission.amount,
+          description: `Comissão paga - ${barberName}`,
+          category: 'Comissões',
+          payment_method: paymentMethod,
+          reference_id: commissionId,
+          reference_type: 'commission',
+          notes: notes,
+          transaction_date: new Date().toISOString().split('T')[0]
+        });
+
+      if (cashFlowError) {
+        console.error('Erro ao registrar no fluxo de caixa:', cashFlowError);
+        throw new Error('Erro ao registrar no fluxo de caixa');
+      }
+
+      console.log('Pagamento processado com sucesso');
+      return { success: true };
     },
     onSuccess: () => {
+      // Invalidar todas as queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
       queryClient.invalidateQueries({ queryKey: ['commission-stats'] });
       queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-flow'] });
+      
+      // Resetar estado
       setIsPaymentDialogOpen(false);
       setSelectedCommission(null);
       setPaymentMethod('');
       setNotes('');
+      
       toast({
-        title: 'Comissão paga',
-        description: 'A comissão foi marcada como paga e registrada no fluxo de caixa.',
+        title: '✅ Pagamento confirmado',
+        description: 'A comissão foi paga e registrada no fluxo de caixa com sucesso.',
+        duration: 3000,
       });
     },
     onError: (error) => {
-      console.error('Erro ao pagar comissão:', error);
+      console.error('Erro no pagamento:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível processar o pagamento da comissão.',
+        title: '❌ Erro no pagamento',
+        description: error.message || 'Não foi possível processar o pagamento da comissão.',
         variant: 'destructive',
+        duration: 5000,
       });
     }
   });
 
   const handlePayCommission = (commission: Commission) => {
+    console.log('Abrindo modal de pagamento para:', commission);
     setSelectedCommission(commission);
+    setPaymentMethod('');
+    setNotes('');
     setIsPaymentDialogOpen(true);
   };
 
   const confirmPayment = () => {
-    if (!selectedCommission || !paymentMethod) {
+    if (!selectedCommission) {
       toast({
-        title: 'Erro',
+        title: '❌ Erro',
+        description: 'Nenhuma comissão selecionada.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!paymentMethod) {
+      toast({
+        title: '❌ Erro',
         description: 'Selecione uma forma de pagamento.',
         variant: 'destructive',
       });
       return;
     }
 
+    console.log('Confirmando pagamento:', {
+      commissionId: selectedCommission.id,
+      paymentMethod,
+      notes
+    });
+
     payCommissionMutation.mutate({
       commissionId: selectedCommission.id,
       paymentMethod,
       notes
     });
+  };
+
+  const closeModal = () => {
+    setIsPaymentDialogOpen(false);
+    setSelectedCommission(null);
+    setPaymentMethod('');
+    setNotes('');
   };
 
   if (isLoading) {
@@ -369,6 +411,11 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
                           Pago via: {commission.payment_method}
                         </p>
                       )}
+                      {commission.paid_at && (
+                        <p className="text-xs text-green-500">
+                          Pago em: {format(new Date(commission.paid_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -403,15 +450,24 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
       <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
         <DialogContent className="bg-gray-900 border-gray-700 text-gray-100">
           <DialogHeader>
-            <DialogTitle>Pagar Comissão</DialogTitle>
+            <DialogTitle className="text-white">Pagar Comissão</DialogTitle>
+            <button
+              onClick={closeModal}
+              className="absolute right-4 top-4 text-gray-400 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </DialogHeader>
           
           {selectedCommission && (
             <div className="space-y-4">
               <div className="p-4 bg-gray-800 rounded-lg">
-                <p className="font-medium text-white">{selectedCommission.barber?.name}</p>
-                <p className="text-green-500 font-bold">
+                <p className="font-medium text-white mb-1">{selectedCommission.barber?.name}</p>
+                <p className="text-green-500 font-bold text-lg">
                   R$ {Number(selectedCommission.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+                <p className="text-sm text-gray-400">
+                  Taxa: {selectedCommission.commission_rate}%
                 </p>
               </div>
 
@@ -443,8 +499,8 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
                   variant="outline"
-                  onClick={() => setIsPaymentDialogOpen(false)}
-                  className="border-gray-600 text-gray-300"
+                  onClick={closeModal}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
                 >
                   Cancelar
                 </Button>
