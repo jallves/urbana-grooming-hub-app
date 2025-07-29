@@ -38,6 +38,12 @@ interface Commission {
   appointment_source?: string;
 }
 
+interface CommissionStats {
+  total: number;
+  pago: number;
+  pendente: number;
+}
+
 const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -111,7 +117,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
 
   const { data: commissionStats } = useQuery({
     queryKey: ['commission-stats', filters],
-    queryFn: async () => {
+    queryFn: async (): Promise<Record<string, CommissionStats>> => {
       const startDate = new Date(filters.ano, filters.mes - 1, 1);
       const endDate = new Date(filters.ano, filters.mes, 0);
 
@@ -168,7 +174,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
           acc[barberName].pendente += Number(commission.amount);
         }
         return acc;
-      }, {} as Record<string, { total: number; pago: number; pendente: number }>);
+      }, {} as Record<string, CommissionStats>);
 
       return stats;
     }
