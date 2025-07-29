@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
-import { render, createMockAppointment } from '@/lib/test-utils';
+import { render } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/dom';
+import { createMockAppointment } from '@/lib/test-utils';
 import BarberAppointments from '../BarberAppointments';
 
 // Mock do hook principal

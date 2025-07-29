@@ -1,7 +1,7 @@
-
 import React from 'react';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
-import { render, createMockCommission } from '@/lib/test-utils';
+import { render } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/dom';
+import { createMockCommission } from '@/lib/test-utils';
 import ComissoesTab from '../ComissoesTab';
 
 // Mock do React Query

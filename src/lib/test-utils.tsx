@@ -95,4 +95,5 @@ export const createMockCommission = (overrides = {}) => ({
 
 // Re-exportar tudo do testing-library
 export * from '@testing-library/react';
+export * from '@testing-library/dom';
 export { customRender as render, mockSupabase };
