@@ -1,4 +1,4 @@
-ximport React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Calendar,
   Clock,
@@ -8,13 +8,13 @@ import {
   LogOut,
   User,
   Scissors,
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import DashboardContainer from '@/components/ui/containers/DashboardContainer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import DashboardContainer from "@/components/ui/containers/DashboardContainer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
 
 interface AgendamentoStats {
   total: number;
@@ -43,36 +43,40 @@ export default function PainelClienteDashboard() {
 
     try {
       const { data: agendamentos, error } = await supabase
-        .from('painel_agendamentos')
-        .select(`
+        .from("painel_agendamentos")
+        .select(
+          `
           *,
           painel_barbeiros!inner(nome),
           painel_servicos!inner(nome)
-        `)
-        .eq('cliente_id', cliente.id);
+        `
+        )
+        .eq("cliente_id", cliente.id);
 
       if (error) {
-        console.error('Erro ao buscar estatísticas:', error);
+        console.error("Erro ao buscar estatísticas:", error);
         return;
       }
 
       if (agendamentos) {
         const agora = new Date();
-        const hojeDate = new Date(agora.toISOString().split('T')[0]);
+        const hojeDate = new Date(agora.toISOString().split("T")[0]);
         const dataLimite = new Date(hojeDate);
         dataLimite.setDate(dataLimite.getDate() + 30);
 
         const proximos = agendamentos.filter((a) => {
           const agendamentoDate = new Date(`${a.data}T${a.hora}`);
           return (
-            a.status !== 'cancelado' &&
-            a.status !== 'concluido' &&
+            a.status !== "cancelado" &&
+            a.status !== "concluido" &&
             agendamentoDate >= agora &&
             agendamentoDate <= dataLimite
           );
         });
 
-        const concluidos = agendamentos.filter((a) => a.status === 'concluido');
+        const concluidos = agendamentos.filter(
+          (a) => a.status === "concluido"
+        );
 
         setStats({
           total: agendamentos.length,
@@ -87,7 +91,7 @@ export default function PainelClienteDashboard() {
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      console.error("Erro ao carregar estatísticas:", error);
     } finally {
       setLoading(false);
     }
@@ -101,7 +105,7 @@ export default function PainelClienteDashboard() {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/painel-cliente/login');
+    navigate("/painel-cliente/login");
   };
 
   if (loading) {
@@ -117,6 +121,7 @@ export default function PainelClienteDashboard() {
   return (
     <DashboardContainer>
       <div className="space-y-10">
+        {/* Cabeçalho */}
         <div className="flex items-center gap-4 mb-2">
           <TrendingUp className="h-9 w-9 text-urbana-gold" />
           <div>
@@ -133,25 +138,25 @@ export default function PainelClienteDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
-              label: 'Total de Agendamentos',
+              label: "Total de Agendamentos",
               value: stats.total,
               icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
-              bgColor: 'bg-gray-800 border-gray-700',
             },
             {
-              label: 'Próximos 30 Dias',
+              label: "Próximos 30 Dias",
               value: stats.proximos,
               icon: <Clock className="h-5 w-5 text-blue-400" />,
-              bgColor: 'bg-gray-800 border-gray-700',
             },
             {
-              label: 'Atendimentos Concluídos',
+              label: "Atendimentos Concluídos",
               value: stats.concluidos,
               icon: <CheckCircle className="h-5 w-5 text-green-400" />,
-              bgColor: 'bg-gray-800 border-gray-700',
             },
           ].map((stat, i) => (
-            <Card key={i} className={`${stat.bgColor} rounded-xl border`}>
+            <Card
+              key={i}
+              className="bg-gray-800 border border-gray-700 rounded-xl"
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-1 px-5 pt-5">
                 <CardTitle className="text-sm font-medium text-gray-300">
                   {stat.label}
@@ -159,70 +164,73 @@ export default function PainelClienteDashboard() {
                 {stat.icon}
               </CardHeader>
               <CardContent className="px-5 pb-5">
-                <div className="text-3xl font-bold text-white">{stat.value}</div>
+                <div className="text-3xl font-bold text-white">
+                  {stat.value}
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Próximos agendamentos */}
-        {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
-          <Card className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-urbana-gold text-lg">
-                Próximos Agendamentos (30 dias)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-gray-300">
-              {stats.agendamentosFuturos.map((ag, index) => (
-                <div
-                  key={index}
-                  className="border-b border-gray-700 pb-3 last:border-b-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-urbana-gold" />
-                    <span className="text-white">
-                      {new Date(ag.data).toLocaleDateString('pt-BR')}
-                    </span>
+        {/* Próximos Agendamentos */}
+        {stats.agendamentosFuturos &&
+          stats.agendamentosFuturos.length > 0 && (
+            <Card className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-urbana-gold text-lg">
+                  Próximos Agendamentos (30 dias)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm text-gray-300">
+                {stats.agendamentosFuturos.map((ag, index) => (
+                  <div
+                    key={index}
+                    className="border-b border-gray-700 pb-3 last:border-b-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-urbana-gold" />
+                      <span className="text-white">
+                        {new Date(ag.data).toLocaleDateString("pt-BR")}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-urbana-gold" />
+                      <span className="text-white">{ag.hora}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-urbana-gold" />
+                      <span>{ag.barbeiro}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Scissors className="h-4 w-4 text-urbana-gold" />
+                      <span>{ag.servico}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-urbana-gold" />
-                    <span className="text-white">{ag.hora}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-urbana-gold" />
-                    <span>{ag.barbeiro}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Scissors className="h-4 w-4 text-urbana-gold" />
-                    <span>{ag.servico}</span>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
         {/* Ações */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
           {[
             {
-              label: 'Novo Agendamento',
+              label: "Novo Agendamento",
               icon: <Calendar className="h-6 w-6 text-urbana-gold" />,
-              action: () => navigate('/painel-cliente/agendar'),
+              action: () => navigate("/painel-cliente/agendar"),
             },
             {
-              label: 'Meus Agendamentos',
+              label: "Meus Agendamentos",
               icon: <Clock className="h-6 w-6 text-blue-400" />,
-              action: () => navigate('/painel-cliente/agendamentos'),
+              action: () => navigate("/painel-cliente/agendamentos"),
             },
             {
-              label: 'Meu Perfil',
+              label: "Meu Perfil",
               icon: <Settings className="h-6 w-6 text-gray-300" />,
-              action: () => navigate('/painel-cliente/perfil'),
+              action: () => navigate("/painel-cliente/perfil"),
             },
             {
-              label: 'Sair',
+              label: "Sair",
               icon: <LogOut className="h-6 w-6 text-red-500" />,
               action: handleLogout,
             },
