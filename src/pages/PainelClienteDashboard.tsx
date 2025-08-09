@@ -120,7 +120,22 @@ export default function PainelClienteDashboard() {
 
   return (
     <DashboardContainer>
-      <div className="space-y-10">
+      {/* Marca d'água */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "url('https://cdn-icons-png.flaticon.com/512/1185/1185416.png')",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
+          backgroundSize: "300px",
+          opacity: 0.05,
+          pointerEvents: "none",
+        }}
+      />
+      
+      <div className="relative space-y-10">
         {/* Cabeçalho */}
         <div className="flex items-center gap-4 mb-2">
           <TrendingUp className="h-9 w-9 text-urbana-gold" />
