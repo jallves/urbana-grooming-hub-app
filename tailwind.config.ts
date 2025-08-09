@@ -19,55 +19,55 @@ export default {
     },
     extend: {
       colors: {
-        border: '#808080',
-        input: '#808080',
-        ring: '#FFD700',
-        background: '#FFFFFF',
-        foreground: '#000000',
+        border: 'hsl(0 0% 50%)',
+        input: 'hsl(0 0% 50%)',
+        ring: 'hsl(51 100% 50%)',
+        background: 'hsl(0 0% 100%)',
+        foreground: 'hsl(0 0% 0%)',
         primary: {
-          DEFAULT: '#FFD700',
-          foreground: '#000000'
+          DEFAULT: 'hsl(51 100% 50%)',
+          foreground: 'hsl(0 0% 0%)'
         },
         secondary: {
-          DEFAULT: '#808080',
-          foreground: '#FFFFFF'
+          DEFAULT: 'hsl(0 0% 50%)',
+          foreground: 'hsl(0 0% 100%)'
         },
         destructive: {
-          DEFAULT: '#FF0000',
-          foreground: '#FFFFFF'
+          DEFAULT: 'hsl(0 100% 50%)',
+          foreground: 'hsl(0 0% 100%)'
         },
         muted: {
-          DEFAULT: '#F0F0F0',
-          foreground: '#808080'
+          DEFAULT: 'hsl(0 0% 94%)',
+          foreground: 'hsl(0 0% 50%)'
         },
         accent: {
-          DEFAULT: '#FFD700',
-          foreground: '#000000'
+          DEFAULT: 'hsl(51 100% 50%)',
+          foreground: 'hsl(0 0% 0%)'
         },
         popover: {
-          DEFAULT: '#FFFFFF',
-          foreground: '#000000'
+          DEFAULT: 'hsl(0 0% 100%)',
+          foreground: 'hsl(0 0% 0%)'
         },
         card: {
-          DEFAULT: '#FFFFFF',
-          foreground: '#000000'
+          DEFAULT: 'hsl(0 0% 100%)',
+          foreground: 'hsl(0 0% 0%)'
         },
         sidebar: {
-          DEFAULT: '#0A0A0A',
-          foreground: '#FFFFFF',
-          primary: '#FFD700',
-          'primary-foreground': '#000000',
-          accent: '#808080',
-          'accent-foreground': '#FFFFFF',
-          border: '#333333',
-          ring: '#FFD700'
+          DEFAULT: 'hsl(0 0% 4%)',
+          foreground: 'hsl(0 0% 100%)',
+          primary: 'hsl(51 100% 50%)',
+          'primary-foreground': 'hsl(0 0% 0%)',
+          accent: 'hsl(0 0% 50%)',
+          'accent-foreground': 'hsl(0 0% 100%)',
+          border: 'hsl(0 0% 20%)',
+          ring: 'hsl(51 100% 50%)'
         },
         urbana: {
-          gold: '#FFD700',     // Golden for luxury
-          brown: '#1A0F0A',    // Almost black
-          black: '#0A0A0A',    // Pure black
-          gray: '#808080',     // Medium gray
-          light: '#FFFFFF',    // Pure white
+          gold: 'hsl(51 100% 50%)',
+          brown: 'hsl(35 74% 5%)',
+          black: 'hsl(0 0% 4%)',
+          gray: 'hsl(0 0% 50%)',
+          light: 'hsl(0 0% 100%)',
         }
       },
       borderRadius: {

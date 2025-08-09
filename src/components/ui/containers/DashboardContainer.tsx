@@ -29,7 +29,7 @@ const DashboardContainer: React.FC<DashboardContainerProps> = ({
 
   return (
     <div className={cn(
-      'w-full mx-auto bg-white min-h-screen',
+      'w-full mx-auto bg-background text-foreground min-h-screen',
       maxWidthClasses[maxWidth],
       spacingClasses[spacing],
       className

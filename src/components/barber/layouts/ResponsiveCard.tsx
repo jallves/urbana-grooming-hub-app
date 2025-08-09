@@ -18,12 +18,12 @@ const ResponsiveCard: React.FC<ResponsiveCardProps> = ({
 }) => {
   return (
     <Card className={cn(
-      "w-full bg-gray-800 border-gray-700 shadow-lg",
+      "w-full bg-sidebar border-sidebar-border shadow-lg",
       className
     )}>
       {title && (
         <CardHeader className="pb-2 px-3 py-3 sm:px-4 sm:py-4">
-          <CardTitle className="text-sm sm:text-base font-semibold text-urbana-gold">
+          <CardTitle className="text-sm sm:text-base font-semibold text-sidebar-primary">
             {title}
           </CardTitle>
         </CardHeader>
