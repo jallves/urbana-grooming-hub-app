@@ -152,7 +152,7 @@
 }
 
 .urbana-container {
-  @apply container mx-auto px-4 md:px-6;
+  @apply w-full mx-auto px-4 md:px-6;
 }
 
 .urbana-section {
