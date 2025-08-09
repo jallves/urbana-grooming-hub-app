@@ -203,7 +203,7 @@ export default function AdminDashboard() {
                   <div
                     key={index}
                     onClick={action.action}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200"
+                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg cursor-pointer transition-colors border border-gray-200"
                   >
                     <div className={`w-10 h-10 rounded-full ${action.bgColor} flex items-center justify-center`}>
                       <Icon className={`h-5 w-5 ${action.color}`} />

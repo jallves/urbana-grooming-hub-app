@@ -53,7 +53,7 @@ const AppointmentCardOptimized = memo(({
   const canEdit = appointment.status !== 'completed' && appointment.status !== 'cancelled';
 
   return (
-    <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg p-4 hover:bg-gray-800/70 transition-all duration-200">
+    <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg p-4 transition-all duration-200">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-full flex items-center justify-center">
@@ -89,7 +89,7 @@ const AppointmentCardOptimized = memo(({
             size="sm"
             onClick={() => onComplete(appointment.id)}
             disabled={isUpdating}
-            className="bg-green-600 hover:bg-green-700 text-white flex-1"
+            className="bg-green-600 text-white flex-1"
           >
             {isUpdating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -103,7 +103,7 @@ const AppointmentCardOptimized = memo(({
             variant="outline"
             onClick={() => onEdit(appointment.id, appointment.start_time)}
             disabled={isUpdating}
-            className="border-gray-600 hover:border-gray-500"
+            className="border-gray-600"
           >
             <Edit3 className="h-4 w-4 mr-2" />
             Editar
@@ -113,7 +113,7 @@ const AppointmentCardOptimized = memo(({
             variant="outline"
             onClick={() => onCancel(appointment.id)}
             disabled={isUpdating}
-            className="border-red-600 hover:border-red-500 text-red-400 hover:text-red-300"
+            className="border-red-600 text-red-400"
           >
             <XCircle className="h-4 w-4" />
           </Button>

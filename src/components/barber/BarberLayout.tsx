@@ -71,7 +71,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
               
               <button
                 onClick={signOut}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-400 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="text-sm">Sair</span>
@@ -92,7 +92,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 className={`flex items-center space-x-2 px-3 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   isActiveRoute(item.path)
                     ? 'text-urbana-gold border-urbana-gold'
-                    : 'text-gray-400 border-transparent hover:text-white hover:border-gray-300'
+                    : 'text-gray-400 border-transparent'
                 }`}
               >
                 <item.icon className="h-4 w-4" />

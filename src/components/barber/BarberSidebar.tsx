@@ -58,7 +58,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="text-gray-400 hover:text-white hover:bg-gray-700/50 lg:hidden"
+            className="text-gray-400 lg:hidden"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -77,7 +77,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
               `group flex items-center gap-3 p-4 rounded-xl transition-all duration-200 relative overflow-hidden ${
                 isActive
                   ? 'bg-urbana-gold text-black shadow-lg font-medium'
-                  : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                  : 'text-gray-300'
               }`
             }
           >

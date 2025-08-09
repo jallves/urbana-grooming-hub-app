@@ -85,7 +85,7 @@ const Services: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center max-w-4xl mx-auto mb-8"
+          className="text-center max-w-4xl mx-auto mb-8 px-4"
         >
           <h2 className="text-5xl md:text-6xl font-playfair font-bold text-urbana-gold mb-4">
             Nossos{" "}

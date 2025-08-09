@@ -58,7 +58,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden text-sidebar-accent-foreground hover:bg-sidebar-accent"
+                className="lg:hidden text-sidebar-accent-foreground"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="h-6 w-6" />
@@ -73,7 +73,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative text-sidebar-accent-foreground hover:bg-sidebar-accent"
+                className="relative text-sidebar-accent-foreground"
               >
                 <Bell className="h-5 w-5" />
                 <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-destructive p-0 border-0 text-xs" />
@@ -82,7 +82,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
               {/* Menu Usuário */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-sidebar-accent">
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-8 w-8 border border-sidebar-border">
                       <AvatarFallback className="bg-gradient-to-r from-sidebar-primary to-accent text-sidebar-primary-foreground text-sm font-medium">
                         {userInitials}
@@ -94,20 +94,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                   <DropdownMenuLabel className="text-sidebar-foreground">Minha Conta</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-sidebar-border" />
                   <DropdownMenuItem 
-                    className="hover:bg-sidebar-accent"
+                    className=""
                     onClick={() => navigate('/admin/configuracoes')}
                   >
                     <User className="mr-2 h-4 w-4" /> Perfil
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    className="hover:bg-sidebar-accent"
+                    className=""
                     onClick={() => navigate('/')}
                   >
                     <Settings className="mr-2 h-4 w-4" /> Ver Site
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-sidebar-border" />
                   <DropdownMenuItem
-                    className="text-destructive hover:bg-destructive/10"
+                    className="text-destructive"
                     onClick={handleLogout}
                   >
                     <LogOut className="mr-2 h-4 w-4" /> Sair
