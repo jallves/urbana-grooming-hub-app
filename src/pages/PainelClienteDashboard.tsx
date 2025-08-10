@@ -120,7 +120,7 @@ export default function PainelClienteDashboard() {
 
   return (
     <DashboardContainer>
-      {/* Marca d'água */}
+      {/* Marca d'água sutil */}
       <div
         style={{
           position: "absolute",
@@ -129,57 +129,77 @@ export default function PainelClienteDashboard() {
             "url('https://cdn-icons-png.flaticon.com/512/1185/1185416.png')",
           backgroundRepeat: "no-repeat",
           backgroundPosition: "center",
-          backgroundSize: "300px",
-          opacity: 0.05,
+          backgroundSize: "400px",
+          opacity: 0.03,
           pointerEvents: "none",
         }}
       />
       
-      <div className="relative space-y-10">
-        {/* Cabeçalho */}
-        <div className="flex items-center gap-4 mb-2">
-          <TrendingUp className="h-9 w-9 text-urbana-gold" />
-          <div>
-            <h1 className="text-4xl font-extrabold text-urbana-gold font-playfair">
-              Olá, {cliente?.nome}!
-            </h1>
-            <p className="text-gray-400 text-sm">
-              Bem-vindo ao seu painel personalizado
-            </p>
+      <div className="relative space-y-8 animate-fade-in">
+        {/* Cabeçalho Elegante */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/20 p-8">
+          <div className="flex items-center gap-6">
+            <div className="p-3 rounded-full bg-primary/20 backdrop-blur-sm">
+              <TrendingUp className="h-10 w-10 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold text-foreground font-playfair bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Olá, {cliente?.nome}!
+              </h1>
+              <p className="text-muted-foreground text-lg mt-1">
+                Bem-vindo ao seu espaço personalizado
+              </p>
+            </div>
           </div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary/20 to-transparent rounded-full -translate-y-8 translate-x-8" />
         </div>
 
-        {/* Estatísticas */}
+        {/* Estatísticas Modernas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
               label: "Total de Agendamentos",
               value: stats.total,
-              icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
+              icon: <Calendar className="h-6 w-6" />,
+              gradient: "from-primary/20 to-primary/5",
+              iconBg: "bg-primary/20",
+              iconColor: "text-primary",
             },
             {
               label: "Próximos 30 Dias",
               value: stats.proximos,
-              icon: <Clock className="h-5 w-5 text-blue-400" />,
+              icon: <Clock className="h-6 w-6" />,
+              gradient: "from-blue-500/20 to-blue-500/5",
+              iconBg: "bg-blue-500/20",
+              iconColor: "text-blue-500",
             },
             {
               label: "Atendimentos Concluídos",
               value: stats.concluidos,
-              icon: <CheckCircle className="h-5 w-5 text-green-400" />,
+              icon: <CheckCircle className="h-6 w-6" />,
+              gradient: "from-green-500/20 to-green-500/5",
+              iconBg: "bg-green-500/20",
+              iconColor: "text-green-500",
             },
           ].map((stat, i) => (
             <Card
               key={i}
-              className="bg-gray-800 border border-gray-700 rounded-xl"
+              className={`bg-gradient-to-br ${stat.gradient} border border-border/50 rounded-xl backdrop-blur-sm transition-all duration-300 shadow-lg`}
             >
-              <CardHeader className="flex flex-row items-center justify-between pb-1 px-5 pt-5">
-                <CardTitle className="text-sm font-medium text-gray-300">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className={`p-2 rounded-lg ${stat.iconBg}`}>
+                    <div className={stat.iconColor}>
+                      {stat.icon}
+                    </div>
+                  </div>
+                </div>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.label}
                 </CardTitle>
-                {stat.icon}
               </CardHeader>
-              <CardContent className="px-5 pb-5">
-                <div className="text-3xl font-bold text-white">
+              <CardContent className="pt-0">
+                <div className="text-3xl font-bold text-foreground">
                   {stat.value}
                 </div>
               </CardContent>
@@ -187,76 +207,105 @@ export default function PainelClienteDashboard() {
           ))}
         </div>
 
-        {/* Próximos Agendamentos */}
+        {/* Próximos Agendamentos Elegantes */}
         {stats.agendamentosFuturos &&
           stats.agendamentosFuturos.length > 0 && (
-            <Card className="bg-gray-900 border border-gray-700 rounded-xl shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-urbana-gold text-lg">
-                  Próximos Agendamentos (30 dias)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm text-gray-300">
-                {stats.agendamentosFuturos.map((ag, index) => (
-                  <div
-                    key={index}
-                    className="border-b border-gray-700 pb-3 last:border-b-0 last:pb-0"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-urbana-gold" />
-                      <span className="text-white">
-                        {new Date(ag.data).toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-urbana-gold" />
-                      <span className="text-white">{ag.hora}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-urbana-gold" />
-                      <span>{ag.barbeiro}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Scissors className="h-4 w-4 text-urbana-gold" />
-                      <span>{ag.servico}</span>
-                    </div>
+            <Card className="bg-card/50 border border-border/50 rounded-xl backdrop-blur-sm shadow-lg">
+              <CardHeader className="border-b border-border/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/20">
+                    <Calendar className="h-5 w-5 text-primary" />
                   </div>
-                ))}
+                  <CardTitle className="text-primary text-xl font-semibold">
+                    Próximos Agendamentos
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {stats.agendamentosFuturos.map((ag, index) => (
+                    <div
+                      key={index}
+                      className="relative p-4 rounded-lg bg-gradient-to-r from-primary/10 to-transparent border border-primary/20 transition-all duration-300"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="flex items-center gap-3">
+                          <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-foreground font-medium">
+                            {new Date(ag.data).toLocaleDateString("pt-BR", {
+                              weekday: "long",
+                              day: "numeric",
+                              month: "long"
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-foreground font-medium">{ag.hora}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <User className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">{ag.barbeiro}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Scissors className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">{ag.servico}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
 
-        {/* Ações */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+        {/* Ações Rápidas */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             {
               label: "Novo Agendamento",
-              icon: <Calendar className="h-6 w-6 text-urbana-gold" />,
+              icon: <Calendar className="h-7 w-7" />,
               action: () => navigate("/painel-cliente/agendar"),
+              gradient: "from-primary/20 to-primary/5",
+              iconColor: "text-primary",
+              border: "border-primary/30",
             },
             {
               label: "Meus Agendamentos",
-              icon: <Clock className="h-6 w-6 text-blue-400" />,
+              icon: <Clock className="h-7 w-7" />,
               action: () => navigate("/painel-cliente/agendamentos"),
+              gradient: "from-blue-500/20 to-blue-500/5",
+              iconColor: "text-blue-500",
+              border: "border-blue-500/30",
             },
             {
               label: "Meu Perfil",
-              icon: <Settings className="h-6 w-6 text-gray-300" />,
+              icon: <Settings className="h-7 w-7" />,
               action: () => navigate("/painel-cliente/perfil"),
+              gradient: "from-gray-500/20 to-gray-500/5",
+              iconColor: "text-gray-400",
+              border: "border-gray-500/30",
             },
             {
               label: "Sair",
-              icon: <LogOut className="h-6 w-6 text-red-500" />,
+              icon: <LogOut className="h-7 w-7" />,
               action: handleLogout,
+              gradient: "from-red-500/20 to-red-500/5",
+              iconColor: "text-red-500",
+              border: "border-red-500/30",
             },
           ].map((item, index) => (
             <button
               key={index}
               onClick={item.action}
-              className="bg-gray-800 hover:bg-gray-700 transition-all border border-gray-700 rounded-xl p-5 flex flex-col items-center justify-center text-gray-200 space-y-2"
+              className={`bg-gradient-to-br ${item.gradient} border ${item.border} rounded-xl p-6 flex flex-col items-center justify-center transition-all duration-300 space-y-3 group backdrop-blur-sm shadow-lg`}
             >
-              {item.icon}
-              <span className="text-sm font-medium">{item.label}</span>
+              <div className={`${item.iconColor} transition-transform duration-300 group-active:scale-95`}>
+                {item.icon}
+              </div>
+              <span className="text-sm font-medium text-foreground text-center">
+                {item.label}
+              </span>
             </button>
           ))}
         </div>
