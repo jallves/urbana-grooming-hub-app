@@ -120,48 +120,48 @@ export default function PainelClienteDashboard() {
 
   return (
     <DashboardContainer>
-      <div className="space-y-8 animate-fade-in">
-        {/* Cabeçalho Simples e Elegante */}
-        <div className="flex items-center gap-4 py-6">
-          <div className="p-3 rounded-lg bg-primary/10">
-            <TrendingUp className="h-8 w-8 text-primary" />
+      <div className="space-y-8">
+        {/* Cabeçalho Profissional */}
+        <div className="flex items-center gap-4 py-6 border-b border-border">
+          <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20">
+            <TrendingUp className="h-8 w-8 text-amber-600" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-foreground">
               Olá, {cliente?.nome}!
             </h1>
             <p className="text-muted-foreground">
-              Bem-vindo ao seu painel personalizado
+              Bem-vindo à Urbana Barbearia
             </p>
           </div>
         </div>
 
-        {/* Estatísticas Clean */}
+        {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
               label: "Total de Agendamentos",
               value: stats.total,
-              icon: <Calendar className="h-5 w-5" />,
-              color: "text-blue-600",
-              bgColor: "bg-blue-50",
+              icon: <Calendar className="h-6 w-6" />,
+              color: "text-amber-600",
+              bgColor: "bg-amber-50 dark:bg-amber-900/10",
             },
             {
               label: "Próximos 30 Dias", 
               value: stats.proximos,
-              icon: <Clock className="h-5 w-5" />,
-              color: "text-orange-600",
-              bgColor: "bg-orange-50",
+              icon: <Clock className="h-6 w-6" />,
+              color: "text-blue-600",
+              bgColor: "bg-blue-50 dark:bg-blue-900/10",
             },
             {
               label: "Atendimentos Concluídos",
               value: stats.concluidos,
-              icon: <CheckCircle className="h-5 w-5" />,
+              icon: <CheckCircle className="h-6 w-6" />,
               color: "text-green-600", 
-              bgColor: "bg-green-50",
+              bgColor: "bg-green-50 dark:bg-green-900/10",
             },
           ].map((stat, i) => (
-            <Card key={i} className="border-0 shadow-sm bg-card/50">
+            <Card key={i} className="border border-border bg-card">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -185,27 +185,27 @@ export default function PainelClienteDashboard() {
 
         {/* Próximos Agendamentos */}
         {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
-          <Card className="border-0 shadow-sm bg-card/50">
-            <CardHeader className="pb-4">
+          <Card className="border border-border bg-card">
+            <CardHeader className="pb-4 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Calendar className="h-5 w-5 text-primary" />
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20">
+                  <Calendar className="h-5 w-5 text-amber-600" />
                 </div>
                 <CardTitle className="text-xl text-foreground">
                   Próximos Agendamentos
                 </CardTitle>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="space-y-4">
                 {stats.agendamentosFuturos.map((ag, index) => (
                   <div
                     key={index}
-                    className="p-4 rounded-lg border border-border/50 bg-background/50"
+                    className="p-4 rounded-lg border border-border bg-muted/30"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-primary" />
+                        <Calendar className="h-4 w-4 text-amber-600" />
                         <span className="font-medium text-foreground">
                           {new Date(ag.data).toLocaleDateString("pt-BR", {
                             weekday: "long",
@@ -215,15 +215,15 @@ export default function PainelClienteDashboard() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-primary" />
+                        <Clock className="h-4 w-4 text-amber-600" />
                         <span className="font-medium text-foreground">{ag.hora}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-primary" />
+                        <User className="h-4 w-4 text-amber-600" />
                         <span className="text-muted-foreground">{ag.barbeiro}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Scissors className="h-4 w-4 text-primary" />
+                        <Scissors className="h-4 w-4 text-amber-600" />
                         <span className="text-muted-foreground">{ag.servico}</span>
                       </div>
                     </div>
@@ -241,39 +241,39 @@ export default function PainelClienteDashboard() {
               label: "Novo Agendamento",
               icon: <Calendar className="h-6 w-6" />,
               action: () => navigate("/painel-cliente/agendar"),
-              color: "text-blue-600",
-              bgColor: "bg-blue-50",
-              hoverColor: "hover:bg-blue-100",
+              color: "text-amber-600",
+              bgColor: "bg-amber-50 dark:bg-amber-900/10",
+              borderColor: "border-amber-200 dark:border-amber-800",
             },
             {
               label: "Meus Agendamentos",
               icon: <Clock className="h-6 w-6" />,
               action: () => navigate("/painel-cliente/agendamentos"),
-              color: "text-orange-600",
-              bgColor: "bg-orange-50", 
-              hoverColor: "hover:bg-orange-100",
+              color: "text-blue-600",
+              bgColor: "bg-blue-50 dark:bg-blue-900/10", 
+              borderColor: "border-blue-200 dark:border-blue-800",
             },
             {
               label: "Meu Perfil",
               icon: <Settings className="h-6 w-6" />,
               action: () => navigate("/painel-cliente/perfil"),
               color: "text-gray-600",
-              bgColor: "bg-gray-50",
-              hoverColor: "hover:bg-gray-100",
+              bgColor: "bg-gray-50 dark:bg-gray-900/10",
+              borderColor: "border-gray-200 dark:border-gray-800",
             },
             {
               label: "Sair", 
               icon: <LogOut className="h-6 w-6" />,
               action: handleLogout,
               color: "text-red-600",
-              bgColor: "bg-red-50",
-              hoverColor: "hover:bg-red-100",
+              bgColor: "bg-red-50 dark:bg-red-900/10",
+              borderColor: "border-red-200 dark:border-red-800",
             },
           ].map((item, index) => (
             <button
               key={index}
               onClick={item.action}
-              className={`${item.bgColor} ${item.hoverColor} border border-border/20 rounded-lg p-6 flex flex-col items-center justify-center transition-all duration-200 space-y-3`}
+              className={`${item.bgColor} border ${item.borderColor} rounded-lg p-6 flex flex-col items-center justify-center space-y-3`}
             >
               <div className={item.color}>
                 {item.icon}
