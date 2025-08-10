@@ -120,63 +120,67 @@ export default function PainelClienteDashboard() {
 
   return (
     <DashboardContainer>
-      <div className="space-y-8">
-        {/* Cabeçalho Profissional */}
-        <div className="flex items-center gap-4 py-6 border-b border-border">
-          <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/20">
-            <TrendingUp className="h-8 w-8 text-amber-600" />
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Cabeçalho */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-3xl font-bold text-urbana-gold font-playfair">
               Olá, {cliente?.nome}!
             </h1>
-            <p className="text-muted-foreground">
-              Bem-vindo à Urbana Barbearia
-            </p>
+            <p className="text-gray-400">Bem-vindo à Urbana Barbearia</p>
           </div>
         </div>
 
-        {/* Estatísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Estatísticas em Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {[
             {
               label: "Total de Agendamentos",
               value: stats.total,
-              icon: <Calendar className="h-6 w-6" />,
-              color: "text-amber-600",
-              bgColor: "bg-amber-50 dark:bg-amber-900/10",
+              icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
+              status: "todos",
             },
             {
               label: "Próximos 30 Dias", 
               value: stats.proximos,
-              icon: <Clock className="h-6 w-6" />,
-              color: "text-blue-600",
-              bgColor: "bg-blue-50 dark:bg-blue-900/10",
+              icon: <Clock className="h-5 w-5 text-urbana-gold" />,
+              status: "confirmado",
             },
             {
               label: "Atendimentos Concluídos",
               value: stats.concluidos,
-              icon: <CheckCircle className="h-6 w-6" />,
-              color: "text-green-600", 
-              bgColor: "bg-green-50 dark:bg-green-900/10",
+              icon: <CheckCircle className="h-5 w-5 text-urbana-gold" />,
+              status: "concluido",
             },
           ].map((stat, i) => (
-            <Card key={i} className="border border-border bg-card">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {stat.label}
-                    </p>
-                    <p className="text-3xl font-bold text-foreground mt-2">
-                      {stat.value}
-                    </p>
-                  </div>
-                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                    <div className={stat.color}>
-                      {stat.icon}
-                    </div>
-                  </div>
+            <Card key={i} className="bg-gray-900 border border-gray-700">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-white text-sm font-medium flex items-center gap-2">
+                    {stat.icon}
+                    {stat.label}
+                  </CardTitle>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      stat.status === 'concluido' 
+                        ? 'bg-green-400/10 text-green-400'
+                        : stat.status === 'confirmado'
+                        ? 'bg-blue-400/10 text-blue-400'
+                        : 'bg-gray-800 text-gray-300'
+                    }`}
+                  >
+                    {stat.status === 'concluido' 
+                      ? 'Concluído'
+                      : stat.status === 'confirmado'
+                      ? 'Agendado'
+                      : 'Total'
+                    }
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-white">
+                  {stat.value}
                 </div>
               </CardContent>
             </Card>
@@ -185,28 +189,29 @@ export default function PainelClienteDashboard() {
 
         {/* Próximos Agendamentos */}
         {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
-          <Card className="border border-border bg-card">
-            <CardHeader className="pb-4 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/20">
-                  <Calendar className="h-5 w-5 text-amber-600" />
-                </div>
-                <CardTitle className="text-xl text-foreground">
-                  Próximos Agendamentos
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                {stats.agendamentosFuturos.map((ag, index) => (
-                  <div
-                    key={index}
-                    className="p-4 rounded-lg border border-border bg-muted/30"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-amber-600" />
-                        <span className="font-medium text-foreground">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-urbana-gold mb-4">
+              Próximos Agendamentos
+            </h2>
+            <div className="space-y-4">
+              {stats.agendamentosFuturos.map((ag, index) => (
+                <Card key={index} className="bg-gray-900 border border-gray-700">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-white text-lg flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-urbana-gold" />
+                        {ag.servico}
+                      </CardTitle>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-400/10 text-blue-400">
+                        Agendado
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center text-gray-300">
+                        <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
+                        <span className="text-sm">
                           {new Date(ag.data).toLocaleDateString("pt-BR", {
                             weekday: "long",
                             day: "numeric", 
@@ -214,24 +219,20 @@ export default function PainelClienteDashboard() {
                           })}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-amber-600" />
-                        <span className="font-medium text-foreground">{ag.hora}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-amber-600" />
-                        <span className="text-muted-foreground">{ag.barbeiro}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Scissors className="h-4 w-4 text-amber-600" />
-                        <span className="text-muted-foreground">{ag.servico}</span>
+                      <div className="flex items-center text-gray-300">
+                        <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
+                        <span className="text-sm">{ag.hora}</span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                    <div className="flex items-center text-gray-300">
+                      <User className="h-4 w-4 mr-2 text-urbana-gold" />
+                      <span className="text-sm">{ag.barbeiro}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Ações Rápidas */}
@@ -241,44 +242,34 @@ export default function PainelClienteDashboard() {
               label: "Novo Agendamento",
               icon: <Calendar className="h-6 w-6" />,
               action: () => navigate("/painel-cliente/agendar"),
-              color: "text-amber-600",
-              bgColor: "bg-amber-50 dark:bg-amber-900/10",
-              borderColor: "border-amber-200 dark:border-amber-800",
+              color: "bg-gradient-to-r from-pink-500 to-violet-500",
             },
             {
               label: "Meus Agendamentos",
               icon: <Clock className="h-6 w-6" />,
               action: () => navigate("/painel-cliente/agendamentos"),
-              color: "text-blue-600",
-              bgColor: "bg-blue-50 dark:bg-blue-900/10", 
-              borderColor: "border-blue-200 dark:border-blue-800",
+              color: "bg-blue-600",
             },
             {
               label: "Meu Perfil",
               icon: <Settings className="h-6 w-6" />,
               action: () => navigate("/painel-cliente/perfil"),
-              color: "text-gray-600",
-              bgColor: "bg-gray-50 dark:bg-gray-900/10",
-              borderColor: "border-gray-200 dark:border-gray-800",
+              color: "bg-gray-600",
             },
             {
               label: "Sair", 
               icon: <LogOut className="h-6 w-6" />,
               action: handleLogout,
-              color: "text-red-600",
-              bgColor: "bg-red-50 dark:bg-red-900/10",
-              borderColor: "border-red-200 dark:border-red-800",
+              color: "bg-red-600",
             },
           ].map((item, index) => (
             <button
               key={index}
               onClick={item.action}
-              className={`${item.bgColor} border ${item.borderColor} rounded-lg p-6 flex flex-col items-center justify-center space-y-3`}
+              className={`${item.color} text-white rounded-lg p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-200 hover:brightness-110`}
             >
-              <div className={item.color}>
-                {item.icon}
-              </div>
-              <span className="text-sm font-medium text-foreground text-center">
+              {item.icon}
+              <span className="text-sm font-medium text-center">
                 {item.label}
               </span>
             </button>
