@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Scissors, LogOut, Calendar, CreditCard, ShoppingBag, CheckCircle, Sparkles } from 'lucide-react';
+import { LogOut, Calendar, CreditCard, ShoppingBag, CheckCircle, Sparkles } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
-import { TotemResetButton } from './TotemResetButton';
+import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
 
 const TotemHome: React.FC = () => {
   const navigate = useNavigate();
@@ -41,32 +41,40 @@ const TotemHome: React.FC = () => {
       title: 'Agendar',
       subtitle: 'Novo Atendimento',
       onClick: () => navigate('/totem/search'),
-      gradient: 'from-urbana-gold via-urbana-gold-vibrant to-urbana-gold-light',
-      iconGradient: 'from-urbana-gold-vibrant to-urbana-gold',
+      gradient: 'from-amber-400 via-yellow-500 to-orange-500',
+      iconGradient: 'from-yellow-400 to-orange-500',
+      iconColor: 'text-yellow-400',
+      glowColor: 'shadow-yellow-500/50',
     },
     {
       icon: CheckCircle,
       title: 'Check-in',
       subtitle: 'Já Cheguei',
       onClick: () => navigate('/totem/search'),
-      gradient: 'from-green-500 via-emerald-500 to-teal-500',
-      iconGradient: 'from-green-400 to-emerald-500',
+      gradient: 'from-emerald-400 via-green-500 to-teal-500',
+      iconGradient: 'from-green-400 to-teal-500',
+      iconColor: 'text-emerald-400',
+      glowColor: 'shadow-green-500/50',
     },
     {
       icon: CreditCard,
       title: 'Check-out',
       subtitle: 'Pagamento',
       onClick: () => navigate('/totem/checkout-search'),
-      gradient: 'from-blue-500 via-cyan-500 to-sky-500',
+      gradient: 'from-sky-400 via-blue-500 to-indigo-500',
       iconGradient: 'from-cyan-400 to-blue-500',
+      iconColor: 'text-sky-400',
+      glowColor: 'shadow-blue-500/50',
     },
     {
       icon: ShoppingBag,
       title: 'Produtos',
       subtitle: 'E Cuidados',
       onClick: () => navigate('/totem/search'),
-      gradient: 'from-purple-500 via-fuchsia-500 to-pink-500',
-      iconGradient: 'from-fuchsia-400 to-purple-500',
+      gradient: 'from-fuchsia-400 via-purple-500 to-pink-500',
+      iconGradient: 'from-pink-400 to-purple-500',
+      iconColor: 'text-fuchsia-400',
+      glowColor: 'shadow-purple-500/50',
     }
   ];
 
@@ -95,18 +103,18 @@ const TotemHome: React.FC = () => {
         <span className="hidden sm:inline text-xs sm:text-sm md:text-base">Sair</span>
       </Button>
 
-      {/* Reset Button */}
-      <TotemResetButton />
-
       <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 max-w-7xl w-full z-10">
         {/* Logo with enhanced animation */}
         <div className="flex justify-center mb-4 sm:mb-6 md:mb-8 animate-scale-in">
           <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold-light blur-2xl sm:blur-3xl opacity-40 animate-glow" />
-            <div className="absolute inset-0 bg-urbana-gold/20 blur-xl animate-pulse-slow" />
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28 lg:w-36 lg:h-36 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-2xl border-2 sm:border-4 border-urbana-gold/30 group-active:scale-95 transition-transform duration-200">
-              <Scissors className="w-8 h-8 sm:w-10 sm:h-10 md:w-14 md:h-14 lg:w-18 lg:h-18 text-urbana-black drop-shadow-lg" />
-              <div className="absolute -inset-1 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold rounded-2xl sm:rounded-3xl opacity-0 group-active:opacity-20 blur transition-opacity duration-200" />
+            <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold-light/20 blur-2xl sm:blur-3xl opacity-60 animate-pulse-slow" />
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full bg-urbana-black-soft/80 backdrop-blur-sm flex items-center justify-center shadow-2xl border-2 sm:border-3 border-urbana-gold/40 group-active:scale-95 transition-transform duration-200 p-2 sm:p-3">
+              <img 
+                src={costaUrbanaLogo} 
+                alt="Costa Urbana Logo" 
+                className="w-full h-full object-contain drop-shadow-2xl"
+              />
+              <div className="absolute -inset-1 bg-gradient-to-r from-urbana-gold/30 to-urbana-gold-light/30 rounded-full opacity-0 group-active:opacity-40 blur-xl transition-opacity duration-200" />
             </div>
           </div>
         </div>
@@ -152,9 +160,10 @@ const TotemHome: React.FC = () => {
                 
                 {/* Content */}
                 <div className="relative flex flex-col items-center gap-2 sm:gap-3 md:gap-4">
-                  {/* Icon with gradient background */}
-                  <div className={`relative w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl bg-gradient-to-br ${item.iconGradient} opacity-20 group-active:opacity-100 flex items-center justify-center transition-all duration-200 shadow-lg`}>
-                    <Icon className={`w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-urbana-light group-active:text-white transition-colors duration-200 drop-shadow-lg`} />
+                  {/* Icon with vibrant gradient background */}
+                  <div className={`relative w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-24 lg:h-24 rounded-xl sm:rounded-2xl bg-gradient-to-br ${item.iconGradient} opacity-80 group-active:opacity-100 flex items-center justify-center transition-all duration-200 shadow-xl ${item.glowColor} group-active:shadow-2xl`}>
+                    <Icon className={`w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 lg:w-12 lg:h-12 ${item.iconColor} group-active:text-white transition-all duration-200 drop-shadow-lg group-active:scale-110`} />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-30 blur-xl transition-opacity duration-200 rounded-xl sm:rounded-2xl`} />
                   </div>
                   
                   {/* Text */}
