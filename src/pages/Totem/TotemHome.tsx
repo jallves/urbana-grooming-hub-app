@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Scissors, LogOut, Calendar, CreditCard, ShoppingBag, CheckCircle } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
+import { TotemResetButton } from './TotemResetButton';
 
 const TotemHome: React.FC = () => {
   const navigate = useNavigate();
@@ -88,6 +89,9 @@ const TotemHome: React.FC = () => {
         <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
         <span className="hidden sm:inline">Sair</span>
       </Button>
+
+      {/* Reset Button (for testing) */}
+      <TotemResetButton />
 
       <div className="text-center space-y-12 max-w-6xl w-full z-10">
         {/* Logo */}
