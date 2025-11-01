@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,11 +7,13 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { OfflineIndicator } from '@/components/totem/OfflineIndicator';
 
 const TotemConfirmation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { appointment, client } = location.state || {};
+  const [isProcessing, setIsProcessing] = useState(false);
 
   if (!appointment || !client) {
     navigate('/totem/search');
@@ -19,44 +21,41 @@ const TotemConfirmation: React.FC = () => {
   }
 
   const handleConfirmCheckIn = async () => {
+    setIsProcessing(true);
+    
     try {
-      // Criar sessão do totem
-      const { data: session, error: sessionError } = await supabase
-        .from('totem_sessions')
-        .insert({
-          appointment_id: appointment.id,
-          status: 'check_in',
-          check_in_time: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (sessionError) throw sessionError;
-
-      // Atualizar status do agendamento
-      const { error: updateError } = await supabase
-        .from('painel_agendamentos')
-        .update({ status: 'em_atendimento' })
-        .eq('id', appointment.id);
-
-      if (updateError) throw updateError;
-
-      toast.success('Check-in realizado com sucesso!');
-      navigate('/totem/checkin-success', { 
-        state: { 
-          appointment,
-          client,
-          sessionId: session.id
-        } 
+      // Chamar edge function de check-in
+      const { data, error } = await supabase.functions.invoke('totem-checkin', {
+        body: {
+          agendamento_id: appointment.id,
+          modo: 'MANUAL'
+        }
       });
-    } catch (error) {
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success('Check-in realizado com sucesso!');
+        navigate('/totem/checkin-success', { 
+          state: { 
+            appointment: data.agendamento,
+            client
+          } 
+        });
+      } else {
+        throw new Error(data.error || 'Erro ao fazer check-in');
+      }
+    } catch (error: any) {
       console.error('Erro no check-in:', error);
-      toast.error('Erro ao realizar check-in');
+      toast.error(error.message || 'Erro ao realizar check-in');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col p-4 sm:p-6 md:p-8">
+      <OfflineIndicator />
       {/* Header */}
       <div className="flex items-center justify-between mb-6 md:mb-8 gap-2">
         <Button
@@ -130,10 +129,11 @@ const TotemConfirmation: React.FC = () => {
           <div className="pt-8">
             <Button
               onClick={handleConfirmCheckIn}
-              className="w-full h-28 text-4xl font-bold bg-urbana-gold text-black hover:bg-urbana-gold/90"
+              disabled={isProcessing}
+              className="w-full h-28 text-4xl font-bold bg-urbana-gold text-black hover:bg-urbana-gold/90 disabled:opacity-50"
             >
               <CheckCircle className="w-12 h-12 mr-4" />
-              CONFIRMAR CHECK-IN
+              {isProcessing ? 'PROCESSANDO...' : 'CONFIRMAR CHECK-IN'}
             </Button>
           </div>
         </Card>

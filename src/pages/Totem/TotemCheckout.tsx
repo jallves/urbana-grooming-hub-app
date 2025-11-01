@@ -5,88 +5,81 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, CreditCard, QrCode } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { OfflineIndicator } from '@/components/totem/OfflineIndicator';
 
 interface ServiceItem {
+  id: string;
   nome: string;
   preco: number;
+  quantidade: number;
 }
 
 const TotemCheckout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sessionId, appointment } = location.state || {};
+  const { appointment } = location.state || {};
   
-  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [vendaId, setVendaId] = useState<string | null>(null);
+  const [resumo, setResumo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    if (!sessionId || !appointment) {
+    if (!appointment) {
       navigate('/totem');
       return;
     }
     
-    loadServices();
-  }, [sessionId, appointment]);
+    startCheckout();
+  }, [appointment]);
 
-  const loadServices = async () => {
+  const startCheckout = async () => {
     try {
-      // Carregar serviço original
-      const originalService: ServiceItem = {
-        nome: appointment.servico?.nome || 'Serviço',
-        preco: appointment.servico?.preco || 0
-      };
+      setLoading(true);
 
-      // Carregar serviços extras
-      const { data: extraServices, error } = await supabase
-        .from('appointment_extra_services')
-        .select(`
-          service_id,
-          painel_servicos (
-            nome,
-            preco
-          )
-        `)
-        .eq('appointment_id', appointment.id);
+      // Chamar edge function para iniciar checkout
+      const { data, error } = await supabase.functions.invoke('totem-checkout', {
+        body: {
+          agendamento_id: appointment.id,
+          action: 'start',
+          extras: [] // Pode adicionar serviços extras aqui
+        }
+      });
 
       if (error) throw error;
 
-      const extraServicesList: ServiceItem[] = extraServices?.map(es => ({
-        nome: (es as any).painel_servicos?.nome || 'Serviço Extra',
-        preco: (es as any).painel_servicos?.preco || 0
-      })) || [];
-
-      setServices([originalService, ...extraServicesList]);
-    } catch (error) {
-      console.error('Erro ao carregar serviços:', error);
-      toast.error('Erro ao carregar serviços');
+      if (data.success) {
+        setVendaId(data.venda_id);
+        setResumo(data.resumo);
+      } else {
+        throw new Error(data.error || 'Erro ao iniciar checkout');
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar checkout:', error);
+      toast.error(error.message || 'Erro ao carregar checkout');
+      navigate('/totem');
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateTotal = () => {
-    return services.reduce((sum, service) => sum + service.preco, 0);
-  };
-
   const handlePaymentMethod = (method: 'pix' | 'card') => {
-    const total = calculateTotal();
+    if (!vendaId || !resumo) return;
     
     if (method === 'pix') {
       navigate('/totem/payment-pix', {
         state: {
-          sessionId,
+          venda_id: vendaId,
           appointment,
-          services,
-          total
+          total: resumo.total
         }
       });
     } else {
       navigate('/totem/payment-card', {
         state: {
-          sessionId,
+          venda_id: vendaId,
           appointment,
-          services,
-          total
+          total: resumo.total
         }
       });
     }
@@ -95,83 +88,97 @@ const TotemCheckout: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
+        <OfflineIndicator />
         <p className="text-4xl text-muted-foreground">Carregando...</p>
       </div>
     );
   }
 
-  const total = calculateTotal();
-
   return (
-    <div className="min-h-screen bg-background flex flex-col p-8">
+    <div className="min-h-screen bg-background flex flex-col p-4 sm:p-6 md:p-8">
+      <OfflineIndicator />
+      
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 md:mb-8 gap-2">
         <Button
           onClick={() => navigate('/totem')}
           variant="outline"
           size="lg"
-          className="h-20 px-8 text-2xl"
+          className="h-16 sm:h-18 md:h-20 px-4 sm:px-6 md:px-8 text-xl sm:text-xl md:text-2xl"
         >
-          <ArrowLeft className="w-8 h-8 mr-4" />
-          Cancelar
+          <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mr-2 sm:mr-3 md:mr-4" />
+          Voltar
         </Button>
-        <h1 className="text-5xl font-bold text-foreground">Resumo do Atendimento</h1>
-        <div className="w-48"></div>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground text-center flex-1">Finalizar Atendimento</h1>
+        <div className="w-20 sm:w-32 md:w-48"></div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center">
-        <Card className="w-full max-w-4xl p-12 space-y-8 bg-card">
-          {/* Services List */}
-          <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-foreground border-b border-border pb-4">
-              Serviços Realizados
-            </h2>
+        <Card className="w-full max-w-4xl p-6 sm:p-8 md:p-12 space-y-6 sm:space-y-7 md:space-y-8 bg-card">
+          {/* Services Summary */}
+          <div className="space-y-4">
+            <h2 className="text-3xl font-bold text-foreground mb-6">Resumo do Atendimento</h2>
             
-            {services.map((service, index) => (
-              <div
-                key={index}
-                className="flex justify-between items-center py-4 border-b border-border/50"
-              >
-                <span className="text-3xl text-foreground">{service.nome}</span>
-                <span className="text-3xl font-bold text-urbana-gold">
-                  R$ {service.preco.toFixed(2)}
+            <div className="space-y-3">
+              {resumo?.itens.map((item: any, index: number) => (
+                <div key={index} className="flex justify-between items-center py-3 border-b border-border">
+                  <span className="text-2xl text-foreground">{item.nome}</span>
+                  <span className="text-2xl font-semibold text-urbana-gold">
+                    R$ {Number(item.preco_unit).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Totals */}
+            <div className="pt-6 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-2xl text-muted-foreground">Subtotal</span>
+                <span className="text-2xl font-semibold text-foreground">
+                  R$ {Number(resumo?.subtotal || 0).toFixed(2)}
                 </span>
               </div>
-            ))}
-
-            {/* Total */}
-            <div className="flex justify-between items-center pt-6 border-t-4 border-urbana-gold">
-              <span className="text-4xl font-bold text-foreground">TOTAL</span>
-              <span className="text-5xl font-black text-urbana-gold">
-                R$ {total.toFixed(2)}
-              </span>
+              
+              {resumo?.desconto > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl text-muted-foreground">Desconto</span>
+                  <span className="text-2xl font-semibold text-green-500">
+                    - R$ {Number(resumo.desconto).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center pt-4 border-t-2 border-urbana-gold">
+                <span className="text-4xl font-bold text-foreground">TOTAL</span>
+                <span className="text-4xl font-bold text-urbana-gold">
+                  R$ {Number(resumo?.total || 0).toFixed(2)}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Payment Methods */}
           <div className="pt-8 space-y-4">
-            <h3 className="text-3xl font-bold text-foreground text-center mb-6">
-              Escolha a forma de pagamento
-            </h3>
+            <h3 className="text-3xl font-bold text-foreground mb-4">Escolha a forma de pagamento</h3>
             
             <div className="grid grid-cols-2 gap-6">
               <Button
                 onClick={() => handlePaymentMethod('pix')}
-                variant="default"
-                className="h-28 sm:h-30 md:h-32 text-2xl sm:text-2xl md:text-3xl font-bold"
+                disabled={processing}
+                className="h-32 text-3xl font-bold bg-primary hover:bg-primary/90"
               >
-                <QrCode className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mr-3 sm:mr-3 md:mr-4" />
-                Pagar com PIX
+                <QrCode className="w-12 h-12 mr-4" />
+                PIX
               </Button>
-              
+
               <Button
                 onClick={() => handlePaymentMethod('card')}
-                variant="secondary"
-                className="h-28 sm:h-30 md:h-32 text-2xl sm:text-2xl md:text-3xl font-bold"
+                disabled={processing}
+                className="h-32 text-3xl font-bold bg-primary hover:bg-primary/90"
               >
-                <CreditCard className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mr-3 sm:mr-3 md:mr-4" />
-                Cartão
+                <CreditCard className="w-12 h-12 mr-4" />
+                CARTÃO
               </Button>
             </div>
           </div>

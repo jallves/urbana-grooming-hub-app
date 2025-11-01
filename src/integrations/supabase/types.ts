@@ -1811,6 +1811,59 @@ export type Database = {
         }
         Relationships: []
       }
+      pagamentos: {
+        Row: {
+          atualizado_em: string | null
+          copia_cola: string | null
+          criado_em: string | null
+          id: string
+          metodo: string
+          payload: Json | null
+          provedor: string | null
+          qr_code: string | null
+          status: string
+          transacao_id: string | null
+          valor: number
+          venda_id: string | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          copia_cola?: string | null
+          criado_em?: string | null
+          id?: string
+          metodo: string
+          payload?: Json | null
+          provedor?: string | null
+          qr_code?: string | null
+          status?: string
+          transacao_id?: string | null
+          valor: number
+          venda_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          copia_cola?: string | null
+          criado_em?: string | null
+          id?: string
+          metodo?: string
+          payload?: Json | null
+          provedor?: string | null
+          qr_code?: string | null
+          status?: string
+          transacao_id?: string | null
+          valor?: number
+          venda_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       painel_agendamentos: {
         Row: {
           barbeiro_id: string
@@ -1819,8 +1872,10 @@ export type Database = {
           data: string
           hora: string
           id: string
+          qr_checkin: string | null
           servico_id: string
           status: string
+          status_totem: Database["public"]["Enums"]["status_agendamento"] | null
           updated_at: string
         }
         Insert: {
@@ -1830,8 +1885,12 @@ export type Database = {
           data: string
           hora: string
           id?: string
+          qr_checkin?: string | null
           servico_id: string
           status?: string
+          status_totem?:
+            | Database["public"]["Enums"]["status_agendamento"]
+            | null
           updated_at?: string
         }
         Update: {
@@ -1841,8 +1900,12 @@ export type Database = {
           data?: string
           hora?: string
           id?: string
+          qr_checkin?: string | null
           servico_id?: string
           status?: string
+          status_totem?:
+            | Database["public"]["Enums"]["status_agendamento"]
+            | null
           updated_at?: string
         }
         Relationships: [
@@ -2161,6 +2224,36 @@ export type Database = {
           name?: string
           price?: number
           stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      produtos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          estoque: number | null
+          id: string
+          nome: string
+          preco: number
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          estoque?: number | null
+          id?: string
+          nome: string
+          preco: number
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          estoque?: number | null
+          id?: string
+          nome?: string
+          preco?: number
           updated_at?: string | null
         }
         Relationships: []
@@ -3005,6 +3098,111 @@ export type Database = {
         }
         Relationships: []
       }
+      vendas: {
+        Row: {
+          agendamento_id: string | null
+          barbeiro_id: string | null
+          cliente_id: string | null
+          criado_em: string | null
+          desconto: number
+          id: string
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string | null
+        }
+        Insert: {
+          agendamento_id?: string | null
+          barbeiro_id?: string | null
+          cliente_id?: string | null
+          criado_em?: string | null
+          desconto?: number
+          id?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+        }
+        Update: {
+          agendamento_id?: string | null
+          barbeiro_id?: string | null
+          cliente_id?: string | null
+          criado_em?: string | null
+          desconto?: number
+          id?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendas_itens: {
+        Row: {
+          criado_em: string | null
+          id: string
+          nome: string
+          preco_unit: number
+          quantidade: number
+          ref_id: string
+          tipo: string
+          total: number
+          venda_id: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          id?: string
+          nome: string
+          preco_unit: number
+          quantidade?: number
+          ref_id: string
+          tipo: string
+          total: number
+          venda_id?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          id?: string
+          nome?: string
+          preco_unit?: number
+          quantidade?: number
+          ref_id?: string
+          tipo?: string
+          total?: number
+          venda_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_itens_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       working_hours: {
         Row: {
           created_at: string | null
@@ -3134,8 +3332,10 @@ export type Database = {
           data: string
           hora: string
           id: string
+          qr_checkin: string | null
           servico_id: string
           status: string
+          status_totem: Database["public"]["Enums"]["status_agendamento"] | null
           updated_at: string
         }
         SetofOptions: {
@@ -3193,6 +3393,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      generate_qr_checkin: {
+        Args: { p_agendamento_id: string; p_secret: string }
+        Returns: string
       }
       get_agendamentos_barbeiro_data: {
         Args: { barbeiro_id: string; data_agendamento: string }
@@ -3378,9 +3582,19 @@ export type Database = {
         Returns: Json
       }
       validate_client_age: { Args: { birth_date: string }; Returns: boolean }
+      validate_qr_checkin: {
+        Args: { p_qr_token: string; p_secret: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "barber" | "customer" | "manager"
+      status_agendamento:
+        | "AGENDADO"
+        | "CHEGOU"
+        | "EM_ATENDIMENTO"
+        | "FINALIZADO"
+        | "CANCELADO"
       user_type: "admin" | "user"
     }
     CompositeTypes: {
@@ -3510,6 +3724,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "barber", "customer", "manager"],
+      status_agendamento: [
+        "AGENDADO",
+        "CHEGOU",
+        "EM_ATENDIMENTO",
+        "FINALIZADO",
+        "CANCELADO",
+      ],
       user_type: ["admin", "user"],
     },
   },
