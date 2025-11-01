@@ -19,55 +19,59 @@ export default {
     },
     extend: {
       colors: {
-        border: 'hsl(0 0% 50%)',
-        input: 'hsl(0 0% 50%)',
-        ring: 'hsl(51 100% 50%)',
-        background: 'hsl(0 0% 100%)',
-        foreground: 'hsl(0 0% 0%)',
+        // Tema Costa Urbana - Cores corretas em HSL
+        border: 'hsl(0 0% 23%)',
+        input: 'hsl(0 0% 23%)',
+        ring: 'hsl(43 47% 56%)',
+        background: 'hsl(0 0% 7%)',
+        foreground: 'hsl(0 0% 96%)',
         primary: {
-          DEFAULT: 'hsl(51 100% 50%)',
-          foreground: 'hsl(0 0% 0%)'
+          DEFAULT: 'hsl(43 47% 56%)',
+          foreground: 'hsl(0 0% 7%)'
         },
         secondary: {
-          DEFAULT: 'hsl(0 0% 50%)',
-          foreground: 'hsl(0 0% 100%)'
+          DEFAULT: 'hsl(24 35% 13%)',
+          foreground: 'hsl(0 0% 96%)'
         },
         destructive: {
-          DEFAULT: 'hsl(0 100% 50%)',
-          foreground: 'hsl(0 0% 100%)'
+          DEFAULT: 'hsl(0 84% 60%)',
+          foreground: 'hsl(0 0% 96%)'
         },
         muted: {
-          DEFAULT: 'hsl(0 0% 94%)',
-          foreground: 'hsl(0 0% 50%)'
+          DEFAULT: 'hsl(0 0% 15%)',
+          foreground: 'hsl(0 0% 70%)'
         },
         accent: {
-          DEFAULT: 'hsl(51 100% 50%)',
-          foreground: 'hsl(0 0% 0%)'
+          DEFAULT: 'hsl(43 47% 56%)',
+          foreground: 'hsl(0 0% 7%)'
         },
         popover: {
-          DEFAULT: 'hsl(0 0% 100%)',
-          foreground: 'hsl(0 0% 0%)'
+          DEFAULT: 'hsl(0 0% 7%)',
+          foreground: 'hsl(0 0% 96%)'
         },
         card: {
-          DEFAULT: 'hsl(0 0% 100%)',
-          foreground: 'hsl(0 0% 0%)'
+          DEFAULT: 'hsl(0 0% 10%)',
+          foreground: 'hsl(0 0% 96%)'
         },
         sidebar: {
-          DEFAULT: 'hsl(0 0% 4%)',
-          foreground: 'hsl(0 0% 100%)',
-          primary: 'hsl(51 100% 50%)',
-          'primary-foreground': 'hsl(0 0% 0%)',
-          accent: 'hsl(0 0% 50%)',
-          'accent-foreground': 'hsl(0 0% 100%)',
-          border: 'hsl(0 0% 20%)',
-          ring: 'hsl(51 100% 50%)'
+          DEFAULT: 'hsl(0 0% 7%)',
+          foreground: 'hsl(0 0% 96%)',
+          primary: 'hsl(43 47% 56%)',
+          'primary-foreground': 'hsl(0 0% 7%)',
+          accent: 'hsl(0 0% 23%)',
+          'accent-foreground': 'hsl(0 0% 96%)',
+          border: 'hsl(0 0% 15%)',
+          ring: 'hsl(43 47% 56%)'
         },
         urbana: {
-          gold: 'hsl(51 100% 50%)',
-          brown: 'hsl(35 74% 5%)',
-          black: 'hsl(0 0% 4%)',
-          gray: 'hsl(0 0% 50%)',
-          light: 'hsl(0 0% 100%)',
+          gold: 'hsl(43 47% 56%)',
+          'gold-light': 'hsl(43 47% 70%)',
+          'gold-dark': 'hsl(43 47% 40%)',
+          brown: 'hsl(24 35% 13%)',
+          black: 'hsl(0 0% 7%)',
+          gray: 'hsl(0 0% 23%)',
+          'gray-light': 'hsl(0 0% 40%)',
+          light: 'hsl(0 0% 96%)',
         }
       },
       borderRadius: {
@@ -105,6 +109,8 @@ export default {
       fontFamily: {
         'playfair': ['"Playfair Display"', 'serif'],
         'raleway': ['"Raleway"', 'sans-serif'],
+        'poppins': ['"Poppins"', 'sans-serif'],
+        'montserrat': ['"Montserrat"', 'sans-serif'],
       },
     }
   },

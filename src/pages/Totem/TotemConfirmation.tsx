@@ -54,86 +54,111 @@ const TotemConfirmation: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-urbana-black flex flex-col p-8 font-poppins relative overflow-hidden">
       <OfflineIndicator />
+      
+      {/* Background texture */}
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+      
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 md:mb-8 gap-2">
+      <div className="flex items-center justify-between mb-12 z-10">
         <Button
           onClick={() => navigate('/totem/search')}
-          variant="outline"
+          variant="ghost"
           size="lg"
-          className="h-16 sm:h-18 md:h-20 px-4 sm:px-6 md:px-8 text-xl sm:text-xl md:text-2xl"
+          className="h-16 px-8 text-xl text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10"
         >
-          <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mr-2 sm:mr-3 md:mr-4" />
+          <ArrowLeft className="w-7 h-7 mr-3" />
           Voltar
         </Button>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground text-center flex-1">Confirme seus dados</h1>
-        <div className="w-20 sm:w-32 md:w-48"></div>
+        <h1 className="text-5xl font-bold text-urbana-light text-center flex-1">
+          Confirme seus dados
+        </h1>
+        <div className="w-48"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center">
-        <Card className="w-full max-w-4xl p-6 sm:p-8 md:p-12 space-y-6 sm:space-y-7 md:space-y-8 bg-card">
+      <div className="flex-1 flex items-center justify-center z-10">
+        <Card className="w-full max-w-5xl p-12 space-y-10 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
           {/* Client Info */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 pb-6 border-b border-border">
-              <User className="w-12 h-12 text-urbana-gold" />
+          <div className="space-y-8">
+            <div className="flex items-center gap-6 pb-8 border-b-2 border-urbana-gold/20">
+              <div className="w-16 h-16 rounded-2xl bg-urbana-gold/10 flex items-center justify-center">
+                <User className="w-10 h-10 text-urbana-gold" />
+              </div>
               <div>
-                <p className="text-2xl text-muted-foreground">Cliente</p>
-                <p className="text-4xl font-bold text-foreground">{client.nome}</p>
+                <p className="text-2xl text-urbana-light/60">Cliente</p>
+                <p className="text-5xl font-bold text-urbana-light">{client.nome}</p>
               </div>
             </div>
 
             {/* Appointment Details */}
-            <div className="grid grid-cols-2 gap-8">
-              <div className="flex items-start gap-4">
-                <Calendar className="w-10 h-10 text-urbana-gold mt-2" />
+            <div className="grid grid-cols-2 gap-10">
+              <div className="flex items-start gap-5">
+                <div className="w-14 h-14 rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-2">
+                  <Calendar className="w-8 h-8 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-2xl text-muted-foreground">Data</p>
-                  <p className="text-3xl font-bold text-foreground">
+                  <p className="text-2xl text-urbana-light/60 mb-2">Data</p>
+                  <p className="text-4xl font-bold text-urbana-light">
                     {format(new Date(appointment.data), "dd 'de' MMMM", { locale: ptBR })}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <Clock className="w-10 h-10 text-urbana-gold mt-2" />
+              <div className="flex items-start gap-5">
+                <div className="w-14 h-14 rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-2">
+                  <Clock className="w-8 h-8 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-2xl text-muted-foreground">Horário</p>
-                  <p className="text-3xl font-bold text-foreground">{appointment.hora}</p>
+                  <p className="text-2xl text-urbana-light/60 mb-2">Horário</p>
+                  <p className="text-4xl font-bold text-urbana-light">{appointment.hora}</p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <Scissors className="w-10 h-10 text-urbana-gold mt-2" />
+              <div className="flex items-start gap-5">
+                <div className="w-14 h-14 rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-2">
+                  <Scissors className="w-8 h-8 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-2xl text-muted-foreground">Serviço</p>
-                  <p className="text-3xl font-bold text-foreground">{appointment.servico?.nome}</p>
-                  <p className="text-2xl text-urbana-gold font-semibold">
+                  <p className="text-2xl text-urbana-light/60 mb-2">Serviço</p>
+                  <p className="text-4xl font-bold text-urbana-light">{appointment.servico?.nome}</p>
+                  <p className="text-3xl text-urbana-gold font-semibold mt-2">
                     R$ {appointment.servico?.preco?.toFixed(2)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <User className="w-10 h-10 text-urbana-gold mt-2" />
+              <div className="flex items-start gap-5">
+                <div className="w-14 h-14 rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-2">
+                  <User className="w-8 h-8 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-2xl text-muted-foreground">Barbeiro</p>
-                  <p className="text-3xl font-bold text-foreground">{appointment.barbeiro?.nome}</p>
+                  <p className="text-2xl text-urbana-light/60 mb-2">Barbeiro</p>
+                  <p className="text-4xl font-bold text-urbana-light">{appointment.barbeiro?.nome}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Confirm Button */}
-          <div className="pt-8">
+          <div className="pt-10">
             <Button
               onClick={handleConfirmCheckIn}
               disabled={isProcessing}
-              className="w-full h-28 text-4xl font-bold bg-urbana-gold text-black hover:bg-urbana-gold/90 disabled:opacity-50"
+              className="w-full h-28 text-4xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black hover:from-urbana-gold-dark hover:to-urbana-gold disabled:opacity-50 shadow-2xl shadow-urbana-gold/30 hover:shadow-urbana-gold/50 transition-all"
             >
-              <CheckCircle className="w-12 h-12 mr-4" />
-              {isProcessing ? 'PROCESSANDO...' : 'CONFIRMAR CHECK-IN'}
+              {isProcessing ? (
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 border-4 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
+                  PROCESSANDO...
+                </div>
+              ) : (
+                <>
+                  <CheckCircle className="w-12 h-12 mr-4" />
+                  CONFIRMAR CHECK-IN
+                </>
+              )}
             </Button>
           </div>
         </Card>

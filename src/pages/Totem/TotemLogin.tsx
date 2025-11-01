@@ -42,37 +42,43 @@ const TotemLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-md space-y-6 sm:space-y-8">
+    <div className="min-h-screen bg-urbana-black flex flex-col items-center justify-center p-6 relative font-poppins overflow-hidden">
+      {/* Background texture effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+      
+      <div className="w-full max-w-lg space-y-10 z-10">
         {/* Logo */}
-        <div className="flex justify-center mb-6 sm:mb-8">
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-urbana-gold flex items-center justify-center">
-            <Scissors className="w-10 h-10 sm:w-12 sm:h-12 text-black" />
+        <div className="flex justify-center mb-8 animate-fade-in">
+          <div className="relative">
+            <div className="absolute inset-0 bg-urbana-gold blur-3xl opacity-30 animate-pulse" />
+            <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-2xl border-4 border-urbana-gold/20">
+              <Scissors className="w-14 h-14 text-urbana-black" />
+            </div>
           </div>
         </div>
 
         {/* Title */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground">
+        <div className="text-center space-y-3 animate-fade-in">
+          <h1 className="text-4xl md:text-5xl font-bold text-urbana-light">
             Acesso ao Totem
           </h1>
-          <p className="text-base sm:text-lg text-muted-foreground">
-            Digite o PIN para acessar
+          <p className="text-lg text-urbana-light/60">
+            Digite o PIN de 4 dígitos
           </p>
         </div>
 
         {/* PIN Card */}
-        <Card className="p-6 sm:p-8 bg-card">
+        <Card className="p-10 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
           {/* PIN Display */}
-          <div className="mb-6 sm:mb-8">
-            <div className="flex justify-center gap-3 sm:gap-4">
+          <div className="mb-10">
+            <div className="flex justify-center gap-5">
               {[0, 1, 2, 3].map((index) => (
                 <div
                   key={index}
-                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-2 border-border bg-background flex items-center justify-center"
+                  className="w-20 h-20 rounded-2xl border-2 border-urbana-gray/50 bg-urbana-black/50 flex items-center justify-center transition-all duration-300 hover:border-urbana-gold/50"
                 >
                   {pin[index] && (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-urbana-gold" />
+                    <div className="w-5 h-5 rounded-full bg-urbana-gold shadow-lg shadow-urbana-gold/50 animate-fade-in" />
                   )}
                 </div>
               ))}
@@ -80,13 +86,13 @@ const TotemLogin: React.FC = () => {
           </div>
 
           {/* Keypad */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
                 variant="outline"
-                className="h-16 sm:h-20 text-2xl sm:text-3xl font-bold hover:bg-urbana-gold/10 hover:border-urbana-gold"
+                className="h-20 text-3xl font-bold bg-urbana-black/50 hover:bg-urbana-gold/20 border-urbana-gray/30 hover:border-urbana-gold text-urbana-light hover:text-urbana-gold transition-all duration-300"
                 disabled={isLoading}
               >
                 {num}
@@ -95,7 +101,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={handleClear}
               variant="outline"
-              className="h-16 sm:h-20 text-base sm:text-lg hover:bg-destructive/10 hover:border-destructive hover:text-destructive"
+              className="h-20 text-lg font-semibold bg-urbana-black/50 hover:bg-destructive/20 border-urbana-gray/30 hover:border-destructive text-urbana-light hover:text-destructive transition-all duration-300"
               disabled={isLoading}
             >
               Limpar
@@ -103,7 +109,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={() => handleNumberClick('0')}
               variant="outline"
-              className="h-16 sm:h-20 text-2xl sm:text-3xl font-bold hover:bg-urbana-gold/10 hover:border-urbana-gold"
+              className="h-20 text-3xl font-bold bg-urbana-black/50 hover:bg-urbana-gold/20 border-urbana-gray/30 hover:border-urbana-gold text-urbana-light hover:text-urbana-gold transition-all duration-300"
               disabled={isLoading}
             >
               0
@@ -111,10 +117,10 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={handleBackspace}
               variant="outline"
-              className="h-16 sm:h-20 hover:bg-destructive/10 hover:border-destructive"
+              className="h-20 bg-urbana-black/50 hover:bg-destructive/20 border-urbana-gray/30 hover:border-destructive transition-all duration-300"
               disabled={isLoading}
             >
-              <Delete className="w-6 h-6 sm:w-7 sm:h-7" />
+              <Delete className="w-7 h-7 text-urbana-light hover:text-destructive" />
             </Button>
           </div>
 
@@ -122,16 +128,28 @@ const TotemLogin: React.FC = () => {
           <Button
             onClick={handleLogin}
             disabled={pin.length !== 4 || isLoading}
-            className="w-full h-14 sm:h-16 text-xl sm:text-2xl font-bold bg-urbana-gold text-black hover:bg-urbana-gold/90"
+            className="w-full h-20 text-2xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black hover:from-urbana-gold-dark hover:to-urbana-gold shadow-lg shadow-urbana-gold/30 hover:shadow-urbana-gold/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Entrando...' : 'ENTRAR'}
+            {isLoading ? (
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 border-3 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
+                Entrando...
+              </div>
+            ) : (
+              'ENTRAR'
+            )}
           </Button>
         </Card>
 
         {/* Info */}
-        <p className="text-center text-sm sm:text-base text-muted-foreground">
-          PIN padrão: 1234
-        </p>
+        <div className="text-center space-y-2 animate-fade-in">
+          <p className="text-sm text-urbana-light/40">
+            PIN padrão para demonstração
+          </p>
+          <p className="text-2xl font-mono font-bold text-urbana-gold">
+            1 2 3 4
+          </p>
+        </div>
       </div>
     </div>
   );

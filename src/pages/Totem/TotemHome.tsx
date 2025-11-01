@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Scissors, LogOut } from 'lucide-react';
+import { Scissors, LogOut, Calendar, CreditCard, ShoppingBag, CheckCircle } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 
 const TotemHome: React.FC = () => {
@@ -28,55 +28,132 @@ const TotemHome: React.FC = () => {
     navigate('/totem/login');
   };
 
+  const menuItems = [
+    {
+      icon: Calendar,
+      title: 'Agendar',
+      subtitle: 'Novo Atendimento',
+      onClick: () => navigate('/totem/search'),
+      color: 'bg-urbana-gold'
+    },
+    {
+      icon: CheckCircle,
+      title: 'Check-in',
+      subtitle: 'Já Cheguei',
+      onClick: () => navigate('/totem/search'),
+      color: 'bg-urbana-gold'
+    },
+    {
+      icon: CreditCard,
+      title: 'Check-out',
+      subtitle: 'Pagamento',
+      onClick: () => navigate('/totem/search'),
+      color: 'bg-urbana-gold'
+    },
+    {
+      icon: ShoppingBag,
+      title: 'Produtos',
+      subtitle: 'E Cuidados',
+      onClick: () => navigate('/totem/search'),
+      color: 'bg-urbana-gold'
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative">
+    <div className="min-h-screen bg-urbana-black flex flex-col items-center justify-center p-8 relative font-poppins overflow-hidden">
+      {/* Background texture effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+      
+      {/* Subtle grid pattern */}
+      <div className="absolute inset-0 opacity-5" style={{
+        backgroundImage: 'linear-gradient(rgba(197, 161, 91, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(197, 161, 91, 0.1) 1px, transparent 1px)',
+        backgroundSize: '50px 50px'
+      }} />
+
       {/* Logout Button */}
       <Button
         onClick={handleLogout}
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="absolute top-4 right-4 gap-2"
+        className="absolute top-6 right-6 gap-2 text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 z-10"
       >
-        <LogOut className="w-4 h-4" />
+        <LogOut className="w-5 h-5" />
         Sair
       </Button>
 
-      <div className="text-center space-y-6 sm:space-y-8 max-w-2xl w-full">
+      <div className="text-center space-y-12 max-w-6xl w-full z-10">
         {/* Logo */}
-        <div className="flex justify-center mb-6 sm:mb-8">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-urbana-gold flex items-center justify-center">
-            <Scissors className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-black" />
+        <div className="flex justify-center mb-8 animate-fade-in">
+          <div className="relative">
+            <div className="absolute inset-0 bg-urbana-gold blur-3xl opacity-30 animate-pulse" />
+            <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-2xl border-4 border-urbana-gold/20">
+              <Scissors className="w-16 h-16 text-urbana-black" />
+            </div>
           </div>
         </div>
 
         {/* Welcome Message */}
-        <div className="space-y-3 sm:space-y-4">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground">
+        <div className="space-y-6 animate-fade-in">
+          <h1 className="text-5xl md:text-6xl font-light text-urbana-light tracking-wide">
             Bem-vindo à
           </h1>
-          <h2 className="text-5xl sm:text-6xl md:text-7xl font-black text-urbana-gold">
-            Costa Urbana
+          <h2 className="text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+            COSTA URBANA
           </h2>
-          <p className="text-2xl sm:text-2xl md:text-3xl text-muted-foreground mt-6 sm:mt-8">
-            Sistema de Autoatendimento
-          </p>
+          <div className="flex items-center justify-center gap-4 text-urbana-light/70">
+            <div className="h-px w-16 bg-gradient-to-r from-transparent to-urbana-gold" />
+            <p className="text-xl md:text-2xl font-light tracking-wider uppercase">
+              Sistema de Autoatendimento
+            </p>
+            <div className="h-px w-16 bg-gradient-to-l from-transparent to-urbana-gold" />
+          </div>
         </div>
 
-        {/* Start Button */}
-        <div className="pt-8 sm:pt-10 md:pt-12">
-          <Button
-            onClick={handleStart}
-            size="lg"
-            className="h-24 sm:h-28 md:h-32 px-12 sm:px-14 md:px-16 text-3xl sm:text-3xl md:text-4xl font-bold bg-urbana-gold text-black hover:bg-urbana-gold/90 rounded-2xl shadow-2xl transition-all hover:scale-105"
-          >
-            INICIAR ATENDIMENTO
-          </Button>
+        {/* Menu Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12">
+          {menuItems.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={index}
+                onClick={item.onClick}
+                className="group relative bg-card hover:bg-card/80 rounded-2xl p-8 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-urbana-gold/20 border border-urbana-gray/20 hover:border-urbana-gold/50"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                {/* Glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-hover:from-urbana-gold/10 group-hover:to-urbana-gold/5 rounded-2xl transition-all duration-300" />
+                
+                <div className="relative flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-urbana-gold/10 group-hover:bg-urbana-gold flex items-center justify-center transition-all duration-300">
+                    <Icon className="w-8 h-8 text-urbana-gold group-hover:text-urbana-black transition-colors duration-300" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-bold text-urbana-light mb-1">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-urbana-light/60">
+                      {item.subtitle}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Instructions */}
-        <p className="text-lg sm:text-xl text-muted-foreground mt-8 sm:mt-10 md:mt-12 animate-pulse">
-          Toque na tela para começar
-        </p>
+        <div className="pt-12 animate-pulse">
+          <p className="text-xl text-urbana-gold/70 font-light tracking-wide">
+            Toque na tela para começar
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="pt-8">
+          <p className="text-xs text-urbana-light/30 uppercase tracking-wider">
+            Powered by Beltec Soluções
+          </p>
+        </div>
       </div>
     </div>
   );
