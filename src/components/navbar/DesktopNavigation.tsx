@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Scissors, User } from "lucide-react";
+import { Shield, Scissors, User, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   NavigationMenu,
@@ -28,6 +28,10 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
 
   const handleBarberLogin = () => {
     navigate('/barbeiro/login');
+  };
+
+  const handleTotemAccess = () => {
+    navigate('/totem/login');
   };
 
   return (
@@ -105,6 +109,16 @@ const DesktopNavigation: React.FC<DesktopNavigationProps> = ({
                 title="Área do Barbeiro"
               >
                 <Scissors size={18} className="text-urbana-gold" />
+              </Button>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Button
+                variant="ghost"
+                className="text-white hover:text-urbana-gold transition-colors px-4 py-2"
+                onClick={handleTotemAccess}
+                title="Totem de Autoatendimento"
+              >
+                <Monitor size={18} className="text-urbana-gold" />
               </Button>
             </NavigationMenuItem>
           </>

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Shield, Scissors, Menu, Home, X, User } from "lucide-react";
+import { Shield, Scissors, Menu, Home, X, User, Monitor } from "lucide-react";
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileNavigationProps {
@@ -40,6 +40,11 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const handleBarberLogin = () => {
     closeMenu();
     navigate('/barbeiro/login');
+  };
+
+  const handleTotemAccess = () => {
+    closeMenu();
+    navigate('/totem/login');
   };
 
   if (!isMobile) return null;
@@ -145,6 +150,14 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 >
                   <Scissors size={20} className="text-urbana-gold mr-3" />
                   <span className="text-lg font-medium">Área do Barbeiro</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-white hover:text-urbana-gold hover:bg-urbana-gold/20 text-lg py-3 h-auto"
+                  onClick={handleTotemAccess}
+                >
+                  <Monitor size={20} className="text-urbana-gold mr-3" />
+                  <span className="text-lg font-medium">Totem</span>
                 </Button>
               </div>
             )}
