@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
-      console.log('🛒 Iniciando checkout para agendamento:', agendamento_id)
+      console.log('🛒 Iniciando checkout para agendamento:', agendamento_id, 'sessão fornecida:', session_id)
 
       // Buscar agendamento completo
       const { data: agendamento, error: agendError } = await supabase
@@ -30,33 +30,55 @@ Deno.serve(async (req) => {
         .single()
 
       if (agendError || !agendamento) {
-        console.error('❌ Agendamento não encontrado:', agendamento_id)
+        console.error('❌ Agendamento não encontrado:', agendamento_id, agendError)
         throw new Error('Agendamento não encontrado')
       }
 
       console.log('✅ Agendamento encontrado:', agendamento.id, 'Cliente:', agendamento.cliente?.nome, 'Hora:', agendamento.hora)
 
-      // Buscar sessão totem ativa MAIS RECENTE para este agendamento
-      const { data: totemSession, error: sessionError } = await supabase
-        .from('totem_sessions')
-        .select('*')
-        .eq('appointment_id', agendamento_id)
-        .in('status', ['check_in', 'in_service', 'checkout'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      // Se session_id foi fornecido, usar diretamente. Caso contrário, buscar
+      let totemSession
+      
+      if (session_id) {
+        console.log('🔍 Buscando sessão específica:', session_id)
+        const { data: specificSession, error: specificError } = await supabase
+          .from('totem_sessions')
+          .select('*')
+          .eq('id', session_id)
+          .single()
+        
+        if (specificError || !specificSession) {
+          console.error('❌ Sessão específica não encontrada:', session_id, specificError)
+          throw new Error('Sessão não encontrada')
+        }
+        
+        totemSession = specificSession
+        console.log('✅ Sessão específica encontrada:', totemSession.id, 'Status:', totemSession.status)
+      } else {
+        console.log('🔍 Buscando sessão ativa mais recente para agendamento:', agendamento_id)
+        // Buscar sessão totem ativa MAIS RECENTE para este agendamento
+        const { data: foundSession, error: sessionError } = await supabase
+          .from('totem_sessions')
+          .select('*')
+          .eq('appointment_id', agendamento_id)
+          .in('status', ['check_in', 'in_service', 'checkout'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
 
-      if (sessionError) {
-        console.error('❌ Erro ao buscar sessão totem:', sessionError)
-        throw new Error('Erro ao buscar sessão do totem')
+        if (sessionError) {
+          console.error('❌ Erro ao buscar sessão totem:', sessionError)
+          throw new Error('Erro ao buscar sessão do totem')
+        }
+
+        if (!foundSession) {
+          console.error('❌ Nenhuma sessão ativa encontrada para agendamento:', agendamento_id)
+          throw new Error('Sessão não encontrada. Faça check-in primeiro.')
+        }
+
+        totemSession = foundSession
+        console.log('✅ Sessão ativa encontrada:', totemSession.id, 'Status:', totemSession.status, 'Check-in:', totemSession.check_in_time)
       }
-
-      if (!totemSession) {
-        console.error('❌ Nenhuma sessão ativa encontrada para agendamento:', agendamento_id)
-        throw new Error('Sessão não encontrada. Faça check-in primeiro.')
-      }
-
-      console.log('✅ Sessão ativa encontrada:', totemSession.id, 'Status:', totemSession.status, 'Check-in:', totemSession.check_in_time)
 
       // Buscar barbeiro staff_id
       const { data: barbeiro } = await supabase

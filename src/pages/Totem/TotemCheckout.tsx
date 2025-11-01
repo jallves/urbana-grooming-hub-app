@@ -63,7 +63,7 @@ const TotemCheckout: React.FC = () => {
     setLoading(true);
     
     try {
-      console.log('🔍 Buscando venda existente para sessão:', session?.id);
+      console.log('🔍 Buscando venda existente para sessão:', session?.id, 'agendamento:', appointment?.id);
 
       // Carregar serviços extras existentes
       const { data: existingExtras, error: extrasError } = await supabase
@@ -98,9 +98,8 @@ const TotemCheckout: React.FC = () => {
         .maybeSingle();
 
       if (vendaError) {
-        console.error('Erro ao buscar venda:', vendaError);
-        setLoading(false);
-        return;
+        console.error('❌ Erro ao buscar venda:', vendaError);
+        // Não retornar, tentar criar venda
       }
 
       if (venda) {
@@ -113,7 +112,18 @@ const TotemCheckout: React.FC = () => {
           .eq('venda_id', venda.id);
 
         if (itensError) {
-          console.error('Erro ao buscar itens:', itensError);
+          console.error('❌ Erro ao buscar itens:', itensError);
+          // Tentar recriar venda
+          console.log('⚠️ Tentando recriar venda...');
+          await startCheckout();
+          setLoading(false);
+          return;
+        }
+
+        // Se não há itens, recriar venda
+        if (!itens || itens.length === 0) {
+          console.log('⚠️ Venda sem itens, recriando...');
+          await startCheckout();
           setLoading(false);
           return;
         }
@@ -141,9 +151,9 @@ const TotemCheckout: React.FC = () => {
         setResumo(resumoData);
         setNeedsRecalculation(false);
         
-        console.log('✅ Checkout carregado com sucesso');
+        console.log('✅ Checkout carregado com sucesso - Total:', venda.total);
       } else {
-        console.log('⚠️ Nenhuma venda encontrada, iniciando novo checkout');
+        console.log('⚠️ Nenhuma venda encontrada para sessão:', session.id, '- Iniciando novo checkout...');
         await startCheckout();
       }
     } catch (error) {
@@ -151,6 +161,12 @@ const TotemCheckout: React.FC = () => {
       toast.error('Erro ao carregar checkout', {
         description: 'Tente novamente'
       });
+      // Tentar criar venda mesmo com erro
+      try {
+        await startCheckout();
+      } catch (e) {
+        console.error('❌ Falha ao criar venda:', e);
+      }
     } finally {
       setLoading(false);
     }
@@ -228,25 +244,31 @@ const TotemCheckout: React.FC = () => {
     setIsUpdating(needsRecalculation);
     
     try {
-      console.log('🛒 Iniciando/atualizando checkout para agendamento:', appointment?.id);
+      console.log('🛒 Iniciando checkout...');
+      console.log('   📋 Agendamento ID:', appointment?.id);
+      console.log('   🎫 Sessão ID:', session?.id);
+      console.log('   👤 Cliente:', client?.nome);
 
       // Não precisa mais enviar extras, pois já estão na tabela appointment_extra_services
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'start',
-          agendamento_id: appointment.id
+          agendamento_id: appointment.id,
+          session_id: session.id
         }
       });
 
       if (error) {
         console.error('❌ Erro ao iniciar checkout:', error);
         toast.error('Erro ao processar checkout', {
-          description: error.message || 'Tente novamente'
+          description: error.message || 'Não foi possível iniciar o checkout. Tente novamente.'
         });
         setLoading(false);
         setIsUpdating(false);
         return;
       }
+
+      console.log('📦 Resposta da edge function:', data);
 
       // Se recebeu uma resposta de fila, tentar buscar a venda existente
       if (data?.queued || !data?.success) {
