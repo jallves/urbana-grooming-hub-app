@@ -65,6 +65,26 @@ const TotemCheckout: React.FC = () => {
     try {
       console.log('🔍 Buscando venda existente para agendamento:', appointment?.id);
 
+      // Carregar serviços extras existentes
+      const { data: existingExtras, error: extrasError } = await supabase
+        .from('appointment_extra_services')
+        .select(`
+          *,
+          servico:painel_servicos(*)
+        `)
+        .eq('appointment_id', appointment.id);
+
+      if (extrasError) {
+        console.error('Erro ao buscar serviços extras:', extrasError);
+      } else if (existingExtras && existingExtras.length > 0) {
+        console.log('📦 Serviços extras encontrados:', existingExtras.length);
+        setExtraServices(existingExtras.map((extra: any) => ({
+          service_id: extra.service_id,
+          nome: extra.servico.nome,
+          preco: extra.servico.preco
+        })));
+      }
+
       // Buscar venda existente
       const { data: vendas, error: vendaError } = await supabase
         .from('vendas')
@@ -134,9 +154,26 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
-  const handleAddExtraService = (serviceId: string) => {
+  const handleAddExtraService = async (serviceId: string) => {
     const service = availableServices.find(s => s.id === serviceId);
     if (service) {
+      // Adicionar na tabela appointment_extra_services
+      const { error } = await supabase
+        .from('appointment_extra_services')
+        .insert({
+          appointment_id: appointment.id,
+          service_id: service.id,
+          added_by: session.id // Usando session_id como referência
+        });
+
+      if (error) {
+        console.error('Erro ao adicionar serviço extra:', error);
+        toast.error('Erro ao adicionar serviço', {
+          description: 'Tente novamente'
+        });
+        return;
+      }
+
       setExtraServices([...extraServices, {
         service_id: service.id,
         nome: service.nome,
@@ -149,8 +186,24 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
-  const handleRemoveExtraService = (index: number) => {
+  const handleRemoveExtraService = async (index: number) => {
     const removedService = extraServices[index];
+    
+    // Remover da tabela appointment_extra_services
+    const { error } = await supabase
+      .from('appointment_extra_services')
+      .delete()
+      .eq('appointment_id', appointment.id)
+      .eq('service_id', removedService.service_id);
+
+    if (error) {
+      console.error('Erro ao remover serviço extra:', error);
+      toast.error('Erro ao remover serviço', {
+        description: 'Tente novamente'
+      });
+      return;
+    }
+
     setExtraServices(extraServices.filter((_, i) => i !== index));
     setNeedsRecalculation(true);
     toast.info('Serviço removido', {
@@ -167,17 +220,11 @@ const TotemCheckout: React.FC = () => {
     try {
       console.log('🛒 Iniciando/atualizando checkout para agendamento:', appointment?.id);
 
-      const extras = extraServices.map(service => ({
-        tipo: 'servico',
-        id: service.service_id,
-        quantidade: 1
-      }));
-
+      // Não precisa mais enviar extras, pois já estão na tabela appointment_extra_services
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'start',
-          agendamento_id: appointment.id,
-          extras: extras.length > 0 ? extras : undefined
+          agendamento_id: appointment.id
         }
       });
 
@@ -284,15 +331,10 @@ const TotemCheckout: React.FC = () => {
   };
 
   const handleRecalculate = async () => {
-    if (extraServices.length === 0) {
-      toast.info('Nenhum serviço extra adicionado');
-      return;
-    }
-
     setIsUpdating(true);
     
     try {
-      console.log('🔄 Recalculando com serviços extras:', extraServices);
+      console.log('🔄 Recalculando total do checkout');
 
       // Deletar venda anterior se existir
       if (vendaId) {
@@ -300,18 +342,11 @@ const TotemCheckout: React.FC = () => {
         await supabase.from('vendas').delete().eq('id', vendaId);
       }
 
-      // Criar nova venda com extras
-      const extras = extraServices.map(service => ({
-        tipo: 'servico',
-        id: service.service_id,
-        quantidade: 1
-      }));
-
+      // Criar nova venda (extras já estão na tabela appointment_extra_services)
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'start',
-          agendamento_id: appointment.id,
-          extras: extras
+          agendamento_id: appointment.id
         }
       });
 
