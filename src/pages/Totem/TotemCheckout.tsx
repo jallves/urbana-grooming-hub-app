@@ -63,7 +63,7 @@ const TotemCheckout: React.FC = () => {
     setLoading(true);
     
     try {
-      console.log('🔍 Buscando venda existente para agendamento:', appointment?.id);
+      console.log('🔍 Buscando venda existente para sessão:', session?.id);
 
       // Carregar serviços extras existentes
       const { data: existingExtras, error: extrasError } = await supabase
@@ -89,14 +89,13 @@ const TotemCheckout: React.FC = () => {
         })));
       }
 
-      // Buscar venda existente
-      const { data: vendas, error: vendaError } = await supabase
+      // Buscar venda existente PARA ESTA SESSÃO ESPECÍFICA
+      const { data: venda, error: vendaError } = await supabase
         .from('vendas')
         .select('*')
-        .eq('agendamento_id', appointment.id)
+        .eq('totem_session_id', session.id)
         .eq('status', 'ABERTA')
-        .order('updated_at', { ascending: false })
-        .limit(1);
+        .maybeSingle();
 
       if (vendaError) {
         console.error('Erro ao buscar venda:', vendaError);
@@ -104,9 +103,8 @@ const TotemCheckout: React.FC = () => {
         return;
       }
 
-      if (vendas && vendas.length > 0) {
-        const venda = vendas[0];
-        console.log('✅ Venda existente encontrada:', venda.id);
+      if (venda) {
+        console.log('✅ Venda existente encontrada para sessão:', session.id, '- venda:', venda.id);
         
         // Buscar itens da venda
         const { data: itens, error: itensError } = await supabase
@@ -257,17 +255,15 @@ const TotemCheckout: React.FC = () => {
         // Aguardar um pouco para o backend processar
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Buscar venda existente
-        const { data: vendas, error: vendaError } = await supabase
+        // Buscar venda existente PARA ESTA SESSÃO
+        const { data: venda, error: vendaError } = await supabase
           .from('vendas')
           .select('*')
-          .eq('agendamento_id', appointment.id)
+          .eq('totem_session_id', session.id)
           .eq('status', 'ABERTA')
-          .order('updated_at', { ascending: false })
-          .limit(1);
+          .maybeSingle();
 
-        if (!vendaError && vendas && vendas.length > 0) {
-          const venda = vendas[0];
+        if (!vendaError && venda) {
           
           // Buscar itens da venda
           const { data: itens, error: itensError } = await supabase
@@ -367,17 +363,15 @@ const TotemCheckout: React.FC = () => {
       // Aguardar processamento
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Buscar venda atualizada
-      const { data: vendas } = await supabase
+      // Buscar venda atualizada PARA ESTA SESSÃO
+      const { data: venda } = await supabase
         .from('vendas')
         .select('*')
-        .eq('agendamento_id', appointment.id)
+        .eq('totem_session_id', session.id)
         .eq('status', 'ABERTA')
-        .order('updated_at', { ascending: false })
-        .limit(1);
+        .maybeSingle();
 
-      if (vendas && vendas.length > 0) {
-        const venda = vendas[0];
+      if (venda) {
         
         const { data: itens } = await supabase
           .from('vendas_itens')

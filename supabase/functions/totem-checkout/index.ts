@@ -62,28 +62,51 @@ Deno.serve(async (req) => {
         .eq('id', agendamento.barbeiro_id)
         .single()
 
-      // Criar venda
-      const { data: venda, error: vendaError } = await supabase
+      // Verificar se já existe venda para esta sessão
+      let venda
+      const { data: vendaExistente } = await supabase
         .from('vendas')
-        .insert({
-          agendamento_id: agendamento_id,
-          cliente_id: agendamento.cliente_id,
-          barbeiro_id: barbeiro?.staff_id,
-          status: 'ABERTA'
-        })
-        .select()
-        .single()
+        .select('*')
+        .eq('totem_session_id', totemSession.id)
+        .eq('status', 'ABERTA')
+        .maybeSingle()
 
-      if (vendaError) {
-        console.error('Erro detalhado ao criar venda:', vendaError)
-        throw new Error(`Erro ao criar venda: ${vendaError.message}`)
+      if (vendaExistente) {
+        console.log('Venda existente encontrada para sessão:', totemSession.id)
+        venda = vendaExistente
+        
+        // Deletar itens antigos para recalcular
+        await supabase
+          .from('vendas_itens')
+          .delete()
+          .eq('venda_id', venda.id)
+      } else {
+        // Criar venda vinculada à sessão
+        const { data: novaVenda, error: vendaError } = await supabase
+          .from('vendas')
+          .insert({
+            agendamento_id: agendamento_id,
+            cliente_id: agendamento.cliente_id,
+            barbeiro_id: barbeiro?.staff_id,
+            totem_session_id: totemSession.id,
+            status: 'ABERTA'
+          })
+          .select()
+          .single()
+
+        if (vendaError) {
+          console.error('Erro detalhado ao criar venda:', vendaError)
+          throw new Error(`Erro ao criar venda: ${vendaError.message}`)
+        }
+
+        if (!novaVenda) {
+          throw new Error('Venda não foi criada')
+        }
+
+        venda = novaVenda
+        console.log('Nova venda criada para sessão:', totemSession.id, '- venda:', venda.id)
       }
 
-      if (!venda) {
-        throw new Error('Venda não foi criada')
-      }
-
-      console.log('Venda criada:', venda.id)
 
       // Adicionar serviço principal
       const itens = [

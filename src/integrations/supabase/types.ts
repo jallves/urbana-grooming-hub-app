@@ -3109,6 +3109,7 @@ export type Database = {
           status: string
           subtotal: number
           total: number
+          totem_session_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3121,6 +3122,7 @@ export type Database = {
           status?: string
           subtotal?: number
           total?: number
+          totem_session_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3133,6 +3135,7 @@ export type Database = {
           status?: string
           subtotal?: number
           total?: number
+          totem_session_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -3155,6 +3158,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_totem_session_id_fkey"
+            columns: ["totem_session_id"]
+            isOneToOne: false
+            referencedRelation: "totem_sessions"
             referencedColumns: ["id"]
           },
         ]
