@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, CreditCard, DollarSign, Plus, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { OfflineIndicator } from '@/components/totem/OfflineIndicator';
 
 interface CheckoutSummary {
   original_service: {
@@ -284,8 +283,95 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
-  const handleRecalculate = () => {
-    startCheckout();
+  const handleRecalculate = async () => {
+    if (extraServices.length === 0) {
+      toast.info('Nenhum serviço extra adicionado');
+      return;
+    }
+
+    setIsUpdating(true);
+    
+    try {
+      console.log('🔄 Recalculando com serviços extras:', extraServices);
+
+      // Deletar venda anterior se existir
+      if (vendaId) {
+        await supabase.from('vendas_itens').delete().eq('venda_id', vendaId);
+        await supabase.from('vendas').delete().eq('id', vendaId);
+      }
+
+      // Criar nova venda com extras
+      const extras = extraServices.map(service => ({
+        tipo: 'servico',
+        id: service.service_id,
+        quantidade: 1
+      }));
+
+      const { data, error } = await supabase.functions.invoke('totem-checkout', {
+        body: {
+          action: 'start',
+          agendamento_id: appointment.id,
+          extras: extras
+        }
+      });
+
+      if (error) throw error;
+
+      // Aguardar processamento
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Buscar venda atualizada
+      const { data: vendas } = await supabase
+        .from('vendas')
+        .select('*')
+        .eq('agendamento_id', appointment.id)
+        .eq('status', 'ABERTA')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (vendas && vendas.length > 0) {
+        const venda = vendas[0];
+        
+        const { data: itens } = await supabase
+          .from('vendas_itens')
+          .select('*')
+          .eq('venda_id', venda.id);
+
+        if (itens) {
+          const servicoPrincipal = itens.find(item => item.tipo === 'SERVICO' && item.ref_id === appointment.servico_id);
+          const servicosExtras = itens.filter(item => item.tipo === 'SERVICO' && item.ref_id !== appointment.servico_id);
+
+          const resumoData: CheckoutSummary = {
+            original_service: {
+              nome: servicoPrincipal?.nome || appointment.servico?.nome || '',
+              preco: servicoPrincipal?.preco_unit || appointment.servico?.preco || 0
+            },
+            extra_services: servicosExtras.map(item => ({
+              nome: item.nome,
+              preco: item.preco_unit
+            })),
+            subtotal: venda.subtotal,
+            discount: venda.desconto,
+            total: venda.total
+          };
+
+          setVendaId(venda.id);
+          setResumo(resumoData);
+          setNeedsRecalculation(false);
+          
+          toast.success('Total atualizado!', {
+            description: `Novo total: R$ ${venda.total.toFixed(2)}`
+          });
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao recalcular:', error);
+      toast.error('Erro ao atualizar', {
+        description: 'Não foi possível atualizar o total. Tente novamente.'
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handlePaymentMethod = (method: 'pix' | 'card') => {
@@ -329,7 +415,6 @@ const TotemCheckout: React.FC = () => {
   if (loading && !isUpdating) {
     return (
       <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center">
-        <OfflineIndicator />
         <div className="text-center space-y-4">
           <div className="w-20 h-20 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
           <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light font-poppins">Carregando checkout...</p>
@@ -341,10 +426,9 @@ const TotemCheckout: React.FC = () => {
   if (!resumo && !loading) {
     return (
       <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center">
-        <OfflineIndicator />
         <div className="text-center space-y-4">
           <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light font-poppins">Erro ao carregar dados</p>
-          <Button onClick={() => navigate('/totem/home')} className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold-light">
+          <Button onClick={() => navigate('/totem/home')} className="bg-urbana-gold text-urbana-black active:bg-urbana-gold-dark">
             Voltar ao início
           </Button>
         </div>
@@ -353,8 +437,7 @@ const TotemCheckout: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins overflow-hidden">
-      <OfflineIndicator />
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
       
       {/* Animated background patterns */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -363,23 +446,23 @@ const TotemCheckout: React.FC = () => {
       </div>
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 z-10">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 z-10">
         <Button
           onClick={() => navigate('/totem/home')}
           variant="ghost"
           size="lg"
-          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 transition-all duration-200"
+          className="h-10 sm:h-12 md:h-14 lg:h-16 px-3 sm:px-4 md:px-6 lg:px-8 text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100"
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mr-2 sm:mr-3" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 mr-1 sm:mr-2 md:mr-3" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <div className="text-center flex-1">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
             Finalizar Atendimento
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-urbana-gray-light mt-1">Revise e confirme o pagamento</p>
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-gray-light mt-0.5 sm:mt-1">Revise e confirme o pagamento</p>
         </div>
-        <div className="w-20 sm:w-32 md:w-48"></div>
+        <div className="w-12 sm:w-20 md:w-32 lg:w-48"></div>
       </div>
 
       {/* Main Content */}
@@ -546,7 +629,7 @@ const TotemCheckout: React.FC = () => {
               <button
                 onClick={() => handlePaymentMethod('pix')}
                 disabled={processing || needsRecalculation || isUpdating}
-                className="group relative h-32 sm:h-36 md:h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 hover:from-urbana-gold/30 hover:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 hover:border-urbana-gold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                className="group relative h-28 sm:h-32 md:h-36 lg:h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
@@ -562,7 +645,7 @@ const TotemCheckout: React.FC = () => {
               <button
                 onClick={() => handlePaymentMethod('card')}
                 disabled={processing || needsRecalculation || isUpdating}
-                className="group relative h-32 sm:h-36 md:h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 hover:from-urbana-gold/30 hover:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 hover:border-urbana-gold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                className="group relative h-28 sm:h-32 md:h-36 lg:h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">

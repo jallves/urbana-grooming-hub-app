@@ -112,12 +112,12 @@ const TotemPaymentCard: React.FC = () => {
       console.log('✅ Checkout finalizado com sucesso!', finishData);
 
       toast.success('Pagamento aprovado!', {
-        duration: 3000
+        duration: 2000
       });
       
-      navigate('/totem/payment-success', {
-        state: { appointment, total, paymentMethod: type }
-      });
+      setTimeout(() => {
+        navigate('/totem/home');
+      }, 2000);
     } catch (error) {
       console.error('❌ Erro no pagamento:', error);
       toast.error('Erro no pagamento', {
@@ -185,11 +185,10 @@ const TotemPaymentCard: React.FC = () => {
                   {/* Credit Card */}
                   <button
                     onClick={() => handlePaymentType('credit')}
-                    className="group relative h-36 sm:h-40 md:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 hover:from-urbana-gold/30 hover:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 hover:border-urbana-gold rounded-2xl transition-all duration-300 overflow-hidden"
+                    className="group relative h-32 sm:h-36 md:h-40 lg:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
-                      <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center transition-all duration-100">
                         <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
                       </div>
                       <div className="text-center">
@@ -202,11 +201,10 @@ const TotemPaymentCard: React.FC = () => {
                   {/* Debit Card */}
                   <button
                     onClick={() => handlePaymentType('debit')}
-                    className="group relative h-36 sm:h-40 md:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 hover:from-urbana-gold/30 hover:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 hover:border-urbana-gold rounded-2xl transition-all duration-300 overflow-hidden"
+                    className="group relative h-32 sm:h-36 md:h-40 lg:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
-                      <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center transition-all duration-100">
                         <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
                       </div>
                       <div className="text-center">
