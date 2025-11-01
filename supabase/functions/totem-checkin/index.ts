@@ -59,20 +59,39 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
-    // Criar sessão do totem
-    const { data: session, error: sessionError } = await supabase
+    // Verificar se já existe sessão ativa
+    const { data: existingSession } = await supabase
       .from('totem_sessions')
-      .insert({
-        appointment_id: agendamento_id,
-        status: 'check_in',
-        check_in_time: new Date().toISOString()
-      })
-      .select()
-      .single()
+      .select('*')
+      .eq('appointment_id', agendamento_id)
+      .in('status', ['check_in', 'in_service', 'checkout'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-    if (sessionError) {
-      console.error('Erro ao criar sessão:', sessionError)
-      // Não falha o check-in se a sessão não for criada
+    let session = existingSession
+
+    // Se não existe sessão ativa, criar nova
+    if (!existingSession) {
+      const { data: newSession, error: sessionError } = await supabase
+        .from('totem_sessions')
+        .insert({
+          appointment_id: agendamento_id,
+          status: 'check_in',
+          check_in_time: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (sessionError) {
+        console.error('Erro ao criar sessão:', sessionError)
+        throw new Error('Erro ao criar sessão do totem')
+      }
+
+      session = newSession
+      console.log('Nova sessão criada:', session.id)
+    } else {
+      console.log('Sessão existente encontrada:', session.id)
     }
 
     // Publicar evento realtime

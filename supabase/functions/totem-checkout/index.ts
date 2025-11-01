@@ -38,15 +38,22 @@ Deno.serve(async (req) => {
         .from('totem_sessions')
         .select('*')
         .eq('appointment_id', agendamento_id)
-        .in('status', ['check_in', 'in_service'])
+        .in('status', ['check_in', 'in_service', 'checkout'])
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
-      if (sessionError || !totemSession) {
+      if (sessionError) {
         console.error('Erro ao buscar sessão totem:', sessionError)
+        throw new Error('Erro ao buscar sessão do totem')
+      }
+
+      if (!totemSession) {
+        console.error('Nenhuma sessão encontrada para agendamento:', agendamento_id)
         throw new Error('Sessão não encontrada. Faça check-in primeiro.')
       }
+
+      console.log('Sessão encontrada:', totemSession.id, 'status:', totemSession.status)
 
       // Buscar barbeiro staff_id
       const { data: barbeiro } = await supabase
