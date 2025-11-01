@@ -43,7 +43,7 @@ const TotemCheckout: React.FC = () => {
     }
     
     loadAvailableServices();
-    startCheckout();
+    loadExistingCheckout();
   }, [appointment, session]);
 
   const loadAvailableServices = async () => {
@@ -57,6 +57,81 @@ const TotemCheckout: React.FC = () => {
       setAvailableServices(services || []);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
+    }
+  };
+
+  const loadExistingCheckout = async () => {
+    setLoading(true);
+    
+    try {
+      console.log('🔍 Buscando venda existente para agendamento:', appointment?.id);
+
+      // Buscar venda existente
+      const { data: vendas, error: vendaError } = await supabase
+        .from('vendas')
+        .select('*')
+        .eq('agendamento_id', appointment.id)
+        .eq('status', 'ABERTA')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+
+      if (vendaError) {
+        console.error('Erro ao buscar venda:', vendaError);
+        setLoading(false);
+        return;
+      }
+
+      if (vendas && vendas.length > 0) {
+        const venda = vendas[0];
+        console.log('✅ Venda existente encontrada:', venda.id);
+        
+        // Buscar itens da venda
+        const { data: itens, error: itensError } = await supabase
+          .from('vendas_itens')
+          .select('*')
+          .eq('venda_id', venda.id);
+
+        if (itensError) {
+          console.error('Erro ao buscar itens:', itensError);
+          setLoading(false);
+          return;
+        }
+
+        // Montar resumo a partir dos dados existentes
+        const servicoPrincipal = itens.find(item => item.tipo === 'SERVICO' && item.ref_id === appointment.servico_id);
+        const servicosExtras = itens.filter(item => item.tipo === 'SERVICO' && item.ref_id !== appointment.servico_id);
+
+        const resumoData: CheckoutSummary = {
+          original_service: {
+            nome: servicoPrincipal?.nome || appointment.servico?.nome || '',
+            preco: servicoPrincipal?.preco_unit || appointment.servico?.preco || 0
+          },
+          extra_services: servicosExtras.map(item => ({
+            nome: item.nome,
+            preco: item.preco_unit
+          })),
+          subtotal: venda.subtotal,
+          discount: venda.desconto,
+          total: venda.total
+        };
+
+        setVendaId(venda.id);
+        setSessionId(session.id);
+        setResumo(resumoData);
+        setNeedsRecalculation(false);
+        
+        console.log('✅ Checkout carregado com sucesso');
+      } else {
+        console.log('⚠️ Nenhuma venda encontrada, iniciando novo checkout');
+        await startCheckout();
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar checkout:', error);
+      toast.error('Erro ao carregar checkout', {
+        description: 'Tente novamente'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,11 +160,13 @@ const TotemCheckout: React.FC = () => {
   };
 
   const startCheckout = async () => {
-    setLoading(true);
+    if (!loading) {
+      setLoading(true);
+    }
     setIsUpdating(needsRecalculation);
     
     try {
-      console.log('🛒 Iniciando checkout para agendamento:', appointment?.id);
+      console.log('🛒 Iniciando/atualizando checkout para agendamento:', appointment?.id);
 
       const extras = extraServices.map(service => ({
         tipo: 'servico',
@@ -107,17 +184,80 @@ const TotemCheckout: React.FC = () => {
 
       if (error) {
         console.error('❌ Erro ao iniciar checkout:', error);
-        toast.error('Erro ao iniciar checkout', {
+        toast.error('Erro ao processar checkout', {
           description: error.message || 'Tente novamente'
         });
+        setLoading(false);
+        setIsUpdating(false);
         return;
       }
 
-      if (!data?.success) {
-        console.error('❌ Falha ao iniciar checkout:', data?.error);
-        toast.error('Erro ao iniciar checkout', {
-          description: data?.error || 'Tente novamente'
+      // Se recebeu uma resposta de fila, tentar buscar a venda existente
+      if (data?.queued || !data?.success) {
+        console.log('⏳ Requisição enfileirada ou falhou, buscando venda existente...');
+        
+        // Aguardar um pouco para o backend processar
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Buscar venda existente
+        const { data: vendas, error: vendaError } = await supabase
+          .from('vendas')
+          .select('*')
+          .eq('agendamento_id', appointment.id)
+          .eq('status', 'ABERTA')
+          .order('updated_at', { ascending: false })
+          .limit(1);
+
+        if (!vendaError && vendas && vendas.length > 0) {
+          const venda = vendas[0];
+          
+          // Buscar itens da venda
+          const { data: itens, error: itensError } = await supabase
+            .from('vendas_itens')
+            .select('*')
+            .eq('venda_id', venda.id);
+
+          if (!itensError && itens) {
+            const servicoPrincipal = itens.find(item => item.tipo === 'SERVICO' && item.ref_id === appointment.servico_id);
+            const servicosExtras = itens.filter(item => item.tipo === 'SERVICO' && item.ref_id !== appointment.servico_id);
+
+            const resumoData: CheckoutSummary = {
+              original_service: {
+                nome: servicoPrincipal?.nome || appointment.servico?.nome || '',
+                preco: servicoPrincipal?.preco_unit || appointment.servico?.preco || 0
+              },
+              extra_services: servicosExtras.map(item => ({
+                nome: item.nome,
+                preco: item.preco_unit
+              })),
+              subtotal: venda.subtotal,
+              discount: venda.desconto,
+              total: venda.total
+            };
+
+            setVendaId(venda.id);
+            setSessionId(session.id);
+            setResumo(resumoData);
+            setNeedsRecalculation(false);
+            
+            if (isUpdating) {
+              toast.success('Total atualizado!', {
+                description: `Novo total: R$ ${venda.total.toFixed(2)}`
+              });
+            }
+            
+            console.log('✅ Checkout carregado da venda existente');
+            setLoading(false);
+            setIsUpdating(false);
+            return;
+          }
+        }
+        
+        toast.error('Erro ao carregar checkout', {
+          description: 'Não foi possível processar a venda. Tente novamente.'
         });
+        setLoading(false);
+        setIsUpdating(false);
         return;
       }
 
@@ -136,7 +276,7 @@ const TotemCheckout: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Erro inesperado:', error);
       toast.error('Erro inesperado', {
-        description: 'Ocorreu um erro ao iniciar o checkout'
+        description: 'Ocorreu um erro ao processar o checkout'
       });
     } finally {
       setLoading(false);
