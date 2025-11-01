@@ -179,7 +179,61 @@ const TotemCheckoutSearch: React.FC = () => {
 
       console.log('🎫 Sessões encontradas:', todasSessoes?.length || 0);
 
-      // Verificar se existe checkout já finalizado (completed com check_out_time)
+      // PRIORIDADE 1: Verificar se existe sessão em checkout (não finalizado)
+      const sessaoEmCheckout = todasSessoes?.find(s => 
+        s.status === 'checkout' && !s.check_out_time
+      );
+
+      if (sessaoEmCheckout) {
+        const agendamento = agendamentos.find(a => a.id === sessaoEmCheckout.appointment_id);
+        console.log('✅ Sessão em checkout encontrada, navegando...');
+        navigate('/totem/checkout', { 
+          state: { 
+            appointment: agendamento,
+            client: cliente,
+            session: sessaoEmCheckout
+          } 
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      // PRIORIDADE 2: Buscar SESSÃO ATIVA mais recente (check-in ativo sem checkout)
+      const sessaoAtivaRecente = todasSessoes?.find(s => 
+        ['check_in', 'in_service'].includes(s.status) && 
+        !s.check_out_time
+      );
+
+      if (sessaoAtivaRecente) {
+        // Buscar o agendamento correspondente à sessão ativa
+        const agendamentoParaCheckout = agendamentos.find(a => 
+          a.id === sessaoAtivaRecente.appointment_id
+        );
+
+        if (!agendamentoParaCheckout) {
+          toast.error('Agendamento não encontrado', {
+            description: 'Não foi possível localizar o agendamento ativo.'
+          });
+          setIsSearching(false);
+          return;
+        }
+
+        console.log('✅ Sessão ativa encontrada:', sessaoAtivaRecente.id, 'para agendamento:', agendamentoParaCheckout.id);
+        console.log('✅ Navegando para checkout com sessão ativa:', sessaoAtivaRecente.id);
+        
+        // Navegar para checkout com dados do agendamento e sessão ATIVA
+        navigate('/totem/checkout', { 
+          state: { 
+            appointment: agendamentoParaCheckout,
+            client: cliente,
+            session: sessaoAtivaRecente
+          } 
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      // PRIORIDADE 3: Se não há sessão ativa, verificar se existe checkout já finalizado
       const sessaoComCheckoutFinalizado = todasSessoes?.find(s => 
         s.check_out_time && s.status === 'completed'
       );
@@ -213,76 +267,24 @@ const TotemCheckoutSearch: React.FC = () => {
         }
       }
 
-      // Verificar se existe sessão em checkout ou checkout não finalizado
-      const sessaoEmCheckout = todasSessoes?.find(s => 
-        s.status === 'checkout' && !s.check_out_time
-      );
+      // PRIORIDADE 4: Nenhuma sessão encontrada - verificar situação
 
-      if (sessaoEmCheckout) {
-        const agendamento = agendamentos.find(a => a.id === sessaoEmCheckout.appointment_id);
-        console.log('✅ Sessão em checkout encontrada, navegando...');
-        navigate('/totem/checkout', { 
-          state: { 
-            appointment: agendamento,
-            client: cliente,
-            session: sessaoEmCheckout
-          } 
-        });
-        setIsSearching(false);
-        return;
-      }
-
-      // Buscar SESSÃO ATIVA mais recente (última com check-in ativo)
-      const sessaoAtivaRecente = todasSessoes?.find(s => 
-        ['check_in', 'in_service'].includes(s.status) && 
-        !s.check_out_time
-      );
-
-      if (!sessaoAtivaRecente) {
-        // Verificar se todos os checkouts foram finalizados
-        const agendamentosFinalizados = agendamentos.filter(a => {
-          const sessao = todasSessoes?.find(s => s.appointment_id === a.id);
-          return sessao && sessao.check_out_time;
-        });
-
-        if (agendamentosFinalizados.length === agendamentos.length) {
-          toast.error('Checkouts já finalizados', {
-            description: `${cliente.nome}, todos os seus serviços de hoje já foram finalizados.`
-          });
-        } else {
-          toast.error('Nenhum check-in encontrado', {
-            description: `${cliente.nome}, você precisa fazer o check-in primeiro para realizar o checkout.`
-          });
-        }
-        setIsSearching(false);
-        return;
-      }
-
-      // Buscar o agendamento correspondente à sessão ativa
-      const agendamentoParaCheckout = agendamentos.find(a => 
-        a.id === sessaoAtivaRecente.appointment_id
-      );
-
-      if (!agendamentoParaCheckout) {
-        toast.error('Agendamento não encontrado', {
-          description: 'Não foi possível localizar o agendamento ativo.'
-        });
-        setIsSearching(false);
-        return;
-      }
-
-      console.log('✅ Sessão ativa encontrada:', sessaoAtivaRecente.id, 'para agendamento:', agendamentoParaCheckout.id);
-
-      console.log('✅ Navegando para checkout com sessão ativa:', sessaoAtivaRecente.id);
-      
-      // Navegar para checkout com dados do agendamento e sessão ATIVA
-      navigate('/totem/checkout', { 
-        state: { 
-          appointment: agendamentoParaCheckout,
-          client: cliente,
-          session: sessaoAtivaRecente
-        } 
+      // Verificar se todos os checkouts foram finalizados
+      const agendamentosFinalizados = agendamentos.filter(a => {
+        const sessao = todasSessoes?.find(s => s.appointment_id === a.id);
+        return sessao && sessao.check_out_time;
       });
+
+      if (agendamentosFinalizados.length === agendamentos.length) {
+        toast.error('Checkouts já finalizados', {
+          description: `${cliente.nome}, todos os seus serviços de hoje já foram finalizados.`
+        });
+      } else {
+        toast.error('Nenhum check-in encontrado', {
+          description: `${cliente.nome}, você precisa fazer o check-in primeiro para realizar o checkout.`
+        });
+      }
+      setIsSearching(false);
       
     } catch (error) {
       console.error('❌ Erro inesperado:', error);
