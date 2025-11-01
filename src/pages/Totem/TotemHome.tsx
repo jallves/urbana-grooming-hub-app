@@ -110,16 +110,15 @@ const TotemHome: React.FC = () => {
             {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/30 via-urbana-gold-vibrant/30 to-urbana-gold-light/30 blur-3xl opacity-50 animate-pulse-slow" />
             
-            {/* Circle border - larger to accommodate logo */}
-            <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full border-[3px] sm:border-[4px] md:border-[5px] border-urbana-gold/60 flex items-center justify-center shadow-2xl shadow-urbana-gold/20 group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 p-2 sm:p-2.5 md:p-3 bg-urbana-black/40 backdrop-blur-sm">
-              {/* Logo - fills the circle */}
+            {/* Circle border with logo perfectly aligned */}
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full border-[3px] sm:border-[4px] md:border-[5px] border-urbana-gold/60 flex items-center justify-center shadow-2xl shadow-urbana-gold/20 group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 overflow-hidden">
+              {/* Logo - perfectly sized to fill the circle */}
               <img 
                 src={costaUrbanaLogo} 
                 alt="Costa Urbana Logo" 
-                className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(197,161,91,0.4)]"
+                className="w-full h-full object-cover scale-105"
                 style={{ 
-                  filter: 'drop-shadow(0 0 15px rgba(197, 161, 91, 0.3))',
-                  mixBlendMode: 'normal'
+                  filter: 'drop-shadow(0 0 15px rgba(197, 161, 91, 0.3))'
                 }}
               />
             </div>
