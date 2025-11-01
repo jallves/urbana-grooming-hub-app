@@ -3,7 +3,9 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
+import { TotemAuthProvider } from './contexts/TotemAuthContext';
 import AdminRoute from './components/auth/AdminRoute';
+import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
 import BarberRoute from './components/auth/BarberRoute';
 import PainelClienteLayout from './components/painel-cliente/PainelClienteLayout';
@@ -38,6 +40,7 @@ import BarberCommissions from './pages/BarberCommissions';
 import BarberSchedule from './pages/BarberSchedule';
 import BarberProfile from './pages/BarberProfile';
 import BarberAdminDashboard from './pages/BarberAdminDashboard';
+import TotemLogin from './pages/Totem/TotemLogin';
 import TotemHome from './pages/Totem/TotemHome';
 import TotemSearch from './pages/Totem/TotemSearch';
 import TotemConfirmation from './pages/Totem/TotemConfirmation';
@@ -66,7 +69,8 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <PainelClienteAuthProvider>
-            <QueryClientProvider client={queryClient}>
+            <TotemAuthProvider>
+              <QueryClientProvider client={queryClient}>
               <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -208,21 +212,23 @@ function App() {
                     <Route index element={<Navigate to="dashboard" replace />} />
                   </Route>
 
-                  {/* Totem Routes - Public Access */}
-                  <Route path="/totem" element={<TotemHome />} />
-                  <Route path="/totem/search" element={<TotemSearch />} />
-                  <Route path="/totem/confirmation" element={<TotemConfirmation />} />
-                  <Route path="/totem/checkin-success" element={<TotemCheckInSuccess />} />
-                  <Route path="/totem/checkout" element={<TotemCheckout />} />
-                  <Route path="/totem/payment-pix" element={<TotemPaymentPix />} />
-                  <Route path="/totem/payment-card" element={<TotemPaymentCard />} />
-                  <Route path="/totem/payment-success" element={<TotemPaymentSuccess />} />
+                  {/* Totem Routes */}
+                  <Route path="/totem/login" element={<TotemLogin />} />
+                  <Route path="/totem" element={<TotemProtectedRoute><TotemHome /></TotemProtectedRoute>} />
+                  <Route path="/totem/search" element={<TotemProtectedRoute><TotemSearch /></TotemProtectedRoute>} />
+                  <Route path="/totem/confirmation" element={<TotemProtectedRoute><TotemConfirmation /></TotemProtectedRoute>} />
+                  <Route path="/totem/check-in-success" element={<TotemProtectedRoute><TotemCheckInSuccess /></TotemProtectedRoute>} />
+                  <Route path="/totem/checkout" element={<TotemProtectedRoute><TotemCheckout /></TotemProtectedRoute>} />
+                  <Route path="/totem/payment-pix" element={<TotemProtectedRoute><TotemPaymentPix /></TotemProtectedRoute>} />
+                  <Route path="/totem/payment-card" element={<TotemProtectedRoute><TotemPaymentCard /></TotemProtectedRoute>} />
+                  <Route path="/totem/payment-success" element={<TotemProtectedRoute><TotemPaymentSuccess /></TotemProtectedRoute>} />
 
                   {/* Catch all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </div>
             </QueryClientProvider>
+            </TotemAuthProvider>
           </PainelClienteAuthProvider>
         </AuthProvider>
       </BrowserRouter>

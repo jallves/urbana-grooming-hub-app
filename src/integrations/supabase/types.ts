@@ -2866,6 +2866,36 @@ export type Database = {
           },
         ]
       }
+      totem_auth: {
+        Row: {
+          created_at: string
+          device_name: string
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          pin_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_name: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          pin_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          pin_hash?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       totem_payments: {
         Row: {
           amount: number

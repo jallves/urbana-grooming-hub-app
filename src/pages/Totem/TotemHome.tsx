@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Scissors } from 'lucide-react';
+import { Scissors, LogOut } from 'lucide-react';
+import { useTotemAuth } from '@/contexts/TotemAuthContext';
 
 const TotemHome: React.FC = () => {
   const navigate = useNavigate();
+  const { logout } = useTotemAuth();
   const [isIdle, setIsIdle] = useState(true);
 
   useEffect(() => {
@@ -21,8 +23,24 @@ const TotemHome: React.FC = () => {
     navigate('/totem/search');
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/totem/login');
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative">
+      {/* Logout Button */}
+      <Button
+        onClick={handleLogout}
+        variant="outline"
+        size="sm"
+        className="absolute top-4 right-4 gap-2"
+      >
+        <LogOut className="w-4 h-4" />
+        Sair
+      </Button>
+
       <div className="text-center space-y-6 sm:space-y-8 max-w-2xl w-full">
         {/* Logo */}
         <div className="flex justify-center mb-6 sm:mb-8">
