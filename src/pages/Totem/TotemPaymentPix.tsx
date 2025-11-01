@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sessionId, appointment, total } = location.state || {};
+  const { venda_id, session_id, appointment, total } = location.state || {};
   
   const [pixCode, setPixCode] = useState('');
   const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
@@ -18,7 +18,7 @@ const TotemPaymentPix: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
 
   useEffect(() => {
-    if (!sessionId || !total) {
+    if (!venda_id || !session_id || !total) {
       navigate('/totem');
       return;
     }
@@ -40,7 +40,7 @@ const TotemPaymentPix: React.FC = () => {
       const { data: payment, error } = await supabase
         .from('totem_payments')
         .insert({
-          session_id: sessionId,
+          session_id: session_id,
           payment_method: 'pix',
           amount: total,
           status: 'pending',
@@ -95,24 +95,27 @@ const TotemPaymentPix: React.FC = () => {
 
   const handlePaymentSuccess = async () => {
     try {
-      // Atualizar sessão
+      // Atualizar status do pagamento
       await supabase
-        .from('totem_sessions')
-        .update({ 
-          status: 'completed',
-          check_out_time: new Date().toISOString()
-        })
-        .eq('id', sessionId);
+        .from('totem_payments')
+        .update({ status: 'completed' })
+        .eq('id', paymentId);
 
-      // Atualizar agendamento
-      await supabase
-        .from('painel_agendamentos')
-        .update({ status: 'concluido' })
-        .eq('id', appointment.id);
+      // Chamar edge function para finalizar checkout
+      const { data, error } = await supabase.functions.invoke('totem-checkout', {
+        body: {
+          action: 'finish',
+          venda_id,
+          session_id,
+          payment_id: paymentId
+        }
+      });
+
+      if (error) throw error;
 
       toast.success('Pagamento confirmado!');
       navigate('/totem/payment-success', {
-        state: { appointment, total }
+        state: { appointment, total, paymentMethod: 'pix' }
       });
     } catch (error) {
       console.error('Erro ao confirmar pagamento:', error);
@@ -122,7 +125,7 @@ const TotemPaymentPix: React.FC = () => {
 
   const handleTimeout = () => {
     toast.error('Tempo esgotado para pagamento');
-    navigate('/totem/checkout', { state: { sessionId, appointment } });
+    navigate('/totem/checkout', { state: { appointment } });
   };
 
   const formatTime = (seconds: number) => {
@@ -136,7 +139,7 @@ const TotemPaymentPix: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <Button
-          onClick={() => navigate('/totem/checkout', { state: { sessionId, appointment } })}
+          onClick={() => navigate('/totem/checkout', { state: { appointment } })}
           variant="outline"
           size="lg"
           className="h-20 px-8 text-2xl"

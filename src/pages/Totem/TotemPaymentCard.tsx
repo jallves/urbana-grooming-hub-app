@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 const TotemPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sessionId, appointment, total } = location.state || {};
+  const { venda_id, session_id, appointment, total } = location.state || {};
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
@@ -23,7 +23,7 @@ const TotemPaymentCard: React.FC = () => {
       const { data: payment, error: paymentError } = await supabase
         .from('totem_payments')
         .insert({
-          session_id: sessionId,
+          session_id: session_id,
           payment_method: type,
           amount: total,
           status: 'processing',
@@ -54,20 +54,17 @@ const TotemPaymentCard: React.FC = () => {
           })
           .eq('id', payment.id);
 
-        // Atualizar sessão
-        await supabase
-          .from('totem_sessions')
-          .update({ 
-            status: 'completed',
-            check_out_time: new Date().toISOString()
-          })
-          .eq('id', sessionId);
+        // Chamar edge function para finalizar checkout
+        const { data: finishData, error: finishError } = await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'finish',
+            venda_id,
+            session_id,
+            payment_id: payment.id
+          }
+        });
 
-        // Atualizar agendamento
-        await supabase
-          .from('painel_agendamentos')
-          .update({ status: 'concluido' })
-          .eq('id', appointment.id);
+        if (finishError) throw finishError;
 
         toast.success('Pagamento aprovado!');
         navigate('/totem/payment-success', {
@@ -97,7 +94,7 @@ const TotemPaymentCard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <Button
-          onClick={() => navigate('/totem/checkout', { state: { sessionId, appointment } })}
+          onClick={() => navigate('/totem/checkout', { state: { appointment } })}
           variant="outline"
           size="lg"
           className="h-20 px-8 text-2xl"

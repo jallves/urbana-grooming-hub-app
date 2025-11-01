@@ -11,10 +11,13 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, action } = await req.json()
+    const { agendamento_id, extras, action, venda_id, session_id, payment_id } = await req.json()
 
+    // ==================== ACTION: START ====================
     if (action === 'start') {
-      // Buscar agendamento com serviço
+      console.log('Iniciando checkout para agendamento:', agendamento_id)
+
+      // Buscar agendamento completo
       const { data: agendamento, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -27,133 +30,168 @@ Deno.serve(async (req) => {
         .single()
 
       if (agendError || !agendamento) {
-        return new Response(
-          JSON.stringify({ error: 'Agendamento não encontrado' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-        )
+        throw new Error('Agendamento não encontrado')
       }
+
+      // Buscar sessão totem ativa
+      const { data: totemSession, error: sessionError } = await supabase
+        .from('totem_sessions')
+        .select('*')
+        .eq('appointment_id', agendamento_id)
+        .in('status', ['check_in', 'in_service'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (sessionError || !totemSession) {
+        console.error('Erro ao buscar sessão totem:', sessionError)
+        throw new Error('Sessão não encontrada. Faça check-in primeiro.')
+      }
+
+      // Buscar barbeiro staff_id
+      const { data: barbeiro } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', agendamento.barbeiro_id)
+        .single()
 
       // Criar venda
       const { data: venda, error: vendaError } = await supabase
         .from('vendas')
         .insert({
-          agendamento_id: agendamento.id,
           cliente_id: agendamento.cliente_id,
-          barbeiro_id: agendamento.barbeiro_id,
-          status: 'ABERTA'
+          barbeiro_id: barbeiro?.staff_id,
+          data_venda: new Date().toISOString(),
+          status: 'pendente'
         })
         .select()
         .single()
 
-      if (vendaError) {
-        throw vendaError
+      if (vendaError || !venda) {
+        throw new Error('Erro ao criar venda')
       }
 
+      console.log('Venda criada:', venda.id)
+
       // Adicionar serviço principal
-      const itens = [{
-        venda_id: venda.id,
-        tipo: 'SERVICO',
-        ref_id: agendamento.servico_id,
-        nome: agendamento.servico.nome,
-        quantidade: 1,
-        preco_unit: agendamento.servico.preco,
-        total: agendamento.servico.preco
-      }]
+      const itens = [
+        {
+          venda_id: venda.id,
+          tipo: 'servico',
+          item_id: agendamento.servico_id,
+          quantidade: 1,
+          preco_unitario: agendamento.servico.preco,
+          subtotal: agendamento.servico.preco
+        }
+      ]
 
-      let subtotal = Number(agendamento.servico.preco)
+      // Buscar serviços extras se existirem
+      const { data: servicos_extras } = await supabase
+        .from('appointment_extra_services')
+        .select(`
+          *,
+          servico:painel_servicos(*)
+        `)
+        .eq('appointment_id', agendamento_id)
 
-      // Adicionar extras
+      if (servicos_extras && servicos_extras.length > 0) {
+        servicos_extras.forEach((extra: any) => {
+          itens.push({
+            venda_id: venda.id,
+            tipo: 'servico',
+            item_id: extra.service_id,
+            quantidade: 1,
+            preco_unitario: extra.servico.preco,
+            subtotal: extra.servico.preco
+          })
+        })
+      }
+
+      // Adicionar extras fornecidos (se houver)
       if (extras && extras.length > 0) {
         for (const extra of extras) {
-          if (extra.tipo === 'SERVICO') {
+          // Buscar dados do serviço/produto
+          if (extra.tipo === 'servico') {
             const { data: servico } = await supabase
               .from('painel_servicos')
-              .select('*')
-              .eq('id', extra.ref_id)
+              .select('preco')
+              .eq('id', extra.item_id)
               .single()
 
-            if (servico) {
-              const total = Number(servico.preco) * extra.quantidade
-              itens.push({
-                venda_id: venda.id,
-                tipo: 'SERVICO',
-                ref_id: servico.id,
-                nome: servico.nome,
-                quantidade: extra.quantidade,
-                preco_unit: servico.preco,
-                total
-              })
-              subtotal += total
-            }
-          } else if (extra.tipo === 'PRODUTO') {
+            itens.push({
+              venda_id: venda.id,
+              tipo: 'servico',
+              item_id: extra.item_id,
+              quantidade: extra.quantidade || 1,
+              preco_unitario: servico?.preco || 0,
+              subtotal: (servico?.preco || 0) * (extra.quantidade || 1)
+            })
+          } else if (extra.tipo === 'produto') {
             const { data: produto } = await supabase
               .from('produtos')
-              .select('*')
-              .eq('id', extra.ref_id)
+              .select('preco_venda')
+              .eq('id', extra.item_id)
               .single()
 
-            if (produto) {
-              const total = Number(produto.preco) * extra.quantidade
-              itens.push({
-                venda_id: venda.id,
-                tipo: 'PRODUTO',
-                ref_id: produto.id,
-                nome: produto.nome,
-                quantidade: extra.quantidade,
-                preco_unit: produto.preco,
-                total
-              })
-              subtotal += total
-            }
+            itens.push({
+              venda_id: venda.id,
+              tipo: 'produto',
+              item_id: extra.item_id,
+              quantidade: extra.quantidade || 1,
+              preco_unitario: produto?.preco_venda || 0,
+              subtotal: (produto?.preco_venda || 0) * (extra.quantidade || 1)
+            })
           }
         }
       }
 
-      // Inserir itens
+      // Inserir itens da venda
       const { error: itensError } = await supabase
         .from('vendas_itens')
         .insert(itens)
 
       if (itensError) {
-        throw itensError
+        console.error('Erro ao inserir itens:', itensError)
+        throw new Error('Erro ao adicionar itens da venda')
       }
 
-      // Atualizar totais da venda
+      // Calcular totais
+      const subtotal = itens.reduce((sum, item) => sum + Number(item.subtotal), 0)
       const desconto = 0 // Pode implementar lógica de desconto aqui
       const total = subtotal - desconto
 
+      // Atualizar venda com totais
       await supabase
         .from('vendas')
-        .update({ subtotal, desconto, total })
+        .update({
+          subtotal,
+          desconto,
+          total
+        })
         .eq('id', venda.id)
 
-      // Buscar itens criados
-      const { data: itensCreated } = await supabase
-        .from('vendas_itens')
-        .select('*')
-        .eq('venda_id', venda.id)
+      // Atualizar sessão para checkout
+      await supabase
+        .from('totem_sessions')
+        .update({ status: 'checkout' })
+        .eq('id', totemSession.id)
 
-      // Publicar evento realtime
-      const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)
-      await channel.send({
-        type: 'broadcast',
-        event: 'CHECKOUT_INICIADO',
-        payload: {
-          tipo: 'CHECKOUT_INICIADO',
-          agendamento_id: agendamento.id,
-          venda_id: venda.id,
-          cliente_nome: agendamento.cliente?.nome,
-          total,
-          timestamp: new Date().toISOString()
-        }
-      })
+      console.log('Checkout iniciado com sucesso')
 
       return new Response(
         JSON.stringify({
           success: true,
           venda_id: venda.id,
+          session_id: totemSession.id,
           resumo: {
-            itens: itensCreated,
+            itens: itens.map(i => ({
+              nome: i.tipo === 'servico' ? 
+                (i.item_id === agendamento.servico_id ? agendamento.servico.nome : 'Serviço Extra') : 
+                'Produto',
+              preco_unit: i.preco_unitario,
+              quantidade: i.quantidade,
+              subtotal: i.subtotal
+            })),
             subtotal,
             desconto,
             total
@@ -161,47 +199,157 @@ Deno.serve(async (req) => {
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
-    } else if (action === 'finish') {
-      const { venda_id } = await req.json()
+    }
 
-      // Atualizar status do agendamento
-      await supabase
-        .from('painel_agendamentos')
-        .update({ status_totem: 'FINALIZADO', status: 'concluido' })
-        .eq('id', agendamento_id)
+    // ==================== ACTION: FINISH ====================
+    if (action === 'finish') {
+      console.log('Finalizando checkout - venda:', venda_id, 'session:', session_id)
+
+      if (!venda_id || !session_id || !payment_id) {
+        throw new Error('Dados insuficientes para finalizar')
+      }
 
       // Buscar venda
       const { data: venda } = await supabase
         .from('vendas')
-        .select('*, agendamento:painel_agendamentos(barbeiro_id)')
+        .select('*, barbeiro_id')
         .eq('id', venda_id)
         .single()
 
-      // Publicar evento realtime
-      if (venda) {
-        const channel = supabase.channel(`barbearia:${venda.agendamento?.barbeiro_id}`)
-        await channel.send({
-          type: 'broadcast',
-          event: 'FINALIZADO',
-          payload: {
-            tipo: 'FINALIZADO',
-            agendamento_id,
-            venda_id,
-            timestamp: new Date().toISOString()
-          }
-        })
+      if (!venda) {
+        throw new Error('Venda não encontrada')
       }
 
+      // Buscar sessão
+      const { data: session } = await supabase
+        .from('totem_sessions')
+        .select('appointment_id')
+        .eq('id', session_id)
+        .single()
+
+      if (!session) {
+        throw new Error('Sessão não encontrada')
+      }
+
+      // Buscar agendamento
+      const { data: agendamento } = await supabase
+        .from('painel_agendamentos')
+        .select('barbeiro_id')
+        .eq('id', session.appointment_id)
+        .single()
+
+      // 1. Atualizar pagamento
+      await supabase
+        .from('totem_payments')
+        .update({ 
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', payment_id)
+
+      // 2. Atualizar sessão totem
+      await supabase
+        .from('totem_sessions')
+        .update({ 
+          status: 'completed',
+          check_out_time: new Date().toISOString()
+        })
+        .eq('id', session_id)
+
+      // 3. Atualizar venda
+      await supabase
+        .from('vendas')
+        .update({ status: 'concluido' })
+        .eq('id', venda_id)
+
+      // 4. Atualizar agendamento
+      await supabase
+        .from('painel_agendamentos')
+        .update({ status: 'FINALIZADO' })
+        .eq('id', session.appointment_id)
+
+      // 5. Buscar taxa de comissão do barbeiro
+      const { data: barbeiro } = await supabase
+        .from('staff')
+        .select('commission_rate')
+        .eq('id', venda.barbeiro_id)
+        .single()
+
+      const commission_rate = barbeiro?.commission_rate || 50
+
+      // 6. Calcular e gerar comissão
+      const commission_amount = venda.total * (commission_rate / 100)
+
+      await supabase
+        .from('comissoes')
+        .insert({
+          barbeiro_id: venda.barbeiro_id,
+          agendamento_id: session.appointment_id,
+          valor: commission_amount,
+          percentual: commission_rate,
+          data: new Date().toISOString().split('T')[0],
+          status: 'gerado'
+        })
+
+      // 7. Criar transações financeiras
+      // Receita
+      await supabase
+        .from('finance_transactions')
+        .insert({
+          tipo: 'receita',
+          categoria: 'servico',
+          descricao: 'Atendimento finalizado via Totem',
+          valor: venda.total,
+          data: new Date().toISOString().split('T')[0],
+          agendamento_id: session.appointment_id,
+          barbeiro_id: venda.barbeiro_id,
+          status: 'pago'
+        })
+
+      // Despesa (comissão)
+      await supabase
+        .from('finance_transactions')
+        .insert({
+          tipo: 'despesa',
+          categoria: 'comissao',
+          descricao: `Comissão ${commission_rate}% - Atendimento`,
+          valor: commission_amount,
+          data: new Date().toISOString().split('T')[0],
+          agendamento_id: session.appointment_id,
+          barbeiro_id: venda.barbeiro_id,
+          status: 'pago'
+        })
+
+      // 8. Notificar barbeiro via Realtime
+      const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)
+      await channel.send({
+        type: 'broadcast',
+        event: 'FINALIZADO',
+        payload: {
+          tipo: 'FINALIZADO',
+          agendamento_id: session.appointment_id,
+          venda_id: venda_id,
+          total: venda.total,
+          timestamp: new Date().toISOString()
+        }
+      })
+
+      console.log('Checkout finalizado com sucesso')
+
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({
+          success: true,
+          message: 'Checkout finalizado com sucesso'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    // Action inválida
     return new Response(
-      JSON.stringify({ error: 'Ação inválida' }),
+      JSON.stringify({ error: 'Action inválida' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
+
   } catch (error) {
     console.error('Erro no checkout:', error)
     return new Response(

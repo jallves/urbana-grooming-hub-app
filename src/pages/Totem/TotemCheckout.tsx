@@ -50,6 +50,7 @@ const TotemCheckout: React.FC = () => {
 
       if (data.success) {
         setVendaId(data.venda_id);
+        setSessionId(data.session_id);
         setResumo(data.resumo);
       } else {
         throw new Error(data.error || 'Erro ao iniciar checkout');
@@ -63,13 +64,16 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
   const handlePaymentMethod = (method: 'pix' | 'card') => {
-    if (!vendaId || !resumo) return;
+    if (!vendaId || !sessionId || !resumo) return;
     
     if (method === 'pix') {
       navigate('/totem/payment-pix', {
         state: {
           venda_id: vendaId,
+          session_id: sessionId,
           appointment,
           total: resumo.total
         }
@@ -78,6 +82,7 @@ const TotemCheckout: React.FC = () => {
       navigate('/totem/payment-card', {
         state: {
           venda_id: vendaId,
+          session_id: sessionId,
           appointment,
           total: resumo.total
         }

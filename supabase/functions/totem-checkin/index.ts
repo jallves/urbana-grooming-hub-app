@@ -59,6 +59,22 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
+    // Criar sessão do totem
+    const { data: session, error: sessionError } = await supabase
+      .from('totem_sessions')
+      .insert({
+        appointment_id: agendamento_id,
+        status: 'check_in',
+        check_in_time: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (sessionError) {
+      console.error('Erro ao criar sessão:', sessionError)
+      // Não falha o check-in se a sessão não for criada
+    }
+
     // Publicar evento realtime
     const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)
     await channel.send({
@@ -78,6 +94,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        session_id: session?.id,
         agendamento: {
           id: agendamento.id,
           cliente: agendamento.cliente?.nome,
