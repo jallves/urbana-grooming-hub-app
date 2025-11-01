@@ -49,8 +49,7 @@ const TotemSearch: React.FC = () => {
     setIsSearching(true);
 
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      
+      // Buscar cliente por telefone/WhatsApp
       const { data: cliente, error: clientError } = await supabase
         .from('painel_clientes')
         .select('*')
@@ -58,12 +57,13 @@ const TotemSearch: React.FC = () => {
         .single();
 
       if (clientError || !cliente) {
-        toast.error('Cliente não encontrado');
+        toast.error('Cliente não encontrado. Cadastre-se primeiro!');
         setIsSearching(false);
         return;
       }
 
-      const { data: agendamento, error: agendamentoError } = await supabase
+      // Buscar TODOS os agendamentos do cliente (não apenas de hoje)
+      const { data: agendamentos, error: agendamentosError } = await supabase
         .from('painel_agendamentos')
         .select(`
           *,
@@ -71,25 +71,33 @@ const TotemSearch: React.FC = () => {
           barbeiro:painel_barbeiros(*)
         `)
         .eq('cliente_id', cliente.id)
-        .eq('data', today)
-        .in('status', ['agendado', 'confirmado'])
-        .single();
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false })
+        .limit(10); // Últimos 10 agendamentos
 
-      if (agendamentoError || !agendamento) {
-        toast.error('Nenhum agendamento encontrado para hoje');
+      if (agendamentosError) {
+        console.error('Erro ao buscar agendamentos:', agendamentosError);
+        toast.error('Erro ao buscar agendamentos');
         setIsSearching(false);
         return;
       }
 
-      navigate('/totem/confirmation', { 
+      if (!agendamentos || agendamentos.length === 0) {
+        toast.error('Nenhum agendamento encontrado para este cliente');
+        setIsSearching(false);
+        return;
+      }
+
+      // Navegar para tela de seleção de agendamento
+      navigate('/totem/appointments-list', { 
         state: { 
-          appointment: agendamento,
+          appointments: agendamentos,
           client: cliente 
         } 
       });
     } catch (error) {
-      console.error('Erro ao buscar agendamento:', error);
-      toast.error('Erro ao buscar agendamento');
+      console.error('Erro ao buscar dados:', error);
+      toast.error('Erro ao buscar dados do cliente');
     } finally {
       setIsSearching(false);
     }
