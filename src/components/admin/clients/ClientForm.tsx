@@ -88,7 +88,16 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           })
           .eq('id', clientId);
 
-        if (error) throw error;
+        if (error) {
+          // Check for unique constraint violation on whatsapp
+          if (error.code === '23505' && error.message.includes('painel_clientes_whatsapp_unique')) {
+            toast.error('Erro ao atualizar cliente', {
+              description: 'Este número de WhatsApp já está cadastrado para outro cliente.',
+            });
+            return;
+          }
+          throw error;
+        }
         toast.success('Cliente atualizado com sucesso!');
       } else {
         const { error } = await supabase
@@ -102,7 +111,16 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
             updated_at: new Date().toISOString(),
           });
 
-        if (error) throw error;
+        if (error) {
+          // Check for unique constraint violation on whatsapp
+          if (error.code === '23505' && error.message.includes('painel_clientes_whatsapp_unique')) {
+            toast.error('Erro ao criar cliente', {
+              description: 'Este número de WhatsApp já está cadastrado. Cada cliente deve ter um número único.',
+            });
+            return;
+          }
+          throw error;
+        }
         toast.success('Cliente criado com sucesso!');
       }
 
@@ -165,6 +183,9 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           {form.formState.errors.whatsapp && (
             <p className="text-sm text-red-500">{form.formState.errors.whatsapp.message}</p>
           )}
+          <p className="text-xs text-muted-foreground">
+            Cada cliente deve ter um número único. Este número será usado no Totem.
+          </p>
         </div>
 
         <div className="space-y-2">

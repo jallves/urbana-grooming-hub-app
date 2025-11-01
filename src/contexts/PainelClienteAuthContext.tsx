@@ -139,6 +139,12 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       if (insertError) {
         console.error('Erro ao inserir cliente:', insertError);
+        
+        // Check for unique constraint violation on whatsapp
+        if (insertError.code === '23505' && insertError.message.includes('painel_clientes_whatsapp_unique')) {
+          return { error: 'Este número de WhatsApp já está cadastrado. Cada cliente deve ter um número único.' };
+        }
+        
         return { error: `Erro ao criar conta: ${insertError.message}` };
       }
 
