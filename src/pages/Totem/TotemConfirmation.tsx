@@ -56,25 +56,25 @@ const TotemConfirmation: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-8">
+    <div className="min-h-screen bg-background flex flex-col p-4 sm:p-6 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 md:mb-8 gap-2">
         <Button
           onClick={() => navigate('/totem/search')}
           variant="outline"
           size="lg"
-          className="h-20 px-8 text-2xl"
+          className="h-16 sm:h-18 md:h-20 px-4 sm:px-6 md:px-8 text-xl sm:text-xl md:text-2xl"
         >
-          <ArrowLeft className="w-8 h-8 mr-4" />
+          <ArrowLeft className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 mr-2 sm:mr-3 md:mr-4" />
           Voltar
         </Button>
-        <h1 className="text-5xl font-bold text-foreground">Confirme seus dados</h1>
-        <div className="w-48"></div>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground text-center flex-1">Confirme seus dados</h1>
+        <div className="w-20 sm:w-32 md:w-48"></div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center">
-        <Card className="w-full max-w-4xl p-12 space-y-8 bg-card">
+        <Card className="w-full max-w-4xl p-6 sm:p-8 md:p-12 space-y-6 sm:space-y-7 md:space-y-8 bg-card">
           {/* Client Info */}
           <div className="space-y-6">
             <div className="flex items-center gap-4 pb-6 border-b border-border">

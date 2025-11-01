@@ -183,15 +183,15 @@ const TotemPaymentPix: React.FC = () => {
           {/* Instructions */}
           <div className="pt-8 space-y-4 text-2xl text-muted-foreground">
             <p className="flex items-center justify-center gap-3">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className="w-8 h-8 text-primary" />
               Abra o app do seu banco
             </p>
             <p className="flex items-center justify-center gap-3">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className="w-8 h-8 text-primary" />
               Escolha Pix e escaneie o código
             </p>
             <p className="flex items-center justify-center gap-3">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className="w-8 h-8 text-primary" />
               Confirme o pagamento
             </p>
           </div>

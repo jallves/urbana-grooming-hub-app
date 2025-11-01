@@ -158,17 +158,19 @@ const TotemCheckout: React.FC = () => {
             <div className="grid grid-cols-2 gap-6">
               <Button
                 onClick={() => handlePaymentMethod('pix')}
-                className="h-32 text-3xl font-bold bg-green-600 hover:bg-green-700 text-white"
+                variant="default"
+                className="h-28 sm:h-30 md:h-32 text-2xl sm:text-2xl md:text-3xl font-bold"
               >
-                <QrCode className="w-12 h-12 mr-4" />
+                <QrCode className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mr-3 sm:mr-3 md:mr-4" />
                 Pagar com PIX
               </Button>
               
               <Button
                 onClick={() => handlePaymentMethod('card')}
-                className="h-32 text-3xl font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                variant="secondary"
+                className="h-28 sm:h-30 md:h-32 text-2xl sm:text-2xl md:text-3xl font-bold"
               >
-                <CreditCard className="w-12 h-12 mr-4" />
+                <CreditCard className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mr-3 sm:mr-3 md:mr-4" />
                 Cartão
               </Button>
             </div>

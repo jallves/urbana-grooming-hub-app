@@ -31,12 +31,12 @@ const TotemPaymentSuccess: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-8">
-      <Card className="w-full max-w-4xl p-16 space-y-12 bg-card">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 sm:p-6 md:p-8">
+      <Card className="w-full max-w-4xl p-8 sm:p-12 md:p-16 space-y-8 sm:space-y-10 md:space-y-12 bg-card">
         {/* Success Icon */}
         <div className="flex justify-center">
-          <div className="w-40 h-40 rounded-full bg-green-500/20 flex items-center justify-center animate-pulse">
-            <CheckCircle className="w-24 h-24 text-green-500" />
+          <div className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+            <CheckCircle className="w-20 h-20 sm:w-22 sm:h-22 md:w-24 md:h-24 text-primary" />
           </div>
         </div>
 
