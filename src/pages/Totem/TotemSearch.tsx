@@ -56,11 +56,10 @@ const TotemSearch: React.FC = () => {
       
       console.log('🔍 Buscando cliente com telefone:', cleanPhone);
 
-      // Buscar cliente por telefone/WhatsApp usando LIKE para ignorar formatação
-      const { data: clientes, error: clientError } = await supabase
+      // Buscar todos os clientes e filtrar removendo formatação
+      const { data: todosClientes, error: clientError } = await supabase
         .from('painel_clientes')
-        .select('*')
-        .ilike('whatsapp', `%${cleanPhone}%`);
+        .select('*');
 
       if (clientError) {
         console.error('❌ Erro ao buscar cliente:', clientError);
@@ -70,6 +69,12 @@ const TotemSearch: React.FC = () => {
         setIsSearching(false);
         return;
       }
+
+      // Filtrar clientes comparando apenas os dígitos
+      const clientes = todosClientes?.filter(c => {
+        const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
+        return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
+      }) || [];
 
       if (!clientes || clientes.length === 0) {
         console.log('❌ Nenhum cliente encontrado com telefone:', cleanPhone);
