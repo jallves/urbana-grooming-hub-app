@@ -104,27 +104,18 @@ const TotemHome: React.FC = () => {
       </Button>
 
       <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 max-w-7xl w-full z-10">
-        {/* Logo with enhanced animation */}
+        {/* Logo with circle border */}
         <div className="flex justify-center mb-4 sm:mb-6 md:mb-8 animate-scale-in">
           <div className="relative group">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/30 via-urbana-gold-vibrant/30 to-urbana-gold-light/30 blur-3xl opacity-50 animate-pulse-slow" />
-            
-            {/* Circle border with logo perfectly aligned */}
-            <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full border-[3px] sm:border-[4px] md:border-[5px] border-urbana-gold/60 flex items-center justify-center shadow-2xl shadow-urbana-gold/20 group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 overflow-hidden">
-              {/* Logo - perfectly sized to fill the circle */}
+            {/* Circle border as finishing touch */}
+            <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-56 lg:h-56 rounded-full border-[3px] sm:border-[4px] md:border-[5px] border-urbana-gold/70 flex items-center justify-center shadow-xl group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 overflow-hidden p-[3px] sm:p-[4px] md:p-[5px]">
+              {/* Logo - fills almost entire circle */}
               <img 
                 src={costaUrbanaLogo} 
                 alt="Costa Urbana Logo" 
-                className="w-full h-full object-cover scale-105"
-                style={{ 
-                  filter: 'drop-shadow(0 0 15px rgba(197, 161, 91, 0.3))'
-                }}
+                className="w-full h-full object-contain"
               />
             </div>
-            
-            {/* Active glow effect */}
-            <div className="absolute -inset-2 bg-gradient-to-r from-urbana-gold-vibrant/0 to-urbana-gold-vibrant/0 group-active:from-urbana-gold-vibrant/40 group-active:to-urbana-gold/40 rounded-full opacity-0 group-active:opacity-100 blur-2xl transition-all duration-200" />
           </div>
         </div>
 
