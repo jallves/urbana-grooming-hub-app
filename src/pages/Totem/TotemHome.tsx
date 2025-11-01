@@ -55,7 +55,7 @@ const TotemHome: React.FC = () => {
       icon: CreditCard,
       title: 'Check-out',
       subtitle: 'Pagamento',
-      onClick: () => navigate('/totem/search'),
+      onClick: () => navigate('/totem/checkout-search'),
       color: 'bg-urbana-gold'
     },
     {

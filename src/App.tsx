@@ -43,6 +43,7 @@ import BarberAdminDashboard from './pages/BarberAdminDashboard';
 import TotemLogin from './pages/Totem/TotemLogin';
 import TotemHome from './pages/Totem/TotemHome';
 import TotemSearch from './pages/Totem/TotemSearch';
+import TotemCheckoutSearch from './pages/Totem/TotemCheckoutSearch';
 import TotemAppointmentsList from './pages/Totem/TotemAppointmentsList';
 import TotemConfirmation from './pages/Totem/TotemConfirmation';
 import TotemCheckInSuccess from './pages/Totem/TotemCheckInSuccess';
@@ -216,7 +217,9 @@ function App() {
                   {/* Totem Routes */}
                   <Route path="/totem/login" element={<TotemLogin />} />
                   <Route path="/totem" element={<TotemProtectedRoute><TotemHome /></TotemProtectedRoute>} />
+                  <Route path="/totem/home" element={<TotemProtectedRoute><TotemHome /></TotemProtectedRoute>} />
                   <Route path="/totem/search" element={<TotemProtectedRoute><TotemSearch /></TotemProtectedRoute>} />
+                  <Route path="/totem/checkout-search" element={<TotemProtectedRoute><TotemCheckoutSearch /></TotemProtectedRoute>} />
                   <Route path="/totem/appointments-list" element={<TotemProtectedRoute><TotemAppointmentsList /></TotemProtectedRoute>} />
                   <Route path="/totem/confirmation" element={<TotemProtectedRoute><TotemConfirmation /></TotemProtectedRoute>} />
                   <Route path="/totem/check-in-success" element={<TotemProtectedRoute><TotemCheckInSuccess /></TotemProtectedRoute>} />

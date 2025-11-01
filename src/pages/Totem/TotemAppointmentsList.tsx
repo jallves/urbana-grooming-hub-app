@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Clock, Scissors, User, CheckCircle, XCircle } from 'lucide-react';
 import { format, parseISO, isPast, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Appointment {
   id: string;
@@ -55,8 +57,31 @@ const TotemAppointmentsList: React.FC = () => {
     );
   };
 
-  const handleSelectAppointment = (appointment: Appointment) => {
+  const handleSelectAppointment = async (appointment: Appointment) => {
     if (!canCheckIn(appointment)) {
+      return;
+    }
+
+    // Verificar se já foi feito check-in para este agendamento
+    const { data: sessions, error } = await supabase
+      .from('totem_sessions')
+      .select('*')
+      .eq('appointment_id', appointment.id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Erro ao verificar check-in:', error);
+    }
+
+    if (sessions && sessions.length > 0) {
+      const session = sessions[0];
+      const checkInTime = new Date(session.check_in_time || session.created_at);
+      
+      toast.error('Check-in já realizado', {
+        description: `Check-in feito às ${format(checkInTime, 'HH:mm')} em ${format(checkInTime, 'dd/MM/yyyy')}. Use a opção Check-out para pagamento.`,
+        duration: 5000
+      });
       return;
     }
     
