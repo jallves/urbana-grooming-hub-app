@@ -107,13 +107,13 @@ const TotemHome: React.FC = () => {
         {/* Logo with circle border */}
         <div className="flex justify-center mb-4 sm:mb-6 md:mb-8 animate-scale-in">
           <div className="relative group">
-            {/* Circle border as finishing touch - just the border */}
-            <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-56 lg:h-56 rounded-full border-[4px] sm:border-[5px] md:border-[6px] border-urbana-gold/80 flex items-center justify-center group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 overflow-hidden">
-              {/* Logo - fills the entire circle maintaining original colors */}
+            {/* Circle border - only the border, logo fills completely inside */}
+            <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-56 lg:h-56 rounded-full border-[4px] sm:border-[5px] md:border-[6px] border-urbana-gold/80 group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 overflow-hidden">
+              {/* Logo - exactly same size as inner circle */}
               <img 
                 src={costaUrbanaLogo} 
                 alt="Costa Urbana Logo" 
-                className="w-full h-full object-cover rounded-full"
+                className="absolute inset-0 w-full h-full object-cover rounded-full"
               />
             </div>
           </div>
