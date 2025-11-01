@@ -3,17 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CreditCard, DollarSign, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Plus, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { OfflineIndicator } from '@/components/totem/OfflineIndicator';
-
-interface ServiceItem {
-  id: string;
-  nome: string;
-  preco: number;
-  quantidade: number;
-}
 
 interface CheckoutSummary {
   original_service: {
@@ -41,6 +34,7 @@ const TotemCheckout: React.FC = () => {
   const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [extraServices, setExtraServices] = useState<Array<{ service_id: string; nome: string; preco: number }>>([]);
   const [needsRecalculation, setNeedsRecalculation] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     if (!appointment || !session) {
@@ -75,21 +69,28 @@ const TotemCheckout: React.FC = () => {
         preco: service.preco
       }]);
       setNeedsRecalculation(true);
+      toast.success('Serviço adicionado!', {
+        description: `${service.nome} - R$ ${service.preco.toFixed(2)}`
+      });
     }
   };
 
   const handleRemoveExtraService = (index: number) => {
+    const removedService = extraServices[index];
     setExtraServices(extraServices.filter((_, i) => i !== index));
     setNeedsRecalculation(true);
+    toast.info('Serviço removido', {
+      description: removedService.nome
+    });
   };
 
   const startCheckout = async () => {
     setLoading(true);
+    setIsUpdating(needsRecalculation);
     
     try {
       console.log('🛒 Iniciando checkout para agendamento:', appointment?.id);
 
-      // Preparar lista de extras (serviços adicionados)
       const extras = extraServices.map(service => ({
         tipo: 'servico',
         id: service.service_id,
@@ -126,6 +127,12 @@ const TotemCheckout: React.FC = () => {
       setResumo(data.resumo);
       setNeedsRecalculation(false);
       
+      if (isUpdating) {
+        toast.success('Total atualizado!', {
+          description: `Novo total: R$ ${data.resumo.total.toFixed(2)}`
+        });
+      }
+      
     } catch (error: any) {
       console.error('❌ Erro inesperado:', error);
       toast.error('Erro inesperado', {
@@ -133,6 +140,7 @@ const TotemCheckout: React.FC = () => {
       });
     } finally {
       setLoading(false);
+      setIsUpdating(false);
     }
   };
 
@@ -149,8 +157,8 @@ const TotemCheckout: React.FC = () => {
     }
 
     if (needsRecalculation) {
-      toast.warning('Recalcule o total', {
-        description: 'Clique em Atualizar para recalcular com os novos serviços'
+      toast.warning('Atualize o total primeiro', {
+        description: 'Clique em "Atualizar Total" para recalcular com os novos serviços'
       });
       return;
     }
@@ -178,194 +186,256 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !isUpdating) {
     return (
       <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center">
         <OfflineIndicator />
-        <p className="text-3xl sm:text-4xl md:text-5xl text-urbana-light">Carregando...</p>
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
+          <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light font-poppins">Carregando checkout...</p>
+        </div>
       </div>
     );
   }
 
-  if (!resumo) {
+  if (!resumo && !loading) {
     return (
       <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center">
         <OfflineIndicator />
-        <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light">Erro ao carregar dados do checkout</p>
+        <div className="text-center space-y-4">
+          <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light font-poppins">Erro ao carregar dados</p>
+          <Button onClick={() => navigate('/totem/home')} className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold-light">
+            Voltar ao início
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins overflow-hidden">
       <OfflineIndicator />
       
-      {/* Background texture */}
-      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+      {/* Animated background patterns */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8 md:mb-12 z-10">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 z-10">
         <Button
           onClick={() => navigate('/totem/home')}
           variant="ghost"
           size="lg"
-          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
+          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 transition-all duration-200"
         >
           <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mr-2 sm:mr-3" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light text-center flex-1">
-          Checkout
-        </h1>
+        <div className="text-center flex-1">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+            Finalizar Atendimento
+          </h1>
+          <p className="text-sm sm:text-base md:text-lg text-urbana-gray-light mt-1">Revise e confirme o pagamento</p>
+        </div>
         <div className="w-20 sm:w-32 md:w-48"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-4">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-5xl p-4 sm:p-6 md:p-8 lg:p-12 space-y-4 sm:space-y-6 md:space-y-8 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
+      <div className="flex-1 z-10 overflow-y-auto">
+        <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 pb-6">
           
-          {/* Add Extra Services Section */}
-          <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-4 border-b-2 border-urbana-gold/20">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light">
-              Adicionar Serviços Extras
-            </h2>
+          {/* Add Extra Services Card */}
+          <Card className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10">
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-lg shadow-urbana-gold/30">
+                <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-black" />
+              </div>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light">
+                Adicionar Serviços Extras
+              </h2>
+            </div>
             
             <div className="flex gap-2 sm:gap-3 md:gap-4">
-              <Select onValueChange={handleAddExtraService}>
-                <SelectTrigger className="flex-1 h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl text-urbana-light bg-urbana-black/50 border-2 border-urbana-gray/30">
-                  <SelectValue placeholder="Selecione um serviço" />
+              <Select onValueChange={handleAddExtraService} disabled={isUpdating}>
+                <SelectTrigger className="flex-1 h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl text-urbana-light bg-urbana-black/50 border-2 border-urbana-gray/50 hover:border-urbana-gold/50 transition-colors">
+                  <SelectValue placeholder="Selecione um serviço extra" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-card border-urbana-gold/30">
                   {availableServices.map((service) => (
-                    <SelectItem key={service.id} value={service.id} className="text-base sm:text-lg">
-                      {service.nome} - R$ {service.preco.toFixed(2)}
+                    <SelectItem 
+                      key={service.id} 
+                      value={service.id} 
+                      className="text-base sm:text-lg text-urbana-light hover:bg-urbana-gold/10 cursor-pointer"
+                    >
+                      {service.nome} - <span className="text-urbana-gold font-bold">R$ {service.preco.toFixed(2)}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              
               {needsRecalculation && (
                 <Button
                   onClick={handleRecalculate}
-                  className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl bg-urbana-gold text-urbana-black active:bg-urbana-gold-dark animate-pulse"
+                  disabled={isUpdating}
+                  className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold text-urbana-black font-bold hover:from-urbana-gold-dark hover:via-urbana-gold hover:to-urbana-gold-light shadow-lg shadow-urbana-gold/30 animate-pulse"
                 >
-                  <Plus className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-                  Atualizar
+                  {isUpdating ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin mr-2" />
+                      Atualizando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                      Atualizar Total
+                    </>
+                  )}
                 </Button>
               )}
             </div>
 
             {/* List of added extra services */}
             {extraServices.length > 0 && (
-              <div className="space-y-2">
+              <div className="mt-4 space-y-2">
+                <p className="text-sm sm:text-base text-urbana-gray-light mb-2">Serviços adicionados:</p>
                 {extraServices.map((service, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-urbana-black/30 rounded-lg">
-                    <span className="text-sm sm:text-base md:text-lg text-urbana-light">
-                      {service.nome} - R$ {service.preco.toFixed(2)}
-                    </span>
-                    <Button
-                      onClick={() => handleRemoveExtraService(index)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                  <div key={index} className="flex items-center justify-between p-3 sm:p-4 bg-urbana-black/40 rounded-xl border border-urbana-gold/20 group hover:border-urbana-gold/40 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-urbana-gold" />
+                      <span className="text-sm sm:text-base md:text-lg text-urbana-light font-medium">
+                        {service.nome}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-base sm:text-lg md:text-xl text-urbana-gold font-bold">
+                        R$ {service.preco.toFixed(2)}
+                      </span>
+                      <Button
+                        onClick={() => handleRemoveExtraService(index)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        disabled={isUpdating}
+                      >
+                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Summary */}
-          <div className="space-y-3 sm:space-y-4 md:space-y-6">
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light border-b-2 border-urbana-gold/20 pb-2 sm:pb-3 md:pb-4">
-              Resumo do Atendimento
-            </h2>
+          {/* Summary Card */}
+          {resumo && (
+            <Card className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light mb-6 pb-4 border-b-2 border-urbana-gold/30">
+                Resumo do Atendimento
+              </h2>
 
-            {/* Original Service */}
-            <div className="flex items-center justify-between py-2 sm:py-3 md:py-4 border-b border-urbana-gray/20">
-              <div>
-                <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-urbana-light">
-                  {resumo.original_service.nome}
-                </p>
-                <p className="text-xs sm:text-sm md:text-base text-urbana-light/60">Serviço principal</p>
-              </div>
-              <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-gold">
-                R$ {resumo.original_service.preco.toFixed(2)}
-              </p>
-            </div>
-
-            {/* Extra Services */}
-            {resumo.extra_services.map((service, index) => (
-              <div key={index} className="flex items-center justify-between py-2 sm:py-3 md:py-4 border-b border-urbana-gray/20">
-                <div>
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-urbana-light">
-                    {service.nome}
+              <div className="space-y-3 sm:space-y-4">
+                {/* Original Service */}
+                <div className="flex items-center justify-between py-3 sm:py-4 border-b border-urbana-gray/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-urbana-gold animate-pulse" />
+                    <div>
+                      <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">
+                        {resumo.original_service.nome}
+                      </p>
+                      <p className="text-xs sm:text-sm text-urbana-gray-light">Serviço principal</p>
+                    </div>
+                  </div>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-gold">
+                    R$ {resumo.original_service.preco.toFixed(2)}
                   </p>
-                  <p className="text-xs sm:text-sm md:text-base text-urbana-light/60">Serviço extra</p>
                 </div>
-                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-gold">
-                  R$ {service.preco.toFixed(2)}
-                </p>
-              </div>
-            ))}
 
-            {/* Totals */}
-            <div className="space-y-2 sm:space-y-3 md:space-y-4 pt-4 sm:pt-6 md:pt-8">
-              <div className="flex items-center justify-between text-base sm:text-lg md:text-xl lg:text-2xl">
-                <span className="text-urbana-light/80">Subtotal:</span>
-                <span className="text-urbana-light font-semibold">R$ {resumo.subtotal.toFixed(2)}</span>
-              </div>
-              
-              {resumo.discount > 0 && (
-                <div className="flex items-center justify-between text-base sm:text-lg md:text-xl lg:text-2xl">
-                  <span className="text-urbana-light/80">Desconto:</span>
-                  <span className="text-green-500 font-semibold">- R$ {resumo.discount.toFixed(2)}</span>
+                {/* Extra Services */}
+                {resumo.extra_services.map((service, index) => (
+                  <div key={index} className="flex items-center justify-between py-3 sm:py-4 border-b border-urbana-gray/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-urbana-gold-light animate-pulse" />
+                      <div>
+                        <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">
+                          {service.nome}
+                        </p>
+                        <p className="text-xs sm:text-sm text-urbana-gray-light">Serviço extra</p>
+                      </div>
+                    </div>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-gold">
+                      R$ {service.preco.toFixed(2)}
+                    </p>
+                  </div>
+                ))}
+
+                {/* Totals */}
+                <div className="space-y-3 sm:space-y-4 pt-6 mt-6 border-t-2 border-urbana-gold/30">
+                  <div className="flex items-center justify-between text-base sm:text-lg md:text-xl">
+                    <span className="text-urbana-gray-light">Subtotal:</span>
+                    <span className="text-urbana-light font-semibold">R$ {resumo.subtotal.toFixed(2)}</span>
+                  </div>
+                  
+                  {resumo.discount > 0 && (
+                    <div className="flex items-center justify-between text-base sm:text-lg md:text-xl">
+                      <span className="text-urbana-gray-light">Desconto:</span>
+                      <span className="text-green-400 font-semibold">- R$ {resumo.discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between p-4 sm:p-5 md:p-6 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold-dark/10 rounded-2xl border-2 border-urbana-gold shadow-lg shadow-urbana-gold/20">
+                    <span className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-light">TOTAL:</span>
+                    <span className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold animate-pulse">
+                      R$ {resumo.total.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
-              )}
-              
-              <div className="flex items-center justify-between text-xl sm:text-2xl md:text-3xl lg:text-4xl pt-3 sm:pt-4 md:pt-6 border-t-2 border-urbana-gold/30">
-                <span className="text-urbana-light font-bold">TOTAL:</span>
-                <span className="text-urbana-gold font-bold">R$ {resumo.total.toFixed(2)}</span>
               </div>
-            </div>
-          </div>
+            </Card>
+          )}
 
           {/* Payment Method Selection */}
-          <div className="space-y-3 sm:space-y-4 md:space-y-6 pt-4 sm:pt-6 md:pt-8">
-            <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-light">
+          <Card className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10">
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light mb-6 text-center">
               Selecione a forma de pagamento
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {/* PIX Button */}
-              <Button
+              <button
                 onClick={() => handlePaymentMethod('pix')}
-                disabled={processing || needsRecalculation}
-                className="h-24 sm:h-28 md:h-32 lg:h-36 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gold/50 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 disabled:opacity-50"
-                variant="outline"
+                disabled={processing || needsRecalculation || isUpdating}
+                className="group relative h-32 sm:h-36 md:h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 hover:from-urbana-gold/30 hover:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 hover:border-urbana-gold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
-                <div className="flex flex-col items-center gap-2 sm:gap-3 md:gap-4">
-                  <DollarSign className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16" />
-                  <span>PIX</span>
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
+                    <DollarSign className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
+                  </div>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-gold">PIX</span>
+                  <span className="text-xs sm:text-sm text-urbana-gray-light">Pagamento instantâneo</span>
                 </div>
-              </Button>
+              </button>
 
               {/* Card Button */}
-              <Button
+              <button
                 onClick={() => handlePaymentMethod('card')}
-                disabled={processing || needsRecalculation}
-                className="h-24 sm:h-28 md:h-32 lg:h-36 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gold/50 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 disabled:opacity-50"
-                variant="outline"
+                disabled={processing || needsRecalculation || isUpdating}
+                className="group relative h-32 sm:h-36 md:h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 hover:from-urbana-gold/30 hover:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 hover:border-urbana-gold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
-                <div className="flex flex-col items-center gap-2 sm:gap-3 md:gap-4">
-                  <CreditCard className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16" />
-                  <span>CARTÃO</span>
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
+                    <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
+                  </div>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-gold">CARTÃO</span>
+                  <span className="text-xs sm:text-sm text-urbana-gray-light">Crédito ou Débito</span>
                 </div>
-              </Button>
+              </button>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );
