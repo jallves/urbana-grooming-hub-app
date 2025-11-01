@@ -59,16 +59,21 @@ Deno.serve(async (req) => {
       const { data: venda, error: vendaError } = await supabase
         .from('vendas')
         .insert({
+          agendamento_id: agendamento_id,
           cliente_id: agendamento.cliente_id,
           barbeiro_id: barbeiro?.staff_id,
-          data_venda: new Date().toISOString(),
-          status: 'pendente'
+          status: 'ABERTA'
         })
         .select()
         .single()
 
-      if (vendaError || !venda) {
-        throw new Error('Erro ao criar venda')
+      if (vendaError) {
+        console.error('Erro detalhado ao criar venda:', vendaError)
+        throw new Error(`Erro ao criar venda: ${vendaError.message}`)
+      }
+
+      if (!venda) {
+        throw new Error('Venda não foi criada')
       }
 
       console.log('Venda criada:', venda.id)
@@ -77,11 +82,12 @@ Deno.serve(async (req) => {
       const itens = [
         {
           venda_id: venda.id,
-          tipo: 'servico',
-          item_id: agendamento.servico_id,
+          tipo: 'SERVICO',
+          ref_id: agendamento.servico_id,
+          nome: agendamento.servico.nome,
           quantidade: 1,
-          preco_unitario: agendamento.servico.preco,
-          subtotal: agendamento.servico.preco
+          preco_unit: agendamento.servico.preco,
+          total: agendamento.servico.preco
         }
       ]
 
@@ -98,11 +104,12 @@ Deno.serve(async (req) => {
         servicos_extras.forEach((extra: any) => {
           itens.push({
             venda_id: venda.id,
-            tipo: 'servico',
-            item_id: extra.service_id,
+            tipo: 'SERVICO',
+            ref_id: extra.service_id,
+            nome: extra.servico.nome,
             quantidade: 1,
-            preco_unitario: extra.servico.preco,
-            subtotal: extra.servico.preco
+            preco_unit: extra.servico.preco,
+            total: extra.servico.preco
           })
         })
       }
@@ -114,33 +121,39 @@ Deno.serve(async (req) => {
           if (extra.tipo === 'servico') {
             const { data: servico } = await supabase
               .from('painel_servicos')
-              .select('preco')
-              .eq('id', extra.item_id)
+              .select('nome, preco')
+              .eq('id', extra.id)
               .single()
 
-            itens.push({
-              venda_id: venda.id,
-              tipo: 'servico',
-              item_id: extra.item_id,
-              quantidade: extra.quantidade || 1,
-              preco_unitario: servico?.preco || 0,
-              subtotal: (servico?.preco || 0) * (extra.quantidade || 1)
-            })
+            if (servico) {
+              itens.push({
+                venda_id: venda.id,
+                tipo: 'SERVICO',
+                ref_id: extra.id,
+                nome: servico.nome,
+                quantidade: extra.quantidade || 1,
+                preco_unit: servico.preco,
+                total: servico.preco * (extra.quantidade || 1)
+              })
+            }
           } else if (extra.tipo === 'produto') {
             const { data: produto } = await supabase
               .from('produtos')
-              .select('preco_venda')
-              .eq('id', extra.item_id)
+              .select('nome, preco_venda')
+              .eq('id', extra.id)
               .single()
 
-            itens.push({
-              venda_id: venda.id,
-              tipo: 'produto',
-              item_id: extra.item_id,
-              quantidade: extra.quantidade || 1,
-              preco_unitario: produto?.preco_venda || 0,
-              subtotal: (produto?.preco_venda || 0) * (extra.quantidade || 1)
-            })
+            if (produto) {
+              itens.push({
+                venda_id: venda.id,
+                tipo: 'PRODUTO',
+                ref_id: extra.id,
+                nome: produto.nome,
+                quantidade: extra.quantidade || 1,
+                preco_unit: produto.preco_venda,
+                total: produto.preco_venda * (extra.quantidade || 1)
+              })
+            }
           }
         }
       }
@@ -156,7 +169,7 @@ Deno.serve(async (req) => {
       }
 
       // Calcular totais
-      const subtotal = itens.reduce((sum, item) => sum + Number(item.subtotal), 0)
+      const subtotal = itens.reduce((sum, item) => sum + Number(item.total), 0)
       const desconto = 0 // Pode implementar lógica de desconto aqui
       const total = subtotal - desconto
 
@@ -184,16 +197,16 @@ Deno.serve(async (req) => {
           venda_id: venda.id,
           session_id: totemSession.id,
           resumo: {
-            itens: itens.map(i => ({
-              nome: i.tipo === 'servico' ? 
-                (i.item_id === agendamento.servico_id ? agendamento.servico.nome : 'Serviço Extra') : 
-                'Produto',
-              preco_unit: i.preco_unitario,
-              quantidade: i.quantidade,
-              subtotal: i.subtotal
+            original_service: {
+              nome: agendamento.servico.nome,
+              preco: agendamento.servico.preco
+            },
+            extra_services: itens.slice(1).map(i => ({
+              nome: i.nome,
+              preco: i.preco_unit
             })),
             subtotal,
-            desconto,
+            discount: desconto,
             total
           }
         }),
@@ -258,7 +271,7 @@ Deno.serve(async (req) => {
       // 3. Atualizar venda
       await supabase
         .from('vendas')
-        .update({ status: 'concluido' })
+        .update({ status: 'PAGA' })
         .eq('id', venda_id)
 
       // 4. Atualizar agendamento
