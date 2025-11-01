@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Search, Phone } from 'lucide-react';
+import { ArrowLeft, Search, Phone, Sparkles, Loader2, Delete } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -143,96 +143,120 @@ const TotemSearch: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
-      {/* Background texture */}
-      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-brown flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.15) 1px, transparent 0)',
+          backgroundSize: '40px 40px'
+        }} />
+      </div>
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8 md:mb-12 z-10">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 z-10 animate-fade-in">
         <Button
-          onClick={() => navigate('/totem')}
+          onClick={() => navigate('/totem/home')}
           variant="ghost"
           size="lg"
-          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
+          className="h-10 sm:h-12 md:h-14 lg:h-16 px-3 sm:px-4 md:px-6 lg:px-8 gap-2 text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light bg-urbana-black-soft/50 backdrop-blur-sm border border-urbana-gray/30 active:bg-urbana-gold/20 active:border-urbana-gold active:text-urbana-gold transition-all duration-200 active:scale-95 rounded-xl"
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mr-2 sm:mr-3" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light text-center flex-1">
-          Buscar Agendamento
-        </h1>
-        <div className="w-20 sm:w-32 md:w-48"></div>
+        
+        <div className="flex-1 text-center">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light animate-shimmer" style={{ backgroundSize: '200% auto' }}>
+            Buscar Agendamento
+          </h1>
+        </div>
+        
+        <div className="w-16 sm:w-20 md:w-24 lg:w-32"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto">
-        <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-12 space-y-4 sm:space-y-6 md:space-y-8 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
+      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2 sm:py-4">
+        <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-3 sm:p-4 md:p-6 lg:p-10 space-y-3 sm:space-y-4 md:space-y-6 bg-gradient-to-br from-urbana-black-soft/90 to-urbana-black-soft/70 backdrop-blur-xl border-2 border-urbana-gray/30 shadow-2xl rounded-2xl sm:rounded-3xl animate-scale-in">
           {/* Phone Display */}
-          <div className="space-y-3 sm:space-y-4">
-            <label className="text-xl sm:text-2xl md:text-3xl font-semibold text-urbana-light flex items-center gap-2 sm:gap-3 md:gap-4">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-urbana-gold/10 flex items-center justify-center">
-                <Phone className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-urbana-gold" />
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
+            <label className="text-base sm:text-xl md:text-2xl lg:text-3xl font-semibold text-urbana-light flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg">
+                <Phone className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white drop-shadow" />
               </div>
               Digite seu telefone
             </label>
-            <div className="bg-urbana-black/50 border-2 sm:border-3 md:border-4 border-urbana-gold/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-center active:border-urbana-gold transition-colors duration-100">
-              <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-mono font-bold text-urbana-light min-h-[40px] sm:min-h-[50px] md:min-h-[60px] flex items-center justify-center">
-                {phone ? formatPhone(phone) : '(  )      -    '}
-              </p>
+            
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold to-cyan-500 rounded-2xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
+              <div className="relative bg-urbana-black/60 border-2 border-urbana-gold/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 text-center transition-colors duration-200">
+                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-mono font-bold text-urbana-gold-vibrant min-h-[32px] sm:min-h-[40px] md:min-h-[50px] lg:min-h-[60px] flex items-center justify-center tracking-wider drop-shadow-lg">
+                  {phone ? formatPhone(phone) : '(  )      -    '}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Numeric Keypad */}
+          {/* Enhanced Numeric Keypad */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gray/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+                className="relative group h-12 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl overflow-hidden"
                 variant="outline"
               >
-                {num}
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-150" />
+                <span className="relative drop-shadow">{num}</span>
               </Button>
             ))}
+            
             <Button
               onClick={handleClear}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-urbana-gray/30 active:border-destructive text-urbana-light active:text-destructive transition-all duration-100 active:scale-95"
+              className="relative h-12 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base lg:text-lg font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/30 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-150 active:scale-95 rounded-xl"
             >
               Limpar
             </Button>
+            
             <Button
               onClick={() => handleNumberClick('0')}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gray/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+              className="relative group h-12 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl overflow-hidden"
               variant="outline"
             >
-              0
+              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-150" />
+              <span className="relative drop-shadow">0</span>
             </Button>
+            
             <Button
               onClick={handleBackspace}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-urbana-gray/30 active:border-destructive text-urbana-light transition-all duration-100 active:scale-95"
+              className="relative h-12 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/30 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-150 active:scale-95 rounded-xl"
               variant="outline"
             >
-              ⌫
+              <Delete className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
             </Button>
           </div>
 
-          {/* Search Button */}
+          {/* Enhanced Search Button */}
           <Button
             onClick={handleSearch}
             disabled={phone.length < 10 || isSearching}
-            className="w-full h-14 sm:h-18 md:h-20 lg:h-24 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black active:from-urbana-gold-dark active:to-urbana-gold disabled:opacity-50 shadow-lg shadow-urbana-gold/30 active:shadow-urbana-gold/50 transition-all duration-100 active:scale-98"
+            className="relative w-full h-12 sm:h-14 md:h-16 lg:h-20 text-base sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light active:from-urbana-gold active:to-urbana-gold-dark text-urbana-black disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-200 active:scale-98 shadow-xl rounded-xl overflow-hidden group"
           >
-            {isSearching ? (
-              <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-                <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 border-3 sm:border-4 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
-                Buscando...
-              </div>
-            ) : (
-              <>
-                <Search className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 mr-2 sm:mr-3 md:mr-4" />
-                BUSCAR
-              </>
-            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            
+            <div className="relative flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
+              {isSearching ? (
+                <>
+                  <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 animate-spin" />
+                  <span>Buscando...</span>
+                </>
+              ) : (
+                <>
+                  <Search className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
+                  <span>BUSCAR</span>
+                </>
+              )}
+            </div>
           </Button>
         </Card>
       </div>
