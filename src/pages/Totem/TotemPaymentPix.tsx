@@ -97,6 +97,12 @@ const TotemPaymentPix: React.FC = () => {
     try {
       console.log('✅ Pagamento PIX confirmado! Finalizando checkout...');
       
+      // Mostrar saudação de sucesso
+      toast.success(`Pagamento confirmado, ${appointment?.cliente?.nome || 'Cliente'}! 🎉`, {
+        description: 'Seu atendimento foi finalizado com sucesso. Obrigado pela preferência!',
+        duration: 5000
+      });
+      
       // Atualizar status do pagamento
       const { error: updateError } = await supabase
         .from('totem_payments')

@@ -41,7 +41,7 @@ const TotemPaymentSuccess: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
       
@@ -49,67 +49,71 @@ const TotemPaymentSuccess: React.FC = () => {
       <div className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
 
-      <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 max-w-xl sm:max-w-2xl md:max-w-4xl z-10 animate-fade-in">
+      <div className="text-center space-y-3 sm:space-y-4 md:space-y-6 max-w-xl sm:max-w-2xl md:max-w-4xl w-full z-10 animate-fade-in">
         {/* Success Icon */}
-        <div className="flex justify-center mb-4 sm:mb-6 md:mb-8">
+        <div className="flex justify-center mb-2 sm:mb-4">
           <div className="relative">
             <div className="absolute inset-0 bg-green-500 blur-3xl opacity-40 animate-pulse" />
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-2xl border-4 border-green-400/20">
-              <CheckCircle className="w-14 h-14 sm:w-18 sm:h-18 md:w-24 md:h-24 text-white" strokeWidth={3} />
+            <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-2xl border-4 border-green-400/20">
+              <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 text-white" strokeWidth={3} />
             </div>
           </div>
         </div>
 
-        {/* Success Message */}
-        <div className="space-y-4 sm:space-y-5 md:space-y-6">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-urbana-light">
-            Pagamento Confirmado!
+        {/* Success Message with Client Name */}
+        <div className="space-y-2 sm:space-y-3 md:space-y-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light">
+            Obrigado, {appointment.cliente?.nome || 'Cliente'}! 🎉
           </h1>
           
-          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-urbana-light/70">
-            Obrigado pela preferência!
+          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-urbana-light/80">
+            Pagamento Confirmado
+          </p>
+          
+          <p className="text-base sm:text-lg md:text-xl text-urbana-gold font-semibold">
+            Volte sempre à Costa Urbana!
           </p>
         </div>
 
         {/* Receipt */}
-        <div className="bg-urbana-black/40 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 mt-6 sm:mt-8">
-          <div className="flex items-center justify-center gap-3 sm:gap-4 text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-gold border-b-2 border-urbana-gold/30 pb-3 sm:pb-4">
-            <Receipt className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" />
-            RECIBO DE PAGAMENTO
+        <div className="bg-urbana-black/40 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-3 mt-3 sm:mt-4 max-h-[45vh] overflow-y-auto">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base md:text-lg lg:text-xl font-bold text-urbana-gold border-b-2 border-urbana-gold/30 pb-2 sm:pb-3">
+            <Receipt className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
+            RECIBO
           </div>
 
-          <div className="space-y-3 sm:space-y-4 text-base sm:text-lg md:text-xl lg:text-2xl">
-            <div className="flex justify-between py-2 sm:py-3 border-b border-urbana-gold/20">
+          <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm md:text-base lg:text-lg">
+            <div className="flex justify-between py-1.5 sm:py-2 border-b border-urbana-gold/20">
               <span className="text-urbana-light/60">Data:</span>
-              <span className="font-semibold text-urbana-light">
+              <span className="font-semibold text-urbana-light text-right">
                 {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
               </span>
             </div>
 
-            <div className="flex justify-between py-2 sm:py-3 border-b border-urbana-gold/20">
+            <div className="flex justify-between py-1.5 sm:py-2 border-b border-urbana-gold/20">
               <span className="text-urbana-light/60">Cliente:</span>
-              <span className="font-semibold text-urbana-light">
+              <span className="font-semibold text-urbana-light text-right truncate max-w-[60%]">
                 {appointment.cliente?.nome || 'Cliente'}
               </span>
             </div>
 
-            <div className="flex justify-between py-2 sm:py-3 border-b border-urbana-gold/20">
+            <div className="flex justify-between py-1.5 sm:py-2 border-b border-urbana-gold/20">
               <span className="text-urbana-light/60">Serviço:</span>
-              <span className="font-semibold text-urbana-light">
+              <span className="font-semibold text-urbana-light text-right truncate max-w-[60%]">
                 {appointment.servico?.nome}
               </span>
             </div>
 
-            <div className="flex justify-between py-2 sm:py-3 border-b border-urbana-gold/20">
-              <span className="text-urbana-light/60">Forma de Pagamento:</span>
-              <span className="font-semibold text-urbana-light">
+            <div className="flex justify-between py-1.5 sm:py-2 border-b border-urbana-gold/20">
+              <span className="text-urbana-light/60">Pagamento:</span>
+              <span className="font-semibold text-urbana-light text-right">
                 {getPaymentMethodText()}
               </span>
             </div>
 
-            <div className="flex justify-between py-4 sm:py-6 border-t-4 border-urbana-gold pt-4 sm:pt-6">
-              <span className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light">TOTAL PAGO:</span>
-              <span className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-gold">
+            <div className="flex justify-between py-3 sm:py-4 border-t-4 border-urbana-gold pt-3 sm:pt-4">
+              <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light">TOTAL:</span>
+              <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-urbana-gold">
                 R$ {total.toFixed(2)}
               </span>
             </div>
@@ -117,19 +121,19 @@ const TotemPaymentSuccess: React.FC = () => {
         </div>
 
         {/* Footer Message */}
-        <div className="text-center space-y-3 sm:space-y-4 pt-6 sm:pt-8">
-          <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light font-semibold">
+        <div className="text-center space-y-2 sm:space-y-3 pt-3 sm:pt-4">
+          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-urbana-light font-semibold">
             Até a próxima! 
           </p>
-          <p className="text-xl sm:text-2xl md:text-3xl text-urbana-gold font-bold">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-urbana-gold font-bold">
             Costa Urbana Barbearia
           </p>
           
-          <div className="pt-4 sm:pt-6 space-y-2 sm:space-y-3">
-            <div className="flex items-center justify-center gap-2 sm:gap-3">
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-urbana-gold animate-pulse" />
-              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light/60">
-                Retornando automaticamente em alguns segundos...
+          <div className="pt-2 sm:pt-3 space-y-1 sm:space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-urbana-gold animate-pulse" />
+              <p className="text-xs sm:text-sm md:text-base text-urbana-light/60">
+                Retornando em alguns segundos...
               </p>
             </div>
           </div>
