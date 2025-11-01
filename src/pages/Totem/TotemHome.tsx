@@ -106,14 +106,16 @@ const TotemHome: React.FC = () => {
       <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 max-w-7xl w-full z-10">
         {/* Logo with circle border */}
         <div className="flex justify-center mb-4 sm:mb-6 md:mb-8 animate-scale-in">
-          <div className="relative group">
-            {/* Circle border - only the border, logo fills completely inside */}
-            <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-56 lg:h-56 rounded-full border-[4px] sm:border-[5px] md:border-[6px] border-urbana-gold/80 group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 overflow-hidden">
-              {/* Logo - exactly same size as inner circle */}
+          <div className="relative group w-32 h-32 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-56 lg:h-56">
+            {/* Circle border - thin golden border only */}
+            <div className="absolute inset-0 rounded-full border-[4px] sm:border-[5px] md:border-[6px] border-urbana-gold/80 group-active:border-urbana-gold-vibrant transition-all duration-200 pointer-events-none z-10"></div>
+            
+            {/* Logo - fills almost all the space, with minimal padding */}
+            <div className="absolute inset-[2px] sm:inset-[3px] md:inset-[4px] rounded-full overflow-hidden group-active:scale-95 transition-transform duration-200">
               <img 
                 src={costaUrbanaLogo} 
                 alt="Costa Urbana Logo" 
-                className="absolute inset-0 w-full h-full object-cover rounded-full"
+                className="w-full h-full object-cover"
               />
             </div>
           </div>
