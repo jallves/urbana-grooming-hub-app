@@ -69,19 +69,23 @@ const TotemCheckout: React.FC = () => {
       const { data: existingExtras, error: extrasError } = await supabase
         .from('appointment_extra_services')
         .select(`
-          *,
-          servico:painel_servicos(*)
+          service_id,
+          painel_servicos!inner (
+            id,
+            nome,
+            preco
+          )
         `)
         .eq('appointment_id', appointment.id);
 
       if (extrasError) {
-        console.error('Erro ao buscar serviços extras:', extrasError);
+        console.error('❌ Erro ao buscar serviços extras:', extrasError);
       } else if (existingExtras && existingExtras.length > 0) {
         console.log('📦 Serviços extras encontrados:', existingExtras.length);
         setExtraServices(existingExtras.map((extra: any) => ({
           service_id: extra.service_id,
-          nome: extra.servico.nome,
-          preco: extra.servico.preco
+          nome: extra.painel_servicos.nome,
+          preco: extra.painel_servicos.preco
         })));
       }
 
@@ -157,22 +161,26 @@ const TotemCheckout: React.FC = () => {
   const handleAddExtraService = async (serviceId: string) => {
     const service = availableServices.find(s => s.id === serviceId);
     if (service) {
+      console.log('➕ Adicionando serviço extra:', service.nome, 'ao agendamento:', appointment.id);
+      
       // Adicionar na tabela appointment_extra_services
-      const { error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('appointment_extra_services')
         .insert({
           appointment_id: appointment.id,
-          service_id: service.id,
-          added_by: session.id // Usando session_id como referência
-        });
+          service_id: service.id
+        })
+        .select();
 
       if (error) {
-        console.error('Erro ao adicionar serviço extra:', error);
+        console.error('❌ Erro ao adicionar serviço extra:', error);
         toast.error('Erro ao adicionar serviço', {
-          description: 'Tente novamente'
+          description: error.message || 'Tente novamente'
         });
         return;
       }
+
+      console.log('✅ Serviço extra adicionado:', insertData);
 
       setExtraServices([...extraServices, {
         service_id: service.id,
@@ -189,6 +197,8 @@ const TotemCheckout: React.FC = () => {
   const handleRemoveExtraService = async (index: number) => {
     const removedService = extraServices[index];
     
+    console.log('🗑️ Removendo serviço extra:', removedService.nome, 'do agendamento:', appointment.id);
+    
     // Remover da tabela appointment_extra_services
     const { error } = await supabase
       .from('appointment_extra_services')
@@ -197,12 +207,14 @@ const TotemCheckout: React.FC = () => {
       .eq('service_id', removedService.service_id);
 
     if (error) {
-      console.error('Erro ao remover serviço extra:', error);
+      console.error('❌ Erro ao remover serviço extra:', error);
       toast.error('Erro ao remover serviço', {
-        description: 'Tente novamente'
+        description: error.message || 'Tente novamente'
       });
       return;
     }
+
+    console.log('✅ Serviço extra removido com sucesso');
 
     setExtraServices(extraServices.filter((_, i) => i !== index));
     setNeedsRecalculation(true);

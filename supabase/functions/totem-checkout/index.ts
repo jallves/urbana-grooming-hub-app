@@ -99,24 +99,39 @@ Deno.serve(async (req) => {
       ]
 
       // Buscar serviços extras se existirem
-      const { data: servicos_extras } = await supabase
+      console.log('🔍 Buscando serviços extras para agendamento:', agendamento_id)
+      
+      const { data: servicos_extras, error: extrasError } = await supabase
         .from('appointment_extra_services')
         .select(`
-          *,
-          servico:painel_servicos(*)
+          service_id,
+          painel_servicos!inner (
+            id,
+            nome,
+            preco
+          )
         `)
         .eq('appointment_id', agendamento_id)
 
+      if (extrasError) {
+        console.error('❌ Erro ao buscar serviços extras:', extrasError)
+      } else {
+        console.log('📦 Serviços extras encontrados:', servicos_extras?.length || 0)
+      }
+
       if (servicos_extras && servicos_extras.length > 0) {
         servicos_extras.forEach((extra: any) => {
+          const servico = extra.painel_servicos
+          console.log('➕ Adicionando extra ao checkout:', servico.nome, 'R$', servico.preco)
+          
           itens.push({
             venda_id: venda.id,
             tipo: 'SERVICO',
             ref_id: extra.service_id,
-            nome: extra.servico.nome,
+            nome: servico.nome,
             quantidade: 1,
-            preco_unit: extra.servico.preco,
-            total: extra.servico.preco
+            preco_unit: servico.preco,
+            total: servico.preco
           })
         })
       }
