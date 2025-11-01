@@ -232,15 +232,13 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      // Buscar agendamentos com check-in mas sem checkout finalizado
-      const agendamentosComCheckin = agendamentos.filter(a => {
-        const sessao = todasSessoes?.find(s => s.appointment_id === a.id);
-        return sessao && 
-               ['check_in', 'in_service'].includes(sessao.status) && 
-               !sessao.check_out_time;
-      });
+      // Buscar SESSÃO ATIVA mais recente (última com check-in ativo)
+      const sessaoAtivaRecente = todasSessoes?.find(s => 
+        ['check_in', 'in_service'].includes(s.status) && 
+        !s.check_out_time
+      );
 
-      if (agendamentosComCheckin.length === 0) {
+      if (!sessaoAtivaRecente) {
         // Verificar se todos os checkouts foram finalizados
         const agendamentosFinalizados = agendamentos.filter(a => {
           const sessao = todasSessoes?.find(s => s.appointment_id === a.id);
@@ -260,28 +258,29 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      // Se tem múltiplos agendamentos com check-in, pegar o primeiro
-      const agendamentoParaCheckout = agendamentosComCheckin[0];
-      const sessaoParaCheckout = todasSessoes?.find(s => 
-        s.appointment_id === agendamentoParaCheckout.id
+      // Buscar o agendamento correspondente à sessão ativa
+      const agendamentoParaCheckout = agendamentos.find(a => 
+        a.id === sessaoAtivaRecente.appointment_id
       );
 
-      if (!sessaoParaCheckout) {
-        toast.error('Sessão não encontrada', {
-          description: 'Não foi possível localizar sua sessão ativa.'
+      if (!agendamentoParaCheckout) {
+        toast.error('Agendamento não encontrado', {
+          description: 'Não foi possível localizar o agendamento ativo.'
         });
         setIsSearching(false);
         return;
       }
 
-      console.log('✅ Navegando para checkout');
+      console.log('✅ Sessão ativa encontrada:', sessaoAtivaRecente.id, 'para agendamento:', agendamentoParaCheckout.id);
+
+      console.log('✅ Navegando para checkout com sessão ativa:', sessaoAtivaRecente.id);
       
-      // Navegar para checkout com dados do agendamento e sessão
+      // Navegar para checkout com dados do agendamento e sessão ATIVA
       navigate('/totem/checkout', { 
         state: { 
           appointment: agendamentoParaCheckout,
           client: cliente,
-          session: sessaoParaCheckout
+          session: sessaoAtivaRecente
         } 
       });
       

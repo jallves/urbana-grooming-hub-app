@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
-      console.log('Iniciando checkout para agendamento:', agendamento_id)
+      console.log('🛒 Iniciando checkout para agendamento:', agendamento_id)
 
       // Buscar agendamento completo
       const { data: agendamento, error: agendError } = await supabase
@@ -30,10 +30,13 @@ Deno.serve(async (req) => {
         .single()
 
       if (agendError || !agendamento) {
+        console.error('❌ Agendamento não encontrado:', agendamento_id)
         throw new Error('Agendamento não encontrado')
       }
 
-      // Buscar sessão totem ativa
+      console.log('✅ Agendamento encontrado:', agendamento.id, 'Cliente:', agendamento.cliente?.nome, 'Hora:', agendamento.hora)
+
+      // Buscar sessão totem ativa MAIS RECENTE para este agendamento
       const { data: totemSession, error: sessionError } = await supabase
         .from('totem_sessions')
         .select('*')
@@ -44,16 +47,16 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (sessionError) {
-        console.error('Erro ao buscar sessão totem:', sessionError)
+        console.error('❌ Erro ao buscar sessão totem:', sessionError)
         throw new Error('Erro ao buscar sessão do totem')
       }
 
       if (!totemSession) {
-        console.error('Nenhuma sessão encontrada para agendamento:', agendamento_id)
+        console.error('❌ Nenhuma sessão ativa encontrada para agendamento:', agendamento_id)
         throw new Error('Sessão não encontrada. Faça check-in primeiro.')
       }
 
-      console.log('Sessão encontrada:', totemSession.id, 'status:', totemSession.status)
+      console.log('✅ Sessão ativa encontrada:', totemSession.id, 'Status:', totemSession.status, 'Check-in:', totemSession.check_in_time)
 
       // Buscar barbeiro staff_id
       const { data: barbeiro } = await supabase
@@ -104,8 +107,10 @@ Deno.serve(async (req) => {
         }
 
         venda = novaVenda
-        console.log('Nova venda criada para sessão:', totemSession.id, '- venda:', venda.id)
+        console.log('✅ Nova venda criada para sessão:', totemSession.id, '- venda:', venda.id)
       }
+
+      console.log('📝 Venda ID:', venda.id, 'vinculada à sessão:', totemSession.id)
 
 
       // Adicionar serviço principal
@@ -234,7 +239,7 @@ Deno.serve(async (req) => {
         .update({ status: 'checkout' })
         .eq('id', totemSession.id)
 
-      console.log('Checkout iniciado com sucesso')
+      console.log('✅ Checkout iniciado com sucesso - Venda:', venda.id, 'Sessão:', totemSession.id, 'Total:', total)
 
       return new Response(
         JSON.stringify({
