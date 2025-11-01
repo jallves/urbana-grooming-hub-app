@@ -7,24 +7,33 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { useBarbershopAppointments } from '@/hooks/useBarbershopAppointments';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Service {
   id: string;
-  name: string;
-  price: number;
-  duration: number;
+  nome: string;
+  preco: number;
+  duracao: number;
+}
+
+interface Barber {
+  id: string;
+  nome: string;
+  email: string;
+  staff_id: string;
 }
 
 export default function PainelClienteNovoAgendamento() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
-  const { createAppointment, fetchBarbers, barbers, isLoading } = useBarbershopAppointments();
+  
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<string>('');
@@ -34,23 +43,32 @@ export default function PainelClienteNovoAgendamento() {
   const [notes, setNotes] = useState<string>('');
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
-  // Carregar serviços
+  // Carregar serviços e barbeiros
   useEffect(() => {
-    const fetchServices = async () => {
-      const { data, error } = await supabase
-        .from('services')
+    const fetchData = async () => {
+      // Buscar serviços do painel
+      const { data: servicesData } = await supabase
+        .from('painel_servicos')
         .select('*')
-        .eq('is_active', true)
-        .order('name');
+        .order('nome');
       
-      if (data) {
-        setServices(data);
+      if (servicesData) {
+        setServices(servicesData);
+      }
+
+      // Buscar barbeiros do painel
+      const { data: barbersData } = await supabase
+        .from('painel_barbeiros')
+        .select('id, nome, email, staff_id')
+        .order('nome');
+      
+      if (barbersData) {
+        setBarbers(barbersData);
       }
     };
 
-    fetchServices();
-    fetchBarbers();
-  }, [fetchBarbers]);
+    fetchData();
+  }, []);
 
   // Gerar horários disponíveis quando barbeiro e data são selecionados
   useEffect(() => {
@@ -64,11 +82,18 @@ export default function PainelClienteNovoAgendamento() {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
       try {
-        // Buscar horário de trabalho do barbeiro
+        // Buscar staff_id do barbeiro selecionado
+        const selectedBarberData = barbers.find(b => b.id === selectedBarber);
+        if (!selectedBarberData?.staff_id) {
+          setAvailableTimes([]);
+          return;
+        }
+
+        // Buscar horário de trabalho do barbeiro via staff_id
         const { data: schedules } = await supabase
           .from('barber_schedules')
           .select('start_time, end_time')
-          .eq('barber_id', selectedBarber)
+          .eq('barber_id', selectedBarberData.staff_id)
           .eq('weekday', weekday)
           .eq('is_active', true)
           .single();
@@ -78,27 +103,15 @@ export default function PainelClienteNovoAgendamento() {
           return;
         }
 
-        // Buscar agendamentos existentes (do painel antigo)
-        const { data: existingPainelAppointments } = await supabase
+        // Buscar agendamentos existentes apenas do painel
+        const { data: existingAppointments } = await supabase
           .from('painel_agendamentos')
           .select('hora')
           .eq('barbeiro_id', selectedBarber)
           .eq('data', dateStr)
           .not('status', 'eq', 'cancelado');
 
-        // Buscar agendamentos do sistema novo
-        const { data: existingAppointments } = await supabase
-          .from('appointments')
-          .select('start_time')
-          .eq('staff_id', selectedBarber)
-          .gte('start_time', `${dateStr}T00:00:00`)
-          .lt('start_time', `${dateStr}T23:59:59`)
-          .not('status', 'eq', 'cancelled');
-
-        const bookedTimes = [
-          ...(existingPainelAppointments?.map(apt => apt.hora) || []),
-          ...(existingAppointments?.map(apt => new Date(apt.start_time).toTimeString().slice(0,5)) || [])
-        ];
+        const bookedTimes = existingAppointments?.map(apt => apt.hora) || [];
 
         // Gerar horários disponíveis (intervalos de 30 minutos)
         const times: string[] = [];
@@ -116,33 +129,46 @@ export default function PainelClienteNovoAgendamento() {
 
         setAvailableTimes(times);
       } catch (error) {
-        console.error('Erro ao gerar horários:', error);
+      console.error('Erro ao gerar horários:', error);
         setAvailableTimes([]);
       }
     };
 
     generateAvailableTimes();
-  }, [selectedBarber, selectedDate]);
+  }, [selectedBarber, selectedDate, barbers]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!cliente || !selectedService || !selectedBarber || !selectedDate || !selectedTime) {
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
-    const formData = {
-      service_id: selectedService,
-      barber_id: selectedBarber,
-      scheduled_date: format(selectedDate, 'yyyy-MM-dd'),
-      scheduled_time: selectedTime,
-      notes: notes.trim() || undefined
-    };
+    setIsLoading(true);
+    try {
+      // Salvar diretamente em painel_agendamentos
+      const { error } = await supabase
+        .from('painel_agendamentos')
+        .insert({
+          cliente_id: cliente.id,
+          barbeiro_id: selectedBarber,
+          servico_id: selectedService,
+          data: format(selectedDate, 'yyyy-MM-dd'),
+          hora: selectedTime,
+          status: 'confirmado',
+          observacoes: notes.trim() || null
+        });
 
-    const result = await createAppointment(formData, cliente.id);
-    
-    if (result) {
+      if (error) throw error;
+
+      toast.success('Agendamento realizado com sucesso!');
       navigate('/painel-cliente/agendamentos');
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error);
+      toast.error('Erro ao criar agendamento. Tente novamente.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -171,7 +197,7 @@ export default function PainelClienteNovoAgendamento() {
                 <SelectContent>
                   {services.map((service) => (
                     <SelectItem key={service.id} value={service.id}>
-                      {service.name} - R$ {service.price.toFixed(2)} ({service.duration}min)
+                      {service.nome} - R$ {service.preco.toFixed(2)} ({service.duracao}min)
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -188,7 +214,7 @@ export default function PainelClienteNovoAgendamento() {
                 <SelectContent>
                   {barbers.map((barber) => (
                     <SelectItem key={barber.id} value={barber.id}>
-                      {barber.name} - {barber.specialty}
+                      {barber.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
