@@ -34,8 +34,18 @@ const TotemCheckout: React.FC = () => {
   }, [appointment]);
 
   const startCheckout = async () => {
+    if (!appointment?.id) {
+      console.error('❌ ID do agendamento não encontrado');
+      toast.error('Erro', {
+        description: 'Informações do agendamento não encontradas. Retorne ao início.'
+      });
+      navigate('/totem');
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('🔄 Iniciando checkout para agendamento:', appointment.id);
 
       // Chamar edge function para iniciar checkout
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
@@ -46,19 +56,56 @@ const TotemCheckout: React.FC = () => {
         }
       });
 
-      if (error) throw error;
-
-      if (data.success) {
-        setVendaId(data.venda_id);
-        setSessionId(data.session_id);
-        setResumo(data.resumo);
-      } else {
-        throw new Error(data.error || 'Erro ao iniciar checkout');
+      if (error) {
+        console.error('❌ Erro ao iniciar checkout:', error);
+        
+        // Tratamento específico de erros
+        if (error.message?.includes('não encontrado')) {
+          toast.error('Agendamento não encontrado', {
+            description: 'Não foi possível localizar este agendamento.'
+          });
+        } else if (error.message?.includes('finalizado')) {
+          toast.error('Agendamento já finalizado', {
+            description: 'Este agendamento já foi finalizado anteriormente.'
+          });
+        } else {
+          toast.error('Erro ao processar checkout', {
+            description: error.message || 'Não foi possível processar o checkout. Procure a recepção.'
+          });
+        }
+        throw error;
       }
+
+      if (!data?.success) {
+        console.error('❌ Falha no checkout:', data?.error);
+        toast.error('Erro no checkout', {
+          description: data?.error || 'Não foi possível processar o checkout.'
+        });
+        throw new Error(data?.error || 'Erro ao iniciar checkout');
+      }
+
+      if (!data.venda_id || !data.session_id || !data.resumo) {
+        console.error('❌ Dados incompletos retornados:', data);
+        toast.error('Erro no sistema', {
+          description: 'Dados incompletos retornados do servidor.'
+        });
+        throw new Error('Dados de checkout incompletos');
+      }
+
+      console.log('✅ Checkout iniciado com sucesso:', {
+        venda_id: data.venda_id,
+        session_id: data.session_id,
+        total: data.resumo.total
+      });
+
+      setVendaId(data.venda_id);
+      setSessionId(data.session_id);
+      setResumo(data.resumo);
     } catch (error: any) {
-      console.error('Erro ao carregar checkout:', error);
+      console.error('❌ Erro inesperado no checkout:', error);
       toast.error(error.message || 'Erro ao carregar checkout');
-      navigate('/totem');
+      // Redirecionar para o início em caso de erro crítico
+      setTimeout(() => navigate('/totem'), 3000);
     } finally {
       setLoading(false);
     }

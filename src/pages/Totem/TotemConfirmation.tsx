@@ -29,10 +29,11 @@ const TotemConfirmation: React.FC = () => {
   }
 
   const handleConfirmCheckIn = async () => {
-    setIsProcessing(true);
-    
     try {
-      // Chamar edge function de check-in
+      setIsProcessing(true);
+      
+      console.log('🔄 Iniciando check-in para agendamento:', appointment?.id);
+
       const { data, error } = await supabase.functions.invoke('totem-checkin', {
         body: {
           agendamento_id: appointment.id,
@@ -40,22 +41,53 @@ const TotemConfirmation: React.FC = () => {
         }
       });
 
-      if (error) throw error;
-
-      if (data.success) {
-        toast.success('Check-in realizado com sucesso!');
-        navigate('/totem/checkin-success', { 
-          state: { 
-            appointment: data.agendamento,
-            client
-          } 
-        });
-      } else {
-        throw new Error(data.error || 'Erro ao fazer check-in');
+      if (error) {
+        console.error('❌ Erro no check-in:', error);
+        
+        // Tratamento específico de erros
+        if (error.message?.includes('já foi realizado')) {
+          toast.error('Check-in já realizado', {
+            description: 'Este agendamento já teve check-in feito anteriormente.'
+          });
+        } else if (error.message?.includes('não encontrado')) {
+          toast.error('Agendamento não encontrado', {
+            description: 'Não foi possível localizar este agendamento. Procure a recepção.'
+          });
+        } else if (error.message?.includes('cancelado')) {
+          toast.error('Agendamento cancelado', {
+            description: 'Este agendamento foi cancelado. Procure a recepção para reagendar.'
+          });
+        } else {
+          toast.error('Erro no check-in', {
+            description: error.message || 'Não foi possível fazer o check-in. Procure a recepção.'
+          });
+        }
+        throw error;
       }
+
+      if (!data?.success) {
+        console.error('❌ Falha no check-in:', data?.error);
+        toast.error('Erro no check-in', {
+          description: data?.error || 'Não foi possível fazer o check-in.'
+        });
+        throw new Error(data?.error || 'Erro ao fazer check-in');
+      }
+
+      console.log('✅ Check-in realizado com sucesso!');
+
+      toast.success('Check-in realizado!', {
+        description: `Bem-vindo(a), ${client?.nome}! Aguarde ser chamado.`
+      });
+
+      navigate('/totem/checkin-success', { 
+        state: { 
+          appointment: data.agendamento,
+          client
+        } 
+      });
     } catch (error: any) {
-      console.error('Erro no check-in:', error);
-      toast.error(error.message || 'Erro ao realizar check-in');
+      console.error('❌ Erro inesperado no check-in:', error);
+      // Erro já foi tratado acima
     } finally {
       setIsProcessing(false);
     }

@@ -42,27 +42,50 @@ const TotemSearch: React.FC = () => {
 
   const handleSearch = async () => {
     if (phone.length < 10) {
-      toast.error('Digite um telefone válido');
+      toast.error('Digite um telefone válido', {
+        description: 'O número deve ter pelo menos 10 dígitos'
+      });
       return;
     }
 
     setIsSearching(true);
 
     try {
-      // Buscar cliente por telefone/WhatsApp
-      const { data: cliente, error: clientError } = await supabase
+      // Remover formatação para buscar apenas números
+      const cleanPhone = phone.replace(/\D/g, '');
+      
+      console.log('🔍 Buscando cliente com telefone:', cleanPhone);
+
+      // Buscar cliente por telefone/WhatsApp usando LIKE para ignorar formatação
+      const { data: clientes, error: clientError } = await supabase
         .from('painel_clientes')
         .select('*')
-        .eq('whatsapp', phone)
-        .single();
+        .ilike('whatsapp', `%${cleanPhone}%`);
 
-      if (clientError || !cliente) {
-        toast.error('Cliente não encontrado. Cadastre-se primeiro!');
+      if (clientError) {
+        console.error('❌ Erro ao buscar cliente:', clientError);
+        toast.error('Erro no sistema', {
+          description: 'Não foi possível buscar o cliente. Tente novamente.'
+        });
         setIsSearching(false);
         return;
       }
 
-      // Buscar TODOS os agendamentos do cliente (não apenas de hoje)
+      if (!clientes || clientes.length === 0) {
+        console.log('❌ Nenhum cliente encontrado com telefone:', cleanPhone);
+        toast.error('Telefone não cadastrado', {
+          description: 'Este número não está cadastrado no sistema. Procure a recepção para fazer seu cadastro.'
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      const cliente = clientes[0];
+      console.log('✅ Cliente encontrado:', cliente.nome);
+
+      // Buscar agendamentos do cliente
+      const hoje = new Date().toISOString().split('T')[0];
+      
       const { data: agendamentos, error: agendamentosError } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -71,23 +94,31 @@ const TotemSearch: React.FC = () => {
           barbeiro:painel_barbeiros(*)
         `)
         .eq('cliente_id', cliente.id)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false })
-        .limit(10); // Últimos 10 agendamentos
+        .gte('data', hoje)
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
 
       if (agendamentosError) {
-        console.error('Erro ao buscar agendamentos:', agendamentosError);
-        toast.error('Erro ao buscar agendamentos');
+        console.error('❌ Erro ao buscar agendamentos:', agendamentosError);
+        toast.error('Erro no sistema', {
+          description: 'Não foi possível buscar seus agendamentos. Tente novamente.'
+        });
         setIsSearching(false);
         return;
       }
+
+      console.log('📅 Agendamentos encontrados:', agendamentos?.length || 0);
 
       if (!agendamentos || agendamentos.length === 0) {
-        toast.error('Nenhum agendamento encontrado para este cliente');
+        toast.error('Nenhum agendamento encontrado', {
+          description: `${cliente.nome}, você não possui agendamentos marcados. Procure a recepção para agendar.`
+        });
         setIsSearching(false);
         return;
       }
 
+      console.log('✅ Navegando para lista de agendamentos');
+      
       // Navegar para tela de seleção de agendamento
       navigate('/totem/appointments-list', { 
         state: { 
@@ -95,9 +126,12 @@ const TotemSearch: React.FC = () => {
           client: cliente 
         } 
       });
+      
     } catch (error) {
-      console.error('Erro ao buscar dados:', error);
-      toast.error('Erro ao buscar dados do cliente');
+      console.error('❌ Erro inesperado:', error);
+      toast.error('Erro inesperado', {
+        description: 'Ocorreu um erro ao processar sua solicitação. Por favor, procure a recepção.'
+      });
     } finally {
       setIsSearching(false);
     }

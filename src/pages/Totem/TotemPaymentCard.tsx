@@ -19,6 +19,8 @@ const TotemPaymentCard: React.FC = () => {
     setProcessing(true);
 
     try {
+      console.log(`🔄 Processando pagamento ${type === 'credit' ? 'crédito' : 'débito'}...`);
+
       // Criar registro de pagamento
       const { data: payment, error: paymentError } = await supabase
         .from('totem_payments')
@@ -32,11 +34,20 @@ const TotemPaymentCard: React.FC = () => {
         .select()
         .single();
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error('❌ Erro ao criar registro de pagamento:', paymentError);
+        toast.error('Erro ao processar', {
+          description: 'Não foi possível iniciar o pagamento. Tente novamente.'
+        });
+        throw paymentError;
+      }
 
-      // AQUI: Integrar com API da maquininha (Stone, Cielo, etc)
-      // Por enquanto, simular processamento
-      toast.info('Aproxime ou insira o cartão na maquininha');
+      console.log('✅ Registro de pagamento criado:', payment.id);
+
+      // Integrar com API da maquininha (Stone, Cielo, etc)
+      toast.info('Aguarde...', {
+        description: 'Aproxime, insira ou passe seu cartão na maquininha'
+      });
 
       // Simular processamento de 5 segundos
       await new Promise(resolve => setTimeout(resolve, 5000));
@@ -44,48 +55,75 @@ const TotemPaymentCard: React.FC = () => {
       // Simular sucesso (90% de chance)
       const success = Math.random() > 0.1;
 
-      if (success) {
-        // Atualizar pagamento
-        await supabase
-          .from('totem_payments')
-          .update({ 
-            status: 'completed',
-            paid_at: new Date().toISOString()
-          })
-          .eq('id', payment.id);
-
-        // Chamar edge function para finalizar checkout
-        const { data: finishData, error: finishError } = await supabase.functions.invoke('totem-checkout', {
-          body: {
-            action: 'finish',
-            venda_id,
-            session_id,
-            payment_id: payment.id
-          }
-        });
-
-        if (finishError) throw finishError;
-
-        toast.success('Pagamento aprovado!');
-        navigate('/totem/payment-success', {
-          state: { appointment, total, paymentMethod: type }
-        });
-      } else {
-        // Atualizar como falhou
+      if (!success) {
+        console.error('❌ Pagamento negado pela maquininha');
         await supabase
           .from('totem_payments')
           .update({ status: 'failed' })
           .eq('id', payment.id);
 
-        toast.error('Pagamento recusado. Tente novamente.');
+        toast.error('Pagamento negado', {
+          description: 'O pagamento foi recusado. Tente outro cartão ou forma de pagamento.'
+        });
         setProcessing(false);
         setPaymentType(null);
+        return;
       }
+
+      console.log('✅ Pagamento aprovado! Finalizando checkout...');
+
+      // Atualizar pagamento
+      const { error: updateError } = await supabase
+        .from('totem_payments')
+        .update({ 
+          status: 'completed',
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', payment.id);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar pagamento:', updateError);
+        toast.error('Erro ao confirmar', {
+          description: 'Pagamento aprovado mas houve erro ao confirmar. Procure a recepção.'
+        });
+        throw updateError;
+      }
+
+      // Chamar edge function para finalizar checkout
+      const { data: finishData, error: finishError } = await supabase.functions.invoke('totem-checkout', {
+        body: {
+          action: 'finish',
+          venda_id,
+          session_id,
+          payment_id: payment.id
+        }
+      });
+
+      if (finishError) {
+        console.error('❌ Erro ao finalizar checkout:', finishError);
+        toast.error('Erro ao finalizar', {
+          description: finishError.message || 'Pagamento aprovado mas houve erro ao finalizar. Procure a recepção.'
+        });
+        throw finishError;
+      }
+
+      console.log('✅ Checkout finalizado com sucesso!', finishData);
+
+      toast.success('Pagamento aprovado!');
+      navigate('/totem/payment-success', {
+        state: { appointment, total, paymentMethod: type }
+      });
     } catch (error) {
-      console.error('Erro no pagamento:', error);
-      toast.error('Erro ao processar pagamento');
+      console.error('❌ Erro no pagamento:', error);
+      toast.error('Erro no pagamento', {
+        description: 'Ocorreu um erro ao processar o pagamento. Procure a recepção.'
+      });
       setProcessing(false);
       setPaymentType(null);
+      // Aguardar um pouco e voltar para o checkout
+      setTimeout(() => {
+        navigate('/totem/checkout', { state: { appointment } });
+      }, 3000);
     }
   };
 

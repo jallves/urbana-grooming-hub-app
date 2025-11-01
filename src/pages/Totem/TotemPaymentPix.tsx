@@ -95,11 +95,21 @@ const TotemPaymentPix: React.FC = () => {
 
   const handlePaymentSuccess = async () => {
     try {
+      console.log('✅ Pagamento PIX confirmado! Finalizando checkout...');
+      
       // Atualizar status do pagamento
-      await supabase
+      const { error: updateError } = await supabase
         .from('totem_payments')
-        .update({ status: 'completed' })
+        .update({ status: 'completed', paid_at: new Date().toISOString() })
         .eq('id', paymentId);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar pagamento:', updateError);
+        toast.error('Erro ao confirmar pagamento', {
+          description: 'Não foi possível atualizar o status. Procure a recepção.'
+        });
+        throw updateError;
+      }
 
       // Chamar edge function para finalizar checkout
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
@@ -111,20 +121,34 @@ const TotemPaymentPix: React.FC = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao finalizar checkout:', error);
+        toast.error('Erro ao finalizar', {
+          description: error.message || 'Não foi possível finalizar o atendimento. Procure a recepção.'
+        });
+        throw error;
+      }
+
+      console.log('✅ Checkout finalizado com sucesso!', data);
 
       toast.success('Pagamento confirmado!');
       navigate('/totem/payment-success', {
         state: { appointment, total, paymentMethod: 'pix' }
       });
     } catch (error) {
-      console.error('Erro ao confirmar pagamento:', error);
-      toast.error('Erro ao confirmar pagamento');
+      console.error('❌ Erro ao processar sucesso do pagamento:', error);
+      toast.error('Atenção', {
+        description: 'Houve um problema ao finalizar. Por favor, confirme com a recepção.'
+      });
+      setTimeout(() => navigate('/totem'), 3000);
     }
   };
 
   const handleTimeout = () => {
-    toast.error('Tempo esgotado para pagamento');
+    console.log('⏱️ Tempo de pagamento PIX expirado');
+    toast.error('Tempo esgotado', {
+      description: 'O tempo para pagamento expirou. Tente novamente.'
+    });
     navigate('/totem/checkout', { state: { appointment } });
   };
 
