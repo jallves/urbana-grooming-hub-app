@@ -110,14 +110,17 @@ const TotemHome: React.FC = () => {
             {/* Glow effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/30 via-urbana-gold-vibrant/30 to-urbana-gold-light/30 blur-3xl opacity-50 animate-pulse-slow" />
             
-            {/* Circle border */}
-            <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-full border-[3px] sm:border-[4px] md:border-[5px] border-urbana-gold/60 flex items-center justify-center shadow-2xl shadow-urbana-gold/20 group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 bg-transparent">
-              {/* Logo */}
+            {/* Circle border - larger to accommodate logo */}
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 rounded-full border-[3px] sm:border-[4px] md:border-[5px] border-urbana-gold/60 flex items-center justify-center shadow-2xl shadow-urbana-gold/20 group-active:scale-95 group-active:border-urbana-gold-vibrant transition-all duration-200 p-2 sm:p-2.5 md:p-3 bg-urbana-black/40 backdrop-blur-sm">
+              {/* Logo - fills the circle */}
               <img 
                 src={costaUrbanaLogo} 
                 alt="Costa Urbana Logo" 
-                className="w-20 h-20 sm:w-24 sm:h-24 md:w-30 md:h-30 lg:w-36 lg:h-36 object-contain drop-shadow-[0_0_20px_rgba(197,161,91,0.4)]"
-                style={{ filter: 'drop-shadow(0 0 15px rgba(197, 161, 91, 0.3))' }}
+                className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(197,161,91,0.4)]"
+                style={{ 
+                  filter: 'drop-shadow(0 0 15px rgba(197, 161, 91, 0.3))',
+                  mixBlendMode: 'normal'
+                }}
               />
             </div>
             
@@ -148,44 +151,48 @@ const TotemHome: React.FC = () => {
           </div>
         </div>
 
-        {/* Enhanced Menu Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6 pt-4 sm:pt-6 md:pt-8 lg:pt-12 px-2 sm:px-0">
+        {/* Enhanced Menu Grid - optimized for touch */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-5 lg:gap-6 pt-4 sm:pt-6 md:pt-8 lg:pt-12 px-2 sm:px-0">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <button
                 key={index}
                 onClick={item.onClick}
-                className="group relative bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black-soft/60 backdrop-blur-sm rounded-xl sm:rounded-2xl lg:rounded-3xl p-3 sm:p-4 md:p-6 lg:p-8 transition-all duration-200 active:scale-95 border border-urbana-gray/20 active:border-urbana-gold/50 overflow-hidden animate-slide-up"
-                style={{ animationDelay: `${0.6 + index * 0.1}s` }}
+                className="group relative bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black-soft/60 backdrop-blur-sm rounded-xl sm:rounded-2xl lg:rounded-3xl p-4 sm:p-5 md:p-7 lg:p-9 transition-all duration-150 active:scale-94 border-2 border-urbana-gray/20 active:border-urbana-gold/50 overflow-hidden animate-slide-up min-h-[120px] sm:min-h-[140px] md:min-h-[180px] lg:min-h-[220px]"
+                style={{ 
+                  animationDelay: `${0.6 + index * 0.1}s`,
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent'
+                }}
               >
                 {/* Gradient overlay on active */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-10 transition-opacity duration-200`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-10 transition-opacity duration-150`} />
                 
                 {/* Glow effect */}
-                <div className={`absolute -inset-1 bg-gradient-to-r ${item.gradient} opacity-0 group-active:opacity-30 blur-xl transition-opacity duration-200`} />
+                <div className={`absolute -inset-1 bg-gradient-to-r ${item.gradient} opacity-0 group-active:opacity-30 blur-xl transition-opacity duration-150`} />
                 
                 {/* Content */}
                 <div className="relative flex flex-col items-center gap-2 sm:gap-3 md:gap-4">
                   {/* Icon with vibrant gradient background */}
-                  <div className={`relative w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-24 lg:h-24 rounded-xl sm:rounded-2xl bg-gradient-to-br ${item.iconGradient} opacity-80 group-active:opacity-100 flex items-center justify-center transition-all duration-200 shadow-xl ${item.glowColor} group-active:shadow-2xl`}>
-                    <Icon className={`w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 lg:w-12 lg:h-12 ${item.iconColor} group-active:text-white transition-all duration-200 drop-shadow-lg group-active:scale-110`} />
-                    <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-30 blur-xl transition-opacity duration-200 rounded-xl sm:rounded-2xl`} />
+                  <div className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-28 lg:h-28 rounded-xl sm:rounded-2xl bg-gradient-to-br ${item.iconGradient} opacity-80 group-active:opacity-100 flex items-center justify-center transition-all duration-150 shadow-xl ${item.glowColor} group-active:shadow-2xl`}>
+                    <Icon className={`w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-14 lg:h-14 ${item.iconColor} group-active:text-white transition-all duration-150 drop-shadow-lg group-active:scale-110`} />
+                    <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-30 blur-xl transition-opacity duration-150 rounded-xl sm:rounded-2xl`} />
                   </div>
                   
                   {/* Text */}
                   <div className="text-center space-y-0.5 sm:space-y-1">
-                    <h3 className="text-xs sm:text-sm md:text-lg lg:text-xl xl:text-2xl font-bold text-urbana-light group-active:text-white transition-colors duration-200">
+                    <h3 className="text-sm sm:text-base md:text-xl lg:text-2xl xl:text-3xl font-bold text-urbana-light group-active:text-white transition-colors duration-150">
                       {item.title}
                     </h3>
-                    <p className="text-[10px] sm:text-xs md:text-sm lg:text-base text-urbana-light/60 group-active:text-urbana-light/80 transition-colors duration-200">
+                    <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/60 group-active:text-urbana-light/80 transition-colors duration-150">
                       {item.subtitle}
                     </p>
                   </div>
                 </div>
 
                 {/* Corner accent */}
-                <div className={`absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-20 blur-2xl transition-opacity duration-200`} />
+                <div className={`absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-20 blur-2xl transition-opacity duration-150`} />
               </button>
             );
           })}

@@ -203,36 +203,40 @@ const TotemSearch: React.FC = () => {
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="relative group h-12 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl overflow-hidden"
+                className="relative group h-14 sm:h-16 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-xl overflow-hidden"
                 variant="outline"
+                style={{ touchAction: 'manipulation' }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-150" />
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-100" />
                 <span className="relative drop-shadow">{num}</span>
               </Button>
             ))}
             
             <Button
               onClick={handleClear}
-              className="relative h-12 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base lg:text-lg font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/30 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-150 active:scale-95 rounded-xl"
+              className="relative h-14 sm:h-16 md:h-20 lg:h-24 text-xs sm:text-sm md:text-base lg:text-lg font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/30 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-94 rounded-xl"
+              style={{ touchAction: 'manipulation' }}
             >
               Limpar
             </Button>
             
             <Button
               onClick={() => handleNumberClick('0')}
-              className="relative group h-12 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl overflow-hidden"
+              className="relative group h-14 sm:h-16 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-xl overflow-hidden"
               variant="outline"
+              style={{ touchAction: 'manipulation' }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-150" />
+              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-100" />
               <span className="relative drop-shadow">0</span>
             </Button>
             
             <Button
               onClick={handleBackspace}
-              className="relative h-12 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/30 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-150 active:scale-95 rounded-xl"
+              className="relative h-14 sm:h-16 md:h-20 lg:h-24 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/30 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-94 rounded-xl"
               variant="outline"
+              style={{ touchAction: 'manipulation' }}
             >
-              <Delete className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8" />
+              <Delete className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9" />
             </Button>
           </div>
 
@@ -240,19 +244,20 @@ const TotemSearch: React.FC = () => {
           <Button
             onClick={handleSearch}
             disabled={phone.length < 10 || isSearching}
-            className="relative w-full h-12 sm:h-14 md:h-16 lg:h-20 text-base sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light active:from-urbana-gold active:to-urbana-gold-dark text-urbana-black disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-200 active:scale-98 shadow-xl rounded-xl overflow-hidden group"
+            className="relative w-full h-14 sm:h-16 md:h-20 lg:h-24 text-base sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light active:from-urbana-gold active:to-urbana-gold-dark text-urbana-black disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-150 active:scale-96 shadow-xl rounded-xl overflow-hidden group"
+            style={{ touchAction: 'manipulation' }}
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
             
             <div className="relative flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
               {isSearching ? (
                 <>
-                  <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 animate-spin" />
+                  <Loader2 className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 animate-spin" />
                   <span>Buscando...</span>
                 </>
               ) : (
                 <>
-                  <Search className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
+                  <Search className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9" />
                   <span>BUSCAR</span>
                 </>
               )}
