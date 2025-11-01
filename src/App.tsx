@@ -38,6 +38,14 @@ import BarberCommissions from './pages/BarberCommissions';
 import BarberSchedule from './pages/BarberSchedule';
 import BarberProfile from './pages/BarberProfile';
 import BarberAdminDashboard from './pages/BarberAdminDashboard';
+import TotemHome from './pages/Totem/TotemHome';
+import TotemSearch from './pages/Totem/TotemSearch';
+import TotemConfirmation from './pages/Totem/TotemConfirmation';
+import TotemCheckInSuccess from './pages/Totem/TotemCheckInSuccess';
+import TotemCheckout from './pages/Totem/TotemCheckout';
+import TotemPaymentPix from './pages/Totem/TotemPaymentPix';
+import TotemPaymentCard from './pages/Totem/TotemPaymentCard';
+import TotemPaymentSuccess from './pages/Totem/TotemPaymentSuccess';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
@@ -199,6 +207,16 @@ function App() {
                     <Route path="perfil" element={<PainelClientePerfil />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
                   </Route>
+
+                  {/* Totem Routes - Public Access */}
+                  <Route path="/totem" element={<TotemHome />} />
+                  <Route path="/totem/search" element={<TotemSearch />} />
+                  <Route path="/totem/confirmation" element={<TotemConfirmation />} />
+                  <Route path="/totem/checkin-success" element={<TotemCheckInSuccess />} />
+                  <Route path="/totem/checkout" element={<TotemCheckout />} />
+                  <Route path="/totem/payment-pix" element={<TotemPaymentPix />} />
+                  <Route path="/totem/payment-card" element={<TotemPaymentCard />} />
+                  <Route path="/totem/payment-success" element={<TotemPaymentSuccess />} />
 
                   {/* Catch all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />

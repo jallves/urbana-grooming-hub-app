@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -150,6 +150,52 @@ export type Database = {
             columns: ["coupon_id"]
             isOneToOne: false
             referencedRelation: "discount_coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointment_extra_services: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          appointment_id: string | null
+          id: string
+          service_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          appointment_id?: string | null
+          id?: string
+          service_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          appointment_id?: string | null
+          id?: string
+          service_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_extra_services_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_extra_services_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_extra_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "painel_servicos"
             referencedColumns: ["id"]
           },
         ]
@@ -2820,6 +2866,94 @@ export type Database = {
           },
         ]
       }
+      totem_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          paid_at: string | null
+          payment_method: string
+          pix_key: string | null
+          pix_qr_code: string | null
+          session_id: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method: string
+          pix_key?: string | null
+          pix_qr_code?: string | null
+          session_id?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string
+          pix_key?: string | null
+          pix_qr_code?: string | null
+          session_id?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "totem_payments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "totem_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      totem_sessions: {
+        Row: {
+          appointment_id: string | null
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string | null
+          id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "totem_sessions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -2907,22 +3041,28 @@ export type Database = {
           updated_at: string
           whatsapp: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "painel_clientes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       check_appointment_conflict: {
         Args: {
-          p_staff_id: string
-          p_start_time: string
           p_end_time: string
           p_exclude_appointment_id?: string
+          p_staff_id: string
+          p_start_time: string
         }
         Returns: boolean
       }
       check_client_appointment_conflict: {
         Args: {
           p_client_id: string
-          p_start_time: string
           p_end_time: string
           p_exclude_appointment_id?: string
+          p_start_time: string
         }
         Returns: boolean
       }
@@ -2930,8 +3070,8 @@ export type Database = {
         Args: {
           p_barber_id: string
           p_date: string
-          p_time: string
           p_duration_minutes: number
+          p_time: string
         }
         Returns: boolean
       }
@@ -2941,24 +3081,21 @@ export type Database = {
       }
       check_time_slot_availability: {
         Args: {
-          p_staff_id: string
           p_date: string
-          p_start_time: string
           p_duration: number
+          p_staff_id: string
+          p_start_time: string
         }
         Returns: boolean
       }
-      clean_expired_client_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      clean_expired_client_sessions: { Args: never; Returns: undefined }
       create_painel_agendamento: {
         Args: {
-          cliente_id: string
           barbeiro_id: string
-          servico_id: string
+          cliente_id: string
           data: string
           hora: string
+          servico_id: string
         }
         Returns: {
           barbeiro_id: string
@@ -2971,13 +3108,19 @@ export type Database = {
           status: string
           updated_at: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "painel_agendamentos"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       create_painel_cliente: {
         Args: {
-          nome: string
           email: string
-          whatsapp: string
+          nome: string
           senha_hash: string
+          whatsapp: string
         }
         Returns: {
           created_at: string
@@ -2988,15 +3131,21 @@ export type Database = {
           senha_hash: string
           updated_at: string
           whatsapp: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "painel_clientes"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       create_painel_cliente_with_birth_date: {
         Args: {
-          nome: string
-          email: string
-          whatsapp: string
           data_nascimento: string
+          email: string
+          nome: string
           senha_hash: string
+          whatsapp: string
         }
         Returns: {
           created_at: string
@@ -3007,37 +3156,43 @@ export type Database = {
           senha_hash: string
           updated_at: string
           whatsapp: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "painel_clientes"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       get_agendamentos_barbeiro_data: {
         Args: { barbeiro_id: string; data_agendamento: string }
         Returns: {
-          id: string
           hora: string
+          id: string
           status: string
         }[]
       }
       get_available_barbers: {
         Args: {
-          p_service_id: string
           p_date: string
-          p_time: string
           p_duration: number
+          p_service_id: string
+          p_time: string
         }
         Returns: {
-          id: string
-          name: string
           email: string
-          phone: string
-          image_url: string
-          specialties: string
           experience: string
-          role: string
+          id: string
+          image_url: string
           is_active: boolean
+          name: string
+          phone: string
+          role: string
+          specialties: string
         }[]
       }
       get_available_time_slots: {
-        Args: { p_staff_id: string; p_date: string; p_service_duration: number }
+        Args: { p_date: string; p_service_duration: number; p_staff_id: string }
         Returns: {
           time_slot: string
         }[]
@@ -3045,17 +3200,17 @@ export type Database = {
       get_birthday_clients: {
         Args: { target_month?: number }
         Returns: {
+          age: number
+          birth_date: string
+          email: string
           id: string
           name: string
-          email: string
           phone: string
-          birth_date: string
           whatsapp: string
-          age: number
         }[]
       }
       get_painel_barbeiros: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           commission_rate: number | null
           created_at: string
@@ -3071,6 +3226,12 @@ export type Database = {
           telefone: string | null
           updated_at: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "painel_barbeiros"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_painel_cliente_by_id: {
         Args: { cliente_id: string }
@@ -3084,9 +3245,15 @@ export type Database = {
           updated_at: string
           whatsapp: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "painel_clientes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       get_painel_servicos: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           duracao: number
@@ -3095,30 +3262,33 @@ export type Database = {
           preco: number
           updated_at: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "painel_servicos"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_staff_module_access: {
         Args: { staff_id_param: string }
         Returns: string[]
       }
-      has_role: {
-        Args:
-          | { _user_id: string; _role: Database["public"]["Enums"]["app_role"] }
-          | { role_name: string }
-        Returns: boolean
-      }
-      is_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      is_staff_member: {
-        Args: { user_email: string }
-        Returns: boolean
-      }
+      has_role:
+        | { Args: { role_name: string }; Returns: boolean }
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_staff_member: { Args: { user_email: string }; Returns: boolean }
       update_painel_cliente: {
         Args: {
           cliente_id: string
-          nome?: string
           email?: string
+          nome?: string
           whatsapp?: string
         }
         Returns: {
@@ -3130,15 +3300,21 @@ export type Database = {
           senha_hash: string
           updated_at: string
           whatsapp: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "painel_clientes"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       update_painel_cliente_with_birth_date: {
         Args: {
           cliente_id: string
-          nome?: string
-          email?: string
-          whatsapp?: string
           data_nascimento?: string
+          email?: string
+          nome?: string
+          whatsapp?: string
         }
         Returns: {
           created_at: string
@@ -3150,25 +3326,28 @@ export type Database = {
           updated_at: string
           whatsapp: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "painel_clientes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_staff_module_access: {
-        Args: { staff_id_param: string; module_ids_param: string[] }
+        Args: { module_ids_param: string[]; staff_id_param: string }
         Returns: undefined
       }
       validate_appointment_booking: {
         Args: {
           p_client_id: string
-          p_staff_id: string
-          p_service_id: string
-          p_start_time: string
           p_end_time: string
+          p_service_id: string
+          p_staff_id: string
+          p_start_time: string
         }
         Returns: Json
       }
-      validate_client_age: {
-        Args: { birth_date: string }
-        Returns: boolean
-      }
+      validate_client_age: { Args: { birth_date: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "barber" | "customer" | "manager"

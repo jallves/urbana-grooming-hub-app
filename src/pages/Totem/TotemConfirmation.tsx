@@ -1,0 +1,145 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ArrowLeft, CheckCircle, User, Scissors, Clock, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+const TotemConfirmation: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { appointment, client } = location.state || {};
+
+  if (!appointment || !client) {
+    navigate('/totem/search');
+    return null;
+  }
+
+  const handleConfirmCheckIn = async () => {
+    try {
+      // Criar sessão do totem
+      const { data: session, error: sessionError } = await supabase
+        .from('totem_sessions')
+        .insert({
+          appointment_id: appointment.id,
+          status: 'check_in',
+          check_in_time: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Atualizar status do agendamento
+      const { error: updateError } = await supabase
+        .from('painel_agendamentos')
+        .update({ status: 'em_atendimento' })
+        .eq('id', appointment.id);
+
+      if (updateError) throw updateError;
+
+      toast.success('Check-in realizado com sucesso!');
+      navigate('/totem/checkin-success', { 
+        state: { 
+          appointment,
+          client,
+          sessionId: session.id
+        } 
+      });
+    } catch (error) {
+      console.error('Erro no check-in:', error);
+      toast.error('Erro ao realizar check-in');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <Button
+          onClick={() => navigate('/totem/search')}
+          variant="outline"
+          size="lg"
+          className="h-20 px-8 text-2xl"
+        >
+          <ArrowLeft className="w-8 h-8 mr-4" />
+          Voltar
+        </Button>
+        <h1 className="text-5xl font-bold text-foreground">Confirme seus dados</h1>
+        <div className="w-48"></div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center">
+        <Card className="w-full max-w-4xl p-12 space-y-8 bg-card">
+          {/* Client Info */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 pb-6 border-b border-border">
+              <User className="w-12 h-12 text-urbana-gold" />
+              <div>
+                <p className="text-2xl text-muted-foreground">Cliente</p>
+                <p className="text-4xl font-bold text-foreground">{client.nome}</p>
+              </div>
+            </div>
+
+            {/* Appointment Details */}
+            <div className="grid grid-cols-2 gap-8">
+              <div className="flex items-start gap-4">
+                <Calendar className="w-10 h-10 text-urbana-gold mt-2" />
+                <div>
+                  <p className="text-2xl text-muted-foreground">Data</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {format(new Date(appointment.data), "dd 'de' MMMM", { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <Clock className="w-10 h-10 text-urbana-gold mt-2" />
+                <div>
+                  <p className="text-2xl text-muted-foreground">Horário</p>
+                  <p className="text-3xl font-bold text-foreground">{appointment.hora}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <Scissors className="w-10 h-10 text-urbana-gold mt-2" />
+                <div>
+                  <p className="text-2xl text-muted-foreground">Serviço</p>
+                  <p className="text-3xl font-bold text-foreground">{appointment.servico?.nome}</p>
+                  <p className="text-2xl text-urbana-gold font-semibold">
+                    R$ {appointment.servico?.preco?.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <User className="w-10 h-10 text-urbana-gold mt-2" />
+                <div>
+                  <p className="text-2xl text-muted-foreground">Barbeiro</p>
+                  <p className="text-3xl font-bold text-foreground">{appointment.barbeiro?.nome}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Confirm Button */}
+          <div className="pt-8">
+            <Button
+              onClick={handleConfirmCheckIn}
+              className="w-full h-28 text-4xl font-bold bg-urbana-gold text-black hover:bg-urbana-gold/90"
+            >
+              <CheckCircle className="w-12 h-12 mr-4" />
+              CONFIRMAR CHECK-IN
+            </Button>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default TotemConfirmation;
