@@ -40,9 +40,9 @@ const TotemCheckoutSearch: React.FC = () => {
   };
 
   const handleSearch = async () => {
-    if (phone.length < 10) {
+    if (phone.length < 8) {
       toast.error('Digite um telefone válido', {
-        description: 'O número deve ter pelo menos 10 dígitos'
+        description: 'O número deve ter pelo menos 8 dígitos'
       });
       return;
     }
@@ -54,7 +54,7 @@ const TotemCheckoutSearch: React.FC = () => {
       
       console.log('🔍 Buscando cliente para checkout:', cleanPhone);
 
-      // Buscar todos os clientes
+      // Buscar cliente por telefone (com ou sem DDD)
       const { data: todosClientes, error: clientError } = await supabase
         .from('painel_clientes')
         .select('*');
@@ -68,10 +68,16 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      // Filtrar clientes
+      // Filtrar clientes - busca flexível com ou sem DDD
       const clientes = todosClientes?.filter(c => {
         const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
-        return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
+        // Busca com DDD ou sem DDD (últimos 8-9 dígitos)
+        const clientPhoneLast9 = clientPhoneClean.slice(-9);
+        const searchLast9 = cleanPhone.slice(-9);
+        return clientPhoneClean.includes(cleanPhone) || 
+               cleanPhone.includes(clientPhoneClean) ||
+               clientPhoneLast9.includes(searchLast9) ||
+               searchLast9.includes(clientPhoneLast9);
       }) || [];
 
       if (!clientes || clientes.length === 0) {
@@ -98,7 +104,6 @@ const TotemCheckoutSearch: React.FC = () => {
         `)
         .eq('cliente_id', cliente.id)
         .eq('data', hoje)
-        .eq('status_totem', 'CHEGOU')
         .order('hora', { ascending: true });
 
       if (agendamentosError) {
@@ -113,23 +118,85 @@ const TotemCheckoutSearch: React.FC = () => {
       console.log('📅 Agendamentos encontrados:', agendamentos?.length || 0);
 
       if (!agendamentos || agendamentos.length === 0) {
-        toast.error('Nenhum check-in encontrado', {
-          description: `${cliente.nome}, você não possui check-in realizado hoje. Por favor, faça o check-in primeiro.`
+        toast.error('Nenhum agendamento hoje', {
+          description: `${cliente.nome}, você não possui agendamentos para hoje.`
         });
         setIsSearching(false);
         return;
       }
 
-      // Buscar sessão ativa do totem
-      const { data: sessions, error: sessionError } = await supabase
+      // Buscar sessões do totem para todos os agendamentos
+      const { data: todasSessoes, error: sessionError } = await supabase
         .from('totem_sessions')
         .select('*')
-        .eq('appointment_id', agendamentos[0].id)
-        .in('status', ['check_in', 'in_service'])
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .in('appointment_id', agendamentos.map(a => a.id))
+        .order('created_at', { ascending: false });
 
-      if (sessionError || !sessions || sessions.length === 0) {
+      if (sessionError) {
+        console.error('❌ Erro ao buscar sessões:', sessionError);
+        toast.error('Erro no sistema', {
+          description: 'Não foi possível buscar suas sessões.'
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      console.log('🎫 Sessões encontradas:', todasSessoes?.length || 0);
+
+      // Verificar se existe sessão em checkout ou checkout não finalizado
+      const sessaoEmCheckout = todasSessoes?.find(s => 
+        s.status === 'checkout' && !s.check_out_time
+      );
+
+      if (sessaoEmCheckout) {
+        const agendamento = agendamentos.find(a => a.id === sessaoEmCheckout.appointment_id);
+        console.log('✅ Sessão em checkout encontrada, navegando...');
+        navigate('/totem/checkout', { 
+          state: { 
+            appointment: agendamento,
+            client: cliente,
+            session: sessaoEmCheckout
+          } 
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      // Buscar agendamentos com check-in mas sem checkout finalizado
+      const agendamentosComCheckin = agendamentos.filter(a => {
+        const sessao = todasSessoes?.find(s => s.appointment_id === a.id);
+        return sessao && 
+               ['check_in', 'in_service'].includes(sessao.status) && 
+               !sessao.check_out_time;
+      });
+
+      if (agendamentosComCheckin.length === 0) {
+        // Verificar se todos os checkouts foram finalizados
+        const agendamentosFinalizados = agendamentos.filter(a => {
+          const sessao = todasSessoes?.find(s => s.appointment_id === a.id);
+          return sessao && sessao.check_out_time;
+        });
+
+        if (agendamentosFinalizados.length === agendamentos.length) {
+          toast.error('Checkouts já finalizados', {
+            description: `${cliente.nome}, todos os seus serviços de hoje já foram finalizados.`
+          });
+        } else {
+          toast.error('Nenhum check-in encontrado', {
+            description: `${cliente.nome}, você precisa fazer o check-in primeiro para realizar o checkout.`
+          });
+        }
+        setIsSearching(false);
+        return;
+      }
+
+      // Se tem múltiplos agendamentos com check-in, pegar o primeiro
+      const agendamentoParaCheckout = agendamentosComCheckin[0];
+      const sessaoParaCheckout = todasSessoes?.find(s => 
+        s.appointment_id === agendamentoParaCheckout.id
+      );
+
+      if (!sessaoParaCheckout) {
         toast.error('Sessão não encontrada', {
           description: 'Não foi possível localizar sua sessão ativa.'
         });
@@ -142,9 +209,9 @@ const TotemCheckoutSearch: React.FC = () => {
       // Navegar para checkout com dados do agendamento e sessão
       navigate('/totem/checkout', { 
         state: { 
-          appointment: agendamentos[0],
+          appointment: agendamentoParaCheckout,
           client: cliente,
-          session: sessions[0]
+          session: sessaoParaCheckout
         } 
       });
       
@@ -229,7 +296,7 @@ const TotemCheckoutSearch: React.FC = () => {
 
           <Button
             onClick={handleSearch}
-            disabled={phone.length < 10 || isSearching}
+            disabled={phone.length < 8 || isSearching}
             className="w-full h-14 sm:h-18 md:h-20 lg:h-24 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black active:from-urbana-gold-dark active:to-urbana-gold disabled:opacity-50 shadow-lg shadow-urbana-gold/30 active:shadow-urbana-gold/50 transition-all duration-100 active:scale-98"
           >
             {isSearching ? (
