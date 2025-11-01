@@ -131,13 +131,14 @@ const TotemPaymentPix: React.FC = () => {
 
       console.log('✅ Checkout finalizado com sucesso!', data);
 
-      toast.success('Pagamento confirmado!', {
-        duration: 2000
+      // Navegar para tela de sucesso
+      navigate('/totem/payment-success', {
+        state: {
+          appointment,
+          total,
+          paymentMethod: 'pix'
+        }
       });
-      
-      setTimeout(() => {
-        navigate('/totem/home');
-      }, 2000);
     } catch (error) {
       console.error('❌ Erro ao processar sucesso do pagamento:', error);
       toast.error('Atenção', {

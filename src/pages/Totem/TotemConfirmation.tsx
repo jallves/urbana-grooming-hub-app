@@ -75,15 +75,13 @@ const TotemConfirmation: React.FC = () => {
 
       console.log('✅ Check-in realizado com sucesso!');
 
-      toast.success('Check-in realizado!', {
-        description: `Bem-vindo(a), ${client?.nome}! Aguarde ser chamado.`,
-        duration: 3000
+      // Navegar para tela de sucesso
+      navigate('/totem/check-in-success', {
+        state: {
+          client,
+          appointment
+        }
       });
-
-      // Aguardar 3 segundos antes de voltar para a tela principal do Totem
-      setTimeout(() => {
-        navigate('/totem/home');
-      }, 3000);
     } catch (error: any) {
       console.error('❌ Erro inesperado no check-in:', error);
       // Erro já foi tratado acima

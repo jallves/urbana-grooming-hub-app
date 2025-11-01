@@ -12,13 +12,13 @@ const TotemCheckInSuccess: React.FC = () => {
     document.documentElement.classList.add('totem-mode');
     
     if (!client || !appointment) {
-      navigate('/totem');
+      navigate('/totem/home');
       return;
     }
 
     // Automatically redirect after 5 seconds
     const timer = setTimeout(() => {
-      navigate('/totem');
+      navigate('/totem/home');
     }, 5000);
 
     return () => {

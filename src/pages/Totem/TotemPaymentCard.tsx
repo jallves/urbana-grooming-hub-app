@@ -111,13 +111,14 @@ const TotemPaymentCard: React.FC = () => {
 
       console.log('✅ Checkout finalizado com sucesso!', finishData);
 
-      toast.success('Pagamento aprovado!', {
-        duration: 2000
+      // Navegar para tela de sucesso
+      navigate('/totem/payment-success', {
+        state: {
+          appointment,
+          total,
+          paymentMethod: paymentType
+        }
       });
-      
-      setTimeout(() => {
-        navigate('/totem/home');
-      }, 2000);
     } catch (error) {
       console.error('❌ Erro no pagamento:', error);
       toast.error('Erro no pagamento', {
