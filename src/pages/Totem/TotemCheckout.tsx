@@ -479,10 +479,10 @@ const TotemCheckout: React.FC = () => {
 
   if (loading && !isUpdating) {
     return (
-      <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-20 h-20 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
-          <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light font-poppins">Carregando checkout...</p>
+      <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center p-4">
+        <div className="text-center space-y-3 sm:space-y-4">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
+          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-urbana-light font-poppins">Carregando checkout...</p>
         </div>
       </div>
     );
@@ -490,10 +490,10 @@ const TotemCheckout: React.FC = () => {
 
   if (!resumo && !loading) {
     return (
-      <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-2xl sm:text-3xl md:text-4xl text-urbana-light font-poppins">Erro ao carregar dados</p>
-          <Button onClick={() => navigate('/totem/home')} className="bg-urbana-gold text-urbana-black active:bg-urbana-gold-dark">
+      <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center p-4">
+        <div className="text-center space-y-3 sm:space-y-4">
+          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-urbana-light font-poppins">Erro ao carregar dados</p>
+          <Button onClick={() => navigate('/totem/home')} className="bg-urbana-gold text-urbana-black active:bg-urbana-gold-dark text-sm sm:text-base md:text-lg h-10 sm:h-12 md:h-14 px-6 sm:px-8 md:px-10">
             Voltar ao início
           </Button>
         </div>
