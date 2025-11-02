@@ -3581,6 +3581,17 @@ export type Database = {
             }
             Returns: boolean
           }
+      insert_painel_agendamento: {
+        Args: {
+          p_barbeiro_id: string
+          p_cliente_id: string
+          p_data: string
+          p_hora: string
+          p_servico_id: string
+          p_status?: string
+        }
+        Returns: string
+      }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_staff_member: { Args: { user_email: string }; Returns: boolean }
       update_painel_cliente: {
