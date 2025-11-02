@@ -51,6 +51,8 @@ import TotemCheckout from './pages/Totem/TotemCheckout';
 import TotemPaymentPix from './pages/Totem/TotemPaymentPix';
 import TotemPaymentCard from './pages/Totem/TotemPaymentCard';
 import TotemPaymentSuccess from './pages/Totem/TotemPaymentSuccess';
+import TotemWaiting from './pages/Totem/TotemWaiting';
+import TotemRating from './pages/Totem/TotemRating';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
@@ -227,6 +229,8 @@ function App() {
                   <Route path="/totem/payment-pix" element={<TotemProtectedRoute><TotemPaymentPix /></TotemProtectedRoute>} />
                   <Route path="/totem/payment-card" element={<TotemProtectedRoute><TotemPaymentCard /></TotemProtectedRoute>} />
                   <Route path="/totem/payment-success" element={<TotemProtectedRoute><TotemPaymentSuccess /></TotemProtectedRoute>} />
+                  <Route path="/totem/waiting" element={<TotemProtectedRoute><TotemWaiting /></TotemProtectedRoute>} />
+                  <Route path="/totem/rating" element={<TotemProtectedRoute><TotemRating /></TotemProtectedRoute>} />
 
                   {/* Catch all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />

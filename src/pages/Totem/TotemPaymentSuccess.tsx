@@ -19,10 +19,12 @@ const TotemPaymentSuccess: React.FC = () => {
       return;
     }
 
-    // Retorna para home após 8 segundos
+    // Redirecionar para tela de avaliação após 4 segundos
     const timer = setTimeout(() => {
-      navigate('/totem/home');
-    }, 8000);
+      navigate('/totem/rating', {
+        state: { appointment, client: appointment?.cliente }
+      });
+    }, 4000);
 
     return () => {
       clearTimeout(timer);
@@ -133,9 +135,12 @@ const TotemPaymentSuccess: React.FC = () => {
             <div className="flex items-center justify-center gap-2">
               <div className="w-2 h-2 rounded-full bg-urbana-gold animate-pulse" />
               <p className="text-xs sm:text-sm md:text-base text-urbana-light/60">
-                Retornando em alguns segundos...
+                Preparando avaliação...
               </p>
             </div>
+            <p className="text-xs sm:text-sm text-urbana-light/40">
+              Sua opinião é muito importante para nós!
+            </p>
           </div>
         </div>
       </div>

@@ -16,10 +16,12 @@ const TotemCheckInSuccess: React.FC = () => {
       return;
     }
 
-    // Automatically redirect after 5 seconds
+    // Redirect to waiting screen after 3 seconds
     const timer = setTimeout(() => {
-      navigate('/totem/home');
-    }, 5000);
+      navigate('/totem/waiting', {
+        state: { client, appointment, session: location.state?.session }
+      });
+    }, 3000);
 
     return () => {
       clearTimeout(timer);
@@ -83,16 +85,16 @@ const TotemCheckInSuccess: React.FC = () => {
         </div>
 
         {/* Auto redirect message */}
-        <div className="pt-6 sm:pt-8 md:pt-12 space-y-3 sm:space-y-4">
+          <div className="pt-6 sm:pt-8 md:pt-12 space-y-3 sm:space-y-4">
           <div className="flex items-center justify-center gap-2 sm:gap-3">
             <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-urbana-gold animate-pulse" />
             <p className="text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light/60">
-              Retornando automaticamente em alguns segundos...
+              Preparando sua tela de espera...
             </p>
           </div>
           
           <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/40">
-            Aguarde confortavelmente na recepção
+            Você verá sua posição na fila e tempo estimado
           </p>
         </div>
       </div>
