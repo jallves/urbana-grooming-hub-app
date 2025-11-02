@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, User, Scissors } from 'lucide-react';
+import { CheckCircle, User, Scissors, Sparkles, Crown, ArrowRight } from 'lucide-react';
+import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
 
 const TotemCheckInSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -34,68 +35,121 @@ const TotemCheckInSuccess: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
-      
-      {/* Animated circles */}
-      <div className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/30 to-urbana-black flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+      {/* Premium animated background effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.1) 1px, transparent 0)',
+            backgroundSize: '40px 40px'
+          }} />
+        </div>
+      </div>
 
-      <div className="text-center space-y-6 sm:space-y-8 md:space-y-10 max-w-xl sm:max-w-2xl md:max-w-3xl z-10 animate-fade-in">
-        {/* Success Icon */}
-        <div className="flex justify-center mb-4 sm:mb-6 md:mb-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-green-500 blur-3xl opacity-40 animate-pulse" />
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-2xl border-4 border-green-400/20">
-              <CheckCircle className="w-14 h-14 sm:w-18 sm:h-18 md:w-24 md:h-24 text-white" strokeWidth={3} />
+      <div className="text-center space-y-8 sm:space-y-10 md:space-y-12 max-w-3xl z-10">
+        {/* Success Icon with premium effect */}
+        <div className="flex justify-center animate-scale-in">
+          <div className="relative group">
+            {/* Multiple glow layers */}
+            <div className="absolute -inset-8 bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 blur-3xl opacity-50 animate-pulse" />
+            <div className="absolute -inset-12 bg-emerald-500/30 blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '0.5s' }} />
+            
+            {/* Icon container */}
+            <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 flex items-center justify-center shadow-2xl border-4 border-emerald-400/30">
+              <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-white drop-shadow-2xl" strokeWidth={3} />
+              
+              {/* Sparkles */}
+              <Sparkles className="absolute top-4 right-4 w-6 h-6 text-white animate-pulse" />
+              <Sparkles className="absolute bottom-4 left-4 w-4 h-4 text-emerald-200 animate-pulse" style={{ animationDelay: '0.5s' }} />
             </div>
+            
+            {/* Ripple effect */}
+            <div className="absolute inset-0 rounded-full border-4 border-emerald-400/30 animate-ping" style={{ animationDuration: '2s' }} />
           </div>
         </div>
 
-        {/* Success Message */}
-        <div className="space-y-4 sm:space-y-5 md:space-y-6">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-urbana-light">
-            Check-in realizado!
+        {/* Success Message with gradient text */}
+        <div className="space-y-6 sm:space-y-8 animate-fade-up" style={{ animationDelay: '0.2s' }}>
+          {/* Crown badge */}
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+              <Crown className="w-4 h-4 text-emerald-400" />
+              <span className="text-xs sm:text-sm text-emerald-400 font-medium uppercase tracking-wider">Check-in Premium</span>
+            </div>
+          </div>
+
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300 animate-shimmer leading-tight" style={{ backgroundSize: '200% auto' }}>
+            Check-in Confirmado!
           </h1>
           
-          <div className="space-y-3 sm:space-y-4 text-base sm:text-lg md:text-xl lg:text-2xl text-urbana-light/70">
-            <p className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
-              <User className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-urbana-gold" />
-              <span>
-                Bem-vindo, <span className="text-urbana-gold font-bold">{client.nome}</span>
-              </span>
-            </p>
-            
-            <p className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
-              <Scissors className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-urbana-gold" />
-              <span>
-                Seu barbeiro <span className="text-urbana-gold font-bold">{appointment.barbeiro?.nome}</span> foi notificado
-              </span>
-            </p>
+          {/* Client info card */}
+          <div className="inline-block p-6 sm:p-8 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 border-2 border-urbana-gold/30 rounded-2xl backdrop-blur-sm shadow-2xl">
+            <div className="space-y-4">
+              <div className="flex items-center justify-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 rounded-xl bg-urbana-gold/20 flex items-center justify-center">
+                  <User className="w-6 h-6 text-urbana-gold" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm text-urbana-light/60">Bem-vindo</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-urbana-gold">
+                    {client.nome}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="h-px bg-urbana-gold/20" />
+              
+              <div className="flex items-center justify-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <Scissors className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm text-urbana-light/60">Profissional</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-400">
+                    {appointment.barbeiro?.nome}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="pt-4 sm:pt-6 md:pt-8">
-            <div className="inline-block px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 bg-urbana-gold/10 rounded-xl sm:rounded-2xl border-2 border-urbana-gold/30">
-              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold">
-                {appointment.servico?.nome}
-              </p>
-            </div>
+          {/* Service badge */}
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold/30 to-urbana-gold/20 border-2 border-urbana-gold/50 rounded-2xl backdrop-blur-sm">
+            <Sparkles className="w-5 h-5 text-urbana-gold animate-pulse" />
+            <span className="text-xl sm:text-2xl font-bold text-urbana-gold">
+              {appointment.servico?.nome}
+            </span>
+            <Sparkles className="w-5 h-5 text-urbana-gold animate-pulse" style={{ animationDelay: '0.5s' }} />
           </div>
         </div>
 
-        {/* Auto redirect message */}
-          <div className="pt-6 sm:pt-8 md:pt-12 space-y-3 sm:space-y-4">
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
-            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-urbana-gold animate-pulse" />
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light/60">
-              Preparando sua tela de espera...
-            </p>
+        {/* Auto redirect with progress */}
+        <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          <div className="flex items-center justify-center gap-3 text-urbana-light/70">
+            <span className="text-base sm:text-lg font-light">Preparando experiência premium</span>
+            <ArrowRight className="w-5 h-5 animate-pulse" />
           </div>
           
-          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/40">
-            Você verá sua posição na fila e tempo estimado
+          {/* Progress bar */}
+          <div className="max-w-md mx-auto h-1 bg-urbana-gray/20 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 rounded-full animate-[slideRight_3s_ease-in-out]" />
+          </div>
+          
+          <p className="text-sm sm:text-base text-urbana-light/50">
+            Acompanhe sua posição na fila em tempo real
           </p>
+        </div>
+
+        {/* Logo footer */}
+        <div className="pt-8 animate-fade-in" style={{ animationDelay: '0.9s' }}>
+          <div className="inline-flex items-center gap-3 px-4 py-2 bg-urbana-black-soft/50 border border-urbana-gold/20 rounded-full backdrop-blur-sm">
+            <img src={costaUrbanaLogo} alt="Costa Urbana" className="w-8 h-8 object-contain" />
+            <span className="text-xs text-urbana-light/60 font-medium uppercase tracking-wider">
+              Sistema Premium de Gestão
+            </span>
+          </div>
         </div>
       </div>
     </div>
