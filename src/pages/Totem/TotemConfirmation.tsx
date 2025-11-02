@@ -74,12 +74,14 @@ const TotemConfirmation: React.FC = () => {
       }
 
       console.log('✅ Check-in realizado com sucesso!');
+      console.log('📦 Session retornada:', data.session);
 
       // Navegar para tela de sucesso
       navigate('/totem/check-in-success', {
         state: {
           client,
-          appointment
+          appointment,
+          session: data.session
         }
       });
     } catch (error: any) {

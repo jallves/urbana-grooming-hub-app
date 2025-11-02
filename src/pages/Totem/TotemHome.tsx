@@ -3,19 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, Calendar, CreditCard, ShoppingBag, CheckCircle, Sparkles } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
+import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
 
 const TotemHome: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useTotemAuth();
   const [isIdle, setIsIdle] = useState(true);
+  const [showNewFeatures, setShowNewFeatures] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
+    
+    // Mostrar modal de novas features na primeira visita
+    const hasSeenNewFeatures = localStorage.getItem('totem_seen_new_features');
+    if (!hasSeenNewFeatures) {
+      setTimeout(() => setShowNewFeatures(true), 1000);
+    }
+    
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
   }, []);
+
+  const handleCloseNewFeatures = () => {
+    setShowNewFeatures(false);
+    localStorage.setItem('totem_seen_new_features', 'true');
+  };
 
   useEffect(() => {
     const idleTimer = setTimeout(() => {
@@ -193,6 +207,14 @@ const TotemHome: React.FC = () => {
             Toque na tela para começar
             <span className="inline-block w-1.5 h-1.5 sm:w-2 sm:h-2 bg-urbana-gold-vibrant rounded-full animate-ping" />
           </p>
+          
+          <button
+            onClick={() => setShowNewFeatures(true)}
+            className="mt-6 text-sm text-urbana-gold/60 hover:text-urbana-gold flex items-center justify-center gap-2 transition-colors mx-auto"
+          >
+            <Sparkles className="w-4 h-4" />
+            Ver novidades do totem
+          </button>
         </div>
 
         {/* Footer */}
@@ -202,6 +224,12 @@ const TotemHome: React.FC = () => {
           </p>
         </div>
       </div>
+      
+      {/* New Features Modal */}
+      <NewFeaturesModal 
+        isOpen={showNewFeatures} 
+        onClose={handleCloseNewFeatures} 
+      />
     </div>
   );
 };
