@@ -99,8 +99,10 @@ const TotemSearch: React.FC = () => {
       const cliente = clientes[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // Buscar agendamentos do cliente
-      const hoje = new Date().toISOString().split('T')[0];
+      // Buscar agendamentos do cliente - usar data local do Brasil
+      const hoje = format(new Date(), 'yyyy-MM-dd');
+      
+      console.log('📅 Buscando agendamentos a partir de:', hoje);
       
       const { data: agendamentos, error: agendamentosError } = await supabase
         .from('painel_agendamentos')
