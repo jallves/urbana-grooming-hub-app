@@ -109,17 +109,30 @@ const TotemAppointmentsList: React.FC = () => {
       return { allowed: false, reason: 'Status do agendamento não permite check-in' };
     }
 
-    // Criar data/hora completa do agendamento
+    // Criar data/hora completa do agendamento no horário de Brasília
     const [hours, minutes] = appointment.hora.split(':').map(Number);
-    const appointmentDateTime = parseISO(appointment.data);
-    appointmentDateTime.setHours(hours, minutes, 0, 0);
+    
+    // Parse da data e ajuste para horário de Brasília (UTC-3)
+    const appointmentDate = parseISO(appointment.data);
+    const appointmentDateTime = new Date(
+      appointmentDate.getFullYear(),
+      appointmentDate.getMonth(),
+      appointmentDate.getDate(),
+      hours,
+      minutes,
+      0,
+      0
+    );
 
+    // Obter horário atual
     const now = new Date();
     
     console.log('⏰ Comparação de horários:', {
       agendamento: format(appointmentDateTime, 'dd/MM/yyyy HH:mm', { locale: ptBR }),
       agora: format(now, 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-      diffMinutes: Math.floor((now.getTime() - appointmentDateTime.getTime()) / (1000 * 60))
+      diffMinutes: Math.floor((now.getTime() - appointmentDateTime.getTime()) / (1000 * 60)),
+      appointmentTimestamp: appointmentDateTime.getTime(),
+      nowTimestamp: now.getTime()
     });
     
     // Verificar se é muito cedo (mais de 2 horas antes)
