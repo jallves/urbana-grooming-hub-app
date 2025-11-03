@@ -120,13 +120,28 @@ const TotemNovoAgendamento: React.FC = () => {
     // Gerar slots de 30 em 30 minutos (8h às 20h)
     const slots: TimeSlot[] = [];
     const occupiedTimes = new Set(appointments?.map(a => a.hora) || []);
+    
+    // Verificar se é hoje para filtrar horários passados
+    const hoje = new Date();
+    const isToday = format(selectedDate, 'yyyy-MM-dd') === format(hoje, 'yyyy-MM-dd');
+    const horaAtual = hoje.getHours();
+    const minutoAtual = hoje.getMinutes();
 
     for (let hour = 8; hour < 20; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        // Se for hoje, só mostrar horários futuros (com margem de 30 min)
+        let isPast = false;
+        if (isToday) {
+          if (hour < horaAtual || (hour === horaAtual && minute <= minutoAtual)) {
+            isPast = true;
+          }
+        }
+        
         slots.push({
           time: timeString,
-          available: !occupiedTimes.has(timeString)
+          available: !occupiedTimes.has(timeString) && !isPast
         });
       }
     }
@@ -360,7 +375,13 @@ const TotemNovoAgendamento: React.FC = () => {
             mode="single"
             selected={selectedDate}
             onSelect={handleDateSelect}
-            disabled={(date) => date < new Date() || date > addDays(new Date(), 60)}
+            disabled={(date) => {
+              const hoje = new Date();
+              hoje.setHours(0, 0, 0, 0);
+              const dataComparacao = new Date(date);
+              dataComparacao.setHours(0, 0, 0, 0);
+              return dataComparacao < hoje || date > addDays(new Date(), 60);
+            }}
             locale={ptBR}
             className="rounded-lg [&_button]:text-xs [&_button]:sm:text-sm [&_button]:md:text-base landscape:[&_button]:text-xs"
           />
