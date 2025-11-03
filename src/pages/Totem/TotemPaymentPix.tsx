@@ -116,12 +116,7 @@ const TotemPaymentPix: React.FC = () => {
   const handlePaymentSuccess = async () => {
     try {
       console.log('✅ Pagamento PIX confirmado! Finalizando checkout...');
-      
-      // Mostrar saudação de sucesso
-      toast.success(`Pagamento confirmado, ${appointment?.cliente?.nome || 'Cliente'}! 🎉`, {
-        description: 'Seu atendimento foi finalizado com sucesso. Obrigado pela preferência!',
-        duration: 5000
-      });
+      console.log('📋 Dados do pagamento:', { appointment, client, total, paymentId });
       
       // Atualizar status do pagamento
       const { error: updateError } = await supabase
@@ -156,8 +151,9 @@ const TotemPaymentPix: React.FC = () => {
       }
 
       console.log('✅ Checkout finalizado com sucesso!', data);
+      console.log('📍 Navegando para tela de sucesso...');
 
-      // Navegar para tela de sucesso
+      // Navegar para tela de sucesso COM OS MESMOS DADOS QUE O CARTÃO
       navigate('/totem/payment-success', {
         state: {
           appointment,
