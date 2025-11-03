@@ -237,49 +237,49 @@ const TotemNovoAgendamento: React.FC = () => {
   };
 
   const renderServiceSelection = () => (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-urbana-light flex items-center justify-center gap-3">
-          <Scissors className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 landscape:space-y-2">
+      <div className="text-center space-y-1 sm:space-y-2 landscape:space-y-1">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light flex items-center justify-center gap-2 sm:gap-3 landscape:text-lg landscape:sm:text-xl">
+          <Scissors className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-urbana-gold landscape:w-5 landscape:h-5" />
           Escolha o Serviço
         </h2>
-        <p className="text-sm sm:text-base md:text-lg text-urbana-light/70">
+        <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/70 landscape:text-xs">
           Selecione o serviço desejado
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4 landscape:grid-cols-3 landscape:gap-2">
         {services.map((service, index) => (
           <button
             key={service.id}
             onClick={() => handleServiceSelect(service)}
-            className="group relative bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black-soft/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 transition-all duration-200 active:scale-95 border-2 border-urbana-gray/20 active:border-urbana-gold/50 overflow-hidden animate-fade-in"
+            className="group relative bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black-soft/60 backdrop-blur-sm rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 transition-all duration-200 active:scale-95 border-2 border-urbana-gray/20 active:border-urbana-gold/50 overflow-hidden animate-fade-in landscape:p-2 landscape:sm:p-3 landscape:rounded-lg"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 to-transparent opacity-0 group-active:opacity-100 transition-opacity" />
             
-            <div className="relative space-y-3">
+            <div className="relative space-y-2 sm:space-y-3 landscape:space-y-1">
               <div className="flex items-center justify-between">
-                <Scissors className="w-6 h-6 sm:w-8 sm:h-8 text-urbana-gold group-active:text-urbana-gold-vibrant transition-colors" />
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-urbana-gold/20 flex items-center justify-center">
-                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold" />
+                <Scissors className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-urbana-gold group-active:text-urbana-gold-vibrant transition-colors landscape:w-4 landscape:h-4" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-urbana-gold/20 flex items-center justify-center landscape:w-7 landscape:h-7">
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-urbana-gold landscape:w-3 landscape:h-3" />
                 </div>
               </div>
               
-              <div className="text-left space-y-1">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light group-active:text-urbana-gold transition-colors">
+              <div className="text-left space-y-0.5 sm:space-y-1">
+                <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light group-active:text-urbana-gold transition-colors landscape:text-sm landscape:sm:text-base">
                   {service.nome}
                 </h3>
                 {service.descricao && (
-                  <p className="text-xs sm:text-sm text-urbana-light/60 line-clamp-2">
+                  <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/60 line-clamp-2 landscape:text-[9px]">
                     {service.descricao}
                   </p>
                 )}
-                <div className="flex items-center justify-between pt-2">
-                  <span className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold">
+                <div className="flex items-center justify-between pt-1 sm:pt-2 landscape:pt-0.5">
+                  <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-gold landscape:text-base landscape:sm:text-lg">
                     R$ {service.preco.toFixed(2)}
                   </span>
-                  <span className="text-xs sm:text-sm text-urbana-light/60">
+                  <span className="text-[10px] sm:text-xs md:text-sm text-urbana-light/60 landscape:text-[9px]">
                     {service.duracao} min
                   </span>
                 </div>
@@ -292,44 +292,44 @@ const TotemNovoAgendamento: React.FC = () => {
   );
 
   const renderBarberSelection = () => (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-urbana-light flex items-center justify-center gap-3">
-          <User className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 landscape:space-y-2">
+      <div className="text-center space-y-1 sm:space-y-2 landscape:space-y-1">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light flex items-center justify-center gap-2 sm:gap-3 landscape:text-lg landscape:sm:text-xl">
+          <User className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-urbana-gold landscape:w-5 landscape:h-5" />
           Escolha o Barbeiro
         </h2>
-        <p className="text-sm sm:text-base md:text-lg text-urbana-light/70">
+        <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/70 landscape:text-xs">
           Selecione seu barbeiro preferido
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4 landscape:grid-cols-3 landscape:gap-2">
         {barbers.map((barber, index) => (
           <button
             key={barber.id}
             onClick={() => handleBarberSelect(barber)}
-            className="group relative bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black-soft/60 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-all duration-200 active:scale-95 border-2 border-urbana-gray/20 active:border-urbana-gold/50 overflow-hidden animate-fade-in"
+            className="group relative bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black-soft/60 backdrop-blur-sm rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 transition-all duration-200 active:scale-95 border-2 border-urbana-gray/20 active:border-urbana-gold/50 overflow-hidden animate-fade-in landscape:p-2 landscape:sm:p-3 landscape:rounded-lg"
             style={{ animationDelay: `${index * 0.1}s` }}
           >
             <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 to-transparent opacity-0 group-active:opacity-100 transition-opacity" />
             
-            <div className="relative flex flex-col items-center space-y-3">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark overflow-hidden border-4 border-urbana-gold/30 group-active:border-urbana-gold transition-all">
+            <div className="relative flex flex-col items-center space-y-2 sm:space-y-3 landscape:space-y-1">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-32 lg:h-32 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark overflow-hidden border-3 sm:border-4 border-urbana-gold/30 group-active:border-urbana-gold transition-all landscape:w-14 landscape:h-14 landscape:sm:w-16 landscape:sm:h-16">
                 {barber.foto_url ? (
                   <img src={barber.foto_url} alt={barber.nome} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-urbana-black-soft">
-                    <User className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-urbana-light/40" />
+                    <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16 text-urbana-light/40 landscape:w-7 landscape:h-7" />
                   </div>
                 )}
               </div>
               
-              <div className="text-center space-y-1">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light group-active:text-urbana-gold transition-colors">
+              <div className="text-center space-y-0.5 sm:space-y-1 landscape:space-y-0">
+                <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light group-active:text-urbana-gold transition-colors landscape:text-sm landscape:sm:text-base">
                   {barber.nome}
                 </h3>
                 {barber.especialidades && (
-                  <p className="text-xs sm:text-sm text-urbana-light/60">
+                  <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/60 landscape:text-[9px]">
                     {barber.especialidades}
                   </p>
                 )}
@@ -342,53 +342,53 @@ const TotemNovoAgendamento: React.FC = () => {
   );
 
   const renderDateTimeSelection = () => (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-urbana-light flex items-center justify-center gap-3">
-          <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 landscape:space-y-2">
+      <div className="text-center space-y-1 sm:space-y-2 landscape:space-y-1">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light flex items-center justify-center gap-2 sm:gap-3 landscape:text-lg landscape:sm:text-xl">
+          <CalendarIcon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 text-urbana-gold landscape:w-5 landscape:h-5" />
           Data e Horário
         </h2>
-        <p className="text-sm sm:text-base md:text-lg text-urbana-light/70">
+        <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/70 landscape:text-xs">
           Escolha o melhor dia e horário para você
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 landscape:gap-2 landscape:grid-cols-2">
         {/* Calendário */}
-        <Card className="bg-urbana-black-soft/80 border-urbana-gray/20 p-4 sm:p-6">
+        <Card className="bg-urbana-black-soft/80 border-urbana-gray/20 p-3 sm:p-4 md:p-6 landscape:p-2">
           <Calendar
             mode="single"
             selected={selectedDate}
             onSelect={handleDateSelect}
             disabled={(date) => date < new Date() || date > addDays(new Date(), 60)}
             locale={ptBR}
-            className="rounded-lg"
+            className="rounded-lg [&_button]:text-xs [&_button]:sm:text-sm [&_button]:md:text-base landscape:[&_button]:text-xs"
           />
         </Card>
 
         {/* Horários */}
-        <Card className="bg-urbana-black-soft/80 border-urbana-gray/20 p-4 sm:p-6">
-          <h3 className="text-lg sm:text-xl font-bold text-urbana-light mb-4">
+        <Card className="bg-urbana-black-soft/80 border-urbana-gray/20 p-3 sm:p-4 md:p-6 landscape:p-2">
+          <h3 className="text-base sm:text-lg md:text-xl font-bold text-urbana-light mb-3 sm:mb-4 landscape:text-sm landscape:mb-2">
             Horários Disponíveis
           </h3>
           
           {!selectedDate ? (
-            <div className="flex items-center justify-center h-64 text-urbana-light/60">
-              <p className="text-center">Selecione uma data primeiro</p>
+            <div className="flex items-center justify-center h-48 sm:h-56 md:h-64 text-urbana-light/60 landscape:h-40">
+              <p className="text-center text-xs sm:text-sm md:text-base landscape:text-xs">Selecione uma data primeiro</p>
             </div>
           ) : isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin" />
+            <div className="flex items-center justify-center h-48 sm:h-56 md:h-64 landscape:h-40">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 border-3 sm:border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin landscape:w-5 landscape:h-5" />
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-1.5 sm:gap-2 max-h-72 sm:max-h-80 md:max-h-96 overflow-y-auto landscape:max-h-60 landscape:gap-1">
               {timeSlots.map((slot, index) => (
                 <button
                   key={slot.time}
                   onClick={() => slot.available && setSelectedTime(slot.time)}
                   disabled={!slot.available}
                   className={`
-                    p-2 sm:p-3 rounded-lg font-semibold text-sm sm:text-base transition-all duration-200
+                    p-1.5 sm:p-2 md:p-3 rounded-md sm:rounded-lg font-semibold text-xs sm:text-sm md:text-base transition-all duration-200 landscape:p-1 landscape:text-xs
                     ${selectedTime === slot.time
                       ? 'bg-urbana-gold text-urbana-black scale-105'
                       : slot.available
@@ -408,14 +408,14 @@ const TotemNovoAgendamento: React.FC = () => {
 
       {/* Resumo e Confirmação */}
       {selectedDate && selectedTime && (
-        <Card className="bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 p-4 sm:p-6 animate-fade-in">
-          <div className="space-y-4">
+        <Card className="bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 p-3 sm:p-4 md:p-6 animate-fade-in landscape:p-2">
+          <div className="space-y-3 sm:space-y-4 landscape:space-y-2">
             <div className="flex items-center gap-2 text-urbana-light">
-              <Sparkles className="w-5 h-5 text-urbana-gold" />
-              <h3 className="text-lg sm:text-xl font-bold">Resumo do Agendamento</h3>
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold landscape:w-4 landscape:h-4" />
+              <h3 className="text-base sm:text-lg md:text-xl font-bold landscape:text-sm">Resumo do Agendamento</h3>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm sm:text-base">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm md:text-base landscape:grid-cols-4 landscape:gap-2 landscape:text-xs">
               <div>
                 <p className="text-urbana-light/60">Serviço:</p>
                 <p className="text-urbana-light font-semibold">{selectedService?.nome}</p>
@@ -427,7 +427,7 @@ const TotemNovoAgendamento: React.FC = () => {
               <div>
                 <p className="text-urbana-light/60">Data:</p>
                 <p className="text-urbana-light font-semibold">
-                  {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
                 </p>
               </div>
               <div>
@@ -439,13 +439,13 @@ const TotemNovoAgendamento: React.FC = () => {
             <Button
               onClick={handleConfirmAppointment}
               disabled={isLoading}
-              className="w-full bg-urbana-gold hover:bg-urbana-gold-vibrant text-urbana-black font-bold text-base sm:text-lg h-12 sm:h-14"
+              className="w-full bg-urbana-gold hover:bg-urbana-gold-vibrant text-urbana-black font-bold text-sm sm:text-base md:text-lg h-10 sm:h-12 md:h-14 landscape:h-9 landscape:text-sm"
             >
               {isLoading ? (
-                <div className="w-6 h-6 border-4 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 sm:border-4 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin landscape:w-4 landscape:h-4" />
               ) : (
                 <>
-                  <Check className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 landscape:w-4 landscape:h-4" />
                   Confirmar Agendamento
                 </>
               )}
@@ -457,9 +457,9 @@ const TotemNovoAgendamento: React.FC = () => {
   );
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 overflow-hidden landscape:py-2 landscape:px-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 landscape:mb-2">
         <Button
           onClick={() => {
             if (step === 'service') {
@@ -471,27 +471,27 @@ const TotemNovoAgendamento: React.FC = () => {
             }
           }}
           variant="ghost"
-          className="gap-2 text-urbana-light hover:text-urbana-gold"
+          className="gap-2 text-urbana-light hover:text-urbana-gold h-10 sm:h-12 px-3 sm:px-4 landscape:h-8 landscape:px-2"
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="text-sm sm:text-base">Voltar</span>
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 landscape:w-4 landscape:h-4" />
+          <span className="text-xs sm:text-sm md:text-base landscape:text-xs">Voltar</span>
         </Button>
 
         <div className="text-right">
-          <p className="text-xs sm:text-sm text-urbana-light/60">Cliente:</p>
-          <p className="text-sm sm:text-base md:text-lg font-semibold text-urbana-gold">
+          <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/60 landscape:text-[9px]">Cliente:</p>
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-urbana-gold landscape:text-xs">
             {clientData?.nome}
           </p>
         </div>
       </div>
 
       {/* Progress Indicator */}
-      <div className="flex items-center justify-center gap-2 sm:gap-4 mb-6 sm:mb-8">
+      <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-4 mb-4 sm:mb-6 md:mb-8 landscape:mb-2">
         {['service', 'barber', 'datetime'].map((stepName, index) => (
-          <div key={stepName} className="flex items-center gap-2">
+          <div key={stepName} className="flex items-center gap-1 sm:gap-2">
             <div
               className={`
-                w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base transition-all
+                w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm md:text-base transition-all landscape:w-6 landscape:h-6 landscape:text-xs
                 ${step === stepName || (index < ['service', 'barber', 'datetime'].indexOf(step))
                   ? 'bg-urbana-gold text-urbana-black'
                   : 'bg-urbana-black-soft border-2 border-urbana-gray/30 text-urbana-light/50'
@@ -501,7 +501,7 @@ const TotemNovoAgendamento: React.FC = () => {
               {index + 1}
             </div>
             {index < 2 && (
-              <div className={`w-8 sm:w-12 h-1 rounded-full ${index < ['service', 'barber', 'datetime'].indexOf(step) ? 'bg-urbana-gold' : 'bg-urbana-gray/30'}`} />
+              <div className={`w-6 sm:w-8 md:w-12 h-0.5 sm:h-1 rounded-full landscape:w-4 ${index < ['service', 'barber', 'datetime'].indexOf(step) ? 'bg-urbana-gold' : 'bg-urbana-gray/30'}`} />
             )}
           </div>
         ))}
