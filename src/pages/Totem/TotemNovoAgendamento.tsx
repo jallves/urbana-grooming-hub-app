@@ -152,7 +152,16 @@ const TotemNovoAgendamento: React.FC = () => {
 
   const handleConfirmAppointment = async () => {
     if (!selectedService || !selectedBarber || !selectedDate || !selectedTime) {
-      toast.error('Preencha todos os campos');
+      toast.error('Preencha todos os campos', {
+        duration: 5000,
+        style: {
+          background: 'hsl(var(--urbana-brown))',
+          color: 'hsl(var(--urbana-light))',
+          border: '3px solid hsl(var(--destructive))',
+          fontSize: '1.25rem',
+          padding: '1.5rem',
+        }
+      });
       return;
     }
 
@@ -167,15 +176,26 @@ const TotemNovoAgendamento: React.FC = () => {
           servico_id: selectedService.id,
           data: format(selectedDate, 'yyyy-MM-dd'),
           hora: selectedTime,
-          status: 'agendado'
+          status: 'confirmado'
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar agendamento:', error);
+        throw error;
+      }
 
-      toast.success('Agendamento criado com sucesso!', {
-        description: `${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às ${selectedTime}`
+      toast.success('✅ Agendamento criado com sucesso!', {
+        description: `${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às ${selectedTime}`,
+        duration: 5000,
+        style: {
+          background: 'hsl(var(--urbana-brown))',
+          color: 'hsl(var(--urbana-light))',
+          border: '3px solid hsl(var(--urbana-gold))',
+          fontSize: '1.25rem',
+          padding: '1.5rem',
+        }
       });
 
       navigate('/totem/agendamento-sucesso', {
@@ -186,10 +206,30 @@ const TotemNovoAgendamento: React.FC = () => {
           client: clientData
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar agendamento:', error);
-      toast.error('Erro ao criar agendamento', {
-        description: 'Tente novamente ou procure a recepção.'
+      
+      let errorMessage = 'Não foi possível criar o agendamento';
+      let errorDescription = 'Tente novamente ou procure a recepção.';
+      
+      // Tratar erros específicos
+      if (error?.code === '23505') {
+        errorDescription = 'Este horário já está ocupado. Por favor, escolha outro horário.';
+      } else if (error?.message) {
+        errorDescription = error.message;
+      }
+      
+      toast.error(errorMessage, {
+        description: errorDescription,
+        duration: 8000,
+        style: {
+          background: 'hsl(var(--urbana-brown))',
+          color: 'hsl(var(--urbana-light))',
+          border: '3px solid hsl(var(--destructive))',
+          fontSize: '1.25rem',
+          padding: '1.5rem',
+          maxWidth: '600px'
+        }
       });
     } finally {
       setIsLoading(false);
