@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Clock, Scissors, User, CheckCircle, XCircle, CheckCircle2, AlertCircle } from 'lucide-react';
-import { format, parseISO, isPast, isToday } from 'date-fns';
+import { format, parseISO, isPast, isToday, addHours, subHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -95,16 +95,57 @@ const TotemAppointmentsList: React.FC = () => {
     return badges[status] || badges.agendado;
   };
 
-  const canCheckIn = (appointment: Appointment) => {
-    const appointmentDate = parseISO(appointment.data);
-    return (
-      (appointment.status === 'agendado' || appointment.status === 'confirmado') &&
-      isToday(appointmentDate)
-    );
+  const canCheckIn = (appointment: Appointment): { allowed: boolean; reason?: string } => {
+    // Verificar se o status permite check-in
+    if (appointment.status !== 'agendado' && appointment.status !== 'confirmado') {
+      return { allowed: false, reason: 'Status do agendamento não permite check-in' };
+    }
+
+    // Criar data/hora completa do agendamento
+    const [hours, minutes] = appointment.hora.split(':').map(Number);
+    const appointmentDateTime = parseISO(appointment.data);
+    appointmentDateTime.setHours(hours, minutes, 0, 0);
+
+    const now = new Date();
+    
+    // Verificar se é muito cedo (mais de 2 horas antes)
+    const twoHoursBefore = subHours(appointmentDateTime, 2);
+    if (now < twoHoursBefore) {
+      const hoursUntil = Math.floor((twoHoursBefore.getTime() - now.getTime()) / (1000 * 60 * 60));
+      const minutesUntil = Math.floor(((twoHoursBefore.getTime() - now.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+      return { 
+        allowed: false, 
+        reason: `Check-in disponível a partir de ${format(twoHoursBefore, 'HH:mm', { locale: ptBR })} (faltam ${hoursUntil}h ${minutesUntil}min)` 
+      };
+    }
+
+    // Verificar se é muito tarde (mais de 1 hora depois)
+    const oneHourAfter = addHours(appointmentDateTime, 1);
+    if (now > oneHourAfter) {
+      return { 
+        allowed: false, 
+        reason: `Check-in expirado. Limite era até ${format(oneHourAfter, 'HH:mm', { locale: ptBR })} (1 hora após o horário agendado)` 
+      };
+    }
+
+    // Check-in permitido
+    return { allowed: true };
   };
 
   const handleSelectAppointment = async (appointment: Appointment) => {
-    if (!canCheckIn(appointment)) {
+    const checkInValidation = canCheckIn(appointment);
+    
+    if (!checkInValidation.allowed) {
+      toast.error(checkInValidation.reason || 'Check-in não disponível', {
+        duration: 5000,
+        style: {
+          background: 'hsl(var(--urbana-brown))',
+          color: 'hsl(var(--urbana-light))',
+          border: '2px solid hsl(var(--destructive))',
+          fontSize: '1.125rem',
+          padding: '1.5rem',
+        }
+      });
       return;
     }
 
@@ -112,7 +153,16 @@ const TotemAppointmentsList: React.FC = () => {
     const checkIn = checkInInfo[appointment.id];
     
     if (checkIn) {
-      // Não navega, apenas informa
+      toast.info('Check-in já realizado para este agendamento', {
+        duration: 3000,
+        style: {
+          background: 'hsl(var(--urbana-brown))',
+          color: 'hsl(var(--urbana-light))',
+          border: '2px solid hsl(var(--urbana-gold))',
+          fontSize: '1.125rem',
+          padding: '1.5rem',
+        }
+      });
       return;
     }
     
@@ -167,7 +217,8 @@ const TotemAppointmentsList: React.FC = () => {
         <div className="max-w-5xl mx-auto space-y-3 sm:space-y-4 md:space-y-6 pb-6">
           {appointments.map((appointment: Appointment) => {
             const statusBadge = getStatusBadge(appointment.status);
-            const allowCheckIn = canCheckIn(appointment);
+            const checkInValidation = canCheckIn(appointment);
+            const allowCheckIn = checkInValidation.allowed;
             const appointmentDate = parseISO(appointment.data);
             const isPastAppointment = isPast(appointmentDate) && !isToday(appointmentDate);
             const hasCheckIn = checkInInfo[appointment.id];
@@ -277,13 +328,20 @@ const TotemAppointmentsList: React.FC = () => {
                   </div>
                 )}
 
-                {!hasCheckIn && !allowCheckIn && isPastAppointment && (
-                  <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t-2 border-urbana-gray/20">
-                    <div className="flex items-center justify-center gap-2 sm:gap-3 text-urbana-light/40">
-                      <XCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-                      <p className="text-xs sm:text-sm md:text-base">
-                        Agendamento passado
-                      </p>
+                {!hasCheckIn && !allowCheckIn && (
+                  <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t-2 border-red-500/20">
+                    <div className="flex flex-col items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-red-500/10 rounded-lg">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <XCircle className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-red-400" />
+                        <p className="text-sm sm:text-base md:text-lg font-bold text-red-400">
+                          Check-in não disponível
+                        </p>
+                      </div>
+                      {checkInValidation.reason && (
+                        <p className="text-xs sm:text-sm md:text-base text-red-300/80 text-center">
+                          {checkInValidation.reason}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
