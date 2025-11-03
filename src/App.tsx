@@ -54,6 +54,8 @@ import TotemPaymentCard from './pages/Totem/TotemPaymentCard';
 import TotemPaymentSuccess from './pages/Totem/TotemPaymentSuccess';
 import TotemWaiting from './pages/Totem/TotemWaiting';
 import TotemRating from './pages/Totem/TotemRating';
+import TotemNovoAgendamento from './pages/Totem/TotemNovoAgendamento';
+import TotemAgendamentoSucesso from './pages/Totem/TotemAgendamentoSucesso';
 import Install from './pages/Install';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
@@ -234,6 +236,8 @@ function App() {
                   <Route path="/totem/payment-success" element={<TotemProtectedRoute><TotemPaymentSuccess /></TotemProtectedRoute>} />
                   <Route path="/totem/waiting" element={<TotemProtectedRoute><TotemWaiting /></TotemProtectedRoute>} />
                   <Route path="/totem/rating" element={<TotemProtectedRoute><TotemRating /></TotemProtectedRoute>} />
+                  <Route path="/totem/novo-agendamento" element={<TotemProtectedRoute><TotemNovoAgendamento /></TotemProtectedRoute>} />
+                  <Route path="/totem/agendamento-sucesso" element={<TotemProtectedRoute><TotemAgendamentoSucesso /></TotemProtectedRoute>} />
 
                   {/* PWA Install Page */}
                   <Route path="/install" element={<Install />} />

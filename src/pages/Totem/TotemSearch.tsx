@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Search, Phone, Sparkles, Loader2, Delete } from 'lucide-react';
@@ -9,8 +9,10 @@ import { format } from 'date-fns';
 
 const TotemSearch: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [phone, setPhone] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const action = (location.state as any)?.action;
 
   // Add totem-mode class for touch optimization
   React.useEffect(() => {
@@ -124,9 +126,20 @@ const TotemSearch: React.FC = () => {
 
       console.log('✅ Navegando para lista de agendamentos');
       
-      // Navegar para tela de seleção de agendamento
-      navigate('/totem/appointments-list', { 
-        state: { 
+      // Verificar qual ação foi solicitada
+      if (action === 'novo-agendamento') {
+        // Redirecionar para criação de novo agendamento
+        navigate('/totem/novo-agendamento', {
+          state: {
+            client: cliente
+          }
+        });
+        return;
+      }
+      
+      // Navegar para tela de seleção de agendamento (check-in)
+      navigate('/totem/appointments-list', {
+        state: {
           appointments: agendamentos,
           client: cliente 
         } 

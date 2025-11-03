@@ -52,9 +52,9 @@ const TotemHome: React.FC = () => {
   const menuItems = [
     {
       icon: Calendar,
-      title: 'Agendar',
-      subtitle: 'Novo Atendimento',
-      onClick: () => navigate('/totem/search'),
+      title: 'Novo Agendamento',
+      subtitle: 'Agende seu horário',
+      onClick: () => navigate('/totem/search', { state: { action: 'novo-agendamento' } }),
       gradient: 'from-amber-400 via-yellow-500 to-orange-500',
       iconGradient: 'from-yellow-400 to-orange-500',
       iconColor: 'text-yellow-400',
@@ -64,7 +64,7 @@ const TotemHome: React.FC = () => {
       icon: CheckCircle,
       title: 'Check-in',
       subtitle: 'Já Cheguei',
-      onClick: () => navigate('/totem/search'),
+      onClick: () => navigate('/totem/search', { state: { action: 'check-in' } }),
       gradient: 'from-emerald-400 via-green-500 to-teal-500',
       iconGradient: 'from-green-400 to-teal-500',
       iconColor: 'text-emerald-400',
