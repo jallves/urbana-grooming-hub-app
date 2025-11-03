@@ -176,78 +176,70 @@ const TotemSearch: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-brown flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-brown flex flex-col p-2 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.15) 1px, transparent 0)',
-          backgroundSize: '40px 40px'
-        }} />
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 z-10 animate-fade-in">
+      <div className="flex items-center justify-between mb-2 sm:mb-4 md:mb-6 z-10 animate-fade-in">
         <Button
           onClick={() => navigate('/totem/home')}
           variant="ghost"
           size="lg"
-          className="h-10 sm:h-12 md:h-14 lg:h-16 px-3 sm:px-4 md:px-6 lg:px-8 gap-2 text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light bg-urbana-black-soft/50 backdrop-blur-sm border border-urbana-gray/30 active:bg-urbana-gold/20 active:border-urbana-gold active:text-urbana-gold transition-all duration-200 active:scale-95 rounded-xl"
+          className="h-8 sm:h-10 md:h-12 px-2 sm:px-3 md:px-4 gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-urbana-light bg-urbana-black-soft/50 backdrop-blur-sm border border-urbana-gray/30 active:bg-urbana-gold/20 active:border-urbana-gold active:text-urbana-gold transition-all duration-200 active:scale-95 rounded-lg"
         >
-          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         
         <div className="flex-1 text-center">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light animate-shimmer" style={{ backgroundSize: '200% auto' }}>
+          <h1 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light animate-shimmer" style={{ backgroundSize: '200% auto' }}>
             Buscar Agendamento
           </h1>
         </div>
         
-        <div className="w-16 sm:w-20 md:w-24 lg:w-32"></div>
+        <div className="w-10 sm:w-16 md:w-20"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2 sm:py-4">
-        <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-3 sm:p-4 md:p-6 lg:p-10 space-y-3 sm:space-y-4 md:space-y-6 bg-gradient-to-br from-urbana-black-soft/90 to-urbana-black-soft/70 backdrop-blur-xl border-2 border-urbana-gray/30 shadow-2xl rounded-2xl sm:rounded-3xl animate-scale-in">
+      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-1 sm:py-2">
+        <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl p-2 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 bg-gradient-to-br from-urbana-black-soft/90 to-urbana-black-soft/70 backdrop-blur-xl border-2 border-urbana-gray/30 shadow-2xl rounded-xl sm:rounded-2xl animate-scale-in">
           {/* Phone Display */}
-          <div className="space-y-2 sm:space-y-3 md:space-y-4">
-            <label className="text-base sm:text-xl md:text-2xl lg:text-3xl font-semibold text-urbana-light flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg">
-                <Phone className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white drop-shadow" />
+          <div className="space-y-1 sm:space-y-2 md:space-y-3">
+            <label className="text-sm sm:text-base md:text-xl font-semibold text-urbana-light flex items-center gap-1 sm:gap-2">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg">
+                <Phone className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-white drop-shadow" />
               </div>
               Digite seu telefone
             </label>
             
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold to-cyan-500 rounded-2xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300" />
-              <div className="relative bg-urbana-black/60 border-2 border-urbana-gold/40 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 text-center transition-colors duration-200">
-                <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-mono font-bold text-urbana-gold-vibrant min-h-[32px] sm:min-h-[40px] md:min-h-[50px] lg:min-h-[60px] flex items-center justify-center tracking-wider drop-shadow-lg">
-                  {phone ? formatPhone(phone) : '(  )      -    '}
-                </p>
-              </div>
+            <div className="relative bg-urbana-black/60 border-2 border-urbana-gold/40 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 text-center">
+              <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-mono font-bold text-urbana-gold-vibrant min-h-[24px] sm:min-h-[32px] md:min-h-[40px] flex items-center justify-center tracking-wider drop-shadow-lg">
+                {phone ? formatPhone(phone) : '(  )      -    '}
+              </p>
             </div>
           </div>
 
-          {/* Enhanced Numeric Keypad */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+          {/* Numeric Keypad */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="relative group h-14 sm:h-16 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-xl overflow-hidden"
+                className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden"
                 variant="outline"
                 style={{ touchAction: 'manipulation' }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-100" />
                 <span className="relative drop-shadow">{num}</span>
               </Button>
             ))}
             
             <Button
               onClick={handleClear}
-              className="relative h-14 sm:h-16 md:h-20 lg:h-24 text-xs sm:text-sm md:text-base lg:text-lg font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/30 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-94 rounded-xl"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-[10px] sm:text-xs md:text-sm font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/30 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-94 rounded-lg"
               style={{ touchAction: 'manipulation' }}
             >
               Limpar
@@ -255,42 +247,39 @@ const TotemSearch: React.FC = () => {
             
             <Button
               onClick={() => handleNumberClick('0')}
-              className="relative group h-14 sm:h-16 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-xl overflow-hidden"
+              className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden"
               variant="outline"
               style={{ touchAction: 'manipulation' }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/0 group-active:from-urbana-gold/20 group-active:to-urbana-gold-vibrant/20 transition-all duration-100" />
               <span className="relative drop-shadow">0</span>
             </Button>
             
             <Button
               onClick={handleBackspace}
-              className="relative h-14 sm:h-16 md:h-20 lg:h-24 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/30 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-94 rounded-xl"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/30 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-94 rounded-lg"
               variant="outline"
               style={{ touchAction: 'manipulation' }}
             >
-              <Delete className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-9 lg:h-9" />
+              <Delete className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />
             </Button>
           </div>
 
-          {/* Enhanced Search Button */}
+          {/* Search Button */}
           <Button
             onClick={handleSearch}
             disabled={phone.length < 10 || isSearching}
-            className="relative w-full h-14 sm:h-16 md:h-20 lg:h-24 text-base sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light active:from-urbana-gold active:to-urbana-gold-dark text-urbana-black disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-150 active:scale-96 shadow-xl rounded-xl overflow-hidden group"
+            className="relative w-full h-10 sm:h-14 md:h-16 lg:h-20 text-sm sm:text-base md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light active:from-urbana-gold active:to-urbana-gold-dark text-urbana-black disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-150 active:scale-96 shadow-xl rounded-lg overflow-hidden group"
             style={{ touchAction: 'manipulation' }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
-            
-            <div className="relative flex items-center justify-center gap-2 sm:gap-3 md:gap-4">
+            <div className="relative flex items-center justify-center gap-1 sm:gap-2 md:gap-3">
               {isSearching ? (
                 <>
-                  <Loader2 className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 animate-spin" />
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 animate-spin" />
                   <span>Buscando...</span>
                 </>
               ) : (
                 <>
-                  <Search className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9" />
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
                   <span>BUSCAR</span>
                 </>
               )}
