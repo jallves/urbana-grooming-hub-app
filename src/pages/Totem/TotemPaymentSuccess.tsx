@@ -8,13 +8,13 @@ import { ptBR } from 'date-fns/locale';
 const TotemPaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { appointment, total, paymentMethod } = location.state || {};
+  const { appointment, client, total, paymentMethod } = location.state || {};
 
   useEffect(() => {
     // Add totem-mode class for touch optimization
     document.documentElement.classList.add('totem-mode');
     
-    if (!appointment || !total) {
+    if (!appointment || !total || !client) {
       navigate('/totem/home');
       return;
     }
@@ -22,7 +22,7 @@ const TotemPaymentSuccess: React.FC = () => {
     // Redirecionar para tela de avaliação após 4 segundos
     const timer = setTimeout(() => {
       navigate('/totem/rating', {
-        state: { appointment, client: appointment?.cliente }
+        state: { appointment, client }
       });
     }, 4000);
 
@@ -30,9 +30,9 @@ const TotemPaymentSuccess: React.FC = () => {
       clearTimeout(timer);
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [navigate, appointment, total]);
+  }, [navigate, appointment, client, total]);
 
-  if (!appointment || !total) {
+  if (!appointment || !total || !client) {
     return null;
   }
 
@@ -95,7 +95,7 @@ const TotemPaymentSuccess: React.FC = () => {
             <div className="flex justify-between py-1.5 sm:py-2 border-b border-urbana-gold/20">
               <span className="text-urbana-light/60">Cliente:</span>
               <span className="font-semibold text-urbana-light text-right truncate max-w-[60%]">
-                {appointment.cliente?.nome || 'Cliente'}
+                {client.nome}
               </span>
             </div>
 

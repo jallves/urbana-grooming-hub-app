@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 const TotemPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, total } = location.state || {};
+  const { venda_id, session_id, appointment, client, total } = location.state || {};
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
@@ -115,6 +115,7 @@ const TotemPaymentCard: React.FC = () => {
       navigate('/totem/payment-success', {
         state: {
           appointment,
+          client,
           total,
           paymentMethod: paymentType
         }

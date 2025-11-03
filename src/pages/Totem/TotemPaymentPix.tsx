@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, total } = location.state || {};
+  const { venda_id, session_id, appointment, client, total } = location.state || {};
   
   const [pixCode, setPixCode] = useState('');
   const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
@@ -141,6 +141,7 @@ const TotemPaymentPix: React.FC = () => {
       navigate('/totem/payment-success', {
         state: {
           appointment,
+          client,
           total,
           paymentMethod: 'pix'
         }

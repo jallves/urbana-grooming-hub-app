@@ -462,6 +462,7 @@ const TotemCheckout: React.FC = () => {
           venda_id: vendaId,
           session_id: sessionId,
           appointment: appointment,
+          client: client,
           total: resumo.total
         }
       });
@@ -471,6 +472,7 @@ const TotemCheckout: React.FC = () => {
           venda_id: vendaId,
           session_id: sessionId,
           appointment: appointment,
+          client: client,
           total: resumo.total
         }
       });
