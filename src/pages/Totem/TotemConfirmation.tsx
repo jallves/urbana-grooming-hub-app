@@ -93,32 +93,32 @@ const TotemConfirmation: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-3 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
       <OfflineIndicator />
       
       {/* Background texture */}
       <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8 md:mb-12 z-10">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 z-10">
         <Button
           onClick={() => navigate('/totem/search')}
           variant="ghost"
           size="lg"
-          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
+          className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mr-2 sm:mr-3" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light text-center flex-1">
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light text-center flex-1">
           Confirme seus dados
         </h1>
-        <div className="w-20 sm:w-32 md:w-48"></div>
+        <div className="w-16 sm:w-24 md:w-32"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-5xl p-4 sm:p-6 md:p-8 lg:p-12 space-y-4 sm:space-y-6 md:space-y-8 lg:space-y-10 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
+      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
           {/* Client Info */}
           <div className="space-y-4 sm:space-y-6 md:space-y-8">
             <div className="flex items-center gap-3 sm:gap-4 md:gap-6 pb-4 sm:pb-6 md:pb-8 border-b-2 border-urbana-gold/20">

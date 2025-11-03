@@ -190,25 +190,25 @@ const TotemPaymentPix: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-2 sm:p-3 md:p-4 lg:p-6 overflow-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4 gap-2 sm:gap-3">
         <Button
           onClick={() => navigate('/totem/checkout', { state: { appointment } })}
           variant="outline"
           size="lg"
-          className="h-10 sm:h-12 md:h-14 lg:h-16 px-4 sm:px-6 md:px-8 text-sm sm:text-base md:text-lg lg:text-xl"
+          className="h-9 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base"
         >
-          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 mr-2 sm:mr-3 md:mr-4" />
-          Voltar
+          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 sm:mr-2" />
+          <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light text-center flex-1">Pagamento via PIX</h1>
-        <div className="w-0 sm:w-20 md:w-32 lg:w-48"></div>
+        <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light text-center flex-1">Pagamento via PIX</h1>
+        <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center overflow-y-auto">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-12 space-y-4 sm:space-y-6 md:space-y-8 bg-card/50 backdrop-blur-sm text-center">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto py-2">
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 bg-card/50 backdrop-blur-sm text-center">
           {/* Indicador de Simulação */}
           <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-3 sm:p-4 animate-pulse">
             <div className="flex items-center justify-center gap-2 text-urbana-gold">

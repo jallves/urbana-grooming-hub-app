@@ -128,8 +128,8 @@ const TotemCheckoutSearch: React.FC = () => {
       const cliente = clientes[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // Buscar agendamentos do dia
-      const hoje = new Date().toISOString().split('T')[0];
+      // Buscar agendamentos do dia - usar data local do Brasil
+      const hoje = format(new Date(), 'yyyy-MM-dd');
       
       const { data: agendamentos, error: agendamentosError } = await supabase
         .from('painel_agendamentos')
@@ -297,29 +297,29 @@ const TotemCheckoutSearch: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-3 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
       
-      <div className="flex items-center justify-between mb-6 sm:mb-8 md:mb-12 z-10">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 z-10">
         <Button
           onClick={() => navigate('/totem/home')}
           variant="ghost"
           size="lg"
-          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
+          className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mr-2 sm:mr-3" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light text-center flex-1">
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light text-center flex-1">
           Checkout / Pagamento
         </h1>
-        <div className="w-20 sm:w-32 md:w-48"></div>
+        <div className="w-16 sm:w-24 md:w-32"></div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
         {checkoutInfo && clientInfo && appointmentInfo ? (
           // Mostrar informações do checkout já finalizado
-          <Card className="w-full max-w-2xl lg:max-w-4xl p-6 sm:p-8 md:p-10 space-y-6 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-green-500/50 shadow-2xl shadow-green-500/20">
+          <Card className="w-full max-w-2xl lg:max-w-4xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-green-500/50 shadow-2xl shadow-green-500/20">
             {/* Header de Checkout Finalizado */}
             <div className="p-4 sm:p-6 bg-gradient-to-r from-green-500/20 to-green-600/20 border-2 border-green-500/50 rounded-2xl">
               <div className="flex items-center gap-4 mb-4">
@@ -437,7 +437,7 @@ const TotemCheckoutSearch: React.FC = () => {
           </Card>
         ) : (
           // Formulário de busca normal
-          <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-12 space-y-4 sm:space-y-6 md:space-y-8 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
+          <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
           <div className="space-y-3 sm:space-y-4">
             <label className="text-xl sm:text-2xl md:text-3xl font-semibold text-urbana-light flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-urbana-gold/10 flex items-center justify-center">

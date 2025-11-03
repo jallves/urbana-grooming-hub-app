@@ -147,7 +147,7 @@ const TotemPaymentCard: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" />
@@ -155,29 +155,29 @@ const TotemPaymentCard: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8 z-10">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 z-10">
         <Button
           onClick={() => navigate('/totem/checkout', { state: { appointment, client: location.state?.client, session: location.state?.session } })}
           variant="ghost"
           size="lg"
-          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10"
+          className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10"
           disabled={processing}
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mr-2 sm:mr-3" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <div className="text-center flex-1">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
             Pagamento com Cartão
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-urbana-gray-light mt-1">Escolha o tipo de cartão</p>
+          <p className="text-xs sm:text-sm md:text-base text-urbana-gray-light mt-0.5">Escolha o tipo de cartão</p>
         </div>
-        <div className="w-20 sm:w-32 md:w-48"></div>
+        <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10">
-        <Card className="w-full max-w-3xl p-6 sm:p-8 md:p-12 space-y-6 sm:space-y-8 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20">
+      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
+        <Card className="w-full max-w-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20">
           
           {/* Amount Display */}
           <div className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold-dark/10 rounded-2xl border-2 border-urbana-gold/30">

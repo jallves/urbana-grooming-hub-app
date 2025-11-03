@@ -216,35 +216,35 @@ const TotemAppointmentsList: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col p-3 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
       {/* Background texture */}
       <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8 z-10">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 z-10">
         <Button
           onClick={() => navigate('/totem/search')}
           variant="ghost"
           size="lg"
-          className="h-12 sm:h-14 md:h-16 px-4 sm:px-6 md:px-8 text-base sm:text-lg md:text-xl text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
+          className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
         >
-          <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 mr-2 sm:mr-3" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <div className="flex-1 text-center">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light">
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-light">
             Olá, {client.nome}!
           </h1>
-          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light/60 mt-1 sm:mt-2">
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/60 mt-1">
             Selecione um agendamento para fazer check-in
           </p>
         </div>
-        <div className="w-16 sm:w-20 md:w-32"></div>
+        <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 z-10 overflow-y-auto">
-        <div className="max-w-5xl mx-auto space-y-3 sm:space-y-4 md:space-y-6 pb-6">
+      <div className="flex-1 z-10 overflow-y-auto py-2">
+        <div className="max-w-5xl mx-auto space-y-2 sm:space-y-3 md:space-y-4 pb-4">
           {appointments.map((appointment: Appointment) => {
             const statusBadge = getStatusBadge(appointment.status);
             const checkInValidation = canCheckIn(appointment);
