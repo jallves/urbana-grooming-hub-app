@@ -13,10 +13,12 @@ const TotemPaymentCard: React.FC = () => {
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
+  const [simulationTimer, setSimulationTimer] = useState(15); // Timer de simulação (15 segundos)
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     setPaymentType(type);
     setProcessing(true);
+    setSimulationTimer(15); // Reset timer
 
     try {
       console.log(`🔄 Processando pagamento ${type === 'credit' ? 'crédito' : 'débito'}...`);
@@ -46,32 +48,42 @@ const TotemPaymentCard: React.FC = () => {
 
       // Integrar com API da maquininha (Stone, Cielo, etc)
       toast.info('Aguarde...', {
-        description: 'Aproxime, insira ou passe seu cartão na maquininha',
+        description: 'Simulando processamento do pagamento...',
         duration: 5000
       });
 
-      // Simular processamento de 5 segundos
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Simular sucesso (90% de chance)
-      const success = Math.random() > 0.1;
-
-      if (!success) {
-        console.error('❌ Pagamento negado pela maquininha');
-        await supabase
-          .from('totem_payments')
-          .update({ status: 'failed' })
-          .eq('id', payment.id);
-
-        toast.error('Pagamento negado', {
-          description: 'O pagamento foi recusado. Tente outro cartão ou forma de pagamento.',
-          duration: 4000
+      // Iniciar timer de simulação
+      const interval = setInterval(() => {
+        setSimulationTimer((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            console.log('🤖 Simulação: Aprovando pagamento automaticamente...');
+            toast.info('Simulação', {
+              description: `Pagamento no ${type === 'credit' ? 'crédito' : 'débito'} aprovado automaticamente`
+            });
+            finalizePayment(payment.id);
+            return 0;
+          }
+          return prev - 1;
         });
-        setProcessing(false);
-        setPaymentType(null);
-        return;
-      }
+      }, 1000);
 
+    } catch (error) {
+      console.error('❌ Erro no pagamento:', error);
+      toast.error('Erro no pagamento', {
+        description: 'Ocorreu um erro ao processar o pagamento.'
+      });
+      setProcessing(false);
+      setPaymentType(null);
+      
+      setTimeout(() => {
+        navigate('/totem/home');
+      }, 3000);
+    }
+  };
+
+  const finalizePayment = async (paymentId: string) => {
+    try {
       console.log('✅ Pagamento aprovado! Finalizando checkout...');
 
       // Atualizar pagamento
@@ -81,7 +93,7 @@ const TotemPaymentCard: React.FC = () => {
           status: 'completed',
           paid_at: new Date().toISOString()
         })
-        .eq('id', payment.id);
+        .eq('id', paymentId);
 
       if (updateError) {
         console.error('❌ Erro ao atualizar pagamento:', updateError);
@@ -97,7 +109,7 @@ const TotemPaymentCard: React.FC = () => {
           action: 'finish',
           venda_id,
           session_id,
-          payment_id: payment.id
+          payment_id: paymentId
         }
       });
 
@@ -229,6 +241,16 @@ const TotemPaymentCard: React.FC = () => {
             <>
               {/* Processing State */}
               <div className="flex flex-col items-center justify-center py-8 sm:py-12 space-y-6 sm:space-y-8">
+                {/* Indicador de Simulação */}
+                <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-3 sm:p-4 animate-pulse w-full max-w-md">
+                  <div className="flex items-center justify-center gap-2 text-urbana-gold">
+                    <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
+                    <p className="text-sm sm:text-base md:text-lg font-bold">
+                      🤖 SIMULAÇÃO: Pagamento será aprovado em {simulationTimer}s
+                    </p>
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Loader2 className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 text-urbana-gold animate-spin" />
                   <div className="absolute inset-0 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-urbana-gold/20 rounded-full blur-xl animate-pulse" />

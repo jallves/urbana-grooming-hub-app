@@ -16,6 +16,7 @@ const TotemPaymentPix: React.FC = () => {
   const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
   const [paymentId, setPaymentId] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
+  const [simulationTimer, setSimulationTimer] = useState(15); // Timer de simulação (15 segundos)
 
   useEffect(() => {
     if (!venda_id || !session_id || !total) {
@@ -26,6 +27,7 @@ const TotemPaymentPix: React.FC = () => {
     generatePixCode();
     startPaymentCheck();
     startTimer();
+    startSimulationTimer(); // Iniciar timer de simulação
   }, []);
 
   const generatePixCode = async () => {
@@ -86,6 +88,24 @@ const TotemPaymentPix: React.FC = () => {
         if (prev <= 1) {
           clearInterval(interval);
           handleTimeout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Timer de simulação - aprova pagamento automaticamente após 15 segundos
+  const startSimulationTimer = () => {
+    const interval = setInterval(() => {
+      setSimulationTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          console.log('🤖 Simulação: Aprovando pagamento automaticamente...');
+          toast.info('Simulação', {
+            description: 'Pagamento PIX aprovado automaticamente (simulação)'
+          });
+          handlePaymentSuccess();
           return 0;
         }
         return prev - 1;
@@ -189,6 +209,16 @@ const TotemPaymentPix: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center overflow-y-auto">
         <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-12 space-y-4 sm:space-y-6 md:space-y-8 bg-card/50 backdrop-blur-sm text-center">
+          {/* Indicador de Simulação */}
+          <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-3 sm:p-4 animate-pulse">
+            <div className="flex items-center justify-center gap-2 text-urbana-gold">
+              <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
+              <p className="text-sm sm:text-base md:text-lg font-bold">
+                🤖 SIMULAÇÃO: Pagamento será aprovado em {simulationTimer}s
+              </p>
+            </div>
+          </div>
+
           {/* Timer */}
           <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 text-lg sm:text-xl md:text-2xl lg:text-3xl">
             <Clock className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
