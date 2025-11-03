@@ -1,1 +1,7 @@
 project_id = "bqftkknbvmggcbsubicl"
+
+[functions.create-test-appointment]
+verify_jwt = false
+
+[functions.totem-checkin]
+verify_jwt = false

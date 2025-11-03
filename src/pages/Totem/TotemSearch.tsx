@@ -81,7 +81,16 @@ const TotemSearch: React.FC = () => {
       if (!clientes || clientes.length === 0) {
         console.log('❌ Nenhum cliente encontrado com telefone:', cleanPhone);
         toast.error('Telefone não cadastrado', {
-          description: 'Este número não está cadastrado no sistema. Procure a recepção para fazer seu cadastro.'
+          description: 'Este número não está cadastrado no sistema. Procure a recepção para fazer seu cadastro.',
+          duration: 8000,
+          style: {
+            background: 'hsl(var(--urbana-brown))',
+            color: 'hsl(var(--urbana-light))',
+            border: '3px solid hsl(var(--destructive))',
+            fontSize: '1.25rem',
+            padding: '1.5rem',
+            maxWidth: '600px'
+          }
         });
         setIsSearching(false);
         return;
@@ -118,7 +127,16 @@ const TotemSearch: React.FC = () => {
 
       if (!agendamentos || agendamentos.length === 0) {
         toast.error('Nenhum agendamento encontrado', {
-          description: `${cliente.nome}, você não possui agendamentos marcados. Procure a recepção para agendar.`
+          description: `${cliente.nome}, você não possui agendamentos marcados. Procure a recepção para agendar.`,
+          duration: 8000,
+          style: {
+            background: 'hsl(var(--urbana-brown))',
+            color: 'hsl(var(--urbana-light))',
+            border: '3px solid hsl(var(--destructive))',
+            fontSize: '1.25rem',
+            padding: '1.5rem',
+            maxWidth: '600px'
+          }
         });
         setIsSearching(false);
         return;
