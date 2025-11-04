@@ -13,23 +13,15 @@ interface AuthContainerProps {
 const AuthContainer: React.FC<AuthContainerProps> = ({ children, className, title, subtitle }) => {
   return (
     <div className={cn(
-      'min-h-screen w-full flex items-center justify-center relative overflow-hidden',
-      'bg-gradient-to-br from-black via-gray-900 to-black',
+      'fixed inset-0 w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden p-4',
+      'bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black',
       className
     )}>
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(197, 161, 91, 0.1) 35px, rgba(197, 161, 91, 0.1) 70px)`
-        }} />
-      </div>
-
-      {/* Gradient Orbs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+      {/* Background texture effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
 
       {/* Content */}
-      <div className="w-full max-w-md mx-auto px-4 py-6 relative z-10">
+      <div className="w-full max-w-sm sm:max-w-md space-y-5 z-10">
         {(title || subtitle) && (
           <div className="text-center mb-8 space-y-3">
             <div className="flex justify-center mb-4">
@@ -38,19 +30,19 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ children, className, titl
               </div>
             </div>
             {title && (
-              <h1 className="text-4xl font-playfair font-bold text-white tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-light via-urbana-gold-light to-urbana-light">
                 {title}
               </h1>
             )}
             {subtitle && (
-              <p className="text-gray-400 text-sm">
+              <p className="text-urbana-light/70 text-sm sm:text-base font-light">
                 {subtitle}
               </p>
             )}
           </div>
         )}
         
-        <div className="backdrop-blur-xl bg-gray-900/40 border border-gray-800/50 rounded-2xl shadow-2xl p-8">
+        <div className="backdrop-blur-sm bg-card/50 border border-urbana-gray/30 rounded-2xl shadow-2xl p-6 sm:p-8">
           {children}
         </div>
       </div>
