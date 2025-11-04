@@ -18,14 +18,16 @@ const Auth: React.FC = () => {
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
 
-  const from = location.state?.from || "/admin";
-
-  // Só redireciona se o usuário está tentando acessar uma rota protegida
+  // Redireciona admin para o painel, outros para home
   useEffect(() => {
-    if (!authLoading && user && isAdmin && location.state?.from) {
-      navigate(from, { replace: true });
+    if (!authLoading && user) {
+      if (isAdmin) {
+        navigate('/admin', { replace: true });
+      } else if (!location.state?.from) {
+        navigate('/', { replace: true });
+      }
     }
-  }, [user, isAdmin, navigate, authLoading, from, location.state]);
+  }, [user, isAdmin, navigate, authLoading, location.state]);
 
   useEffect(() => {
     const createAdminUser = async () => {
