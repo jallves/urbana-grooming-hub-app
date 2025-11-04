@@ -6,6 +6,7 @@ import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Home, Scissors, Shield } from 'lucide-react';
+import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -36,8 +37,8 @@ const BarberAuth: React.FC = () => {
   // Show access denied message if user is logged in but doesn't have access
   if (!authLoading && user && !isAdmin && !isBarber) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center px-4">
-        <div className="w-full max-w-md">
+      <AuthContainer className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+        <div className="w-full">
           <div className="bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl p-8 shadow-2xl">
             <div className="text-center space-y-6">
               {/* Icon */}
@@ -79,13 +80,13 @@ const BarberAuth: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </AuthContainer>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <AuthContainer className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+      <div className="w-full">
         <div className="space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
@@ -127,7 +128,7 @@ const BarberAuth: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </AuthContainer>
   );
 };
 

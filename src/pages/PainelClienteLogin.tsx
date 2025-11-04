@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Scissors, ArrowLeft, Home, Check, X, Calendar } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
@@ -117,8 +118,8 @@ export default function PainelClienteLogin() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <AuthContainer className="bg-gradient-to-br from-zinc-950 to-zinc-900">
+      <div className="w-full">
         {/* Header com botão voltar */}
         <div className="w-full mb-6">
           <Button
@@ -388,6 +389,6 @@ export default function PainelClienteLogin() {
           </Card>
         </motion.div>
       </div>
-    </div>
+    </AuthContainer>
   );
 }
