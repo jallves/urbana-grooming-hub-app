@@ -78,7 +78,7 @@ const Auth: React.FC = () => {
 
   return (
     <AuthContainer className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="w-full space-y-8">
+      <div className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           {/* Logo */}

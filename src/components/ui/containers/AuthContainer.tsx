@@ -14,7 +14,7 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ children, className }) =>
       'px-4 py-6',
       className
     )}>
-      <div className="w-full max-w-md mx-auto space-y-6">
+      <div className="w-full max-w-md space-y-6">
         {children}
       </div>
     </div>
