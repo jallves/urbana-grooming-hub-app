@@ -36,8 +36,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
 
       if (data.user) {
         toast({
-          title: "Login realizado com sucesso!",
-          description: "Redirecionando para o painel administrativo...",
+          title: "Login realizado!",
+          description: "Bem-vindo de volta!",
         });
         navigate('/admin');
       }
@@ -45,7 +45,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
-        description: error.message || "Verifique suas credenciais e tente novamente.",
+        description: error.message || "Email ou senha incorretos.",
         variant: "destructive",
       });
     } finally {
@@ -63,41 +63,39 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Email Field */}
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium text-slate-300">
+        <Label htmlFor="email" className="text-sm font-medium text-gray-300">
           Email
         </Label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <div className="relative group">
+          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-urbana-gold transition-colors" />
           <Input
             id="email"
             type="email"
             placeholder="seu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            className="pl-12 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
             disabled={loading}
           />
         </div>
       </div>
 
-      {/* Password Field */}
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-sm font-medium text-slate-300">
+        <Label htmlFor="password" className="text-sm font-medium text-gray-300">
           Senha
         </Label>
-        <div className="relative">
-          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <div className="relative group">
+          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-urbana-gold transition-colors" />
           <Input
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Digite sua senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 pr-10 bg-slate-800/50 border-slate-700 text-white placeholder-slate-400 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12"
+            className="pl-12 pr-14 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
             disabled={loading}
           />
@@ -105,50 +103,47 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             type="button"
             variant="ghost"
             size="sm"
-            className="absolute right-0 top-0 h-12 px-3 hover:bg-transparent"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 hover:bg-gray-700/50 rounded-lg transition-colors"
             onClick={() => setShowPassword(!showPassword)}
             disabled={loading}
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4 text-slate-400" />
+              <EyeOff className="h-5 w-5 text-gray-500" />
             ) : (
-              <Eye className="h-4 w-4 text-slate-400" />
+              <Eye className="h-5 w-5 text-gray-500" />
             )}
           </Button>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {/* Submit Button */}
-        <Button 
-          type="submit" 
-          className="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-black font-semibold py-3 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02] h-12" 
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
-              Entrando...
-            </>
-          ) : (
-            <>
-              <LogIn className="h-4 w-4 mr-2" />
-              Entrar
-            </>
-          )}
-        </Button>
-        
-        {/* Forgot Password */}
-        <Button 
-          type="button"
-          variant="ghost" 
-          className="w-full text-sm text-slate-400 hover:text-amber-400 hover:bg-slate-800/50 py-2 rounded-xl transition-colors h-10"
-          onClick={() => setShowForgotPassword(true)}
-        >
-          <KeyRound className="h-4 w-4 mr-2" />
-          Esqueceu sua senha?
-        </Button>
-      </div>
+      <Button 
+        type="submit" 
+        className="w-full h-14 bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold hover:shadow-lg hover:shadow-urbana-gold/30 text-black font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02]" 
+        disabled={loading}
+      >
+        {loading ? (
+          <>
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black mr-2"></div>
+            Entrando...
+          </>
+        ) : (
+          <>
+            <LogIn className="h-5 w-5 mr-2" />
+            Entrar
+          </>
+        )}
+      </Button>
+
+      <Button 
+        type="button"
+        variant="ghost" 
+        onClick={() => setShowForgotPassword(true)}
+        className="w-full text-gray-400 hover:text-urbana-gold hover:bg-gray-800/50 h-12 rounded-xl transition-all"
+        disabled={loading}
+      >
+        <KeyRound className="h-4 w-4 mr-2" />
+        Esqueceu sua senha?
+      </Button>
     </form>
   );
 };

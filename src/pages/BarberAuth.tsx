@@ -83,47 +83,24 @@ const BarberAuth: React.FC = () => {
   }
 
   return (
-    <AuthContainer className="bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          {/* Logo */}
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg">
-            <Scissors className="h-8 w-8 text-black" />
-          </div>
+    <AuthContainer 
+      title="Costa Urbana"
+      subtitle="Acesso Barbeiro"
+    >
+      <BarberLoginForm 
+        onLoginSuccess={handleLoginSuccess}
+        loading={loading}
+        setLoading={setLoading}
+      />
 
-          {/* Title */}
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Costa Urbana</h1>
-            <p className="text-zinc-400">
-              Painel do Barbeiro
-            </p>
-          </div>
-        </div>
-
-        {/* Login Form */}
-        {!user && (
-          <div className="bg-zinc-900/80 backdrop-blur-sm border border-zinc-800 rounded-2xl p-8 shadow-2xl">
-            <BarberLoginForm 
-              loading={loading}
-              setLoading={setLoading}
-              onLoginSuccess={handleLoginSuccess}
-            />
-          </div>
-        )}
-
-        {/* Back to home button */}
-        <div className="text-center">
-          <Button
-            variant="ghost"
-            onClick={handleGoHome}
-            className="text-zinc-400 hover:text-white hover:bg-zinc-800/50 rounded-xl"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Voltar para o site
-          </Button>
-        </div>
-      </div>
+      <Button
+        variant="outline"
+        className="w-full mt-6 border-gray-700 bg-gray-800/30 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-urbana-gold/50 h-12 rounded-xl transition-all"
+        onClick={handleGoHome}
+      >
+        <Home className="h-4 w-4 mr-2" />
+        Voltar ao site
+      </Button>
     </AuthContainer>
   );
 };

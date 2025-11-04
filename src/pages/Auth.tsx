@@ -76,82 +76,50 @@ const Auth: React.FC = () => {
     );
   }
 
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
   return (
-    <AuthContainer className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          {/* Logo */}
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-2xl">
-            <Scissors className="h-10 w-10 text-black" />
-          </div>
-
-          {/* Title */}
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
-              Costa Urbana
-            </h1>
-            <p className="text-slate-400 text-lg">
-              Painel Administrativo
-            </p>
-          </div>
-        </div>
-
-        {/* Auth Card */}
-        <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl">
-          <div className="space-y-6">
-            {/* Form Header */}
-            <div className="text-center space-y-2">
-              <div className="mx-auto w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
-                <Shield className="h-6 w-6 text-amber-400" />
-              </div>
-              <h2 className="text-xl font-semibold text-white">Acesso Administrativo</h2>
-              <p className="text-slate-400 text-sm">
-                Entre com suas credenciais para acessar o painel
-              </p>
-            </div>
-
-            {/* Tabs */}
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid grid-cols-2 w-full bg-slate-800/50 rounded-xl p-1">
-                <TabsTrigger
-                  value="login"
-                  className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black data-[state=active]:shadow-lg transition-all duration-200"
-                >
-                  <LogIn className="h-4 w-4 mr-2" />
-                  Login
-                </TabsTrigger>
-                <TabsTrigger
-                  value="register"
-                  className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-400 data-[state=active]:to-amber-500 data-[state=active]:text-black data-[state=active]:shadow-lg transition-all duration-200"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Cadastro
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="login" className="mt-6">
-                <LoginForm loading={loading} setLoading={setLoading} />
-              </TabsContent>
-              <TabsContent value="register" className="mt-6">
-                <RegisterForm loading={loading} setLoading={setLoading} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
-
-        {/* Back button */}
-        <div className="text-center">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-            className="text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-xl px-6 py-3 transition-all duration-200"
+    <AuthContainer 
+      title="Costa Urbana"
+      subtitle="Painel Administrativo"
+    >
+      <Tabs defaultValue="login" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-800/30 p-1 rounded-xl mb-6">
+          <TabsTrigger 
+            value="login" 
+            className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black data-[state=active]:shadow-lg rounded-lg transition-all"
           >
-            <Home className="h-4 w-4 mr-2" />
-            Voltar ao site
-          </Button>
-        </div>
-      </div>
+            <LogIn className="h-4 w-4 mr-2" />
+            Login
+          </TabsTrigger>
+          <TabsTrigger 
+            value="register" 
+            className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black data-[state=active]:shadow-lg rounded-lg transition-all"
+          >
+            <User className="h-4 w-4 mr-2" />
+            Cadastro
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="login" className="mt-0">
+          <LoginForm loading={loading} setLoading={setLoading} />
+        </TabsContent>
+        
+        <TabsContent value="register" className="mt-0">
+          <RegisterForm loading={loading} setLoading={setLoading} />
+        </TabsContent>
+      </Tabs>
+
+      <Button
+        variant="outline"
+        className="w-full mt-6 border-gray-700 bg-gray-800/30 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-urbana-gold/50 h-12 rounded-xl transition-all"
+        onClick={handleGoHome}
+      >
+        <Home className="h-4 w-4 mr-2" />
+        Voltar ao site
+      </Button>
     </AuthContainer>
   );
 };
