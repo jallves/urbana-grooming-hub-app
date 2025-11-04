@@ -35,11 +35,25 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       if (error) throw error;
 
       if (data.user) {
+        // Check if user is admin
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
         toast({
           title: "Login realizado!",
           description: "Bem-vindo de volta!",
         });
-        navigate('/admin');
+        
+        // Redirect based on role
+        if (adminRole) {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       }
     } catch (error: any) {
       console.error('Erro no login:', error);
