@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Home, Scissors, Shield, User, LogIn } from 'lucide-react';
+import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -76,8 +77,8 @@ const Auth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-8">
+    <AuthContainer className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="w-full space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
           {/* Logo */}
@@ -151,7 +152,7 @@ const Auth: React.FC = () => {
           </Button>
         </div>
       </div>
-    </div>
+    </AuthContainer>
   );
 };
 
