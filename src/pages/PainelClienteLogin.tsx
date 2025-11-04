@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Scissors, ArrowLeft, Home, Check, X, Calendar } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
@@ -118,22 +117,24 @@ export default function PainelClienteLogin() {
   };
 
   return (
-    <AuthContainer className="bg-gradient-to-br from-zinc-950 to-zinc-900">
-      <div className="w-full">
-        {/* Header com botão voltar */}
-        <div className="w-full mb-6">
-          <Button
-            onClick={() => navigate('/')}
-            variant="ghost"
-            size="sm"
-            className="text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-xl px-4 py-2"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Página Inicial
-          </Button>
-        </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-zinc-950 to-zinc-900 flex flex-col">
+      {/* Header com botão voltar - fixo no topo */}
+      <div className="w-full p-4">
+        <Button
+          onClick={() => navigate('/')}
+          variant="ghost"
+          size="sm"
+          className="text-gray-400 hover:text-white hover:bg-zinc-800/50 rounded-xl px-4 py-2"
+        >
+          <Home className="h-4 w-4 mr-2" />
+          Página Inicial
+        </Button>
+      </div>
 
-        <motion.div
+      {/* Container centralizado */}
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -386,9 +387,10 @@ export default function PainelClienteLogin() {
                 </Button>
               </div>
             </CardContent>
-          </Card>
-        </motion.div>
+            </Card>
+          </motion.div>
+        </div>
       </div>
-    </AuthContainer>
+    </div>
   );
 }
