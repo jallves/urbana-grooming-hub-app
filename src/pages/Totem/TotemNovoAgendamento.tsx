@@ -201,6 +201,16 @@ const TotemNovoAgendamento: React.FC = () => {
         throw error;
       }
 
+      console.log('✅ Agendamento criado com sucesso no Totem:', {
+        appointmentId: data.id,
+        clientId: clientData.id,
+        barberId: selectedBarber.id,
+        serviceId: selectedService.id,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        time: selectedTime,
+        status: 'confirmado'
+      });
+
       toast.success('✅ Agendamento criado com sucesso!', {
         description: `${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às ${selectedTime}`,
         duration: 5000,

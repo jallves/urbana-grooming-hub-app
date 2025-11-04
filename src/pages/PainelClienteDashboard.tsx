@@ -42,6 +42,8 @@ export default function PainelClienteDashboard() {
     if (!cliente?.id) return;
 
     try {
+      console.log('📊 [PainelCliente] Buscando agendamentos para cliente:', cliente.id);
+      
       const { data: agendamentos, error } = await supabase
         .from("painel_agendamentos")
         .select(
@@ -57,6 +59,8 @@ export default function PainelClienteDashboard() {
         console.error("Erro ao buscar estatísticas:", error);
         return;
       }
+
+      console.log('✅ [PainelCliente] Agendamentos encontrados:', agendamentos?.length || 0);
 
       if (agendamentos) {
         const agora = new Date();

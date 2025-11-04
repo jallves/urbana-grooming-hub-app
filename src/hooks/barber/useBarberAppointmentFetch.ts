@@ -49,6 +49,8 @@ export const useBarberAppointmentFetch = (barberId: string | null) => {
     
     setLoading(true);
     try {
+      console.log('💈 [Barbeiro] Buscando agendamentos para barbeiro:', barberId);
+      
       const { data, error } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -61,6 +63,8 @@ export const useBarberAppointmentFetch = (barberId: string | null) => {
         .order('hora', { ascending: true });
 
       if (error) throw error;
+
+      console.log('✅ [Barbeiro] Agendamentos encontrados:', data?.length || 0);
 
       if (data) {
         const appointmentsWithDetails = data.map((appointment: PainelAgendamento) => {

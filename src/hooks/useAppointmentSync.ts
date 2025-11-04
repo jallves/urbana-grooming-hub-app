@@ -149,7 +149,7 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
 
   // Configurar listeners em tempo real
   useEffect(() => {
-    console.log('Configurando listeners de sincronização...');
+    console.log('🔄 [AppointmentSync] Iniciando listeners de sincronização');
     
     // Canal para mudanças na tabela painel_agendamentos
     const painelChannel = supabase
@@ -162,25 +162,40 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
           table: 'painel_agendamentos'
         },
         async (payload) => {
-          console.log('Mudança detectada em painel_agendamentos:', payload);
+          const payloadNew = payload.new as AppointmentSyncData | undefined;
+          const payloadOld = payload.old as AppointmentSyncData | undefined;
+          
+          console.log('✅ [AppointmentSync] Mudança detectada em painel_agendamentos:', {
+            eventType: payload.eventType,
+            id: payloadNew?.id || payloadOld?.id,
+            status: payloadNew?.status || payloadOld?.status,
+            timestamp: new Date().toISOString()
+          });
           
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const newData = payload.new as AppointmentSyncData;
+            console.log(`🔄 [AppointmentSync] Sincronizando ${payload.eventType}:`, {
+              id: newData.id,
+              cliente_id: newData.cliente_id,
+              barbeiro_id: newData.barbeiro_id,
+              status: newData.status
+            });
             await syncAppointmentToTables(newData, payload.eventType.toLowerCase() as 'insert' | 'update');
           } else if (payload.eventType === 'DELETE') {
             const oldData = payload.old as AppointmentSyncData;
+            console.log('❌ [AppointmentSync] Sincronizando DELETE:', oldData.id);
             await syncAppointmentToTables(oldData, 'delete');
           }
 
           // Notificar sobre a mudança
           if (onUpdate) {
+            console.log('🔄 [AppointmentSync] Chamando callback onUpdate');
             onUpdate();
           }
 
-          // Toast para feedback do usuário - com verificação de tipo segura
-          const newData = payload.new as AppointmentSyncData | null;
-          const oldData = payload.old as AppointmentSyncData | null;
-          const statusMessage = newData?.status || oldData?.status;
+          // Toast para feedback do usuário
+          const statusData = payloadNew || payloadOld;
+          const statusMessage = statusData?.status;
           
           if (statusMessage && typeof statusMessage === 'string') {
             const statusLabels: Record<string, string> = {
@@ -204,7 +219,13 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
           table: 'appointments'
         },
         (payload) => {
-          console.log('Mudança detectada em appointments:', payload);
+          const payloadNew = payload.new as AppointmentSyncData | undefined;
+          const payloadOld = payload.old as AppointmentSyncData | undefined;
+          
+          console.log('🔔 [AppointmentSync] Mudança detectada em appointments:', {
+            eventType: payload.eventType,
+            id: payloadNew?.id || payloadOld?.id
+          });
           
           // Notificar sobre mudanças nos agendamentos regulares
           if (onUpdate) {
@@ -212,10 +233,12 @@ export const useAppointmentSync = (onUpdate?: () => void) => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [AppointmentSync] Status da subscrição:', status);
+      });
 
     return () => {
-      console.log('Removendo listeners de sincronização...');
+      console.log('🔌 [AppointmentSync] Removendo listeners de sincronização');
       supabase.removeChannel(painelChannel);
     };
   }, [syncAppointmentToTables, onUpdate]);

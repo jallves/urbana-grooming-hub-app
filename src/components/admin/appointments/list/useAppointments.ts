@@ -159,9 +159,12 @@ export const useAppointments = () => {
       const allAppointments = [...regularAppointments, ...painelAppointments]
         .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
-      console.log('Regular appointments found:', regularAppointments.length);
-      console.log('Painel appointments found:', painelAppointments.length);
-      console.log('Total appointments:', allAppointments.length);
+      console.log('📊 [Admin] Agendamentos carregados:', {
+        regular: regularAppointments.length,
+        painel: painelAppointments.length,
+        total: allAppointments.length,
+        timestamp: new Date().toISOString()
+      });
       
       setAppointments(allAppointments);
     } catch (error) {
