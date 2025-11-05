@@ -262,11 +262,45 @@ const TotemCheckout: React.FC = () => {
 
       if (error) {
         console.error('❌ Erro ao iniciar checkout:', error);
-        toast.error('Erro ao processar checkout', {
-          description: error.message || 'Não foi possível iniciar o checkout. Tente novamente.'
+        
+        // Tratamento específico de erros
+        let errorTitle = 'Erro ao processar checkout';
+        let errorDescription = error.message || 'Não foi possível iniciar o checkout. Tente novamente.';
+        
+        // Verificar erros comuns
+        if (error.message?.includes('já foi finalizado') || error.message?.includes('completed')) {
+          errorTitle = 'Checkout já finalizado';
+          errorDescription = `${client?.nome?.split(' ')[0]}, este serviço já foi finalizado. Agradecemos pela preferência!`;
+        } else if (error.message?.includes('sessão') || error.message?.includes('session')) {
+          errorTitle = 'Sessão expirada';
+          errorDescription = 'Por favor, faça o check-in novamente para realizar o checkout.';
+        } else if (error.message?.includes('agendamento') || error.message?.includes('appointment')) {
+          errorTitle = 'Agendamento não encontrado';
+          errorDescription = 'Não foi possível localizar seu agendamento. Procure a recepção.';
+        }
+        
+        toast.error(errorTitle, {
+          description: errorDescription,
+          duration: 10000,
+          style: {
+            background: 'hsl(var(--urbana-brown))',
+            color: 'hsl(var(--urbana-light))',
+            border: '3px solid hsl(var(--urbana-gold))',
+            fontSize: '1.25rem',
+            padding: '1.5rem',
+            maxWidth: '600px'
+          }
         });
+        
         setLoading(false);
         setIsUpdating(false);
+        
+        // Se for erro de checkout já finalizado ou sessão expirada, voltar para home
+        if (error.message?.includes('finalizado') || error.message?.includes('completed') || 
+            error.message?.includes('sessão') || error.message?.includes('session')) {
+          setTimeout(() => navigate('/totem/home'), 3000);
+        }
+        
         return;
       }
 
@@ -353,8 +387,27 @@ const TotemCheckout: React.FC = () => {
       
     } catch (error: any) {
       console.error('❌ Erro inesperado:', error);
+      
+      let errorDescription = 'Ocorreu um erro ao processar o checkout. Tente novamente.';
+      
+      // Verificar se é erro de rede ou timeout
+      if (error.message?.includes('fetch') || error.message?.includes('network')) {
+        errorDescription = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (error.message?.includes('timeout')) {
+        errorDescription = 'O processamento está demorando muito. Tente novamente em alguns instantes.';
+      }
+      
       toast.error('Erro inesperado', {
-        description: 'Ocorreu um erro ao processar o checkout'
+        description: errorDescription,
+        duration: 10000,
+        style: {
+          background: 'hsl(var(--urbana-brown))',
+          color: 'hsl(var(--urbana-light))',
+          border: '3px solid hsl(var(--urbana-gold))',
+          fontSize: '1.25rem',
+          padding: '1.5rem',
+          maxWidth: '600px'
+        }
       });
     } finally {
       setLoading(false);
