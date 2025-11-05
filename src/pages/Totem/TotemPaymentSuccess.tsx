@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -43,13 +44,24 @@ const TotemPaymentSuccess: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-brown/70 to-urbana-black/80" />
+      </div>
+
       {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/20 via-urbana-brown/10 to-urbana-black/20 z-0" />
       
       {/* Animated circles */}
-      <div className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse z-0" />
+      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse z-0" style={{ animationDelay: '1s' }} />
 
       <div className="text-center space-y-3 sm:space-y-4 md:space-y-6 max-w-xl sm:max-w-2xl md:max-w-4xl w-full z-10 animate-fade-in">
         {/* Success Icon */}

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, User, Scissors, Sparkles, Crown, ArrowRight } from 'lucide-react';
 import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemCheckInSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -35,9 +36,20 @@ const TotemCheckInSuccess: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/30 to-urbana-black flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-brown/75 to-urbana-black/80" />
+      </div>
+
       {/* Premium animated background effects */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden z-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">

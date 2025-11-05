@@ -5,6 +5,7 @@ import { LogOut, Calendar, CreditCard, ShoppingBag, CheckCircle, Sparkles } from
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemHome: React.FC = () => {
   const navigate = useNavigate();
@@ -93,9 +94,20 @@ const TotemHome: React.FC = () => {
   ];
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-brown flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 relative font-poppins overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 relative font-poppins overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/80 via-urbana-black/75 to-urbana-brown/70" />
+      </div>
+
       {/* Animated background effects */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden z-0">
         <div className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
