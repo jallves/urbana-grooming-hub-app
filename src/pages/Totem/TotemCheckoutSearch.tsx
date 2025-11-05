@@ -277,11 +277,29 @@ const TotemCheckoutSearch: React.FC = () => {
 
       if (agendamentosFinalizados.length === agendamentos.length) {
         toast.error('Checkouts já finalizados', {
-          description: `${cliente.nome}, todos os seus serviços de hoje já foram finalizados.`
+          description: `${cliente.nome.split(' ')[0]}, todos os seus serviços de hoje já foram finalizados. Agradecemos pela preferência!`,
+          duration: 10000,
+          style: {
+            background: 'hsl(var(--urbana-brown))',
+            color: 'hsl(var(--urbana-light))',
+            border: '3px solid hsl(var(--urbana-gold))',
+            fontSize: '1.25rem',
+            padding: '1.5rem',
+            maxWidth: '600px'
+          }
         });
       } else {
         toast.error('Nenhum check-in encontrado', {
-          description: `${cliente.nome}, você precisa fazer o check-in primeiro para realizar o checkout.`
+          description: `${cliente.nome.split(' ')[0]}, você precisa fazer o check-in primeiro para realizar o checkout. Por favor, dirija-se ao totem de check-in.`,
+          duration: 10000,
+          style: {
+            background: 'hsl(var(--urbana-brown))',
+            color: 'hsl(var(--urbana-light))',
+            border: '3px solid hsl(var(--urbana-gold))',
+            fontSize: '1.25rem',
+            padding: '1.5rem',
+            maxWidth: '600px'
+          }
         });
       }
       setIsSearching(false);

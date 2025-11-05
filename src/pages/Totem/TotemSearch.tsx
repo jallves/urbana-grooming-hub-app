@@ -127,14 +127,28 @@ const TotemSearch: React.FC = () => {
 
       console.log('📅 Agendamentos encontrados:', agendamentos?.length || 0);
 
+      // Verificar qual ação foi solicitada
+      if (action === 'novo-agendamento') {
+        // Para novo agendamento, apenas precisamos do cliente
+        console.log('✅ Navegando para novo agendamento');
+        navigate('/totem/novo-agendamento', {
+          state: {
+            client: cliente
+          }
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      // Para CHECK-IN, verificar se há agendamentos
       if (!agendamentos || agendamentos.length === 0) {
         toast.error('Nenhum agendamento encontrado', {
-          description: `${cliente.nome}, você não possui agendamentos marcados. Procure a recepção para agendar.`,
-          duration: 8000,
+          description: `${cliente.nome.split(' ')[0]}, você não possui agendamentos futuros para fazer check-in. Por favor, procure a recepção para agendar.`,
+          duration: 10000,
           style: {
             background: 'hsl(var(--urbana-brown))',
             color: 'hsl(var(--urbana-light))',
-            border: '3px solid hsl(var(--destructive))',
+            border: '3px solid hsl(var(--urbana-gold))',
             fontSize: '1.25rem',
             padding: '1.5rem',
             maxWidth: '600px'
@@ -143,21 +157,9 @@ const TotemSearch: React.FC = () => {
         setIsSearching(false);
         return;
       }
-
-      console.log('✅ Navegando para lista de agendamentos');
-      
-      // Verificar qual ação foi solicitada
-      if (action === 'novo-agendamento') {
-        // Redirecionar para criação de novo agendamento
-        navigate('/totem/novo-agendamento', {
-          state: {
-            client: cliente
-          }
-        });
-        return;
-      }
       
       // Navegar para tela de seleção de agendamento (check-in)
+      console.log('✅ Navegando para lista de agendamentos');
       navigate('/totem/appointments-list', {
         state: {
           appointments: agendamentos,
