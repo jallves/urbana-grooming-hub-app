@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Star, Send, Home, Sparkles } from 'lucide-react';
+import { Star, Send, Home, Sparkles, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,8 @@ const TotemRating: React.FC = () => {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showScheduleQuestion, setShowScheduleQuestion] = useState(false);
+  const [countdown, setCountdown] = useState(10);
 
   React.useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -30,6 +32,29 @@ const TotemRating: React.FC = () => {
       document.documentElement.classList.remove('totem-mode');
     };
   }, [appointment, client, navigate]);
+
+  // Countdown timer para voltar ao início
+  React.useEffect(() => {
+    if (showScheduleQuestion && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (showScheduleQuestion && countdown === 0) {
+      navigate('/totem/home');
+    }
+  }, [showScheduleQuestion, countdown, navigate]);
+
+  const handleScheduleYes = () => {
+    navigate('/totem/search', { 
+      state: { 
+        action: 'novo-agendamento',
+        client 
+      } 
+    });
+  };
+
+  const handleScheduleNo = () => {
+    navigate('/totem/home');
+  };
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -60,10 +85,8 @@ const TotemRating: React.FC = () => {
         description: 'Obrigado pelo seu feedback! Ele nos ajuda a melhorar.'
       });
 
-      // Redirecionar após 3 segundos
-      setTimeout(() => {
-        navigate('/totem/home');
-      }, 3000);
+      // Mostrar pergunta sobre agendamento
+      setShowScheduleQuestion(true);
       
     } catch (error: any) {
       console.error('Erro ao enviar avaliação:', error);
@@ -80,6 +103,60 @@ const TotemRating: React.FC = () => {
   };
 
   if (!appointment || !client) return null;
+
+  if (showScheduleQuestion) {
+    return (
+      <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-brown flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
+        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20 animate-scale-in">
+          <div className="text-center space-y-6 sm:space-y-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-urbana-gold/20 border-2 border-urbana-gold/40">
+              <Calendar className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
+            </div>
+            
+            <div className="space-y-3 sm:space-y-4">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+                {client.nome.split(' ')[0]}, deseja agendar<br />seu próximo corte?
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-urbana-light/70">
+                Garanta já seu horário para a próxima visita!
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              <Button
+                onClick={handleScheduleYes}
+                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark hover:from-urbana-gold-dark hover:to-urbana-gold text-urbana-black"
+              >
+                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 mr-2" />
+                Sim, quero agendar!
+              </Button>
+
+              <Button
+                onClick={handleScheduleNo}
+                variant="outline"
+                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl border-urbana-gold/30 text-urbana-light hover:bg-urbana-gold/10"
+              >
+                <Home className="w-6 h-6 sm:w-7 sm:h-7 mr-2" />
+                Não, obrigado
+              </Button>
+            </div>
+
+            <div className="pt-4 border-t border-urbana-gold/20">
+              <p className="text-sm sm:text-base text-urbana-light/50">
+                Voltando ao início em <span className="text-urbana-gold font-bold text-lg">{countdown}</span> segundos...
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
@@ -101,13 +178,13 @@ const TotemRating: React.FC = () => {
                 Avaliação Enviada! ✓
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-urbana-light/70">
-                Obrigado pelo seu feedback, {client.nome}!
+                Obrigado pelo seu feedback, {client.nome.split(' ')[0]}!
               </p>
             </div>
 
             <div className="pt-4 sm:pt-6">
               <p className="text-sm sm:text-base md:text-lg text-urbana-light/60">
-                Redirecionando para o início...
+                Preparando próxima etapa...
               </p>
             </div>
           </div>

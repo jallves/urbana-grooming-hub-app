@@ -84,6 +84,16 @@ const TotemCheckInSuccess: React.FC = () => {
             Check-in Confirmado!
           </h1>
           
+          {/* Personalized Welcome Message */}
+          <div className="space-y-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+              Seja bem-vindo, {client.nome.split(' ')[0]}!
+            </h2>
+            <p className="text-lg sm:text-xl md:text-2xl text-urbana-light/80 font-light">
+              É uma honra tê-lo conosco hoje! ✨
+            </p>
+          </div>
+          
           {/* Client info card */}
           <div className="inline-block p-6 sm:p-8 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 border-2 border-urbana-gold/30 rounded-2xl backdrop-blur-sm shadow-2xl">
             <div className="space-y-4">
@@ -92,7 +102,7 @@ const TotemCheckInSuccess: React.FC = () => {
                   <User className="w-6 h-6 text-urbana-gold" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm text-urbana-light/60">Bem-vindo</p>
+                  <p className="text-sm text-urbana-light/60">Cliente VIP</p>
                   <p className="text-2xl sm:text-3xl font-bold text-urbana-gold">
                     {client.nome}
                   </p>

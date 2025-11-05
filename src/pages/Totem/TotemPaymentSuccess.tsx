@@ -64,16 +64,20 @@ const TotemPaymentSuccess: React.FC = () => {
 
         {/* Success Message with Client Name */}
         <div className="space-y-2 sm:space-y-3 md:space-y-4">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light">
-            Obrigado, {appointment.cliente?.nome || 'Cliente'}! 🎉
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300">
+            Muito obrigado, {client.nome.split(' ')[0]}! 🎉
           </h1>
           
-          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-urbana-light/80">
-            Pagamento Confirmado
+          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-urbana-light/90 font-semibold">
+            Pagamento Confirmado com Sucesso
           </p>
           
-          <p className="text-base sm:text-lg md:text-xl text-urbana-gold font-semibold">
-            Volte sempre à Costa Urbana!
+          <p className="text-lg sm:text-xl md:text-2xl text-urbana-gold font-bold">
+            Foi um prazer atendê-lo! ✨
+          </p>
+          
+          <p className="text-base sm:text-lg md:text-xl text-urbana-light/70">
+            Esperamos você novamente em breve!
           </p>
         </div>
 
