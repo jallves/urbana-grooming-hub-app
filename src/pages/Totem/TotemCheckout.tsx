@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CreditCard, DollarSign, Plus, Trash2, CheckCircle2, Sparkles } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Plus, Trash2, CheckCircle2, Sparkles, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ExtraServicesUpsell } from '@/components/totem/ExtraServicesUpsell';
@@ -546,9 +546,20 @@ const TotemCheckout: React.FC = () => {
   if (!resumo && !loading) {
     return (
       <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex items-center justify-center p-4">
-        <div className="text-center space-y-3 sm:space-y-4">
-          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-urbana-light font-poppins">Erro ao carregar dados</p>
-          <Button onClick={() => navigate('/totem/home')} className="bg-urbana-gold text-urbana-black active:bg-urbana-gold-dark text-sm sm:text-base md:text-lg h-10 sm:h-12 md:h-14 px-6 sm:px-8 md:px-10">
+        <div className="text-center space-y-3 sm:space-y-4 max-w-2xl">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-400" />
+          </div>
+          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-urbana-light font-poppins font-bold">
+            {client?.nome?.split(' ')[0]}, não foi possível carregar o checkout
+          </p>
+          <p className="text-sm sm:text-base md:text-lg text-urbana-light/60">
+            Por favor, tente novamente ou procure a recepção para assistência.
+          </p>
+          <Button 
+            onClick={() => navigate('/totem/home')} 
+            className="bg-urbana-gold text-urbana-black active:bg-urbana-gold-dark text-sm sm:text-base md:text-lg h-10 sm:h-12 md:h-14 px-6 sm:px-8 md:px-10 mt-4"
+          >
             Voltar ao início
           </Button>
         </div>
@@ -577,10 +588,12 @@ const TotemCheckout: React.FC = () => {
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <div className="text-center flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
-            Finalizar Atendimento
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold mb-1">
+            Olá, {client?.nome?.split(' ')[0]}! ✨
           </h1>
-          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-gray-light mt-0.5 sm:mt-1">Revise e confirme o pagamento</p>
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-gray-light">
+            Revise seu atendimento e escolha a forma de pagamento
+          </p>
         </div>
         <div className="w-12 sm:w-20 md:w-32 lg:w-48"></div>
       </div>

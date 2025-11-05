@@ -232,10 +232,10 @@ const TotemAppointmentsList: React.FC = () => {
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <div className="flex-1 text-center">
-          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-light">
-            Olá, {client.nome}!
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-light mb-1">
+            Olá, {client.nome.split(' ')[0]}! 👋
           </h1>
-          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/60 mt-1">
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/60">
             Selecione um agendamento para fazer check-in
           </p>
         </div>
