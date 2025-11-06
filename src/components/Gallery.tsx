@@ -5,47 +5,55 @@ import GalleryImage from './gallery/GalleryImage';
 import LightboxModal from './gallery/LightboxModal';
 import { useLightbox } from '@/hooks/useLightbox';
 
-interface GalleryImage {
+interface GalleryPhoto {
   id: string;
+  title: string;
+  alt_text: string;
   image_url: string;
-  alt: string;
+  description: string | null;
+  published: boolean;
   display_order: number;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
 const Gallery: React.FC = () => {
-  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [images, setImages] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const { selectedImage, setSelectedImage, closeModal, showNext, showPrevious } = useLightbox();
 
   // Default images as fallback
-  const defaultImages: GalleryImage[] = [
+  const defaultImages: GalleryPhoto[] = [
     {
       id: '1',
+      title: 'Trabalho Profissional',
+      alt_text: 'Barbeiro trabalhando com precisão',
       image_url: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Barbeiro trabalhando',
+      description: 'Nosso time de profissionais trabalhando',
       display_order: 1,
-      is_active: true,
+      published: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
     {
       id: '2',
+      title: 'Ambiente Sofisticado',
+      alt_text: 'Interior moderno e elegante da barbearia',
       image_url: 'https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Ambiente da barbearia',
+      description: 'Ambiente confortável e moderno',
       display_order: 2,
-      is_active: true,
+      published: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
     {
       id: '3',
+      title: 'Ferramentas Profissionais',
+      alt_text: 'Equipamentos de alta qualidade para barbearia',
       image_url: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Ferramentas de barbeiro',
+      description: 'Equipamentos profissionais de última geração',
       display_order: 3,
-      is_active: true,
+      published: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
@@ -55,32 +63,26 @@ const Gallery: React.FC = () => {
     const fetchImages = async () => {
       try {
         setLoading(true);
+        console.log('🔍 Buscando fotos da galeria...');
+        
         const { data, error } = await supabase
-          .from('gallery_images')
+          .from('gallery_photos')
           .select('*')
-          .eq('is_active', true)
+          .eq('published', true)
           .order('display_order', { ascending: true });
 
         if (error) {
-          console.error('Error fetching gallery images:', error);
+          console.error('❌ Erro ao buscar fotos:', error);
           setImages(defaultImages);
         } else if (data && data.length > 0) {
-          // Transform the data to match GalleryImage interface
-          const transformedImages: GalleryImage[] = data.map(img => ({
-            id: img.id,
-            image_url: img.src, // Map src to image_url
-            alt: img.alt,
-            display_order: img.display_order,
-            is_active: img.is_active,
-            created_at: img.created_at,
-            updated_at: img.updated_at,
-          }));
-          setImages(transformedImages);
+          console.log(`✅ ${data.length} fotos carregadas com sucesso`);
+          setImages(data as GalleryPhoto[]);
         } else {
+          console.log('⚠️ Nenhuma foto publicada, usando imagens padrão');
           setImages(defaultImages);
         }
       } catch (error) {
-        console.error('Error in fetchImages:', error);
+        console.error('❌ Erro crítico ao carregar galeria:', error);
         setImages(defaultImages);
       } finally {
         setLoading(false);
@@ -88,6 +90,27 @@ const Gallery: React.FC = () => {
     };
 
     fetchImages();
+
+    // Real-time subscription para atualizações
+    const channel = supabase
+      .channel('gallery_photos_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'gallery_photos'
+        },
+        (payload) => {
+          console.log('🔄 Galeria atualizada em tempo real:', payload);
+          fetchImages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   if (loading) {
@@ -119,7 +142,7 @@ const Gallery: React.FC = () => {
             <GalleryImage
               key={image.id}
               src={image.image_url}
-              alt={image.alt}
+              alt={image.alt_text}
               delay={index * 0.05}
               onClick={() => setSelectedImage(index)}
             />
@@ -133,7 +156,7 @@ const Gallery: React.FC = () => {
           images={images.map((img, idx) => ({
             id: idx,
             src: img.image_url,
-            alt: img.alt
+            alt: img.title || img.alt_text
           }))}
           onClose={closeModal}
           onPrevious={() => showPrevious(images.length)}

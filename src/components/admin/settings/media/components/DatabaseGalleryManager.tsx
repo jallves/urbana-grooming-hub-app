@@ -1,16 +1,21 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Trash2, Edit3, Upload, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit3, Upload, ArrowUp, ArrowDown, Eye, EyeOff } from 'lucide-react';
 import { useSupabaseGallery } from '@/hooks/useSupabaseGallery';
 import { useToast } from '@/hooks/use-toast';
 
 const DatabaseGalleryManager: React.FC = () => {
-  const { photos, loading, uploading, uploadPhoto, deletePhoto, updatePhoto, reorderPhoto } = useSupabaseGallery();
+  const { photos, loading, uploading, uploadPhoto, deletePhoto, updatePhoto, togglePublished, reorderPhoto, fetchAllPhotos } = useSupabaseGallery();
   const { toast } = useToast();
+  
+  // Carregar todas as fotos (incluindo não publicadas) ao montar
+  useEffect(() => {
+    fetchAllPhotos();
+  }, []);
   
   const [newPhoto, setNewPhoto] = useState({
     title: '',
@@ -139,6 +144,15 @@ const DatabaseGalleryManager: React.FC = () => {
                       alt={photo.alt_text}
                       className="w-full h-full object-cover"
                     />
+                    <div className="absolute top-2 right-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        photo.published 
+                          ? 'bg-green-500/80 text-white' 
+                          : 'bg-gray-500/80 text-white'
+                      }`}>
+                        {photo.published ? '✓ Publicado' : '○ Rascunho'}
+                      </span>
+                    </div>
                   </div>
                   <CardContent className="p-3">
                     {editingPhoto === photo.id ? (
@@ -177,12 +191,24 @@ const DatabaseGalleryManager: React.FC = () => {
                       <div>
                         <h3 className="text-white text-sm font-medium truncate">{photo.title}</h3>
                         <p className="text-gray-400 text-xs truncate">{photo.alt_text}</p>
-                        <div className="flex gap-1 mt-2">
+                        <div className="grid grid-cols-4 gap-1 mt-2">
+                          <Button
+                            onClick={() => togglePublished(photo.id, photo.published)}
+                            size="sm"
+                            variant="outline"
+                            className={`border-gray-600 hover:bg-gray-700 px-2 h-8 ${
+                              photo.published ? 'text-green-400' : 'text-gray-400'
+                            }`}
+                            title={photo.published ? 'Despublicar' : 'Publicar'}
+                          >
+                            {photo.published ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                          </Button>
                           <Button
                             onClick={() => handleEdit(photo)}
                             size="sm"
                             variant="outline"
-                            className="border-gray-600 text-gray-300 hover:bg-gray-700 flex-1 h-8"
+                            className="border-gray-600 text-gray-300 hover:bg-gray-700 px-2 h-8"
+                            title="Editar"
                           >
                             <Edit3 className="h-3 w-3" />
                           </Button>
@@ -191,6 +217,7 @@ const DatabaseGalleryManager: React.FC = () => {
                             size="sm"
                             variant="outline"
                             className="border-gray-600 text-gray-300 hover:bg-gray-700 px-2 h-8"
+                            title="Mover para cima"
                           >
                             <ArrowUp className="h-3 w-3" />
                           </Button>
@@ -199,18 +226,20 @@ const DatabaseGalleryManager: React.FC = () => {
                             size="sm"
                             variant="outline"
                             className="border-gray-600 text-gray-300 hover:bg-gray-700 px-2 h-8"
+                            title="Mover para baixo"
                           >
                             <ArrowDown className="h-3 w-3" />
                           </Button>
-                          <Button
-                            onClick={() => deletePhoto(photo.id)}
-                            size="sm"
-                            variant="destructive"
-                            className="px-2 h-8"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
                         </div>
+                        <Button
+                          onClick={() => deletePhoto(photo.id)}
+                          size="sm"
+                          variant="destructive"
+                          className="w-full mt-2 h-8"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Excluir
+                        </Button>
                       </div>
                     )}
                   </CardContent>

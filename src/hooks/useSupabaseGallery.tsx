@@ -132,10 +132,37 @@ export const useSupabaseGallery = () => {
       }
 
       console.log('✅ Foto atualizada com sucesso');
-      await fetchPhotos();
+      await fetchAllPhotos(); // Usar fetchAllPhotos para atualizar lista de admin
       return true;
     } catch (error) {
       console.error('❌ Erro ao atualizar foto:', error);
+      return false;
+    }
+  };
+
+  // Toggle publicação da foto
+  const togglePublished = async (id: string, currentState: boolean): Promise<boolean> => {
+    try {
+      console.log(`🔄 ${currentState ? 'Despublicando' : 'Publicando'} foto:`, id);
+      
+      const { error } = await supabase
+        .from('gallery_photos')
+        .update({
+          published: !currentState,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ Erro ao alterar status:', error);
+        throw error;
+      }
+
+      console.log(`✅ Foto ${!currentState ? 'publicada' : 'despublicada'} com sucesso`);
+      await fetchAllPhotos();
+      return true;
+    } catch (error) {
+      console.error('❌ Erro ao alterar status de publicação:', error);
       return false;
     }
   };
@@ -199,6 +226,7 @@ export const useSupabaseGallery = () => {
     fetchAllPhotos,
     uploadPhoto,
     updatePhoto,
+    togglePublished,
     deletePhoto,
     reorderPhoto
   };
