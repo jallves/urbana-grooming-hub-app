@@ -2,6 +2,7 @@ import { User } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Services from '@/components/Services';
+import Statistics from '@/components/Statistics';
 import Gallery from '@/components/Gallery';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
@@ -44,6 +45,16 @@ const Index = () => {
       {/* Decorative divider */}
       <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
         <GoldenDivider variant="ornate" />
+      </div>
+      
+      {/* Statistics Section */}
+      <section className="w-full transition-all duration-700">
+        <Statistics />
+      </section>
+      
+      {/* Decorative divider */}
+      <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
+        <GoldenDivider variant="geometric" />
       </div>
       
       {/* Gallery - Sem padding lateral */}
