@@ -199,20 +199,22 @@ const Footer: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
           viewport={{ once: true }}
-          className="border-t border-urbana-gold/20 mt-20 pt-12"
+          className="border-t border-urbana-gold/20 mt-20 pt-8"
         >
-          <div className="text-center space-y-6">
-            <div className="flex items-center justify-center gap-3 text-urbana-light/70 font-raleway text-lg">
-              <span>Feito com</span>
-              <Heart className="w-5 h-5 text-red-400 animate-pulse" />
-              <span>pela equipe {shopName}</span>
-            </div>
-            <p className="text-urbana-light/50 font-raleway">
-              © {new Date().getFullYear()} {shopName}. Todos os direitos reservados.
-            </p>
-            <div className="text-urbana-gold/70 font-raleway">
-              <span>Desenvolvido pela Beltec Soluções</span>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 text-urbana-light/70 font-raleway text-sm md:text-base">
+            <span className="flex items-center gap-2">
+              Feito com
+              <Heart className="w-4 h-4 text-red-400 animate-pulse" />
+              pela equipe {shopName}
+            </span>
+            <span className="hidden md:inline text-urbana-gold/50">•</span>
+            <span className="text-urbana-light/50">
+              © {new Date().getFullYear()} Barbearia Costa Urbana. Todos os direitos reservados.
+            </span>
+            <span className="hidden md:inline text-urbana-gold/50">•</span>
+            <span className="text-urbana-gold/70">
+              Desenvolvido pela Beltec Soluções
+            </span>
           </div>
         </motion.div>
       </div>
