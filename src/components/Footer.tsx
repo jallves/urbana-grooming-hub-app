@@ -57,43 +57,40 @@ const Footer: React.FC = () => {
       </div>
 
       <div className="urbana-container relative z-10 pt-24 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-16">
-          {/* Brand Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12">
+          {/* Brand Section - Takes 3 columns on lg */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="lg:col-span-1 space-y-8"
+            className="lg:col-span-3 space-y-6"
           >
-            <div className="space-y-6">
+            <div className="space-y-4">
               <h3 
-                className="font-playfair text-5xl md:text-6xl font-bold leading-tight tracking-tight"
+                className="font-playfair text-3xl md:text-4xl font-bold leading-tight tracking-tight"
                 style={{
-                  background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                  textShadow: '0 0 40px rgba(255, 215, 0, 0.3)'
                 }}
               >
-                {shopName}
+                Barbearia<br/>Costa Urbana
               </h3>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-6 h-6 text-urbana-gold fill-current drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]" />
+                  <Star key={i} className="w-4 h-4 text-urbana-gold fill-current" />
                 ))}
-                <span className="text-urbana-light/70 font-raleway ml-2 text-lg">Excelência Premium</span>
               </div>
             </div>
             
-            <p className="text-urbana-light/80 leading-relaxed text-lg font-raleway">
-              Tradição e modernidade se encontram em cada corte. 
-              Oferecemos uma experiência premium de barbearia com foco na excelência e satisfação do cliente.
+            <p className="text-urbana-light/70 leading-relaxed text-sm font-raleway">
+              Tradição e modernidade se encontram em cada corte.
             </p>
             
             {/* Social Links */}
-            <div className="flex space-x-6">
+            <div className="flex gap-3 pt-2">
               {socialLinks.map((social, index) => (
               <motion.a
                   key={social.name}
@@ -103,89 +100,111 @@ const Footer: React.FC = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                   whileHover={{ 
-                    scale: 1.2, 
+                    scale: 1.15,
                     rotate: [0, -10, 10, -10, 0],
                     transition: { duration: 0.5 }
                   }}
-                  className={`w-14 h-14 bg-urbana-gold/10 backdrop-blur-lg border border-urbana-gold/20 hover:bg-urbana-gold hover:text-urbana-black rounded-xl flex items-center justify-center transition-all duration-300 group ${social.color}`}
+                  className={`w-10 h-10 bg-urbana-gold/10 backdrop-blur-lg border border-urbana-gold/20 hover:bg-urbana-gold hover:text-urbana-black rounded-lg flex items-center justify-center transition-all duration-300 group`}
                   aria-label={social.name}
                 >
-                  <social.icon className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                  <social.icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
                 </motion.a>
               ))}
             </div>
           </motion.div>
 
-          {/* Hours and Contact Sections */}
-          {footerSections.map((section, sectionIndex) => (
-            <motion.div
-              key={section.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: sectionIndex * 0.2 }}
-              viewport={{ once: true }}
-              className="space-y-8"
-            >
-              <h3 
-                className="font-playfair text-3xl md:text-4xl font-bold tracking-tight"
-                style={{
-                  background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  textShadow: '0 0 20px rgba(255, 215, 0, 0.2)'
-                }}
-              >
-                {section.title}
-              </h3>
-              <ul className="space-y-6">
-                {section.items.map((item, index) => (
-                  <motion.li
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                    className="flex items-start group hover:translate-x-2 transition-transform duration-300"
-                  >
-                    <div className="w-12 h-12 bg-urbana-gold/10 backdrop-blur-lg border border-urbana-gold/20 rounded-lg flex items-center justify-center mr-4 group-hover:bg-urbana-gold/20 transition-colors duration-300">
-                      <item.icon className="h-5 w-5 text-urbana-gold group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div>
-                      <p className="font-raleway font-semibold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300">
-                        {item.label}
-                      </p>
-                      <p className="text-urbana-light/70 font-raleway">
-                        {item.value}
-                      </p>
-                    </div>
-                  </motion.li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-
-          {/* Quick Links & Map */}
+          {/* Hours Section - Takes 3 columns on lg */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
+            transition={{ duration: 0.8, delay: 0.15 }}
             viewport={{ once: true }}
-            className="space-y-8"
+            className="lg:col-span-3 space-y-5"
           >
             <h3 
-              className="font-playfair text-3xl md:text-4xl font-bold tracking-tight"
-              style={{
-                background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                textShadow: '0 0 20px rgba(255, 215, 0, 0.2)'
-              }}
+              className="font-playfair text-xl md:text-2xl font-bold tracking-tight text-urbana-gold"
+            >
+              Horário de Funcionamento
+            </h3>
+            <ul className="space-y-3">
+              {footerSections[0].items.map((item, index) => (
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  className="flex items-center gap-3"
+                >
+                  <div className="w-8 h-8 bg-urbana-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <item.icon className="h-4 w-4 text-urbana-gold" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-raleway text-urbana-light text-sm font-medium">
+                      {item.label}
+                    </p>
+                    <p className="text-urbana-light/60 font-raleway text-xs">
+                      {item.value}
+                    </p>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Contact Section - Takes 3 columns on lg */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            viewport={{ once: true }}
+            className="lg:col-span-3 space-y-5"
+          >
+            <h3 
+              className="font-playfair text-xl md:text-2xl font-bold tracking-tight text-urbana-gold"
+            >
+              Contato
+            </h3>
+            <ul className="space-y-3">
+              {footerSections[1].items.map((item, index) => (
+                <motion.li
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  className="flex items-start gap-3"
+                >
+                  <div className="w-8 h-8 bg-urbana-gold/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <item.icon className="h-4 w-4 text-urbana-gold" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-raleway text-urbana-light text-sm font-medium mb-0.5">
+                      {item.label}
+                    </p>
+                    <p className="text-urbana-light/60 font-raleway text-xs break-words">
+                      {item.value}
+                    </p>
+                  </div>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+
+          {/* Links & Map Section - Takes 3 columns on lg */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.45 }}
+            viewport={{ once: true }}
+            className="lg:col-span-3 space-y-5"
+          >
+            <h3 
+              className="font-playfair text-xl md:text-2xl font-bold tracking-tight text-urbana-gold"
             >
               Links Rápidos
             </h3>
-            <ul className="space-y-4">
+            <ul className="space-y-2">
               {quickLinks.map((link, index) => (
                 <motion.li
                   key={link.name}
@@ -196,33 +215,24 @@ const Footer: React.FC = () => {
                 >
                   <a 
                     href={link.href} 
-                    className="text-urbana-light/80 hover:text-urbana-gold transition-colors duration-300 relative group inline-block font-raleway text-lg"
+                    className="text-urbana-light/70 hover:text-urbana-gold transition-colors duration-300 relative group inline-block font-raleway text-sm"
                   >
                     {link.name}
-                    <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-urbana-gold group-hover:w-full transition-all duration-300"></span>
+                    <span className="absolute left-0 bottom-0 w-0 h-px bg-urbana-gold group-hover:w-full transition-all duration-300"></span>
                   </a>
                 </motion.li>
               ))}
             </ul>
 
             {/* Map Section */}
-            <div className="mt-12">
-              <h4 
-                className="font-playfair text-2xl md:text-3xl font-bold mb-6 tracking-tight"
-                style={{
-                  background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  textShadow: '0 0 20px rgba(255, 215, 0, 0.2)'
-                }}
-              >
+            <div className="pt-3">
+              <h4 className="font-playfair text-lg font-bold mb-3 text-urbana-gold">
                 Nossa Localização
               </h4>
-              <div className="bg-urbana-black/50 backdrop-blur-lg rounded-xl p-6 border border-urbana-gold/20 hover:border-urbana-gold/40 transition-colors duration-300">
+              <div className="bg-urbana-black/30 backdrop-blur-sm rounded-lg overflow-hidden border border-urbana-gold/20">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3742.6441437707836!2d-40.28747308455458!3d-20.325849486358473!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xb83d4e5a5e5e5e5%3A0x5e5e5e5e5e5e5e5!2sRua%20Castelo%20Branco%2C%20483%20-%20Praia%20da%20Costa%2C%20Vila%20Velha%20-%20ES%2C%2029101-480!5e0!3m2!1spt!2sbr!4v1620000000000!5m2!1spt!2sbr"
-                  className="w-full h-48 rounded-lg border-0"
+                  className="w-full h-36 border-0"
                   allowFullScreen
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
@@ -244,7 +254,7 @@ const Footer: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-2 text-urbana-light/70 font-raleway text-sm md:text-base">
             <span className="flex items-center gap-2">
               Feito com
-              <Heart className="w-4 h-4 text-red-400 animate-pulse" />
+              <Heart className="w-4 h-4 text-red-400" />
               pela equipe {shopName}
             </span>
             <span className="hidden md:inline text-urbana-gold/50">•</span>
