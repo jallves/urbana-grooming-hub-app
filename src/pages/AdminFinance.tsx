@@ -8,7 +8,7 @@ const AdminFinance: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Financeiro">
-        <div className="h-full bg-gray-900 flex flex-col">
+        <div className="w-full h-full bg-gray-900 flex flex-col">
           <div className="px-4 py-4 sm:px-6 sm:py-6 border-b border-gray-700 flex-shrink-0">
             <div className="w-full">
               <h1 className="text-2xl sm:text-3xl font-playfair text-urbana-gold">

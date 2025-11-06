@@ -8,7 +8,9 @@ const Admin: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Dashboard">
-        <AdminDashboard />
+        <div className="w-full h-full">
+          <AdminDashboard />
+        </div>
       </AdminLayout>
     </AdminRoute>
   );

@@ -194,13 +194,17 @@ export default AdminYourPage;
 
 ### ❌ Múltiplos max-w no mesmo componente
 ```tsx
-// ERRADO (conflito)
-<div className="max-w-4xl">
-  <div className="max-w-6xl">
+// ERRADO (conflito - AdminLayout já aplica max-w-7xl)
+<AdminLayout>
+  <div className="max-w-7xl mx-auto">
+    {/* Conteúdo */}
+  </div>
 
 // CORRETO
 <AdminLayout>
   <div className="w-full">
+    {/* Conteúdo */}
+  </div>
 ```
 
 ### ❌ Container dentro de container
@@ -213,6 +217,26 @@ export default AdminYourPage;
 // CORRETO
 <AdminLayout>
   <div className="w-full">
+```
+
+### ❌ Heights fixos com calc
+```tsx
+// EVITAR (pode causar problemas de overflow)
+<div className="h-[calc(100vh-120px)]">
+
+// PREFERIR
+<div className="h-full">
+```
+
+### ❌ Falta de w-full
+```tsx
+// ERRADO (não ocupa espaço disponível)
+<AdminLayout>
+  <div className="h-full">
+
+// CORRETO
+<AdminLayout>
+  <div className="w-full h-full">
 ```
 
 ## 📋 Checklist de Implementação
@@ -228,6 +252,24 @@ Ao criar ou modificar uma página admin:
 - [ ] Testado em mobile, tablet e desktop
 - [ ] Sem overflow horizontal em mobile
 - [ ] Scroll funciona corretamente
+
+## ⚠️ Problemas Comuns Corrigidos
+
+### AdminCommissions e AdminAppointments
+**Problema:** Tinham `max-w-7xl mx-auto` duplicado dentro do conteúdo  
+**Solução:** Removido, o `AdminLayout` já aplica `max-w-7xl`
+
+### AdminFinance
+**Problema:** Faltava `w-full` no container principal  
+**Solução:** Adicionado `w-full h-full` no container
+
+### AdminClients
+**Problema:** Usava `h-[calc(100vh-120px)]` com valor fixo  
+**Solução:** Alterado para `h-full` para melhor flexibilidade
+
+### AdminAppointments
+**Problema:** Estrutura com múltiplos containers e `max-w-7xl` duplicado  
+**Solução:** Simplificado para estrutura padrão com `w-full h-full`
 
 ## 🔄 Manutenção
 

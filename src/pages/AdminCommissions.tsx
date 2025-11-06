@@ -163,7 +163,7 @@ export default function AdminCommissions() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full h-full overflow-auto p-4 sm:p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Gestão de Comissões</h1>
         <p className="text-muted-foreground">Gerencie pagamentos de comissões para barbeiros</p>
