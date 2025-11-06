@@ -108,12 +108,12 @@ const Hero: React.FC = () => {
           >
             <Button 
               size="lg"
-              className="relative overflow-hidden bg-urbana-gold text-urbana-black hover:bg-urbana-gold px-8 py-6 text-lg font-semibold shadow-[0_0_30px_rgba(255,215,0,0.4)] hover:shadow-[0_0_50px_rgba(255,215,0,0.6)] transition-all duration-500 group border-2 border-urbana-gold/50"
+              className="relative overflow-hidden bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold hover:from-yellow-400 hover:via-urbana-gold hover:to-yellow-400 text-urbana-black px-10 py-7 text-lg font-bold shadow-[0_0_40px_rgba(255,215,0,0.5),inset_0_2px_8px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,215,0,0.7),0_0_100px_rgba(255,215,0,0.4),inset_0_2px_12px_rgba(255,255,255,0.3)] transition-all duration-500 group border-2 border-yellow-300/30 hover:border-yellow-300/50 backdrop-blur-sm hover:scale-105"
               onClick={() => window.location.href = currentBanner.button_link || '/painel-cliente/login'}
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-urbana-gold to-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <Calendar className="mr-2 h-5 w-5 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-              <span className="relative z-10">{currentBanner.button_text || 'Agendar Agora'}</span>
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <Calendar className="mr-2 h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg" />
+              <span className="relative z-10 drop-shadow-sm">{currentBanner.button_text || 'Agendar Agora'}</span>
             </Button>
           </motion.div>
         </div>

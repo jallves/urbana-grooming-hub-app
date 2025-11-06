@@ -33,30 +33,37 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
       }}
       className="group"
     >
-      <Card className="relative bg-urbana-black/90 backdrop-blur-lg border-2 border-urbana-gold/30 rounded-xl shadow-xl hover:shadow-[0_0_50px_rgba(255,215,0,0.5)] transition-all duration-500 h-full flex flex-col p-6 hover:border-urbana-gold overflow-hidden">
-        {/* Glow effect on hover */}
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 via-urbana-gold/5 to-urbana-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <Card className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.1)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)] transition-all duration-500 h-full flex flex-col p-6 hover:border-urbana-gold overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-urbana-gold/5 before:via-transparent before:to-urbana-gold/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
+        {/* Animated golden glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 animate-pulse" />
         
-        {/* Animated border gradient */}
-        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-urbana-gold/20 to-transparent animate-[slide-in-right_2s_ease-in-out_infinite]" />
-        </div>
+        {/* Glassmorphism overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
+        
+        {/* Geometric pattern */}
+        <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500" style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.8) 1px, transparent 0)',
+          backgroundSize: '32px 32px'
+        }} />
 
         <div className="relative z-10 mb-6 flex items-center justify-between">
           <motion.div 
-            className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-urbana-gold to-yellow-400 rounded-xl shadow-lg"
+            className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-urbana-gold via-yellow-400 to-amber-500 rounded-xl shadow-[0_8px_32px_rgba(255,215,0,0.4),inset_0_2px_8px_rgba(255,255,255,0.2)] backdrop-blur-sm border border-yellow-300/20"
             whileHover={{ 
               scale: 1.15,
               rotate: 5,
-              boxShadow: "0 0 30px rgba(255,215,0,0.6)"
+              boxShadow: "0 12px 48px rgba(255,215,0,0.6), 0 0 40px rgba(255,215,0,0.4), inset 0 2px 12px rgba(255,255,255,0.3)"
             }}
             transition={{ type: "spring", stiffness: 400 }}
           >
-            <Scissors size={28} className="text-urbana-black" />
+            <Scissors size={30} className="text-urbana-black drop-shadow-lg" />
           </motion.div>
           <motion.span 
-            className="text-urbana-gold font-playfair font-bold text-xl"
-            whileHover={{ scale: 1.1 }}
+            className="text-urbana-gold font-playfair font-bold text-2xl px-4 py-2 rounded-lg bg-gradient-to-r from-urbana-gold/10 to-yellow-500/10 backdrop-blur-sm border border-urbana-gold/20 shadow-[0_4px_16px_rgba(255,215,0,0.2)]"
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: "0 6px 24px rgba(255,215,0,0.4)"
+            }}
           >
             {price}
           </motion.span>
@@ -76,9 +83,9 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
         </p>
 
         <motion.div 
-          className="relative z-10 mt-6 h-1 w-16 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-full"
+          className="relative z-10 mt-6 h-1.5 w-20 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-full shadow-[0_0_16px_rgba(255,215,0,0.6)]"
           initial={{ scaleX: 1 }}
-          whileHover={{ scaleX: 2 }}
+          whileHover={{ scaleX: 2.5 }}
           transition={{ duration: 0.5 }}
         />
       </Card>
@@ -108,14 +115,24 @@ const Services: React.FC = () => {
       id="services"
       className="relative min-h-screen py-8 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
     >
-      {/* Modern background elements */}
+      {/* Modern background elements with enhanced glow */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-20 left-20 w-80 h-80 bg-urbana-gold rounded-full blur-3xl mix-blend-screen animate-pulse" />
+        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-radial from-urbana-gold via-yellow-400 to-transparent rounded-full blur-3xl mix-blend-screen animate-pulse shadow-[0_0_100px_rgba(255,215,0,0.3)]" />
         <div
-          className="absolute bottom-20 right-20 w-72 h-72 bg-yellow-400 rounded-full blur-3xl mix-blend-screen animate-pulse"
+          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-radial from-yellow-400 via-urbana-gold to-transparent rounded-full blur-3xl mix-blend-screen animate-pulse shadow-[0_0_100px_rgba(255,215,0,0.3)]"
           style={{ animationDelay: "1s" }}
         />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-urbana-gold/30 to-transparent rounded-full blur-2xl animate-pulse"
+          style={{ animationDelay: "0.5s" }}
+        />
       </div>
+      
+      {/* Geometric golden pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
+        backgroundImage: 'linear-gradient(30deg, transparent 45%, rgba(255, 215, 0, 0.3) 45%, rgba(255, 215, 0, 0.3) 55%, transparent 55%), linear-gradient(150deg, transparent 45%, rgba(255, 215, 0, 0.3) 45%, rgba(255, 215, 0, 0.3) 55%, transparent 55%)',
+        backgroundSize: '60px 60px'
+      }} />
 
       <div className="urbana-container relative z-10">
         {/* Header */}

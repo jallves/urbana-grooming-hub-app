@@ -38,9 +38,11 @@ const GalleryImage: React.FC<GalleryImageProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay }}
       viewport={{ once: true }}
-      className="relative aspect-square overflow-hidden group cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-yellow-600/40"
+      className="relative aspect-square overflow-hidden group cursor-pointer rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_40px_rgba(255,215,0,0.2)] transition-all duration-500 border-2 border-transparent hover:border-urbana-gold/60"
       onClick={onClick}
     >
+      {/* Golden glow effect */}
+      <div className="absolute -inset-1 bg-gradient-to-br from-urbana-gold via-yellow-400 to-urbana-gold rounded-xl opacity-0 group-hover:opacity-20 blur-lg transition-opacity duration-500" />
       {/* Loading state */}
       {!imageLoaded && !imageError && (
         <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
@@ -73,10 +75,11 @@ const GalleryImage: React.FC<GalleryImageProps> = ({
       />
       
       {/* Overlay com gradiente e título */}
-      <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center">
-        <Camera className="text-yellow-600 mb-2" size={32} strokeWidth={1.5} />
-        <div className="px-4 text-white w-full text-center">
-          <h3 className="font-bold text-sm md:text-base line-clamp-2">
+      <div className="absolute inset-0 bg-gradient-to-t from-urbana-black via-urbana-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center backdrop-blur-sm">
+        <div className="absolute inset-0 bg-urbana-gold/5" />
+        <Camera className="text-urbana-gold mb-3 drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" size={40} strokeWidth={1.5} />
+        <div className="px-4 text-white w-full text-center relative z-10">
+          <h3 className="font-bold text-sm md:text-base line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
             {alt}
           </h3>
         </div>

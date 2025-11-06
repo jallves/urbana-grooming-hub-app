@@ -130,8 +130,18 @@ const Gallery: React.FC = () => {
   }
 
   return (
-    <section className="py-12 md:py-20 bg-gray-900">
-      <div className="w-full max-w-7xl mx-auto px-4">
+    <section className="py-12 md:py-20 bg-gradient-to-b from-gray-900 via-urbana-black to-gray-900 relative overflow-hidden">
+      {/* Geometric pattern background */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
+        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.8) 1px, transparent 0)',
+        backgroundSize: '32px 32px'
+      }} />
+      
+      {/* Golden glow orbs */}
+      <div className="absolute top-40 left-20 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-40 right-20 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+      
+      <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-12 md:mb-16">
           <h2 
             className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 leading-tight font-playfair tracking-tight"
