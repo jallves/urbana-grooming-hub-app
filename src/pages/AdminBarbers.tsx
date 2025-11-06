@@ -13,7 +13,7 @@ const AdminBarbers: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Equipe">
-        <div className="w-full max-w-full space-y-4 sm:space-y-6">
+        <div className="w-full space-y-4 sm:space-y-6">
           <Tabs 
             value={activeTab} 
             onValueChange={(value) => setActiveTab(value as 'barbers' | 'access')}

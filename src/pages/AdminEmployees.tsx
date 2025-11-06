@@ -8,7 +8,7 @@ const AdminEmployees: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Funcionários">
-        <div className="w-full max-w-full">
+        <div className="w-full">
           <EmployeeManagement />
         </div>
       </AdminLayout>

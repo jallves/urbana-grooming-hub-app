@@ -21,7 +21,7 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ children, className, titl
       <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
 
       {/* Content */}
-      <div className="w-full max-w-sm sm:max-w-md space-y-5 z-10">
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-5 z-10">
         {(title || subtitle) && (
           <div className="text-center mb-8 space-y-3">
             <div className="flex justify-center mb-4">
@@ -42,7 +42,7 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ children, className, titl
           </div>
         )}
         
-        <div className="backdrop-blur-sm bg-card/50 border border-urbana-gray/30 rounded-2xl shadow-2xl p-6 sm:p-8">
+        <div className="backdrop-blur-sm bg-card/50 border border-urbana-gray/30 rounded-2xl shadow-2xl p-8 sm:p-10">
           {children}
         </div>
       </div>

@@ -8,7 +8,7 @@ const AdminCashFlow: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Fluxo de Caixa">
-        <div className="h-full min-h-0 flex flex-col">
+        <div className="w-full h-full min-h-0 flex flex-col">
           <CashFlowManagement />
         </div>
       </AdminLayout>

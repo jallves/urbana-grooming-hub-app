@@ -8,7 +8,7 @@ const AdminClients: React.FC = () => {
   return (
     <AdminRoute allowBarber={true} requiredModule="clients">
       <AdminLayout title="Clientes">
-        <div className="h-[calc(100vh-120px)] flex flex-col">
+        <div className="w-full h-[calc(100vh-120px)] flex flex-col">
           <ClientManagement />
         </div>
       </AdminLayout>

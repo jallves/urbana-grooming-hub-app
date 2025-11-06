@@ -8,7 +8,7 @@ const AdminProducts: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Produtos e Serviços">
-        <div className="h-full bg-gray-900 flex flex-col">
+        <div className="w-full h-full bg-gray-900 flex flex-col">
           <div className="p-4 sm:p-6 border-b border-gray-700 flex-shrink-0">
             <h1 className="text-xl sm:text-2xl font-playfair text-urbana-gold">
               🧴 Gestão de Produtos e Serviços

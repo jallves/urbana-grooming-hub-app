@@ -8,7 +8,7 @@ const AdminBarberSchedules: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Horários dos Barbeiros">
-        <div className="h-full min-h-0 flex flex-col">
+        <div className="w-full h-full min-h-0 flex flex-col">
           <BarberScheduleManagement />
         </div>
       </AdminLayout>

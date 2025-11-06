@@ -14,7 +14,7 @@ const AdminSettings: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Configurações">
-        <div className="h-full w-full bg-gray-950 text-gray-100 overflow-hidden">
+        <div className="w-full h-full bg-gray-950 text-gray-100 overflow-hidden">
           <div className="h-full flex flex-col">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <TabsList className="grid w-full grid-cols-3 bg-gray-800 border border-gray-700 h-14 mb-4 rounded-lg">
