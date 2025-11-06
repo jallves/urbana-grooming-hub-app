@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import GalleryImage from './gallery/GalleryImage';
+import LightboxModal from './gallery/LightboxModal';
+import { useLightbox } from '@/hooks/useLightbox';
 
 interface GalleryImage {
   id: string;
@@ -15,9 +16,9 @@ interface GalleryImage {
 }
 
 const Gallery: React.FC = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const { selectedImage, setSelectedImage, closeModal, showNext, showPrevious } = useLightbox();
 
   // Default images as fallback
   const defaultImages: GalleryImage[] = [
@@ -89,14 +90,6 @@ const Gallery: React.FC = () => {
     fetchImages();
   }, []);
 
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + images.length) % images.length);
-  };
-
   if (loading) {
     return (
       <section className="py-20 bg-gray-900">
@@ -114,64 +107,39 @@ const Gallery: React.FC = () => {
   }
 
   return (
-    <section className="py-20 bg-gray-900">
-      <div className="w-full mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-white mb-4">Nossa Galeria</h2>
-          <p className="text-xl text-gray-400">Conheça nosso trabalho</p>
+    <section className="py-12 md:py-20 bg-gray-900">
+      <div className="w-full max-w-7xl mx-auto px-4">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-4">Nossa Galeria</h2>
+          <p className="text-lg md:text-xl text-gray-400">Conheça nosso trabalho e inspire-se</p>
         </div>
         
-        <div className="relative max-w-4xl mx-auto">
-          <div className="relative h-96 overflow-hidden rounded-lg">
-            {images.map((image, index) => (
-              <div
-                key={image.id}
-                className={`absolute inset-0 transition-transform duration-500 ease-in-out ${
-                  index === currentIndex ? 'translate-x-0' : 
-                  index < currentIndex ? '-translate-x-full' : 'translate-x-full'
-                }`}
-              >
-                <img
-                  src={image.image_url}
-                  alt={image.alt}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
-          </div>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={prevSlide}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white border-yellow-500 hover:bg-yellow-500 hover:text-black"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={nextSlide}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white border-yellow-500 hover:bg-yellow-500 hover:text-black"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          
-          <div className="flex justify-center mt-6 space-x-2">
-            {images.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-yellow-500' : 'bg-gray-600'
-                }`}
-              />
-            ))}
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+          {images.map((image, index) => (
+            <GalleryImage
+              key={image.id}
+              src={image.image_url}
+              alt={image.alt}
+              delay={index * 0.05}
+              onClick={() => setSelectedImage(index)}
+            />
+          ))}
         </div>
       </div>
+
+      {selectedImage !== null && (
+        <LightboxModal
+          selectedImage={selectedImage}
+          images={images.map((img, idx) => ({
+            id: idx,
+            src: img.image_url,
+            alt: img.alt
+          }))}
+          onClose={closeModal}
+          onPrevious={() => showPrevious(images.length)}
+          onNext={() => showNext(images.length)}
+        />
+      )}
     </section>
   );
 };
