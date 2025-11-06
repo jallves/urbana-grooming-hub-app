@@ -116,21 +116,21 @@ const BarberManagement: React.FC = () => {
   const isFormVisible = mode === 'adding' || mode === 'editing';
 
   return (
-    <div className="w-full max-w-full space-y-4 p-2 sm:p-4 bg-black min-h-screen">
+    <div className="w-full max-w-full space-y-4 p-2 sm:p-4 bg-gray-50 min-h-screen">
       {/* Header responsivo */}
       <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 className="text-lg sm:text-2xl font-bold text-urbana-gold font-playfair">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 font-playfair">
             Barbeiros
           </h1>
-          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-raleway">
+          <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-raleway">
             Gerencie barbeiros e suas permissões
           </p>
         </div>
         {mode === 'viewing' && (
           <Button 
             onClick={handleAddBarber}
-            className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway w-full sm:w-auto"
+            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 font-raleway w-full sm:w-auto shadow-md"
           >
             <Plus className="mr-2 h-4 w-4" />
             Novo Barbeiro
@@ -141,20 +141,20 @@ const BarberManagement: React.FC = () => {
       {/* Alerts responsivos */}
       {mode === 'viewing' && (
         <div className="space-y-3">
-          <Alert className="border-blue-200 bg-blue-50">
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-xs sm:text-sm leading-relaxed text-blue-800">
+          <Alert className="border-blue-300 bg-blue-50">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-xs sm:text-sm leading-relaxed text-blue-900">
               Este módulo exibe todos os profissionais cadastrados como "Barbeiro".
             </AlertDescription>
           </Alert>
           
-          <Card className="bg-gray-900 border-gray-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-lg text-urbana-gold font-playfair">
-                <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-lg text-gray-900 font-playfair">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
                 Controle de Acesso
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-300">
+              <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
                 Configure permissões de acesso aos módulos do sistema editando um barbeiro.
               </CardDescription>
             </CardHeader>
@@ -164,12 +164,12 @@ const BarberManagement: React.FC = () => {
 
       {/* Formulário responsivo */}
       {isFormVisible && (
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="p-3 sm:p-6">
-            <CardTitle className="text-sm sm:text-lg text-urbana-gold font-playfair">
+            <CardTitle className="text-sm sm:text-lg text-gray-900 font-playfair">
               {mode === 'editing' ? 'Editar Barbeiro' : 'Novo Barbeiro'}
             </CardTitle>
-            <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-300">
+            <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
               {mode === 'editing'
                 ? 'Edite as informações e permissões do barbeiro'
                 : 'Cadastre um novo barbeiro no sistema'}

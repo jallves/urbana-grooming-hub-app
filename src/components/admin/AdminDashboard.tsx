@@ -174,10 +174,10 @@ export default function AdminDashboard() {
     <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white font-clash mb-2">
+        <h1 className="text-3xl font-bold text-gray-900 font-playfair mb-2">
           Dashboard Administrativo
         </h1>
-        <p className="text-gray-400 font-inter">
+        <p className="text-gray-600 font-raleway">
           Visão geral das operações da barbearia
         </p>
       </div>
