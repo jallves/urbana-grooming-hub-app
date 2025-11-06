@@ -157,8 +157,8 @@ const BarberAccessManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <Card className="bg-gray-900 border-gray-700">
-        <CardContent className="flex items-center justify-center py-8">
+      <Card className="bg-white border-gray-200 shadow-sm">
+        <CardContent className="flex items-center justify-center py-6 sm:py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
         </CardContent>
       </Card>
@@ -167,15 +167,15 @@ const BarberAccessManagement: React.FC = () => {
 
   return (
     <>
-      <Card className="bg-gray-900 border-gray-700">
-        <CardHeader className="border-b border-gray-700">
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-urbana-gold font-playfair">
-                <Settings className="h-5 w-5" />
+      <Card className="bg-white border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="flex items-center gap-2 text-gray-900 font-playfair text-base sm:text-lg">
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
                 Gerenciamento de Acesso ao Painel
               </CardTitle>
-              <p className="text-gray-300 text-sm font-raleway mt-1">
+              <p className="text-gray-700 text-xs sm:text-sm font-raleway mt-1">
                 Controle o acesso dos barbeiros ao painel administrativo
               </p>
             </div>
@@ -183,7 +183,7 @@ const BarberAccessManagement: React.FC = () => {
               onClick={handleRefresh}
               variant="outline"
               size="sm"
-              className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold hover:text-black"
+              className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold hover:text-white w-full sm:w-auto touch-manipulation"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Atualizar
@@ -191,48 +191,41 @@ const BarberAccessManagement: React.FC = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="p-6">
-          <div className="space-y-4">
+        <CardContent className="p-3 sm:p-6">
+          <div className="space-y-3 sm:space-y-4">
             {barbers.map((barber) => (
               <div 
                 key={barber.id}
-                className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200"
               >
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-full">
-                    <User className="h-5 w-5 text-black" />
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-full flex-shrink-0">
+                    <User className="h-5 w-5 text-white" />
                   </div>
                   
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-white">{barber.name}</span>
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-gray-900 text-sm sm:text-base">{barber.name}</span>
                       {barber.hasAuthUser ? (
-                        <Badge className="bg-green-600 text-white">
+                        <Badge className="bg-green-600 text-white text-xs">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Com Acesso
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="bg-gray-600 text-gray-300">
+                        <Badge variant="secondary" className="bg-gray-600 text-gray-300 text-xs">
                           <XCircle className="h-3 w-3 mr-1" />
                           Sem Acesso
                         </Badge>
                       )}
                       
                       {!barber.isActive && (
-                        <Badge variant="destructive">Inativo</Badge>
+                        <Badge variant="destructive" className="text-xs">Inativo</Badge>
                       )}
                     </div>
                     
-                    <div className="text-sm text-gray-300">
+                    <div className="text-xs sm:text-sm text-gray-700">
                       {barber.email ? (
-                        <>
-                          <span>{barber.email}</span>
-                          {barber.lastLogin && (
-                            <span className="ml-2 text-gray-400">
-                              • Último login: {new Date(barber.lastLogin).toLocaleDateString('pt-BR')}
-                            </span>
-                          )}
-                        </>
+                        <span className="block truncate">{barber.email}</span>
                       ) : (
                         <span className="text-red-400">Email não configurado</span>
                       )}
@@ -240,11 +233,11 @@ const BarberAccessManagement: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <Button
                     onClick={() => handleManagePassword(barber)}
                     size="sm"
-                    className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
+                    className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 text-xs sm:text-sm w-full sm:w-auto touch-manipulation"
                     disabled={!barber.email || !barber.isActive}
                   >
                     <Key className="h-4 w-4 mr-2" />
@@ -255,9 +248,9 @@ const BarberAccessManagement: React.FC = () => {
             ))}
 
             {barbers.length === 0 && (
-              <div className="text-center py-8 text-gray-400">
-                <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum barbeiro encontrado</p>
+              <div className="text-center py-8 sm:py-12">
+                <User className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 opacity-50 text-gray-400" />
+                <p className="text-gray-600 text-sm sm:text-base">Nenhum barbeiro encontrado</p>
               </div>
             )}
           </div>
@@ -266,9 +259,9 @@ const BarberAccessManagement: React.FC = () => {
 
       {/* Dialog para gerenciar senha */}
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
           <DialogHeader>
-            <DialogTitle className="text-urbana-gold">
+            <DialogTitle className="text-urbana-gold text-base sm:text-lg">
               Gerenciar Acesso ao Painel
             </DialogTitle>
           </DialogHeader>

@@ -273,35 +273,35 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
   };
 
   return (
-    <Card className="bg-gray-900 border-gray-700">
-      <CardHeader className="border-b border-gray-700">
-        <CardTitle className="flex items-center gap-2 text-urbana-gold font-playfair">
-          <Key className="h-5 w-5" />
+    <Card className="bg-white border-gray-200 shadow-sm">
+      <CardHeader className="border-b border-gray-200 p-4 sm:p-6">
+        <CardTitle className="flex items-center gap-2 text-gray-900 font-playfair text-base sm:text-lg">
+          <Key className="h-4 w-4 sm:h-5 sm:w-5" />
           Gerenciar Acesso ao Painel
         </CardTitle>
-        <p className="text-gray-300 text-sm font-raleway">
+        <p className="text-gray-700 text-xs sm:text-sm font-raleway mt-1">
           Configure senha e acesso ao painel do barbeiro para <strong>{barberName}</strong>
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-6 p-6">
+      <CardContent className="space-y-4 sm:space-y-6 p-3 sm:p-6">
         {/* Informações do Barbeiro */}
-        <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <div className="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-300 text-sm">Nome:</span>
-              <span className="text-white font-medium">{barberName}</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+              <span className="text-gray-700 text-xs sm:text-sm font-medium">Nome:</span>
+              <span className="text-gray-900 font-medium text-sm sm:text-base">{barberName}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-300 text-sm">Email:</span>
-              <span className="text-white font-medium">{barberEmail || 'Não informado'}</span>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-2">
+              <span className="text-gray-700 text-xs sm:text-sm font-medium">Email:</span>
+              <span className="text-gray-900 font-medium text-sm sm:text-base truncate">{barberEmail || 'Não informado'}</span>
             </div>
           </div>
         </div>
 
         {!barberEmail && (
-          <Alert className="border-red-700 bg-red-900/20">
-            <AlertDescription className="text-red-300">
+          <Alert className="border-red-600 bg-red-50 text-red-900">
+            <AlertDescription className="text-xs sm:text-sm">
               Email é obrigatório para criar acesso ao painel. Configure o email do barbeiro primeiro.
             </AlertDescription>
           </Alert>
@@ -310,22 +310,22 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
         {barberEmail && (
           <>
             {/* Geração de Senha */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h4 className="font-medium text-white">Definir Nova Senha</h4>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4">
+                <h4 className="font-medium text-gray-900 text-sm sm:text-base">Definir Nova Senha</h4>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={generateRandomPassword}
-                  className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold hover:text-black"
+                  className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold hover:text-white w-full sm:w-auto text-xs sm:text-sm touch-manipulation"
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                   Gerar Senha
                 </Button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Campo Senha */}
                 <div>
                   <div className="relative">
@@ -334,16 +334,16 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
                       placeholder="Digite a nova senha"
                       value={password}
                       onChange={(e) => handlePasswordChange(e.target.value)}
-                      className="bg-black border-urbana-gold/30 text-white pr-10"
+                      className="bg-white border-urbana-gold/30 text-gray-900 pr-10 text-sm sm:text-base"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-gray-400 hover:text-white"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 p-0 text-gray-600 hover:text-gray-900 touch-manipulation"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Eye className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </Button>
                   </div>
                 </div>
@@ -356,16 +356,16 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
                       placeholder="Confirme a nova senha"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="bg-black border-urbana-gold/30 text-white pr-10"
+                      className="bg-white border-urbana-gold/30 text-gray-900 pr-10 text-sm sm:text-base"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 text-gray-400 hover:text-white"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-8 sm:w-8 p-0 text-gray-600 hover:text-gray-900 touch-manipulation"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Eye className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </Button>
                   </div>
                 </div>
@@ -374,16 +374,16 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
                 {password && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-300">Força da senha:</span>
+                      <span className="text-xs sm:text-sm text-gray-700">Força da senha:</span>
                       <Badge 
                         variant={passwordStrength.isValid ? "default" : "destructive"}
-                        className={passwordStrength.isValid ? "bg-green-600" : "bg-red-600"}
+                        className={`text-xs ${passwordStrength.isValid ? "bg-green-600" : "bg-red-600"}`}
                       >
                         {passwordStrength.isValid ? 'Forte' : 'Fraca'}
                       </Badge>
                     </div>
                     {passwordStrength.errors.length > 0 && (
-                      <ul className="text-sm text-red-400 space-y-1 pl-4">
+                      <ul className="text-xs sm:text-sm text-red-600 space-y-1 pl-4">
                         {passwordStrength.errors.map((error, index) => (
                           <li key={index} className="list-disc">{error}</li>
                         ))}
@@ -394,26 +394,26 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
 
                 {/* Verificação de Confirmação */}
                 {confirmPassword && password !== confirmPassword && (
-                  <p className="text-red-400 text-sm">As senhas não coincidem</p>
+                  <p className="text-red-600 text-xs sm:text-sm">As senhas não coincidem</p>
                 )}
               </div>
             </div>
 
             {/* Ações */}
-            <div className="flex gap-3 pt-4 border-t border-gray-700">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-200">
               <Button
                 onClick={handleCreateOrUpdatePassword}
                 disabled={loading || !passwordStrength.isValid || password !== confirmPassword}
-                className="flex-1 bg-urbana-gold text-black hover:bg-urbana-gold/90"
+                className="flex-1 bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 text-xs sm:text-sm touch-manipulation"
               >
                 {loading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2"></div>
                     Salvando...
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                     Criar/Atualizar Acesso
                   </>
                 )}
@@ -423,9 +423,9 @@ const BarberPasswordManager: React.FC<BarberPasswordManagerProps> = ({
                 onClick={handleDeleteUser}
                 disabled={loading}
                 variant="outline"
-                className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white text-xs sm:text-sm touch-manipulation"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 Remover Acesso
               </Button>
             </div>

@@ -58,10 +58,10 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8 sm:p-12 bg-gray-900 rounded-lg border border-gray-700">
+      <div className="flex justify-center items-center p-8 sm:p-12 bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="flex flex-col items-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
-          <p className="text-gray-300 font-raleway text-sm">Carregando funcionários...</p>
+          <p className="text-gray-700 font-raleway text-sm">Carregando funcionários...</p>
         </div>
       </div>
     );
@@ -70,8 +70,8 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   return (
     <div className="w-full">
       {/* View Desktop/Tablet */}
-      <div className="hidden md:block border rounded-lg border-gray-700 bg-gray-900">
-        <div className="grid grid-cols-7 gap-4 p-4 border-b border-gray-700 bg-black text-urbana-gold font-playfair font-medium text-sm">
+      <div className="hidden md:block border rounded-lg border-gray-200 bg-white shadow-sm">
+        <div className="grid grid-cols-7 gap-4 p-4 border-b border-gray-200 bg-gray-50 text-gray-900 font-playfair font-medium text-sm">
           <div>Funcionário</div>
           <div>Email</div>
           <div>Telefone</div>
@@ -83,7 +83,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
         
         {employees.length > 0 ? (
           employees.map((employee) => (
-            <div key={employee.id} className="grid grid-cols-7 gap-4 p-4 border-b border-gray-700 hover:bg-gray-800/50 transition-colors items-center">
+            <div key={employee.id} className="grid grid-cols-7 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center">
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8 border-2 border-urbana-gold/30">
                   <AvatarImage src={employee.photo_url} />
@@ -91,13 +91,13 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                     {employee.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-white font-raleway font-medium text-sm truncate">{employee.name}</span>
+                <span className="text-gray-900 font-raleway font-medium text-sm truncate">{employee.name}</span>
               </div>
-              <div className="text-gray-300 font-raleway text-sm truncate">{employee.email}</div>
-              <div className="text-gray-300 font-raleway text-sm">{employee.phone}</div>
+              <div className="text-gray-700 font-raleway text-sm truncate">{employee.email}</div>
+              <div className="text-gray-700 font-raleway text-sm">{employee.phone}</div>
               <div>{getRoleBadge(employee.role)}</div>
               <div>{getStatusBadge(employee.status)}</div>
-              <div className="text-gray-300 font-raleway text-sm">
+              <div className="text-gray-700 font-raleway text-sm">
                 {formatDate(employee.last_login)}
               </div>
               <div className="text-right">
@@ -106,22 +106,22 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 w-8 p-0 text-gray-400 hover:text-urbana-gold hover:bg-urbana-gold/10"
+                      className="h-8 w-8 p-0 text-gray-600 hover:text-urbana-gold hover:bg-urbana-gold/10"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                  <DropdownMenuContent align="end" className="bg-white border-gray-200 z-50">
                     <DropdownMenuItem 
                       onClick={() => onEdit(employee)}
-                      className="text-white hover:bg-gray-700 font-raleway"
+                      className="text-gray-900 hover:bg-gray-100 font-raleway cursor-pointer"
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete(employee.id)}
-                      className="text-red-400 hover:bg-gray-700 font-raleway"
+                      className="text-red-600 hover:bg-red-50 font-raleway cursor-pointer"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Excluir
@@ -137,7 +137,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
               <div className="w-16 h-16 bg-urbana-gold/10 rounded-full flex items-center justify-center">
                 <UserPlus className="h-8 w-8 text-urbana-gold" />
               </div>
-              <p className="text-gray-400 font-raleway">Nenhum funcionário encontrado</p>
+              <p className="text-gray-600 font-raleway">Nenhum funcionário encontrado</p>
             </div>
           </div>
         )}
@@ -147,7 +147,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
       <div className="md:hidden space-y-3">
         {employees.length > 0 ? (
           employees.map((employee) => (
-            <div key={employee.id} className="bg-gray-900 border border-gray-700 rounded-lg p-4">
+            <div key={employee.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Avatar className="h-12 w-12 border-2 border-urbana-gold/30">
@@ -157,8 +157,8 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-white font-raleway font-medium text-sm truncate">{employee.name}</h3>
-                    <p className="text-gray-300 font-raleway text-xs truncate">{employee.email}</p>
+                    <h3 className="text-gray-900 font-raleway font-medium text-sm truncate">{employee.name}</h3>
+                    <p className="text-gray-700 font-raleway text-xs truncate">{employee.email}</p>
                   </div>
                 </div>
                 <DropdownMenu>
@@ -166,22 +166,22 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 w-8 p-0 text-gray-400 hover:text-urbana-gold hover:bg-urbana-gold/10"
+                      className="h-8 w-8 p-0 text-gray-600 hover:text-urbana-gold hover:bg-urbana-gold/10 touch-manipulation"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                  <DropdownMenuContent align="end" className="bg-white border-gray-200 z-50">
                     <DropdownMenuItem 
                       onClick={() => onEdit(employee)}
-                      className="text-white hover:bg-gray-700 font-raleway"
+                      className="text-gray-900 hover:bg-gray-100 font-raleway cursor-pointer"
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete(employee.id)}
-                      className="text-red-400 hover:bg-gray-700 font-raleway"
+                      className="text-red-600 hover:bg-red-50 font-raleway cursor-pointer"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Excluir
@@ -192,20 +192,20 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
               
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-gray-400 font-raleway">Telefone:</span>
-                  <span className="text-white font-raleway ml-1">{employee.phone}</span>
+                  <span className="text-gray-600 font-raleway">Telefone:</span>
+                  <span className="text-gray-900 font-raleway ml-1">{employee.phone}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400 font-raleway">Cargo:</span>
+                  <span className="text-gray-600 font-raleway">Cargo:</span>
                   <div className="mt-1">{getRoleBadge(employee.role)}</div>
                 </div>
                 <div>
-                  <span className="text-gray-400 font-raleway">Status:</span>
+                  <span className="text-gray-600 font-raleway">Status:</span>
                   <div className="mt-1">{getStatusBadge(employee.status)}</div>
                 </div>
                 <div>
-                  <span className="text-gray-400 font-raleway">Último Login:</span>
-                  <span className="text-white font-raleway ml-1 text-xs">
+                  <span className="text-gray-600 font-raleway">Último Login:</span>
+                  <span className="text-gray-900 font-raleway ml-1 text-xs block mt-1">
                     {formatDate(employee.last_login)}
                   </span>
                 </div>
@@ -213,12 +213,12 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
             </div>
           ))
         ) : (
-          <div className="text-center py-12 bg-gray-900 rounded-lg border border-gray-700">
+          <div className="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="flex flex-col items-center space-y-3">
               <div className="w-16 h-16 bg-urbana-gold/10 rounded-full flex items-center justify-center">
                 <UserPlus className="h-8 w-8 text-urbana-gold" />
               </div>
-              <p className="text-gray-400 font-raleway">Nenhum funcionário encontrado</p>
+              <p className="text-gray-600 font-raleway">Nenhum funcionário encontrado</p>
             </div>
           </div>
         )}
