@@ -13,9 +13,9 @@ const NavbarLogo: React.FC<NavbarLogoProps> = ({ shopName }) => {
       {/* Logo */}
       <Link to="/" className="transition-transform duration-300 hover:scale-110">
         <img
-          src="/lovable-uploads/201b1568-1698-4a5e-bbb8-ee35c5363960.png"
-          alt="Costa Urbana Logo"
-          className="h-12 w-12 object-contain drop-shadow-md"
+          src="/costa-urbana-logo.png"
+          alt="Costa Urbana Barbearia Logo"
+          className="h-16 w-16 object-contain drop-shadow-lg"
         />
       </Link>
 
