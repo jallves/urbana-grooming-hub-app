@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import GalleryImage from './gallery/GalleryImage';
 import LightboxModal from './gallery/LightboxModal';
 import { useLightbox } from '@/hooks/useLightbox';
+import { motion } from 'framer-motion';
 
 interface GalleryPhoto {
   id: string;
@@ -144,7 +145,7 @@ const Gallery: React.FC = () => {
       <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-12 md:mb-16">
           <h2 
-            className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 leading-tight font-playfair tracking-tight"
+            className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 leading-tight font-playfair tracking-tight relative inline-block"
             style={{
               background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
               WebkitBackgroundClip: 'text',
@@ -154,6 +155,14 @@ const Gallery: React.FC = () => {
             }}
           >
             Nossa Galeria
+            {/* Decorative underline */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              transition={{ duration: 1, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-urbana-gold to-transparent rounded-full shadow-[0_0_15px_rgba(255,215,0,0.6)]"
+            />
           </h2>
           <p className="text-xl md:text-2xl lg:text-3xl text-gray-300 font-raleway font-light tracking-wide">Conheça nosso trabalho e inspire-se</p>
         </div>

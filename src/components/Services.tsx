@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { ArtDecoCorner } from "@/components/decorative/ArtDecoCorner";
 
 interface ServiceProps {
   title: string;
@@ -34,8 +35,12 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
       className="group"
     >
       <Card className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.1)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)] transition-all duration-500 h-full flex flex-col p-6 hover:border-urbana-gold overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-urbana-gold/5 before:via-transparent before:to-urbana-gold/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
-      {/* Animated golden glow effect */}
-      <div className="absolute -inset-1 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
+        {/* Art Deco corners */}
+        <ArtDecoCorner position="top-left" />
+        <ArtDecoCorner position="bottom-right" />
+        
+        {/* Animated golden glow effect */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
         
         {/* Glassmorphism overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
@@ -142,7 +147,7 @@ const Services: React.FC = () => {
           className="text-center max-w-5xl mx-auto mb-16 px-4"
         >
           <h2 
-            className="text-6xl md:text-7xl lg:text-8xl font-playfair font-bold mb-6 leading-tight tracking-tight"
+            className="text-6xl md:text-7xl lg:text-8xl font-playfair font-bold mb-6 leading-tight tracking-tight relative inline-block"
             style={{
               background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
               WebkitBackgroundClip: 'text',
@@ -158,6 +163,14 @@ const Services: React.FC = () => {
             }}>
               Serviços
             </span>
+            {/* Decorative underline */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              transition={{ duration: 1, delay: 0.5 }}
+              viewport={{ once: true }}
+              className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-urbana-gold to-transparent rounded-full shadow-[0_0_15px_rgba(255,215,0,0.6)]"
+            />
           </h2>
           <p className="text-urbana-light/90 font-raleway text-xl md:text-2xl lg:text-3xl leading-relaxed font-light tracking-wide max-w-3xl mx-auto">
             Descubra uma experiência única onde tradição e modernidade se
