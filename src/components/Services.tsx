@@ -34,8 +34,8 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
       className="group"
     >
       <Card className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.1)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)] transition-all duration-500 h-full flex flex-col p-6 hover:border-urbana-gold overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-urbana-gold/5 before:via-transparent before:to-urbana-gold/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
-        {/* Animated golden glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500 animate-pulse" />
+      {/* Animated golden glow effect */}
+      <div className="absolute -inset-1 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500" />
         
         {/* Glassmorphism overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl" />
@@ -117,14 +117,12 @@ const Services: React.FC = () => {
     >
       {/* Modern background elements with enhanced glow */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-radial from-urbana-gold via-yellow-400 to-transparent rounded-full blur-3xl mix-blend-screen animate-pulse shadow-[0_0_100px_rgba(255,215,0,0.3)]" />
+        <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-radial from-urbana-gold via-yellow-400 to-transparent rounded-full blur-3xl mix-blend-screen shadow-[0_0_100px_rgba(255,215,0,0.3)]" />
         <div
-          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-radial from-yellow-400 via-urbana-gold to-transparent rounded-full blur-3xl mix-blend-screen animate-pulse shadow-[0_0_100px_rgba(255,215,0,0.3)]"
-          style={{ animationDelay: "1s" }}
+          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-radial from-yellow-400 via-urbana-gold to-transparent rounded-full blur-3xl mix-blend-screen shadow-[0_0_100px_rgba(255,215,0,0.3)]"
         />
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-urbana-gold/30 to-transparent rounded-full blur-2xl animate-pulse"
-          style={{ animationDelay: "0.5s" }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-urbana-gold/30 to-transparent rounded-full blur-2xl"
         />
       </div>
       

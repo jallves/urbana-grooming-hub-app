@@ -138,8 +138,8 @@ const Gallery: React.FC = () => {
       }} />
       
       {/* Golden glow orbs */}
-      <div className="absolute top-40 left-20 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-40 right-20 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="absolute top-40 left-20 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-40 right-20 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl" />
       
       <div className="w-full max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-12 md:mb-16">
