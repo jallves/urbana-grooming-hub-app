@@ -94,14 +94,14 @@ const CampaignList = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-32">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-urbana-gold"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center text-red-400 py-8">
+      <div className="text-center text-red-600 py-8">
         <p className="text-sm">Erro ao carregar campanhas</p>
       </div>
     );
@@ -112,13 +112,13 @@ const CampaignList = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-white">Campanhas de Marketing</h3>
-          <p className="text-xs text-gray-400">Gerencie suas campanhas</p>
+          <h3 className="text-sm font-medium text-gray-900 font-playfair">Campanhas de Marketing</h3>
+          <p className="text-xs text-gray-600">Gerencie suas campanhas</p>
         </div>
         <Button 
           onClick={() => setIsDialogOpen(true)} 
           size="sm"
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 h-auto"
+          className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold-dark hover:to-urbana-gold text-xs px-3 py-1.5 h-auto shadow-md"
         >
           <Plus className="mr-1 h-3 w-3" />
           Nova
@@ -131,12 +131,12 @@ const CampaignList = () => {
           {campaigns.map((campaign) => (
             <Card 
               key={campaign.id} 
-              className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+              className="bg-white border-gray-200 hover:border-urbana-gold/50 hover:shadow-lg transition-all cursor-pointer"
               onClick={() => handleEdit(campaign)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
-                  <CardTitle className="text-sm font-medium text-white line-clamp-2">
+                  <CardTitle className="text-sm font-medium text-gray-900 line-clamp-2 font-playfair">
                     {campaign.name}
                   </CardTitle>
                   <Badge variant={getBadgeVariant(campaign.status)} className="text-xs">
@@ -146,14 +146,14 @@ const CampaignList = () => {
               </CardHeader>
               <CardContent className="space-y-2">
                 {campaign.description && (
-                  <p className="text-xs text-gray-400 line-clamp-2">
+                  <p className="text-xs text-gray-600 line-clamp-2">
                     {campaign.description}
                   </p>
                 )}
                 
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <Calendar className="h-3 w-3" />
+                  <div className="flex items-center gap-2 text-xs text-gray-700">
+                    <Calendar className="h-3 w-3 text-urbana-gold" />
                     <span>{format(new Date(campaign.start_date), 'dd/MM/yyyy')}</span>
                     {campaign.end_date && (
                       <>
@@ -164,9 +164,9 @@ const CampaignList = () => {
                   </div>
                   
                   {campaign.budget && (
-                    <div className="flex items-center gap-2 text-xs text-gray-300">
-                      <DollarSign className="h-3 w-3" />
-                      <span>R$ {campaign.budget.toLocaleString('pt-BR')}</span>
+                    <div className="flex items-center gap-2 text-xs text-gray-700">
+                      <DollarSign className="h-3 w-3 text-urbana-gold" />
+                      <span className="font-medium">R$ {campaign.budget.toLocaleString('pt-BR')}</span>
                     </div>
                   )}
                 </div>
@@ -176,17 +176,17 @@ const CampaignList = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <TrendingUp className="mx-auto h-8 w-8 text-gray-600 mb-3" />
-          <h3 className="text-sm font-medium text-gray-400 mb-2">
+          <TrendingUp className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+          <h3 className="text-sm font-medium text-gray-700 mb-2">
             Nenhuma campanha encontrada
           </h3>
-          <p className="text-xs text-gray-600 mb-4">
+          <p className="text-xs text-gray-500 mb-4">
             Crie uma nova campanha para começar
           </p>
           <Button 
             onClick={() => setIsDialogOpen(true)}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold-dark hover:to-urbana-gold shadow-md"
           >
             <Plus className="mr-2 h-4 w-4" />
             Criar Primeira Campanha

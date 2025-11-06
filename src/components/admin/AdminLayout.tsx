@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -68,7 +69,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
               </h1>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+              
               {/* Notificações */}
               <Button
                 variant="ghost"

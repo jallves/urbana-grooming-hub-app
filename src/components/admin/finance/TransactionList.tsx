@@ -80,41 +80,41 @@ const TransactionList: React.FC = () => {
   const balance = totalIncome - totalExpense;
 
   return (
-    <div className="h-full flex flex-col bg-gray-800 text-white">
+    <div className="h-full flex flex-col bg-white">
       {/* Header com resumo */}
-      <div className="p-2 sm:p-4 border-b border-gray-700 flex-shrink-0">
+      <div className="p-2 sm:p-4 border-b border-gray-200 flex-shrink-0">
         {/* Métricas */}
         <div className="grid grid-cols-3 gap-1 sm:gap-4 mb-3 sm:mb-4">
-          <Card className="bg-green-900/20 border-green-700/30 p-1.5 sm:p-3">
+          <Card className="bg-green-50 border-green-200 p-1.5 sm:p-3">
             <div className="flex items-center gap-1 sm:gap-2">
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400" />
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
               <div className="min-w-0">
-                <p className="text-xs text-green-400">Receitas</p>
-                <p className="text-xs sm:text-base font-bold text-green-400 truncate">
+                <p className="text-xs text-green-700 font-medium">Receitas</p>
+                <p className="text-xs sm:text-base font-bold text-green-700 truncate">
                   R$ {totalIncome.toLocaleString('pt-BR')}
                 </p>
               </div>
             </div>
           </Card>
           
-          <Card className="bg-red-900/20 border-red-700/30 p-1.5 sm:p-3">
+          <Card className="bg-red-50 border-red-200 p-1.5 sm:p-3">
             <div className="flex items-center gap-1 sm:gap-2">
-              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" />
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
               <div className="min-w-0">
-                <p className="text-xs text-red-400">Despesas</p>
-                <p className="text-xs sm:text-base font-bold text-red-400 truncate">
+                <p className="text-xs text-red-700 font-medium">Despesas</p>
+                <p className="text-xs sm:text-base font-bold text-red-700 truncate">
                   R$ {totalExpense.toLocaleString('pt-BR')}
                 </p>
               </div>
             </div>
           </Card>
           
-          <Card className={`${balance >= 0 ? 'bg-urbana-gold/20 border-urbana-gold/30' : 'bg-red-900/20 border-red-700/30'} p-1.5 sm:p-3`}>
+          <Card className={`${balance >= 0 ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-urbana-gold/30' : 'bg-red-50 border-red-200'} p-1.5 sm:p-3`}>
             <div className="flex items-center gap-1 sm:gap-2">
-              <DollarSign className={`h-3 w-3 sm:h-4 sm:w-4 ${balance >= 0 ? 'text-urbana-gold' : 'text-red-400'}`} />
+              <DollarSign className={`h-3 w-3 sm:h-4 sm:w-4 ${balance >= 0 ? 'text-urbana-gold' : 'text-red-600'}`} />
               <div className="min-w-0">
-                <p className={`text-xs ${balance >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>Saldo</p>
-                <p className={`text-xs sm:text-base font-bold ${balance >= 0 ? 'text-urbana-gold' : 'text-red-400'} truncate`}>
+                <p className={`text-xs font-medium ${balance >= 0 ? 'text-urbana-gold-dark' : 'text-red-700'}`}>Saldo</p>
+                <p className={`text-xs sm:text-base font-bold ${balance >= 0 ? 'text-urbana-gold' : 'text-red-700'} truncate`}>
                   R$ {balance.toLocaleString('pt-BR')}
                 </p>
               </div>
@@ -128,17 +128,17 @@ const TransactionList: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-urbana-gold" />
             <Input
               placeholder="Buscar transações..."
-              className="pl-8 sm:pl-10 bg-gray-700 border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
+              className="pl-8 sm:pl-10 bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full sm:w-32 bg-gray-700 border-urbana-gold/30 text-white h-8 sm:h-10 text-xs sm:text-sm">
+            <SelectTrigger className="w-full sm:w-32 bg-gray-50 border-gray-300 text-gray-900 h-8 sm:h-10 text-xs sm:text-sm">
               <SelectValue placeholder="Tipo" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-700 border-gray-600">
+            <SelectContent className="bg-white border-gray-200 shadow-lg">
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="income">Receita</SelectItem>
               <SelectItem value="expense">Despesa</SelectItem>
@@ -146,10 +146,10 @@ const TransactionList: React.FC = () => {
           </Select>
           
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-32 bg-gray-700 border-urbana-gold/30 text-white h-8 sm:h-10 text-xs sm:text-sm">
+            <SelectTrigger className="w-full sm:w-32 bg-gray-50 border-gray-300 text-gray-900 h-8 sm:h-10 text-xs sm:text-sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-700 border-gray-600">
+            <SelectContent className="bg-white border-gray-200 shadow-lg">
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="completed">Completo</SelectItem>
               <SelectItem value="pending">Pendente</SelectItem>
@@ -160,13 +160,13 @@ const TransactionList: React.FC = () => {
       </div>
 
       {/* Lista de transações */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden bg-gray-50">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
           </div>
         ) : filteredTransactions.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
               <DollarSign className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm sm:text-base">Nenhuma transação encontrada</p>
@@ -176,28 +176,28 @@ const TransactionList: React.FC = () => {
           <div className="h-full overflow-y-auto">
             <div className="p-2 sm:p-4 space-y-2 sm:space-y-3">
               {filteredTransactions.map((transaction) => (
-                <Card key={transaction.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors">
+                <Card key={transaction.id} className="bg-white border-gray-200 hover:shadow-lg hover:border-urbana-gold/30 transition-all">
                   <div className="p-2 sm:p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                        <div className={`p-1.5 sm:p-2 rounded-full ${transaction.transaction_type === 'income' ? 'bg-green-900/30' : 'bg-red-900/30'}`}>
+                        <div className={`p-1.5 sm:p-2 rounded-full ${transaction.transaction_type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
                           {transaction.transaction_type === 'income' ? 
-                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400" /> : 
-                            <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" />
+                            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" /> : 
+                            <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
                           }
                         </div>
                         
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1 sm:gap-2 mb-1">
-                            <h3 className="font-medium text-white text-xs sm:text-base truncate">
+                            <h3 className="font-medium text-gray-900 text-xs sm:text-base truncate">
                               {transaction.description}
                             </h3>
                             <Badge 
                               variant="outline" 
                               className={`text-xs flex-shrink-0 ${
-                                transaction.status === 'completed' ? 'border-green-600 text-green-400' :
-                                transaction.status === 'pending' ? 'border-yellow-600 text-yellow-400' :
-                                'border-red-600 text-red-400'
+                                transaction.status === 'completed' ? 'border-green-500 text-green-700 bg-green-50' :
+                                transaction.status === 'pending' ? 'border-yellow-500 text-yellow-700 bg-yellow-50' :
+                                'border-red-500 text-red-700 bg-red-50'
                               }`}
                             >
                               {transaction.status === 'completed' ? 'Completo' :
@@ -205,11 +205,11 @@ const TransactionList: React.FC = () => {
                             </Badge>
                           </div>
                           
-                          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
+                          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                             <span>{transaction.category}</span>
                             <span>{transaction.payment_method}</span>
                             <span className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
+                              <Calendar className="h-3 w-3 text-urbana-gold" />
                               {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
                             </span>
                           </div>
@@ -218,7 +218,7 @@ const TransactionList: React.FC = () => {
                       
                       <div className="text-right flex-shrink-0 ml-2 sm:ml-3">
                         <p className={`font-bold text-xs sm:text-base ${
-                          transaction.transaction_type === 'income' ? 'text-green-400' : 'text-red-400'
+                          transaction.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR')}
                         </p>

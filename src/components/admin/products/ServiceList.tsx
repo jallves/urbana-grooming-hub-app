@@ -56,21 +56,21 @@ const ServiceList: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex flex-col bg-gray-800 text-white">
+    <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="p-3 sm:p-4 border-b border-gray-700 flex-shrink-0">
+      <div className="p-3 sm:p-4 border-b border-gray-200 flex-shrink-0">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-urbana-gold" />
             <Input
               placeholder="Buscar serviços..."
-              className="pl-8 sm:pl-10 bg-gray-700 border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
+              className="pl-8 sm:pl-10 bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Button 
-            className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
+            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold-dark hover:to-urbana-gold font-raleway font-medium h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4 shadow-md"
           >
             <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Novo Serviço</span>
@@ -80,13 +80,13 @@ const ServiceList: React.FC = () => {
       </div>
 
       {/* Lista de serviços */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 bg-gray-50">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
               <Scissors className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm sm:text-base">Nenhum serviço encontrado</p>
@@ -96,24 +96,24 @@ const ServiceList: React.FC = () => {
           <div className="p-3 sm:p-4 h-full overflow-y-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {filteredServices.map((service) => (
-                <Card key={service.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors">
+                <Card key={service.id} className="bg-white border-gray-200 hover:shadow-lg hover:border-urbana-gold/50 transition-all">
                   <div className="p-3 sm:p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-medium text-white text-sm sm:text-base truncate mr-2">
+                      <h3 className="font-medium text-gray-900 text-sm sm:text-base truncate mr-2">
                         {service.name}
                       </h3>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                             <MoreVertical className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
-                          <DropdownMenuItem className="text-white hover:bg-gray-700 text-xs sm:text-sm">
+                        <DropdownMenuContent align="end" className="bg-white border-gray-200 shadow-lg">
+                          <DropdownMenuItem className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 text-xs sm:text-sm cursor-pointer">
                             <Edit className="h-3 w-3 mr-2" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-400 hover:bg-gray-700 text-xs sm:text-sm">
+                          <DropdownMenuItem className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm cursor-pointer">
                             <Trash2 className="h-3 w-3 mr-2" />
                             Excluir
                           </DropdownMenuItem>
@@ -122,32 +122,32 @@ const ServiceList: React.FC = () => {
                     </div>
                     
                     {service.description && (
-                      <p className="text-xs sm:text-sm text-gray-400 mb-3 line-clamp-2">
+                      <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2">
                         {service.description}
                       </p>
                     )}
                     
                     <div className="space-y-2 text-xs sm:text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Preço:</span>
-                        <span className="text-urbana-gold font-medium">
+                        <span className="text-gray-600">Preço:</span>
+                        <span className="text-urbana-gold font-semibold">
                           R$ {service.price.toFixed(2)}
                         </span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Duração:</span>
-                        <span className="text-white flex items-center gap-1">
+                        <span className="text-gray-600">Duração:</span>
+                        <span className="text-gray-900 font-medium flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {service.duration}min
                         </span>
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Status:</span>
+                        <span className="text-gray-600">Status:</span>
                         <Badge 
                           variant={service.is_active ? "default" : "outline"}
-                          className={`text-xs ${service.is_active ? "bg-urbana-gold text-black" : "text-gray-400 border-gray-600"}`}
+                          className={`text-xs ${service.is_active ? "bg-gradient-to-r from-urbana-gold to-yellow-500 text-white border-0" : "text-gray-600 border-gray-300"}`}
                         >
                           {service.is_active ? "Ativo" : "Inativo"}
                         </Badge>

@@ -103,22 +103,22 @@ const ProductList: React.FC = () => {
   );
 
   return (
-    <div className="h-full flex flex-col bg-gray-800 text-white">
+    <div className="h-full flex flex-col bg-white">
       {/* Header compacto */}
-      <div className="p-2 sm:p-4 border-b border-gray-700 flex-shrink-0">
+      <div className="p-2 sm:p-4 border-b border-gray-200 flex-shrink-0">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-urbana-gold" />
             <Input
               placeholder="Buscar produtos..."
-              className="pl-8 sm:pl-10 bg-gray-700 border-urbana-gold/30 text-white placeholder:text-gray-400 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
+              className="pl-8 sm:pl-10 bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-urbana-gold text-xs sm:text-sm h-8 sm:h-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Button 
             onClick={handleCreateProduct} 
-            className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
+            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold-dark hover:to-urbana-gold font-raleway font-medium h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4 shadow-md"
           >
             <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Novo Produto</span>
@@ -128,13 +128,13 @@ const ProductList: React.FC = () => {
       </div>
 
       {/* Lista de produtos - Grid responsivo */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden bg-gray-50">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold"></div>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex items-center justify-center h-full text-gray-500">
             <div className="text-center">
               <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm sm:text-base">Nenhum produto encontrado</p>
@@ -145,29 +145,29 @@ const ProductList: React.FC = () => {
             <div className="p-2 sm:p-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
                 {filteredProducts.map((product) => (
-                  <Card key={product.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors">
+                  <Card key={product.id} className="bg-white border-gray-200 hover:shadow-lg hover:border-urbana-gold/50 transition-all">
                     <div className="p-2 sm:p-4">
                       <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-medium text-white text-xs sm:text-base truncate mr-2">
+                        <h3 className="font-medium text-gray-900 text-xs sm:text-base truncate mr-2">
                           {product.name}
                         </h3>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400 hover:text-white">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                               <MoreVertical className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-gray-800 border-gray-600">
+                          <DropdownMenuContent align="end" className="bg-white border-gray-200 shadow-lg">
                             <DropdownMenuItem 
                               onClick={() => handleEditProduct(product.id)}
-                              className="text-white hover:bg-gray-700 text-xs sm:text-sm"
+                              className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 text-xs sm:text-sm cursor-pointer"
                             >
                               <Edit className="h-3 w-3 mr-2" />
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => confirmDeleteProduct(product.id)}
-                              className="text-red-400 hover:bg-gray-700 text-xs sm:text-sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm cursor-pointer"
                             >
                               <Trash2 className="h-3 w-3 mr-2" />
                               Excluir
@@ -178,33 +178,33 @@ const ProductList: React.FC = () => {
                       
                       <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Preço:</span>
-                          <span className="text-urbana-gold font-medium">
+                          <span className="text-gray-600">Preço:</span>
+                          <span className="text-urbana-gold font-semibold">
                             R$ {product.price.toFixed(2)}
                           </span>
                         </div>
                         
                         {product.cost_price && (
                           <div className="flex justify-between">
-                            <span className="text-gray-400">Custo:</span>
-                            <span className="text-white">
+                            <span className="text-gray-600">Custo:</span>
+                            <span className="text-gray-900 font-medium">
                               R$ {product.cost_price.toFixed(2)}
                             </span>
                           </div>
                         )}
                         
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Estoque:</span>
-                          <span className="text-white">
+                          <span className="text-gray-600">Estoque:</span>
+                          <span className="text-gray-900 font-medium">
                             {product.stock_quantity ?? 0}
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-400">Status:</span>
+                          <span className="text-gray-600">Status:</span>
                           <Badge 
                             variant={product.is_active ? "default" : "outline"}
-                            className={`text-xs ${product.is_active ? "bg-urbana-gold text-black" : "text-gray-400 border-gray-600"}`}
+                            className={`text-xs ${product.is_active ? "bg-gradient-to-r from-urbana-gold to-yellow-500 text-white border-0" : "text-gray-600 border-gray-300"}`}
                           >
                             {product.is_active ? "Ativo" : "Inativo"}
                           </Badge>
@@ -232,15 +232,15 @@ const ProductList: React.FC = () => {
       )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700">
+        <AlertDialogContent className="bg-white border-gray-200 shadow-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Excluir produto</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-300">
+            <AlertDialogTitle className="text-gray-900">Excluir produto</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600">
               Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600">
+            <AlertDialogCancel className="bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction 

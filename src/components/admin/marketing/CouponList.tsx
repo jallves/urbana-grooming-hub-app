@@ -81,14 +81,14 @@ const CouponList = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-32">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-urbana-gold"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center text-red-400 py-8">
+      <div className="text-center text-red-600 py-8">
         <p className="text-sm">Erro ao carregar cupons</p>
       </div>
     );
@@ -99,13 +99,13 @@ const CouponList = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium text-white">Cupons de Desconto</h3>
-          <p className="text-xs text-gray-400">Gerencie seus cupons</p>
+          <h3 className="text-sm font-medium text-gray-900 font-playfair">Cupons de Desconto</h3>
+          <p className="text-xs text-gray-600">Gerencie seus cupons</p>
         </div>
         <Button 
           onClick={() => setIsDialogOpen(true)} 
           size="sm"
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 h-auto"
+          className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold-dark hover:to-urbana-gold text-xs px-3 py-1.5 h-auto shadow-md"
         >
           <Plus className="mr-1 h-3 w-3" />
           Novo
@@ -118,13 +118,13 @@ const CouponList = () => {
           {coupons.map((coupon) => (
             <Card 
               key={coupon.id} 
-              className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+              className="bg-white border-gray-200 hover:border-urbana-gold/50 hover:shadow-lg transition-all cursor-pointer"
               onClick={() => handleEdit(coupon)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
-                  <CardTitle className="text-sm font-medium text-white flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-purple-400" />
+                  <CardTitle className="text-sm font-medium text-gray-900 flex items-center gap-2 font-playfair">
+                    <Tag className="h-4 w-4 text-urbana-gold" />
                     {coupon.code}
                   </CardTitle>
                   <Badge variant={coupon.is_active ? 'default' : 'secondary'} className="text-xs">
@@ -133,31 +133,31 @@ const CouponList = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium text-green-400">
+                <div className="flex items-center gap-2 text-sm font-medium text-green-600">
                   <Percent className="h-3 w-3" />
                   <span>{formatDiscountValue(coupon)}</span>
                 </div>
                 
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <Calendar className="h-3 w-3" />
+                  <div className="flex items-center gap-2 text-xs text-gray-700">
+                    <Calendar className="h-3 w-3 text-urbana-gold" />
                     <span>De: {format(new Date(coupon.valid_from), 'dd/MM/yyyy')}</span>
                   </div>
                   
                   {coupon.valid_until && (
-                    <div className="flex items-center gap-2 text-xs text-gray-300">
-                      <Calendar className="h-3 w-3" />
+                    <div className="flex items-center gap-2 text-xs text-gray-700">
+                      <Calendar className="h-3 w-3 text-urbana-gold" />
                       <span>Até: {format(new Date(coupon.valid_until), 'dd/MM/yyyy')}</span>
                     </div>
                   )}
                   
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-600">
                     Usos: {coupon.current_uses || 0}
                     {coupon.max_uses ? `/${coupon.max_uses}` : ''}
                   </div>
                   
                   {coupon.marketing_campaigns?.name && (
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-600">
                       Campanha: {coupon.marketing_campaigns.name}
                     </div>
                   )}
@@ -168,17 +168,17 @@ const CouponList = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <Tag className="mx-auto h-8 w-8 text-gray-600 mb-3" />
-          <h3 className="text-sm font-medium text-gray-400 mb-2">
+          <Tag className="mx-auto h-8 w-8 text-gray-400 mb-3" />
+          <h3 className="text-sm font-medium text-gray-700 mb-2">
             Nenhum cupom encontrado
           </h3>
-          <p className="text-xs text-gray-600 mb-4">
+          <p className="text-xs text-gray-500 mb-4">
             Crie um novo cupom para começar
           </p>
           <Button 
             onClick={() => setIsDialogOpen(true)}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold-dark hover:to-urbana-gold shadow-md"
           >
             <Plus className="mr-2 h-4 w-4" />
             Criar Primeiro Cupom
