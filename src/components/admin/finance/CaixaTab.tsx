@@ -114,43 +114,43 @@ const CaixaTab: React.FC<CaixaTabProps> = ({ filters }) => {
     <div className="space-y-6">
       {/* Resumo do Dia */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
+            <CardTitle className="text-sm font-medium text-gray-700">
               Receitas Hoje
             </CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-green-500" />
+            <ArrowUpRight className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-500">
+            <div className="text-2xl font-bold text-green-600">
               R$ {totals.receitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
+            <CardTitle className="text-sm font-medium text-gray-700">
               Despesas Hoje
             </CardTitle>
-            <ArrowDownRight className="h-4 w-4 text-red-500" />
+            <ArrowDownRight className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-500">
+            <div className="text-2xl font-bold text-red-600">
               R$ {totals.despesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">
+            <CardTitle className="text-sm font-medium text-gray-700">
               Saldo do Dia
             </CardTitle>
-            <Calendar className="h-4 w-4 text-blue-500" />
+            <Calendar className="h-4 w-4 text-urbana-gold" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${saldoDiario >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <div className={`text-2xl font-bold ${saldoDiario >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               R$ {saldoDiario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
@@ -158,34 +158,34 @@ const CaixaTab: React.FC<CaixaTabProps> = ({ filters }) => {
       </div>
 
       {/* Transações do Dia */}
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">Movimentações de Hoje</CardTitle>
+      <Card className="bg-white border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="text-gray-900">Movimentações de Hoje</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
             {transactions?.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-gray-600">
                 Nenhuma movimentação encontrada para hoje.
               </div>
             ) : (
               transactions?.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
+                <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${
-                      transaction.type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'
+                      transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'
                     }`}>
                       {transaction.category === 'Serviços' ? (
-                        <Scissors className="h-4 w-4 text-green-500" />
+                        <Scissors className="h-4 w-4 text-green-600" />
                       ) : transaction.type === 'income' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        <ArrowUpRight className="h-4 w-4 text-green-600" />
                       ) : (
-                        <ArrowDownRight className="h-4 w-4 text-red-500" />
+                        <ArrowDownRight className="h-4 w-4 text-red-600" />
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-white">{transaction.description}</p>
-                      <p className="text-sm text-gray-400">
+                      <p className="font-medium text-gray-900">{transaction.description}</p>
+                      <p className="text-sm text-gray-600">
                         {transaction.category} • {transaction.barber || 'Sistema'}
                         {transaction.time && ` • ${transaction.time}`}
                       </p>
@@ -198,7 +198,7 @@ const CaixaTab: React.FC<CaixaTabProps> = ({ filters }) => {
                   </div>
                   <div className="text-right">
                     <p className={`font-bold ${
-                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                     }`}>
                       {transaction.type === 'income' ? '+' : '-'}R$ {transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>

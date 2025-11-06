@@ -251,7 +251,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   };
 
   return (
-    <div className="bg-gray-900 p-6 rounded-lg">
+    <div className="bg-white p-6 rounded-lg">
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Upload de Foto */}
         <div className="flex flex-col items-center space-y-4">
@@ -272,7 +272,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
             <Button
               type="button"
               variant="outline"
-              className="bg-black border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 font-raleway"
+              className="bg-white border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 font-raleway touch-manipulation"
               disabled={uploadingPhoto}
             >
               {uploadingPhoto ? (
@@ -288,100 +288,100 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Nome */}
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-urbana-gold font-raleway font-medium">Nome *</Label>
+            <Label htmlFor="name" className="text-gray-900 font-raleway font-medium">Nome *</Label>
             <Input
               {...form.register('name')}
-              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+              className="bg-white border-gray-200 text-gray-900 font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
               placeholder="Nome completo"
             />
             {form.formState.errors.name && (
-              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.name.message}</p>
+              <p className="text-sm text-red-600 font-raleway">{form.formState.errors.name.message}</p>
             )}
           </div>
 
           {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-urbana-gold font-raleway font-medium">Email *</Label>
+            <Label htmlFor="email" className="text-gray-900 font-raleway font-medium">Email *</Label>
             <Input
               {...form.register('email')}
               type="email"
-              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+              className="bg-white border-gray-200 text-gray-900 font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
               placeholder="email@exemplo.com"
             />
             {form.formState.errors.email && (
-              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.email.message}</p>
+              <p className="text-sm text-red-600 font-raleway">{form.formState.errors.email.message}</p>
             )}
           </div>
 
           {/* Telefone */}
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-urbana-gold font-raleway font-medium">Telefone *</Label>
+            <Label htmlFor="phone" className="text-gray-900 font-raleway font-medium">Telefone *</Label>
             <Input
               {...form.register('phone')}
-              className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+              className="bg-white border-gray-200 text-gray-900 font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
               placeholder="(11) 99999-9999"
             />
             {form.formState.errors.phone && (
-              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.phone.message}</p>
+              <p className="text-sm text-red-600 font-raleway">{form.formState.errors.phone.message}</p>
             )}
           </div>
 
           {/* Cargo */}
           <div className="space-y-2">
-            <Label className="text-urbana-gold font-raleway font-medium">Cargo *</Label>
+            <Label className="text-gray-900 font-raleway font-medium">Cargo *</Label>
             <Select
               value={form.watch('role')}
               onValueChange={(value) => form.setValue('role', value as any)}
             >
-              <SelectTrigger className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
+              <SelectTrigger className="bg-white border-gray-200 text-gray-900 font-raleway focus:border-urbana-gold">
                 <SelectValue placeholder="Selecione o cargo" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="admin" className="text-white hover:bg-gray-700 font-raleway">Administrador</SelectItem>
-                <SelectItem value="manager" className="text-white hover:bg-gray-700 font-raleway">Gerente</SelectItem>
-                <SelectItem value="barber" className="text-white hover:bg-gray-700 font-raleway">Barbeiro</SelectItem>
+              <SelectContent className="bg-white border-gray-200 z-50">
+                <SelectItem value="admin" className="text-gray-900 hover:bg-gray-100 font-raleway">Administrador</SelectItem>
+                <SelectItem value="manager" className="text-gray-900 hover:bg-gray-100 font-raleway">Gerente</SelectItem>
+                <SelectItem value="barber" className="text-gray-900 hover:bg-gray-100 font-raleway">Barbeiro</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.role && (
-              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.role.message}</p>
+              <p className="text-sm text-red-600 font-raleway">{form.formState.errors.role.message}</p>
             )}
           </div>
 
           {/* Status */}
           <div className="space-y-2 md:col-span-1">
-            <Label className="text-urbana-gold font-raleway font-medium">Status *</Label>
+            <Label className="text-gray-900 font-raleway font-medium">Status *</Label>
             <Select
               value={form.watch('status')}
               onValueChange={(value) => form.setValue('status', value as any)}
             >
-              <SelectTrigger className="bg-black border-urbana-gold/30 text-white font-raleway focus:border-urbana-gold">
+              <SelectTrigger className="bg-white border-gray-200 text-gray-900 font-raleway focus:border-urbana-gold">
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="active" className="text-white hover:bg-gray-700 font-raleway">Ativo</SelectItem>
-                <SelectItem value="inactive" className="text-white hover:bg-gray-700 font-raleway">Inativo</SelectItem>
+              <SelectContent className="bg-white border-gray-200 z-50">
+                <SelectItem value="active" className="text-gray-900 hover:bg-gray-100 font-raleway">Ativo</SelectItem>
+                <SelectItem value="inactive" className="text-gray-900 hover:bg-gray-100 font-raleway">Inativo</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.status && (
-              <p className="text-sm text-red-400 font-raleway">{form.formState.errors.status.message}</p>
+              <p className="text-sm text-red-600 font-raleway">{form.formState.errors.status.message}</p>
             )}
           </div>
         </div>
 
         {/* Botões */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-700">
+        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
-            className="bg-black border-gray-600 text-gray-300 hover:bg-gray-800 font-raleway"
+            className="bg-white border-gray-300 text-gray-700 hover:bg-gray-100 font-raleway touch-manipulation"
           >
             Cancelar
           </Button>
           <Button
             type="submit"
             disabled={loading}
-            className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-raleway font-medium transition-all duration-300"
+            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 font-raleway font-medium transition-all duration-300 touch-manipulation"
           >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

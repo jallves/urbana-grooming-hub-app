@@ -216,15 +216,18 @@ const TimeOffManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 p-4 sm:p-6 bg-gray-50">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Gerenciamento de Folgas</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-playfair">Gerenciamento de Folgas</h2>
+          <p className="text-gray-700 font-raleway text-sm">
             Gerencie folgas, férias e feriados da equipe
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>
+        <Button 
+          onClick={() => setIsFormOpen(true)}
+          className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 w-full sm:w-auto touch-manipulation"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nova Folga
         </Button>
@@ -232,13 +235,13 @@ const TimeOffManagement: React.FC = () => {
 
       {/* Form */}
       {isFormOpen && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className="bg-white border-gray-200 shadow-sm">
+          <CardHeader className="border-b border-gray-200">
+            <CardTitle className="text-gray-900 font-playfair">
               {editingTimeOff ? 'Editar Folga' : 'Nova Folga'}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -321,56 +324,59 @@ const TimeOffManagement: React.FC = () => {
       )}
 
       {/* Time Off List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Folgas Cadastradas</CardTitle>
+      <Card className="bg-white border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="text-gray-900 font-playfair">Folgas Cadastradas</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {loading ? (
-            <div className="text-center py-4">Carregando...</div>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-urbana-gold mx-auto"></div>
+            </div>
           ) : timeOffs.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="text-center py-8 text-gray-600 font-raleway">
               Nenhuma folga cadastrada.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-6 sm:mx-0">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Profissional</th>
-                    <th className="text-left p-2">Tipo</th>
-                    <th className="text-left p-2">Data Inicial</th>
-                    <th className="text-left p-2">Data Final</th>
-                    <th className="text-left p-2">Motivo</th>
-                    <th className="text-left p-2">Ações</th>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left p-3 text-gray-900 font-playfair font-semibold text-sm">Profissional</th>
+                    <th className="text-left p-3 text-gray-900 font-playfair font-semibold text-sm">Tipo</th>
+                    <th className="text-left p-3 text-gray-900 font-playfair font-semibold text-sm">Data Inicial</th>
+                    <th className="text-left p-3 text-gray-900 font-playfair font-semibold text-sm">Data Final</th>
+                    <th className="text-left p-3 text-gray-900 font-playfair font-semibold text-sm">Motivo</th>
+                    <th className="text-left p-3 text-gray-900 font-playfair font-semibold text-sm">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {timeOffs.map((timeOff) => (
-                    <tr key={timeOff.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2">
+                    <tr key={timeOff.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      <td className="p-3 text-gray-900 font-raleway text-sm">
                         {timeOff.staff?.name || 'Todos os profissionais'}
                       </td>
-                      <td className="p-2">
-                        <Badge variant={getTypeBadgeVariant(timeOff.type)}>
+                      <td className="p-3">
+                        <Badge variant={getTypeBadgeVariant(timeOff.type)} className="font-raleway">
                           {getTypeLabel(timeOff.type)}
                         </Badge>
                       </td>
-                      <td className="p-2">
+                      <td className="p-3 text-gray-900 font-raleway text-sm">
                         {format(new Date(timeOff.start_date), 'dd/MM/yyyy', { locale: ptBR })}
                       </td>
-                      <td className="p-2">
+                      <td className="p-3 text-gray-900 font-raleway text-sm">
                         {format(new Date(timeOff.end_date), 'dd/MM/yyyy', { locale: ptBR })}
                       </td>
-                      <td className="p-2 max-w-xs truncate">
+                      <td className="p-3 max-w-xs truncate text-gray-700 font-raleway text-sm">
                         {timeOff.reason}
                       </td>
-                      <td className="p-2">
+                      <td className="p-3">
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleEdit(timeOff)}
+                            className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold hover:text-white touch-manipulation"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -378,6 +384,7 @@ const TimeOffManagement: React.FC = () => {
                             size="sm"
                             variant="destructive"
                             onClick={() => handleDelete(timeOff.id)}
+                            className="touch-manipulation"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

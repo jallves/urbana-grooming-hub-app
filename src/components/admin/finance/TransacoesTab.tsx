@@ -233,10 +233,10 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
     <div className="space-y-6">
       {/* Header com botão de nova transação */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium text-white">Transações Manuais</h3>
+        <h3 className="text-lg font-medium text-gray-900">Transações Manuais</h3>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+            <Button className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600" onClick={() => {
               setEditingTransaction(null);
               resetForm();
             }}>
@@ -244,7 +244,7 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
               Nova Transação
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-900 border-gray-700 text-gray-100 max-w-md">
+          <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-md">
             <DialogHeader>
               <DialogTitle>
                 {editingTransaction ? 'Editar Transação' : 'Nova Transação'}
@@ -259,10 +259,10 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                     value={formData.transaction_type}
                     onValueChange={(value) => setFormData({ ...formData, transaction_type: value as 'income' | 'expense' })}
                   >
-                    <SelectTrigger className="bg-gray-800 border-gray-700">
+                    <SelectTrigger className="bg-white border-gray-200">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-200 z-50">
                       <SelectItem value="income">Receita</SelectItem>
                       <SelectItem value="expense">Despesa</SelectItem>
                     </SelectContent>
@@ -276,32 +276,32 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                     step="0.01"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="bg-gray-800 border-gray-700"
+                    className="bg-white border-gray-200 text-gray-900"
                     placeholder="0,00"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Descrição *</label>
+                <label className="text-sm font-medium text-gray-700">Descrição *</label>
                 <Input
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="bg-gray-800 border-gray-700"
+                  className="bg-white border-gray-200 text-gray-900"
                   placeholder="Descrição da transação"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Categoria *</label>
+                <label className="text-sm font-medium text-gray-700">Categoria *</label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger className="bg-gray-800 border-gray-700">
+                  <SelectTrigger className="bg-white border-gray-200">
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border-gray-200 z-50">
                     {categories?.filter(c => c.type === formData.transaction_type).map(category => (
                       <SelectItem key={category.id} value={category.name}>
                         {category.name}
@@ -313,15 +313,15 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300">Forma de Pagamento</label>
+                  <label className="text-sm font-medium text-gray-700">Forma de Pagamento</label>
                   <Select
                     value={formData.payment_method}
                     onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
                   >
-                    <SelectTrigger className="bg-gray-800 border-gray-700">
+                    <SelectTrigger className="bg-white border-gray-200">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-gray-200 z-50">
                       <SelectItem value="dinheiro">Dinheiro</SelectItem>
                       <SelectItem value="pix">PIX</SelectItem>
                       <SelectItem value="cartao">Cartão</SelectItem>
@@ -331,22 +331,22 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-300">Data *</label>
+                  <label className="text-sm font-medium text-gray-700">Data *</label>
                   <Input
                     type="date"
                     value={formData.transaction_date}
                     onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
-                    className="bg-gray-800 border-gray-700"
+                    className="bg-white border-gray-200 text-gray-900"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Observações</label>
+                <label className="text-sm font-medium text-gray-700">Observações</label>
                 <Textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="bg-gray-800 border-gray-700"
+                  className="bg-white border-gray-200 text-gray-900"
                   rows={3}
                 />
               </div>
@@ -356,14 +356,14 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                   type="button"
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
-                  className="border-gray-600 text-gray-300"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-100"
                 >
                   Cancelar
                 </Button>
                 <Button
                   type="submit"
                   disabled={createTransactionMutation.isPending || updateTransactionMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600"
                 >
                   {editingTransaction ? 'Atualizar' : 'Criar'}
                 </Button>
@@ -374,32 +374,32 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
       </div>
 
       {/* Lista de Transações */}
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">Histórico de Transações</CardTitle>
+      <Card className="bg-white border-gray-200 shadow-sm">
+        <CardHeader className="border-b border-gray-200">
+          <CardTitle className="text-gray-900">Histórico de Transações</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="pt-6">
+          <div className="space-y-3">
             {transactions?.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
+              <div className="text-center py-8 text-gray-600">
                 Nenhuma transação manual encontrada para o período selecionado.
               </div>
             ) : (
               transactions?.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
+                <div key={transaction.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                   <div className="flex items-center space-x-3">
                     <div className={`p-2 rounded-full ${
-                      transaction.transaction_type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'
+                      transaction.transaction_type === 'income' ? 'bg-green-100' : 'bg-red-100'
                     }`}>
                       {transaction.transaction_type === 'income' ? (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
+                        <ArrowUpRight className="h-4 w-4 text-green-600" />
                       ) : (
-                        <ArrowDownRight className="h-4 w-4 text-red-500" />
+                        <ArrowDownRight className="h-4 w-4 text-red-600" />
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-white">{transaction.description}</p>
-                      <p className="text-sm text-gray-400">
+                      <p className="font-medium text-gray-900">{transaction.description}</p>
+                      <p className="text-sm text-gray-600">
                         {transaction.category} • {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
                       </p>
                       {transaction.payment_method && (
@@ -410,11 +410,11 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <p className={`font-bold ${
-                        transaction.transaction_type === 'income' ? 'text-green-500' : 'text-red-500'
+                        transaction.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'
                       }`}>
                         {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </p>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-urbana-gold/30 text-urbana-gold">
                         Manual
                       </Badge>
                     </div>
@@ -423,7 +423,7 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                         size="sm"
                         variant="ghost"
                         onClick={() => openEditDialog(transaction)}
-                        className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300"
+                        className="h-8 w-8 p-0 text-urbana-gold hover:text-urbana-gold/80 hover:bg-urbana-gold/10"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -431,7 +431,7 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDelete(transaction.id)}
-                        className="h-8 w-8 p-0 text-red-400 hover:text-red-300"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-500 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
