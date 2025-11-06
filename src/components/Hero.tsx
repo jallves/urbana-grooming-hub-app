@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useBannerImages } from './hero/useBannerImages';
 import BannerSlide from './hero/BannerSlide';
+import { RippleButton } from '@/components/ui/ripple-button';
 
 const Hero: React.FC = () => {
   const { bannerImages, loading } = useBannerImages();
@@ -44,13 +44,13 @@ const Hero: React.FC = () => {
         <div className="text-center px-4">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Costa Urbana</h1>
           <p className="text-xl mb-8">Barbearia Premium</p>
-          <Button 
-            className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90"
+          <RippleButton 
+            className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 px-8 py-6 text-lg font-semibold rounded-lg"
             onClick={() => window.location.href = '/painel-cliente/login'}
           >
-            <Calendar className="mr-2 h-4 w-4" />
+            <Calendar className="inline mr-2 h-4 w-4" />
             Agendar Agora
-          </Button>
+          </RippleButton>
         </div>
       </div>
     );
@@ -106,15 +106,14 @@ const Hero: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Button 
-              size="lg"
-              className="relative overflow-hidden bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold hover:from-yellow-400 hover:via-urbana-gold hover:to-yellow-400 text-urbana-black px-10 py-7 text-lg font-bold shadow-[0_0_40px_rgba(255,215,0,0.5),inset_0_2px_8px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,215,0,0.7),0_0_100px_rgba(255,215,0,0.4),inset_0_2px_12px_rgba(255,255,255,0.3)] transition-all duration-500 group border-2 border-yellow-300/30 hover:border-yellow-300/50 backdrop-blur-sm hover:scale-105"
+            <RippleButton 
+              className="relative overflow-hidden bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold hover:from-yellow-400 hover:via-urbana-gold hover:to-yellow-400 text-urbana-black px-10 py-7 text-lg font-bold shadow-[0_0_40px_rgba(255,215,0,0.5),inset_0_2px_8px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,215,0,0.7),0_0_100px_rgba(255,215,0,0.4),inset_0_2px_12px_rgba(255,255,255,0.3)] transition-all duration-500 group border-2 border-yellow-300/30 hover:border-yellow-300/50 backdrop-blur-sm hover:scale-105 rounded-lg"
               onClick={() => window.location.href = currentBanner.button_link || '/painel-cliente/login'}
             >
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-              <Calendar className="mr-2 h-6 w-6 relative z-10 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg" />
+              <Calendar className="inline mr-2 h-6 w-6 relative z-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 drop-shadow-lg" />
               <span className="relative z-10 drop-shadow-sm">{currentBanner.button_text || 'Agendar Agora'}</span>
-            </Button>
+            </RippleButton>
           </motion.div>
         </div>
       </motion.div>

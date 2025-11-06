@@ -74,10 +74,15 @@ const GalleryImage: React.FC<GalleryImageProps> = ({
         }`}
       />
       
-      {/* Overlay com gradiente e título */}
       <div className="absolute inset-0 bg-gradient-to-t from-urbana-black via-urbana-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center backdrop-blur-sm">
         <div className="absolute inset-0 bg-urbana-gold/5" />
-        <Camera className="text-urbana-gold mb-3 drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" size={40} strokeWidth={1.5} />
+        <motion.div
+          initial={{ scale: 1 }}
+          whileHover={{ scale: 1.2, rotate: 15 }}
+          transition={{ type: "spring", stiffness: 300 }}
+        >
+          <Camera className="text-urbana-gold mb-3 drop-shadow-[0_0_20px_rgba(255,215,0,0.6)]" size={40} strokeWidth={1.5} />
+        </motion.div>
         <div className="px-4 text-white w-full text-center relative z-10">
           <h3 className="font-bold text-sm md:text-base line-clamp-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
             {alt}

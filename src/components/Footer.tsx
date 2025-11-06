@@ -95,14 +95,18 @@ const Footer: React.FC = () => {
             {/* Social Links */}
             <div className="flex space-x-6">
               {socialLinks.map((social, index) => (
-                <motion.a
+              <motion.a
                   key={social.name}
                   href={social.href}
                   initial={{ opacity: 0, scale: 0 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  whileHover={{ scale: 1.2, rotate: 5 }}
+                  whileHover={{ 
+                    scale: 1.2, 
+                    rotate: [0, -10, 10, -10, 0],
+                    transition: { duration: 0.5 }
+                  }}
                   className={`w-14 h-14 bg-urbana-gold/10 backdrop-blur-lg border border-urbana-gold/20 hover:bg-urbana-gold hover:text-urbana-black rounded-xl flex items-center justify-center transition-all duration-300 group ${social.color}`}
                   aria-label={social.name}
                 >

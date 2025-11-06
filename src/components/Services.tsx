@@ -51,10 +51,10 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
             className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-urbana-gold via-yellow-400 to-amber-500 rounded-xl shadow-[0_8px_32px_rgba(255,215,0,0.4),inset_0_2px_8px_rgba(255,255,255,0.2)] backdrop-blur-sm border border-yellow-300/20"
             whileHover={{ 
               scale: 1.15,
-              rotate: 5,
+              rotate: 360,
               boxShadow: "0 12px 48px rgba(255,215,0,0.6), 0 0 40px rgba(255,215,0,0.4), inset 0 2px 12px rgba(255,255,255,0.3)"
             }}
-            transition={{ type: "spring", stiffness: 400 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Scissors size={30} className="text-urbana-black drop-shadow-lg" />
           </motion.div>

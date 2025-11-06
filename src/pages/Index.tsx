@@ -5,10 +5,14 @@ import Services from '@/components/Services';
 import Gallery from '@/components/Gallery';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import { ScrollProgress } from '@/components/ui/scroll-progress';
 
 const Index = () => {
   return (
     <div className="w-full min-h-screen bg-urbana-black scroll-smooth">
+      {/* Scroll Progress Indicator */}
+      <ScrollProgress />
+      
       {/* Navbar */}
       <Navbar />
       
