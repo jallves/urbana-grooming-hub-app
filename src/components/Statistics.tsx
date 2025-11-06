@@ -79,28 +79,28 @@ const Statistics: React.FC = () => {
   const stats = [
     {
       icon: Award,
-      end: 12,
-      suffix: '+',
+      end: 2,
+      suffix: '',
       label: 'Anos de Excelência',
       delay: 0.1
     },
     {
       icon: Users,
-      end: 8500,
+      end: 400,
       suffix: '+',
       label: 'Clientes Satisfeitos',
       delay: 0.2
     },
     {
       icon: Scissors,
-      end: 15000,
+      end: 700,
       suffix: '+',
       label: 'Serviços Realizados',
       delay: 0.3
     },
     {
       icon: Star,
-      end: 98,
+      end: 99,
       suffix: '%',
       label: 'Avaliação Positiva',
       delay: 0.4
