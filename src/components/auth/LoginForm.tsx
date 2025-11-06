@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,11 +19,59 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockTimeLeft, setBlockTimeLeft] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Rate limiting: bloquear após 5 tentativas por 15 minutos
+  const MAX_ATTEMPTS = 5;
+  const BLOCK_DURATION = 15 * 60 * 1000; // 15 minutos em ms
+
+  useEffect(() => {
+    // Verificar se há bloqueio ativo
+    const blockData = localStorage.getItem('loginBlock');
+    if (blockData) {
+      const { blockedUntil } = JSON.parse(blockData);
+      const now = Date.now();
+      
+      if (now < blockedUntil) {
+        setIsBlocked(true);
+        setBlockTimeLeft(Math.ceil((blockedUntil - now) / 1000));
+        
+        const interval = setInterval(() => {
+          const remaining = Math.ceil((blockedUntil - Date.now()) / 1000);
+          if (remaining <= 0) {
+            setIsBlocked(false);
+            setBlockTimeLeft(0);
+            localStorage.removeItem('loginBlock');
+            setLoginAttempts(0);
+            clearInterval(interval);
+          } else {
+            setBlockTimeLeft(remaining);
+          }
+        }, 1000);
+        
+        return () => clearInterval(interval);
+      } else {
+        localStorage.removeItem('loginBlock');
+      }
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isBlocked) {
+      toast({
+        title: "Acesso bloqueado",
+        description: `Aguarde ${Math.floor(blockTimeLeft / 60)}:${(blockTimeLeft % 60).toString().padStart(2, '0')} minutos`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -35,6 +83,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       if (error) throw error;
 
       if (data.user) {
+        // Limpar tentativas em caso de sucesso
+        setLoginAttempts(0);
+        localStorage.removeItem('loginBlock');
+        
         toast({
           title: "Login realizado!",
           description: "Bem-vindo de volta!",
@@ -43,11 +95,28 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       }
     } catch (error: any) {
       console.error('Erro no login:', error);
-      toast({
-        title: "Erro no login",
-        description: error.message || "Email ou senha incorretos.",
-        variant: "destructive",
-      });
+      
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+      
+      if (newAttempts >= MAX_ATTEMPTS) {
+        const blockedUntil = Date.now() + BLOCK_DURATION;
+        localStorage.setItem('loginBlock', JSON.stringify({ blockedUntil }));
+        setIsBlocked(true);
+        setBlockTimeLeft(BLOCK_DURATION / 1000);
+        
+        toast({
+          title: "Conta bloqueada temporariamente",
+          description: "Muitas tentativas de login. Aguarde 15 minutos.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro no login",
+          description: `Email ou senha incorretos. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -64,6 +133,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {isBlocked && (
+        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-center">
+          <p className="text-red-400 font-semibold mb-2">
+            ⚠️ Conta bloqueada temporariamente
+          </p>
+          <p className="text-red-300 text-sm">
+            Tempo restante: {Math.floor(blockTimeLeft / 60)}:{(blockTimeLeft % 60).toString().padStart(2, '0')}
+          </p>
+        </div>
+      )}
+      
       <div className="space-y-2">
         <Label htmlFor="email" className="text-sm font-medium text-gray-300">
           Email
@@ -78,7 +158,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             onChange={(e) => setEmail(e.target.value)}
             className="pl-12 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
-            disabled={loading}
+            disabled={loading || isBlocked}
           />
         </div>
       </div>
@@ -97,7 +177,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             onChange={(e) => setPassword(e.target.value)}
             className="pl-12 pr-14 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
-            disabled={loading}
+            disabled={loading || isBlocked}
           />
           <Button
             type="button"
@@ -105,7 +185,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             size="sm"
             className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 hover:bg-gray-700/50 rounded-lg transition-colors"
             onClick={() => setShowPassword(!showPassword)}
-            disabled={loading}
+            disabled={loading || isBlocked}
           >
             {showPassword ? (
               <EyeOff className="h-5 w-5 text-gray-500" />
@@ -119,12 +199,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       <Button 
         type="submit" 
         className="w-full h-14 bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold hover:shadow-lg hover:shadow-urbana-gold/30 text-black font-semibold rounded-xl transition-all duration-300 transform hover:scale-[1.02]" 
-        disabled={loading}
+        disabled={loading || isBlocked}
       >
         {loading ? (
           <>
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-black mr-2"></div>
             Entrando...
+          </>
+        ) : isBlocked ? (
+          <>
+            🔒 Bloqueado
           </>
         ) : (
           <>
@@ -139,7 +223,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
         variant="ghost" 
         onClick={() => setShowForgotPassword(true)}
         className="w-full text-gray-400 hover:text-urbana-gold hover:bg-gray-800/50 h-12 rounded-xl transition-all"
-        disabled={loading}
+        disabled={loading || isBlocked}
       >
         <KeyRound className="h-4 w-4 mr-2" />
         Esqueceu sua senha?

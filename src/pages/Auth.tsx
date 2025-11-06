@@ -29,43 +29,8 @@ const Auth: React.FC = () => {
     }
   }, [user, isAdmin, navigate, authLoading, location.state]);
 
-  useEffect(() => {
-    const createAdminUser = async () => {
-      if (authLoading || user) return;
-
-      try {
-        const { data: existingUser } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('email', 'joao.colimoides@gmail.com')
-          .single();
-
-        if (!existingUser) {
-          const { data: signUpData } = await supabase.auth.signUp({
-            email: 'joao.colimoides@gmail.com',
-            password: 'Jb74872701@',
-            options: { data: { full_name: 'João Alves Da Silva' } }
-          });
-
-          if (signUpData?.user) {
-            await supabase.from('user_roles').insert([{
-              user_id: signUpData.user.id,
-              role: 'admin'
-            }]);
-
-            toast({
-              title: "Usuário administrador criado",
-              description: "Use joao.colimoides@gmail.com para login de admin",
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Erro ao criar admin:', error);
-      }
-    };
-
-    createAdminUser();
-  }, [authLoading, user, toast]);
+  // Credenciais de admin removidas por segurança
+  // Use o Supabase Dashboard para criar usuários admin manualmente
 
   if (authLoading) {
     return (
