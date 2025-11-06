@@ -149,17 +149,17 @@ const AnalyticsOverview: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
-        <p className="text-gray-400">Carregando métricas...</p>
+      <div className="h-full bg-white border border-gray-200 rounded-lg flex items-center justify-center">
+        <p className="text-gray-600">Carregando métricas...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-gray-100">Visão Geral - {format(new Date(), 'MMMM yyyy', { locale: ptBR })}</h2>
-        <p className="text-sm text-gray-400">Principais métricas e indicadores de performance</p>
+    <div className="h-full bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-gray-900">Visão Geral - {format(new Date(), 'MMMM yyyy', { locale: ptBR })}</h2>
+        <p className="text-sm text-gray-600">Principais métricas e indicadores de performance</p>
       </div>
 
       <div className="h-full overflow-y-auto">
@@ -167,12 +167,12 @@ const AnalyticsOverview: React.FC = () => {
           {/* KPIs Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {kpiCards.map((kpi, index) => (
-              <Card key={index} className="bg-gray-800 border-gray-700">
+              <Card key={index} className="bg-white border-gray-200 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400 mb-1">{kpi.title}</p>
-                      <p className="text-xl font-bold text-gray-100">{kpi.value}</p>
+                      <p className="text-xs text-gray-600 mb-1">{kpi.title}</p>
+                      <p className="text-xl font-bold text-gray-900">{kpi.value}</p>
                       <p className="text-xs text-gray-500 mt-1">{kpi.change}</p>
                     </div>
                     <div className={`p-2 rounded-full bg-gradient-to-r ${kpi.color}`}>
@@ -185,34 +185,34 @@ const AnalyticsOverview: React.FC = () => {
           </div>
 
           {/* Alertas */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-gray-100">Alertas e Insights</CardTitle>
+              <CardTitle className="text-gray-900">Alertas e Insights</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {alerts.map((alert, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg">
+                <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <alert.icon className={`h-5 w-5 ${
-                    alert.type === 'success' ? 'text-green-400' : 'text-yellow-400'
+                    alert.type === 'success' ? 'text-green-600' : 'text-yellow-600'
                   }`} />
-                  <span className="text-sm text-gray-300">{alert.message}</span>
+                  <span className="text-sm text-gray-700">{alert.message}</span>
                 </div>
               ))}
             </CardContent>
           </Card>
 
           {/* Resumo Rápido */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-gray-100">Resumo Executivo</CardTitle>
+              <CardTitle className="text-gray-900">Resumo Executivo</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 text-sm text-gray-300">
-                <p>• Receita mensal: <span className="text-green-400">R$ {kpis?.revenue?.toLocaleString('pt-BR') || '0'}</span></p>
-                <p>• Agendamentos realizados: <span className="text-blue-400">{kpis?.completedAppointments || '0'}</span></p>
-                <p>• Taxa de conversão: <span className="text-purple-400">{kpis?.conversionRate?.toFixed(1) || '0'}%</span></p>
-                <p>• Novos clientes: <span className="text-orange-400">{kpis?.newClients || '0'}</span></p>
-                <p>• Receita adicional (caixa): <span className="text-cyan-400">R$ {kpis?.cashFlowRevenue?.toLocaleString('pt-BR') || '0'}</span></p>
+              <div className="space-y-2 text-sm text-gray-700">
+                <p>• Receita mensal: <span className="text-green-600 font-semibold">R$ {kpis?.revenue?.toLocaleString('pt-BR') || '0'}</span></p>
+                <p>• Agendamentos realizados: <span className="text-blue-600 font-semibold">{kpis?.completedAppointments || '0'}</span></p>
+                <p>• Taxa de conversão: <span className="text-purple-600 font-semibold">{kpis?.conversionRate?.toFixed(1) || '0'}%</span></p>
+                <p>• Novos clientes: <span className="text-orange-600 font-semibold">{kpis?.newClients || '0'}</span></p>
+                <p>• Receita adicional (caixa): <span className="text-cyan-600 font-semibold">R$ {kpis?.cashFlowRevenue?.toLocaleString('pt-BR') || '0'}</span></p>
               </div>
             </CardContent>
           </Card>

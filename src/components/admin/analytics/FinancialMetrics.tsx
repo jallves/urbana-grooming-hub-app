@@ -119,17 +119,17 @@ const FinancialMetrics: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
-        <p className="text-gray-400">Carregando métricas financeiras...</p>
+      <div className="h-full bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-sm">
+        <p className="text-gray-600">Carregando métricas financeiras...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-gray-100">Métricas Financeiras</h2>
-        <p className="text-sm text-gray-400">Análise de receita e performance financeira</p>
+    <div className="h-full bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-gray-900">Métricas Financeiras</h2>
+        <p className="text-sm text-gray-600">Análise de receita e performance financeira</p>
       </div>
 
       <div className="h-full overflow-y-auto">
@@ -137,19 +137,19 @@ const FinancialMetrics: React.FC = () => {
           {/* Métricas Principais */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {metrics.map((metric, index) => (
-              <Card key={index} className="bg-gray-800 border-gray-700">
+              <Card key={index} className="bg-white border-gray-200 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">{metric.title}</p>
-                      <p className="text-lg font-bold text-gray-100">{metric.value}</p>
+                      <p className="text-xs text-gray-600 mb-1">{metric.title}</p>
+                      <p className="text-lg font-bold text-gray-900">{metric.value}</p>
                       <div className="flex items-center gap-1 mt-1">
                         {metric.trend === 'up' ? (
-                          <TrendingUp className="h-3 w-3 text-green-400" />
+                          <TrendingUp className="h-3 w-3 text-green-600" />
                         ) : (
-                          <TrendingDown className="h-3 w-3 text-red-400" />
+                          <TrendingDown className="h-3 w-3 text-red-600" />
                         )}
-                        <span className="text-xs text-green-400">{metric.change}</span>
+                        <span className="text-xs text-green-600">{metric.change}</span>
                       </div>
                     </div>
                     <metric.icon className={`h-6 w-6 ${metric.color}`} />
@@ -160,21 +160,21 @@ const FinancialMetrics: React.FC = () => {
           </div>
 
           {/* Gráfico de Receita */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-gray-100">Evolução da Receita</CardTitle>
+              <CardTitle className="text-gray-900">Evolução da Receita</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={financialData?.monthlyRevenue || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="month" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="month" stroke="#6B7280" />
+                    <YAxis stroke="#6B7280" />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: '#1F2937', 
-                        border: '1px solid #374151',
+                        backgroundColor: '#FFFFFF', 
+                        border: '1px solid #E5E7EB',
                         borderRadius: '8px'
                       }}
                     />
@@ -192,21 +192,21 @@ const FinancialMetrics: React.FC = () => {
           </Card>
 
           {/* Gráfico de Barras */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-gray-100">Receita por Mês</CardTitle>
+              <CardTitle className="text-gray-900">Receita por Mês</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={financialData?.monthlyRevenue || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="month" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="month" stroke="#6B7280" />
+                    <YAxis stroke="#6B7280" />
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: '#1F2937', 
-                        border: '1px solid #374151',
+                        backgroundColor: '#FFFFFF', 
+                        border: '1px solid #E5E7EB',
                         borderRadius: '8px'
                       }}
                     />

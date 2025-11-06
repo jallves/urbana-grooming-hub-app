@@ -110,17 +110,17 @@ const AppointmentMetrics: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
-        <p className="text-gray-400">Carregando métricas de agendamentos...</p>
+      <div className="h-full bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-sm">
+        <p className="text-gray-600">Carregando métricas de agendamentos...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-gray-100">Métricas de Agendamentos</h2>
-        <p className="text-sm text-gray-400">Análise de performance e padrões de agendamento</p>
+    <div className="h-full bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-gray-900">Métricas de Agendamentos</h2>
+        <p className="text-sm text-gray-600">Análise de performance e padrões de agendamento</p>
       </div>
 
       <div className="h-full overflow-y-auto">
@@ -128,12 +128,12 @@ const AppointmentMetrics: React.FC = () => {
           {/* Métricas Principais */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {metrics.map((metric, index) => (
-              <Card key={index} className="bg-gray-800 border-gray-700">
+              <Card key={index} className="bg-white border-gray-200 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">{metric.title}</p>
-                      <p className="text-lg font-bold text-gray-100">{metric.value}</p>
+                      <p className="text-xs text-gray-600 mb-1">{metric.title}</p>
+                      <p className="text-lg font-bold text-gray-900">{metric.value}</p>
                     </div>
                     <metric.icon className={`h-5 w-5 ${metric.color}`} />
                   </div>
@@ -144,49 +144,29 @@ const AppointmentMetrics: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Status Distribution */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-gray-100">Status dos Agendamentos</CardTitle>
+                <CardTitle className="text-gray-900">Status dos Agendamentos</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={appointmentData?.statusData || []}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {appointmentData?.statusData?.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
+...
             </Card>
 
             {/* Hourly Distribution */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-gray-100">Horários Mais Procurados</CardTitle>
+                <CardTitle className="text-gray-900">Horários Mais Procurados</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={appointmentData?.hourlyChart || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="hour" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="hour" stroke="#6B7280" />
+                      <YAxis stroke="#6B7280" />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
+                          backgroundColor: '#FFFFFF', 
+                          border: '1px solid #E5E7EB',
                           borderRadius: '8px'
                         }}
                       />
@@ -199,21 +179,21 @@ const AppointmentMetrics: React.FC = () => {
           </div>
 
           {/* Staff Performance */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-gray-100">Performance dos Profissionais</CardTitle>
+              <CardTitle className="text-gray-900">Performance dos Profissionais</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {appointmentData?.staffData?.map((staff: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div>
-                      <p className="font-medium text-gray-100">{staff.name}</p>
-                      <p className="text-sm text-gray-400">{staff.completed}/{staff.total} agendamentos</p>
+                      <p className="font-medium text-gray-900">{staff.name}</p>
+                      <p className="text-sm text-gray-600">{staff.completed}/{staff.total} agendamentos</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-gray-100">{staff.rate.toFixed(1)}%</p>
-                      <p className="text-xs text-gray-400">Taxa de conclusão</p>
+                      <p className="text-lg font-bold text-gray-900">{staff.rate.toFixed(1)}%</p>
+                      <p className="text-xs text-gray-600">Taxa de conclusão</p>
                     </div>
                   </div>
                 ))}

@@ -108,17 +108,17 @@ const ClientMetrics: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg flex items-center justify-center">
-        <p className="text-gray-400">Carregando métricas de clientes...</p>
+      <div className="h-full bg-white border border-gray-200 rounded-lg flex items-center justify-center shadow-sm">
+        <p className="text-gray-600">Carregando métricas de clientes...</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-gray-900/50 border border-gray-700 rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-gray-100">Métricas de Clientes</h2>
-        <p className="text-sm text-gray-400">Análise de base de clientes e comportamento</p>
+    <div className="h-full bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="p-4 border-b border-gray-200">
+        <h2 className="text-xl font-bold text-gray-900">Métricas de Clientes</h2>
+        <p className="text-sm text-gray-600">Análise de base de clientes e comportamento</p>
       </div>
 
       <div className="h-full overflow-y-auto">
@@ -126,12 +126,12 @@ const ClientMetrics: React.FC = () => {
           {/* Métricas Principais */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {metrics.map((metric, index) => (
-              <Card key={index} className="bg-gray-800 border-gray-700">
+              <Card key={index} className="bg-white border-gray-200 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">{metric.title}</p>
-                      <p className="text-lg font-bold text-gray-100">{metric.value}</p>
+                      <p className="text-xs text-gray-600 mb-1">{metric.title}</p>
+                      <p className="text-lg font-bold text-gray-900">{metric.value}</p>
                     </div>
                     <metric.icon className={`h-5 w-5 ${metric.color}`} />
                   </div>
@@ -142,21 +142,21 @@ const ClientMetrics: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Crescimento de Clientes */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-gray-100">Crescimento de Clientes</CardTitle>
+                <CardTitle className="text-gray-900">Crescimento de Clientes</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={clientData?.monthlyData || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="month" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="month" stroke="#6B7280" />
+                      <YAxis stroke="#6B7280" />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
+                          backgroundColor: '#FFFFFF', 
+                          border: '1px solid #E5E7EB',
                           borderRadius: '8px'
                         }}
                       />
@@ -174,21 +174,21 @@ const ClientMetrics: React.FC = () => {
             </Card>
 
             {/* Top Clientes */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-gray-100">Clientes Mais Frequentes</CardTitle>
+                <CardTitle className="text-gray-900">Clientes Mais Frequentes</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={clientData?.topClients || []}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="name" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="name" stroke="#6B7280" />
+                      <YAxis stroke="#6B7280" />
                       <Tooltip 
                         contentStyle={{ 
-                          backgroundColor: '#1F2937', 
-                          border: '1px solid #374151',
+                          backgroundColor: '#FFFFFF', 
+                          border: '1px solid #E5E7EB',
                           borderRadius: '8px'
                         }}
                       />
@@ -201,23 +201,23 @@ const ClientMetrics: React.FC = () => {
           </div>
 
           {/* Insights */}
-          <Card className="bg-gray-800 border-gray-700">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-gray-100">Insights de Clientes</CardTitle>
+              <CardTitle className="text-gray-900">Insights de Clientes</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                  <span className="text-gray-300">Taxa de crescimento mensal</span>
-                  <span className="text-green-400 font-semibold">+15.2%</span>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-700">Taxa de crescimento mensal</span>
+                  <span className="text-green-600 font-semibold">+15.2%</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                  <span className="text-gray-300">Tempo médio de retenção</span>
-                  <span className="text-blue-400 font-semibold">8.5 meses</span>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-700">Tempo médio de retenção</span>
+                  <span className="text-blue-600 font-semibold">8.5 meses</span>
                 </div>
-                <div className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg">
-                  <span className="text-gray-300">Satisfação média</span>
-                  <span className="text-yellow-400 font-semibold">4.8/5</span>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <span className="text-gray-700">Satisfação média</span>
+                  <span className="text-yellow-600 font-semibold">4.8/5</span>
                 </div>
               </div>
             </CardContent>
