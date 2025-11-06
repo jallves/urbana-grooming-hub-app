@@ -71,7 +71,7 @@ const BirthdayManagement: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full bg-gray-900 text-white">
+    <div className="w-full h-full bg-white">
       <div className="w-full px-4 md:px-6 py-4 sm:py-6 space-y-6">
 
         {/* Header */}
@@ -81,8 +81,8 @@ const BirthdayManagement: React.FC = () => {
           transition={{ duration: 0.4 }}
           className="text-center sm:text-left"
         >
-          <h1 className="text-lg sm:text-3xl font-bold leading-tight">Aniversariantes</h1>
-          <p className="text-gray-400 text-xs sm:text-sm max-w-xl mx-auto sm:mx-0">
+          <h1 className="text-lg sm:text-3xl font-bold leading-tight text-gray-900">Aniversariantes</h1>
+          <p className="text-gray-600 text-xs sm:text-sm max-w-xl mx-auto sm:mx-0">
             Gerencie aniversários e campanhas especiais
           </p>
         </motion.div>
@@ -97,8 +97,8 @@ const BirthdayManagement: React.FC = () => {
               onClick={() => setFilter(item.key as FilterType)}
               className={`flex-shrink-0 px-5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all duration-300 ${
                 filter === item.key
-                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
-                  : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                  ? 'bg-gradient-to-r from-urbana-gold to-yellow-500 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200'
               }`}
             >
               {item.label}
@@ -113,7 +113,7 @@ const BirthdayManagement: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="overflow-x-auto"
         >
-          <Card className="bg-gray-800 border border-gray-700 shadow-md rounded-xl min-w-full">
+          <Card className="bg-white border border-gray-200 shadow-sm rounded-xl min-w-full">
             <BirthdayList
               clients={clients || []}
               isLoading={isLoading}
