@@ -132,9 +132,20 @@ const Gallery: React.FC = () => {
   return (
     <section className="py-12 md:py-20 bg-gray-900">
       <div className="w-full max-w-7xl mx-auto px-4">
-        <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-4">Nossa Galeria</h2>
-          <p className="text-lg md:text-xl text-gray-400">Conheça nosso trabalho e inspire-se</p>
+        <div className="text-center mb-12 md:mb-16">
+          <h2 
+            className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 leading-tight font-playfair tracking-tight"
+            style={{
+              background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textShadow: '0 0 60px rgba(255, 215, 0, 0.3)'
+            }}
+          >
+            Nossa Galeria
+          </h2>
+          <p className="text-xl md:text-2xl lg:text-3xl text-gray-300 font-raleway font-light tracking-wide">Conheça nosso trabalho e inspire-se</p>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">

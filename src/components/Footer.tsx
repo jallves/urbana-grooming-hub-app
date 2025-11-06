@@ -67,14 +67,23 @@ const Footer: React.FC = () => {
             className="lg:col-span-1 space-y-8"
           >
             <div className="space-y-6">
-              <h3 className="font-playfair text-4xl font-bold text-urbana-gold">
+              <h3 
+                className="font-playfair text-5xl md:text-6xl font-bold leading-tight tracking-tight"
+                style={{
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  textShadow: '0 0 40px rgba(255, 215, 0, 0.3)'
+                }}
+              >
                 {shopName}
               </h3>
               <div className="flex items-center space-x-2">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-urbana-gold fill-current" />
+                  <Star key={i} className="w-6 h-6 text-urbana-gold fill-current drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]" />
                 ))}
-                <span className="text-urbana-light/70 font-raleway ml-2">Excelência Premium</span>
+                <span className="text-urbana-light/70 font-raleway ml-2 text-lg">Excelência Premium</span>
               </div>
             </div>
             
@@ -113,7 +122,16 @@ const Footer: React.FC = () => {
               viewport={{ once: true }}
               className="space-y-8"
             >
-              <h3 className="font-playfair text-2xl font-bold text-urbana-gold">
+              <h3 
+                className="font-playfair text-3xl md:text-4xl font-bold tracking-tight"
+                style={{
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  textShadow: '0 0 20px rgba(255, 215, 0, 0.2)'
+                }}
+              >
                 {section.title}
               </h3>
               <ul className="space-y-6">
@@ -151,7 +169,16 @@ const Footer: React.FC = () => {
             viewport={{ once: true }}
             className="space-y-8"
           >
-            <h3 className="font-playfair text-2xl font-bold text-urbana-gold">
+            <h3 
+              className="font-playfair text-3xl md:text-4xl font-bold tracking-tight"
+              style={{
+                background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                textShadow: '0 0 20px rgba(255, 215, 0, 0.2)'
+              }}
+            >
               Links Rápidos
             </h3>
             <ul className="space-y-4">
@@ -176,7 +203,16 @@ const Footer: React.FC = () => {
 
             {/* Map Section */}
             <div className="mt-12">
-              <h4 className="font-playfair text-xl font-bold mb-6 text-urbana-gold">
+              <h4 
+                className="font-playfair text-2xl md:text-3xl font-bold mb-6 tracking-tight"
+                style={{
+                  background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  textShadow: '0 0 20px rgba(255, 215, 0, 0.2)'
+                }}
+              >
                 Nossa Localização
               </h4>
               <div className="bg-urbana-black/50 backdrop-blur-lg rounded-xl p-6 border border-urbana-gold/20 hover:border-urbana-gold/40 transition-colors duration-300">

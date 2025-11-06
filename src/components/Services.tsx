@@ -62,11 +62,16 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
           </motion.span>
         </div>
 
-        <h3 className="relative z-10 text-2xl font-bold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300 mb-3 font-playfair drop-shadow-[0_0_10px_rgba(255,215,0,0)]">
+        <h3 
+          className="relative z-10 text-3xl md:text-4xl font-bold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300 mb-4 font-playfair leading-tight tracking-tight"
+          style={{
+            textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)'
+          }}
+        >
           {title}
         </h3>
 
-        <p className="relative z-10 text-urbana-light/80 flex-grow font-raleway text-base leading-relaxed">
+        <p className="relative z-10 text-urbana-light/80 flex-grow font-raleway text-lg leading-relaxed font-light">
           {description ?? "Serviço premium de barbearia com atenção aos detalhes e técnicas modernas."}
         </p>
 
@@ -119,15 +124,27 @@ const Services: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center max-w-4xl mx-auto mb-8 px-4"
+          className="text-center max-w-5xl mx-auto mb-16 px-4"
         >
-          <h2 className="text-5xl md:text-6xl font-playfair font-bold text-urbana-gold mb-4">
+          <h2 
+            className="text-6xl md:text-7xl lg:text-8xl font-playfair font-bold mb-6 leading-tight tracking-tight"
+            style={{
+              background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textShadow: '0 0 60px rgba(255, 215, 0, 0.3)'
+            }}
+          >
             Nossos{" "}
-            <span className="text-urbana-light drop-shadow-[0_0_8px_rgba(255,215,0,0.3)]">
+            <span className="block md:inline text-urbana-light font-bold" style={{
+              WebkitTextFillColor: '#f5f5f5',
+              textShadow: '0 0 30px rgba(255, 215, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.5)'
+            }}>
               Serviços
             </span>
           </h2>
-          <p className="text-urbana-light/90 font-raleway text-lg md:text-xl leading-relaxed">
+          <p className="text-urbana-light/90 font-raleway text-xl md:text-2xl lg:text-3xl leading-relaxed font-light tracking-wide max-w-3xl mx-auto">
             Descubra uma experiência única onde tradição e modernidade se
             encontram.
           </p>
