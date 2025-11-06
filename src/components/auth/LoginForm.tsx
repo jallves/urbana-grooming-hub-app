@@ -134,29 +134,29 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {isBlocked && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 text-center">
-          <p className="text-red-400 font-semibold mb-2">
+        <div className="bg-red-50 border border-red-300 rounded-xl p-4 text-center">
+          <p className="text-red-600 font-semibold mb-2">
             ⚠️ Conta bloqueada temporariamente
           </p>
-          <p className="text-red-300 text-sm">
+          <p className="text-red-500 text-sm">
             Tempo restante: {Math.floor(blockTimeLeft / 60)}:{(blockTimeLeft % 60).toString().padStart(2, '0')}
           </p>
         </div>
       )}
       
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium text-gray-300">
+        <Label htmlFor="email" className="text-sm font-medium text-gray-900">
           Email
         </Label>
         <div className="relative group">
-          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-urbana-gold transition-colors" />
+          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-urbana-gold transition-colors" />
           <Input
             id="email"
             type="email"
             placeholder="seu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-12 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
+            className="pl-12 h-14 bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
             disabled={loading || isBlocked}
           />
@@ -164,18 +164,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-sm font-medium text-gray-300">
+        <Label htmlFor="password" className="text-sm font-medium text-gray-900">
           Senha
         </Label>
         <div className="relative group">
-          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-urbana-gold transition-colors" />
+          <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-urbana-gold transition-colors" />
           <Input
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Digite sua senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-12 pr-14 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
+            className="pl-12 pr-14 h-14 bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
             disabled={loading || isBlocked}
           />
@@ -183,7 +183,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             type="button"
             variant="ghost"
             size="sm"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 hover:bg-gray-700/50 rounded-lg transition-colors"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10 hover:bg-gray-100 rounded-lg transition-colors"
             onClick={() => setShowPassword(!showPassword)}
             disabled={loading || isBlocked}
           >
@@ -222,7 +222,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
         type="button"
         variant="ghost" 
         onClick={() => setShowForgotPassword(true)}
-        className="w-full text-gray-400 hover:text-urbana-gold hover:bg-gray-800/50 h-12 rounded-xl transition-all"
+        className="w-full text-gray-600 hover:text-urbana-gold hover:bg-gray-50 h-12 rounded-xl transition-all"
         disabled={loading || isBlocked}
       >
         <KeyRound className="h-4 w-4 mr-2" />

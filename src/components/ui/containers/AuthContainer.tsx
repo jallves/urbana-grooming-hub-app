@@ -14,11 +14,11 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ children, className, titl
   return (
     <div className={cn(
       'fixed inset-0 w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden p-4',
-      'bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black',
+      'bg-gradient-to-br from-gray-50 via-white to-gray-100',
       className
     )}>
       {/* Background texture effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 opacity-50" />
 
       {/* Content */}
       <div className="w-full max-w-md md:max-w-lg lg:max-w-xl space-y-5 z-10">
@@ -30,19 +30,19 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ children, className, titl
               </div>
             </div>
             {title && (
-              <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-light via-urbana-gold-light to-urbana-light">
+              <h1 className="text-3xl sm:text-4xl font-black text-gray-900">
                 {title}
               </h1>
             )}
             {subtitle && (
-              <p className="text-urbana-light/70 text-sm sm:text-base font-light">
+              <p className="text-gray-600 text-sm sm:text-base font-light">
                 {subtitle}
               </p>
             )}
           </div>
         )}
         
-        <div className="backdrop-blur-sm bg-card/50 border border-urbana-gray/30 rounded-2xl shadow-2xl p-8 sm:p-10">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-8 sm:p-10">
           {children}
         </div>
       </div>
