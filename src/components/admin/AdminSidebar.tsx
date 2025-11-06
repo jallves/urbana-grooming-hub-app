@@ -53,22 +53,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
       {/* Sidebar */}
       <div
         className={`
-          fixed lg:static top-0 left-0 h-full lg:h-auto w-72 lg:w-64 bg-black/40 backdrop-blur-lg border-r border-white/10 flex flex-col z-50 transform transition-transform duration-300
+          fixed lg:static top-0 left-0 h-full lg:h-auto w-72 lg:w-64 bg-white border-r border-gray-200 flex flex-col z-50 transform transition-transform duration-300 shadow-xl lg:shadow-none
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
           lg:translate-x-0
         `}
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-xl flex items-center justify-center">
-              <Star className="h-7 w-7 text-black" />
+            <div className="w-12 h-12 bg-gradient-to-br from-urbana-gold to-yellow-500 rounded-xl flex items-center justify-center shadow-md">
+              <Star className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-urbana-gold to-yellow-400 bg-clip-text text-transparent">
-                Painel Administrador
+              <h2 className="text-xl font-bold bg-gradient-to-r from-urbana-gold via-yellow-600 to-urbana-gold-dark bg-clip-text text-transparent font-playfair">
+                Painel Admin
               </h2>
-              <p className="text-xs text-gray-400">Barbearia Costa Urbana</p>
+              <p className="text-xs text-gray-500 font-raleway">Costa Urbana</p>
             </div>
           </div>
           {onClose && (
@@ -76,7 +76,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-gray-400 hover:text-white hover:bg-white/10 lg:hidden"
+              className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 lg:hidden"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -84,34 +84,32 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => (
             <NavLink
               key={item.href}
               to={item.href}
               onClick={onClose}
               className={({ isActive }) =>
-                `group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
+                `group flex items-center gap-3 p-3 rounded-lg transition-all duration-200 relative overflow-hidden ${
                   isActive
-                    ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-lg scale-105'
-                    : 'hover:bg-white/10 text-gray-300 hover:text-white hover:scale-105'
+                    ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-md'
+                    : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'
                 }`
               }
               end={item.href === '/admin'}
             >
               <div className="relative z-10 flex items-center gap-3">
                 <item.icon className="h-5 w-5" />
-                <span className="font-medium text-sm">{item.title}</span>
+                <span className="font-medium text-sm font-raleway">{item.title}</span>
               </div>
-
-              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </NavLink>
           ))}
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10">
-          <div className="text-xs text-gray-500 text-center">
+        <div className="p-4 border-t border-gray-200">
+          <div className="text-xs text-gray-500 text-center font-raleway">
             <p className="font-semibold text-urbana-gold">Costa Urbana</p>
             <p>Sistema Administrativo</p>
           </div>

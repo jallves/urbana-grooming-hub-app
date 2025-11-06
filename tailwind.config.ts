@@ -19,49 +19,49 @@ export default {
     },
     extend: {
       colors: {
-        // Tema Costa Urbana - Cores vibrantes e modernas
-        border: 'hsl(0 0% 23%)',
-        input: 'hsl(0 0% 23%)',
-        ring: 'hsl(43 60% 62%)',
-        background: 'hsl(0 0% 5%)',
-        foreground: 'hsl(0 0% 98%)',
+        // Tema Costa Urbana - Tema Claro Elegante
+        border: 'hsl(0 0% 88%)',
+        input: 'hsl(0 0% 95%)',
+        ring: 'hsl(43 60% 55%)',
+        background: 'hsl(0 0% 100%)',
+        foreground: 'hsl(0 0% 10%)',
         primary: {
-          DEFAULT: 'hsl(43 60% 62%)',
-          foreground: 'hsl(0 0% 5%)'
+          DEFAULT: 'hsl(43 60% 55%)',
+          foreground: 'hsl(0 0% 100%)'
         },
         secondary: {
-          DEFAULT: 'hsl(24 45% 18%)',
-          foreground: 'hsl(0 0% 98%)'
+          DEFAULT: 'hsl(0 0% 96%)',
+          foreground: 'hsl(0 0% 10%)'
         },
         destructive: {
           DEFAULT: 'hsl(0 84% 60%)',
-          foreground: 'hsl(0 0% 98%)'
+          foreground: 'hsl(0 0% 100%)'
         },
         muted: {
-          DEFAULT: 'hsl(0 0% 12%)',
-          foreground: 'hsl(0 0% 75%)'
+          DEFAULT: 'hsl(0 0% 96%)',
+          foreground: 'hsl(0 0% 40%)'
         },
         accent: {
-          DEFAULT: 'hsl(43 70% 68%)',
-          foreground: 'hsl(0 0% 5%)'
+          DEFAULT: 'hsl(43 60% 55%)',
+          foreground: 'hsl(0 0% 100%)'
         },
         popover: {
-          DEFAULT: 'hsl(0 0% 8%)',
-          foreground: 'hsl(0 0% 98%)'
+          DEFAULT: 'hsl(0 0% 100%)',
+          foreground: 'hsl(0 0% 10%)'
         },
         card: {
-          DEFAULT: 'hsl(0 0% 9%)',
-          foreground: 'hsl(0 0% 98%)'
+          DEFAULT: 'hsl(0 0% 100%)',
+          foreground: 'hsl(0 0% 10%)'
         },
         sidebar: {
-          DEFAULT: 'hsl(0 0% 5%)',
-          foreground: 'hsl(0 0% 98%)',
-          primary: 'hsl(43 60% 62%)',
-          'primary-foreground': 'hsl(0 0% 5%)',
-          accent: 'hsl(0 0% 23%)',
-          'accent-foreground': 'hsl(0 0% 98%)',
-          border: 'hsl(0 0% 15%)',
-          ring: 'hsl(43 60% 62%)'
+          DEFAULT: 'hsl(0 0% 100%)',
+          foreground: 'hsl(0 0% 10%)',
+          primary: 'hsl(43 60% 55%)',
+          'primary-foreground': 'hsl(0 0% 100%)',
+          accent: 'hsl(0 0% 96%)',
+          'accent-foreground': 'hsl(0 0% 10%)',
+          border: 'hsl(0 0% 90%)',
+          ring: 'hsl(43 60% 55%)'
         },
         urbana: {
           gold: 'hsl(43 65% 60%)',

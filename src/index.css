@@ -97,88 +97,9 @@
     min-height: 100dvh;
   }
 
-  /* Force dark theme for all admin panels */
+  /* Light theme for admin panels - Clean and elegant */
   .admin-panel, .barber-panel, .client-panel {
-    @apply bg-black text-white w-full;
-  }
-
-  /* Override any white backgrounds and ensure text visibility */
-  .bg-white {
-    @apply bg-gray-900 text-white !important;
-  }
-
-  .bg-gray-50 {
-    @apply bg-gray-800 text-white !important;
-  }
-
-  .bg-gray-100 {
-    @apply bg-gray-800 text-white !important;
-  }
-
-  /* Card styling for all panels with white text */
-  .card, [data-radix-collection-item] {
-    @apply bg-gray-900 border-gray-700 text-white !important;
-  }
-
-  /* Input styling with white text */
-  input, textarea, select {
-    @apply bg-gray-800 border-gray-600 text-white placeholder-gray-400 !important;
-  }
-
-  input:focus, textarea:focus, select:focus {
-    @apply border-urbana-gold ring-urbana-gold/20 text-white !important;
-  }
-
-  /* Button styling */
-  .btn-primary, button[type="submit"] {
-    @apply bg-urbana-gold text-black hover:bg-urbana-gold/90 !important;
-  }
-
-  /* Dropdown and select styling with white text */
-  [role="option"], [role="menuitem"] {
-    @apply bg-gray-900 text-white hover:bg-gray-800 !important;
-  }
-
-  /* Table styling with white text */
-  table {
-    @apply bg-gray-900 text-white !important;
-  }
-
-  th {
-    @apply bg-gray-800 text-white border-gray-700 !important;
-  }
-
-  td {
-    @apply bg-gray-900 text-white border-gray-700 !important;
-  }
-
-  /* Modal and dialog styling with white text */
-  [role="dialog"], .dialog-content {
-    @apply bg-gray-900 border-gray-700 text-white !important;
-  }
-
-  /* Sidebar styling */
-  .sidebar {
-    @apply bg-black border-gray-800 text-white !important;
-  }
-
-  /* Form styling with white text */
-  .form-control, .form-input {
-    @apply bg-gray-800 border-gray-600 text-white !important;
-  }
-
-  .form-label {
-    @apply text-white !important;
-  }
-
-  /* Ensure all text elements are white in admin panels */
-  .admin-panel *, .barber-panel *, .client-panel * {
-    color: white !important;
-  }
-
-  /* Override specific elements that might have dark text */
-  p, span, div, label, a {
-    @apply text-white;
+    @apply bg-white text-gray-900 w-full;
   }
 
   /* Custom scrollbar for mobile navigation */
@@ -197,24 +118,24 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Improved scrollbars for mobile */
+  /* Improved scrollbars for light theme */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 215, 0, 0.5);
-    border-radius: 2px;
+    background: rgba(197, 161, 91, 0.5);
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 215, 0, 0.7);
+    background: rgba(197, 161, 91, 0.7);
   }
 }
 
@@ -235,7 +156,7 @@
 }
 
 .urbana-card {
-  @apply rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-gray-900 shadow-lg shadow-black/10 border border-gray-700;
+  @apply rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg bg-white shadow-md shadow-gray-200/50 border border-gray-200;
 }
 
 /* Mobile responsive styles - ULTRA OPTIMIZED */
@@ -262,24 +183,24 @@
     @apply w-full mb-2 justify-center text-xs px-2 py-1.5;
   }
 
-  /* Mobile admin panel optimizations */
+  /* Mobile admin panel optimizations - Light theme */
   .admin-panel-mobile {
-    @apply w-screen min-h-screen bg-black overflow-x-hidden;
+    @apply w-screen min-h-screen bg-white overflow-x-hidden;
     max-width: 100vw;
   }
 
   .admin-panel-header {
-    @apply w-full bg-black border-b border-gray-700 px-2 py-2 sticky top-0 z-10;
+    @apply w-full bg-white border-b border-gray-200 px-2 py-2 sticky top-0 z-10;
   }
 
   .admin-panel-content {
-    @apply w-full bg-black px-2 py-2 space-y-2;
+    @apply w-full bg-gray-50 px-2 py-2 space-y-2;
     max-width: 100vw;
   }
 
-  /* Mobile card optimizations */
+  /* Mobile card optimizations - Light theme */
   .mobile-card {
-    @apply w-full bg-gray-900 border border-gray-700 rounded-lg p-2 mb-2;
+    @apply w-full bg-white border border-gray-200 rounded-lg p-2 mb-2 shadow-sm;
     max-width: 100%;
   }
 
