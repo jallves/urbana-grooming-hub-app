@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion } from "framer-motion";
+import { Camera } from 'lucide-react';
 
 interface GalleryImageProps {
   src: string;
@@ -37,7 +38,7 @@ const GalleryImage: React.FC<GalleryImageProps> = ({
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay }}
       viewport={{ once: true }}
-      className="relative aspect-square overflow-hidden group cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-all duration-300"
+      className="relative aspect-square overflow-hidden group cursor-pointer rounded-lg shadow-md hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-yellow-600/40"
       onClick={onClick}
     >
       {/* Loading state */}
@@ -72,8 +73,9 @@ const GalleryImage: React.FC<GalleryImageProps> = ({
       />
       
       {/* Overlay com gradiente e título */}
-      <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
-        <div className="p-4 text-white w-full">
+      <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center">
+        <Camera className="text-yellow-600 mb-2" size={32} strokeWidth={1.5} />
+        <div className="px-4 text-white w-full text-center">
           <h3 className="font-bold text-sm md:text-base line-clamp-2">
             {alt}
           </h3>
