@@ -264,6 +264,67 @@ Ao criar ou modificar uma página admin:
 - [ ] Sem overflow horizontal em mobile
 - [ ] Scroll funciona corretamente
 
+## 🔍 Diagnóstico de Inconsistências de Largura
+
+### 🎯 Problema Identificado
+
+O usuário reportou que as telas do painel administrativo tinham **tamanhos inconsistentes** na versão web desktop:
+- Algumas telas ocupavam apenas metade do espaço disponível
+- Outras não alcançavam as bordas laterais
+- Cada página tinha um tamanho diferente
+- O problema ocorria no espaço entre o menu lateral e a borda direita da tela
+
+### 🔎 Causa Raiz
+
+Componentes **internos** das páginas admin estavam aplicando limitadores de largura (`max-w-7xl`, `max-w-4xl`, etc.) mesmo já estando dentro do `AdminLayout` que gerencia a largura total.
+
+**Analogia:** É como se cada sala da casa (componente) tentasse definir seu próprio tamanho, ignorando que já está dentro de uma casa (AdminLayout) que controla o espaço.
+
+### ✅ Componentes Corrigidos
+
+1. **BirthdayManagement.tsx**
+   - **Antes:** `<div className="max-w-7xl mx-auto">` (limitado a 1280px)
+   - **Depois:** `<div className="w-full px-4 md:px-6">` (largura total)
+
+2. **ClientAppointmentList.tsx** (2 divs)
+   - **Antes:** `<div className="max-w-7xl mx-auto">` (limitado a 1280px)
+   - **Depois:** `<div className="w-full px-4 md:px-6">` (largura total)
+
+3. **LoadingClientState.tsx**
+   - **Antes:** `<div className="max-w-4xl">` (limitado a 896px)
+   - **Depois:** `<div className="w-full">` (largura total)
+
+### 📐 Padrão Correto
+
+**Container principal das páginas admin:**
+```tsx
+<div className="w-full h-full">
+  {/* Conteúdo */}
+</div>
+```
+
+**Elementos internos que precisam padding:**
+```tsx
+<div className="w-full px-4 md:px-6">
+  {/* Conteúdo */}
+</div>
+```
+
+### ⚠️ Exceções Válidas
+
+Os seguintes usos de `max-w-` são **corretos** e devem ser mantidos:
+- **Diálogos/Modais:** `DialogContent className="max-w-2xl"` (formulários devem ter largura limitada)
+- **Formulários:** `form className="max-w-3xl mx-auto"` (melhor UX com largura controlada)
+- **Campos de busca:** `input className="max-w-sm"` (não precisa ocupar 100%)
+- **Textos descritivos:** `p className="max-w-xl"` (melhor legibilidade)
+- **Elementos com truncate:** `span className="max-w-[150px] truncate"` (controle de overflow)
+
+### 🎨 Resultado Final
+
+Todas as páginas do painel admin agora ocupam **100% da largura disponível** (respeitando o espaço do menu lateral), criando uma experiência consistente em todas as telas do sistema administrativo.
+
+---
+
 ## ⚠️ Problemas Comuns Corrigidos
 
 ### AdminCommissions e AdminAppointments
@@ -286,6 +347,15 @@ Ao criar ou modificar uma página admin:
 **Mudança:** Removido `max-w-7xl` do AdminLayout  
 **Motivo:** Para usar o mesmo padrão da home (largura total sem limite)  
 **Resultado:** Painel admin agora ocupa 100% da largura, igual à home
+
+### Componentes Internos - Limitadores de Largura
+**Problema:** Componentes dentro das páginas admin estavam limitando largura  
+**Componentes corrigidos:**
+- `BirthdayManagement.tsx`: Removido `max-w-7xl`, adicionado `w-full h-full`
+- `ClientAppointmentList.tsx`: Removido `max-w-7xl` (2x), adicionado `w-full`
+- `LoadingClientState.tsx`: Removido `max-w-4xl`, adicionado `w-full`  
+**Solução:** Todos os componentes internos agora usam `w-full` sem limitadores  
+**Resultado:** Telas do admin agora têm tamanho consistente em toda a aplicação
 
 ## 🔄 Manutenção
 
