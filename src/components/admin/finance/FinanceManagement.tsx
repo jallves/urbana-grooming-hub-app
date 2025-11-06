@@ -138,9 +138,9 @@ const FinanceManagement: React.FC = () => {
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {summaryCards.map((card, index) => (
-          <Card key={index} className="bg-gray-800 border-gray-700">
+          <Card key={index} className="bg-white border-gray-200 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">
+              <CardTitle className="text-sm font-medium text-gray-700">
                 {card.title}
               </CardTitle>
               <div className={`p-2 rounded-full ${card.bgColor}`}>
@@ -152,7 +152,7 @@ const FinanceManagement: React.FC = () => {
                 {card.value}
               </div>
               {card.title === 'Lucro Líquido' && summary && (
-                <p className={`text-xs ${summary.margem >= 20 ? 'text-green-500' : 'text-red-500'}`}>
+                <p className={`text-xs ${summary.margem >= 20 ? 'text-green-600' : 'text-red-600'}`}>
                   Margem: {summary.margem.toFixed(1)}%
                   {summary.margem < 20 && ' ⚠️'}
                 </p>
@@ -164,28 +164,28 @@ const FinanceManagement: React.FC = () => {
 
       {/* Tabs do Módulo */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-800">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200">
           <TabsTrigger 
             value="caixa" 
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
           >
             Caixa
           </TabsTrigger>
           <TabsTrigger 
             value="transacoes"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
           >
             Transações
           </TabsTrigger>
           <TabsTrigger 
             value="comissoes"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
           >
             Comissões
           </TabsTrigger>
           <TabsTrigger 
             value="relatorios"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
           >
             Relatórios
           </TabsTrigger>

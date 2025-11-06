@@ -8,7 +8,7 @@ const AdminMarketing: React.FC = () => {
   return (
     <AdminRoute>
       <AdminLayout title="Marketing">
-        <div className="w-full h-full bg-black overflow-hidden">
+        <div className="w-full h-full bg-gray-50 overflow-hidden">
           <MarketingManagement />
         </div>
       </AdminLayout>
