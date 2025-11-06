@@ -120,7 +120,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
 
         {/* Área principal */}
         <main className="flex-1 overflow-y-auto bg-background">
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="w-full mx-auto px-4 md:px-6 py-6">
             {children}
           </div>
         </main>

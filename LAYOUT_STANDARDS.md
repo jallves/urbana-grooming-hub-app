@@ -21,13 +21,24 @@ Este documento define os padrões de largura e espaçamento para todas as telas 
 ### Painel Admin (`AdminLayout`)
 ```tsx
 // src/components/admin/AdminLayout.tsx
-<div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div className="w-full mx-auto px-4 md:px-6">
 ```
 
 **Dimensões:**
-- Largura máxima: `max-w-7xl` = **1280px**
-- Padding horizontal: `px-4 sm:px-6 lg:px-8` (16px → 24px → 32px)
-- Padding vertical: `py-6` = **24px**
+- Largura: `w-full` = **100% da largura disponível** (sem limite)
+- Padding horizontal: `px-4 md:px-6` (16px → 24px)
+- **Mesmo padrão da home** usando `.urbana-container`
+
+### Painel Barbeiro (`BarberLayout`)
+```tsx
+// src/components/barber/BarberLayout.tsx
+<div className="w-full mx-auto px-4 md:px-6">
+```
+
+**Dimensões:**
+- Largura: `w-full` = **100% da largura disponível** (sem limite)
+- Padding horizontal: `px-4 md:px-6` (16px → 24px)
+- **Mesmo padrão da home e admin**
 
 ### Páginas Individuais do Admin
 
@@ -43,7 +54,7 @@ Todas as páginas do painel admin devem usar:
 **Importante:**
 - `w-full` = ocupa toda largura do container
 - `h-full` = ocupa toda altura disponível
-- O `max-w-7xl` já está aplicado no `AdminLayout`
+- O `AdminLayout` usa largura total sem limite (mesmo padrão da home)
 
 ## ✅ Páginas Padronizadas
 
@@ -257,9 +268,9 @@ Ao criar ou modificar uma página admin:
 
 ### AdminCommissions e AdminAppointments
 **Problema:** Tinham `max-w-7xl mx-auto` duplicado dentro do conteúdo  
-**Solução:** Removido, o `AdminLayout` já aplica `max-w-7xl`
+**Solução:** Removido, o `AdminLayout` já aplica largura total
 
-### AdminFinance
+### AdminFinance  
 **Problema:** Faltava `w-full` no container principal  
 **Solução:** Adicionado `w-full h-full` no container
 
@@ -270,6 +281,11 @@ Ao criar ou modificar uma página admin:
 ### AdminAppointments
 **Problema:** Estrutura com múltiplos containers e `max-w-7xl` duplicado  
 **Solução:** Simplificado para estrutura padrão com `w-full h-full`
+
+### AdminLayout - Largura Total
+**Mudança:** Removido `max-w-7xl` do AdminLayout  
+**Motivo:** Para usar o mesmo padrão da home (largura total sem limite)  
+**Resultado:** Painel admin agora ocupa 100% da largura, igual à home
 
 ## 🔄 Manutenção
 
