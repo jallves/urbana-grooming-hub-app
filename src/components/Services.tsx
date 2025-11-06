@@ -20,28 +20,62 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.15, ease: "easeOut" }}
+      initial={{ opacity: 0, y: 60, scale: 0.9 }}
+      animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+      transition={{ 
+        duration: 0.8, 
+        delay: index * 0.15, 
+        ease: [0.22, 1, 0.36, 1]
+      }}
+      whileHover={{ 
+        y: -10,
+        transition: { duration: 0.3, ease: "easeOut" }
+      }}
       className="group"
     >
-      <Card className="relative bg-urbana-black/90 backdrop-blur-lg border border-urbana-gold/30 rounded-xl shadow-xl hover:shadow-[0_0_30px_rgba(255,215,0,0.3)] transition-all duration-500 h-full flex flex-col p-6 hover:scale-105 hover:border-urbana-gold/60">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-urbana-gold to-yellow-400 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-            <Scissors size={28} className="text-urbana-black" />
-          </div>
-          <span className="text-urbana-gold font-playfair font-bold text-xl">{price}</span>
+      <Card className="relative bg-urbana-black/90 backdrop-blur-lg border-2 border-urbana-gold/30 rounded-xl shadow-xl hover:shadow-[0_0_50px_rgba(255,215,0,0.5)] transition-all duration-500 h-full flex flex-col p-6 hover:border-urbana-gold overflow-hidden">
+        {/* Glow effect on hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 via-urbana-gold/5 to-urbana-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        
+        {/* Animated border gradient */}
+        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-urbana-gold/20 to-transparent animate-[slide-in-right_2s_ease-in-out_infinite]" />
         </div>
 
-        <h3 className="text-2xl font-bold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300 mb-3 font-playfair">
+        <div className="relative z-10 mb-6 flex items-center justify-between">
+          <motion.div 
+            className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-urbana-gold to-yellow-400 rounded-xl shadow-lg"
+            whileHover={{ 
+              scale: 1.15,
+              rotate: 5,
+              boxShadow: "0 0 30px rgba(255,215,0,0.6)"
+            }}
+            transition={{ type: "spring", stiffness: 400 }}
+          >
+            <Scissors size={28} className="text-urbana-black" />
+          </motion.div>
+          <motion.span 
+            className="text-urbana-gold font-playfair font-bold text-xl"
+            whileHover={{ scale: 1.1 }}
+          >
+            {price}
+          </motion.span>
+        </div>
+
+        <h3 className="relative z-10 text-2xl font-bold text-urbana-light group-hover:text-urbana-gold transition-colors duration-300 mb-3 font-playfair drop-shadow-[0_0_10px_rgba(255,215,0,0)]">
           {title}
         </h3>
 
-        <p className="text-urbana-light/80 flex-grow font-raleway text-base leading-relaxed">
+        <p className="relative z-10 text-urbana-light/80 flex-grow font-raleway text-base leading-relaxed">
           {description ?? "Serviço premium de barbearia com atenção aos detalhes e técnicas modernas."}
         </p>
 
-        <div className="mt-6 h-1 w-16 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-full group-hover:scale-x-125 transition-transform duration-500" />
+        <motion.div 
+          className="relative z-10 mt-6 h-1 w-16 bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold rounded-full"
+          initial={{ scaleX: 1 }}
+          whileHover={{ scaleX: 2 }}
+          transition={{ duration: 0.5 }}
+        />
       </Card>
     </motion.div>
   );

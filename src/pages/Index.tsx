@@ -8,7 +8,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 
 const Index = () => {
   return (
-    <div className="w-full min-h-screen bg-urbana-black">
+    <div className="w-full min-h-screen bg-urbana-black scroll-smooth">
       {/* Navbar */}
       <Navbar />
       
@@ -18,17 +18,17 @@ const Index = () => {
       </section>
       
       {/* Services - Sem padding lateral */}
-      <section className="w-full py-12">
+      <section className="w-full py-12 transition-all duration-700">
         <Services />
       </section>
       
       {/* Gallery - Sem padding lateral */}
-      <section className="w-full py-12">
+      <section className="w-full py-12 transition-all duration-700">
         <Gallery />
       </section>
       
       {/* Footer - Tela inteira */}
-      <footer className="w-full">
+      <footer className="w-full transition-all duration-700">
         <Footer />
       </footer>
       
