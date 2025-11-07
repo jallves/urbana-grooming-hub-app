@@ -6,16 +6,16 @@ import ProductManagement from '@/components/admin/products/ProductManagement';
 const AdminProducts: React.FC = () => {
   return (
     <AdminLayout title="Produtos e Serviços">
-      <div className="w-full max-w-none h-full bg-white flex flex-col">
-        <div className="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
-          <h1 className="text-xl sm:text-2xl font-playfair text-gray-900">
+      <div className="w-full max-w-none h-full flex flex-col">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 border-b flex-shrink-0">
+          <h1 className="text-xl sm:text-2xl font-playfair">
             🧴 Gestão de Produtos e Serviços
           </h1>
-          <p className="text-gray-700 font-raleway mt-2 text-sm sm:text-base">
+          <p className="text-muted-foreground font-raleway mt-2 text-sm sm:text-base">
             Gerencie todos os produtos vendidos e serviços oferecidos pela barbearia com praticidade e controle.
           </p>
         </div>
-        <div className="flex-1 min-h-0 p-4 sm:p-6 bg-gray-50">
+        <div className="flex-1 min-h-0 px-4 sm:px-6 lg:px-8 py-6">
           <ProductManagement />
         </div>
       </div>
