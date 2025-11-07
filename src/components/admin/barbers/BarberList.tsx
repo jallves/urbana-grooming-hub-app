@@ -25,14 +25,12 @@ const BarberList: React.FC<BarberListProps> = ({
   onEdit,
   onDelete,
 }) => {
-  console.log('BarberList renderizando:', { barbers, isLoading });
-
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center p-8 sm:p-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="flex justify-center items-center p-8 sm:p-12 rounded-lg border">
         <div className="flex flex-col items-center space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
-          <p className="text-gray-700 font-raleway text-sm">Carregando barbeiros...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="font-raleway text-sm">Carregando barbeiros...</p>
         </div>
       </div>
     );
@@ -41,8 +39,8 @@ const BarberList: React.FC<BarberListProps> = ({
   return (
     <div className="w-full">
       {/* View Desktop/Tablet */}
-      <div className="hidden md:block bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-200 bg-gray-50 text-gray-900 font-playfair font-semibold text-sm">
+      <div className="hidden md:block border rounded-lg">
+        <div className="grid grid-cols-6 gap-4 p-4 border-b bg-muted font-playfair font-semibold text-sm">
           <div>Barbeiro</div>
           <div>Email</div>
           <div>Especialidades</div>
@@ -53,53 +51,50 @@ const BarberList: React.FC<BarberListProps> = ({
         
         {barbers.length > 0 ? (
           barbers.map((barber) => (
-            <div key={barber.id} className="grid grid-cols-6 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center">
+            <div key={barber.id} className="grid grid-cols-6 gap-4 p-4 border-b items-center">
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 border-2 border-urbana-gold/30">
+                <Avatar className="h-10 w-10 border-2 border-primary/30">
                   <AvatarImage src={barber.image_url} />
-                  <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white font-playfair">
+                  <AvatarFallback className="bg-primary text-primary-foreground font-playfair">
                     {barber.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <span className="text-gray-900 font-raleway font-medium text-sm block truncate">{barber.name}</span>
+                  <span className="font-raleway font-medium text-sm block truncate">{barber.name}</span>
                   <Badge 
-                    className={`text-xs mt-1 ${
-                      barber.is_active 
-                        ? 'bg-green-100 text-green-700 border-green-300'
-                        : 'bg-red-100 text-red-700 border-red-300'
-                    }`}
+                    variant={barber.is_active ? 'default' : 'outline'}
+                    className="text-xs mt-1"
                   >
                     {barber.is_active ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </div>
               </div>
-              <div className="text-gray-700 font-raleway text-sm truncate">{barber.email}</div>
-              <div className="text-gray-700 font-raleway text-sm truncate">{barber.specialties}</div>
-              <div className="text-gray-700 font-raleway text-sm">{barber.experience}</div>
-              <div className="text-gray-700 font-raleway text-sm">{barber.commission_rate}%</div>
+              <div className="font-raleway text-sm truncate">{barber.email}</div>
+              <div className="font-raleway text-sm truncate">{barber.specialties}</div>
+              <div className="font-raleway text-sm">{barber.experience}</div>
+              <div className="font-raleway text-sm">{barber.commission_rate}%</div>
               <div className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 w-8 p-0 text-gray-600 hover:text-urbana-gold hover:bg-urbana-gold/10"
+                      className="h-8 w-8 p-0"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white border-gray-200">
+                  <DropdownMenuContent align="end">
                     <DropdownMenuItem 
                       onClick={() => onEdit(barber.id)}
-                      className="text-gray-900 hover:bg-gray-100 font-raleway cursor-pointer"
+                      className="font-raleway cursor-pointer"
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete(barber.id)}
-                      className="text-red-600 hover:bg-red-50 font-raleway cursor-pointer"
+                      className="text-destructive font-raleway cursor-pointer"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Excluir
@@ -112,10 +107,10 @@ const BarberList: React.FC<BarberListProps> = ({
         ) : (
           <div className="text-center py-12">
             <div className="flex flex-col items-center space-y-3">
-              <div className="w-16 h-16 bg-urbana-gold/10 rounded-full flex items-center justify-center">
-                <Users className="h-8 w-8 text-urbana-gold" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <Users className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-gray-600 font-raleway">Nenhum barbeiro encontrado</p>
+              <p className="text-muted-foreground font-raleway">Nenhum barbeiro encontrado</p>
             </div>
           </div>
         )}
@@ -125,24 +120,21 @@ const BarberList: React.FC<BarberListProps> = ({
       <div className="md:hidden space-y-3">
         {barbers.length > 0 ? (
           barbers.map((barber) => (
-            <div key={barber.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div key={barber.id} className="border rounded-lg p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Avatar className="h-12 w-12 border-2 border-urbana-gold/30">
+                  <Avatar className="h-12 w-12 border-2 border-primary/30">
                     <AvatarImage src={barber.image_url} />
-                    <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white font-playfair">
+                    <AvatarFallback className="bg-primary text-primary-foreground font-playfair">
                       {barber.name.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-gray-900 font-raleway font-medium text-sm truncate">{barber.name}</h3>
-                    <p className="text-gray-600 font-raleway text-xs truncate">{barber.email}</p>
+                    <h3 className="font-raleway font-medium text-sm truncate">{barber.name}</h3>
+                    <p className="text-muted-foreground font-raleway text-xs truncate">{barber.email}</p>
                     <Badge 
-                      className={`text-xs mt-1 ${
-                        barber.is_active 
-                          ? 'bg-green-100 text-green-700 border-green-300'
-                          : 'bg-red-100 text-red-700 border-red-300'
-                      }`}
+                      variant={barber.is_active ? 'default' : 'outline'}
+                      className="text-xs mt-1"
                     >
                       {barber.is_active ? 'Ativo' : 'Inativo'}
                     </Badge>
@@ -153,22 +145,22 @@ const BarberList: React.FC<BarberListProps> = ({
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-8 w-8 p-0 text-gray-600 hover:text-urbana-gold hover:bg-urbana-gold/10"
+                      className="h-8 w-8 p-0"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white border-gray-200">
+                  <DropdownMenuContent align="end">
                     <DropdownMenuItem 
                       onClick={() => onEdit(barber.id)}
-                      className="text-gray-900 hover:bg-gray-100 font-raleway cursor-pointer"
+                      className="font-raleway cursor-pointer"
                     >
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDelete(barber.id)}
-                      className="text-red-600 hover:bg-red-50 font-raleway cursor-pointer"
+                      className="text-destructive font-raleway cursor-pointer"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Excluir
@@ -179,29 +171,29 @@ const BarberList: React.FC<BarberListProps> = ({
               
               <div className="space-y-2 text-xs">
                 <div>
-                  <span className="text-gray-600 font-raleway">Especialidades:</span>
-                  <span className="text-gray-900 font-raleway ml-1 block truncate">{barber.specialties}</span>
+                  <span className="text-muted-foreground font-raleway">Especialidades:</span>
+                  <span className="font-raleway ml-1 block truncate">{barber.specialties}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-gray-600 font-raleway">Experiência:</span>
-                    <span className="text-gray-900 font-raleway ml-1">{barber.experience}</span>
+                    <span className="text-muted-foreground font-raleway">Experiência:</span>
+                    <span className="font-raleway ml-1">{barber.experience}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600 font-raleway">Comissão:</span>
-                    <span className="text-gray-900 font-raleway ml-1">{barber.commission_rate}%</span>
+                    <span className="text-muted-foreground font-raleway">Comissão:</span>
+                    <span className="font-raleway ml-1">{barber.commission_rate}%</span>
                   </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-center py-12 rounded-lg border">
             <div className="flex flex-col items-center space-y-3">
-              <div className="w-16 h-16 bg-urbana-gold/10 rounded-full flex items-center justify-center">
-                <Users className="h-8 w-8 text-urbana-gold" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <Users className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-gray-600 font-raleway">Nenhum barbeiro encontrado</p>
+              <p className="text-muted-foreground font-raleway">Nenhum barbeiro encontrado</p>
             </div>
           </div>
         )}

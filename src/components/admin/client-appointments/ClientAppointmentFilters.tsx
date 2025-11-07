@@ -21,28 +21,28 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       {/* Campo de busca */}
       <div className="relative flex-1 sm:max-w-sm">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por nome do cliente..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-urbana-gold focus:ring-urbana-gold"
+          className="pl-10"
         />
       </div>
 
       {/* Filtro de status */}
       <div className="flex items-center gap-2">
-        <Filter className="h-4 w-4 text-gray-600" />
+        <Filter className="h-4 w-4" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900 focus:border-urbana-gold focus:ring-urbana-gold">
+          <SelectTrigger className="w-40">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-white border-gray-200 text-gray-900">
-            <SelectItem value="all" className="hover:bg-gray-100">Todos</SelectItem>
-            <SelectItem value="agendado" className="hover:bg-gray-100">Agendado</SelectItem>
-            <SelectItem value="confirmado" className="hover:bg-gray-100">Confirmado</SelectItem>
-            <SelectItem value="concluido" className="hover:bg-gray-100">Concluído</SelectItem>
-            <SelectItem value="cancelado" className="hover:bg-gray-100">Cancelado</SelectItem>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="agendado">Agendado</SelectItem>
+            <SelectItem value="confirmado">Confirmado</SelectItem>
+            <SelectItem value="concluido">Concluído</SelectItem>
+            <SelectItem value="cancelado">Cancelado</SelectItem>
           </SelectContent>
         </Select>
       </div>
