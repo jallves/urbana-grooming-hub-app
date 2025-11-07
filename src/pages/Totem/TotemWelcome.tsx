@@ -33,20 +33,13 @@ const TotemWelcome: React.FC = () => {
           className="w-full h-full object-cover"
         />
         {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+        <div className="absolute inset-0 bg-urbana-black/60" />
       </div>
 
       {/* Premium background effects with enhanced depth */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl opacity-60" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold-vibrant/20 rounded-full blur-3xl opacity-50" />
-        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-urbana-gold/10 rounded-full blur-2xl opacity-40" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.15) 1px, transparent 0)',
-            backgroundSize: '40px 40px'
-          }} />
-        </div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl" />
       </div>
 
       {/* Content */}
