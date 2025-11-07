@@ -4,8 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import BarberList from './BarberList';
 import BarberForm from './BarberForm';
-import { Button } from '@/components/ui/button';
-import { Plus, Shield, Info } from 'lucide-react';
+import { Shield, Info, Users } from 'lucide-react';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
 } from '@/components/ui/card';
@@ -48,7 +47,7 @@ const fetchBarbers = async () => {
 };
 
 const BarberManagement: React.FC = () => {
-  const [mode, setMode] = useState<'viewing' | 'adding' | 'editing'>('viewing');
+  const [mode, setMode] = useState<'viewing' | 'editing'>('viewing');
   const [editingBarberId, setEditingBarberId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -70,11 +69,6 @@ const BarberManagement: React.FC = () => {
       });
     }
   }, [error]);
-
-  const handleAddBarber = () => {
-    setEditingBarberId(null);
-    setMode('adding');
-  };
 
   const handleEditBarber = (id: string) => {
     setEditingBarberId(id);
@@ -113,38 +107,29 @@ const BarberManagement: React.FC = () => {
     }
   };
 
-  const isFormVisible = mode === 'adding' || mode === 'editing';
+  const isFormVisible = mode === 'editing';
 
   return (
     <div className="w-full max-w-full space-y-4 p-2 sm:p-4 bg-gray-50 min-h-screen">
       {/* Header responsivo */}
-      <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+      <div className="flex flex-col space-y-3">
         <div>
           <h1 className="text-lg sm:text-2xl font-bold text-gray-900 font-playfair">
             Barbeiros
           </h1>
           <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-raleway">
-            Gerencie barbeiros e suas permissões
+            Gerencie permissões de acesso dos barbeiros
           </p>
         </div>
-        {mode === 'viewing' && (
-          <Button 
-            onClick={handleAddBarber}
-            className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 font-raleway w-full sm:w-auto shadow-md"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Barbeiro
-          </Button>
-        )}
       </div>
 
       {/* Alerts responsivos */}
       {mode === 'viewing' && (
         <div className="space-y-3">
           <Alert className="border-blue-300 bg-blue-50">
-            <Info className="h-4 w-4 text-blue-600" />
+            <Users className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-xs sm:text-sm leading-relaxed text-blue-900">
-              Este módulo exibe todos os profissionais cadastrados como "Barbeiro".
+              Os barbeiros são migrados automaticamente do módulo de Funcionários quando um funcionário tem o cargo de "Barbeiro".
             </AlertDescription>
           </Alert>
           
@@ -152,10 +137,10 @@ const BarberManagement: React.FC = () => {
             <CardHeader className="p-3 sm:p-6">
               <CardTitle className="flex items-center gap-2 text-sm sm:text-lg text-gray-900 font-playfair">
                 <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
-                Controle de Acesso
+                Controle de Acesso ao Painel do Barbeiro
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
-                Configure permissões de acesso aos módulos do sistema editando um barbeiro.
+                Clique em editar para configurar as permissões de acesso de cada barbeiro aos módulos do painel.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -167,12 +152,10 @@ const BarberManagement: React.FC = () => {
         <Card className="bg-white border-gray-200 shadow-sm">
           <CardHeader className="p-3 sm:p-6">
             <CardTitle className="text-sm sm:text-lg text-gray-900 font-playfair">
-              {mode === 'editing' ? 'Editar Barbeiro' : 'Novo Barbeiro'}
+              Editar Permissões do Barbeiro
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
-              {mode === 'editing'
-                ? 'Edite as informações e permissões do barbeiro'
-                : 'Cadastre um novo barbeiro no sistema'}
+              Configure as permissões de acesso aos módulos do painel do barbeiro
             </CardDescription>
           </CardHeader>
           <CardContent className="p-3 sm:p-6">
