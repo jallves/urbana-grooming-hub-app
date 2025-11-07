@@ -116,7 +116,7 @@ const TotemLogin: React.FC = () => {
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
                 variant="outline"
-                className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/90 active:bg-urbana-gold/30 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 shadow-lg shadow-urbana-gold/10"
+                className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-urbana-gold/10"
                 disabled={isLoading}
               >
                 {num}
@@ -125,7 +125,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={handleClear}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-urbana-black/90 active:bg-destructive/30 border-destructive/30 active:border-destructive text-urbana-light active:text-destructive transition-all duration-100 active:scale-95 shadow-lg shadow-destructive/10"
+              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/40 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-red-500/10"
               disabled={isLoading}
             >
               Limpar
@@ -133,7 +133,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={() => handleNumberClick('0')}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/90 active:bg-urbana-gold/30 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 shadow-lg shadow-urbana-gold/10"
+              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-urbana-gold/10"
               disabled={isLoading}
             >
               0
@@ -141,7 +141,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={handleBackspace}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 bg-urbana-black/90 active:bg-destructive/30 border-destructive/30 active:border-destructive transition-all duration-100 active:scale-95 shadow-lg shadow-destructive/10"
+              className="h-10 sm:h-14 md:h-16 lg:h-20 bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/40 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-orange-500/10"
               disabled={isLoading}
             >
               <Delete className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-urbana-light" />

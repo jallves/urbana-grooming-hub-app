@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Search, Phone, CheckCircle2, AlertCircle, CreditCard, Smartphone } from 'lucide-react';
+import { ArrowLeft, Search, Phone, CheckCircle2, AlertCircle, CreditCard, Smartphone, Delete } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -475,7 +475,7 @@ const TotemCheckoutSearch: React.FC = () => {
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+                className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-urbana-gold/10"
                 variant="outline"
               >
                 {num}
@@ -483,23 +483,23 @@ const TotemCheckoutSearch: React.FC = () => {
             ))}
             <Button
               onClick={handleClear}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-destructive/30 active:border-destructive text-urbana-light active:text-destructive transition-all duration-100 active:scale-95"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/40 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-red-500/10"
             >
               Limpar
             </Button>
             <Button
               onClick={() => handleNumberClick('0')}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-urbana-gold/10"
               variant="outline"
             >
               0
             </Button>
             <Button
               onClick={handleBackspace}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-destructive/30 active:border-destructive text-urbana-light transition-all duration-100 active:scale-95"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/40 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-orange-500/10"
               variant="outline"
             >
-              ⌫
+              <Delete className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
             </Button>
           </div>
 

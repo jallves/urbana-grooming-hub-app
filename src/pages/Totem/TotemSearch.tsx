@@ -238,17 +238,17 @@ const TotemSearch: React.FC = () => {
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden"
+                className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden shadow-lg shadow-urbana-gold/10"
                 variant="outline"
                 style={{ touchAction: 'manipulation' }}
               >
-                <span className="relative drop-shadow">{num}</span>
+                <span className="relative drop-shadow-lg">{num}</span>
               </Button>
             ))}
             
             <Button
               onClick={handleClear}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-[10px] sm:text-xs md:text-sm font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/30 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-94 rounded-lg"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-[10px] sm:text-xs md:text-sm font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/40 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-94 rounded-lg shadow-lg shadow-red-500/10"
               style={{ touchAction: 'manipulation' }}
             >
               Limpar
@@ -256,16 +256,16 @@ const TotemSearch: React.FC = () => {
             
             <Button
               onClick={() => handleNumberClick('0')}
-              className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/60 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gray/40 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden"
+              className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden shadow-lg shadow-urbana-gold/10"
               variant="outline"
               style={{ touchAction: 'manipulation' }}
             >
-              <span className="relative drop-shadow">0</span>
+              <span className="relative drop-shadow-lg">0</span>
             </Button>
             
             <Button
               onClick={handleBackspace}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/30 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-94 rounded-lg"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/40 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-94 rounded-lg shadow-lg shadow-orange-500/10"
               variant="outline"
               style={{ touchAction: 'manipulation' }}
             >
