@@ -2076,6 +2076,51 @@ export type Database = {
         }
         Relationships: []
       }
+      painel_produtos: {
+        Row: {
+          categoria: string
+          created_at: string | null
+          descricao: string | null
+          destaque: boolean | null
+          estoque: number
+          estoque_minimo: number | null
+          id: string
+          imagens: Json | null
+          is_active: boolean | null
+          nome: string
+          preco: number
+          updated_at: string | null
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string | null
+          descricao?: string | null
+          destaque?: boolean | null
+          estoque?: number
+          estoque_minimo?: number | null
+          id?: string
+          imagens?: Json | null
+          is_active?: boolean | null
+          nome: string
+          preco: number
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string | null
+          descricao?: string | null
+          destaque?: boolean | null
+          estoque?: number
+          estoque_minimo?: number | null
+          id?: string
+          imagens?: Json | null
+          is_active?: boolean | null
+          nome?: string
+          preco?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       painel_servicos: {
         Row: {
           created_at: string
@@ -3090,6 +3135,101 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "totem_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      totem_product_sale_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          preco_unitario: number
+          produto_id: string | null
+          quantidade: number
+          sale_id: string | null
+          subtotal: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          preco_unitario: number
+          produto_id?: string | null
+          quantidade: number
+          sale_id?: string | null
+          subtotal: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          preco_unitario?: number
+          produto_id?: string | null
+          quantidade?: number
+          sale_id?: string | null
+          subtotal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "totem_product_sale_items_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "painel_produtos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "totem_product_sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "totem_product_sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      totem_product_sales: {
+        Row: {
+          cliente_id: string | null
+          created_at: string | null
+          id: string
+          paid_at: string | null
+          payment_method: string
+          payment_status: string
+          pix_key: string | null
+          pix_qr_code: string | null
+          total: number
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method: string
+          payment_status?: string
+          pix_key?: string | null
+          pix_qr_code?: string | null
+          total: number
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cliente_id?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string
+          payment_status?: string
+          pix_key?: string | null
+          pix_qr_code?: string | null
+          total?: number
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "totem_product_sales_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
             referencedColumns: ["id"]
           },
         ]

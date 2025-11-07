@@ -85,7 +85,7 @@ const TotemHome: React.FC = () => {
       icon: Package,
       title: 'Produtos',
       subtitle: 'E Cuidados',
-      onClick: () => navigate('/totem/search'),
+      onClick: () => navigate('/totem/search', { state: { action: 'produtos' } }),
       gradient: 'from-fuchsia-400 via-purple-500 to-pink-500',
       iconGradient: 'from-pink-400 to-purple-500',
       iconColor: 'text-fuchsia-400',

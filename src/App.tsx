@@ -57,6 +57,12 @@ import TotemWaiting from './pages/Totem/TotemWaiting';
 import TotemRating from './pages/Totem/TotemRating';
 import TotemNovoAgendamento from './pages/Totem/TotemNovoAgendamento';
 import TotemAgendamentoSucesso from './pages/Totem/TotemAgendamentoSucesso';
+import TotemProducts from './pages/Totem/TotemProducts';
+import TotemProductCheckout from './pages/Totem/TotemProductCheckout';
+import TotemProductPaymentPix from './pages/Totem/TotemProductPaymentPix';
+import TotemProductPaymentCard from './pages/Totem/TotemProductPaymentCard';
+import TotemProductPaymentSuccess from './pages/Totem/TotemProductPaymentSuccess';
+import AdminProductsManagement from './pages/AdminProductsManagement';
 import Install from './pages/Install';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
@@ -162,6 +168,11 @@ function App() {
                       <AdminClientAppointments />
                     </AdminRoute>
                   } />
+                  <Route path="/admin/produtos-totem" element={
+                    <AdminRoute>
+                      <AdminProductsManagement />
+                    </AdminRoute>
+                  } />
                   
                   {/* Barber Routes */}
                   <Route path="/barbeiro/login" element={<BarberAuth />} />
@@ -240,6 +251,11 @@ function App() {
                   <Route path="/totem/rating" element={<TotemProtectedRoute><TotemRating /></TotemProtectedRoute>} />
                   <Route path="/totem/novo-agendamento" element={<TotemProtectedRoute><TotemNovoAgendamento /></TotemProtectedRoute>} />
                   <Route path="/totem/agendamento-sucesso" element={<TotemProtectedRoute><TotemAgendamentoSucesso /></TotemProtectedRoute>} />
+                  <Route path="/totem/products" element={<TotemProtectedRoute><TotemProducts /></TotemProtectedRoute>} />
+                  <Route path="/totem/product-checkout" element={<TotemProtectedRoute><TotemProductCheckout /></TotemProtectedRoute>} />
+                  <Route path="/totem/product-payment-pix" element={<TotemProtectedRoute><TotemProductPaymentPix /></TotemProtectedRoute>} />
+                  <Route path="/totem/product-payment-card" element={<TotemProtectedRoute><TotemProductPaymentCard /></TotemProtectedRoute>} />
+                  <Route path="/totem/product-payment-success" element={<TotemProtectedRoute><TotemProductPaymentSuccess /></TotemProtectedRoute>} />
 
                   {/* PWA Install Page */}
                   <Route path="/install" element={<Install />} />

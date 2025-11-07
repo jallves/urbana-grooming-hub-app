@@ -140,6 +140,18 @@ const TotemSearch: React.FC = () => {
         return;
       }
 
+      // Para PRODUTOS, apenas precisamos do cliente
+      if (action === 'produtos') {
+        console.log('✅ Navegando para produtos');
+        navigate('/totem/products', {
+          state: {
+            client: cliente
+          }
+        });
+        setIsSearching(false);
+        return;
+      }
+
       // Para CHECK-IN, verificar se há agendamentos
       if (!agendamentos || agendamentos.length === 0) {
         toast.error('Nenhum agendamento encontrado', {
