@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, ChevronRight, Crown } from 'lucide-react';
-import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemWelcome: React.FC = () => {
