@@ -490,26 +490,26 @@ const TotemCheckoutSearch: React.FC = () => {
               <button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
+                className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
               >
                 <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">{num}</span>
               </button>
             ))}
             <button
               onClick={handleClear}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
             >
               <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">Limpar</span>
             </button>
             <button
               onClick={() => handleNumberClick('0')}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
             >
               <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">0</span>
             </button>
             <button
               onClick={handleBackspace}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-95 rounded-lg"
             >
               <Delete className="relative w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]" />
             </button>

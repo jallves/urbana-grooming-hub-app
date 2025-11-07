@@ -143,14 +143,14 @@ const TotemLogin: React.FC = () => {
             </div>
           </div>
 
-          {/* Keypad - Transparent with Black Buttons & Gold Text */}
+          {/* Keypad - Transparent with Gold Text */}
           <div className="relative grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
                 disabled={isLoading}
-                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">{num}</span>
               </button>
@@ -158,21 +158,21 @@ const TotemLogin: React.FC = () => {
             <button
               onClick={handleClear}
               disabled={isLoading}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">Limpar</span>
             </button>
             <button
               onClick={() => handleNumberClick('0')}
               disabled={isLoading}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">0</span>
             </button>
             <button
               onClick={handleBackspace}
               disabled={isLoading}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Delete className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]" />
             </button>
