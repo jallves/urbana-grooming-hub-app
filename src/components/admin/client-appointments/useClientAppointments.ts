@@ -71,22 +71,103 @@ export const useClientAppointments = () => {
   // Busca inicial dos agendamentos
   useEffect(() => {
     fetchAppointments();
+
+    // ADICIONAR REALTIME LISTENERS ADMIN
+    console.log('🔴 [Admin Realtime] Configurando listeners globais');
+
+    const channel = supabase
+      .channel('admin-appointments')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'painel_agendamentos'
+        },
+        (payload) => {
+          console.log('🔔 [Admin Realtime] Novo agendamento:', payload);
+          toast.info('Novo agendamento criado!', {
+            description: 'Lista atualizada automaticamente'
+          });
+          fetchAppointments();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'painel_agendamentos'
+        },
+        (payload) => {
+          console.log('🔔 [Admin Realtime] Agendamento atualizado:', payload);
+          fetchAppointments();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'painel_agendamentos'
+        },
+        (payload) => {
+          console.log('🔔 [Admin Realtime] Agendamento deletado:', payload);
+          fetchAppointments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔴 [Admin Realtime] Removendo listeners');
+      supabase.removeChannel(channel);
+    };
   }, [fetchAppointments]);
 
   // Atualiza status de agendamento com feedback visual
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
-      console.log('Updating appointment status:', appointmentId, 'to:', newStatus);
+      console.log('Atualizando status do agendamento:', appointmentId, 'para:', newStatus);
       
-      const { error } = await supabase
-        .from('painel_agendamentos')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', appointmentId);
+      // Se for FINALIZADO, chamar edge function para processar tudo
+      if (newStatus === 'FINALIZADO') {
+        console.log('🎯 Finalizando agendamento via edge function...');
+        
+        const { data, error } = await supabase.functions.invoke('process-appointment-completion', {
+          body: {
+            agendamento_id: appointmentId,
+            source: 'admin',
+            completed_by: (await supabase.auth.getUser()).data.user?.id
+          }
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+
+        console.log('✅ Agendamento finalizado:', data);
+        toast.success('Atendimento finalizado!', {
+          description: 'Comissão e lançamentos financeiros gerados automaticamente.'
+        });
+      } else {
+        // Para outros status, apenas atualizar
+        const { error } = await supabase
+          .from('painel_agendamentos')
+          .update({ 
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', appointmentId);
+
+        if (error) throw error;
+
+        // Feedback visual baseado no status
+        const statusMessages = {
+          'confirmado': 'Agendamento confirmado com sucesso!',
+          'concluido': 'Agendamento marcado como concluído!',
+          'cancelado': 'Agendamento cancelado!'
+        };
+
+        toast.success(statusMessages[newStatus as keyof typeof statusMessages] || 'Status atualizado!');
+      }
 
       // Atualiza localmente para refletir mudanças imediatas
       setAppointments(prev =>
@@ -94,19 +175,12 @@ export const useClientAppointments = () => {
           appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
         )
       );
-
-      // Feedback visual baseado no status
-      const statusMessages = {
-        'confirmado': 'Agendamento confirmado com sucesso!',
-        'concluido': 'Agendamento marcado como concluído!',
-        'cancelado': 'Agendamento cancelado!'
-      };
-
-      toast.success(statusMessages[newStatus as keyof typeof statusMessages] || 'Status atualizado!');
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao atualizar status do agendamento:', error);
-      toast.error('Erro ao atualizar status do agendamento');
+      toast.error('Erro ao atualizar status', {
+        description: error.message || 'Tente novamente'
+      });
     }
   }, []);
 

@@ -203,6 +203,28 @@ export default function PainelClienteAgendar() {
       const barbeiro = barbeiros.find(b => b.id === formData.barbeiro_id);
       const servico = servicos.find(s => s.id === formData.servico_id);
       
+      // Notificar barbeiro via Realtime
+      try {
+        const channel = supabase.channel(`barbearia:${formData.barbeiro_id}`)
+        await channel.send({
+          type: 'broadcast',
+          event: 'NEW_APPOINTMENT',
+          payload: {
+            tipo: 'NOVO_AGENDAMENTO',
+            agendamento_id: novoAgendamento,
+            cliente_nome: cliente?.nome,
+            servico_nome: servico?.nome,
+            data: formattedDate,
+            hora: formData.hora,
+            timestamp: new Date().toISOString()
+          }
+        })
+        console.log('✅ Notificação enviada ao barbeiro');
+      } catch (notifError) {
+        console.error('⚠️ Erro ao notificar barbeiro:', notifError);
+        // Não falhar o agendamento por erro de notificação
+      }
+      
       setConfirmacao({
         isOpen: true,
         tipo: 'sucesso',

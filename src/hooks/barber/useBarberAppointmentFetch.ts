@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -77,7 +77,8 @@ export const useBarberAppointmentFetch = (barberId: string | null) => {
             end_time: endTime.toISOString(),
             status: appointment.status === 'cancelado' ? 'cancelled' : 
                     appointment.status === 'confirmado' ? 'confirmed' : 
-                    appointment.status === 'concluido' ? 'completed' : 'scheduled',
+                    appointment.status === 'concluido' ? 'completed' :
+                    appointment.status === 'FINALIZADO' ? 'completed' : 'scheduled',
             client_name: appointment.painel_clientes.nome,
             service_name: appointment.painel_servicos.nome,
             service: {
@@ -97,6 +98,74 @@ export const useBarberAppointmentFetch = (barberId: string | null) => {
       setLoading(false);
     }
   }, [barberId]);
+
+  // ADICIONAR REALTIME LISTENERS
+  useEffect(() => {
+    if (!barberId) return;
+
+    console.log('🔴 [Realtime] Configurando listeners para barbeiro:', barberId);
+
+    // Criar canal realtime para este barbeiro
+    const channel = supabase
+      .channel(`barbearia:${barberId}`)
+      .on(
+        'broadcast',
+        { event: 'CHECKIN' },
+        (payload) => {
+          console.log('🔔 [Realtime] Check-in recebido:', payload);
+          toast.success('Cliente chegou!', {
+            description: `${payload.payload.cliente_nome} fez check-in`
+          });
+          fetchAppointments();
+        }
+      )
+      .on(
+        'broadcast',
+        { event: 'APPOINTMENT_COMPLETED' },
+        (payload) => {
+          console.log('🔔 [Realtime] Atendimento finalizado:', payload);
+          toast.success('Atendimento finalizado!', {
+            description: `${payload.payload.cliente_nome} - R$ ${payload.payload.total.toFixed(2)}`
+          });
+          fetchAppointments();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'painel_agendamentos',
+          filter: `barbeiro_id=eq.${barberId}`
+        },
+        (payload) => {
+          console.log('🔔 [Realtime] Novo agendamento:', payload);
+          toast.info('Novo agendamento!', {
+            description: 'Você tem um novo agendamento'
+          });
+          fetchAppointments();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'painel_agendamentos',
+          filter: `barbeiro_id=eq.${barberId}`
+        },
+        (payload) => {
+          console.log('🔔 [Realtime] Agendamento atualizado:', payload);
+          fetchAppointments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔴 [Realtime] Removendo listeners');
+      supabase.removeChannel(channel);
+    };
+  }, [barberId, fetchAppointments]);
 
   return {
     appointments,

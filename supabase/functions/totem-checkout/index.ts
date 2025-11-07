@@ -361,18 +361,25 @@ Deno.serve(async (req) => {
 
       const commission_rate = barbeiro?.commission_rate || 50
 
-      // 6. Calcular e gerar comissão
+      // 6. Calcular e gerar comissão (TABELA CORRETA)
       const commission_amount = venda.total * (commission_rate / 100)
 
+      console.log('💰 Gerando comissão:', {
+        barber_id: venda.barbeiro_id,
+        appointment_id: session.appointment_id,
+        amount: commission_amount,
+        rate: commission_rate
+      })
+
       await supabase
-        .from('comissoes')
+        .from('barber_commissions')
         .insert({
-          barbeiro_id: venda.barbeiro_id,
-          agendamento_id: session.appointment_id,
-          valor: commission_amount,
-          percentual: commission_rate,
-          data: new Date().toISOString().split('T')[0],
-          status: 'gerado'
+          barber_id: venda.barbeiro_id,
+          appointment_id: session.appointment_id,
+          amount: commission_amount,
+          commission_rate: commission_rate,
+          status: 'pending',
+          appointment_source: 'totem'
         })
 
       // 7. Criar transações financeiras

@@ -60,12 +60,14 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 }) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
+      'agendado': { label: 'Agendado', variant: 'default' as const },
       'confirmado': { label: 'Confirmado', variant: 'default' as const },
       'concluido': { label: 'Concluído', variant: 'default' as const },
+      'FINALIZADO': { label: 'Finalizado', variant: 'default' as const },
       'cancelado': { label: 'Cancelado', variant: 'destructive' as const },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.confirmado;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.agendado;
     return <Badge variant={config.variant} className="text-xs">{config.label}</Badge>;
   };
 
@@ -167,21 +169,21 @@ const ActionMenu = ({
         <span className="text-sm">Editar</span>
       </DropdownMenuItem>
 
-      {appointment.status !== 'confirmado' && (
+      {appointment.status !== 'confirmado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
         <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmado')}>
           <Check className="mr-2 h-4 w-4" />
           <span className="text-sm">Confirmar</span>
         </DropdownMenuItem>
       )}
 
-      {appointment.status !== 'concluido' && (
-        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'concluido')}>
+      {(appointment.status === 'confirmado' || appointment.status === 'agendado') && (
+        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'FINALIZADO')}>
           <CheckCircle className="mr-2 h-4 w-4" />
-          <span className="text-sm">Concluir</span>
+          <span className="text-sm">Finalizar Atendimento</span>
         </DropdownMenuItem>
       )}
 
-      {appointment.status !== 'cancelado' && (
+      {appointment.status !== 'cancelado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
         <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelado')}>
           <X className="mr-2 h-4 w-4" />
           <span className="text-sm">Cancelar</span>
