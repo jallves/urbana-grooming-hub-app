@@ -196,6 +196,24 @@
     @apply w-full mb-2 justify-center text-xs px-2 py-1.5;
   }
 
+  /* Totem-specific mobile optimizations */
+  body.totem-mode {
+    font-size: 16px;
+  }
+  
+  body.totem-mode button, 
+  body.totem-mode a {
+    min-height: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body.totem-mode input,
+  body.totem-mode select {
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 48px;
+  }
+
   /* Mobile admin panel optimizations - Light theme */
   .admin-panel-mobile {
     @apply w-screen min-h-screen bg-white overflow-x-hidden;
