@@ -255,44 +255,45 @@ const TotemSearch: React.FC = () => {
             </div>
           </div>
 
-          {/* Numeric Keypad */}
+          {/* Numeric Keypad - Transparent with Black Buttons & Gold Text */}
           <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden shadow-lg shadow-urbana-gold/10"
-                variant="outline"
+                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-urbana-gold/30 active:border-urbana-gold text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg shadow-2xl"
+                variant="ghost"
                 style={{ touchAction: 'manipulation' }}
               >
-                <span className="relative drop-shadow-lg">{num}</span>
+                <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">{num}</span>
               </Button>
             ))}
             
             <Button
               onClick={handleClear}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-[10px] sm:text-xs md:text-sm font-bold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/40 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-94 rounded-lg shadow-lg shadow-red-500/10"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-[10px] sm:text-xs md:text-sm font-bold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-red-500/30 active:border-red-500/50 text-urbana-gold hover:text-red-400 active:text-red-300 transition-all duration-100 active:scale-94 rounded-lg shadow-2xl"
+              variant="ghost"
               style={{ touchAction: 'manipulation' }}
             >
-              Limpar
+              <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">Limpar</span>
             </Button>
             
             <Button
               onClick={() => handleNumberClick('0')}
-              className="relative group h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 backdrop-blur-sm active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg overflow-hidden shadow-lg shadow-urbana-gold/10"
-              variant="outline"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-urbana-gold/30 active:border-urbana-gold text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg shadow-2xl"
+              variant="ghost"
               style={{ touchAction: 'manipulation' }}
             >
-              <span className="relative drop-shadow-lg">0</span>
+              <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">0</span>
             </Button>
             
             <Button
               onClick={handleBackspace}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 font-bold bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/40 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-94 rounded-lg shadow-lg shadow-orange-500/10"
-              variant="outline"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-orange-500/30 active:border-orange-500/50 text-urbana-gold hover:text-orange-400 active:text-orange-300 transition-all duration-100 active:scale-94 rounded-lg shadow-2xl"
+              variant="ghost"
               style={{ touchAction: 'manipulation' }}
             >
-              <Delete className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" />
+              <Delete className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]" />
             </Button>
           </div>
 

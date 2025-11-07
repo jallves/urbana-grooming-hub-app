@@ -143,46 +143,42 @@ const TotemLogin: React.FC = () => {
             </div>
           </div>
 
-          {/* Keypad */}
+          {/* Keypad - Transparent with Black Buttons & Gold Text */}
           <div className="relative grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                variant="outline"
-                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black/90 via-urbana-black-soft/80 to-urbana-black/90 hover:from-urbana-gold/20 hover:to-urbana-gold-vibrant/10 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/40 hover:border-urbana-gold/60 active:border-urbana-gold text-urbana-light hover:text-urbana-gold-light active:text-urbana-gold transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-urbana-gold/20 hover:shadow-urbana-gold/30 overflow-hidden group"
+                variant="ghost"
+                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-urbana-gold/30 active:border-urbana-gold text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
                 disabled={isLoading}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 via-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative drop-shadow-lg">{num}</span>
+                <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">{num}</span>
               </Button>
             ))}
             <Button
               onClick={handleClear}
-              variant="outline"
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-gradient-to-br from-red-900/40 to-red-950/60 hover:from-red-800/50 hover:to-red-900/70 active:from-red-700/60 active:to-red-800/80 border-2 border-red-500/50 hover:border-red-400/70 active:border-red-400 text-red-200 hover:text-red-100 active:text-white transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-red-500/20 hover:shadow-red-500/30 overflow-hidden group"
+              variant="ghost"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-red-500/30 active:border-red-500/50 text-urbana-gold hover:text-red-400 active:text-red-300 transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
               disabled={isLoading}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="relative drop-shadow-lg">Limpar</span>
+              <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">Limpar</span>
             </Button>
             <Button
               onClick={() => handleNumberClick('0')}
-              variant="outline"
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black/90 via-urbana-black-soft/80 to-urbana-black/90 hover:from-urbana-gold/20 hover:to-urbana-gold-vibrant/10 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/40 hover:border-urbana-gold/60 active:border-urbana-gold text-urbana-light hover:text-urbana-gold-light active:text-urbana-gold transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-urbana-gold/20 hover:shadow-urbana-gold/30 overflow-hidden group"
+              variant="ghost"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-urbana-gold/30 active:border-urbana-gold text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
               disabled={isLoading}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 via-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="relative drop-shadow-lg">0</span>
+              <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">0</span>
             </Button>
             <Button
               onClick={handleBackspace}
-              variant="outline"
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-gradient-to-br from-orange-900/40 to-orange-950/60 hover:from-orange-800/50 hover:to-orange-900/70 active:from-orange-700/60 active:to-orange-800/80 border-2 border-orange-500/50 hover:border-orange-400/70 active:border-orange-400 text-orange-200 hover:text-orange-100 active:text-white transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 overflow-hidden group"
+              variant="ghost"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-orange-500/30 active:border-orange-500/50 text-urbana-gold hover:text-orange-400 active:text-orange-300 transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
               disabled={isLoading}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <Delete className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 drop-shadow-lg" />
+              <Delete className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]" />
             </Button>
           </div>
 
