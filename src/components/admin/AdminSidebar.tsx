@@ -42,12 +42,28 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
 
   return (
     <>
-      {/* Sidebar sempre flutuante (fixed) */}
+      {/* Sidebar otimizada para mobile */}
       <div
         className={`
-          fixed top-0 left-0 h-screen w-72 lg:w-64 bg-white border-r border-gray-200 flex flex-col z-50 transform transition-transform duration-300 shadow-xl
+          fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col z-50 
+          transform transition-all duration-300 ease-out shadow-xl
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
+        onTouchStart={(e) => {
+          const touchStart = e.touches[0].clientX;
+          const handleTouchMove = (moveEvent: TouchEvent) => {
+            const touchCurrent = moveEvent.touches[0].clientX;
+            if (touchCurrent - touchStart < -50 && onClose) {
+              onClose();
+            }
+          };
+          const handleTouchEnd = () => {
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleTouchEnd);
+          };
+          document.addEventListener('touchmove', handleTouchMove);
+          document.addEventListener('touchend', handleTouchEnd);
+        }}
       >
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
@@ -74,25 +90,28 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
           )}
         </div>
 
-        {/* Navigation */}
+        {/* Navigation com animações */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item) => (
+          {menuItems.map((item, index) => (
             <NavLink
               key={item.href}
               to={item.href}
               onClick={onClose}
+              style={{ animationDelay: `${index * 30}ms` }}
               className={({ isActive }) =>
-                `group flex items-center gap-3 p-3 rounded-lg transition-all duration-200 relative overflow-hidden ${
+                `group flex items-center gap-3 p-3 rounded-lg transition-all duration-200 
+                relative overflow-hidden animate-fade-in min-h-[44px] touch-manipulation
+                active:scale-[0.98] ${
                   isActive
                     ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-md'
-                    : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'
+                    : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900 active:bg-gray-200'
                 }`
               }
               end={item.href === '/admin'}
             >
               <div className="relative z-10 flex items-center gap-3">
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium text-sm font-raleway">{item.title}</span>
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <span className="font-medium text-sm font-raleway truncate">{item.title}</span>
               </div>
             </NavLink>
           ))}

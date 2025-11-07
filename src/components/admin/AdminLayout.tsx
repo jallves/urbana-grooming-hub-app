@@ -34,11 +34,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const userInitials = user?.email?.charAt(0).toUpperCase() || 'A';
 
   return (
-    <div className="flex w-screen h-screen overflow-hidden">
-      {/* Overlay quando sidebar aberta no mobile */}
+    <div className="flex w-screen h-screen overflow-hidden bg-gray-50">
+      {/* Overlay com animação */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-fade-in"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -49,44 +49,50 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Conteúdo principal full-screen */}
-      <main className="flex-1 h-full overflow-y-auto bg-gray-50 lg:ml-64">
-        {/* Header fixo no topo do scroll */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              {/* Botão menu mobile */}
+      {/* Conteúdo principal com transição */}
+      <main className="flex-1 h-full overflow-y-auto bg-gray-50 lg:ml-64 transition-all duration-300">
+        {/* Header fixo com blur backdrop */}
+        <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Botão menu mobile com toque otimizado */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                className="lg:hidden text-gray-700 hover:text-gray-900 hover:bg-gray-100 
+                min-h-[44px] min-w-[44px] touch-manipulation active:scale-95"
                 onClick={() => setSidebarOpen(true)}
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
               <h1 className="text-lg sm:text-xl font-bold text-gray-900 font-playfair">
                 {title}
               </h1>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Theme Toggle */}
               <ThemeToggle />
               
-              {/* Notificações */}
+              {/* Notificações com touch otimizado */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                className="relative text-gray-700 hover:text-gray-900 hover:bg-gray-100 
+                min-h-[44px] min-w-[44px] touch-manipulation active:scale-95"
               >
-                <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 h-4 w-4 bg-urbana-gold text-white p-0 border-0 text-xs" />
+                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Badge className="absolute top-1 right-1 h-3 w-3 sm:h-4 sm:w-4 bg-urbana-gold text-white p-0 border-0 text-[10px]" />
               </Button>
 
               {/* Menu Usuário */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full hover:bg-gray-100">
+                  <Button 
+                    variant="ghost" 
+                    className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-gray-100 
+                    min-h-[44px] min-w-[44px] touch-manipulation active:scale-95"
+                  >
                     <Avatar className="h-8 w-8 border-2 border-urbana-gold">
                       <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white text-sm font-medium">
                         {userInitials}
@@ -122,8 +128,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
           </div>
         </header>
 
-        {/* Área de conteúdo com padding */}
-        <div className="w-full h-full">
+        {/* Área de conteúdo com transição */}
+        <div className="w-full h-full animate-fade-in">
           {children}
         </div>
       </main>

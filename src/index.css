@@ -8,6 +8,7 @@
 @layer base {
   * {
     border-color: #333333;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Full-screen layout configuration */
@@ -27,6 +28,12 @@
   body {
     @apply bg-white text-gray-900 font-raleway;
     overflow-y: hidden; /* Remove scroll do body */
+  }
+  
+  /* Otimização de performance */
+  button, a {
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
   }
   
   /* Touch optimization for totem - all platforms */
