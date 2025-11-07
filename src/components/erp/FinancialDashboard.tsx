@@ -137,24 +137,24 @@ const FinancialDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
       {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {summaryCards.map((card, index) => (
-          <Card key={index} className="border-0 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+          <Card key={index} className="bg-white border-gray-200 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-700">
                 {card.title}
               </CardTitle>
-              <div className={`p-2 rounded-lg ${card.bgColor}`}>
-                <card.icon className={`h-4 w-4 ${card.color}`} />
+              <div className={`p-1.5 sm:p-2 rounded-lg ${card.bgColor}`}>
+                <card.icon className={`h-3 w-3 sm:h-4 sm:w-4 ${card.color}`} />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${card.color}`}>
+            <CardContent className="p-3 sm:p-6 pt-0">
+              <div className={`text-xl sm:text-2xl font-bold ${card.color}`}>
                 {card.value}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 {card.trend}
               </p>
             </CardContent>
@@ -164,52 +164,72 @@ const FinancialDashboard: React.FC = () => {
 
       {/* Tabs de Período */}
       <Tabs defaultValue="month" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="today">Hoje</TabsTrigger>
-          <TabsTrigger value="week">Semana</TabsTrigger>
-          <TabsTrigger value="month">Mês</TabsTrigger>
-          <TabsTrigger value="year">Ano</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200 h-auto">
+          <TabsTrigger 
+            value="today"
+            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
+          >
+            Hoje
+          </TabsTrigger>
+          <TabsTrigger 
+            value="week"
+            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
+          >
+            Semana
+          </TabsTrigger>
+          <TabsTrigger 
+            value="month"
+            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
+          >
+            Mês
+          </TabsTrigger>
+          <TabsTrigger 
+            value="year"
+            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
+          >
+            Ano
+          </TabsTrigger>
         </TabsList>
 
         {['today', 'week', 'month', 'year'].map(period => (
-          <TabsContent key={period} value={period} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Transações</CardTitle>
+          <TabsContent key={period} value={period} className="space-y-3 sm:space-y-4 mt-3 sm:mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <Card className="bg-white border-gray-200">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm text-gray-700">Transações</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="flex items-center space-x-2">
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-2xl font-bold">
+                    <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
+                    <span className="text-xl sm:text-2xl font-bold text-gray-900">
                       {metrics?.[period as keyof DashboardMetrics]?.transaction_count || 0}
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Pendente</CardTitle>
+              <Card className="bg-white border-gray-200">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm text-gray-700">Pendente</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="flex items-center space-x-2">
-                    <CreditCard className="h-4 w-4 text-yellow-600" />
-                    <span className="text-2xl font-bold text-yellow-600">
+                    <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600" />
+                    <span className="text-lg sm:text-2xl font-bold text-yellow-600">
                       R$ {(metrics?.[period as keyof DashboardMetrics]?.pending_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Margem</CardTitle>
+              <Card className="bg-white border-gray-200 sm:col-span-2 lg:col-span-1">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="text-xs sm:text-sm text-gray-700">Margem</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                    <span className="text-2xl font-bold text-green-600">
+                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                    <span className="text-xl sm:text-2xl font-bold text-green-600">
                       {metrics?.[period as keyof DashboardMetrics]?.profit_margin.toFixed(1)}%
                     </span>
                   </div>

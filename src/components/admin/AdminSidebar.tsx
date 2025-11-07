@@ -31,11 +31,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
     { title: 'Barbeiros', icon: Scissors, href: '/admin/barbeiros', color: 'from-indigo-500 to-blue-500' },
     { title: 'Produtos', icon: ShoppingCart, href: '/admin/produtos', color: 'from-teal-500 to-cyan-500' },
     { title: 'Financeiro', icon: Coins, href: '/admin/financeiro', color: 'from-yellow-500 to-orange-500' },
+    { title: 'ERP Financeiro', icon: Star, href: '/admin/erp-financeiro', color: 'from-urbana-gold to-yellow-600' },
+    { title: 'Fluxo de Caixa', icon: LineChart, href: '/admin/fluxo-caixa', color: 'from-cyan-500 to-blue-500' },
     { title: 'Marketing', icon: Percent, href: '/admin/marketing', color: 'from-red-500 to-pink-500' },
     { title: 'Aniversários', icon: Cake, href: '/admin/aniversarios', color: 'from-purple-500 to-indigo-500' },
     { title: 'Suporte', icon: Headphones, href: '/admin/suporte', color: 'from-blue-500 to-purple-500' },
     { title: 'Escalas', icon: UserCheck, href: '/admin/escalas', color: 'from-green-500 to-blue-500' },
-    { title: 'Fluxo de Caixa', icon: LineChart, href: '/admin/fluxo-caixa', color: 'from-cyan-500 to-blue-500' },
     { title: 'Analytics', icon: LineChart, href: '/admin/analytics', color: 'from-violet-500 to-purple-500' },
     { title: 'Configurações', icon: Settings, href: '/admin/configuracoes', color: 'from-gray-500 to-gray-600' },
   ];
