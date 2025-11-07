@@ -38,15 +38,15 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
   };
 
   return (
-    <Card className="panel-card-responsive hover:shadow-lg transition-all duration-200 border-gray-700 hover:border-urbana-gold/50">
+    <Card className="panel-card-responsive hover:shadow-lg transition-all duration-200">
       <CardContent className="p-4">
         {/* Header do Card */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-base text-white truncate mb-1">
+            <h3 className="font-semibold text-base truncate mb-1">
               {client.nome}
             </h3>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               <span>Cadastrado em {formatDate(client.created_at)}</span>
             </div>
@@ -58,7 +58,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
               variant="ghost"
               size="sm"
               onClick={() => onEdit(client.id)}
-              className="h-8 w-8 p-0 hover:bg-blue-500/10 hover:text-blue-400"
+              className="h-8 w-8 p-0"
               title="Editar cliente"
             >
               <Edit className="h-4 w-4" />
@@ -67,7 +67,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
               variant="ghost"
               size="sm"
               onClick={() => onDelete(client)}
-              className="h-8 w-8 p-0 hover:bg-red-500/10 hover:text-red-400"
+              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
               title="Excluir cliente"
             >
               <Trash2 className="h-4 w-4" />
@@ -79,27 +79,27 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
         <div className="space-y-3">
           {/* Email */}
           {client.email && (
-            <div className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-              <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-300 truncate">
+            <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+              <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm truncate">
                 {client.email}
               </span>
             </div>
           )}
           
           {/* WhatsApp */}
-          <div className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-            <MessageCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
-            <span className="text-sm text-gray-300 font-mono">
+          <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+            <MessageCircle className="h-4 w-4 text-primary flex-shrink-0" />
+            <span className="text-sm font-mono">
               {formatPhone(client.whatsapp)}
             </span>
           </div>
           
           {/* Data de Nascimento */}
           {client.data_nascimento && (
-            <div className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg">
-              <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-300">
+            <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm">
                 Nascimento: {formatDate(client.data_nascimento)}
               </span>
             </div>
