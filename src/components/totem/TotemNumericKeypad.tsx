@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Delete } from 'lucide-react';
 
 interface TotemNumericKeypadProps {
@@ -20,9 +19,8 @@ export const TotemNumericKeypad: React.FC<TotemNumericKeypadProps> = ({
   return (
     <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
       {numbers.map((num) => (
-        <Button
+        <button
           key={num}
-          variant="ghost"
           onClick={() => {
             if (num === clearLabel) {
               onClear();
@@ -32,14 +30,14 @@ export const TotemNumericKeypad: React.FC<TotemNumericKeypadProps> = ({
               onNumberClick(num);
             }
           }}
-          className="h-14 sm:h-16 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold !bg-transparent text-urbana-gold border-2 border-urbana-gold/30 hover:!bg-urbana-gold/10 hover:border-urbana-gold/50 active:!bg-urbana-gold/20 active:border-urbana-gold transition-all duration-200 shadow-lg backdrop-blur-sm rounded-lg"
+          className="h-14 sm:h-16 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-transparent text-urbana-gold border-2 border-urbana-gold/30 hover:bg-urbana-gold/10 hover:border-urbana-gold/50 active:bg-urbana-gold/20 active:border-urbana-gold transition-all duration-200 shadow-lg backdrop-blur-sm rounded-lg inline-flex items-center justify-center"
         >
           {num === 'backspace' ? (
             <Delete className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10" />
           ) : (
             num
           )}
-        </Button>
+        </button>
       ))}
     </div>
   );
