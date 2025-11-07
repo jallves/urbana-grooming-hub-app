@@ -132,7 +132,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
+    <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 font-playfair mb-2">
