@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
 import { TotemAuthProvider } from './contexts/TotemAuthContext';
+import { RealtimeProvider } from './contexts/RealtimeContext';
 import AdminRoute from './components/auth/AdminRoute';
 import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
@@ -79,7 +80,8 @@ function App() {
           <PainelClienteAuthProvider>
             <TotemAuthProvider>
               <QueryClientProvider client={queryClient}>
-              <div className="min-h-screen bg-background">
+                <RealtimeProvider>
+                  <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
                   
@@ -246,8 +248,9 @@ function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </div>
-            </QueryClientProvider>
-            </TotemAuthProvider>
+            </RealtimeProvider>
+          </QueryClientProvider>
+          </TotemAuthProvider>
           </PainelClienteAuthProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminMetricsCards from './dashboard/AdminMetricsCards';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminRealtimeNotifications } from '@/hooks/useAdminRealtimeNotifications';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 interface RecentActivity {
   id: string;
@@ -19,51 +19,12 @@ interface RecentActivity {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Ativar notificações em tempo real
-  useAdminRealtimeNotifications();
-
   useEffect(() => {
     loadRecentActivities();
-    
-    // Real-time subscription for activities
-    const channel = supabase
-      .channel('admin-activities')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointments'
-        },
-        () => {
-          loadRecentActivities();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'clients'
-        },
-        () => {
-          loadRecentActivities();
-          toast({
-            title: "Novo cliente cadastrado",
-            description: "Um novo cliente se cadastrou na plataforma.",
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [toast]);
+  }, []);
 
   const loadRecentActivities = async () => {
     try {

@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { supabase } from '@/integrations/supabase/client';
 import { Appointment } from '@/types/appointment';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppointmentSync } from '@/hooks/useAppointmentSync';
 
 export const useAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -174,9 +173,6 @@ export const useAppointments = () => {
       setIsLoading(false);
     }
   }, [isAdmin, isBarber, user]);
-
-  // Usar o hook de sincronização
-  useAppointmentSync(fetchAppointments);
 
   useEffect(() => {
     if (user) {

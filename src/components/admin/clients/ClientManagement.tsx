@@ -23,26 +23,10 @@ const ClientManagement: React.FC = () => {
       
       if (error) throw new Error(error.message);
       return data;
-    }
+    },
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   });
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('painel-client-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'painel_clientes' },
-        () => {
-          toast.info('Dados de clientes atualizados');
-          refetch();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refetch]);
 
   if (error) {
     toast.error('Erro ao carregar clientes', {

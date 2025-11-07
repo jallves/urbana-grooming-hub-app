@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAppointmentSync } from '@/hooks/useAppointmentSync';
 import { toast } from 'sonner';
 
 interface PainelAgendamento {
@@ -68,8 +67,6 @@ export const useClientAppointments = () => {
     }
   }, []);
 
-  // Usa o hook de sincronização para atualizar lista em eventos externos
-  useAppointmentSync(fetchAppointments);
 
   // Busca inicial dos agendamentos
   useEffect(() => {

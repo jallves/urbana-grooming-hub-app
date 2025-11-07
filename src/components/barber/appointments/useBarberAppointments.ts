@@ -4,7 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppointmentSync } from '@/hooks/useAppointmentSync';
 
 // Interface para agendamentos do painel do cliente adaptada para o barbeiro
 interface PainelAgendamento {
@@ -174,9 +173,6 @@ export const useBarberAppointments = () => {
       fetchAppointmentsData();
     }
   }, [fetchAppointmentsData, barberId, isInitialized]);
-
-  // Usar o hook de sincronização apenas quando inicializado
-  useAppointmentSync(isInitialized ? refreshAppointments : undefined);
 
   // Busca inicial - executar apenas quando barberId está disponível e componente inicializado
   useEffect(() => {

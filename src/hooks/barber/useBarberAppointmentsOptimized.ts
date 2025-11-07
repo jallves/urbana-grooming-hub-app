@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAppointmentSync } from '@/hooks/useAppointmentSync';
 import { useBarberData } from './useBarberData';
 import { useBarberAppointmentFetch } from './useBarberAppointmentFetch';
 import { useBarberAppointmentActions } from './useBarberAppointmentActions';
@@ -19,9 +18,6 @@ export const useBarberAppointmentsOptimized = () => {
   });
   const stats = useBarberAppointmentStats(appointments);
   const modalHandlers = useBarberAppointmentModal();
-
-  // Usar sync apenas quando inicializado
-  useAppointmentSync(barberData?.id ? fetchAppointments : undefined);
 
   // Busca inicial
   useEffect(() => {

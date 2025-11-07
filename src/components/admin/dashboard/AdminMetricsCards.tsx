@@ -17,6 +17,8 @@ const AdminMetricsCards: React.FC = () => {
       if (error) throw error;
       return count || 0;
     },
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch clients count
@@ -30,6 +32,8 @@ const AdminMetricsCards: React.FC = () => {
       if (error) throw error;
       return count || 0;
     },
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch staff count
@@ -44,6 +48,8 @@ const AdminMetricsCards: React.FC = () => {
       if (error) throw error;
       return count || 0;
     },
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch revenue (from completed appointments)
@@ -68,6 +74,8 @@ const AdminMetricsCards: React.FC = () => {
       
       return total;
     },
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const metrics = [
