@@ -6,9 +6,7 @@ import MarketingManagement from '@/components/admin/marketing/MarketingManagemen
 const AdminMarketing: React.FC = () => {
   return (
     <AdminLayout title="Marketing">
-      <div className="w-full max-w-none h-full bg-gray-50 overflow-hidden">
-        <MarketingManagement />
-      </div>
+      <MarketingManagement />
     </AdminLayout>
   );
 };

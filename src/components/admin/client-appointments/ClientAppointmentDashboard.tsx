@@ -39,7 +39,7 @@ const ClientAppointmentDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
       {/* Estatísticas */}
       <ClientAppointmentStats appointments={appointments} />
 

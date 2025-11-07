@@ -35,9 +35,9 @@ const ClientManagement: React.FC = () => {
   }
 
   return (
-    <div className="panel-responsive">
+    <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
       {/* Header - Mobile First */}
-      <div className="panel-header-responsive">
+      <div className="mb-4 sm:mb-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -88,9 +88,9 @@ const ClientManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Lista de Clientes - Sem Scroll */}
-      <div className="panel-content-responsive">
-        <ClientList 
+      {/* Lista de Clientes */}
+      <div className="w-full">
+        <ClientList
           clients={clients || []}
           isLoading={isLoading}
           onEdit={(id) => {

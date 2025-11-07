@@ -22,9 +22,8 @@ const AdminAnalytics: React.FC = () => {
 
   return (
     <AdminLayout title="Analytics & Insights">
-      <div className="w-full max-w-none h-full bg-gray-950 text-gray-100">
-        <div className="h-full flex flex-col">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 bg-gray-950 text-gray-100">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <TabsList className="grid grid-cols-3 sm:grid-cols-5 bg-gray-800 border border-gray-700 mb-4 mx-4 mt-2">
               {tabs.map((tab) => (
                 <TabsTrigger
@@ -39,7 +38,7 @@ const AdminAnalytics: React.FC = () => {
               ))}
             </TabsList>
 
-            <div className="flex-1 px-4 pb-4 overflow-hidden">
+            <div className="flex-1 overflow-hidden">
               <TabsContent value="overview" className="h-full m-0">
                 <AnalyticsOverview />
               </TabsContent>
@@ -62,9 +61,8 @@ const AdminAnalytics: React.FC = () => {
             </div>
           </Tabs>
         </div>
-      </div>
-    </AdminLayout>
-  );
-};
+      </AdminLayout>
+    );
+  };
 
 export default AdminAnalytics;

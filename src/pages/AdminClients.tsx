@@ -6,9 +6,7 @@ import ClientManagement from '@/components/admin/clients/ClientManagement';
 const AdminClients: React.FC = () => {
   return (
     <AdminLayout title="Clientes">
-      <div className="w-full max-w-none h-full flex flex-col">
-        <ClientManagement />
-      </div>
+      <ClientManagement />
     </AdminLayout>
   );
 };

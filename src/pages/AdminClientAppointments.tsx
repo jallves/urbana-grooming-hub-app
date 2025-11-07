@@ -6,9 +6,7 @@ import ClientAppointmentDashboard from '@/components/admin/client-appointments/C
 export default function AdminClientAppointments() {
   return (
     <AdminLayout title="Agendamentos de Clientes">
-      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6">
-        <ClientAppointmentDashboard />
-      </div>
+      <ClientAppointmentDashboard />
     </AdminLayout>
   );
 }

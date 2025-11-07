@@ -118,7 +118,7 @@ const AdminSupport: React.FC = () => {
   if (loading) {
     return (
       <AdminLayout title="Suporte">
-        <div className="w-full max-w-none h-full bg-white overflow-hidden">
+        <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-urbana-gold"></div>
           </div>
@@ -129,10 +129,9 @@ const AdminSupport: React.FC = () => {
 
   return (
     <AdminLayout title="Suporte">
-      <div className="w-full max-w-none h-full bg-white overflow-hidden">
-        <div className="flex flex-col h-full">
+      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex-shrink-0 p-3 sm:p-4 border-b border-gray-200">
+          <div className="mb-4 sm:mb-6">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-base sm:text-lg font-bold text-gray-900">Gestão de Suporte</h1>
@@ -151,7 +150,7 @@ const AdminSupport: React.FC = () => {
           </div>
 
           {/* Content */}
-          <div className="flex-1 p-3 sm:p-4 overflow-y-auto bg-gray-50">
+          <div className="w-full">
             {tickets.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 bg-white rounded-lg border border-gray-200">
                 <MessageSquare className="w-12 h-12 text-gray-400 mb-4" />
@@ -221,9 +220,8 @@ const AdminSupport: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-    </AdminLayout>
-  );
-};
+      </AdminLayout>
+    );
+  };
 
 export default AdminSupport;

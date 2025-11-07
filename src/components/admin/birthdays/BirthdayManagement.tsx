@@ -71,11 +71,9 @@ const BirthdayManagement: React.FC = () => {
   ];
 
   return (
-    <div className="w-full h-full bg-white">
-      <div className="w-full px-4 md:px-6 py-4 sm:py-6 space-y-6">
-
-        {/* Header */}
-        <motion.div
+    <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
+      {/* Header */}
+      <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
@@ -124,8 +122,7 @@ const BirthdayManagement: React.FC = () => {
         </motion.div>
 
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default BirthdayManagement;
