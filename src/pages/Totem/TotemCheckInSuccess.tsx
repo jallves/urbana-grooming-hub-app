@@ -48,10 +48,11 @@ const TotemCheckInSuccess: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-brown/75 to-urbana-black/80" />
       </div>
 
-      {/* Premium animated background effects */}
+      {/* Premium background effects with enhanced depth */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl opacity-60" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl opacity-50" />
+        <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-emerald-400/10 rounded-full blur-2xl opacity-40" />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.1) 1px, transparent 0)',
@@ -61,24 +62,26 @@ const TotemCheckInSuccess: React.FC = () => {
       </div>
 
       <div className="text-center space-y-8 sm:space-y-10 md:space-y-12 max-w-3xl z-10">
-        {/* Success Icon with premium effect */}
+        {/* Success Icon with premium effect - no pulsing */}
         <div className="flex justify-center animate-scale-in">
           <div className="relative group">
-            {/* Multiple glow layers */}
-            <div className="absolute -inset-8 bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 blur-3xl opacity-50 animate-pulse" />
-            <div className="absolute -inset-12 bg-emerald-500/30 blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '0.5s' }} />
+            {/* Multiple glow layers for depth */}
+            <div className="absolute -inset-8 bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 blur-3xl opacity-50" />
+            <div className="absolute -inset-12 bg-emerald-500/30 blur-3xl opacity-30" />
+            <div className="absolute -inset-4 bg-emerald-400/20 blur-2xl opacity-40" />
             
-            {/* Icon container */}
+            {/* Icon container with enhanced styling */}
             <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 flex items-center justify-center shadow-2xl border-4 border-emerald-400/30">
               <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-white drop-shadow-2xl" strokeWidth={3} />
               
-              {/* Sparkles */}
-              <Sparkles className="absolute top-4 right-4 w-6 h-6 text-white animate-pulse" />
-              <Sparkles className="absolute bottom-4 left-4 w-4 h-4 text-emerald-200 animate-pulse" style={{ animationDelay: '0.5s' }} />
+              {/* Sparkles without pulsing */}
+              <Sparkles className="absolute top-4 right-4 w-6 h-6 text-white opacity-80" />
+              <Sparkles className="absolute bottom-4 left-4 w-4 h-4 text-emerald-200 opacity-80" />
+              <Sparkles className="absolute top-8 left-8 w-3 h-3 text-emerald-100 opacity-60" />
             </div>
             
-            {/* Ripple effect */}
-            <div className="absolute inset-0 rounded-full border-4 border-emerald-400/30 animate-ping" style={{ animationDuration: '2s' }} />
+            {/* Static ring effect */}
+            <div className="absolute inset-0 rounded-full border-2 border-emerald-400/20" />
           </div>
         </div>
 
@@ -137,21 +140,21 @@ const TotemCheckInSuccess: React.FC = () => {
             </div>
           </div>
 
-          {/* Service badge */}
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold/30 to-urbana-gold/20 border-2 border-urbana-gold/50 rounded-2xl backdrop-blur-sm">
-            <Sparkles className="w-5 h-5 text-urbana-gold animate-pulse" />
+          {/* Service badge with premium styling */}
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold/30 to-urbana-gold/20 border-2 border-urbana-gold/50 rounded-2xl backdrop-blur-sm shadow-lg">
+            <Sparkles className="w-5 h-5 text-urbana-gold opacity-80" />
             <span className="text-xl sm:text-2xl font-bold text-urbana-gold">
               {appointment.servico?.nome}
             </span>
-            <Sparkles className="w-5 h-5 text-urbana-gold animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <Sparkles className="w-5 h-5 text-urbana-gold opacity-80" />
           </div>
         </div>
 
-        {/* Auto redirect with progress */}
+        {/* Auto redirect with elegant progress */}
         <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
           <div className="flex items-center justify-center gap-3 text-urbana-light/70">
             <span className="text-base sm:text-lg font-light">Preparando experiência premium</span>
-            <ArrowRight className="w-5 h-5 animate-pulse" />
+            <ArrowRight className="w-5 h-5 opacity-80" />
           </div>
           
           {/* Progress bar */}

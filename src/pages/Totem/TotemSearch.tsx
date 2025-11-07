@@ -179,10 +179,17 @@ const TotemSearch: React.FC = () => {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-brown flex flex-col p-2 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
-      {/* Animated background */}
+      {/* Premium background with enhanced depth */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-cyan-500/10 rounded-full blur-3xl opacity-40" />
+        <div className="absolute top-1/2 right-1/3 w-48 h-48 sm:w-72 sm:h-72 bg-urbana-gold/5 rounded-full blur-2xl opacity-30" />
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.1) 1px, transparent 0)',
+            backgroundSize: '40px 40px'
+          }} />
+        </div>
       </div>
       
       {/* Header */}

@@ -24,10 +24,11 @@ const TotemWelcome: React.FC = () => {
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/30 to-urbana-black flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative font-poppins overflow-hidden">
-      {/* Animated background effects */}
+      {/* Premium background effects with enhanced depth */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold-vibrant/20 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl opacity-60" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold-vibrant/20 rounded-full blur-3xl opacity-50" />
+        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-urbana-gold/10 rounded-full blur-2xl opacity-40" />
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">
           <div className="absolute inset-0" style={{
             backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.15) 1px, transparent 0)',
@@ -38,12 +39,13 @@ const TotemWelcome: React.FC = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center space-y-8 sm:space-y-12 max-w-4xl">
-        {/* Logo with premium effect */}
+        {/* Logo with premium effect and enhanced depth */}
         <div className="flex justify-center animate-scale-in">
           <div className="relative group">
-            {/* Multiple glow layers for depth */}
-            <div className="absolute -inset-8 bg-gradient-to-br from-urbana-gold via-urbana-gold-vibrant to-transparent blur-3xl opacity-50 animate-pulse" />
-            <div className="absolute -inset-12 bg-urbana-gold/30 blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '0.5s' }} />
+            {/* Multiple glow layers for depth - no pulsing */}
+            <div className="absolute -inset-8 bg-gradient-to-br from-urbana-gold via-urbana-gold-vibrant to-transparent blur-3xl opacity-50" />
+            <div className="absolute -inset-12 bg-urbana-gold/30 blur-3xl opacity-30" />
+            <div className="absolute -inset-4 bg-urbana-gold/20 blur-2xl opacity-40" />
             
             {/* Logo container with premium border */}
             <div className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 p-6 rounded-3xl bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-2xl overflow-hidden">
@@ -71,11 +73,12 @@ const TotemWelcome: React.FC = () => {
 
         {/* Welcome message with elegant animation */}
         <div className="space-y-6 sm:space-y-8 animate-fade-up" style={{ animationDelay: '0.3s' }}>
-          {/* Crown icon */}
+          {/* Crown icon with premium styling */}
           <div className="flex justify-center">
             <div className="relative">
-              <Crown className="w-12 h-12 sm:w-16 sm:h-16 text-urbana-gold drop-shadow-2xl animate-pulse" />
-              <div className="absolute inset-0 bg-urbana-gold blur-xl opacity-50" />
+              <div className="absolute inset-0 bg-urbana-gold blur-2xl opacity-50" />
+              <div className="absolute -inset-2 bg-gradient-to-br from-urbana-gold to-urbana-gold-vibrant blur-xl opacity-30" />
+              <Crown className="relative w-12 h-12 sm:w-16 sm:h-16 text-urbana-gold drop-shadow-2xl" />
             </div>
           </div>
 
@@ -93,28 +96,28 @@ const TotemWelcome: React.FC = () => {
             </div>
           </div>
 
-          {/* Subtitle with sparkles */}
+          {/* Subtitle with elegant sparkles */}
           <div className="flex items-center justify-center gap-3">
-            <Sparkles className="w-5 h-5 text-urbana-gold-vibrant animate-pulse" />
+            <Sparkles className="w-5 h-5 text-urbana-gold-vibrant opacity-80" />
             <p className="text-lg sm:text-xl md:text-2xl text-urbana-gold-light font-light tracking-wide">
               Sistema de Gestão Premium
             </p>
-            <Sparkles className="w-5 h-5 text-urbana-gold-vibrant animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <Sparkles className="w-5 h-5 text-urbana-gold-vibrant opacity-80" />
           </div>
 
-          {/* Decorative line */}
+          {/* Decorative line with sophistication */}
           <div className="flex items-center justify-center gap-2 mt-8">
             <div className="h-px w-16 sm:w-24 bg-gradient-to-r from-transparent via-urbana-gold to-urbana-gold" />
-            <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
+            <div className="w-2 h-2 bg-urbana-gold rounded-full opacity-80 shadow-lg shadow-urbana-gold/50" />
             <div className="h-px w-16 sm:w-24 bg-gradient-to-l from-transparent via-urbana-gold to-urbana-gold" />
           </div>
         </div>
 
-        {/* Loading indicator with text */}
+        {/* Loading indicator with elegant styling */}
         <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
           <div className="flex items-center justify-center gap-3 text-urbana-gold-light/80">
             <span className="text-base sm:text-lg font-light">Carregando ambiente premium</span>
-            <ChevronRight className="w-5 h-5 animate-pulse" />
+            <ChevronRight className="w-5 h-5 opacity-80" />
           </div>
           
           {/* Progress bar */}
@@ -123,10 +126,10 @@ const TotemWelcome: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer badge */}
+        {/* Footer badge with premium styling */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-fade-in" style={{ animationDelay: '0.9s' }}>
-          <div className="inline-flex items-center gap-2 px-6 py-3 bg-urbana-black-soft/50 border border-urbana-gold/30 rounded-full backdrop-blur-sm">
-            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-urbana-black-soft/50 border border-urbana-gold/30 rounded-full backdrop-blur-sm shadow-lg">
+            <div className="w-2 h-2 bg-emerald-400 rounded-full opacity-90 shadow-lg shadow-emerald-400/50" />
             <span className="text-xs sm:text-sm text-urbana-light/60 font-medium uppercase tracking-wider">
               Sistema Autenticado
             </span>

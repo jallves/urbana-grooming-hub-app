@@ -106,10 +106,16 @@ const TotemHome: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/80 via-urbana-black/75 to-urbana-brown/70" />
       </div>
 
-      {/* Animated background effects */}
+      {/* Premium background effects with depth */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl opacity-40" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.15) 1px, transparent 0)',
+            backgroundSize: '40px 40px'
+          }} />
+        </div>
       </div>
 
       {/* Logout Button */}
@@ -125,14 +131,27 @@ const TotemHome: React.FC = () => {
       </Button>
 
       <div className="text-center space-y-2 sm:space-y-4 md:space-y-6 max-w-7xl w-full z-10">
-        {/* Logo */}
+        {/* Logo with premium frame and depth */}
         <div className="flex justify-center mb-2 sm:mb-4 md:mb-6 animate-scale-in">
           <div className="relative group w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40">
+            {/* Multi-layered glow for depth */}
+            <div className="absolute -inset-4 bg-gradient-to-br from-urbana-gold via-urbana-gold-vibrant to-transparent blur-2xl opacity-30" />
+            <div className="absolute -inset-6 bg-urbana-gold/20 blur-3xl opacity-20" />
+            
+            {/* Premium border frame */}
+            <div className="absolute inset-0 rounded-2xl border-2 border-urbana-gold/30" />
+            
             <img 
               src={costaUrbanaLogo} 
               alt="Costa Urbana Logo" 
-              className="w-full h-full object-contain group-active:scale-95 transition-transform duration-200"
+              className="relative w-full h-full object-contain group-active:scale-95 transition-all duration-300 drop-shadow-2xl"
             />
+            
+            {/* Corner accents */}
+            <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-urbana-gold rounded-tl-lg" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-urbana-gold rounded-tr-lg" />
+            <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-urbana-gold rounded-bl-lg" />
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-urbana-gold rounded-br-lg" />
           </div>
         </div>
 
@@ -148,11 +167,11 @@ const TotemHome: React.FC = () => {
           <div className="flex items-center justify-center gap-1 sm:gap-2 text-urbana-light/70 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="h-px w-3 sm:w-6 md:w-10 bg-gradient-to-r from-transparent via-urbana-gold to-urbana-gold-vibrant" />
             <div className="flex items-center gap-0.5 sm:gap-1">
-              <Sparkles className="w-2 h-2 sm:w-3 sm:h-3 text-urbana-gold-vibrant animate-pulse" />
+              <Sparkles className="w-2 h-2 sm:w-3 sm:h-3 text-urbana-gold-vibrant opacity-80" />
               <p className="text-[8px] sm:text-xs md:text-sm font-light tracking-wider uppercase">
-                Sistema de Autoatendimento
+                Sistema de Autoatendimento Premium
               </p>
-              <Sparkles className="w-2 h-2 sm:w-3 sm:h-3 text-urbana-gold-vibrant animate-pulse" />
+              <Sparkles className="w-2 h-2 sm:w-3 sm:h-3 text-urbana-gold-vibrant opacity-80" />
             </div>
             <div className="h-px w-3 sm:w-6 md:w-10 bg-gradient-to-l from-transparent via-urbana-gold to-urbana-gold-vibrant" />
           </div>
@@ -173,14 +192,20 @@ const TotemHome: React.FC = () => {
                   WebkitTapHighlightColor: 'transparent'
                 }}
               >
-                {/* Gradient overlay on active */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-10 transition-opacity duration-150`} />
+                {/* Multi-layered gradient overlay with depth */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-15 transition-all duration-200`} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-50" />
                 
                 {/* Content */}
                 <div className="relative flex flex-col items-center gap-1 sm:gap-2 md:gap-3">
-                  {/* Icon */}
-                  <div className={`relative w-8 h-8 sm:w-11 sm:h-11 md:w-14 md:h-14 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl bg-gradient-to-br ${item.iconGradient} opacity-80 group-active:opacity-100 flex items-center justify-center transition-all duration-150 shadow-xl ${item.glowColor} group-active:shadow-2xl`}>
-                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7 lg:w-10 lg:h-10 ${item.iconColor} group-active:text-white transition-all duration-150 drop-shadow-lg group-active:scale-110`} />
+                  {/* Icon with premium frame */}
+                  <div className="relative">
+                    {/* Subtle glow behind icon */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${item.iconGradient} blur-xl opacity-40`} />
+                    
+                    <div className={`relative w-8 h-8 sm:w-11 sm:h-11 md:w-14 md:h-14 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl bg-gradient-to-br ${item.iconGradient} opacity-90 group-active:opacity-100 flex items-center justify-center transition-all duration-200 shadow-2xl ${item.glowColor} group-active:shadow-3xl border border-white/10`}>
+                      <Icon className={`w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7 lg:w-10 lg:h-10 ${item.iconColor} group-active:text-white transition-all duration-200 drop-shadow-2xl group-active:scale-110`} />
+                    </div>
                   </div>
                   
                   {/* Text */}
@@ -198,13 +223,15 @@ const TotemHome: React.FC = () => {
           })}
         </div>
 
-        {/* Instructions */}
+        {/* Instructions with elegant styling */}
         <div className="pt-2 sm:pt-4 md:pt-6 animate-fade-in" style={{ animationDelay: '1s' }}>
-          <p className="text-[10px] sm:text-sm md:text-base text-urbana-gold-light/80 font-light tracking-wide flex items-center justify-center gap-1 sm:gap-2 animate-pulse">
-            <span className="inline-block w-1 h-1 sm:w-1.5 sm:h-1.5 bg-urbana-gold-vibrant rounded-full animate-ping" />
-            Toque na tela para começar
-            <span className="inline-block w-1 h-1 sm:w-1.5 sm:h-1.5 bg-urbana-gold-vibrant rounded-full animate-ping" />
-          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-urbana-gold/5 border border-urbana-gold/20 rounded-full backdrop-blur-sm">
+            <span className="inline-block w-1.5 h-1.5 bg-urbana-gold-vibrant rounded-full opacity-80" />
+            <p className="text-[10px] sm:text-sm md:text-base text-urbana-gold-light/90 font-light tracking-wide">
+              Toque na tela para começar
+            </p>
+            <span className="inline-block w-1.5 h-1.5 bg-urbana-gold-vibrant rounded-full opacity-80" />
+          </div>
           
           <button
             onClick={() => setShowNewFeatures(true)}
