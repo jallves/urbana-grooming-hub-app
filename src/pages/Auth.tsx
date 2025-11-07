@@ -1,14 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoginForm from '@/components/auth/LoginForm';
-import RegisterForm from '@/components/auth/RegisterForm';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Home, Scissors, Shield, User, LogIn } from 'lucide-react';
+import { Home, Scissors } from 'lucide-react';
 import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 const Auth: React.FC = () => {
@@ -52,41 +49,18 @@ const Auth: React.FC = () => {
       title="Costa Urbana"
       subtitle="Painel Administrativo"
     >
-      <Tabs defaultValue="login" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-xl mb-6">
-          <TabsTrigger 
-            value="login" 
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-black data-[state=active]:shadow-lg rounded-lg transition-all text-gray-700"
-          >
-            <LogIn className="h-4 w-4 mr-2" />
-            Login
-          </TabsTrigger>
-          <TabsTrigger 
-            value="register" 
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-black data-[state=active]:shadow-lg rounded-lg transition-all text-gray-700"
-          >
-            <User className="h-4 w-4 mr-2" />
-            Cadastro
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="login" className="mt-0">
-          <LoginForm loading={loading} setLoading={setLoading} />
-        </TabsContent>
-        
-        <TabsContent value="register" className="mt-0">
-          <RegisterForm loading={loading} setLoading={setLoading} />
-        </TabsContent>
-      </Tabs>
+      <div className="w-full space-y-6">
+        <LoginForm loading={loading} setLoading={setLoading} />
 
-      <Button
-        variant="outline"
-        className="w-full mt-6 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-urbana-gold h-12 rounded-xl transition-all"
-        onClick={handleGoHome}
-      >
-        <Home className="h-4 w-4 mr-2" />
-        Voltar ao site
-      </Button>
+        <Button
+          variant="outline"
+          className="w-full border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-urbana-gold h-12 rounded-xl transition-all"
+          onClick={handleGoHome}
+        >
+          <Home className="h-4 w-4 mr-2" />
+          Voltar ao site
+        </Button>
+      </div>
     </AuthContainer>
   );
 };
