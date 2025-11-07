@@ -72,7 +72,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   return (
     <>
       {/* DESKTOP (Tabela) */}
-      <TableRow className="hidden sm:table-row hover:bg-muted/50">
+      <TableRow className="hidden sm:table-row">
         <TableCell className="py-3">
           <span className="font-medium text-sm">
             {appointment.painel_clientes?.nome || 'Nome não encontrado'}
