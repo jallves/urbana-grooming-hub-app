@@ -1,8 +1,9 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard } from "lucide-react";
+import { CreditCard, Settings2 } from "lucide-react";
+import TEFHomologacao from '@/components/admin/tef/TEFHomologacao';
+import TEFSettingsForm from '@/components/admin/tef/TEFSettingsForm';
 
 const AdminSettings: React.FC = () => {
   return (
@@ -17,24 +18,21 @@ const AdminSettings: React.FC = () => {
               <CreditCard className="h-4 w-4 mr-2" />
               TEF Homologação
             </TabsTrigger>
+            <TabsTrigger 
+              value="tef-settings"
+              className="data-[state=active]:bg-black data-[state=active]:text-white"
+            >
+              <Settings2 className="h-4 w-4 mr-2" />
+              Configurações TEF
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tef-homologacao" className="mt-6">
-            <Card className="bg-white border-gray-200">
-              <CardHeader>
-                <CardTitle className="text-black">TEF Homologação</CardTitle>
-                <CardDescription className="text-gray-600">
-                  Configure as opções de homologação do TEF
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <p className="text-gray-500">
-                    Conteúdo em desenvolvimento
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <TEFHomologacao />
+          </TabsContent>
+
+          <TabsContent value="tef-settings" className="mt-6">
+            <TEFSettingsForm />
           </TabsContent>
         </Tabs>
       </div>

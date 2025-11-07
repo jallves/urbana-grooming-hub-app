@@ -2980,6 +2980,99 @@ export type Database = {
           },
         ]
       }
+      tef_mock_transactions: {
+        Row: {
+          amount: number
+          authorization_code: string | null
+          callback_url: string | null
+          card_brand: string | null
+          created_at: string
+          id: string
+          installments: number | null
+          nsu: string | null
+          payment_id: string
+          payment_type: string
+          reference: string | null
+          simulated_at: string | null
+          soft_descriptor: string | null
+          status: string
+          terminal_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          authorization_code?: string | null
+          callback_url?: string | null
+          card_brand?: string | null
+          created_at?: string
+          id?: string
+          installments?: number | null
+          nsu?: string | null
+          payment_id: string
+          payment_type: string
+          reference?: string | null
+          simulated_at?: string | null
+          soft_descriptor?: string | null
+          status?: string
+          terminal_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          authorization_code?: string | null
+          callback_url?: string | null
+          card_brand?: string | null
+          created_at?: string
+          id?: string
+          installments?: number | null
+          nsu?: string | null
+          payment_id?: string
+          payment_type?: string
+          reference?: string | null
+          simulated_at?: string | null
+          soft_descriptor?: string | null
+          status?: string
+          terminal_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tef_settings: {
+        Row: {
+          api_key: string | null
+          api_url: string | null
+          created_at: string
+          id: string
+          terminal_id: string | null
+          timeout_seconds: number | null
+          updated_at: string
+          use_mock: boolean
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          api_url?: string | null
+          created_at?: string
+          id?: string
+          terminal_id?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          use_mock?: boolean
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          api_url?: string | null
+          created_at?: string
+          id?: string
+          terminal_id?: string | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          use_mock?: boolean
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           content: string
