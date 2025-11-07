@@ -146,9 +146,9 @@ export default function AdminDashboard() {
       {/* Métricas */}
       <AdminMetricsCards />
 
-      <div className="grid grid-cols-1 gap-4 sm:gap-6">
+      <div className="w-full grid grid-cols-1 gap-4 sm:gap-6">
         {/* Ações Rápidas */}
-        <Card className="bg-white border-gray-200">
+        <Card className="w-full bg-white border-gray-200">
           <CardHeader>
             <CardTitle className="text-gray-900">Ações Rápidas</CardTitle>
             <CardDescription className="text-gray-600">
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Atividades Recentes */}
-        <Card className="bg-white border-gray-200">
+        <Card className="w-full bg-white border-gray-200">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-gray-900 flex items-center gap-2 text-base sm:text-lg">
               <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
