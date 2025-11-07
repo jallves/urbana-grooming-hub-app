@@ -91,9 +91,9 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {statCards.map((stat) => (
-        <Card key={stat.title} className="border border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+        <Card key={stat.title} className="border border-gray-200 bg-white shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300 flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <div className={`p-2 rounded-lg ${stat.bgColor}`}>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </div>
@@ -101,7 +101,7 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-gray-100">{stat.value}</div>
+            <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
           </CardContent>
         </Card>
       ))}

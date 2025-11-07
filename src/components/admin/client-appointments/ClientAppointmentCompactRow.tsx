@@ -60,9 +60,9 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 }) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'confirmado': { label: 'Confirmado', className: 'bg-blue-600/20 text-blue-300 border-blue-500/40' },
-      'concluido': { label: 'Concluído', className: 'bg-green-600/20 text-green-300 border-green-500/40' },
-      'cancelado': { label: 'Cancelado', className: 'bg-red-600/20 text-red-300 border-red-500/40' },
+      'confirmado': { label: 'Confirmado', className: 'bg-blue-100 text-blue-700 border-blue-300' },
+      'concluido': { label: 'Concluído', className: 'bg-green-100 text-green-700 border-green-300' },
+      'cancelado': { label: 'Cancelado', className: 'bg-red-100 text-red-700 border-red-300' },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.confirmado;
@@ -72,31 +72,31 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   return (
     <>
       {/* DESKTOP (Tabela) */}
-      <TableRow className="hidden sm:table-row hover:bg-gray-800 border-b border-gray-700">
+      <TableRow className="hidden sm:table-row hover:bg-gray-50 border-b border-gray-200">
         <TableCell className="py-3">
-          <span className="font-medium text-gray-100 text-sm">
+          <span className="font-medium text-gray-900 text-sm">
             {appointment.painel_clientes?.nome || 'Nome não encontrado'}
           </span>
         </TableCell>
 
         <TableCell className="py-3">
-          <div className="text-sm text-gray-300">
+          <div className="text-sm text-gray-700">
             {format(new Date(appointment.data), 'dd/MM/yyyy')}
-            <div className="text-xs text-gray-400">{appointment.hora}</div>
+            <div className="text-xs text-gray-500">{appointment.hora}</div>
           </div>
         </TableCell>
 
         <TableCell className="py-3">
-          <div className="text-sm text-gray-300">
+          <div className="text-sm text-gray-700">
             {appointment.painel_servicos?.nome || 'N/A'}
-            <div className="text-xs text-gray-400">
+            <div className="text-xs text-gray-500">
               R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
             </div>
           </div>
         </TableCell>
 
         <TableCell className="py-3">
-          <span className="text-sm text-gray-300">
+          <span className="text-sm text-gray-700">
             {appointment.painel_barbeiros?.nome || 'N/A'}
           </span>
         </TableCell>
@@ -116,18 +116,18 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
       </TableRow>
 
       {/* MOBILE (Card) */}
-      <div className="sm:hidden bg-gray-900 border border-gray-700 rounded-lg p-4 mb-3 shadow-sm">
+      <div className="sm:hidden bg-white border border-gray-200 rounded-lg p-4 mb-3 shadow-sm">
         <div className="flex justify-between items-center mb-2">
-          <h4 className="text-gray-100 font-semibold text-base">
+          <h4 className="text-gray-900 font-semibold text-base">
             {appointment.painel_clientes?.nome || 'Nome não encontrado'}
           </h4>
           {getStatusBadge(appointment.status)}
         </div>
 
-        <div className="text-sm text-gray-300">
-          <div><span className="text-gray-400">Data:</span> {format(new Date(appointment.data), 'dd/MM/yyyy')} às {appointment.hora}</div>
-          <div><span className="text-gray-400">Serviço:</span> {appointment.painel_servicos?.nome || 'N/A'} - R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}</div>
-          <div><span className="text-gray-400">Barbeiro:</span> {appointment.painel_barbeiros?.nome || 'N/A'}</div>
+        <div className="text-sm text-gray-700">
+          <div><span className="text-gray-500">Data:</span> {format(new Date(appointment.data), 'dd/MM/yyyy')} às {appointment.hora}</div>
+          <div><span className="text-gray-500">Serviço:</span> {appointment.painel_servicos?.nome || 'N/A'} - R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}</div>
+          <div><span className="text-gray-500">Barbeiro:</span> {appointment.painel_barbeiros?.nome || 'N/A'}</div>
         </div>
 
         <div className="flex justify-end mt-3">
@@ -156,40 +156,40 @@ const ActionMenu = ({
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-700">
-        <MoreHorizontal className="h-4 w-4 text-gray-300" />
+      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100">
+        <MoreHorizontal className="h-4 w-4 text-gray-700" />
         <span className="sr-only">Abrir menu</span>
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-48 bg-gray-900 border border-gray-700">
-      <DropdownMenuItem onClick={() => onEdit(appointment.id)} className="hover:bg-gray-800">
-        <Edit className="mr-2 h-4 w-4 text-gray-300" />
-        <span className="text-sm text-gray-300">Editar</span>
+    <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200">
+      <DropdownMenuItem onClick={() => onEdit(appointment.id)} className="hover:bg-gray-100">
+        <Edit className="mr-2 h-4 w-4 text-gray-700" />
+        <span className="text-sm text-gray-900">Editar</span>
       </DropdownMenuItem>
 
       {appointment.status !== 'confirmado' && (
-        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmado')} className="hover:bg-gray-800">
-          <Check className="mr-2 h-4 w-4 text-blue-400" />
-          <span className="text-sm text-gray-300">Confirmar</span>
+        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmado')} className="hover:bg-gray-100">
+          <Check className="mr-2 h-4 w-4 text-blue-600" />
+          <span className="text-sm text-gray-900">Confirmar</span>
         </DropdownMenuItem>
       )}
 
       {appointment.status !== 'concluido' && (
-        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'concluido')} className="hover:bg-gray-800">
-          <CheckCircle className="mr-2 h-4 w-4 text-green-400" />
-          <span className="text-sm text-gray-300">Concluir</span>
+        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'concluido')} className="hover:bg-gray-100">
+          <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+          <span className="text-sm text-gray-900">Concluir</span>
         </DropdownMenuItem>
       )}
 
       {appointment.status !== 'cancelado' && (
-        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelado')} className="hover:bg-gray-800">
-          <X className="mr-2 h-4 w-4 text-red-400" />
-          <span className="text-sm text-gray-300">Cancelar</span>
+        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelado')} className="hover:bg-gray-100">
+          <X className="mr-2 h-4 w-4 text-red-600" />
+          <span className="text-sm text-gray-900">Cancelar</span>
         </DropdownMenuItem>
       )}
 
       <DropdownMenuItem
-        className="text-red-400 hover:bg-gray-800"
+        className="text-red-600 hover:bg-red-50"
         onClick={() => onDelete(appointment.id)}
       >
         <Trash2 className="mr-2 h-4 w-4" />

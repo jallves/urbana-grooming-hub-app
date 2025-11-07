@@ -39,15 +39,15 @@ const ClientAppointmentDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full flex flex-col gap-6 bg-gray-900 text-gray-100 p-4 sm:p-6 lg:p-8 rounded-lg">
+    <div className="h-full flex flex-col gap-6 bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8 rounded-lg">
       {/* Estatísticas */}
       <ClientAppointmentStats appointments={appointments} />
 
       {/* Card principal com filtro e tabela */}
-      <Card className="flex-1 flex flex-col border border-gray-800 bg-gray-900 shadow-lg min-h-[400px]">
-        <CardHeader className="pb-4 border-b border-gray-800">
+      <Card className="flex-1 flex flex-col border border-gray-200 bg-white shadow-lg min-h-[400px]">
+        <CardHeader className="pb-4 border-b border-gray-200">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <CardTitle className="text-xl font-bold text-gray-100">
+            <CardTitle className="text-xl font-bold text-gray-900">
               Gestão de Agendamentos
             </CardTitle>
             {/* Filtros: empilhado no mobile, horizontal no desktop */}

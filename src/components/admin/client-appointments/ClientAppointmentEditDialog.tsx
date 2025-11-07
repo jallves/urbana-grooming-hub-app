@@ -118,62 +118,62 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md w-full bg-gray-900 text-gray-100 border border-gray-800">
+      <DialogContent className="max-w-md w-full bg-white text-gray-900 border border-gray-200">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-gray-100">
+          <DialogTitle className="text-lg font-bold text-gray-900">
             Editar Agendamento
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 w-full">
           <div>
-            <Label className="text-gray-300">Cliente</Label>
+            <Label className="text-gray-700">Cliente</Label>
             <Input
               value={appointment.painel_clientes?.nome || ''}
               disabled
-              className="bg-gray-800 text-gray-200 border-gray-700 w-full"
+              className="bg-gray-100 text-gray-700 border-gray-300 w-full"
             />
           </div>
 
           <div>
-            <Label htmlFor="data" className="text-gray-300">Data</Label>
+            <Label htmlFor="data" className="text-gray-700">Data</Label>
             <Input
               id="data"
               type="date"
               value={formData.data}
               onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
               required
-              className="bg-gray-800 text-gray-200 border-gray-700 w-full"
+              className="bg-white text-gray-900 border-gray-300 w-full"
             />
           </div>
 
           <div>
-            <Label htmlFor="hora" className="text-gray-300">Horário</Label>
+            <Label htmlFor="hora" className="text-gray-700">Horário</Label>
             <Input
               id="hora"
               type="time"
               value={formData.hora}
               onChange={(e) => setFormData(prev => ({ ...prev, hora: e.target.value }))}
               required
-              className="bg-gray-800 text-gray-200 border-gray-700 w-full"
+              className="bg-white text-gray-900 border-gray-300 w-full"
             />
           </div>
 
           <div>
-            <Label className="text-gray-300">Barbeiro</Label>
+            <Label className="text-gray-700">Barbeiro</Label>
             <Select
               value={formData.barbeiro_id}
               onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}
             >
-              <SelectTrigger className="bg-gray-800 text-gray-200 border-gray-700 w-full">
+              <SelectTrigger className="bg-white text-gray-900 border-gray-300 w-full">
                 <SelectValue placeholder="Selecione um barbeiro" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700 text-gray-100 max-h-60 overflow-auto">
+              <SelectContent className="bg-white border-gray-200 text-gray-900 max-h-60 overflow-auto">
                 {barbeiros.map((barbeiro) => (
                   <SelectItem
                     key={barbeiro.id}
                     value={barbeiro.id}
-                    className="hover:bg-gray-800"
+                    className="hover:bg-gray-100"
                   >
                     {barbeiro.nome}
                   </SelectItem>
@@ -183,20 +183,20 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           </div>
 
           <div>
-            <Label className="text-gray-300">Serviço</Label>
+            <Label className="text-gray-700">Serviço</Label>
             <Select
               value={formData.servico_id}
               onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}
             >
-              <SelectTrigger className="bg-gray-800 text-gray-200 border-gray-700 w-full">
+              <SelectTrigger className="bg-white text-gray-900 border-gray-300 w-full">
                 <SelectValue placeholder="Selecione um serviço" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-900 border-gray-700 text-gray-100 max-h-60 overflow-auto">
+              <SelectContent className="bg-white border-gray-200 text-gray-900 max-h-60 overflow-auto">
                 {servicos.map((servico) => (
                   <SelectItem
                     key={servico.id}
                     value={servico.id}
-                    className="hover:bg-gray-800"
+                    className="hover:bg-gray-100"
                   >
                     {servico.nome} - R$ {servico.preco.toFixed(2)}
                   </SelectItem>
@@ -210,14 +210,14 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
               type="button"
               variant="outline"
               onClick={onClose}
-              className="w-full sm:flex-1 border-gray-600 text-gray-200 hover:bg-gray-800"
+              className="w-full sm:flex-1 border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full sm:flex-1 bg-gradient-to-r from-urbana-gold to-yellow-500 hover:from-urbana-gold/90 hover:to-yellow-600 text-white"
             >
               {loading ? 'Salvando...' : 'Salvar'}
             </Button>

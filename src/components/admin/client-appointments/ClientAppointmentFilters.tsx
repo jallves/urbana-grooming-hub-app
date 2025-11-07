@@ -26,23 +26,23 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
           placeholder="Buscar por nome do cliente..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
+          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-urbana-gold focus:ring-urbana-gold"
         />
       </div>
 
       {/* Filtro de status */}
       <div className="flex items-center gap-2">
-        <Filter className="h-4 w-4 text-gray-400" />
+        <Filter className="h-4 w-4 text-gray-600" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40 bg-gray-800 border-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500">
+          <SelectTrigger className="w-40 bg-white border-gray-300 text-gray-900 focus:border-urbana-gold focus:ring-urbana-gold">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-gray-900 border-gray-700 text-gray-100">
-            <SelectItem value="all" className="hover:bg-gray-800">Todos</SelectItem>
-            <SelectItem value="agendado" className="hover:bg-gray-800">Agendado</SelectItem>
-            <SelectItem value="confirmado" className="hover:bg-gray-800">Confirmado</SelectItem>
-            <SelectItem value="concluido" className="hover:bg-gray-800">Concluído</SelectItem>
-            <SelectItem value="cancelado" className="hover:bg-gray-800">Cancelado</SelectItem>
+          <SelectContent className="bg-white border-gray-200 text-gray-900">
+            <SelectItem value="all" className="hover:bg-gray-100">Todos</SelectItem>
+            <SelectItem value="agendado" className="hover:bg-gray-100">Agendado</SelectItem>
+            <SelectItem value="confirmado" className="hover:bg-gray-100">Confirmado</SelectItem>
+            <SelectItem value="concluido" className="hover:bg-gray-100">Concluído</SelectItem>
+            <SelectItem value="cancelado" className="hover:bg-gray-100">Cancelado</SelectItem>
           </SelectContent>
         </Select>
       </div>

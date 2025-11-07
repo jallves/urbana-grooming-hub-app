@@ -76,16 +76,16 @@ const ClientAppointmentCompactTable: React.FC<ClientAppointmentCompactTableProps
   return (
     <>
       {/* Tabela desktop/tablet */}
-      <div className="hidden sm:block w-full bg-gray-900 rounded-lg shadow-sm border border-gray-800">
+      <div className="hidden sm:block w-full bg-white rounded-lg shadow-sm border border-gray-200">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-800 border-b border-gray-700">
-              <TableHead className="font-medium text-gray-200 py-3">Cliente</TableHead>
-              <TableHead className="font-medium text-gray-200 py-3 hidden sm:table-cell">Data/Hora</TableHead>
-              <TableHead className="font-medium text-gray-200 py-3 hidden md:table-cell">Serviço</TableHead>
-              <TableHead className="font-medium text-gray-200 py-3 hidden lg:table-cell">Barbeiro</TableHead>
-              <TableHead className="font-medium text-gray-200 py-3">Status</TableHead>
-              <TableHead className="font-medium text-gray-200 py-3 text-right">Ações</TableHead>
+            <TableRow className="bg-gray-50 border-b border-gray-200">
+              <TableHead className="font-medium text-gray-900 py-3">Cliente</TableHead>
+              <TableHead className="font-medium text-gray-900 py-3 hidden sm:table-cell">Data/Hora</TableHead>
+              <TableHead className="font-medium text-gray-900 py-3 hidden md:table-cell">Serviço</TableHead>
+              <TableHead className="font-medium text-gray-900 py-3 hidden lg:table-cell">Barbeiro</TableHead>
+              <TableHead className="font-medium text-gray-900 py-3">Status</TableHead>
+              <TableHead className="font-medium text-gray-900 py-3 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
