@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, ChevronRight, Crown } from 'lucide-react';
 import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemWelcome: React.FC = () => {
   const navigate = useNavigate();
@@ -23,9 +24,20 @@ const TotemWelcome: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/30 to-urbana-black flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative font-poppins overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative font-poppins overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+      </div>
+
       {/* Premium background effects with enhanced depth */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden z-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl opacity-60" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold-vibrant/20 rounded-full blur-3xl opacity-50" />
         <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-urbana-gold/10 rounded-full blur-2xl opacity-40" />

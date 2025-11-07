@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Scissors, Delete, Sparkles } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -54,26 +55,52 @@ const TotemLogin: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-urbana-black flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 relative font-poppins overflow-hidden">
-      {/* Background texture effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black opacity-50" />
+    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 relative font-poppins overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+      </div>
+
+      {/* Premium background effects with depth */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl opacity-40" />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.15) 1px, transparent 0)',
+            backgroundSize: '40px 40px'
+          }} />
+        </div>
+      </div>
       
       <div className="w-full max-w-sm sm:max-w-md md:max-w-lg space-y-3 sm:space-y-5 md:space-y-7 z-10">
         {/* Logo da Costa Urbana */}
         <div className="flex justify-center mb-2 sm:mb-4 animate-fade-in">
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold via-urbana-gold-vibrant to-urbana-gold blur-3xl opacity-40 animate-pulse" />
+          <div className="relative group w-16 h-16 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40">
+            {/* Multi-layered glow for depth */}
+            <div className="absolute -inset-4 bg-gradient-to-br from-urbana-gold via-urbana-gold-vibrant to-transparent blur-2xl opacity-30" />
+            <div className="absolute -inset-6 bg-urbana-gold/20 blur-3xl opacity-20" />
             
-            {/* Logo container */}
-            <div className="relative w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36 p-2 sm:p-3 md:p-4 rounded-2xl bg-urbana-black/50 backdrop-blur-sm border-2 border-urbana-gold/30 shadow-2xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 via-transparent to-transparent opacity-80" />
-              
-              <img 
-                src={costaUrbanaLogo} 
-                alt="Costa Urbana Barbearia" 
-                className="relative w-full h-full object-contain drop-shadow-2xl"
-              />
-            </div>
+            {/* Premium border frame */}
+            <div className="absolute inset-0 rounded-2xl border-2 border-urbana-gold/30" />
+            
+            <img 
+              src={costaUrbanaLogo} 
+              alt="Costa Urbana Logo" 
+              className="relative w-full h-full object-contain transition-all duration-300 drop-shadow-2xl"
+            />
+            
+            {/* Corner accents */}
+            <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-urbana-gold rounded-tl-lg" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-urbana-gold rounded-tr-lg" />
+            <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-urbana-gold rounded-bl-lg" />
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-urbana-gold rounded-br-lg" />
           </div>
         </div>
 
