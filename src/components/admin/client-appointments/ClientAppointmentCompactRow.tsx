@@ -1,6 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle } from 'lucide-react';
+import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle, Calendar, Clock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -60,54 +60,103 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 }) => {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'agendado': { label: 'Agendado', variant: 'default' as const },
-      'confirmado': { label: 'Confirmado', variant: 'default' as const },
-      'concluido': { label: 'Concluído', variant: 'default' as const },
-      'FINALIZADO': { label: 'Finalizado', variant: 'default' as const },
-      'cancelado': { label: 'Cancelado', variant: 'destructive' as const },
+      'agendado': { 
+        label: 'Agendado', 
+        className: 'bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200',
+        icon: '⏰'
+      },
+      'confirmado': { 
+        label: 'Confirmado', 
+        className: 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200',
+        icon: '✓'
+      },
+      'concluido': { 
+        label: 'Concluído', 
+        className: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200',
+        icon: '✓'
+      },
+      'FINALIZADO': { 
+        label: 'Finalizado', 
+        className: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200',
+        icon: '✓'
+      },
+      'cancelado': { 
+        label: 'Cancelado', 
+        className: 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200',
+        icon: '✗'
+      },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.agendado;
-    return <Badge variant={config.variant} className="text-xs">{config.label}</Badge>;
+    return (
+      <Badge className={`text-xs font-semibold px-3 py-1 border ${config.className} transition-colors duration-200`}>
+        <span className="mr-1">{config.icon}</span>
+        {config.label}
+      </Badge>
+    );
   };
 
   return (
     <>
       {/* DESKTOP (Tabela) */}
-      <TableRow className="hidden sm:table-row">
-        <TableCell className="py-3">
-          <span className="font-medium text-sm">
-            {appointment.painel_clientes?.nome || 'Nome não encontrado'}
-          </span>
-        </TableCell>
-
-        <TableCell className="py-3">
-          <div className="text-sm">
-            {format(new Date(appointment.data), 'dd/MM/yyyy')}
-            <div className="text-xs text-muted-foreground">{appointment.hora}</div>
+      <TableRow className="hidden sm:table-row hover:bg-gray-50 transition-colors duration-150">
+        <TableCell className="py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-sm">
+              {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
+            </div>
+            <div>
+              <div className="font-semibold text-sm text-gray-900">
+                {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+              </div>
+              <div className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</div>
+            </div>
           </div>
         </TableCell>
 
-        <TableCell className="py-3">
-          <div className="text-sm">
-            {appointment.painel_servicos?.nome || 'N/A'}
-            <div className="text-xs text-muted-foreground">
+        <TableCell className="py-4">
+          <div className="flex flex-col gap-1">
+            <div className="text-sm font-medium text-gray-900">
+              {format(new Date(appointment.data), 'dd/MM/yyyy')}
+            </div>
+            <div className="text-xs text-gray-500 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {appointment.hora}
+            </div>
+          </div>
+        </TableCell>
+
+        <TableCell className="py-4">
+          <div className="flex flex-col gap-1">
+            <div className="text-sm font-medium text-gray-900">
+              {appointment.painel_servicos?.nome || 'N/A'}
+            </div>
+            <div className="text-xs font-semibold text-green-600">
               R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
             </div>
           </div>
         </TableCell>
 
-        <TableCell className="py-3">
-          <span className="text-sm">
-            {appointment.painel_barbeiros?.nome || 'N/A'}
-          </span>
+        <TableCell className="py-4">
+          <div className="flex items-center gap-2">
+            {appointment.painel_barbeiros?.image_url && (
+              <img 
+                src={appointment.painel_barbeiros.image_url} 
+                alt={appointment.painel_barbeiros.nome}
+                className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+              />
+            )}
+            <span className="text-sm font-medium text-gray-900">
+              {appointment.painel_barbeiros?.nome || 'N/A'}
+            </span>
+          </div>
         </TableCell>
 
-        <TableCell className="py-3">
+        <TableCell className="py-4">
           {getStatusBadge(appointment.status)}
         </TableCell>
 
-        <TableCell className="text-right py-3">
+        <TableCell className="text-right py-4">
           <ActionMenu
             appointment={appointment}
             onEdit={onEdit}
@@ -118,21 +167,51 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
       </TableRow>
 
       {/* MOBILE (Card) */}
-      <div className="sm:hidden border rounded-lg p-4 mb-3">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="font-semibold text-base">
-            {appointment.painel_clientes?.nome || 'Nome não encontrado'}
-          </h4>
+      <div className="sm:hidden bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+              {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-base text-gray-900 truncate">
+                {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+              </h4>
+              <p className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</p>
+            </div>
+          </div>
           {getStatusBadge(appointment.status)}
         </div>
 
-        <div className="text-sm">
-          <div><span className="text-muted-foreground">Data:</span> {format(new Date(appointment.data), 'dd/MM/yyyy')} às {appointment.hora}</div>
-          <div><span className="text-muted-foreground">Serviço:</span> {appointment.painel_servicos?.nome || 'N/A'} - R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}</div>
-          <div><span className="text-muted-foreground">Barbeiro:</span> {appointment.painel_barbeiros?.nome || 'N/A'}</div>
+        <div className="space-y-2 bg-gray-50 rounded-lg p-3 mb-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <span className="font-medium text-gray-900">{format(new Date(appointment.data), 'dd/MM/yyyy')}</span>
+            <Clock className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
+            <span className="font-medium text-gray-900">{appointment.hora}</span>
+          </div>
+          <div className="flex items-start gap-2 text-sm">
+            <CheckCircle className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-medium text-gray-900">{appointment.painel_servicos?.nome || 'N/A'}</span>
+              <span className="ml-2 font-bold text-green-600">
+                R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            {appointment.painel_barbeiros?.image_url && (
+              <img 
+                src={appointment.painel_barbeiros.image_url} 
+                alt={appointment.painel_barbeiros.nome}
+                className="w-6 h-6 rounded-full object-cover border-2 border-white"
+              />
+            )}
+            <span className="font-medium text-gray-900">{appointment.painel_barbeiros?.nome || 'N/A'}</span>
+          </div>
         </div>
 
-        <div className="flex justify-end mt-3">
+        <div className="flex justify-end">
           <ActionMenu
             appointment={appointment}
             onEdit={onEdit}
@@ -158,44 +237,56 @@ const ActionMenu = ({
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-        <MoreHorizontal className="h-4 w-4" />
+      <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-gray-100 rounded-lg transition-colors">
+        <MoreHorizontal className="h-5 w-5 text-gray-600" />
         <span className="sr-only">Abrir menu</span>
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-48">
-      <DropdownMenuItem onClick={() => onEdit(appointment.id)}>
-        <Edit className="mr-2 h-4 w-4" />
-        <span className="text-sm">Editar</span>
+    <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200 shadow-lg">
+      <DropdownMenuItem 
+        onClick={() => onEdit(appointment.id)}
+        className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5"
+      >
+        <Edit className="mr-3 h-4 w-4 text-gray-600" />
+        <span className="text-sm font-medium">Editar Agendamento</span>
       </DropdownMenuItem>
 
       {appointment.status !== 'confirmado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
-        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'confirmado')}>
-          <Check className="mr-2 h-4 w-4" />
-          <span className="text-sm">Confirmar</span>
+        <DropdownMenuItem 
+          onClick={() => onStatusChange(appointment.id, 'confirmado')}
+          className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50 py-2.5"
+        >
+          <Check className="mr-3 h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-700">Confirmar</span>
         </DropdownMenuItem>
       )}
 
       {(appointment.status === 'confirmado' || appointment.status === 'agendado') && (
-        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'FINALIZADO')}>
-          <CheckCircle className="mr-2 h-4 w-4" />
-          <span className="text-sm">Finalizar Atendimento</span>
+        <DropdownMenuItem 
+          onClick={() => onStatusChange(appointment.id, 'FINALIZADO')}
+          className="cursor-pointer hover:bg-green-50 focus:bg-green-50 py-2.5"
+        >
+          <CheckCircle className="mr-3 h-4 w-4 text-green-600" />
+          <span className="text-sm font-medium text-green-700">Finalizar Atendimento</span>
         </DropdownMenuItem>
       )}
 
       {appointment.status !== 'cancelado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
-        <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelado')}>
-          <X className="mr-2 h-4 w-4" />
-          <span className="text-sm">Cancelar</span>
+        <DropdownMenuItem 
+          onClick={() => onStatusChange(appointment.id, 'cancelado')}
+          className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50 py-2.5"
+        >
+          <X className="mr-3 h-4 w-4 text-orange-600" />
+          <span className="text-sm font-medium text-orange-700">Cancelar</span>
         </DropdownMenuItem>
       )}
 
       <DropdownMenuItem
-        className="text-destructive"
+        className="cursor-pointer hover:bg-red-50 focus:bg-red-50 py-2.5 text-red-600"
         onClick={() => onDelete(appointment.id)}
       >
-        <Trash2 className="mr-2 h-4 w-4" />
-        <span className="text-sm">Excluir</span>
+        <Trash2 className="mr-3 h-4 w-4" />
+        <span className="text-sm font-medium">Excluir Permanentemente</span>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

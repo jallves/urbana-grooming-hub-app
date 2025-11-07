@@ -18,31 +18,41 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
   setStatusFilter
 }) => {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center w-full sm:w-auto">
       {/* Campo de busca */}
-      <div className="relative flex-1 sm:max-w-sm">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative flex-1 sm:min-w-[300px]">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           placeholder="Buscar por nome do cliente..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-10 h-10 border-gray-200 focus:border-urbana-gold focus:ring-urbana-gold/20 bg-white shadow-sm"
         />
       </div>
 
       {/* Filtro de status */}
-      <div className="flex items-center gap-2">
-        <Filter className="h-4 w-4" />
+      <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+        <Filter className="h-4 w-4 text-gray-500" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-[160px] border-0 focus:ring-0 h-6 font-medium">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="agendado">Agendado</SelectItem>
-            <SelectItem value="confirmado">Confirmado</SelectItem>
-            <SelectItem value="concluido">Concluído</SelectItem>
-            <SelectItem value="cancelado">Cancelado</SelectItem>
+          <SelectContent className="bg-white border-gray-200 shadow-lg">
+            <SelectItem value="all" className="cursor-pointer hover:bg-gray-50">
+              <span className="font-medium">📋 Todos</span>
+            </SelectItem>
+            <SelectItem value="agendado" className="cursor-pointer hover:bg-yellow-50">
+              <span className="font-medium">⏰ Agendado</span>
+            </SelectItem>
+            <SelectItem value="confirmado" className="cursor-pointer hover:bg-blue-50">
+              <span className="font-medium">✓ Confirmado</span>
+            </SelectItem>
+            <SelectItem value="concluido" className="cursor-pointer hover:bg-green-50">
+              <span className="font-medium">✓ Concluído</span>
+            </SelectItem>
+            <SelectItem value="cancelado" className="cursor-pointer hover:bg-red-50">
+              <span className="font-medium">✗ Cancelado</span>
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
