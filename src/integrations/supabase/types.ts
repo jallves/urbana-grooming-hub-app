@@ -1517,6 +1517,103 @@ export type Database = {
           },
         ]
       }
+      financial_records: {
+        Row: {
+          appointment_id: string | null
+          barber_id: string | null
+          category: string
+          client_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          discount_amount: number | null
+          due_date: string | null
+          gross_amount: number
+          id: string
+          metadata: Json | null
+          net_amount: number
+          notes: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          subcategory: string | null
+          tax_amount: number | null
+          transaction_date: string
+          transaction_number: string
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          barber_id?: string | null
+          category: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          discount_amount?: number | null
+          due_date?: string | null
+          gross_amount?: number
+          id?: string
+          metadata?: Json | null
+          net_amount?: number
+          notes?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          subcategory?: string | null
+          tax_amount?: number | null
+          transaction_date?: string
+          transaction_number: string
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          barber_id?: string | null
+          category?: string
+          client_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          discount_amount?: number | null
+          due_date?: string | null
+          gross_amount?: number
+          id?: string
+          metadata?: Json | null
+          net_amount?: number
+          notes?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          subcategory?: string | null
+          tax_amount?: number | null
+          transaction_date?: string
+          transaction_number?: string
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_records_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_records_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transactions: {
         Row: {
           amount: number
@@ -2147,6 +2244,68 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      payment_records: {
+        Row: {
+          amount: number
+          authorization_code: string | null
+          confirmed_at: string | null
+          created_at: string | null
+          financial_record_id: string
+          id: string
+          metadata: Json | null
+          payment_date: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_number: string
+          pix_key: string | null
+          pix_qr_code: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          authorization_code?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          financial_record_id: string
+          id?: string
+          metadata?: Json | null
+          payment_date?: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_number: string
+          pix_key?: string | null
+          pix_qr_code?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          authorization_code?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          financial_record_id?: string
+          id?: string
+          metadata?: Json | null
+          payment_date?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          payment_number?: string
+          pix_key?: string | null
+          pix_qr_code?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_records_financial_record_id_fkey"
+            columns: ["financial_record_id"]
+            isOneToOne: false
+            referencedRelation: "financial_records"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -3272,6 +3431,56 @@ export type Database = {
           },
         ]
       }
+      transaction_items: {
+        Row: {
+          created_at: string | null
+          discount: number | null
+          financial_record_id: string
+          id: string
+          item_id: string
+          item_name: string
+          item_type: string
+          metadata: Json | null
+          quantity: number
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          discount?: number | null
+          financial_record_id: string
+          id?: string
+          item_id: string
+          item_name: string
+          item_type: string
+          metadata?: Json | null
+          quantity?: number
+          subtotal: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string | null
+          discount?: number | null
+          financial_record_id?: string
+          id?: string
+          item_id?: string
+          item_name?: string
+          item_type?: string
+          metadata?: Json | null
+          quantity?: number
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_items_financial_record_id_fkey"
+            columns: ["financial_record_id"]
+            isOneToOne: false
+            referencedRelation: "financial_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -3451,7 +3660,40 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      commission_report: {
+        Row: {
+          average_rate: number | null
+          barber_email: string | null
+          barber_id: string | null
+          barber_name: string | null
+          period: string | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          total_commission: number | null
+          total_services: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_records_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_dashboard: {
+        Row: {
+          average_amount: number | null
+          category: string | null
+          period: string | null
+          total_amount: number | null
+          transaction_count: number | null
+          transaction_type:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_barber_user: {
@@ -3599,10 +3841,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_payment_number: { Args: never; Returns: string }
       generate_qr_checkin: {
         Args: { p_agendamento_id: string; p_secret: string }
         Returns: string
       }
+      generate_transaction_number: { Args: never; Returns: string }
       get_agendamentos_barbeiro_data: {
         Args: { barbeiro_id: string; data_agendamento: string }
         Returns: {
@@ -3805,12 +4049,37 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "barber" | "customer" | "manager"
+      payment_method:
+        | "cash"
+        | "credit_card"
+        | "debit_card"
+        | "pix"
+        | "bank_transfer"
+      payment_status:
+        | "pending"
+        | "processing"
+        | "paid"
+        | "partially_paid"
+        | "refunded"
+        | "cancelled"
       status_agendamento:
         | "AGENDADO"
         | "CHEGOU"
         | "EM_ATENDIMENTO"
         | "FINALIZADO"
         | "CANCELADO"
+      transaction_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "cancelled"
+        | "failed"
+      transaction_type:
+        | "revenue"
+        | "expense"
+        | "commission"
+        | "refund"
+        | "adjustment"
       user_type: "admin" | "user"
     }
     CompositeTypes: {
@@ -3940,12 +4209,41 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "barber", "customer", "manager"],
+      payment_method: [
+        "cash",
+        "credit_card",
+        "debit_card",
+        "pix",
+        "bank_transfer",
+      ],
+      payment_status: [
+        "pending",
+        "processing",
+        "paid",
+        "partially_paid",
+        "refunded",
+        "cancelled",
+      ],
       status_agendamento: [
         "AGENDADO",
         "CHEGOU",
         "EM_ATENDIMENTO",
         "FINALIZADO",
         "CANCELADO",
+      ],
+      transaction_status: [
+        "pending",
+        "processing",
+        "completed",
+        "cancelled",
+        "failed",
+      ],
+      transaction_type: [
+        "revenue",
+        "expense",
+        "commission",
+        "refund",
+        "adjustment",
       ],
       user_type: ["admin", "user"],
     },

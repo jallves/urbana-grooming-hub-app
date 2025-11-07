@@ -146,44 +146,54 @@ Deno.serve(async (req) => {
       console.log('✅ Comissão gerada com sucesso')
     }
 
-    // 7. Criar transação financeira - RECEITA
-    const { error: revenueError } = await supabase
-      .from('finance_transactions')
-      .insert({
-        tipo: 'receita',
-        categoria: 'servico',
-        descricao: `Atendimento finalizado - ${agendamento.servico?.nome}`,
-        valor: total_amount,
-        data: new Date().toISOString().split('T')[0],
-        agendamento_id: agendamento_id,
-        barbeiro_id: staff_id,
-        status: 'pago'
+    // 7. Criar transação financeira completa no novo sistema ERP
+    console.log('💰 Criando transação financeira no ERP...')
+    
+    // Preparar itens da transação
+    const items = [{
+      type: 'service',
+      id: agendamento.servico_id,
+      name: agendamento.servico?.nome,
+      quantity: 1,
+      price: service_price,
+      discount: 0
+    }]
+    
+    // Adicionar serviços extras aos itens
+    if (extras && extras.length > 0) {
+      extras.forEach((extra: any) => {
+        items.push({
+          type: 'service',
+          id: extra.service_id,
+          name: extra.painel_servicos?.nome,
+          quantity: 1,
+          price: extra.painel_servicos?.preco || 0,
+          discount: 0
+        })
       })
-
-    if (revenueError) {
-      console.error('❌ Erro ao criar transação de receita:', revenueError)
-    } else {
-      console.log('✅ Transação de receita criada')
     }
-
-    // 8. Criar transação financeira - DESPESA (Comissão)
-    const { error: expenseError } = await supabase
-      .from('finance_transactions')
-      .insert({
-        tipo: 'despesa',
-        categoria: 'comissao',
-        descricao: `Comissão ${commission_rate}% - ${agendamento.servico?.nome}`,
-        valor: total_commission,
-        data: new Date().toISOString().split('T')[0],
-        agendamento_id: agendamento_id,
-        barbeiro_id: staff_id,
-        status: 'pago'
-      })
-
-    if (expenseError) {
-      console.error('❌ Erro ao criar transação de despesa:', expenseError)
+    
+    // Chamar função para criar transação financeira
+    const { data: financialResult, error: financialError } = await supabase.functions.invoke(
+      'create-financial-transaction',
+      {
+        body: {
+          appointment_id: agendamento_id,
+          client_id: agendamento.cliente_id,
+          barber_id: staff_id,
+          items,
+          payment_method: 'cash', // Default, pode ser atualizado depois
+          discount_amount: 0,
+          notes: `Atendimento finalizado - Fonte: ${source || 'painel'}`
+        }
+      }
+    )
+    
+    if (financialError) {
+      console.error('❌ Erro ao criar transação financeira:', financialError)
+      // Não falhar o processo se o financeiro der erro
     } else {
-      console.log('✅ Transação de despesa criada')
+      console.log('✅ Transação financeira criada:', financialResult)
     }
 
     // 9. Notificar barbeiro via Realtime
