@@ -118,7 +118,7 @@ const TotemConfirmation: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30 shadow-2xl">
           {/* Client Info */}
           <div className="space-y-4 sm:space-y-6 md:space-y-8">
             <div className="flex items-center gap-3 sm:gap-4 md:gap-6 pb-4 sm:pb-6 md:pb-8 border-b-2 border-urbana-gold/20">

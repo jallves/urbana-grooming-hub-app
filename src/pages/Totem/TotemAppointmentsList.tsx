@@ -87,10 +87,10 @@ const TotemAppointmentsList: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { label: string; className: string }> = {
-      agendado: { label: 'Agendado', className: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-      confirmado: { label: 'Confirmado', className: 'bg-green-500/20 text-green-300 border-green-500/30' },
-      concluido: { label: 'Concluído', className: 'bg-urbana-gold/20 text-urbana-gold border-urbana-gold/30' },
-      cancelado: { label: 'Cancelado', className: 'bg-red-500/20 text-red-300 border-red-500/30' },
+      agendado: { label: 'Agendado', className: 'bg-blue-500/20 text-blue-300 border-2 border-blue-500/40' },
+      confirmado: { label: 'Confirmado', className: 'bg-emerald-500/20 text-emerald-300 border-2 border-emerald-500/40' },
+      concluido: { label: 'Concluído', className: 'bg-urbana-gold/20 text-urbana-gold border-2 border-urbana-gold/40' },
+      cancelado: { label: 'Cancelado', className: 'bg-red-500/20 text-red-300 border-2 border-red-500/40' },
     };
     return badges[status] || badges.agendado;
   };
@@ -262,7 +262,7 @@ const TotemAppointmentsList: React.FC = () => {
                     ? 'border-green-500/50 bg-green-500/5'
                     : allowCheckIn
                     ? 'border-urbana-gold/50 cursor-pointer active:border-urbana-gold active:bg-urbana-gold/10 active:scale-98'
-                    : 'border-urbana-gray/30 opacity-75 cursor-not-allowed'
+                    : 'border-urbana-gold/20 opacity-75 cursor-not-allowed'
                 }`}
               >
                 {/* Check-in já realizado - Badge no topo */}

@@ -390,7 +390,7 @@ const TotemCheckoutSearch: React.FC = () => {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-3 sm:p-4 bg-urbana-black/40 rounded-lg">
-                  <p className="text-sm text-urbana-gray-light mb-1">Forma de Pagamento</p>
+                  <p className="text-sm text-urbana-light/60 mb-1">Forma de Pagamento</p>
                   <div className="flex items-center gap-2">
                     {checkoutInfo.payment_method === 'pix' ? (
                       <Smartphone className="w-5 h-5 text-urbana-gold" />
@@ -404,21 +404,21 @@ const TotemCheckoutSearch: React.FC = () => {
                 </div>
                 
                 <div className="p-3 sm:p-4 bg-urbana-black/40 rounded-lg">
-                  <p className="text-sm text-urbana-gray-light mb-1">Status do Pagamento</p>
+                  <p className="text-sm text-urbana-light/60 mb-1">Status do Pagamento</p>
                   <p className={`text-lg sm:text-xl font-bold ${getPaymentStatusLabel(checkoutInfo.payment_status).color}`}>
                     {getPaymentStatusLabel(checkoutInfo.payment_status).label}
                   </p>
                 </div>
                 
                 <div className="p-3 sm:p-4 bg-urbana-black/40 rounded-lg">
-                  <p className="text-sm text-urbana-gray-light mb-1">Valor Pago</p>
+                  <p className="text-sm text-urbana-light/60 mb-1">Valor Pago</p>
                   <p className="text-2xl sm:text-3xl font-black text-urbana-gold">
                     R$ {checkoutInfo.payment_amount.toFixed(2)}
                   </p>
                 </div>
                 
                 <div className="p-3 sm:p-4 bg-urbana-black/40 rounded-lg">
-                  <p className="text-sm text-urbana-gray-light mb-1">Data/Hora do Pagamento</p>
+                  <p className="text-sm text-urbana-light/60 mb-1">Data/Hora do Pagamento</p>
                   <p className="text-base sm:text-lg font-bold text-urbana-light">
                     {format(new Date(checkoutInfo.paid_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </p>
@@ -455,7 +455,7 @@ const TotemCheckoutSearch: React.FC = () => {
           </Card>
         ) : (
           // Formulário de busca normal
-          <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
+          <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30 shadow-2xl">
           <div className="space-y-3 sm:space-y-4">
             <label className="text-xl sm:text-2xl md:text-3xl font-semibold text-urbana-light flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-urbana-gold/10 flex items-center justify-center">
@@ -475,7 +475,7 @@ const TotemCheckoutSearch: React.FC = () => {
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gray/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+                className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
                 variant="outline"
               >
                 {num}
@@ -483,20 +483,20 @@ const TotemCheckoutSearch: React.FC = () => {
             ))}
             <Button
               onClick={handleClear}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-urbana-gray/30 active:border-destructive text-urbana-light active:text-destructive transition-all duration-100 active:scale-95"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-destructive/30 active:border-destructive text-urbana-light active:text-destructive transition-all duration-100 active:scale-95"
             >
               Limpar
             </Button>
             <Button
               onClick={() => handleNumberClick('0')}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gray/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-2 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
               variant="outline"
             >
               0
             </Button>
             <Button
               onClick={handleBackspace}
-              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-urbana-gray/30 active:border-destructive text-urbana-light transition-all duration-100 active:scale-95"
+              className="h-14 sm:h-18 md:h-20 lg:h-24 text-2xl sm:text-3xl md:text-4xl font-bold bg-urbana-black/50 active:bg-destructive/30 border-2 border-destructive/30 active:border-destructive text-urbana-light transition-all duration-100 active:scale-95"
               variant="outline"
             >
               ⌫
