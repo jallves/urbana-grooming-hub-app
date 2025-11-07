@@ -6,6 +6,7 @@ import { CheckCircle2, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentPix: React.FC = () => {
   const navigate = useNavigate();
@@ -48,8 +49,24 @@ const TotemProductPaymentPix: React.FC = () => {
   const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${sale.pix_key || '31996857008'}52040000530398654${sale.total.toFixed(2)}5802BR5925COSTA URBANA BARBEARIA6014BELO HORIZONTE62070503***6304${sale.transaction_id}`;
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/20 to-urbana-black flex items-center justify-center p-4 font-poppins">
-      <Card className="w-full max-w-2xl p-6 sm:p-8 space-y-6 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30">
+    <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-4 font-poppins relative overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+      </div>
+
+      {/* Premium background effects */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl opacity-40" />
+      </div>
+
+      <Card className="relative w-full max-w-2xl p-6 sm:p-8 space-y-6 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30 z-10">
         <h1 className="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold">
           Pagamento via PIX
         </h1>
