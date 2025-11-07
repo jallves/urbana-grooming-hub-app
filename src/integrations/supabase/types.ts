@@ -2134,7 +2134,7 @@ export type Database = {
           {
             foreignKeyName: "fk_painel_barbeiros_staff"
             columns: ["staff_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
