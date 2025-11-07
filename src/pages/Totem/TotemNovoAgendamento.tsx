@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays, setHours, setMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface Service {
   id: string;
@@ -488,8 +489,21 @@ const TotemNovoAgendamento: React.FC = () => {
   );
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 overflow-hidden landscape:py-2 landscape:px-4">
-      {/* Header */}
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 overflow-hidden landscape:py-2 landscape:px-4 relative">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay for better text readability */}
+        <div className="absolute inset-0 bg-urbana-black/60" />
+      </div>
+
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Header */}
       <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 landscape:mb-2">
         <Button
           onClick={() => {
@@ -516,34 +530,35 @@ const TotemNovoAgendamento: React.FC = () => {
         </div>
       </div>
 
-      {/* Progress Indicator */}
-      <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-4 mb-4 sm:mb-6 md:mb-8 landscape:mb-2">
-        {['service', 'barber', 'datetime'].map((stepName, index) => (
-          <div key={stepName} className="flex items-center gap-1 sm:gap-2">
-            <div
-              className={`
-                w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm md:text-base transition-all landscape:w-6 landscape:h-6 landscape:text-xs
-                ${step === stepName || (index < ['service', 'barber', 'datetime'].indexOf(step))
-                  ? 'bg-urbana-gold text-urbana-black'
-                  : 'bg-urbana-black-soft border-2 border-urbana-gray/30 text-urbana-light/50'
-                }
-              `}
-            >
-              {index + 1}
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-center gap-1 sm:gap-2 md:gap-4 mb-4 sm:mb-6 md:mb-8 landscape:mb-2">
+          {['service', 'barber', 'datetime'].map((stepName, index) => (
+            <div key={stepName} className="flex items-center gap-1 sm:gap-2">
+              <div
+                className={`
+                  w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm md:text-base transition-all landscape:w-6 landscape:h-6 landscape:text-xs
+                  ${step === stepName || (index < ['service', 'barber', 'datetime'].indexOf(step))
+                    ? 'bg-urbana-gold text-urbana-black'
+                    : 'bg-urbana-black-soft border-2 border-urbana-gray/30 text-urbana-light/50'
+                  }
+                `}
+              >
+                {index + 1}
+              </div>
+              {index < 2 && (
+                <div className={`w-6 sm:w-8 md:w-12 h-0.5 sm:h-1 rounded-full landscape:w-4 ${index < ['service', 'barber', 'datetime'].indexOf(step) ? 'bg-urbana-gold' : 'bg-urbana-gray/30'}`} />
+              )}
             </div>
-            {index < 2 && (
-              <div className={`w-6 sm:w-8 md:w-12 h-0.5 sm:h-1 rounded-full landscape:w-4 ${index < ['service', 'barber', 'datetime'].indexOf(step) ? 'bg-urbana-gold' : 'bg-urbana-gray/30'}`} />
-            )}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
-          {step === 'service' && renderServiceSelection()}
-          {step === 'barber' && renderBarberSelection()}
-          {step === 'datetime' && renderDateTimeSelection()}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            {step === 'service' && renderServiceSelection()}
+            {step === 'barber' && renderBarberSelection()}
+            {step === 'datetime' && renderDateTimeSelection()}
+          </div>
         </div>
       </div>
     </div>
