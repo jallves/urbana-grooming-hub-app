@@ -4,13 +4,17 @@ import ClientAppointmentStats from './ClientAppointmentStats';
 import ClientAppointmentCompactTable from './ClientAppointmentCompactTable';
 import ClientAppointmentFilters from './ClientAppointmentFilters';
 import ClientAppointmentEditDialog from './ClientAppointmentEditDialog';
+import ClientAppointmentCreateDialog from './ClientAppointmentCreateDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 const ClientAppointmentDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   const {
     appointments,
@@ -38,6 +42,14 @@ const ClientAppointmentDashboard: React.FC = () => {
     setSelectedAppointment(null);
   }, []);
 
+  const handleCreateAppointment = useCallback(() => {
+    setIsCreateDialogOpen(true);
+  }, []);
+
+  const handleCloseCreateDialog = useCallback(() => {
+    setIsCreateDialogOpen(false);
+  }, []);
+
   return (
     <div className="w-full max-w-none h-full bg-gradient-to-br from-gray-50 to-gray-100 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header com gradiente */}
@@ -58,6 +70,13 @@ const ClientAppointmentDashboard: React.FC = () => {
                 Gerencie todos os agendamentos dos clientes em tempo real
               </p>
             </div>
+            <Button
+              onClick={handleCreateAppointment}
+              className="bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Agendamento
+            </Button>
           </div>
         </div>
       </div>
@@ -97,6 +116,13 @@ const ClientAppointmentDashboard: React.FC = () => {
           />
         </CardContent>
       </Card>
+
+      {/* Dialog de criação */}
+      <ClientAppointmentCreateDialog
+        isOpen={isCreateDialogOpen}
+        onClose={handleCloseCreateDialog}
+        onCreate={handleCloseCreateDialog}
+      />
 
       {/* Dialog de edição */}
       {isEditDialogOpen && selectedAppointment && (

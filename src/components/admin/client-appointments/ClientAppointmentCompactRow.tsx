@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle, Calendar, Clock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PainelAgendamento {
   id: string;
@@ -234,8 +244,12 @@ const ActionMenu = ({
   onEdit: (id: string) => void;
   onStatusChange: (id: string, status: string) => void;
   onDelete: (id: string) => void;
-}) => (
-  <DropdownMenu>
+}) => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  return (
+    <>
+      <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-gray-100 rounded-lg transition-colors">
         <MoreHorizontal className="h-5 w-5 text-gray-600" />
@@ -283,13 +297,39 @@ const ActionMenu = ({
 
       <DropdownMenuItem
         className="cursor-pointer hover:bg-red-50 focus:bg-red-50 py-2.5 text-red-600"
-        onClick={() => onDelete(appointment.id)}
+        onClick={() => setIsDeleteDialogOpen(true)}
       >
         <Trash2 className="mr-3 h-4 w-4" />
         <span className="text-sm font-medium">Excluir Permanentemente</span>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
-);
+
+  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+        <AlertDialogDescription>
+          Tem certeza que deseja excluir este agendamento de{' '}
+          <strong>{appointment.painel_clientes?.nome}</strong>? Esta ação não pode ser desfeita.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+        <AlertDialogAction
+          onClick={() => {
+            onDelete(appointment.id);
+            setIsDeleteDialogOpen(false);
+          }}
+          className="bg-red-600 hover:bg-red-700"
+        >
+          Excluir
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+</>
+  );
+};
 
 export default ClientAppointmentCompactRow;
