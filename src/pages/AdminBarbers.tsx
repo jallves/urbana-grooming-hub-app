@@ -11,7 +11,7 @@ const AdminBarbers: React.FC = () => {
 
   return (
     <AdminLayout title="Equipe">
-      <div className="w-full space-y-4 sm:space-y-6">
+      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
         <Tabs 
           value={activeTab} 
           onValueChange={(value) => setActiveTab(value as 'barbers' | 'access')}

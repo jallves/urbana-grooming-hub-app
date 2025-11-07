@@ -6,7 +6,7 @@ import ProductManagement from '@/components/admin/products/ProductManagement';
 const AdminProducts: React.FC = () => {
   return (
     <AdminLayout title="Produtos e Serviços">
-      <div className="w-full h-full bg-white flex flex-col">
+      <div className="w-full max-w-none h-full bg-white flex flex-col">
         <div className="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
           <h1 className="text-xl sm:text-2xl font-playfair text-gray-900">
             🧴 Gestão de Produtos e Serviços

@@ -5,8 +5,8 @@ import AppointmentList from '@/components/admin/appointments/list/AppointmentLis
 export default function AdminAppointments() {
   return (
     <AdminLayout title="Agendamentos">
-      <div className="w-full h-full bg-white flex flex-col">
-        <div className="flex-1 overflow-auto p-4 sm:p-6">
+      <div className="w-full max-w-none h-full bg-white flex flex-col">
+        <div className="flex-1 overflow-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="space-y-6">
             {/* Cabeçalho */}
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">

@@ -118,7 +118,7 @@ const AdminSupport: React.FC = () => {
   if (loading) {
     return (
       <AdminLayout title="Suporte">
-        <div className="w-full h-full bg-white overflow-hidden">
+        <div className="w-full max-w-none h-full bg-white overflow-hidden">
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-urbana-gold"></div>
           </div>
@@ -129,7 +129,7 @@ const AdminSupport: React.FC = () => {
 
   return (
     <AdminLayout title="Suporte">
-      <div className="w-full h-full bg-white overflow-hidden">
+      <div className="w-full max-w-none h-full bg-white overflow-hidden">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex-shrink-0 p-3 sm:p-4 border-b border-gray-200">

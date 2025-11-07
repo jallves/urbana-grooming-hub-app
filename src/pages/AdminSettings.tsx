@@ -12,7 +12,7 @@ const AdminSettings: React.FC = () => {
   
   return (
     <AdminLayout title="Configurações">
-      <div className="w-full h-full px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3 bg-gray-100 border-b border-gray-200 h-14 rounded-t-lg">
