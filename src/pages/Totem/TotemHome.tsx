@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, CreditCard, ShoppingBag, CheckCircle, Sparkles } from 'lucide-react';
+import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
@@ -52,7 +52,7 @@ const TotemHome: React.FC = () => {
 
   const menuItems = [
     {
-      icon: Calendar,
+      icon: CalendarPlus,
       title: 'Novo Agendamento',
       subtitle: 'Agende seu horário',
       onClick: () => navigate('/totem/search', { state: { action: 'novo-agendamento' } }),
@@ -62,7 +62,7 @@ const TotemHome: React.FC = () => {
       glowColor: 'shadow-yellow-500/50',
     },
     {
-      icon: CheckCircle,
+      icon: UserCheck,
       title: 'Check-in',
       subtitle: 'Já Cheguei',
       onClick: () => navigate('/totem/search', { state: { action: 'check-in' } }),
@@ -72,7 +72,7 @@ const TotemHome: React.FC = () => {
       glowColor: 'shadow-green-500/50',
     },
     {
-      icon: CreditCard,
+      icon: Wallet,
       title: 'Check-out',
       subtitle: 'Pagamento',
       onClick: () => navigate('/totem/checkout-search'),
@@ -82,7 +82,7 @@ const TotemHome: React.FC = () => {
       glowColor: 'shadow-blue-500/50',
     },
     {
-      icon: ShoppingBag,
+      icon: Package,
       title: 'Produtos',
       subtitle: 'E Cuidados',
       onClick: () => navigate('/totem/search'),
