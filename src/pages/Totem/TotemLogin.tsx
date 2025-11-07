@@ -146,40 +146,36 @@ const TotemLogin: React.FC = () => {
           {/* Keypad - Transparent with Black Buttons & Gold Text */}
           <div className="relative grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <Button
+              <button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
-                variant="ghost"
-                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-urbana-gold/30 active:border-urbana-gold text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
                 disabled={isLoading}
+                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">{num}</span>
-              </Button>
+              </button>
             ))}
-            <Button
+            <button
               onClick={handleClear}
-              variant="ghost"
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-red-500/30 active:border-red-500/50 text-urbana-gold hover:text-red-400 active:text-red-300 transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
               disabled={isLoading}
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">Limpar</span>
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={() => handleNumberClick('0')}
-              variant="ghost"
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-urbana-gold/30 active:border-urbana-gold text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
               disabled={isLoading}
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">0</span>
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleBackspace}
-              variant="ghost"
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-black/90 hover:bg-black active:bg-black/80 border-2 border-transparent hover:border-orange-500/30 active:border-orange-500/50 text-urbana-gold hover:text-orange-400 active:text-orange-300 transition-all duration-150 active:scale-95 rounded-xl shadow-2xl overflow-hidden"
               disabled={isLoading}
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-black hover:bg-black/90 active:bg-black/70 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-150 active:scale-95 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Delete className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]" />
-            </Button>
+            </button>
           </div>
 
           {/* Login Button */}
