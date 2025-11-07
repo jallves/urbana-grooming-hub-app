@@ -92,17 +92,24 @@ const TotemLogin: React.FC = () => {
         </div>
 
         {/* PIN Card */}
-        <Card className="p-2 sm:p-4 md:p-6 bg-card/50 backdrop-blur-sm border-urbana-gold/20 shadow-2xl">
+        <Card className="relative p-2 sm:p-4 md:p-6 bg-urbana-black/40 backdrop-blur-xl border-2 border-urbana-gold/40 shadow-2xl shadow-urbana-gold/20 overflow-hidden">
+          {/* Glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 via-transparent to-urbana-gold-vibrant/5 pointer-events-none" />
+          
           {/* PIN Display */}
-          <div className="mb-3 sm:mb-5 md:mb-7">
+          <div className="relative mb-3 sm:mb-5 md:mb-7">
             <div className="flex justify-center gap-2 sm:gap-3 md:gap-4">
               {[0, 1, 2, 3].map((index) => (
                 <div
                   key={index}
-                  className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl border-2 border-urbana-gold/30 bg-urbana-black/50 flex items-center justify-center transition-all duration-200 active:scale-95 active:border-urbana-gold shadow-lg shadow-urbana-gold/10"
+                  className="relative w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-xl border-2 border-urbana-gold/40 bg-gradient-to-br from-urbana-black/80 to-urbana-black-soft/60 flex items-center justify-center transition-all duration-200 shadow-lg shadow-urbana-gold/20 overflow-hidden group"
                 >
+                  {/* Inner glow when filled */}
                   {pin[index] && (
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-urbana-gold shadow-lg shadow-urbana-gold/50 animate-fade-in" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-vibrant/10 animate-fade-in" />
+                  )}
+                  {pin[index] && (
+                    <div className="relative w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 rounded-full bg-gradient-to-br from-urbana-gold via-urbana-gold-vibrant to-urbana-gold-dark shadow-lg shadow-urbana-gold/60 animate-fade-in" />
                   )}
                 </div>
               ))}
@@ -110,41 +117,45 @@ const TotemLogin: React.FC = () => {
           </div>
 
           {/* Keypad */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-4">
+          <div className="relative grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <Button
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
                 variant="outline"
-                className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-urbana-gold/10"
+                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black/90 via-urbana-black-soft/80 to-urbana-black/90 hover:from-urbana-gold/20 hover:to-urbana-gold-vibrant/10 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/40 hover:border-urbana-gold/60 active:border-urbana-gold text-urbana-light hover:text-urbana-gold-light active:text-urbana-gold transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-urbana-gold/20 hover:shadow-urbana-gold/30 overflow-hidden group"
                 disabled={isLoading}
               >
-                {num}
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 via-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative drop-shadow-lg">{num}</span>
               </Button>
             ))}
             <Button
               onClick={handleClear}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-gradient-to-br from-red-500/20 to-red-600/20 active:from-red-500/40 active:to-red-600/40 border-2 border-red-500/40 active:border-red-500 text-red-300 active:text-red-100 transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-red-500/10"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-gradient-to-br from-red-900/40 to-red-950/60 hover:from-red-800/50 hover:to-red-900/70 active:from-red-700/60 active:to-red-800/80 border-2 border-red-500/50 hover:border-red-400/70 active:border-red-400 text-red-200 hover:text-red-100 active:text-white transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-red-500/20 hover:shadow-red-500/30 overflow-hidden group"
               disabled={isLoading}
             >
-              Limpar
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="relative drop-shadow-lg">Limpar</span>
             </Button>
             <Button
               onClick={() => handleNumberClick('0')}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-urbana-gold/10"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-br from-urbana-black/90 via-urbana-black-soft/80 to-urbana-black/90 hover:from-urbana-gold/20 hover:to-urbana-gold-vibrant/10 active:from-urbana-gold/30 active:to-urbana-gold-vibrant/30 border-2 border-urbana-gold/40 hover:border-urbana-gold/60 active:border-urbana-gold text-urbana-light hover:text-urbana-gold-light active:text-urbana-gold transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-urbana-gold/20 hover:shadow-urbana-gold/30 overflow-hidden group"
               disabled={isLoading}
             >
-              0
+              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 via-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="relative drop-shadow-lg">0</span>
             </Button>
             <Button
               onClick={handleBackspace}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 bg-gradient-to-br from-orange-500/20 to-orange-600/20 active:from-orange-500/40 active:to-orange-600/40 border-2 border-orange-500/40 active:border-orange-500 text-orange-300 active:text-orange-100 transition-all duration-100 active:scale-95 rounded-lg shadow-lg shadow-orange-500/10"
+              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-gradient-to-br from-orange-900/40 to-orange-950/60 hover:from-orange-800/50 hover:to-orange-900/70 active:from-orange-700/60 active:to-orange-800/80 border-2 border-orange-500/50 hover:border-orange-400/70 active:border-orange-400 text-orange-200 hover:text-orange-100 active:text-white transition-all duration-150 active:scale-95 rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 overflow-hidden group"
               disabled={isLoading}
             >
-              <Delete className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-urbana-light" />
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <Delete className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 drop-shadow-lg" />
             </Button>
           </div>
 
@@ -152,16 +163,19 @@ const TotemLogin: React.FC = () => {
           <Button
             onClick={handleLogin}
             disabled={pin.length !== 4 || isLoading}
-            className="w-full h-10 sm:h-14 md:h-16 lg:h-20 text-base sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black active:from-urbana-gold-dark active:to-urbana-gold shadow-lg shadow-urbana-gold/30 active:shadow-urbana-gold/50 transition-all duration-100 disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
+            className="relative w-full h-10 sm:h-14 md:h-16 lg:h-20 text-base sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold-dark hover:from-urbana-gold-dark hover:via-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black shadow-2xl shadow-urbana-gold/40 hover:shadow-urbana-gold/60 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-98 rounded-xl overflow-hidden group"
           >
-            {isLoading ? (
-              <div className="flex items-center gap-1 sm:gap-2">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
-                Entrando...
-              </div>
-            ) : (
-              'ENTRAR'
-            )}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+            <span className="relative drop-shadow-lg">
+              {isLoading ? (
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
+                  Entrando...
+                </div>
+              ) : (
+                'ENTRAR'
+              )}
+            </span>
           </Button>
         </Card>
 
