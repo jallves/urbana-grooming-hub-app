@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Search, Phone, Sparkles, Loader2, Delete } from 'lucide-react';
+import { ArrowLeft, Search, Phone, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { TotemNumericKeypad } from '@/components/totem/TotemNumericKeypad';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemSearch: React.FC = () => {
@@ -256,42 +257,11 @@ const TotemSearch: React.FC = () => {
           </div>
 
           {/* Numeric Keypad - Transparent with Gold Text */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-              <button
-                key={num}
-                onClick={() => handleNumberClick(num.toString())}
-                className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg"
-                style={{ touchAction: 'manipulation' }}
-              >
-                <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">{num}</span>
-              </button>
-            ))}
-            
-            <button
-              onClick={handleClear}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-[10px] sm:text-xs md:text-sm font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">Limpar</span>
-            </button>
-            
-            <button
-              onClick={() => handleNumberClick('0')}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <span className="relative drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]">0</span>
-            </button>
-            
-            <button
-              onClick={handleBackspace}
-              className="relative h-10 sm:h-14 md:h-16 lg:h-20 bg-transparent hover:bg-urbana-gold/10 active:bg-urbana-gold/20 text-urbana-gold hover:text-urbana-gold-light active:text-urbana-gold-vibrant transition-all duration-100 active:scale-94 rounded-lg"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <Delete className="relative w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 drop-shadow-[0_2px_8px_rgba(197,161,91,0.5)]" />
-            </button>
-          </div>
+          <TotemNumericKeypad
+            onNumberClick={handleNumberClick}
+            onClear={handleClear}
+            onBackspace={handleBackspace}
+          />
 
           {/* Search Button */}
           <Button
