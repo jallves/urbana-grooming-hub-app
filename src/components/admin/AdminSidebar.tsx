@@ -42,20 +42,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
 
   return (
     <>
-      {/* Overlay no mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Sidebar */}
+      {/* Sidebar sempre flutuante (fixed) */}
       <div
         className={`
-          fixed lg:static top-0 left-0 h-full lg:h-auto w-72 lg:w-64 bg-white border-r border-gray-200 flex flex-col z-50 transform transition-transform duration-300 shadow-xl lg:shadow-none
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
-          lg:translate-x-0
+          fixed top-0 left-0 h-screen w-72 lg:w-64 bg-white border-r border-gray-200 flex flex-col z-50 transform transition-transform duration-300 shadow-xl
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Header */}
