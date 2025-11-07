@@ -1,85 +1,21 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Image, Users } from "lucide-react";
-import ShopSettingsForm from '@/components/admin/settings/ShopSettingsForm';
-import UserManagement from '@/components/admin/settings/UserManagement';
-import BannerGallerySettings from '@/components/admin/settings/BannerGallerySettings';
+import { Settings } from "lucide-react";
 
 const AdminSettings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('shop');
-  
   return (
     <AdminLayout title="Configurações">
-      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-100 border-b border-gray-200 h-14 rounded-t-lg">
-              <TabsTrigger 
-                value="shop" 
-                className="flex items-center gap-2 py-3 px-4 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700 hover:text-gray-900 transition-all duration-200"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Barbearia</span>
-                <span className="sm:hidden">Barb.</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="media" 
-                className="flex items-center gap-2 py-3 px-4 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700 hover:text-gray-900 transition-all duration-200"
-              >
-                <Image className="h-4 w-4" />
-                <span className="hidden sm:inline">Banners & Galeria</span>
-                <span className="sm:hidden">Mídia</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="users" 
-                className="flex items-center gap-2 py-3 px-4 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700 hover:text-gray-900 transition-all duration-200"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Usuários</span>
-                <span className="sm:hidden">User.</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <div className="flex-1 overflow-hidden">
-              <TabsContent value="shop" className="h-full m-0 overflow-hidden">
-                <div className="h-full flex flex-col">
-                  <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h3 className="text-lg font-semibold text-gray-900">Configurações da Barbearia</h3>
-                    <p className="text-sm text-gray-600">Gerencie as configurações gerais e personalize a aparência do seu site</p>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-6 py-4">
-                    <ShopSettingsForm />
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="media" className="h-full m-0 overflow-hidden">
-                <div className="h-full flex flex-col">
-                  <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h3 className="text-lg font-semibold text-gray-900">Banners e Galeria</h3>
-                    <p className="text-sm text-gray-600">Gerencie imagens, banners e galeria do site</p>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-6 py-4">
-                    <BannerGallerySettings />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="users" className="h-full m-0 overflow-hidden">
-                <div className="h-full flex flex-col">
-                  <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
-                    <h3 className="text-lg font-semibold text-gray-900">Gestão de Usuários</h3>
-                    <p className="text-sm text-gray-600">Gerencie usuários e permissões do sistema</p>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-6 py-4">
-                    <UserManagement />
-                  </div>
-                </div>
-              </TabsContent>
+      <div className="w-full h-full flex items-center justify-center px-4">
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="p-6 rounded-full bg-gradient-to-br from-urbana-gold/20 to-yellow-500/20">
+              <Settings className="h-16 w-16 text-urbana-gold" />
             </div>
-          </Tabs>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Configurações</h2>
+          <p className="text-gray-500 max-w-md">
+            Este módulo está em desenvolvimento e será disponibilizado em breve.
+          </p>
         </div>
       </div>
     </AdminLayout>
