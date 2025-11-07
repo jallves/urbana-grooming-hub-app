@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle, User, Scissors, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, CheckCircle, User, Scissors, Clock, Calendar, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -104,114 +104,142 @@ const TotemConfirmation: React.FC = () => {
           alt="Barbearia" 
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+        <div className="absolute inset-0 bg-urbana-black/60" />
       </div>
 
       {/* Premium background effects */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl opacity-40" />
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl" />
       </div>
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 z-10">
+      <div className="flex items-center justify-between mb-4 md:mb-6 z-10">
         <Button
           onClick={() => navigate('/totem/search')}
           variant="ghost"
           size="lg"
-          className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
+          className="h-12 md:h-14 px-4 md:px-6 text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20 transition-all active:scale-95"
         >
-          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
+          <ArrowLeft className="w-5 h-5 md:w-6 md:h-6 mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light text-center flex-1">
-          Confirme seus dados
-        </h1>
-        <div className="w-16 sm:w-24 md:w-32"></div>
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-urbana-gold" />
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light">
+            Confirme seus dados
+          </h1>
+          <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-urbana-gold" />
+        </div>
+        <div className="w-20 md:w-32"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30 shadow-2xl">
+      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-4">
+        <Card className="w-full max-w-2xl md:max-w-3xl lg:max-w-5xl p-6 md:p-8 lg:p-10 space-y-6 md:space-y-8 bg-gradient-to-br from-urbana-black-soft/95 via-urbana-black/90 to-urbana-black-soft/95 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20 animate-scale-in">
           {/* Client Info */}
-          <div className="space-y-4 sm:space-y-6 md:space-y-8">
-            <div className="flex items-center gap-3 sm:gap-4 md:gap-6 pb-4 sm:pb-6 md:pb-8 border-b-2 border-urbana-gold/20">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl sm:rounded-2xl bg-urbana-gold/10 flex items-center justify-center">
-                <User className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
+          <div className="space-y-6 md:space-y-8">
+            <div className="relative flex items-center gap-4 md:gap-6 pb-6 md:pb-8 border-b-2 border-urbana-gold/30">
+              {/* Glow effect */}
+              <div className="absolute -left-4 -top-4 w-24 h-24 bg-urbana-gold/20 rounded-full blur-2xl" />
+              
+              <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border-2 border-urbana-gold/40">
+                <User className="w-8 h-8 md:w-10 md:h-10 text-urbana-gold" />
               </div>
               <div>
-                <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-urbana-light/60">Cliente</p>
-                <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light">{client.nome}</p>
+                <p className="text-lg md:text-xl text-urbana-gold/80 font-medium mb-1">Cliente</p>
+                <p className="text-3xl md:text-4xl lg:text-5xl font-black text-urbana-light">{client.nome}</p>
               </div>
             </div>
 
             {/* Appointment Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:gap-10">
-              <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-1 sm:mt-2">
-                  <Calendar className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-urbana-gold" />
-                </div>
-                <div>
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-urbana-light/60 mb-1 sm:mb-2">Data</p>
-                  <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light">
-                    {format(new Date(appointment.data), "dd 'de' MMMM", { locale: ptBR })}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-1 sm:mt-2">
-                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-urbana-gold" />
-                </div>
-                <div>
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-urbana-light/60 mb-1 sm:mb-2">Horário</p>
-                  <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light">{appointment.hora}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {/* Data Card */}
+              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-start gap-4">
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">
+                    <Calendar className="w-7 h-7 md:w-8 md:h-8 text-urbana-gold" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-base md:text-lg text-urbana-gold/70 font-medium mb-2">Data</p>
+                    <p className="text-2xl md:text-3xl font-bold text-urbana-light">
+                      {format(new Date(appointment.data), "dd 'de' MMMM", { locale: ptBR })}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-1 sm:mt-2">
-                  <Scissors className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-urbana-gold" />
-                </div>
-                <div>
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-urbana-light/60 mb-1 sm:mb-2">Serviço</p>
-                  <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light">{appointment.servico?.nome}</p>
-                  <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-urbana-gold font-semibold mt-1 sm:mt-2">
-                    R$ {appointment.servico?.preco?.toFixed(2)}
-                  </p>
+              {/* Horário Card */}
+              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-start gap-4">
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">
+                    <Clock className="w-7 h-7 md:w-8 md:h-8 text-urbana-gold" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-base md:text-lg text-urbana-gold/70 font-medium mb-2">Horário</p>
+                    <p className="text-2xl md:text-3xl font-bold text-urbana-light">{appointment.hora}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 sm:gap-4 md:gap-5">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl bg-urbana-gold/10 flex items-center justify-center mt-1 sm:mt-2">
-                  <User className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-urbana-gold" />
+              {/* Serviço Card */}
+              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-start gap-4">
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">
+                    <Scissors className="w-7 h-7 md:w-8 md:h-8 text-urbana-gold" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-base md:text-lg text-urbana-gold/70 font-medium mb-2">Serviço</p>
+                    <p className="text-2xl md:text-3xl font-bold text-urbana-light mb-2">{appointment.servico?.nome}</p>
+                    <p className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant">
+                      R$ {appointment.servico?.preco?.toFixed(2)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-urbana-light/60 mb-1 sm:mb-2">Barbeiro</p>
-                  <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light">{appointment.barbeiro?.nome}</p>
+              </div>
+
+              {/* Barbeiro Card */}
+              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative flex items-start gap-4">
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">
+                    <User className="w-7 h-7 md:w-8 md:h-8 text-urbana-gold" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-base md:text-lg text-urbana-gold/70 font-medium mb-2">Barbeiro</p>
+                    <p className="text-2xl md:text-3xl font-bold text-urbana-light">{appointment.barbeiro?.nome}</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Confirm Button */}
-          <div className="pt-4 sm:pt-6 md:pt-8 lg:pt-10">
+          <div className="pt-6 md:pt-8">
             <Button
               onClick={handleConfirmCheckIn}
               disabled={isProcessing}
-              className="w-full h-16 sm:h-20 md:h-24 lg:h-28 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black active:from-urbana-gold-dark active:to-urbana-gold disabled:opacity-50 shadow-2xl shadow-urbana-gold/30 active:shadow-urbana-gold/50 transition-all duration-100 active:scale-98"
+              className="relative w-full h-20 md:h-24 lg:h-28 text-2xl md:text-3xl lg:text-4xl font-black bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold text-urbana-black hover:from-urbana-gold-vibrant hover:via-urbana-gold hover:to-urbana-gold-vibrant disabled:opacity-50 shadow-2xl shadow-urbana-gold/40 transition-all duration-300 overflow-hidden group"
             >
-              {isProcessing ? (
-                <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 border-3 sm:border-4 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
-                  PROCESSANDO...
-                </div>
-              ) : (
-                <>
-                  <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 mr-2 sm:mr-3 md:mr-4" />
-                  CONFIRMAR CHECK-IN
-                </>
-              )}
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
+              
+              <div className="relative flex items-center justify-center gap-3 md:gap-4">
+                {isProcessing ? (
+                  <>
+                    <div className="w-8 h-8 md:w-10 md:h-10 border-4 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
+                    PROCESSANDO...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-10 h-10 md:w-12 md:h-12" />
+                    CONFIRMAR CHECK-IN
+                  </>
+                )}
+              </div>
             </Button>
           </div>
         </Card>
