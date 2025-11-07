@@ -44,10 +44,10 @@ const ClientAppointmentDashboard: React.FC = () => {
       <ClientAppointmentStats appointments={appointments} />
 
       {/* Card principal com filtro e tabela */}
-      <Card className="flex-1 flex flex-col border border-gray-200 bg-white shadow-lg min-h-[400px]">
-        <CardHeader className="pb-4 border-b border-gray-200">
+      <Card className="flex-1 flex flex-col bg-background min-h-[400px]">
+        <CardHeader className="pb-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <CardTitle className="text-xl font-bold text-gray-900">
+            <CardTitle className="text-xl font-bold">
               Gestão de Agendamentos
             </CardTitle>
             {/* Filtros: empilhado no mobile, horizontal no desktop */}

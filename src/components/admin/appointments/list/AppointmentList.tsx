@@ -51,7 +51,7 @@ const AppointmentList: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col">
       {/* Filtros fixos no topo */}
-      <div className="p-4 border-b border-gray-200 bg-white shrink-0">
+      <div className="p-4 shrink-0">
         <AppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -61,7 +61,7 @@ const AppointmentList: React.FC = () => {
       </div>
 
       {/* Tabela com rolagem interna, ocupa todo o restante da altura */}
-      <div className="flex-1 overflow-auto bg-white">
+      <div className="flex-1 overflow-auto">
         <div className="min-w-full">
           <AppointmentTable
             appointments={filteredAppointments}

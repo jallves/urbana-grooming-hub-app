@@ -1,28 +1,27 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Employee } from '../types';
 
 export const useEmployeeManagement = () => {
   const { toast } = useToast();
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const fetchEmployees = useCallback(async () => {
-    try {
-      setLoading(true);
-      console.log('Fetching employees...');
-      
+  // Use React Query para buscar funcionários com cache
+  const { data: employees = [], isLoading: loading } = useQuery({
+    queryKey: ['employees', roleFilter, statusFilter],
+    queryFn: async () => {
       let query = supabase
         .from('employees')
         .select('*')
         .order('name');
 
-      // Aplicar filtros
+      // Aplicar filtros no banco
       if (roleFilter !== 'all') {
         query = query.eq('role', roleFilter);
       }
@@ -34,116 +33,91 @@ export const useEmployeeManagement = () => {
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching employees:', error);
         throw error;
       }
 
-      console.log('Fetched employees:', data);
-
-      let filteredData = data || [];
-
-      // Filtro de busca por nome ou email
-      if (searchQuery) {
-        filteredData = filteredData.filter(employee =>
-          employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          employee.email.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-
-      // Type assertion para garantir que os dados estão no formato correto
-      const typedEmployees = filteredData.map(employee => ({
+      return (data || []).map(employee => ({
         ...employee,
         role: employee.role as 'admin' | 'manager' | 'barber',
         status: employee.status as 'active' | 'inactive'
       })) as Employee[];
+    },
+    staleTime: 30000, // Cache por 30 segundos
+    refetchOnWindowFocus: false,
+  });
 
-      setEmployees(typedEmployees);
-      console.log('Employees set successfully');
-    } catch (error: any) {
-      console.error('Erro ao buscar funcionários:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar funcionários',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [roleFilter, statusFilter, searchQuery, toast]);
+  // Filtro de busca no cliente (memoizado)
+  const filteredEmployees = useMemo(() => {
+    if (!searchQuery) return employees;
+    
+    const query = searchQuery.toLowerCase();
+    return employees.filter(employee =>
+      employee.name.toLowerCase().includes(query) ||
+      employee.email.toLowerCase().includes(query)
+    );
+  }, [employees, searchQuery]);
 
-  const handleDeleteEmployee = useCallback(async (employeeId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este funcionário?')) {
-      return;
-    }
-
-    try {
-      console.log('Deleting employee:', employeeId);
-      
-      // Buscar o funcionário para verificar se é barbeiro
+  // Mutation para deletar funcionário
+  const deleteMutation = useMutation({
+    mutationFn: async (employeeId: string) => {
+      // Buscar o funcionário
       const { data: employee, error: fetchError } = await supabase
         .from('employees')
         .select('role, email')
         .eq('id', employeeId)
         .single();
 
-      if (fetchError) {
-        console.error('Error fetching employee:', fetchError);
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
 
-      // Se for barbeiro, deletar da tabela staff (o trigger vai cuidar da sincronização)
+      // Se for barbeiro, deletar da tabela staff
       if (employee.role === 'barber') {
         const { error: staffError } = await supabase
           .from('staff')
           .delete()
           .eq('email', employee.email);
 
-        if (staffError) {
-          console.error('Error deleting from staff:', staffError);
-          throw staffError;
-        }
+        if (staffError) throw staffError;
       } else {
-        // Para outros roles, deletar diretamente da tabela employees
+        // Para outros roles, deletar diretamente
         const { error } = await supabase
           .from('employees')
           .delete()
           .eq('id', employeeId);
 
-        if (error) {
-          console.error('Error deleting employee:', error);
-          throw error;
-        }
+        if (error) throw error;
       }
-
+    },
+    onSuccess: () => {
       toast({
         title: 'Sucesso',
         description: 'Funcionário excluído com sucesso!',
       });
-
-      fetchEmployees();
-    } catch (error: any) {
-      console.error('Error in handleDeleteEmployee:', error);
+      // Invalidar cache para recarregar
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+    onError: (error: any) => {
+      console.error('Error deleting employee:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao excluir funcionário',
         variant: 'destructive',
       });
     }
-  }, [fetchEmployees, toast]);
+  });
 
-  // Initial fetch - only runs once on mount
-  useEffect(() => {
-    fetchEmployees();
-  }, []); // Empty dependency array for initial fetch
+  const handleDeleteEmployee = useCallback(async (employeeId: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este funcionário?')) {
+      return;
+    }
+    deleteMutation.mutate(employeeId);
+  }, [deleteMutation]);
 
-  // Separate effect for filter changes - runs when filters change
-  useEffect(() => {
-    if (loading) return; // Don't refetch if still loading initial data
-    fetchEmployees();
-  }, [roleFilter, statusFilter, searchQuery]); // Only filters, not fetchEmployees
+  const fetchEmployees = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['employees'] });
+  }, [queryClient]);
 
   return {
-    employees,
+    employees: filteredEmployees,
     loading,
     searchQuery,
     setSearchQuery,

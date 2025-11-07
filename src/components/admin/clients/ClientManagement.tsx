@@ -40,12 +40,12 @@ const ClientManagement: React.FC = () => {
       <div className="panel-header-responsive">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-urbana-gold/10 rounded-lg">
-              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-urbana-gold" />
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
             <div>
               <h1 className="panel-title-responsive">Clientes</h1>
-              <p className="panel-text-responsive text-gray-400">
+              <p className="panel-text-responsive text-muted-foreground">
                 {clients?.length || 0} clientes cadastrados
               </p>
             </div>
@@ -54,7 +54,7 @@ const ClientManagement: React.FC = () => {
           {!isAddingClient && !editingClient && (
             <Button 
               onClick={() => setIsAddingClient(true)}
-              className="panel-button-responsive bg-urbana-gold hover:bg-urbana-gold/90 text-black font-medium"
+              className="panel-button-responsive"
             >
               <Plus className="h-4 w-4 mr-2" />
               Novo Cliente
