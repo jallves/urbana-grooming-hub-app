@@ -10,17 +10,23 @@
     border-color: #333333;
   }
 
+  /* Full-screen layout configuration */
+  html, body, #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
   html, body {
     @apply bg-white text-gray-900 font-raleway;
-    min-height: 100vh;
-    min-height: 100dvh;
-    width: 100%;
     overflow-x: hidden;
     position: relative;
   }
 
   body {
     @apply bg-white text-gray-900 font-raleway;
+    overflow-y: hidden; /* Remove scroll do body */
   }
   
   /* Touch optimization for totem - all platforms */

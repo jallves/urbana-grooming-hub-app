@@ -34,11 +34,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const userInitials = user?.email?.charAt(0).toUpperCase() || 'A';
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
-      {/* Overlay quando sidebar aberta */}
+    <div className="flex w-screen h-screen overflow-hidden">
+      {/* Overlay quando sidebar aberta no mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -49,11 +49,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Conteúdo ocupa 100% da largura */}
-      <div className="w-full flex flex-col min-h-screen">
-        {/* Header */}
+      {/* Conteúdo principal full-screen */}
+      <main className="flex-1 h-full overflow-y-auto bg-gray-50 lg:ml-64">
+        {/* Header fixo no topo do scroll */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-          <div className="w-full px-4 sm:px-6 lg:px-8 lg:ml-64 py-4 flex justify-between items-center">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
               {/* Botão menu mobile */}
               <Button
@@ -122,13 +122,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
           </div>
         </header>
 
-        {/* Área principal */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="w-full h-full lg:ml-64">
-            {children}
-          </div>
-        </main>
-      </div>
+        {/* Área de conteúdo com padding */}
+        <div className="w-full h-full">
+          {children}
+        </div>
+      </main>
     </div>
   );
 };
