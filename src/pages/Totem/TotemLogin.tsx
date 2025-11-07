@@ -92,14 +92,14 @@ const TotemLogin: React.FC = () => {
         </div>
 
         {/* PIN Card */}
-        <Card className="p-2 sm:p-4 md:p-6 bg-card/50 backdrop-blur-sm border-urbana-gray/30 shadow-2xl">
+        <Card className="p-2 sm:p-4 md:p-6 bg-card/50 backdrop-blur-sm border-urbana-gold/20 shadow-2xl">
           {/* PIN Display */}
           <div className="mb-3 sm:mb-5 md:mb-7">
             <div className="flex justify-center gap-2 sm:gap-3 md:gap-4">
               {[0, 1, 2, 3].map((index) => (
                 <div
                   key={index}
-                  className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl border-2 border-urbana-gray/50 bg-urbana-black/50 flex items-center justify-center transition-all duration-200 active:scale-95 active:border-urbana-gold"
+                  className="w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl border-2 border-urbana-gold/30 bg-urbana-black/50 flex items-center justify-center transition-all duration-200 active:scale-95 active:border-urbana-gold shadow-lg shadow-urbana-gold/10"
                 >
                   {pin[index] && (
                     <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-urbana-gold shadow-lg shadow-urbana-gold/50 animate-fade-in" />
@@ -116,7 +116,7 @@ const TotemLogin: React.FC = () => {
                 key={num}
                 onClick={() => handleNumberClick(num.toString())}
                 variant="outline"
-                className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-urbana-gray/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+                className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 shadow-lg shadow-urbana-gold/10"
                 disabled={isLoading}
               >
                 {num}
@@ -125,7 +125,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={handleClear}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-urbana-black/50 active:bg-destructive/30 border-urbana-gray/30 active:border-destructive text-urbana-light active:text-destructive transition-all duration-100 active:scale-95"
+              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xs sm:text-sm md:text-base font-semibold bg-urbana-black/50 active:bg-destructive/30 border-destructive/30 active:border-destructive text-urbana-light active:text-destructive transition-all duration-100 active:scale-95 shadow-lg shadow-destructive/10"
               disabled={isLoading}
             >
               Limpar
@@ -133,7 +133,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={() => handleNumberClick('0')}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-urbana-gray/30 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95"
+              className="h-10 sm:h-14 md:h-16 lg:h-20 text-xl sm:text-2xl md:text-3xl font-bold bg-urbana-black/50 active:bg-urbana-gold/30 border-urbana-gold/20 active:border-urbana-gold text-urbana-light active:text-urbana-gold transition-all duration-100 active:scale-95 shadow-lg shadow-urbana-gold/10"
               disabled={isLoading}
             >
               0
@@ -141,7 +141,7 @@ const TotemLogin: React.FC = () => {
             <Button
               onClick={handleBackspace}
               variant="outline"
-              className="h-10 sm:h-14 md:h-16 lg:h-20 bg-urbana-black/50 active:bg-destructive/30 border-urbana-gray/30 active:border-destructive transition-all duration-100 active:scale-95"
+              className="h-10 sm:h-14 md:h-16 lg:h-20 bg-urbana-black/50 active:bg-destructive/30 border-destructive/30 active:border-destructive transition-all duration-100 active:scale-95 shadow-lg shadow-destructive/10"
               disabled={isLoading}
             >
               <Delete className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-urbana-light" />
