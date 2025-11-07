@@ -99,14 +99,14 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
 };
 
 const Services: React.FC = () => {
-  const { data: services, isLoading, error } = useQuery({
-    queryKey: ["services"],
+  const { data: services, isLoading, error } = useQuery<Array<{ id: string; nome: string; preco: number; duracao: number; show_on_home: boolean; display_order: number }>>({
+    queryKey: ["featured-services"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("services")
+        .from("painel_servicos")
         .select("*")
-        .eq("is_active", true)
-        .order("name");
+        .eq("show_on_home", true)
+        .order("display_order", { ascending: true });
 
       if (error) throw error;
       return data || [];
@@ -211,9 +211,9 @@ const Services: React.FC = () => {
             {services.map((service, i) => (
               <ServiceCard
                 key={service.id}
-                title={service.name}
-                price={formatPrice(service.price)}
-                description={service.description}
+                title={service.nome}
+                price={formatPrice(service.preco)}
+                description={null}
                 index={i}
               />
             ))}

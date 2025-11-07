@@ -2221,26 +2221,32 @@ export type Database = {
       painel_servicos: {
         Row: {
           created_at: string
+          display_order: number | null
           duracao: number
           id: string
           nome: string
           preco: number
+          show_on_home: boolean | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          display_order?: number | null
           duracao: number
           id?: string
           nome: string
           preco: number
+          show_on_home?: boolean | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          display_order?: number | null
           duracao?: number
           id?: string
           nome?: string
           preco?: number
+          show_on_home?: boolean | null
           updated_at?: string
         }
         Relationships: []
@@ -3939,10 +3945,12 @@ export type Database = {
         Args: never
         Returns: {
           created_at: string
+          display_order: number | null
           duracao: number
           id: string
           nome: string
           preco: number
+          show_on_home: boolean | null
           updated_at: string
         }[]
         SetofOptions: {

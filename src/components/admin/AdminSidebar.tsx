@@ -15,6 +15,7 @@ import {
   UserCheck,
   X,
   Star,
+  Globe,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -32,6 +33,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
     { title: 'Produtos', icon: ShoppingCart, href: '/admin/produtos', color: 'from-teal-500 to-cyan-500' },
     { title: 'Financeiro', icon: Coins, href: '/admin/financeiro', color: 'from-yellow-500 to-orange-500' },
     { title: 'ERP Financeiro', icon: Star, href: '/admin/erp-financeiro', color: 'from-urbana-gold to-yellow-600' },
+    { title: 'Gestão do Site', icon: Globe, href: '/admin/site', color: 'from-blue-500 to-indigo-500' },
     { title: 'Fluxo de Caixa', icon: LineChart, href: '/admin/fluxo-caixa', color: 'from-cyan-500 to-blue-500' },
     { title: 'Marketing', icon: Percent, href: '/admin/marketing', color: 'from-red-500 to-pink-500' },
     { title: 'Aniversários', icon: Cake, href: '/admin/aniversarios', color: 'from-purple-500 to-indigo-500' },

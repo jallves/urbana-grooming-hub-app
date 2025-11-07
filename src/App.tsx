@@ -20,6 +20,7 @@ import AdminBarbers from './pages/AdminBarbers';
 import AdminProducts from './pages/AdminProducts';
 import AdminFinancial from './pages/AdminFinance';
 import AdminERPFinancial from './pages/AdminERPFinancial';
+import AdminSiteSettings from './pages/AdminSiteSettings';
 import AdminMarketing from './pages/AdminMarketing';
 import AdminBirthdays from './pages/AdminBirthdays';
 import AdminSupport from './pages/AdminSupport';
@@ -162,6 +163,16 @@ function App() {
                   <Route path="/admin/fluxo-caixa" element={
                     <AdminRoute>
                       <AdminCashFlow />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/erp-financeiro" element={
+                    <AdminRoute>
+                      <AdminERPFinancial />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/site" element={
+                    <AdminRoute>
+                      <AdminSiteSettings />
                     </AdminRoute>
                   } />
                   <Route path="/admin/analytics" element={
