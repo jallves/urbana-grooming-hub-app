@@ -12,10 +12,10 @@ const AdminSettings: React.FC = () => {
   
   return (
     <AdminLayout title="Configurações">
-      <div className="w-full h-full bg-white overflow-hidden">
-        <div className="h-full flex flex-col">
+      <div className="w-full h-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="h-full flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-14 mb-4 rounded-lg">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-100 border-b border-gray-200 h-14 rounded-t-lg">
               <TabsTrigger 
                 value="shop" 
                 className="flex items-center gap-2 py-3 px-4 text-sm font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700 hover:text-gray-900 transition-all duration-200"
@@ -44,43 +44,37 @@ const AdminSettings: React.FC = () => {
             
             <div className="flex-1 overflow-hidden">
               <TabsContent value="shop" className="h-full m-0 overflow-hidden">
-                <div className="bg-white border border-gray-200 rounded-lg h-full flex flex-col shadow-sm">
-                  <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                <div className="h-full flex flex-col">
+                  <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">Configurações da Barbearia</h3>
                     <p className="text-sm text-gray-600">Gerencie as configurações gerais e personalize a aparência do seu site</p>
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="p-4">
-                      <ShopSettingsForm />
-                    </div>
+                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                    <ShopSettingsForm />
                   </div>
                 </div>
               </TabsContent>
               
               <TabsContent value="media" className="h-full m-0 overflow-hidden">
-                <div className="bg-white border border-gray-200 rounded-lg h-full flex flex-col shadow-sm">
-                  <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                <div className="h-full flex flex-col">
+                  <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">Banners e Galeria</h3>
                     <p className="text-sm text-gray-600">Gerencie imagens, banners e galeria do site</p>
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="p-4">
-                      <BannerGallerySettings />
-                    </div>
+                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                    <BannerGallerySettings />
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="users" className="h-full m-0 overflow-hidden">
-                <div className="bg-white border border-gray-200 rounded-lg h-full flex flex-col shadow-sm">
-                  <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                <div className="h-full flex flex-col">
+                  <div className="px-6 py-4 border-b border-gray-200 flex-shrink-0">
                     <h3 className="text-lg font-semibold text-gray-900">Gestão de Usuários</h3>
                     <p className="text-sm text-gray-600">Gerencie usuários e permissões do sistema</p>
                   </div>
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="p-4">
-                      <UserManagement />
-                    </div>
+                  <div className="flex-1 overflow-y-auto px-6 py-4">
+                    <UserManagement />
                   </div>
                 </div>
               </TabsContent>

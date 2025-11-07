@@ -39,7 +39,7 @@ const ClientAppointmentDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full flex flex-col gap-6 bg-gray-50 text-gray-900 p-4 sm:p-6 lg:p-8 rounded-lg">
+    <div className="h-full flex flex-col gap-6">
       {/* Estatísticas */}
       <ClientAppointmentStats appointments={appointments} />
 
