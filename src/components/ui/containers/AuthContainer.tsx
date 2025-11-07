@@ -25,8 +25,12 @@ const AuthContainer: React.FC<AuthContainerProps> = ({ children, className, titl
         {(title || subtitle) && (
           <div className="text-center mb-8 space-y-3">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-lg shadow-urbana-gold/30 animate-glow">
-                <Scissors className="w-8 h-8 text-black" />
+              <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg shadow-urbana-gold/30 animate-glow">
+                <img 
+                  src="/logo-costa-urbana-new.png" 
+                  alt="Costa Urbana Logo" 
+                  className="w-full h-full object-contain"
+                />
               </div>
             </div>
             {title && (

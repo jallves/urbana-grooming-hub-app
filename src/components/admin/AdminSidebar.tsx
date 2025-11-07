@@ -71,8 +71,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-urbana-gold to-yellow-500 rounded-xl flex items-center justify-center shadow-md">
-              <Star className="h-7 w-7 text-white" />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center">
+              <img 
+                src="/logo-costa-urbana-new.png" 
+                alt="Costa Urbana Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <h2 className="text-xl font-bold bg-gradient-to-r from-urbana-gold via-yellow-600 to-urbana-gold-dark bg-clip-text text-transparent font-playfair">

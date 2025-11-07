@@ -60,7 +60,12 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       <header className="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-40">
         <div className="w-full mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
+              <img 
+                src="/logo-costa-urbana-new.png" 
+                alt="Costa Urbana Logo" 
+                className="w-10 h-10 object-contain"
+              />
               <h1 className="text-2xl font-bold text-white">
                 {title || 'Painel do Barbeiro'}
               </h1>

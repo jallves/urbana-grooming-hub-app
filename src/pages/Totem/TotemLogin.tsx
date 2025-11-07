@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Scissors, Delete, Sparkles } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
-import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemLogin: React.FC = () => {
