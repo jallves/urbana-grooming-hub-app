@@ -1,11 +1,13 @@
 
 import React from 'react';
 import ClientCard from './components/ClientCard';
+import ClientTable from './components/ClientTable';
 import ExportButton from './components/ExportButton';
 import DeleteClientDialog from './components/DeleteClientDialog';
 import EmptyClientState from './components/EmptyClientState';
 import LoadingClientState from './components/LoadingClientState';
 import { useClientDelete } from './hooks/useClientDelete';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface PainelClient {
@@ -26,6 +28,7 @@ interface ClientListProps {
 }
 
 const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onDelete }) => {
+  const isMobile = useIsMobile();
   const {
     deleteDialogOpen,
     setDeleteDialogOpen,
@@ -50,17 +53,25 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
       </CardHeader>
       
       <CardContent className="pt-0">
-        {/* Grid Responsivo - Cards em vez de tabela */}
-        <div className="panel-grid-responsive">
-          {clients.map((client) => (
-            <ClientCard
-              key={client.id}
-              client={client}
-              onEdit={onEdit}
-              onDelete={confirmDelete}
-            />
-          ))}
-        </div>
+        {/* Renderização condicional: Tabela para desktop, Cards para mobile */}
+        {isMobile ? (
+          <div className="panel-grid-responsive">
+            {clients.map((client) => (
+              <ClientCard
+                key={client.id}
+                client={client}
+                onEdit={onEdit}
+                onDelete={confirmDelete}
+              />
+            ))}
+          </div>
+        ) : (
+          <ClientTable
+            clients={clients}
+            onEdit={onEdit}
+            onDelete={confirmDelete}
+          />
+        )}
       </CardContent>
       
       <DeleteClientDialog
