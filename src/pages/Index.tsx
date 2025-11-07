@@ -11,7 +11,7 @@ import { GoldenDivider } from '@/components/decorative/GoldenDivider';
 
 const Index = () => {
   return (
-    <div className="w-full min-h-screen bg-urbana-black scroll-smooth relative">
+    <div className="w-screen min-h-screen bg-urbana-black scroll-smooth relative overflow-x-hidden">
       {/* Noise texture overlay */}
       <div 
         className="fixed inset-0 pointer-events-none z-[100] opacity-[0.015]"
@@ -34,40 +34,54 @@ const Index = () => {
       
       {/* Decorative divider */}
       <div className="w-full bg-gradient-to-b from-urbana-black to-urbana-brown py-8">
-        <GoldenDivider variant="geometric" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <GoldenDivider variant="geometric" />
+        </div>
       </div>
       
-      {/* Services - Sem padding lateral */}
+      {/* Services */}
       <section className="w-full py-12 transition-all duration-700">
-        <Services />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Services />
+        </div>
       </section>
       
       {/* Decorative divider */}
       <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
-        <GoldenDivider variant="ornate" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <GoldenDivider variant="ornate" />
+        </div>
       </div>
       
       {/* Statistics Section */}
       <section className="w-full transition-all duration-700">
-        <Statistics />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Statistics />
+        </div>
       </section>
       
       {/* Decorative divider */}
       <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
-        <GoldenDivider variant="geometric" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <GoldenDivider variant="geometric" />
+        </div>
       </div>
       
-      {/* Gallery - Sem padding lateral */}
+      {/* Gallery */}
       <section className="w-full py-12 transition-all duration-700">
-        <Gallery />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Gallery />
+        </div>
       </section>
       
       {/* Decorative divider */}
       <div className="w-full bg-gradient-to-b from-urbana-black to-urbana-brown py-8">
-        <GoldenDivider variant="geometric" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <GoldenDivider variant="geometric" />
+        </div>
       </div>
       
-      {/* Footer - Tela inteira */}
+      {/* Footer */}
       <footer className="w-full transition-all duration-700">
         <Footer />
       </footer>
