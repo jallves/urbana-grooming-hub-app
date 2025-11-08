@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { TotemCard, TotemCardTitle, TotemCardDescription } from '@/components/totem/TotemCard';
+import { BarberInfoModal } from '@/components/totem/BarberInfoModal';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface Barber {
@@ -26,6 +27,7 @@ const TotemBarbeiro: React.FC = () => {
   
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
+  const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,15 +79,26 @@ const TotemBarbeiro: React.FC = () => {
 
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
+    setShowModal(true);
+  };
+
+  const handleConfirmBarber = () => {
+    if (!selectedBarber) return;
     
+    setShowModal(false);
     // Navegar para seleção de data/hora
     navigate('/totem/data-hora', {
       state: {
         client,
         service,
-        barber
+        barber: selectedBarber
       }
     });
+  };
+
+  const handleCancelModal = () => {
+    setShowModal(false);
+    setSelectedBarber(null);
   };
 
   if (loading) {
@@ -176,6 +189,15 @@ const TotemBarbeiro: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Barber Info Modal */}
+      {showModal && selectedBarber && (
+        <BarberInfoModal
+          barber={selectedBarber}
+          onConfirm={handleConfirmBarber}
+          onCancel={handleCancelModal}
+        />
+      )}
     </div>
   );
 };
