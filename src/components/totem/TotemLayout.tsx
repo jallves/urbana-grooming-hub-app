@@ -134,19 +134,34 @@ export const TotemContentContainer: React.FC<{
   children: React.ReactNode;
   className?: string;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
-}> = ({ children, className, maxWidth = '7xl' }) => (
-  <div className={cn(
-    'mx-auto w-full pb-4',
-    `max-w-${maxWidth}`,
-    className
-  )}>
-    {children}
-  </div>
-);
+}> = ({ children, className, maxWidth = '7xl' }) => {
+  const getMaxWidthClass = () => {
+    switch (maxWidth) {
+      case 'sm': return 'max-w-sm';
+      case 'md': return 'max-w-md';
+      case 'lg': return 'max-w-lg';
+      case 'xl': return 'max-w-xl';
+      case '2xl': return 'max-w-2xl';
+      case '3xl': return 'max-w-3xl';
+      case '4xl': return 'max-w-4xl';
+      case '5xl': return 'max-w-5xl';
+      case '6xl': return 'max-w-6xl';
+      case '7xl': return 'max-w-7xl';
+      default: return 'max-w-7xl';
+    }
+  };
 
-/**
- * TotemGrid - Grid responsivo para cards
- */
+  return (
+    <div className={cn(
+      'mx-auto w-full pb-4',
+      getMaxWidthClass(),
+      className
+    )}>
+      {children}
+    </div>
+  );
+};
+
 export const TotemGrid: React.FC<{
   children: React.ReactNode;
   columns?: 1 | 2 | 3 | 4;
@@ -163,11 +178,22 @@ export const TotemGrid: React.FC<{
     }
   };
 
+  const getGapClass = () => {
+    switch (gap) {
+      case 2: return 'gap-2';
+      case 3: return 'gap-3';
+      case 4: return 'gap-4';
+      case 6: return 'gap-6';
+      case 8: return 'gap-8';
+      default: return 'gap-4';
+    }
+  };
+
   return (
     <div className={cn(
       'grid',
       getGridCols(),
-      `gap-${gap}`,
+      getGapClass(),
       className
     )}>
       {children}
