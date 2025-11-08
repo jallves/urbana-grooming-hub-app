@@ -24,10 +24,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Product } from '@/types/product';
+import { BarbershopProduct } from '@/types/product';
 
 const ProductList: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<BarbershopProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -39,12 +39,15 @@ const ProductList: React.FC = () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from('products')
+        .from('painel_produtos')
         .select('*')
-        .order('name');
+        .order('nome');
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data || []).map(p => ({
+        ...p,
+        imagens: Array.isArray(p.imagens) ? p.imagens : []
+      })) as BarbershopProduct[]);
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
       toast.error('Erro ao carregar produtos', {
@@ -79,7 +82,7 @@ const ProductList: React.FC = () => {
 
     try {
       const { error } = await supabase
-        .from('products')
+        .from('painel_produtos')
         .delete()
         .eq('id', productToDelete);
 
@@ -99,7 +102,7 @@ const ProductList: React.FC = () => {
   }
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    product.nome?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -149,7 +152,7 @@ const ProductList: React.FC = () => {
                     <div className="p-3 sm:p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-medium text-xs sm:text-base truncate mr-2">
-                          {product.name}
+                          {product.nome}
                         </h3>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -180,23 +183,14 @@ const ProductList: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Preço:</span>
                           <span className="text-primary font-semibold">
-                            R$ {product.price.toFixed(2)}
+                            R$ {product.preco.toFixed(2)}
                           </span>
                         </div>
-                        
-                        {product.cost_price && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Custo:</span>
-                            <span className="font-medium">
-                              R$ {product.cost_price.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
                         
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Estoque:</span>
                           <span className="font-medium">
-                            {product.stock_quantity ?? 0}
+                            {product.estoque}
                           </span>
                         </div>
                         

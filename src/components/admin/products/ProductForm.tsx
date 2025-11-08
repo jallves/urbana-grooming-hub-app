@@ -46,7 +46,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       if (!productId) return null;
       
       const { data, error } = await supabase
-        .from('products')
+        .from('painel_produtos')
         .select('*')
         .eq('id', productId)
         .single();
@@ -67,7 +67,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       stock_quantity: 0,
       is_active: true,
     },
-    values: productData || undefined,
+    values: productData ? {
+      name: productData.nome || '',
+      description: productData.descricao || '',
+      price: productData.preco || 0,
+      cost_price: 0,
+      stock_quantity: productData.estoque || 0,
+      is_active: productData.is_active ?? true,
+    } : undefined,
   });
   
   const { formState } = form;
@@ -77,13 +84,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
     try {
       if (isEditing) {
         const { error } = await supabase
-          .from('products')
+          .from('painel_produtos')
           .update({
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            cost_price: values.cost_price,
-            stock_quantity: values.stock_quantity,
+            nome: values.name,
+            descricao: values.description,
+            preco: values.price,
+            estoque: values.stock_quantity || 0,
             is_active: values.is_active,
           })
           .eq('id', productId);
@@ -92,16 +98,19 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
         toast.success('Produto atualizado com sucesso!');
       } else {
         const productData = {
-          name: values.name,
-          description: values.description || null,
-          price: values.price,
-          cost_price: values.cost_price || null,
-          stock_quantity: values.stock_quantity || 0,
+          nome: values.name,
+          descricao: values.description || null,
+          preco: values.price,
+          estoque: values.stock_quantity || 0,
+          estoque_minimo: 0,
+          categoria: 'Geral',
+          imagens: [],
           is_active: values.is_active,
+          destaque: false,
         };
 
         const { error } = await supabase
-          .from('products')
+          .from('painel_produtos')
           .insert([productData]);
 
         if (error) throw error;
