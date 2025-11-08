@@ -271,23 +271,23 @@ const TotemAppointmentsList: React.FC = () => {
               <Card
                 key={appointment.id}
                 onClick={() => !hasCheckIn && allowCheckIn && handleSelectAppointment(appointment)}
-                className={`p-4 sm:p-6 md:p-8 bg-card/50 backdrop-blur-sm border-2 transition-all duration-100 ${
+                className={`p-4 sm:p-6 md:p-8 bg-white/5 backdrop-blur-2xl border-2 transition-all duration-100 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${
                   hasCheckIn
-                    ? 'border-green-500/50 bg-green-500/5'
+                    ? 'border-green-500/50 shadow-[0_0_40px_rgba(16,185,129,0.2)]'
                     : allowCheckIn
-                    ? 'border-urbana-gold/50 cursor-pointer active:border-urbana-gold active:bg-urbana-gold/10 active:scale-98'
-                    : 'border-urbana-gold/20 opacity-75 cursor-not-allowed'
+                    ? 'border-urbana-gold/50 cursor-pointer active:border-urbana-gold active:shadow-[0_0_40px_rgba(212,175,55,0.3)] active:scale-98'
+                    : 'border-red-500/30 opacity-75 cursor-not-allowed'
                 }`}
               >
                 {/* Check-in já realizado - Badge no topo */}
                 {hasCheckIn && (
-                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 md:p-6 bg-gradient-to-r from-green-500/20 to-green-600/20 border-2 border-green-500/50 rounded-xl">
+                  <div className="mb-4 sm:mb-6 p-3 sm:p-4 md:p-6 bg-gradient-to-r from-green-500/10 to-green-600/10 backdrop-blur-sm border-2 border-green-500/50 rounded-xl shadow-[0_0_30px_rgba(16,185,129,0.15)]">
                     <div className="flex items-center gap-3 sm:gap-4 mb-3">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-green-400" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full bg-green-500/20 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-green-500/20">
+                        <CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-green-400 drop-shadow-lg" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-lg sm:text-xl md:text-2xl font-black text-green-400">
+                        <p className="text-lg sm:text-xl md:text-2xl font-black text-green-400 drop-shadow-lg">
                           CHECK-IN JÁ REALIZADO ✓
                         </p>
                         <p className="text-sm sm:text-base md:text-lg text-green-300/80 mt-1">
@@ -295,7 +295,7 @@ const TotemAppointmentsList: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-urbana-black/30 rounded-lg border border-urbana-gold/30">
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-urbana-black/20 backdrop-blur-sm rounded-lg border border-urbana-gold/30">
                       <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold" />
                       <p className="text-sm sm:text-base md:text-lg text-urbana-light font-medium">
                         Para finalizar o pagamento, use a opção <span className="text-urbana-gold font-bold">CHECK-OUT</span> no menu principal
