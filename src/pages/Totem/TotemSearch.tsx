@@ -176,15 +176,36 @@ const TotemSearch: React.FC = () => {
   };
 
   return (
-    <TotemPinKeypad
-      mode="phone"
-      title={getTitleByAction()}
-      subtitle="Digite o número de telefone do cliente"
-      onSubmit={handleSearch}
-      onCancel={() => navigate('/totem/home')}
-      loading={isSearching}
-      phoneLength={11}
-    />
+    <div className="relative">
+      <TotemPinKeypad
+        mode="phone"
+        title={getTitleByAction()}
+        subtitle="Digite o número de telefone do cliente"
+        onSubmit={handleSearch}
+        onCancel={() => navigate('/totem/home')}
+        loading={isSearching}
+        phoneLength={11}
+      />
+      
+      {/* Botão Cadastro no canto superior direito */}
+      <div className="fixed top-8 right-8">
+        <button
+          onClick={() => navigate('/totem/cadastro', { 
+            state: { 
+              action,
+              phone: '' 
+            } 
+          })}
+          className="relative inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold rounded-full shadow-lg shadow-urbana-gold/50 hover:opacity-90 transition-opacity"
+        >
+          <div className="absolute -top-1 -left-1 w-3 h-3 bg-urbana-light rounded-full"></div>
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-urbana-light rounded-full"></div>
+          <span className="text-urbana-dark font-bold text-sm uppercase tracking-wider">
+            Cadastro
+          </span>
+        </button>
+      </div>
+    </div>
   );
 };
 

@@ -47,6 +47,7 @@ import TotemLogin from './pages/Totem/TotemLogin';
 import TotemWelcome from './pages/Totem/TotemWelcome';
 import TotemHome from './pages/Totem/TotemHome';
 import TotemSearch from './pages/Totem/TotemSearch';
+import TotemCadastro from './pages/Totem/TotemCadastro';
 import TotemCheckoutSearch from './pages/Totem/TotemCheckoutSearch';
 import TotemAppointmentsList from './pages/Totem/TotemAppointmentsList';
 import TotemConfirmation from './pages/Totem/TotemConfirmation';
@@ -261,6 +262,7 @@ function App() {
                   <Route path="/totem" element={<TotemProtectedRoute><TotemHome /></TotemProtectedRoute>} />
                   <Route path="/totem/home" element={<TotemProtectedRoute><TotemHome /></TotemProtectedRoute>} />
                   <Route path="/totem/search" element={<TotemProtectedRoute><TotemSearch /></TotemProtectedRoute>} />
+                  <Route path="/totem/cadastro" element={<TotemProtectedRoute><TotemCadastro /></TotemProtectedRoute>} />
                   <Route path="/totem/checkout-search" element={<TotemProtectedRoute><TotemCheckoutSearch /></TotemProtectedRoute>} />
                   <Route path="/totem/appointments-list" element={<TotemProtectedRoute><TotemAppointmentsList /></TotemProtectedRoute>} />
                   <Route path="/totem/confirmation" element={<TotemProtectedRoute><TotemConfirmation /></TotemProtectedRoute>} />
