@@ -127,12 +127,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
-      setUser(null);
+      console.log('[AuthContext] 🚪 Iniciando logout...');
+      
+      // Limpar estados ANTES do signOut para evitar race conditions
       setIsAdmin(false);
       setIsBarber(false);
+      setUser(null);
+      
+      // Fazer logout no Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('[AuthContext] ❌ Erro no logout:', error);
+        throw error;
+      }
+      
+      console.log('[AuthContext] ✅ Logout realizado com sucesso');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('[AuthContext] ❌ Error signing out:', error);
       throw error;
     }
   };

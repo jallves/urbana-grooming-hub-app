@@ -24,18 +24,23 @@ const Auth: React.FC = () => {
       hasUser: !!user 
     });
     
-    if (!authLoading && user) {
+    // IMPORTANTE: Só redireciona se não estiver em processo de loading
+    // E se realmente houver um usuário autenticado
+    if (!authLoading && user && user.email) {
       console.log('[Auth.tsx] 🔄 Usuário autenticado, verificando redirecionamento...');
       
-      if (isAdmin) {
-        console.log('[Auth.tsx] ✅ Admin detectado, redirecionando para /admin');
-        navigate('/admin', { replace: true });
-      } else {
-        console.log('[Auth.tsx] ℹ️ Não é admin, redirecionando para home');
-        if (!location.state?.from) {
+      // Pequeno delay para garantir que o estado de roles foi atualizado
+      const timer = setTimeout(() => {
+        if (isAdmin) {
+          console.log('[Auth.tsx] ✅ Admin detectado, redirecionando para /admin');
+          navigate('/admin', { replace: true });
+        } else if (!location.state?.from) {
+          console.log('[Auth.tsx] ℹ️ Não é admin, redirecionando para home');
           navigate('/', { replace: true });
         }
-      }
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [user, isAdmin, navigate, authLoading, location.state]);
 

@@ -102,14 +102,29 @@ const Services: React.FC = () => {
   const { data: services, isLoading, error } = useQuery<Array<{ id: string; nome: string; preco: number; duracao: number; show_on_home: boolean; display_order: number }>>({
     queryKey: ["featured-services"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Primeiro tenta buscar serviços marcados para exibição na home
+      const { data: featuredData, error: featuredError } = await supabase
         .from("painel_servicos")
         .select("*")
         .eq("show_on_home", true)
         .order("display_order", { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+      if (featuredError) throw featuredError;
+      
+      // Se não houver serviços marcados, busca os 6 primeiros por display_order
+      if (!featuredData || featuredData.length === 0) {
+        console.log('[Services] Nenhum serviço marcado para home, buscando top 6...');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from("painel_servicos")
+          .select("*")
+          .order("display_order", { ascending: true })
+          .limit(6);
+        
+        if (fallbackError) throw fallbackError;
+        return fallbackData || [];
+      }
+      
+      return featuredData || [];
     },
   });
 
