@@ -84,13 +84,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return;
     
     try {
+      console.log('[AuthContext] 🔍 Verificando roles para usuário:', user.id, user.email);
+      
       // Check admin role
-      const { data: adminRole } = await supabase
+      const { data: adminRole, error: adminError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
         .maybeSingle();
+
+      console.log('[AuthContext] Admin role encontrada:', adminRole, 'Erro:', adminError);
 
       // Check barber role - both from user_roles and painel_barbeiros
       const { data: barberRole } = await supabase
@@ -107,10 +111,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .eq('is_active', true)
         .maybeSingle();
 
-      setIsAdmin(!!adminRole);
-      setIsBarber(!!barberRole || !!barberData);
+      const isAdminUser = !!adminRole;
+      const isBarberUser = !!barberRole || !!barberData;
+      
+      console.log('[AuthContext] ✅ Roles definidas - isAdmin:', isAdminUser, 'isBarber:', isBarberUser);
+      
+      setIsAdmin(isAdminUser);
+      setIsBarber(isBarberUser);
     } catch (error) {
-      console.error('Error checking user roles:', error);
+      console.error('[AuthContext] ❌ Error checking user roles:', error);
       setIsAdmin(false);
       setIsBarber(false);
     }

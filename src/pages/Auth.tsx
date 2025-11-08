@@ -17,11 +17,24 @@ const Auth: React.FC = () => {
 
   // Redireciona admin para o painel, outros para home
   useEffect(() => {
+    console.log('[Auth.tsx] Estado atual:', { 
+      authLoading, 
+      user: user?.email, 
+      isAdmin,
+      hasUser: !!user 
+    });
+    
     if (!authLoading && user) {
+      console.log('[Auth.tsx] 🔄 Usuário autenticado, verificando redirecionamento...');
+      
       if (isAdmin) {
+        console.log('[Auth.tsx] ✅ Admin detectado, redirecionando para /admin');
         navigate('/admin', { replace: true });
-      } else if (!location.state?.from) {
-        navigate('/', { replace: true });
+      } else {
+        console.log('[Auth.tsx] ℹ️ Não é admin, redirecionando para home');
+        if (!location.state?.from) {
+          navigate('/', { replace: true });
+        }
       }
     }
   }, [user, isAdmin, navigate, authLoading, location.state]);
