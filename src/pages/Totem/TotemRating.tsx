@@ -125,17 +125,25 @@ const TotemRating: React.FC = () => {
           <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
 
-        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20 animate-scale-in">
-          <div className="text-center space-y-6 sm:space-y-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-urbana-gold/20 border-2 border-urbana-gold/40">
-              <Calendar className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
+        {/* Glassmorphism Card - Transparente mas legível */}
+        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/40 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_60px_rgba(212,175,55,0.15)] animate-scale-in rounded-3xl overflow-hidden">
+          {/* Inner glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 via-transparent to-purple-500/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/20 to-transparent pointer-events-none" />
+          
+          {/* Content with proper z-index */}
+          <div className="relative z-10 text-center space-y-6 sm:space-y-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-urbana-gold/30 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-lg shadow-urbana-gold/20">
+              <Calendar className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold drop-shadow-lg" />
             </div>
             
             <div className="space-y-3 sm:space-y-4">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]" style={{
+                textShadow: '0 0 40px rgba(212, 175, 55, 0.3), 0 4px 20px rgba(0, 0, 0, 0.8)'
+              }}>
                 {client.nome.split(' ')[0]}, deseja agendar<br />seu próximo corte?
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-urbana-light/70">
+              <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 Garanta já seu horário para a próxima visita!
               </p>
             </div>
@@ -143,25 +151,25 @@ const TotemRating: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
                 onClick={handleScheduleYes}
-                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-dark hover:from-urbana-gold-dark hover:to-urbana-gold text-urbana-black"
+                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold hover:from-yellow-500 hover:via-urbana-gold hover:to-yellow-500 text-urbana-black shadow-[0_8px_24px_rgba(212,175,55,0.4)] hover:shadow-[0_12px_32px_rgba(212,175,55,0.6)] transition-all duration-300 hover:scale-105 border-2 border-yellow-400/30"
               >
-                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 mr-2" />
+                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 mr-2 drop-shadow" />
                 Sim, quero agendar!
               </Button>
 
               <Button
                 onClick={handleScheduleNo}
                 variant="outline"
-                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl border-urbana-gold/30 text-urbana-light hover:bg-urbana-gold/10"
+                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl border-2 border-white/40 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 hover:border-white/60 shadow-lg transition-all duration-300"
               >
                 <Home className="w-6 h-6 sm:w-7 sm:h-7 mr-2" />
                 Não, obrigado
               </Button>
             </div>
 
-            <div className="pt-4 border-t border-urbana-gold/20">
-              <p className="text-sm sm:text-base text-urbana-light/50">
-                Voltando ao início em <span className="text-urbana-gold font-bold text-lg">{countdown}</span> segundos...
+            <div className="pt-4 border-t border-white/20">
+              <p className="text-sm sm:text-base text-white/70 drop-shadow-lg">
+                Voltando ao início em <span className="text-urbana-gold font-bold text-lg drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]">{countdown}</span> segundos...
               </p>
             </div>
           </div>
@@ -190,23 +198,31 @@ const TotemRating: React.FC = () => {
           <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
 
-        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-green-500/50 shadow-2xl shadow-green-500/20 animate-scale-in">
-          <div className="text-center space-y-4 sm:space-y-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-green-500/20 border-2 border-green-500/40">
-              <Star className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-green-400 fill-green-400" />
+        {/* Glassmorphism Card - Transparente mas legível */}
+        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-white/5 backdrop-blur-2xl border-2 border-green-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_60px_rgba(16,185,129,0.2)] animate-scale-in rounded-3xl overflow-hidden">
+          {/* Inner glow effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-urbana-gold/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/20 to-transparent pointer-events-none" />
+          
+          {/* Content */}
+          <div className="relative z-10 text-center space-y-4 sm:space-y-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-green-500/30 backdrop-blur-sm border-2 border-green-500/50 shadow-lg shadow-green-500/20">
+              <Star className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-green-400 fill-green-400 drop-shadow-lg" />
             </div>
             
             <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light mb-2 sm:mb-3">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-3 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]" style={{
+                textShadow: '0 0 40px rgba(16, 185, 129, 0.3), 0 4px 20px rgba(0, 0, 0, 0.8)'
+              }}>
                 Avaliação Enviada! ✓
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-urbana-light/70">
+              <p className="text-base sm:text-lg md:text-xl text-white/90 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                 Obrigado pelo seu feedback, {client.nome.split(' ')[0]}!
               </p>
             </div>
 
             <div className="pt-4 sm:pt-6">
-              <p className="text-sm sm:text-base md:text-lg text-urbana-light/60">
+              <p className="text-sm sm:text-base md:text-lg text-white/70 drop-shadow-lg">
                 Preparando próxima etapa...
               </p>
             </div>
