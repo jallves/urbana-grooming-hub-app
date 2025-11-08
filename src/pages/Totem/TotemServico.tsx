@@ -49,7 +49,7 @@ const TotemServico: React.FC = () => {
       const response = await supabase
         .from('painel_servicos')
         .select('id, nome, preco, duracao')
-        .eq('ativo', true)
+        .eq('is_active', true)
         .order('nome');
 
       if (response.error) throw response.error;
