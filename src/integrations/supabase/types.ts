@@ -2221,9 +2221,12 @@ export type Database = {
       painel_servicos: {
         Row: {
           created_at: string
+          descricao: string | null
           display_order: number | null
           duracao: number
           id: string
+          imagem_url: string | null
+          is_active: boolean | null
           nome: string
           preco: number
           show_on_home: boolean | null
@@ -2231,9 +2234,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          descricao?: string | null
           display_order?: number | null
           duracao: number
           id?: string
+          imagem_url?: string | null
+          is_active?: boolean | null
           nome: string
           preco: number
           show_on_home?: boolean | null
@@ -2241,9 +2247,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          descricao?: string | null
           display_order?: number | null
           duracao?: number
           id?: string
+          imagem_url?: string | null
+          is_active?: boolean | null
           nome?: string
           preco?: number
           show_on_home?: boolean | null
@@ -3909,9 +3918,12 @@ export type Database = {
         Args: never
         Returns: {
           created_at: string
+          descricao: string | null
           display_order: number | null
           duracao: number
           id: string
+          imagem_url: string | null
+          is_active: boolean | null
           nome: string
           preco: number
           show_on_home: boolean | null
