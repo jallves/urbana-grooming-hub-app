@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ArrowLeft, Search, Phone, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { TotemNumericKeypad } from '@/components/totem/TotemNumericKeypad';
-import barbershopBg from '@/assets/barbershop-background.jpg';
+import { TotemPinKeypad } from '@/components/totem/TotemPinKeypad';
 
 const TotemSearch: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [phone, setPhone] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const action = (location.state as any)?.action;
 
@@ -24,34 +19,20 @@ const TotemSearch: React.FC = () => {
     };
   }, []);
 
-  const handleNumberClick = (num: string) => {
-    if (phone.length < 11) {
-      setPhone(phone + num);
+  const getTitleByAction = () => {
+    switch (action) {
+      case 'novo-agendamento':
+        return 'Novo Agendamento';
+      case 'check-in':
+        return 'Check-in';
+      case 'produtos':
+        return 'Produtos e Cuidados';
+      default:
+        return 'Buscar Cliente';
     }
   };
 
-  const handleClear = () => {
-    setPhone('');
-  };
-
-  const handleBackspace = () => {
-    setPhone(phone.slice(0, -1));
-  };
-
-  const formatPhone = (value: string) => {
-    if (value.length <= 2) return value;
-    if (value.length <= 7) return `(${value.slice(0, 2)}) ${value.slice(2)}`;
-    return `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`;
-  };
-
-  const handleSearch = async () => {
-    if (phone.length < 10) {
-      toast.error('Digite um telefone válido', {
-        description: 'O número deve ter pelo menos 10 dígitos'
-      });
-      return;
-    }
-
+  const handleSearch = async (phone: string) => {
     setIsSearching(true);
 
     try {
@@ -61,12 +42,13 @@ const TotemSearch: React.FC = () => {
       console.log('🔍 Buscando cliente com telefone:', cleanPhone);
 
       // Buscar todos os clientes e filtrar removendo formatação
-      const { data: todosClientes, error: clientError } = await supabase
+      // @ts-ignore
+      const response = await supabase
         .from('painel_clientes')
         .select('*');
 
-      if (clientError) {
-        console.error('❌ Erro ao buscar cliente:', clientError);
+      if (response.error) {
+        console.error('❌ Erro ao buscar cliente:', response.error);
         toast.error('Erro no sistema', {
           description: 'Não foi possível buscar o cliente. Tente novamente.'
         });
@@ -75,7 +57,7 @@ const TotemSearch: React.FC = () => {
       }
 
       // Filtrar clientes comparando apenas os dígitos
-      const clientes = todosClientes?.filter(c => {
+      const clientes = response.data?.filter((c: any) => {
         const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
         return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
       }) || [];
@@ -106,7 +88,8 @@ const TotemSearch: React.FC = () => {
       
       console.log('📅 Buscando agendamentos a partir de:', hoje);
       
-      const { data: agendamentos, error: agendamentosError } = await supabase
+      // @ts-ignore
+      const agendamentosResponse = await supabase
         .from('painel_agendamentos')
         .select(`
           *,
@@ -118,8 +101,8 @@ const TotemSearch: React.FC = () => {
         .order('data', { ascending: true })
         .order('hora', { ascending: true });
 
-      if (agendamentosError) {
-        console.error('❌ Erro ao buscar agendamentos:', agendamentosError);
+      if (agendamentosResponse.error) {
+        console.error('❌ Erro ao buscar agendamentos:', agendamentosResponse.error);
         toast.error('Erro no sistema', {
           description: 'Não foi possível buscar seus agendamentos. Tente novamente.'
         });
@@ -127,13 +110,13 @@ const TotemSearch: React.FC = () => {
         return;
       }
 
-      console.log('📅 Agendamentos encontrados:', agendamentos?.length || 0);
+      console.log('📅 Agendamentos encontrados:', agendamentosResponse.data?.length || 0);
 
       // Verificar qual ação foi solicitada
       if (action === 'novo-agendamento') {
         // Para novo agendamento, apenas precisamos do cliente
         console.log('✅ Navegando para novo agendamento');
-        navigate('/totem/novo-agendamento', {
+        navigate('/totem/servico', {
           state: {
             client: cliente
           }
@@ -155,6 +138,7 @@ const TotemSearch: React.FC = () => {
       }
 
       // Para CHECK-IN, verificar se há agendamentos
+      const agendamentos = agendamentosResponse.data;
       if (!agendamentos || agendamentos.length === 0) {
         toast.error('Nenhum agendamento encontrado', {
           description: `${cliente.nome.split(' ')[0]}, você não possui agendamentos futuros para fazer check-in. Por favor, procure a recepção para agendar.`,
@@ -192,101 +176,15 @@ const TotemSearch: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col p-2 sm:p-4 md:p-6 font-poppins relative overflow-hidden">
-      {/* Background image */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src={barbershopBg} 
-          alt="Barbearia" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
-      </div>
-
-      {/* Premium background effects */}
-      <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-cyan-500/10 rounded-full blur-3xl opacity-40" />
-        <div className="absolute top-1/2 right-1/3 w-48 h-48 sm:w-72 sm:h-72 bg-urbana-gold/5 rounded-full blur-2xl opacity-30" />
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(197, 161, 91, 0.1) 1px, transparent 0)',
-            backgroundSize: '40px 40px'
-          }} />
-        </div>
-      </div>
-      
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2 sm:mb-4 md:mb-6 z-10 animate-fade-in">
-        <Button
-          onClick={() => navigate('/totem/home')}
-          variant="ghost"
-          size="lg"
-          className="h-8 sm:h-10 md:h-12 px-2 sm:px-3 md:px-4 gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-urbana-light bg-urbana-black-soft/50 backdrop-blur-sm border border-urbana-gray/30 active:bg-urbana-gold/20 active:border-urbana-gold active:text-urbana-gold transition-all duration-200 active:scale-95 rounded-lg"
-        >
-          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5" />
-          <span className="hidden sm:inline">Voltar</span>
-        </Button>
-        
-        <div className="flex-1 text-center">
-          <h1 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light animate-shimmer" style={{ backgroundSize: '200% auto' }}>
-            Buscar Agendamento
-          </h1>
-        </div>
-        
-        <div className="w-10 sm:w-16 md:w-20"></div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-1 sm:py-2">
-        <Card className="w-full max-w-sm sm:max-w-xl md:max-w-2xl p-2 sm:p-4 md:p-6 space-y-2 sm:space-y-3 md:space-y-4 bg-gradient-to-br from-urbana-black-soft/90 to-urbana-black-soft/70 backdrop-blur-xl border-2 border-urbana-gray/30 shadow-2xl rounded-xl sm:rounded-2xl animate-scale-in">
-          {/* Phone Display */}
-          <div className="space-y-1 sm:space-y-2 md:space-y-3">
-            <label className="text-sm sm:text-base md:text-xl font-semibold text-urbana-light flex items-center gap-1 sm:gap-2">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shadow-lg">
-                <Phone className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-white drop-shadow" />
-              </div>
-              Digite seu telefone
-            </label>
-            
-            <div className="relative bg-urbana-black/60 border-2 border-urbana-gold/40 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 text-center">
-              <p className="text-base sm:text-xl md:text-2xl lg:text-3xl font-mono font-bold text-urbana-gold-vibrant min-h-[24px] sm:min-h-[32px] md:min-h-[40px] flex items-center justify-center tracking-wider drop-shadow-lg">
-                {phone ? formatPhone(phone) : '(  )      -    '}
-              </p>
-            </div>
-          </div>
-
-          {/* Numeric Keypad - Transparent with Gold Text */}
-          <TotemNumericKeypad
-            onNumberClick={handleNumberClick}
-            onClear={handleClear}
-            onBackspace={handleBackspace}
-          />
-
-          {/* Search Button */}
-          <Button
-            onClick={handleSearch}
-            disabled={phone.length < 10 || isSearching}
-            className="relative w-full h-10 sm:h-14 md:h-16 lg:h-20 text-sm sm:text-base md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light active:from-urbana-gold active:to-urbana-gold-dark text-urbana-black disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-150 active:scale-96 shadow-xl rounded-lg overflow-hidden group"
-            style={{ touchAction: 'manipulation' }}
-          >
-            <div className="relative flex items-center justify-center gap-1 sm:gap-2 md:gap-3">
-              {isSearching ? (
-                <>
-                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 animate-spin" />
-                  <span>Buscando...</span>
-                </>
-              ) : (
-                <>
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-                  <span>BUSCAR</span>
-                </>
-              )}
-            </div>
-          </Button>
-        </Card>
-      </div>
-    </div>
+    <TotemPinKeypad
+      mode="phone"
+      title={getTitleByAction()}
+      subtitle="Digite o número de telefone do cliente"
+      onSubmit={handleSearch}
+      onCancel={() => navigate('/totem/home')}
+      loading={isSearching}
+      phoneLength={11}
+    />
   );
 };
 
