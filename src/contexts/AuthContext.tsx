@@ -42,10 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (mounted) {
           setUser(session?.user || null);
           if (session?.user) {
-            // Use setTimeout to avoid blocking the UI
-            setTimeout(() => {
-              checkUserRoles(session.user);
-            }, 100);
+            await checkUserRoles(session.user);
           }
           setLoading(false);
         }
@@ -67,10 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(session?.user || null);
         
         if (session?.user) {
-          // Use setTimeout to avoid blocking the auth state change
-          setTimeout(() => {
-            checkUserRoles(session.user);
-          }, 100);
+          await checkUserRoles(session.user);
         } else {
           setIsAdmin(false);
           setIsBarber(false);
