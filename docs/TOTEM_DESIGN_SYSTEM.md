@@ -7,7 +7,8 @@
 4. [Cores e Tokens](#cores-e-tokens)
 5. [Tipografia](#tipografia)
 6. [Animações](#animações)
-7. [Checklist de Implementação](#checklist-de-implementação)
+7. [Teclado com Logo (Padrão Obrigatório)](#teclado-com-logo-padrão-obrigatório)
+8. [Checklist de Implementação](#checklist-de-implementação)
 
 ---
 
@@ -213,7 +214,120 @@ Este documento define o padrão visual e de interação para **todas** as telas,
 </Button>
 ```
 
-### 5. Estados de Cards
+### 5. Teclado Numérico com Logo (Padrão de Autenticação)
+
+```tsx
+<div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-4 font-poppins relative overflow-hidden">
+  {/* Background com efeitos */}
+  
+  <div className="w-full max-w-md space-y-6 animate-scale-in">
+    {/* Logo com borda dourada */}
+    <div className="flex justify-center mb-6">
+      <div className="relative">
+        {/* Cantos decorativos */}
+        <div className="absolute -top-2 -left-2 w-6 h-6 border-l-2 border-t-2 border-urbana-gold" />
+        <div className="absolute -top-2 -right-2 w-6 h-6 border-r-2 border-t-2 border-urbana-gold" />
+        <div className="absolute -bottom-2 -left-2 w-6 h-6 border-l-2 border-b-2 border-urbana-gold" />
+        <div className="absolute -bottom-2 -right-2 w-6 h-6 border-r-2 border-b-2 border-urbana-gold" />
+        
+        <img 
+          src={costaUrbanaLogo} 
+          alt="Costa Urbana" 
+          className="w-32 h-32 object-contain"
+        />
+      </div>
+    </div>
+
+    {/* Badge Sistema Exclusivo */}
+    <div className="flex justify-center">
+      <div className="px-4 py-1 bg-urbana-gold/20 border border-urbana-gold/50 rounded-full">
+        <p className="text-xs text-urbana-gold uppercase tracking-wider">● SISTEMA EXCLUSIVO</p>
+      </div>
+    </div>
+
+    {/* Título */}
+    <div className="text-center space-y-2">
+      <h1 className="text-3xl font-bold text-urbana-light">Autenticação de Acesso</h1>
+      <p className="text-base text-urbana-light/70">Insira o PIN de segurança para acessar o sistema</p>
+    </div>
+
+    {/* Card do Teclado */}
+    <Card className="bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/40 rounded-2xl p-6 space-y-6">
+      {/* Campos de PIN */}
+      <div className="flex justify-center gap-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div 
+            key={i}
+            className="w-14 h-14 border-2 border-urbana-gold/50 rounded-lg bg-urbana-black/40 flex items-center justify-center"
+          >
+            {pin[i] && <div className="w-3 h-3 rounded-full bg-urbana-gold" />}
+          </div>
+        ))}
+      </div>
+
+      {/* Teclado Numérico */}
+      <div className="grid grid-cols-3 gap-3">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+          <Button
+            key={num}
+            onClick={() => handleKeyPress(num)}
+            className="h-16 text-2xl font-bold bg-urbana-black/60 border-2 border-urbana-gold/40 text-urbana-gold hover:bg-urbana-gold/20 hover:border-urbana-gold"
+          >
+            {num}
+          </Button>
+        ))}
+
+        {/* Botão Limpar */}
+        <Button
+          onClick={handleClear}
+          className="h-16 text-lg font-bold bg-urbana-black/60 border-2 border-urbana-gold/40 text-urbana-gold hover:bg-urbana-gold/20"
+        >
+          Limpar
+        </Button>
+
+        {/* Botão 0 */}
+        <Button
+          onClick={() => handleKeyPress(0)}
+          className="h-16 text-2xl font-bold bg-urbana-black/60 border-2 border-urbana-gold/40 text-urbana-gold hover:bg-urbana-gold/20 hover:border-urbana-gold"
+        >
+          0
+        </Button>
+
+        {/* Botão Backspace */}
+        <Button
+          onClick={handleBackspace}
+          className="h-16 bg-urbana-black/60 border-2 border-urbana-gold/40 text-urbana-gold hover:bg-urbana-gold/20"
+        >
+          <Delete className="w-6 h-6" />
+        </Button>
+      </div>
+
+      {/* Botão Entrar */}
+      <Button
+        onClick={handleSubmit}
+        disabled={pin.length < 4}
+        className="w-full h-14 text-xl font-bold bg-gradient-to-r from-urbana-gold to-urbana-gold-light text-urbana-black hover:scale-105"
+      >
+        ENTRAR
+      </Button>
+    </Card>
+
+    {/* PIN de demonstração (remover em produção) */}
+    <p className="text-center text-sm text-urbana-light/40">
+      PIN padrão para demonstração: 1 2 3 4
+    </p>
+  </div>
+</div>
+```
+
+**Uso:** Todas as telas de autenticação/input de PIN devem usar este padrão:
+- Check-in
+- Checkout  
+- Produtos e Serviços
+- Novo Agendamento
+- Qualquer tela que precise de PIN/telefone
+
+### 6. Estados de Cards
 
 ```tsx
 {/* Card Normal - Disponível */}
@@ -400,6 +514,40 @@ style={{ textShadow: '0 0 40px rgba(16, 185, 129, 0.3), 0 4px 20px rgba(0, 0, 0,
 
 ---
 
+---
+
+## 🔢 Teclado com Logo (Padrão Obrigatório)
+
+### ⚠️ USO OBRIGATÓRIO
+
+O componente `TotemPinKeypad` deve ser usado em **TODAS** as telas que necessitam de entrada de PIN ou autenticação:
+
+- ✅ Check-in
+- ✅ Checkout
+- ✅ Produtos e Serviços
+- ✅ Novo Agendamento
+- ✅ Qualquer tela com autenticação
+
+### Componente Reutilizável
+
+```tsx
+import { TotemPinKeypad } from '@/components/totem/TotemPinKeypad';
+
+<TotemPinKeypad
+  title="Check-in"
+  subtitle="Digite seu telefone"
+  pinLength={11}
+  onSubmit={(pin) => console.log(pin)}
+/>
+```
+
+### Documentação Completa
+
+Para detalhes completos sobre implementação, segurança e exemplos, consulte:
+📄 **[TOTEM_KEYPAD_PATTERN.md](./TOTEM_KEYPAD_PATTERN.md)**
+
+---
+
 ## ✅ Checklist de Implementação
 
 ### Para CADA tela/componente do Totem:
@@ -411,6 +559,16 @@ style={{ textShadow: '0 0 40px rgba(16, 185, 129, 0.3), 0 4px 20px rgba(0, 0, 0,
 - [ ] Container com `fixed inset-0 w-screen h-screen`
 - [ ] Padding responsivo: `p-3 sm:p-4 md:p-6 lg:p-8`
 - [ ] Font: `font-poppins`
+
+#### 1.1. Teclado de Autenticação (Se Aplicável)
+- [ ] **USO OBRIGATÓRIO:** Usar `TotemPinKeypad` para qualquer entrada de PIN/telefone
+- [ ] Logo com cantos decorativos dourados
+- [ ] Badge "SISTEMA EXCLUSIVO"
+- [ ] Campos de PIN com estados visuais claros
+- [ ] Teclado numérico 0-9 com bordas douradas
+- [ ] Botões Limpar e Backspace
+- [ ] Botão ENTRAR em gradiente dourado
+- [ ] Validação de segurança implementada
 
 #### 2. Cards
 - [ ] Background: `bg-white/5 backdrop-blur-2xl`

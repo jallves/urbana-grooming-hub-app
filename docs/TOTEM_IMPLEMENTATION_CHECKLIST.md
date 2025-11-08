@@ -96,6 +96,15 @@ Este documento lista **TODAS** as telas, componentes e formulários do Totem que
   - Informações do agendamento
   - Botões de ação
 
+- [ ] **TotemPinKeypad.tsx** - Teclado numérico com logo (NOVO)
+  - Logo com cantos decorativos
+  - Badge "Sistema Exclusivo"
+  - 4 campos de PIN
+  - Teclado 0-9 com bordas douradas
+  - Botões Limpar e Backspace
+  - Botão ENTRAR em destaque
+  - **USO OBRIGATÓRIO** em: Check-in, Checkout, Produtos, Novo Agendamento
+
 - [ ] **NewFeaturesModal.tsx** - Modal de novas funcionalidades
   - Modal com glassmorphism
   - Cards de features

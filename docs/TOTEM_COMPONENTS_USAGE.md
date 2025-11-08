@@ -15,6 +15,10 @@ Card padrão com glassmorphism e variantes.
 ### 3. TotemGrid
 Grid responsivo para organizar cards.
 
+### 4. TotemPinKeypad (NOVO)
+Teclado numérico com logo para autenticação.
+**USO OBRIGATÓRIO** em todas as telas de PIN/autenticação.
+
 ---
 
 ## 🎯 Exemplos de Uso
@@ -188,7 +192,43 @@ const ExemploEstados: React.FC = () => {
 
 ---
 
-### Exemplo 4: Grid Customizado
+### Exemplo 4: Teclado de PIN com Logo
+
+```tsx
+import React from 'react';
+import { TotemPinKeypad } from '@/components/totem/TotemPinKeypad';
+import { useNavigate } from 'react-router-dom';
+
+const ExemploAutenticacao: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handlePinSubmit = async (pin: string) => {
+    console.log('PIN digitado:', pin);
+    // Validar e processar
+    navigate('/totem/home');
+  };
+
+  return (
+    <TotemPinKeypad
+      title="Check-in"
+      subtitle="Digite seu telefone para fazer check-in"
+      pinLength={11}
+      onSubmit={handlePinSubmit}
+      onCancel={() => navigate('/totem/home')}
+    />
+  );
+};
+```
+
+**Uso obrigatório em:**
+- Check-in (telefone 11 dígitos)
+- Checkout (PIN 4 dígitos)
+- Produtos (PIN 4 dígitos)
+- Novo Agendamento (telefone 11 dígitos)
+
+---
+
+### Exemplo 5: Grid Customizado
 
 ```tsx
 import React from 'react';
