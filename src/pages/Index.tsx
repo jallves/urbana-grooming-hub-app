@@ -6,12 +6,15 @@ import Statistics from '@/components/Statistics';
 import Gallery from '@/components/Gallery';
 import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { GoldenDivider } from '@/components/decorative/GoldenDivider';
 
 const Index = () => {
   return (
     <div className="w-screen min-h-screen bg-urbana-black scroll-smooth relative overflow-x-hidden">
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
       {/* Noise texture overlay */}
       <div 
         className="fixed inset-0 pointer-events-none z-[100] opacity-[0.015]"

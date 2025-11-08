@@ -11,6 +11,7 @@ import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
 import BarberRoute from './components/auth/BarberRoute';
 import PainelClienteLayout from './components/painel-cliente/PainelClienteLayout';
 import Index from './pages/Index';
+import PWAInstall from './pages/PWAInstall';
 import AdminDashboard from './pages/Admin';
 import AdminLogin from './pages/Auth';
 import AdminAppointments from './pages/AdminAppointments';
@@ -96,6 +97,7 @@ function App() {
                   <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/pwa-install" element={<PWAInstall />} />
                   
                   {/* Admin Routes */}
                   <Route path="/auth" element={<AdminLogin />} />

@@ -1,8 +1,28 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const { registerSW } = await import('virtual:pwa-register');
+      const updateSW = registerSW({
+        onNeedRefresh() {
+          if (confirm('Nova versão disponível! Deseja atualizar?')) {
+            updateSW(true);
+          }
+        },
+        onOfflineReady() {
+          console.log('App pronto para funcionar offline');
+        },
+      });
+    } catch (e) {
+      console.log('PWA não disponível');
+    }
+  });
+}
 
 const container = document.getElementById("root");
 if (!container) {
