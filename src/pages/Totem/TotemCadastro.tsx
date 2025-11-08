@@ -195,7 +195,7 @@ const TotemCadastro: React.FC = () => {
         </div>
 
         {/* Formulário */}
-        <div className="bg-urbana-brown/30 backdrop-blur-xl border-2 border-urbana-gold/20 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white/10 backdrop-blur-3xl border-2 border-urbana-gold/40 rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -207,7 +207,7 @@ const TotemCadastro: React.FC = () => {
                   type="text"
                   value={formData.nome}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="bg-urbana-dark/50 border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
+                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
                   placeholder="Seu nome completo"
                   required
                 />
@@ -222,7 +222,7 @@ const TotemCadastro: React.FC = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-urbana-dark/50 border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
+                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
                   placeholder="seu.email@exemplo.com"
                   required
                 />
@@ -237,7 +237,7 @@ const TotemCadastro: React.FC = () => {
                   type="tel"
                   value={formData.whatsapp}
                   onChange={handleWhatsAppChange}
-                  className="bg-urbana-dark/50 border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
+                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
                   placeholder="(11) 99999-9999"
                   maxLength={15}
                   required
@@ -253,7 +253,7 @@ const TotemCadastro: React.FC = () => {
                   type="date"
                   value={formData.data_nascimento}
                   onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
-                  className="bg-urbana-dark/50 border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
+                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
                   required
                 />
               </div>
@@ -268,7 +268,7 @@ const TotemCadastro: React.FC = () => {
                     type={mostrarSenha ? "text" : "password"}
                     value={formData.senha}
                     onChange={(e) => setFormData(prev => ({ ...prev, senha: e.target.value }))}
-                    className="bg-urbana-dark/50 border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold pr-12"
+                    className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold pr-12"
                     placeholder="Sua senha"
                     required
                   />
@@ -315,7 +315,7 @@ const TotemCadastro: React.FC = () => {
                     type={mostrarConfirmarSenha ? "text" : "password"}
                     value={formData.confirmarSenha}
                     onChange={(e) => setFormData(prev => ({ ...prev, confirmarSenha: e.target.value }))}
-                    className={`bg-urbana-dark/50 border-2 text-urbana-light text-lg h-14 pr-12 ${
+                    className={`bg-white/10 backdrop-blur-sm border-2 text-urbana-light text-lg h-14 pr-12 ${
                       formData.confirmarSenha && !senhasIguais ? 'border-red-500 focus:border-red-500' : 
                       formData.confirmarSenha && senhasIguais ? 'border-green-500 focus:border-green-500' : 
                       'border-urbana-gold/30 focus:border-urbana-gold'

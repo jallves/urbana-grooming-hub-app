@@ -59,8 +59,8 @@ export const NewFeaturesModal: React.FC<NewFeaturesModalProps> = ({ isOpen, onCl
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-urbana-black/95 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in">
-      <Card className="w-full max-w-4xl bg-urbana-black-soft border-2 border-urbana-gold/30 p-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-urbana-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
+      <Card className="w-full max-w-4xl bg-white/10 backdrop-blur-3xl border-2 border-urbana-gold/40 p-8 max-h-[90vh] overflow-y-auto shadow-[0_12px_48px_rgba(0,0,0,0.5)]">
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div className="flex items-center gap-4">

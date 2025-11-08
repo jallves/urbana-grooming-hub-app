@@ -22,8 +22,8 @@ export const BarberInfoModal: React.FC<BarberInfoModalProps> = ({
   onCancel,
 }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-urbana-black/90 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-gradient-to-br from-urbana-brown/95 to-urbana-black/95 backdrop-blur-xl border-2 border-urbana-gold/50 rounded-3xl shadow-2xl shadow-urbana-gold/20 animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-urbana-black/60 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-white/10 backdrop-blur-3xl border-2 border-urbana-gold/50 rounded-3xl shadow-2xl shadow-urbana-gold/30 animate-in zoom-in-95 duration-300">
         {/* Close Button */}
         <button
           onClick={onCancel}
@@ -64,7 +64,7 @@ export const BarberInfoModal: React.FC<BarberInfoModalProps> = ({
 
             {/* Specialties */}
             {barber.especialidade && (
-              <div className="bg-urbana-black/40 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-urbana-gold/20 w-full">
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-urbana-gold/30 w-full">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <Star className="w-5 h-5 text-urbana-gold fill-urbana-gold" />
                   <h3 className="text-lg font-semibold text-urbana-light">Especialidades</h3>
