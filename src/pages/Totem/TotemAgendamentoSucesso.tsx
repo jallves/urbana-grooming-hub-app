@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Calendar, Clock, User, Scissors, Home, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
 const TotemAgendamentoSucesso: React.FC = () => {
   const navigate = useNavigate();
