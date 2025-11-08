@@ -110,7 +110,7 @@ const TotemCheckInSuccess: React.FC = () => {
           </div>
           
           {/* Client info card */}
-          <div className="inline-block p-6 sm:p-8 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/90 border-2 border-urbana-gold/30 rounded-2xl backdrop-blur-sm shadow-2xl">
+          <div className="inline-block p-6 sm:p-8 bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/30 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
             <div className="space-y-4">
               <div className="flex items-center justify-center gap-3 sm:gap-4">
                 <div className="w-12 h-12 rounded-xl bg-urbana-gold/20 flex items-center justify-center">
@@ -167,9 +167,9 @@ const TotemCheckInSuccess: React.FC = () => {
           </p>
         </div>
 
-        {/* Logo footer */}
-        <div className="pt-8 animate-fade-in" style={{ animationDelay: '0.9s' }}>
-          <div className="inline-flex items-center gap-3 px-4 py-2 bg-urbana-black-soft/50 border border-urbana-gold/20 rounded-full backdrop-blur-sm">
+          {/* Logo footer */}
+          <div className="pt-8 animate-fade-in" style={{ animationDelay: '0.9s' }}>
+            <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/5 backdrop-blur-sm border border-urbana-gold/20 rounded-full shadow-lg">
             <img src={costaUrbanaLogo} alt="Costa Urbana" className="w-8 h-8 object-contain" />
             <span className="text-xs text-urbana-light/60 font-medium uppercase tracking-wider">
               Sistema Premium de Gestão

@@ -136,7 +136,7 @@ const TotemConfirmation: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-4">
-        <Card className="w-full max-w-2xl md:max-w-3xl lg:max-w-5xl p-6 md:p-8 lg:p-10 space-y-6 md:space-y-8 bg-gradient-to-br from-urbana-black-soft/95 via-urbana-black/90 to-urbana-black-soft/95 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20 animate-scale-in">
+        <Card className="w-full max-w-2xl md:max-w-3xl lg:max-w-5xl p-6 md:p-8 lg:p-10 space-y-6 md:space-y-8 bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/40 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in">
           {/* Client Info */}
           <div className="space-y-6 md:space-y-8">
             <div className="relative flex items-center gap-4 md:gap-6 pb-6 md:pb-8 border-b-2 border-urbana-gold/30">
@@ -155,7 +155,7 @@ const TotemConfirmation: React.FC = () => {
             {/* Appointment Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {/* Data Card */}
-              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+              <div className="group relative p-6 bg-white/5 backdrop-blur-xl rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative flex items-start gap-4">
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">
@@ -171,7 +171,7 @@ const TotemConfirmation: React.FC = () => {
               </div>
 
               {/* Horário Card */}
-              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+              <div className="group relative p-6 bg-white/5 backdrop-blur-xl rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative flex items-start gap-4">
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">
@@ -185,7 +185,7 @@ const TotemConfirmation: React.FC = () => {
               </div>
 
               {/* Serviço Card */}
-              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+              <div className="group relative p-6 bg-white/5 backdrop-blur-xl rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative flex items-start gap-4">
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">
@@ -202,7 +202,7 @@ const TotemConfirmation: React.FC = () => {
               </div>
 
               {/* Barbeiro Card */}
-              <div className="group relative p-6 bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black/70 rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden">
+              <div className="group relative p-6 bg-white/5 backdrop-blur-xl rounded-2xl border-2 border-urbana-gold/30 hover:border-urbana-gold/50 transition-all overflow-hidden shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative flex items-start gap-4">
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/10 flex items-center justify-center border border-urbana-gold/30">

@@ -185,7 +185,7 @@ const TotemHome: React.FC = () => {
               <button
                 key={index}
                 onClick={item.onClick}
-                className="group relative bg-gradient-to-br from-urbana-black-soft/80 to-urbana-black-soft/60 backdrop-blur-sm rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-3 md:p-5 transition-all duration-150 active:scale-94 border-2 border-urbana-gray/20 active:border-urbana-gold/50 overflow-hidden animate-slide-up min-h-[80px] sm:min-h-[110px] md:min-h-[140px]"
+                className="group relative bg-white/5 backdrop-blur-2xl rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-3 md:p-5 transition-all duration-150 active:scale-94 border-2 border-urbana-gold/30 active:border-urbana-gold/50 overflow-hidden animate-slide-up min-h-[80px] sm:min-h-[110px] md:min-h-[140px] shadow-[0_4px_16px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
                 style={{ 
                   animationDelay: `${0.6 + index * 0.1}s`,
                   touchAction: 'manipulation',
