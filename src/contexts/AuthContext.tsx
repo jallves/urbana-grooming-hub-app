@@ -36,43 +36,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
         const { data: { session } } = await supabase.auth.getSession();
-        
         if (mounted) {
           setUser(session?.user || null);
+          // Defer role check to avoid deadlocks
           if (session?.user) {
-            await checkUserRoles(session.user);
+            setTimeout(() => {
+              checkUserRoles(session.user);
+            }, 0);
+          } else {
+            setIsAdmin(false);
+            setIsBarber(false);
           }
           setLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
     initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          await checkUserRoles(session.user);
-        } else {
-          setIsAdmin(false);
-          setIsBarber(false);
-        }
-        
-        setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      setUser(session?.user || null);
+      // Defer role lookup to avoid blocking callback
+      if (session?.user) {
+        setTimeout(() => {
+          checkUserRoles(session.user);
+        }, 0);
+      } else {
+        setIsAdmin(false);
+        setIsBarber(false);
       }
-    );
+      setLoading(false);
+    });
 
     return () => {
       mounted = false;
