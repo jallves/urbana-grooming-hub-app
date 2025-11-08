@@ -6,6 +6,7 @@ import { CheckCircle, Calendar, Clock, User, Scissors, Home, ArrowRight } from '
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemAgendamentoSucesso: React.FC = () => {
   const navigate = useNavigate();
@@ -29,10 +30,20 @@ const TotemAgendamentoSucesso: React.FC = () => {
   if (!appointment) return null;
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+    <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+      </div>
+
+      {/* Animated background effects */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
@@ -67,7 +78,7 @@ const TotemAgendamentoSucesso: React.FC = () => {
         </div>
 
         {/* Appointment Details Card */}
-        <Card className="bg-gradient-to-br from-urbana-black-soft/90 to-urbana-black-soft/70 backdrop-blur-sm border-2 border-urbana-gold/30 p-6 sm:p-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <Card className="bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/40 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-6 sm:p-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <div className="space-y-6">
             {/* Client Info */}
             <div className="text-center pb-4 border-b border-urbana-gray/20">
@@ -138,7 +149,7 @@ const TotemAgendamentoSucesso: React.FC = () => {
         </Card>
 
         {/* Important Message */}
-        <Card className="bg-urbana-gold/10 border-urbana-gold/30 p-4 sm:p-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+        <Card className="bg-urbana-gold/10 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-4 sm:p-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <p className="text-center text-sm sm:text-base text-urbana-light">
             📱 <strong>Importante:</strong> Chegue 10 minutos antes do horário agendado.
             <br />
