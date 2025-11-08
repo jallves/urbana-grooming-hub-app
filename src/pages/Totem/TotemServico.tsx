@@ -43,16 +43,18 @@ const TotemServico: React.FC = () => {
   }, [client, navigate]);
 
   const loadServices = async () => {
+    setLoading(true);
     try {
-      const result: any = await supabase
+      // @ts-ignore - Evitar inferência profunda de tipos do Supabase
+      const response = await supabase
         .from('painel_servicos')
         .select('id, nome, preco, duracao')
         .eq('ativo', true)
         .order('nome');
 
-      if (result.error) throw result.error;
+      if (response.error) throw response.error;
 
-      setServices(result.data || []);
+      setServices(response.data || []);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
       toast.error('Erro ao carregar serviços', {

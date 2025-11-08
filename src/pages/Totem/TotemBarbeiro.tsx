@@ -44,17 +44,19 @@ const TotemBarbeiro: React.FC = () => {
   }, [client, service, navigate]);
 
   const loadBarbers = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      // @ts-ignore - Evitar inferência profunda de tipos do Supabase
+      const response = await supabase
         .from('painel_barbeiros')
         .select('id, nome, specialties, image_url, is_active')
         .eq('is_active', true)
         .order('nome');
 
-      if (error) throw error;
+      if (response.error) throw response.error;
 
       // Mapear dados do Supabase para o tipo Barber
-      const mappedBarbers: Barber[] = (data || []).map(b => ({
+      const mappedBarbers: Barber[] = (response.data || []).map(b => ({
         id: b.id,
         nome: b.nome,
         especialidade: b.specialties || undefined,

@@ -63,7 +63,8 @@ const TotemDataHora: React.FC = () => {
           const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           
           // Verificar se horário está ocupado
-          const { data: agendamentos } = await supabase
+          // @ts-ignore - Evitar inferência profunda de tipos do Supabase
+          const response = await supabase
             .from('painel_agendamentos')
             .select('*')
             .eq('data', format(selectedDate, 'yyyy-MM-dd'))
@@ -73,7 +74,7 @@ const TotemDataHora: React.FC = () => {
 
           slots.push({
             hora: timeStr,
-            disponivel: !agendamentos || agendamentos.length === 0
+            disponivel: !response.data || response.data.length === 0
           });
         }
       }
@@ -95,7 +96,8 @@ const TotemDataHora: React.FC = () => {
 
     setCreating(true);
     try {
-      const { data: appointment, error } = await supabase
+      // @ts-ignore - Evitar inferência profunda de tipos do Supabase
+      const response = await supabase
         .from('painel_agendamentos')
         .insert({
           cliente_id: client.id,
@@ -108,13 +110,13 @@ const TotemDataHora: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (response.error) throw response.error;
 
       toast.success('Agendamento criado com sucesso!');
       
       navigate('/totem/agendamento-sucesso', {
         state: {
-          appointment,
+          appointment: response.data,
           service,
           barber,
           client
