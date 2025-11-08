@@ -4,11 +4,15 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Calendar as CalendarIcon, Clock, User, Scissors, Check, Sparkles, Award, X } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Clock, User, Scissors, Check, Sparkles, Award, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays, setHours, setMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAvailabilityCheck } from '@/hooks/totem/useAvailabilityCheck';
+import { useRetryOperation } from '@/components/totem/RetryOperation';
+import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
+import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface Service {
@@ -51,6 +55,21 @@ const TotemNovoAgendamento: React.FC = () => {
   const [showBarberModal, setShowBarberModal] = useState(false);
   const [hoveredBarber, setHoveredBarber] = useState<Barber | null>(null);
 
+  // Hooks robustos
+  const { getAvailableTimeSlots, checkAvailability, isChecking } = useAvailabilityCheck();
+  const { execute: executeWithRetry, isExecuting } = useRetryOperation(3, 2000);
+  
+  // Sistema de timeout
+  const { showWarning, formatTimeLeft, extendTime } = useTotemTimeout({
+    timeout: 5 * 60 * 1000,
+    warningTime: 30 * 1000,
+    enabled: true,
+    onTimeout: () => {
+      toast.info('Sessão encerrada por inatividade');
+      navigate('/totem/home');
+    },
+  });
+
   useEffect(() => {
     if (!clientData) {
       toast.error('Cliente não encontrado');
@@ -68,91 +87,80 @@ const TotemNovoAgendamento: React.FC = () => {
 
   useEffect(() => {
     if (step === 'datetime' && selectedBarber && selectedDate && selectedService) {
-      fetchAvailableTimeSlots();
+      fetchAvailableTimeSlotsRobust();
     }
   }, [step, selectedBarber, selectedDate, selectedService]);
 
   const fetchServices = async () => {
-    const { data, error } = await supabase
-      .from('painel_servicos')
-      .select('*')
-      .order('nome');
+    const result = await executeWithRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('painel_servicos')
+          .select('*')
+          .eq('is_active', true)
+          .order('nome');
 
-    if (error) {
-      toast.error('Erro ao carregar serviços');
-      return;
+        if (error) throw error;
+        return data || [];
+      },
+      'carregar serviços'
+    );
+
+    if (result) {
+      setServices(result);
     }
-
-    setServices(data || []);
   };
 
   const fetchBarbers = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from('painel_barbeiros')
-      .select('*')
-      .order('nome');
+    
+    const result = await executeWithRetry(
+      async () => {
+        const { data, error } = await supabase
+          .from('painel_barbeiros')
+          .select('*')
+          .eq('is_active', true)
+          .order('nome');
 
-    if (error) {
-      toast.error('Erro ao carregar barbeiros');
-      setIsLoading(false);
-      return;
+        if (error) throw error;
+        return data || [];
+      },
+      'carregar barbeiros'
+    );
+
+    if (result) {
+      setBarbers(result);
     }
-
-    setBarbers(data || []);
+    
     setIsLoading(false);
   };
 
-  const fetchAvailableTimeSlots = async () => {
+  const fetchAvailableTimeSlotsRobust = async () => {
     if (!selectedDate || !selectedBarber || !selectedService) return;
 
     setIsLoading(true);
 
-    // Buscar agendamentos existentes do barbeiro naquela data
-    const { data: appointments, error } = await supabase
-      .from('painel_agendamentos')
-      .select('hora')
-      .eq('barbeiro_id', selectedBarber.id)
-      .eq('data', format(selectedDate, 'yyyy-MM-dd'))
-      .neq('status', 'cancelado');
+    try {
+      const slots = await getAvailableTimeSlots(
+        selectedBarber.id,
+        selectedDate,
+        selectedService.duracao
+      );
 
-    if (error) {
-      toast.error('Erro ao verificar disponibilidade');
-      setIsLoading(false);
-      return;
-    }
-
-    // Gerar slots de 30 em 30 minutos (8h às 20h)
-    const slots: TimeSlot[] = [];
-    const occupiedTimes = new Set(appointments?.map(a => a.hora) || []);
-    
-    // Verificar se é hoje para filtrar horários passados
-    const hoje = new Date();
-    const isToday = format(selectedDate, 'yyyy-MM-dd') === format(hoje, 'yyyy-MM-dd');
-    const horaAtual = hoje.getHours();
-    const minutoAtual = hoje.getMinutes();
-
-    for (let hour = 8; hour < 20; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        // Se for hoje, só mostrar horários futuros (com margem de 30 min)
-        let isPast = false;
-        if (isToday) {
-          if (hour < horaAtual || (hour === horaAtual && minute <= minutoAtual)) {
-            isPast = true;
-          }
-        }
-        
-        slots.push({
-          time: timeString,
-          available: !occupiedTimes.has(timeString) && !isPast
+      setTimeSlots(slots);
+      
+      if (slots.filter(s => s.available).length === 0) {
+        toast.warning('Sem horários disponíveis', {
+          description: 'Não há horários disponíveis nesta data. Tente outra data.',
+          duration: 5000,
         });
       }
+    } catch (error) {
+      console.error('Erro ao buscar horários:', error);
+      toast.error('Erro ao buscar horários disponíveis');
+    } finally {
+      setIsLoading(false);
     }
-
-    setTimeSlots(slots);
-    setIsLoading(false);
   };
 
   const handleServiceSelect = (service: Service) => {
@@ -196,33 +204,54 @@ const TotemNovoAgendamento: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('painel_agendamentos')
-        .insert({
-          cliente_id: clientData.id,
-          barbeiro_id: selectedBarber.id,
-          servico_id: selectedService.id,
-          data: format(selectedDate, 'yyyy-MM-dd'),
-          hora: selectedTime,
-          status: 'confirmado'
-        })
-        .select()
-        .single();
+      // Verificação robusta antes de criar
+      console.log('🔍 Verificando disponibilidade final...');
+      const availabilityCheck = await checkAvailability(
+        selectedBarber.id,
+        selectedDate,
+        selectedTime,
+        selectedService.duracao
+      );
 
-      if (error) {
-        console.error('Erro ao criar agendamento:', error);
-        throw error;
+      if (!availabilityCheck.valid) {
+        toast.error('Horário não disponível', {
+          description: availabilityCheck.error || 'Este horário não está mais disponível',
+          duration: 6000,
+        });
+        // Recarregar slots
+        await fetchAvailableTimeSlotsRobust();
+        setIsLoading(false);
+        return;
       }
 
-      console.log('✅ Agendamento criado com sucesso no Totem:', {
-        appointmentId: data.id,
-        clientId: clientData.id,
-        barberId: selectedBarber.id,
-        serviceId: selectedService.id,
-        date: format(selectedDate, 'yyyy-MM-dd'),
-        time: selectedTime,
-        status: 'confirmado'
-      });
+      // Criar agendamento com retry
+      const result = await executeWithRetry(
+        async () => {
+          const { data, error } = await supabase
+            .from('painel_agendamentos')
+            .insert({
+              cliente_id: clientData.id,
+              barbeiro_id: selectedBarber.id,
+              servico_id: selectedService.id,
+              data: format(selectedDate, 'yyyy-MM-dd'),
+              hora: selectedTime,
+              status: 'confirmado'
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+          return data;
+        },
+        'criar agendamento'
+      );
+
+      if (!result) {
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ Agendamento criado com sucesso:', result.id);
 
       toast.success('✅ Agendamento criado com sucesso!', {
         description: `${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às ${selectedTime}`,
@@ -238,38 +267,14 @@ const TotemNovoAgendamento: React.FC = () => {
 
       navigate('/totem/agendamento-sucesso', {
         state: {
-          appointment: data,
+          appointment: result,
           service: selectedService,
           barber: selectedBarber,
           client: clientData
         }
       });
     } catch (error: any) {
-      console.error('Erro ao criar agendamento:', error);
-      
-      let errorMessage = 'Não foi possível criar o agendamento';
-      let errorDescription = 'Tente novamente ou procure a recepção.';
-      
-      // Tratar erros específicos
-      if (error?.code === '23505') {
-        errorDescription = 'Este horário já está ocupado. Por favor, escolha outro horário.';
-      } else if (error?.message) {
-        errorDescription = error.message;
-      }
-      
-      toast.error(errorMessage, {
-        description: errorDescription,
-        duration: 8000,
-        style: {
-          background: 'hsl(var(--urbana-brown))',
-          color: 'hsl(var(--urbana-light))',
-          border: '3px solid hsl(var(--destructive))',
-          fontSize: '1.25rem',
-          padding: '1.5rem',
-          maxWidth: '600px'
-        }
-      });
-    } finally {
+      console.error('❌ Erro fatal ao criar agendamento:', error);
       setIsLoading(false);
     }
   };
@@ -713,6 +718,13 @@ const TotemNovoAgendamento: React.FC = () => {
             {step === 'datetime' && renderDateTimeSelection()}
           </div>
         </div>
+
+        {/* Timeout Warning */}
+        <TimeoutWarning
+          open={showWarning}
+          timeLeft={formatTimeLeft}
+          onExtend={extendTime}
+        />
       </div>
     </div>
   );

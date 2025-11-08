@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
+import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
+import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
+import { toast } from 'sonner';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
@@ -12,6 +15,17 @@ const TotemHome: React.FC = () => {
   const { logout } = useTotemAuth();
   const [isIdle, setIsIdle] = useState(true);
   const [showNewFeatures, setShowNewFeatures] = useState(false);
+
+  // Sistema de timeout aprimorado
+  const { showWarning, formatTimeLeft, extendTime } = useTotemTimeout({
+    timeout: 5 * 60 * 1000, // 5 minutos
+    warningTime: 30 * 1000, // Avisar 30s antes
+    enabled: false, // Desabilitado na home (reativado nas outras telas)
+    onTimeout: () => {
+      toast.info('Sessão encerrada por inatividade');
+      logout();
+    },
+  });
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -31,14 +45,6 @@ const TotemHome: React.FC = () => {
     setShowNewFeatures(false);
     localStorage.setItem('totem_seen_new_features', 'true');
   };
-
-  useEffect(() => {
-    const idleTimer = setTimeout(() => {
-      setIsIdle(true);
-    }, 60000);
-
-    return () => clearTimeout(idleTimer);
-  }, [isIdle]);
 
   const handleStart = () => {
     setIsIdle(false);
@@ -254,6 +260,12 @@ const TotemHome: React.FC = () => {
       <NewFeaturesModal 
         isOpen={showNewFeatures} 
         onClose={handleCloseNewFeatures} 
+      />
+
+      <TimeoutWarning
+        open={showWarning}
+        timeLeft={formatTimeLeft}
+        onExtend={extendTime}
       />
     </div>
   );
