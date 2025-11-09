@@ -42,6 +42,8 @@ const TotemCheckout: React.FC = () => {
   const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number }>>([]);
 
   useEffect(() => {
+    document.documentElement.classList.add('totem-mode');
+    
     if (!appointment || !session) {
       navigate('/totem/home');
       return;
@@ -50,6 +52,10 @@ const TotemCheckout: React.FC = () => {
     loadAvailableServices();
     loadAvailableProducts();
     loadExistingCheckout();
+    
+    return () => {
+      document.documentElement.classList.remove('totem-mode');
+    };
   }, [appointment, session]);
 
   const loadAvailableServices = async () => {
@@ -741,7 +747,7 @@ const TotemCheckout: React.FC = () => {
           {/* Left Column - Services & Products */}
           <div className="flex flex-col gap-2 sm:gap-3 h-full overflow-y-auto">
             {/* Add Extra Services Card */}
-            <Card className="p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
+            <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-lg shadow-urbana-gold/30">
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-black" />
@@ -753,10 +759,10 @@ const TotemCheckout: React.FC = () => {
               
               <div className="flex gap-2">
                 <Select onValueChange={handleAddExtraService} disabled={isUpdating}>
-                  <SelectTrigger className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-card/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
+                  <SelectTrigger className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-urbana-black-soft/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
                     <SelectValue placeholder="Selecione um serviço" />
                   </SelectTrigger>
-                  <SelectContent className="bg-card backdrop-blur-xl border-urbana-gold/30">
+                  <SelectContent className="bg-urbana-black-soft backdrop-blur-xl border-urbana-gold/30">
                     {availableServices.map((service) => (
                       <SelectItem 
                         key={service.id} 
@@ -816,7 +822,7 @@ const TotemCheckout: React.FC = () => {
             </Card>
 
             {/* Add Products Card */}
-            <Card className="p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
+            <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-urbana-gold-vibrant to-urbana-gold flex items-center justify-center shadow-lg shadow-urbana-gold-vibrant/30">
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-black" />
@@ -827,10 +833,10 @@ const TotemCheckout: React.FC = () => {
               </div>
               
               <Select onValueChange={handleAddProduct} disabled={isUpdating}>
-                <SelectTrigger className="w-full h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-card/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
+                <SelectTrigger className="w-full h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-urbana-black-soft/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
                   <SelectValue placeholder="Selecione um produto" />
                 </SelectTrigger>
-                <SelectContent className="bg-card backdrop-blur-xl border-urbana-gold/30">
+                <SelectContent className="bg-urbana-black-soft backdrop-blur-xl border-urbana-gold/30">
                   {availableProducts.map((product) => (
                     <SelectItem 
                       key={product.id} 
@@ -878,7 +884,7 @@ const TotemCheckout: React.FC = () => {
 
             {/* Summary Card */}
             {resumo && (
-              <Card className="p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex-1 overflow-y-auto">
+              <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-1 overflow-y-auto">
                 <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 pb-2 border-b-2 border-urbana-gold/30">
                   Resumo
                 </h2>
@@ -964,7 +970,7 @@ const TotemCheckout: React.FC = () => {
 
           {/* Right Column - Payment */}
           <div className="flex flex-col gap-2 sm:gap-3 h-full">
-            <Card className="flex-1 p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex flex-col">
+            <Card className="flex-1 p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex flex-col">
               <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 sm:mb-4 text-center">
                 Forma de Pagamento
               </h3>
