@@ -2014,6 +2014,13 @@ export type Database = {
             referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pagamentos_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_vendas_abertas"
+            referencedColumns: ["venda_id"]
+          },
         ]
       }
       painel_agendamentos: {
@@ -3594,6 +3601,13 @@ export type Database = {
             referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "vendas_itens_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_vendas_abertas"
+            referencedColumns: ["venda_id"]
+          },
         ]
       }
       working_hours: {
@@ -3672,6 +3686,45 @@ export type Database = {
             | null
         }
         Relationships: []
+      }
+      vw_vendas_abertas: {
+        Row: {
+          agendamento_id: string | null
+          check_in_time: string | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          cliente_whatsapp: string | null
+          horas_aberta: number | null
+          sessao_status: string | null
+          tipo_venda: string | null
+          total: number | null
+          totem_session_id: string | null
+          updated_at: string | null
+          venda_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_totem_session_id_fkey"
+            columns: ["totem_session_id"]
+            isOneToOne: false
+            referencedRelation: "totem_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -3861,6 +3914,17 @@ export type Database = {
         Args: { p_date: string; p_service_duration: number; p_staff_id: string }
         Returns: {
           time_slot: string
+        }[]
+      }
+      get_barbeiro_horarios_disponiveis: {
+        Args: {
+          p_barbeiro_id: string
+          p_data: string
+          p_duracao_minutos?: number
+        }
+        Returns: {
+          disponivel: boolean
+          horario: string
         }[]
       }
       get_birthday_clients: {
