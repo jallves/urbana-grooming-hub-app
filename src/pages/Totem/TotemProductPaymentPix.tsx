@@ -13,6 +13,7 @@ const TotemProductPaymentPix: React.FC = () => {
   const location = useLocation();
   const { sale, client } = location.state || {};
   const [isProcessing, setIsProcessing] = useState(true);
+  const [simulationTimer, setSimulationTimer] = useState(15); // 15 segundos para simulação
 
   useEffect(() => {
     if (!sale || !client) {
@@ -20,30 +21,47 @@ const TotemProductPaymentPix: React.FC = () => {
       return;
     }
 
-    // Simular pagamento PIX automaticamente após 5 segundos
-    const timer = setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('totem_product_sales')
-          .update({
-            payment_status: 'completed',
-            paid_at: new Date().toISOString()
-          })
-          .eq('id', sale.id);
+    // Timer de simulação - aprova pagamento automaticamente após 15 segundos
+    const interval = setInterval(() => {
+      setSimulationTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          console.log('🤖 Simulação: Aprovando pagamento PIX automaticamente...');
+          toast.info('Simulação', {
+            description: 'Pagamento PIX aprovado automaticamente (simulação)'
+          });
+          handlePaymentSuccess();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-        if (error) throw error;
-        
-        toast.success('Pagamento confirmado!');
-        navigate('/totem/product-payment-success', { state: { sale, client } });
-      } catch (error) {
-        console.error('Erro ao confirmar pagamento:', error);
-        toast.error('Erro ao confirmar pagamento');
-        setIsProcessing(false);
-      }
-    }, 5000);
-
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, [sale, client, navigate]);
+
+  const handlePaymentSuccess = async () => {
+    try {
+      console.log('✅ Pagamento PIX confirmado! Finalizando venda...');
+      
+      const { error } = await supabase
+        .from('totem_product_sales')
+        .update({
+          payment_status: 'completed',
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', sale.id);
+
+      if (error) throw error;
+      
+      toast.success('Pagamento confirmado!');
+      navigate('/totem/product-payment-success', { state: { sale, client } });
+    } catch (error) {
+      console.error('Erro ao confirmar pagamento:', error);
+      toast.error('Erro ao confirmar pagamento');
+      setIsProcessing(false);
+    }
+  };
 
   if (!sale) return null;
 
@@ -71,6 +89,16 @@ const TotemProductPaymentPix: React.FC = () => {
         <h1 className="text-3xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold">
           Pagamento via PIX
         </h1>
+
+        {/* Indicador de Simulação */}
+        <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-4 animate-pulse">
+          <div className="flex items-center justify-center gap-2 text-urbana-gold">
+            <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
+            <p className="text-base font-bold">
+              🤖 SIMULAÇÃO: Pagamento será aprovado em {simulationTimer}s
+            </p>
+          </div>
+        </div>
 
         <div className="flex justify-center">
           <div className="p-4 bg-white rounded-xl">

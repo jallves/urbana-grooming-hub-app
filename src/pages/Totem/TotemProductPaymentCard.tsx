@@ -11,7 +11,8 @@ const TotemProductPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { sale, client, paymentMethod } = location.state || {};
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [simulationTimer, setSimulationTimer] = useState(15); // 15 segundos para simulação
 
   useEffect(() => {
     if (!sale || !client) {
@@ -19,32 +20,47 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
     
-    // Simular processamento de cartão automaticamente
-    setIsProcessing(true);
-    
-    const timer = setTimeout(async () => {
-      try {
-        const { error } = await supabase
-          .from('totem_product_sales')
-          .update({
-            payment_status: 'completed',
-            paid_at: new Date().toISOString()
-          })
-          .eq('id', sale.id);
+    // Timer de simulação - aprova pagamento automaticamente após 15 segundos
+    const interval = setInterval(() => {
+      setSimulationTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          console.log('🤖 Simulação: Aprovando pagamento no cartão automaticamente...');
+          toast.info('Simulação', {
+            description: 'Pagamento no cartão aprovado automaticamente (simulação)'
+          });
+          handlePaymentSuccess();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-        if (error) throw error;
-        
-        toast.success('Pagamento aprovado!');
-        navigate('/totem/product-payment-success', { state: { sale, client } });
-      } catch (error) {
-        console.error('Erro ao processar pagamento:', error);
-        toast.error('Erro ao processar pagamento');
-        setIsProcessing(false);
-      }
-    }, 4000);
-
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, [sale, client, navigate]);
+
+  const handlePaymentSuccess = async () => {
+    try {
+      console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
+      
+      const { error } = await supabase
+        .from('totem_product_sales')
+        .update({
+          payment_status: 'completed',
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', sale.id);
+
+      if (error) throw error;
+      
+      toast.success('Pagamento aprovado!');
+      navigate('/totem/product-payment-success', { state: { sale, client } });
+    } catch (error) {
+      console.error('Erro ao processar pagamento:', error);
+      toast.error('Erro ao processar pagamento');
+      setIsProcessing(false);
+    }
+  };
 
   if (!sale) return null;
 
@@ -67,6 +83,17 @@ const TotemProductPaymentCard: React.FC = () => {
       </div>
 
       <Card className="relative w-full max-w-2xl p-8 space-y-8 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30 text-center z-10">
+        
+        {/* Indicador de Simulação */}
+        <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-4 animate-pulse">
+          <div className="flex items-center justify-center gap-2 text-urbana-gold">
+            <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
+            <p className="text-base font-bold">
+              🤖 SIMULAÇÃO: Pagamento será aprovado em {simulationTimer}s
+            </p>
+          </div>
+        </div>
+
         <div className="flex justify-center">
           <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center animate-pulse">
             <CreditCard className="w-16 h-16 text-white" />
