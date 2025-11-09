@@ -271,7 +271,7 @@ const TotemRating: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 md:space-y-8 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-purple-500/30 shadow-2xl animate-scale-in">
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 md:space-y-8 bg-gradient-to-br from-urbana-black-soft/60 to-urbana-black/40 backdrop-blur-xl border-2 border-purple-500/30 shadow-2xl animate-scale-in">
           {/* Greeting */}
           <div className="text-center space-y-2 sm:space-y-3">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-purple-500/20 mb-2 sm:mb-3">
@@ -330,7 +330,7 @@ const TotemRating: React.FC = () => {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Conte-nos mais sobre sua experiência..."
-              className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] text-sm sm:text-base md:text-lg bg-urbana-black/60 border-urbana-gold/30 focus:border-urbana-gold text-urbana-light placeholder:text-urbana-light/40 resize-none"
+              className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] text-sm sm:text-base md:text-lg bg-urbana-black-soft/50 border-purple-500/30 focus:border-purple-500 text-urbana-light placeholder:text-urbana-light/40 resize-none backdrop-blur-md"
               maxLength={500}
             />
             <p className="text-xs sm:text-sm text-urbana-light/40 text-right">
@@ -361,7 +361,7 @@ const TotemRating: React.FC = () => {
             <Button
               onClick={handleSkip}
               variant="outline"
-              className="flex-1 sm:flex-none h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl border-urbana-gold/30 text-urbana-light hover:bg-urbana-gold/10"
+              className="flex-1 sm:flex-none h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl border-purple-500/30 text-urbana-light hover:bg-purple-500/10 backdrop-blur-md"
             >
               <Home className="w-5 h-5 sm:w-6 sm:h-6 sm:mr-2" />
               <span className="hidden sm:inline">Voltar ao Início</span>
