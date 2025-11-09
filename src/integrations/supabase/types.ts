@@ -3820,6 +3820,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      decrease_product_stock: {
+        Args: { p_product_id: string; p_quantity: number }
+        Returns: undefined
+      }
       generate_payment_number: { Args: never; Returns: string }
       generate_qr_checkin: {
         Args: { p_agendamento_id: string; p_secret: string }

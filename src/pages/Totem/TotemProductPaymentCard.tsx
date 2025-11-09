@@ -43,6 +43,30 @@ const TotemProductPaymentCard: React.FC = () => {
     try {
       console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
       
+      // Buscar itens da venda
+      const { data: saleItems, error: itemsError } = await supabase
+        .from('totem_product_sale_items')
+        .select('produto_id, quantidade')
+        .eq('sale_id', sale.id);
+
+      if (itemsError) throw itemsError;
+
+      // Atualizar estoque de cada produto
+      if (saleItems && saleItems.length > 0) {
+        for (const item of saleItems) {
+          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
+            p_product_id: item.produto_id,
+            p_quantity: item.quantidade
+          });
+
+          if (stockError) {
+            console.error('Erro ao atualizar estoque:', stockError);
+            // Continua mesmo com erro de estoque para não bloquear a venda
+          }
+        }
+      }
+
+      // Atualizar status do pagamento
       const { error } = await supabase
         .from('totem_product_sales')
         .update({
