@@ -11,7 +11,7 @@ import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, client, total, selectedProducts = [] } = location.state || {};
+  const { venda_id, session_id, appointment, client, total, selectedProducts = [], isDirect = false, payment_id } = location.state || {};
   
   const [pixCode, setPixCode] = useState('');
   const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
@@ -21,19 +21,36 @@ const TotemPaymentPix: React.FC = () => {
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
-    if (!venda_id || !session_id || !total) {
+    if (!venda_id || !total) {
       navigate('/totem');
       return;
     }
 
-    generatePixCode();
-    startPaymentCheck();
-    startTimer();
-    startSimulationTimer(); // Iniciar timer de simulação
+    // Se já tem payment_id (venda direta), usar ele
+    if (payment_id) {
+      setPaymentId(payment_id);
+      generatePixCode();
+      startPaymentCheck();
+      startTimer();
+      startSimulationTimer();
+    } else {
+      generatePixCode();
+      startPaymentCheck();
+      startTimer();
+      startSimulationTimer();
+    }
   }, []);
 
   const generatePixCode = async () => {
     try {
+      // Se já tem payment_id (venda direta), apenas gerar QR code
+      if (payment_id) {
+        const transactionId = `TOTEM${Date.now()}`;
+        const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${pixKey}52040000530398654${total.toFixed(2)}5802BR5925BARBEARIA COSTA URBANA6014BELO HORIZONTE62070503***6304${transactionId}`;
+        setPixCode(pixPayload);
+        return;
+      }
+
       // Gerar código PIX (simplificado - integrar com API real depois)
       const transactionId = `TOTEM${Date.now()}`;
       const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${pixKey}52040000530398654${total.toFixed(2)}5802BR5925BARBEARIA COSTA URBANA6014BELO HORIZONTE62070503***6304${transactionId}`;
@@ -119,23 +136,6 @@ const TotemPaymentPix: React.FC = () => {
     try {
       console.log('✅ Pagamento PIX confirmado! Finalizando venda...');
 
-      // 🔒 CORREÇÃO: Produtos já foram salvos no TotemCheckout, apenas atualizar estoque
-      if (selectedProducts && selectedProducts.length > 0) {
-        console.log('📦 Atualizando estoque dos produtos');
-        
-        for (const product of selectedProducts) {
-          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
-            p_product_id: product.product_id,
-            p_quantity: product.quantidade
-          });
-
-          if (stockError) {
-            console.error('Erro ao atualizar estoque:', stockError);
-            // Continua mesmo com erro de estoque
-          }
-        }
-      }
-
       // Atualizar status do pagamento
       const { error: updateError } = await supabase
         .from('totem_payments')
@@ -147,21 +147,58 @@ const TotemPaymentPix: React.FC = () => {
 
       if (updateError) throw updateError;
 
-      // 🔒 CORREÇÃO CRÍTICA: Chamar edge function para finalizar checkout
-      const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
-        body: {
-          action: 'finish',
-          venda_id: venda_id,
-          session_id: session_id,
-          payment_id: paymentId
-        }
-      });
-
-      if (finishError) {
-        console.error('Erro ao finalizar checkout:', finishError);
-        toast.error('Erro ao finalizar', {
-          description: 'Por favor, informe a recepção'
+      // Se é venda direta de produtos, chamar edge function específica
+      if (isDirect) {
+        console.log('📦 Finalizando venda direta de produtos');
+        const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            payment_id: paymentId
+          }
         });
+
+        if (finishError) {
+          console.error('Erro ao finalizar venda direta:', finishError);
+          toast.error('Erro ao finalizar', {
+            description: 'Por favor, informe a recepção'
+          });
+        }
+      } else {
+        // Venda de serviço (checkout normal)
+        // 🔒 Produtos já foram salvos no TotemCheckout, apenas atualizar estoque
+        if (selectedProducts && selectedProducts.length > 0) {
+          console.log('📦 Atualizando estoque dos produtos');
+          
+          for (const product of selectedProducts) {
+            const { error: stockError } = await supabase.rpc('decrease_product_stock', {
+              p_product_id: product.product_id,
+              p_quantity: product.quantidade
+            });
+
+            if (stockError) {
+              console.error('Erro ao atualizar estoque:', stockError);
+              // Continua mesmo com erro de estoque
+            }
+          }
+        }
+
+        // 🔒 Chamar edge function para finalizar checkout de serviço
+        const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            session_id: session_id,
+            payment_id: paymentId
+          }
+        });
+
+        if (finishError) {
+          console.error('Erro ao finalizar checkout:', finishError);
+          toast.error('Erro ao finalizar', {
+            description: 'Por favor, informe a recepção'
+          });
+        }
       }
 
       toast.success('Pagamento confirmado!');
@@ -169,7 +206,8 @@ const TotemPaymentPix: React.FC = () => {
         state: { 
           appointment, 
           client,
-          total
+          total,
+          isDirect
         } 
       });
     } catch (error) {

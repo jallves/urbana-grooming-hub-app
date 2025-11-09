@@ -56,11 +56,29 @@ const TotemDataHora: React.FC = () => {
   const loadTimeSlots = async () => {
     setLoading(true);
     try {
+      const now = new Date();
+      const today = startOfToday();
+      const isToday = format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+      
       // Gerar horários de 8h às 20h
       const slots: TimeSlot[] = [];
       for (let hour = 8; hour <= 20; hour++) {
         for (let minute of [0, 30]) {
           const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          
+          // Se é hoje, filtrar horários passados
+          let isPast = false;
+          if (isToday) {
+            const [slotHour, slotMinute] = timeStr.split(':').map(Number);
+            const slotTime = new Date(today);
+            slotTime.setHours(slotHour, slotMinute, 0, 0);
+            isPast = slotTime < now;
+          }
+          
+          // Se é horário passado, pular
+          if (isPast) {
+            continue;
+          }
           
           // Verificar se horário está ocupado
           // @ts-ignore - Evitar inferência profunda de tipos do Supabase

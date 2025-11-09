@@ -10,7 +10,7 @@ import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 const TotemPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, client, total, selectedProducts = [] } = location.state || {};
+  const { venda_id, session_id, appointment, client, total, selectedProducts = [], isDirect = false, payment_id } = location.state || {};
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
@@ -99,38 +99,37 @@ const TotemPaymentCard: React.FC = () => {
 
       if (paymentError) throw paymentError;
 
-      // 🔒 CORREÇÃO: Produtos já foram salvos no TotemCheckout, apenas atualizar estoque
-      if (selectedProducts && selectedProducts.length > 0) {
-        console.log('📦 Atualizando estoque dos produtos');
-        
-        for (const product of selectedProducts) {
-          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
-            p_product_id: product.product_id,
-            p_quantity: product.quantidade
-          });
-
-          if (stockError) {
-            console.error('Erro ao atualizar estoque:', stockError);
-            // Continua mesmo com erro de estoque
+      // Se é venda direta, usar edge function específica
+      if (isDirect) {
+        const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            payment_id: paymentId
+          }
+        });
+        if (finishError) console.error('Erro ao finalizar venda direta:', finishError);
+      } else {
+        // Atualizar estoque dos produtos
+        if (selectedProducts && selectedProducts.length > 0) {
+          for (const product of selectedProducts) {
+            await supabase.rpc('decrease_product_stock', {
+              p_product_id: product.product_id,
+              p_quantity: product.quantidade
+            });
           }
         }
-      }
 
-      // 🔒 CORREÇÃO CRÍTICA: Chamar edge function para finalizar checkout
-      const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
-        body: {
-          action: 'finish',
-          venda_id: venda_id,
-          session_id: session_id,
-          payment_id: paymentId
-        }
-      });
-
-      if (finishError) {
-        console.error('Erro ao finalizar checkout:', finishError);
-        toast.error('Erro ao finalizar', {
-          description: 'Por favor, informe a recepção'
+        // Finalizar checkout de serviço
+        const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            session_id: session_id,
+            payment_id: paymentId
+          }
         });
+        if (finishError) console.error('Erro ao finalizar checkout:', finishError);
       }
 
       toast.success('Pagamento aprovado!');
@@ -138,7 +137,8 @@ const TotemPaymentCard: React.FC = () => {
         state: { 
           appointment, 
           client,
-          total
+          total,
+          isDirect
         } 
       });
     } catch (error) {

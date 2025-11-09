@@ -201,8 +201,8 @@ const TotemSearch: React.FC = () => {
 
       // Para PRODUTOS, apenas precisamos do cliente
       if (action === 'produtos') {
-        console.log('✅ Navegando para produtos');
-        navigate('/totem/products', {
+        console.log('✅ Navegando para venda de produtos');
+        navigate('/totem/product-sale', {
           state: {
             client: cliente
           }

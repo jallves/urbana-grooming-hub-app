@@ -181,23 +181,25 @@ const TotemProductSale: React.FC = () => {
 
       // Navegar para tela de pagamento
       if (method === 'pix') {
-        navigate('/totem/payment/pix', {
+        navigate('/totem/payment-pix', {
           state: {
-            payment,
-            venda,
+            venda_id: venda.id,
+            session_id: null,
             client,
             total: calculateTotal(),
-            isDirect: true // Flag para indicar venda direta
+            isDirect: true,
+            payment_id: payment.id
           }
         });
       } else {
-        navigate('/totem/payment/card', {
+        navigate('/totem/payment-card', {
           state: {
-            payment,
-            venda,
+            venda_id: venda.id,
+            session_id: null,
             client,
             total: calculateTotal(),
-            isDirect: true
+            isDirect: true,
+            payment_id: payment.id
           }
         });
       }

@@ -180,6 +180,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         session_id: session?.id,
+        session: session, // Incluir objeto session completo
         agendamento: {
           id: agendamento.id,
           cliente: agendamento.cliente?.nome,

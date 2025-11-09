@@ -126,21 +126,21 @@ const TotemAppointmentsList: React.FC = () => {
     );
 
     // Obter horário atual
-    const now = new Date();
+    const currentTime = new Date();
     
     console.log('⏰ Comparação de horários:', {
       agendamento: format(appointmentDateTime, 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-      agora: format(now, 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-      diffMinutes: Math.floor((now.getTime() - appointmentDateTime.getTime()) / (1000 * 60)),
+      agora: format(currentTime, 'dd/MM/yyyy HH:mm', { locale: ptBR }),
+      diffMinutes: Math.floor((currentTime.getTime() - appointmentDateTime.getTime()) / (1000 * 60)),
       appointmentTimestamp: appointmentDateTime.getTime(),
-      nowTimestamp: now.getTime()
+      nowTimestamp: currentTime.getTime()
     });
     
     // Verificar se é muito cedo (mais de 2 horas antes)
     const twoHoursBefore = subHours(appointmentDateTime, 2);
-    if (now < twoHoursBefore) {
-      const hoursUntil = Math.floor((twoHoursBefore.getTime() - now.getTime()) / (1000 * 60 * 60));
-      const minutesUntil = Math.floor(((twoHoursBefore.getTime() - now.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+    if (currentTime < twoHoursBefore) {
+      const hoursUntil = Math.floor((twoHoursBefore.getTime() - currentTime.getTime()) / (1000 * 60 * 60));
+      const minutesUntil = Math.floor(((twoHoursBefore.getTime() - currentTime.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
       console.log('⏰ Muito cedo - faltam', hoursUntil, 'h', minutesUntil, 'min');
       return { 
         allowed: false, 
@@ -150,7 +150,7 @@ const TotemAppointmentsList: React.FC = () => {
 
     // Verificar se é muito tarde (mais de 1 hora depois)
     const oneHourAfter = addHours(appointmentDateTime, 1);
-    if (now > oneHourAfter) {
+    if (currentTime > oneHourAfter) {
       console.log('⏰ Muito tarde - expirou às', format(oneHourAfter, 'HH:mm', { locale: ptBR }));
       return { 
         allowed: false, 
