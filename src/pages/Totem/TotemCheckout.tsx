@@ -144,7 +144,7 @@ const TotemCheckout: React.FC = () => {
           .select('*')
           .eq('agendamento_id', appointment.id)
           .eq('status', 'ABERTA')
-          .order('created_at', { ascending: false })
+          .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         
