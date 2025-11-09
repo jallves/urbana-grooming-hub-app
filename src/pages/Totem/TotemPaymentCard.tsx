@@ -14,13 +14,13 @@ const TotemPaymentCard: React.FC = () => {
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
-  const [simulationTimer, setSimulationTimer] = useState(15); // Timer de simulação (15 segundos)
+  const [simulationTimer, setSimulationTimer] = useState(10); // Timer de simulação (10 segundos)
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     setPaymentType(type);
     setProcessing(true);
-    setSimulationTimer(15); // Reset timer
+    setSimulationTimer(10); // Reset timer
 
     try {
       console.log(`🔄 Processando pagamento ${type === 'credit' ? 'crédito' : 'débito'}...`);
@@ -149,11 +149,16 @@ const TotemPaymentCard: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse delay-1000" />
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden relative">
+      {/* Background */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-black/85 to-urbana-brown/80" />
+      </div>
+
+      {/* Premium background effects */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
       {/* Header */}
@@ -179,12 +184,12 @@ const TotemPaymentCard: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
-        <Card className="w-full max-w-3xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20">
+        <Card className="w-full max-w-3xl p-5 sm:p-6 md:p-8 lg:p-10 space-y-5 sm:space-y-6 md:space-y-8 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20">
           
           {/* Amount Display */}
-          <div className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold-dark/10 rounded-2xl border-2 border-urbana-gold/30">
-            <p className="text-lg sm:text-xl md:text-2xl text-urbana-gray-light">Valor a pagar</p>
-            <p className="text-4xl sm:text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+          <div className="text-center space-y-3 sm:space-y-4 p-5 sm:p-6 md:p-8 bg-gradient-to-r from-urbana-gold/15 via-urbana-gold-vibrant/10 to-urbana-gold/15 rounded-2xl border-2 border-urbana-gold/40 shadow-lg shadow-urbana-gold/20">
+            <p className="text-lg sm:text-xl md:text-2xl text-urbana-light/70 font-medium">Valor total</p>
+            <p className="text-5xl sm:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
               R$ {total?.toFixed(2)}
             </p>
           </div>
@@ -192,9 +197,9 @@ const TotemPaymentCard: React.FC = () => {
           {!processing ? (
             <>
               {/* Card Type Selection */}
-              <div className="space-y-4 sm:space-y-6">
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light text-center">
-                  Selecione o tipo de cartão
+              <div className="space-y-5 sm:space-y-6">
+                <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-light via-urbana-gold-light to-urbana-light text-center">
+                  Escolha o tipo de cartão
                 </h3>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -244,11 +249,14 @@ const TotemPaymentCard: React.FC = () => {
               {/* Processing State */}
               <div className="flex flex-col items-center justify-center py-8 sm:py-12 space-y-6 sm:space-y-8">
                 {/* Indicador de Simulação */}
-                <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-3 sm:p-4 animate-pulse w-full max-w-md">
-                  <div className="flex items-center justify-center gap-2 text-urbana-gold">
-                    <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
-                    <p className="text-sm sm:text-base md:text-lg font-bold">
-                      🤖 SIMULAÇÃO: Pagamento será aprovado em {simulationTimer}s
+                <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-2xl p-4 sm:p-5 animate-pulse w-full max-w-md shadow-lg shadow-urbana-gold/20">
+                  <div className="flex items-center justify-center gap-2 sm:gap-3">
+                    <div className="relative">
+                      <div className="w-3 h-3 bg-urbana-gold rounded-full animate-ping absolute" />
+                      <div className="w-3 h-3 bg-urbana-gold rounded-full" />
+                    </div>
+                    <p className="text-base sm:text-lg md:text-xl font-black text-urbana-gold">
+                      🤖 MODO TESTE: Aprovação em {simulationTimer}s
                     </p>
                   </div>
                 </div>

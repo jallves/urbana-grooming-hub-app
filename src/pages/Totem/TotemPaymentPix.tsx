@@ -17,7 +17,7 @@ const TotemPaymentPix: React.FC = () => {
   const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
   const [paymentId, setPaymentId] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
-  const [simulationTimer, setSimulationTimer] = useState(15); // Timer de simulação (15 segundos)
+  const [simulationTimer, setSimulationTimer] = useState(10); // Timer de simulação (10 segundos)
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -231,83 +231,131 @@ const TotemPaymentPix: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-2 sm:p-3 md:p-4 lg:p-6 overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden relative">
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-black/85 to-urbana-brown/80" />
+      </div>
+
+      {/* Premium background effects */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4 gap-2 sm:gap-3">
+      <div className="flex items-center justify-between mb-4 sm:mb-6 z-10">
         <Button
           onClick={() => navigate('/totem/checkout', { state: { appointment } })}
-          variant="outline"
+          variant="ghost"
           size="lg"
-          className="h-9 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base"
+          className="h-10 sm:h-12 md:h-14 lg:h-16 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/20"
         >
-          <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 sm:mr-2" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
-        <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light text-center flex-1">Pagamento via PIX</h1>
+        <div className="text-center flex-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+            Pagamento via PIX
+          </h1>
+          <p className="text-xs sm:text-sm md:text-base text-urbana-gray-light mt-1">Escaneie o QR Code</p>
+        </div>
         <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center overflow-y-auto py-2">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-3 sm:p-4 md:p-6 lg:p-8 space-y-3 sm:space-y-4 md:space-y-6 bg-card/50 backdrop-blur-sm text-center">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto py-2 z-10">
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20 text-center">
           {/* Indicador de Simulação */}
-          <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-3 sm:p-4 animate-pulse">
-            <div className="flex items-center justify-center gap-2 text-urbana-gold">
-              <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
-              <p className="text-sm sm:text-base md:text-lg font-bold">
-                🤖 SIMULAÇÃO: Pagamento será aprovado em {simulationTimer}s
+          <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-2xl p-4 sm:p-5 animate-pulse shadow-lg shadow-urbana-gold/20">
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
+              <div className="relative">
+                <div className="w-3 h-3 bg-urbana-gold rounded-full animate-ping absolute" />
+                <div className="w-3 h-3 bg-urbana-gold rounded-full" />
+              </div>
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-urbana-gold">
+                🤖 MODO TESTE: Aprovação automática em {simulationTimer}s
               </p>
             </div>
           </div>
 
           {/* Timer */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 text-lg sm:text-xl md:text-2xl lg:text-3xl">
-            <Clock className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
-            <span className="font-bold text-urbana-light">
-              Tempo: <span className="text-urbana-gold">{formatTime(timeLeft)}</span>
-            </span>
+          <div className="flex items-center justify-center gap-3 sm:gap-4 p-4 bg-urbana-black/30 rounded-2xl border border-urbana-gold/20">
+            <Clock className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold animate-pulse" />
+            <div className="text-left">
+              <p className="text-sm sm:text-base text-urbana-light/60">Tempo restante</p>
+              <p className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-gold">
+                {formatTime(timeLeft)}
+              </p>
+            </div>
           </div>
 
           {/* QR Code */}
-          <div className="flex justify-center py-4 sm:py-6 md:py-8">
-            <div className="bg-white p-3 sm:p-4 md:p-6 lg:p-8 rounded-xl sm:rounded-2xl">
-              {pixCode ? (
-                <QRCodeSVG value={pixCode} size={window.innerWidth < 640 ? 200 : window.innerWidth < 768 ? 250 : 300} />
-              ) : (
-                <div className="w-[200px] h-[200px] sm:w-[250px] sm:h-[250px] md:w-[300px] md:h-[300px] flex items-center justify-center">
-                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-500">Gerando QR Code...</p>
-                </div>
-              )}
+          <div className="flex justify-center py-6 sm:py-8">
+            <div className="relative">
+              <div className="absolute -inset-4 bg-urbana-gold/20 rounded-3xl blur-2xl" />
+              <div className="relative bg-white p-4 sm:p-5 md:p-6 lg:p-8 rounded-2xl shadow-2xl">
+                {pixCode ? (
+                  <QRCodeSVG value={pixCode} size={window.innerWidth < 640 ? 220 : window.innerWidth < 768 ? 260 : 320} />
+                ) : (
+                  <div className="w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] md:w-[320px] md:h-[320px] flex items-center justify-center">
+                    <div className="text-center space-y-3">
+                      <div className="w-12 h-12 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
+                      <p className="text-base sm:text-lg text-gray-500 font-medium">Gerando QR Code...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Amount */}
-          <div className="space-y-2 sm:space-y-3 md:space-y-4">
-            <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-urbana-light/60">Valor a pagar</p>
-            <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-urbana-gold">
+          <div className="space-y-3 p-6 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold-vibrant/10 to-urbana-gold/10 rounded-2xl border-2 border-urbana-gold/30">
+            <p className="text-lg sm:text-xl md:text-2xl text-urbana-light/70 font-medium">Valor total</p>
+            <p className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold animate-pulse">
               R$ {total?.toFixed(2)}
             </p>
           </div>
 
           {/* Instructions */}
-          <div className="pt-4 sm:pt-6 md:pt-8 space-y-2 sm:space-y-3 md:space-y-4 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl text-urbana-light/70">
-            <p className="flex items-center justify-center gap-2 sm:gap-3">
-              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-urbana-gold flex-shrink-0" />
-              Abra o app do seu banco
-            </p>
-            <p className="flex items-center justify-center gap-2 sm:gap-3">
-              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-urbana-gold flex-shrink-0" />
-              Escolha Pix e escaneie o código
-            </p>
-            <p className="flex items-center justify-center gap-2 sm:gap-3">
-              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-urbana-gold flex-shrink-0" />
-              Confirme o pagamento
-            </p>
+          <div className="pt-6 space-y-4">
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light mb-4">Como pagar:</h3>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-urbana-gold/20 flex items-center justify-center border-2 border-urbana-gold">
+                  <span className="text-lg sm:text-xl font-black text-urbana-gold">1</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">Abra o app do seu banco</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-urbana-gold/20 flex items-center justify-center border-2 border-urbana-gold">
+                  <span className="text-lg sm:text-xl font-black text-urbana-gold">2</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">Escolha Pix e escaneie o código</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
+                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-urbana-gold/20 flex items-center justify-center border-2 border-urbana-gold">
+                  <span className="text-lg sm:text-xl font-black text-urbana-gold">3</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">Confirme o pagamento</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <p className="text-base sm:text-lg md:text-xl text-urbana-light/60 animate-pulse pt-4 sm:pt-6 md:pt-8">
-            Aguardando confirmação do pagamento...
-          </p>
+          <div className="flex items-center justify-center gap-2 text-urbana-light/60 animate-pulse pt-4">
+            <div className="w-2 h-2 bg-urbana-gold rounded-full animate-bounce" />
+            <p className="text-base sm:text-lg md:text-xl font-medium">
+              Aguardando confirmação do pagamento...
+            </p>
+          </div>
         </Card>
       </div>
     </div>
