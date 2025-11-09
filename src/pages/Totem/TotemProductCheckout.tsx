@@ -131,7 +131,7 @@ const TotemProductCheckout: React.FC = () => {
       {/* Content */}
       <div className="flex-1 overflow-y-auto z-10 space-y-4">
         {/* Order Summary */}
-        <Card className="p-4 sm:p-6 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30">
+        <Card className="p-4 sm:p-6 bg-white/5 backdrop-blur-sm border-2 border-urbana-gold/30">
           <h2 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 flex items-center gap-2">
             <Package className="w-6 h-6 text-urbana-gold" />
             Resumo do Pedido
@@ -139,7 +139,7 @@ const TotemProductCheckout: React.FC = () => {
 
           <div className="space-y-3">
             {(cart as CartItem[]).map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-urbana-black/30 rounded-lg">
+              <div key={index} className="flex items-center justify-between p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-urbana-gold/20">
                 <div className="flex-1">
                   <p className="font-bold text-urbana-light">{item.product.nome}</p>
                   <p className="text-sm text-urbana-light/60">
@@ -164,7 +164,7 @@ const TotemProductCheckout: React.FC = () => {
         </Card>
 
         {/* Payment Methods */}
-        <Card className="p-4 sm:p-6 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30">
+        <Card className="p-4 sm:p-6 bg-white/5 backdrop-blur-sm border-2 border-urbana-gold/30">
           <h2 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4">
             Escolha a forma de pagamento
           </h2>
