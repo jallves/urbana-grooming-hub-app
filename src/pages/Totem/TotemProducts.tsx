@@ -194,7 +194,7 @@ const TotemProducts: React.FC = () => {
       {/* Products Grid */}
       <div className="flex-1 overflow-y-auto z-10">
         {filteredProducts.length === 0 ? (
-          <Card className="p-8 text-center bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30">
+          <Card className="p-8 text-center bg-transparent backdrop-blur-md border-2 border-urbana-gold/30">
             <Package className="w-16 h-16 text-urbana-gold mx-auto mb-4" />
             <p className="text-xl text-urbana-light">Nenhum produto disponível nesta categoria</p>
           </Card>
@@ -207,7 +207,7 @@ const TotemProducts: React.FC = () => {
               return (
                 <Card
                   key={product.id}
-                  className="relative overflow-hidden bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30 active:border-urbana-gold transition-all"
+                  className="relative overflow-hidden bg-transparent backdrop-blur-md border-2 border-urbana-gold/30 active:border-urbana-gold transition-all"
                 >
                   {/* Product Image */}
                   <div className="aspect-square bg-urbana-black/50 relative overflow-hidden">
@@ -288,7 +288,7 @@ const TotemProducts: React.FC = () => {
 
       {/* Cart Summary Footer */}
       {cart.length > 0 && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold/30 to-urbana-gold/20 border-2 border-urbana-gold/50 rounded-xl backdrop-blur-sm z-10">
+        <div className="mt-4 p-4 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold/20 to-urbana-gold/10 border-2 border-urbana-gold/40 rounded-xl backdrop-blur-md z-10">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-urbana-light/60">Total do Carrinho</p>

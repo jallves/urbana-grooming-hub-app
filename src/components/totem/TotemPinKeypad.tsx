@@ -202,8 +202,8 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
           </p>
         </div>
 
-        {/* Card principal com glassmorphism */}
-        <Card className="bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/40 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 animate-scale-in" style={{ animationDelay: '0.3s' }}>
+        {/* Card principal com glassmorphism transparente */}
+        <Card className="bg-transparent backdrop-blur-xl border-2 border-urbana-gold/30 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 animate-scale-in" style={{ animationDelay: '0.3s' }}>
           
           {/* Display de PIN ou Telefone */}
           <div className="bg-urbana-black/60 border-2 border-urbana-gold/40 rounded-xl p-4 sm:p-5 md:p-6">
