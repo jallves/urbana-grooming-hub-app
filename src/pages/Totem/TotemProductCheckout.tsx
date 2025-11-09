@@ -19,6 +19,7 @@ const TotemProductCheckout: React.FC = () => {
     document.documentElement.classList.add('totem-mode');
     
     if (!client || !cart || cart.length === 0) {
+      toast.error('Carrinho vazio ou cliente não identificado');
       navigate('/totem/home');
       return;
     }
@@ -26,7 +27,7 @@ const TotemProductCheckout: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, []);
+  }, [client, cart, navigate]);
 
   const cartTotal = (cart as CartItem[]).reduce((sum, item) => sum + (item.product.preco * item.quantity), 0);
 
@@ -173,7 +174,7 @@ const TotemProductCheckout: React.FC = () => {
             <Button
               onClick={() => handlePayment('pix')}
               disabled={isProcessing}
-              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-teal-500/20 to-teal-600/20 border-2 border-teal-500/40 active:border-teal-500 text-teal-300 active:text-teal-100 transition-all duration-100 active:scale-95 rounded-xl shadow-lg shadow-teal-500/10"
+              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-teal-500/20 to-teal-600/20 hover:from-teal-500/30 hover:to-teal-600/30 border-2 border-teal-500/40 hover:border-teal-400 active:border-teal-500 text-teal-300 hover:text-teal-200 active:text-teal-100 transition-all duration-200 active:scale-95 rounded-xl shadow-lg shadow-teal-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Smartphone className="w-12 h-12" />
               <span className="text-lg font-bold">PIX</span>
@@ -182,7 +183,7 @@ const TotemProductCheckout: React.FC = () => {
             <Button
               onClick={() => handlePayment('credit')}
               disabled={isProcessing}
-              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-2 border-blue-500/40 active:border-blue-500 text-blue-300 active:text-blue-100 transition-all duration-100 active:scale-95 rounded-xl shadow-lg shadow-blue-500/10"
+              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border-2 border-blue-500/40 hover:border-blue-400 active:border-blue-500 text-blue-300 hover:text-blue-200 active:text-blue-100 transition-all duration-200 active:scale-95 rounded-xl shadow-lg shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-12 h-12" />
               <span className="text-lg font-bold">Crédito</span>
@@ -191,7 +192,7 @@ const TotemProductCheckout: React.FC = () => {
             <Button
               onClick={() => handlePayment('debit')}
               disabled={isProcessing}
-              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-purple-500/20 to-purple-600/20 border-2 border-purple-500/40 active:border-purple-500 text-purple-300 active:text-purple-100 transition-all duration-100 active:scale-95 rounded-xl shadow-lg shadow-purple-500/10"
+              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border-2 border-purple-500/40 hover:border-purple-400 active:border-purple-500 text-purple-300 hover:text-purple-200 active:text-purple-100 transition-all duration-200 active:scale-95 rounded-xl shadow-lg shadow-purple-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CreditCard className="w-12 h-12" />
               <span className="text-lg font-bold">Débito</span>
