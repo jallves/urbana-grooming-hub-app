@@ -35,46 +35,49 @@ const TotemProductCheckout: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      // For PIX, create sale immediately
+      console.log('🛒 Criando venda de produtos usando tabela vendas (unificada)');
+      
+      // 🔒 CORREÇÃO CRÍTICA: Usar tabela 'vendas' ao invés de 'totem_product_sales'
+      const { data: sale, error: saleError } = await supabase
+        .from('vendas')
+        .insert({
+          cliente_id: client.id,
+          subtotal: cartTotal,
+          total: cartTotal,
+          desconto: 0,
+          status: 'ABERTA'
+        })
+        .select()
+        .single();
+
+      if (saleError) throw saleError;
+
+      // Criar itens da venda usando vendas_itens
+      const saleItems = (cart as CartItem[]).map(item => ({
+        venda_id: sale.id,
+        tipo: 'PRODUTO',
+        ref_id: item.product.id,
+        nome: item.product.nome,
+        quantidade: item.quantity,
+        preco_unit: item.product.preco,
+        total: item.product.preco * item.quantity
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('vendas_itens')
+        .insert(saleItems);
+
+      if (itemsError) throw itemsError;
+
+      console.log('✅ Venda criada:', sale.id);
+
       if (paymentMethod === 'pix') {
-        const { data: sale, error: saleError } = await supabase
-          .from('totem_product_sales')
-          .insert({
-            cliente_id: client.id,
-            total: cartTotal,
-            payment_method: paymentMethod,
-            payment_status: 'pending',
-            pix_key: '31996857008',
-            transaction_id: `PROD${Date.now()}`
-          })
-          .select()
-          .single();
-
-        if (saleError) throw saleError;
-
-        // Create sale items
-        const saleItems = (cart as CartItem[]).map(item => ({
-          sale_id: sale.id,
-          produto_id: item.product.id,
-          quantidade: item.quantity,
-          preco_unitario: item.product.preco,
-          subtotal: item.product.preco * item.quantity
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('totem_product_sale_items')
-          .insert(saleItems);
-
-        if (itemsError) throw itemsError;
-
-        // Navigate to PIX payment screen
         navigate('/totem/product-payment-pix', {
           state: { sale, client, cart }
         });
       } else {
-        // Navigate to card type selection
         navigate('/totem/product-card-type', {
-          state: { client, cart }
+          state: { sale, client, cart }
         });
       }
 

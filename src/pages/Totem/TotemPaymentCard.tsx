@@ -84,114 +84,65 @@ const TotemPaymentCard: React.FC = () => {
 
   const finalizePayment = async (paymentId: string) => {
     try {
-      console.log('✅ Pagamento aprovado! Finalizando checkout...');
+      console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
+      
+      // Atualizar status do pagamento
+      const { error: paymentError } = await supabase
+        .from('totem_payments')
+        .update({
+          status: 'completed',
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', paymentId);
 
-      // Adicionar produtos na venda se houver
+      if (paymentError) throw paymentError;
+
+      // 🔒 CORREÇÃO: Produtos já foram salvos no TotemCheckout, apenas atualizar estoque
       if (selectedProducts && selectedProducts.length > 0) {
-        console.log('📦 Adicionando produtos à venda...');
+        console.log('📦 Atualizando estoque dos produtos');
         
         for (const product of selectedProducts) {
-          // Inserir produto na venda
-          const { error: productError } = await supabase
-            .from('vendas_itens')
-            .insert({
-              venda_id: venda_id,
-              tipo: 'PRODUTO',
-              ref_id: product.product_id,
-              nome: product.nome,
-              quantidade: product.quantidade,
-              preco_unit: product.preco,
-              total: product.preco * product.quantidade
-            });
-
-          if (productError) {
-            console.error('❌ Erro ao adicionar produto:', productError);
-            // Continua mesmo com erro para não bloquear o pagamento
-          }
-
-          // Atualizar estoque
           const { error: stockError } = await supabase.rpc('decrease_product_stock', {
             p_product_id: product.product_id,
             p_quantity: product.quantidade
           });
 
           if (stockError) {
-            console.error('❌ Erro ao atualizar estoque:', stockError);
+            console.error('Erro ao atualizar estoque:', stockError);
             // Continua mesmo com erro de estoque
           }
         }
-
-        // Atualizar total da venda
-        const { error: updateTotalError } = await supabase
-          .from('vendas')
-          .update({
-            total: total,
-            subtotal: total
-          })
-          .eq('id', venda_id);
-
-        if (updateTotalError) {
-          console.error('❌ Erro ao atualizar total:', updateTotalError);
-        }
       }
 
-      // Atualizar pagamento
-      const { error: updateError } = await supabase
-        .from('totem_payments')
-        .update({ 
-          status: 'completed',
-          paid_at: new Date().toISOString()
-        })
-        .eq('id', paymentId);
-
-      if (updateError) {
-        console.error('❌ Erro ao atualizar pagamento:', updateError);
-        toast.error('Erro ao confirmar', {
-          description: 'Pagamento aprovado mas houve erro ao confirmar. Procure a recepção.'
-        });
-        throw updateError;
-      }
-
-      // Chamar edge function para finalizar checkout
-      const { data: finishData, error: finishError } = await supabase.functions.invoke('totem-checkout', {
+      // 🔒 CORREÇÃO CRÍTICA: Chamar edge function para finalizar checkout
+      const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'finish',
-          venda_id,
-          session_id,
+          venda_id: venda_id,
+          session_id: session_id,
           payment_id: paymentId
         }
       });
 
       if (finishError) {
-        console.error('❌ Erro ao finalizar checkout:', finishError);
+        console.error('Erro ao finalizar checkout:', finishError);
         toast.error('Erro ao finalizar', {
-          description: finishError.message || 'Pagamento aprovado mas houve erro ao finalizar. Procure a recepção.'
+          description: 'Por favor, informe a recepção'
         });
-        throw finishError;
       }
 
-      console.log('✅ Checkout finalizado com sucesso!', finishData);
-
-      // Navegar para tela de sucesso
-      navigate('/totem/payment-success', {
-        state: {
-          appointment,
+      toast.success('Pagamento aprovado!');
+      navigate('/totem/payment-success', { 
+        state: { 
+          appointment, 
           client,
-          total,
-          paymentMethod: paymentType
-        }
+          total
+        } 
       });
     } catch (error) {
-      console.error('❌ Erro no pagamento:', error);
-      toast.error('Erro no pagamento', {
-        description: 'Ocorreu um erro ao processar o pagamento.'
-      });
+      console.error('Erro ao finalizar pagamento:', error);
+      toast.error('Erro ao processar pagamento');
       setProcessing(false);
-      setPaymentType(null);
-      
-      setTimeout(() => {
-        navigate('/totem/home');
-      }, 3000);
     }
   };
 

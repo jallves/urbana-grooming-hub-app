@@ -371,16 +371,28 @@ Deno.serve(async (req) => {
         rate: commission_rate
       })
 
-      await supabase
+      // 🔒 CORREÇÃO CRÍTICA: Verificar se comissão já existe antes de inserir
+      const { data: existingCommission } = await supabase
         .from('barber_commissions')
-        .insert({
-          barber_id: venda.barbeiro_id,
-          appointment_id: session.appointment_id,
-          amount: commission_amount,
-          commission_rate: commission_rate,
-          status: 'pending',
-          appointment_source: 'totem'
-        })
+        .select('id')
+        .eq('appointment_id', session.appointment_id)
+        .maybeSingle()
+
+      if (!existingCommission) {
+        await supabase
+          .from('barber_commissions')
+          .insert({
+            barber_id: venda.barbeiro_id,
+            appointment_id: session.appointment_id,
+            amount: commission_amount,
+            commission_rate: commission_rate,
+            status: 'pending',
+            appointment_source: 'totem'
+          })
+        console.log('✅ Comissão criada')
+      } else {
+        console.log('⚠️ Comissão já existe, pulando inserção')
+      }
 
       // 7. Criar transações financeiras
       // Receita

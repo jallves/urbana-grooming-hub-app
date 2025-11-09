@@ -44,11 +44,12 @@ const TotemProductPaymentPix: React.FC = () => {
     try {
       console.log('✅ Pagamento PIX confirmado! Finalizando venda...');
       
-      // Buscar itens da venda
+      // 🔒 CORREÇÃO: Buscar itens da venda usando vendas_itens
       const { data: saleItems, error: itemsError } = await supabase
-        .from('totem_product_sale_items')
-        .select('produto_id, quantidade')
-        .eq('sale_id', sale.id);
+        .from('vendas_itens')
+        .select('ref_id, quantidade')
+        .eq('venda_id', sale.id)
+        .eq('tipo', 'PRODUTO');
 
       if (itemsError) throw itemsError;
 
@@ -56,29 +57,29 @@ const TotemProductPaymentPix: React.FC = () => {
       if (saleItems && saleItems.length > 0) {
         for (const item of saleItems) {
           const { error: stockError } = await supabase.rpc('decrease_product_stock', {
-            p_product_id: item.produto_id,
+            p_product_id: item.ref_id,
             p_quantity: item.quantidade
           });
 
           if (stockError) {
             console.error('Erro ao atualizar estoque:', stockError);
-            // Continua mesmo com erro de estoque para não bloquear a venda
+            // Continua mesmo com erro de estoque
           }
         }
       }
 
-      // Atualizar status do pagamento
+      // 🔒 CORREÇÃO: Atualizar status usando tabela 'vendas'
       const { error } = await supabase
-        .from('totem_product_sales')
+        .from('vendas')
         .update({
-          payment_status: 'completed',
-          paid_at: new Date().toISOString()
+          status: 'PAGA',
+          updated_at: new Date().toISOString()
         })
         .eq('id', sale.id);
 
       if (error) throw error;
       
-      toast.success('Pagamento confirmado!');
+      toast.success('Pagamento aprovado!');
       navigate('/totem/product-payment-success', { state: { sale, client } });
     } catch (error) {
       console.error('Erro ao confirmar pagamento:', error);

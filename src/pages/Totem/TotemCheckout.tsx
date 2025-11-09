@@ -558,7 +558,7 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
-  const handlePaymentMethod = (method: 'pix' | 'card') => {
+  const handlePaymentMethod = async (method: 'pix' | 'card') => {
     if (!vendaId || !sessionId || !resumo) {
       toast.error('Erro', {
         description: 'Dados do checkout não encontrados'
@@ -575,30 +575,84 @@ const TotemCheckout: React.FC = () => {
 
     setProcessing(true);
     
-    const totalWithProducts = resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+    try {
+      // 🔒 CORREÇÃO CRÍTICA: Salvar produtos ANTES do pagamento
+      if (selectedProducts.length > 0) {
+        console.log('💾 Salvando produtos em vendas_itens ANTES do pagamento');
+        
+        const productItems = selectedProducts.map(product => ({
+          venda_id: vendaId,
+          tipo: 'PRODUTO',
+          ref_id: product.product_id,
+          nome: product.nome,
+          quantidade: product.quantidade,
+          preco_unit: product.preco,
+          total: product.preco * product.quantidade
+        }));
 
-    if (method === 'pix') {
-      navigate('/totem/payment-pix', {
-        state: {
-          venda_id: vendaId,
-          session_id: sessionId,
-          appointment: appointment,
-          client: client,
-          total: totalWithProducts,
-          selectedProducts: selectedProducts
+        const { error: itemsError } = await supabase
+          .from('vendas_itens')
+          .insert(productItems);
+
+        if (itemsError) {
+          console.error('❌ Erro ao salvar produtos:', itemsError);
+          toast.error('Erro ao adicionar produtos', {
+            description: 'Tente novamente'
+          });
+          setProcessing(false);
+          return;
         }
-      });
-    } else {
-      navigate('/totem/payment-card', {
-        state: {
-          venda_id: vendaId,
-          session_id: sessionId,
-          appointment: appointment,
-          client: client,
-          total: totalWithProducts,
-          selectedProducts: selectedProducts
+
+        // Atualizar total da venda
+        const productsTotal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+        const newTotal = resumo.total + productsTotal;
+
+        const { error: updateError } = await supabase
+          .from('vendas')
+          .update({
+            subtotal: newTotal,
+            total: newTotal
+          })
+          .eq('id', vendaId);
+
+        if (updateError) {
+          console.error('❌ Erro ao atualizar total:', updateError);
         }
+
+        console.log('✅ Produtos salvos com sucesso - Novo total:', newTotal);
+      }
+      
+      const totalWithProducts = resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+
+      if (method === 'pix') {
+        navigate('/totem/payment-pix', {
+          state: {
+            venda_id: vendaId,
+            session_id: sessionId,
+            appointment: appointment,
+            client: client,
+            total: totalWithProducts,
+            selectedProducts: selectedProducts
+          }
+        });
+      } else {
+        navigate('/totem/payment-card', {
+          state: {
+            venda_id: vendaId,
+            session_id: sessionId,
+            appointment: appointment,
+            client: client,
+            total: totalWithProducts,
+            selectedProducts: selectedProducts
+          }
+        });
+      }
+    } catch (error) {
+      console.error('❌ Erro ao processar pagamento:', error);
+      toast.error('Erro ao processar', {
+        description: 'Tente novamente'
       });
+      setProcessing(false);
     }
   };
 
