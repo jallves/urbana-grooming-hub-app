@@ -17,7 +17,7 @@ const TotemPaymentPix: React.FC = () => {
   const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
   const [paymentId, setPaymentId] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
-  const [simulationTimer, setSimulationTimer] = useState(10); // Timer de simulação (10 segundos)
+  const [simulationTimer, setSimulationTimer] = useState(10); // ⏱️ TESTE: 10 segundos
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -29,16 +29,29 @@ const TotemPaymentPix: React.FC = () => {
     // Se já tem payment_id (venda direta), usar ele
     if (payment_id) {
       setPaymentId(payment_id);
-      generatePixCode();
-      startPaymentCheck();
-      startTimer();
-      startSimulationTimer();
-    } else {
-      generatePixCode();
-      startPaymentCheck();
-      startTimer();
-      startSimulationTimer();
     }
+
+    // Iniciar processos
+    generatePixCode();
+    startTimer();
+    
+    // ⏱️ Timer de simulação: aprovar pagamento após 10 segundos
+    const simulationInterval = setInterval(() => {
+      setSimulationTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(simulationInterval);
+          console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
+          toast.info('Modo Teste', {
+            description: '✅ Pagamento PIX aprovado automaticamente'
+          });
+          handlePaymentSuccess();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(simulationInterval);
   }, []);
 
   const generatePixCode = async () => {
@@ -80,26 +93,6 @@ const TotemPaymentPix: React.FC = () => {
     }
   };
 
-  const startPaymentCheck = () => {
-    // Verificar pagamento a cada 3 segundos
-    const interval = setInterval(async () => {
-      if (!paymentId) return;
-
-      const { data: payment } = await supabase
-        .from('totem_payments')
-        .select('status')
-        .eq('id', paymentId)
-        .single();
-
-      if (payment?.status === 'completed') {
-        clearInterval(interval);
-        handlePaymentSuccess();
-      }
-    }, 3000);
-
-    // Limpar interval após 5 minutos
-    setTimeout(() => clearInterval(interval), 300000);
-  };
 
   const startTimer = () => {
     const interval = setInterval(() => {
@@ -114,23 +107,6 @@ const TotemPaymentPix: React.FC = () => {
     }, 1000);
   };
 
-  // Timer de simulação - aprova pagamento automaticamente após 15 segundos
-  const startSimulationTimer = () => {
-    const interval = setInterval(() => {
-      setSimulationTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          console.log('🤖 Simulação: Aprovando pagamento automaticamente...');
-          toast.info('Simulação', {
-            description: 'Pagamento PIX aprovado automaticamente (simulação)'
-          });
-          handlePaymentSuccess();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
 
   const handlePaymentSuccess = async () => {
     try {
