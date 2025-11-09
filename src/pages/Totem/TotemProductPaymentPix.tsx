@@ -12,18 +12,16 @@ const TotemProductPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { sale, client } = location.state || {};
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
     if (!sale || !client) {
       navigate('/totem/home');
+      return;
     }
-  }, []);
 
-  const simulatePayment = async () => {
-    setIsSimulating(true);
-    
-    setTimeout(async () => {
+    // Simular pagamento PIX automaticamente após 5 segundos
+    const timer = setTimeout(async () => {
       try {
         const { error } = await supabase
           .from('totem_product_sales')
@@ -38,11 +36,14 @@ const TotemProductPaymentPix: React.FC = () => {
         toast.success('Pagamento confirmado!');
         navigate('/totem/product-payment-success', { state: { sale, client } });
       } catch (error) {
+        console.error('Erro ao confirmar pagamento:', error);
         toast.error('Erro ao confirmar pagamento');
-        setIsSimulating(false);
+        setIsProcessing(false);
       }
-    }, 2000);
-  };
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [sale, client, navigate]);
 
   if (!sale) return null;
 
@@ -77,22 +78,21 @@ const TotemProductPaymentPix: React.FC = () => {
           </div>
         </div>
 
-        <div className="space-y-2 text-center">
+        <div className="space-y-4 text-center">
           <p className="text-2xl font-black text-urbana-gold">
             R$ {sale.total.toFixed(2)}
           </p>
           <p className="text-urbana-light/60">
             Escaneie o QR Code para pagar
           </p>
+          
+          {isProcessing && (
+            <div className="flex items-center justify-center gap-3 pt-4">
+              <div className="w-3 h-3 rounded-full bg-urbana-gold animate-pulse" />
+              <p className="text-urbana-light">Aguardando pagamento...</p>
+            </div>
+          )}
         </div>
-
-        <Button
-          onClick={simulatePayment}
-          disabled={isSimulating}
-          className="w-full h-16 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold text-xl"
-        >
-          {isSimulating ? 'Processando...' : 'Simular Pagamento (DEMO)'}
-        </Button>
       </Card>
     </div>
   );

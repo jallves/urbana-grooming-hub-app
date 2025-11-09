@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CreditCard, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentCard: React.FC = () => {
@@ -18,22 +19,32 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
     
-    // Auto-process card payment after 2 seconds
-    const timer = setTimeout(() => {
-      processPayment();
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const processPayment = () => {
+    // Simular processamento de cartão automaticamente
     setIsProcessing(true);
     
-    setTimeout(() => {
-      toast.success('Pagamento aprovado!');
-      navigate('/totem/product-payment-success', { state: { sale, client } });
-    }, 3000);
-  };
+    const timer = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('totem_product_sales')
+          .update({
+            payment_status: 'completed',
+            paid_at: new Date().toISOString()
+          })
+          .eq('id', sale.id);
+
+        if (error) throw error;
+        
+        toast.success('Pagamento aprovado!');
+        navigate('/totem/product-payment-success', { state: { sale, client } });
+      } catch (error) {
+        console.error('Erro ao processar pagamento:', error);
+        toast.error('Erro ao processar pagamento');
+        setIsProcessing(false);
+      }
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [sale, client, navigate]);
 
   if (!sale) return null;
 
