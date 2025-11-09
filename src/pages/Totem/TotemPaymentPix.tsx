@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, client, total } = location.state || {};
+  const { venda_id, session_id, appointment, client, total, selectedProducts = [] } = location.state || {};
   
   const [pixCode, setPixCode] = useState('');
   const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
@@ -118,6 +118,55 @@ const TotemPaymentPix: React.FC = () => {
       console.log('✅ Pagamento PIX confirmado! Finalizando checkout...');
       console.log('📋 Dados do pagamento:', { appointment, client, total, paymentId });
       
+      // Adicionar produtos na venda se houver
+      if (selectedProducts && selectedProducts.length > 0) {
+        console.log('📦 Adicionando produtos à venda...');
+        
+        for (const product of selectedProducts) {
+          // Inserir produto na venda
+          const { error: productError } = await supabase
+            .from('vendas_itens')
+            .insert({
+              venda_id: venda_id,
+              tipo: 'PRODUTO',
+              ref_id: product.product_id,
+              nome: product.nome,
+              quantidade: product.quantidade,
+              preco_unit: product.preco,
+              total: product.preco * product.quantidade
+            });
+
+          if (productError) {
+            console.error('❌ Erro ao adicionar produto:', productError);
+            // Continua mesmo com erro para não bloquear o pagamento
+          }
+
+          // Atualizar estoque
+          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
+            p_product_id: product.product_id,
+            p_quantity: product.quantidade
+          });
+
+          if (stockError) {
+            console.error('❌ Erro ao atualizar estoque:', stockError);
+            // Continua mesmo com erro de estoque
+          }
+        }
+
+        // Atualizar total da venda
+        const { error: updateTotalError } = await supabase
+          .from('vendas')
+          .update({
+            total: total,
+            subtotal: total
+          })
+          .eq('id', venda_id);
+
+        if (updateTotalError) {
+          console.error('❌ Erro ao atualizar total:', updateTotalError);
+        }
+      }
+
       // Atualizar status do pagamento
       const { error: updateError } = await supabase
         .from('totem_payments')

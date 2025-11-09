@@ -36,6 +36,8 @@ const TotemCheckout: React.FC = () => {
   const [extraServices, setExtraServices] = useState<Array<{ service_id: string; nome: string; preco: number }>>([]);
   const [needsRecalculation, setNeedsRecalculation] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number }>>([]);
 
   useEffect(() => {
     if (!appointment || !session) {
@@ -44,6 +46,7 @@ const TotemCheckout: React.FC = () => {
     }
     
     loadAvailableServices();
+    loadAvailableProducts();
     loadExistingCheckout();
   }, [appointment, session]);
 
@@ -58,6 +61,22 @@ const TotemCheckout: React.FC = () => {
       setAvailableServices(services || []);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
+    }
+  };
+
+  const loadAvailableProducts = async () => {
+    try {
+      const { data: products, error } = await supabase
+        .from('painel_produtos')
+        .select('*')
+        .eq('is_active', true)
+        .gt('estoque', 0)
+        .order('nome');
+
+      if (error) throw error;
+      setAvailableProducts(products || []);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
     }
   };
 
@@ -237,6 +256,53 @@ const TotemCheckout: React.FC = () => {
     toast.info('Serviço removido', {
       description: removedService.nome
     });
+  };
+
+  const handleAddProduct = (productId: string) => {
+    const product = availableProducts.find(p => p.id === productId);
+    if (product) {
+      const existingProduct = selectedProducts.find(p => p.product_id === productId);
+      
+      if (existingProduct) {
+        if (existingProduct.quantidade >= product.estoque) {
+          toast.error('Estoque insuficiente');
+          return;
+        }
+        setSelectedProducts(selectedProducts.map(p =>
+          p.product_id === productId
+            ? { ...p, quantidade: p.quantidade + 1 }
+            : p
+        ));
+      } else {
+        setSelectedProducts([...selectedProducts, {
+          product_id: product.id,
+          nome: product.nome,
+          preco: product.preco,
+          quantidade: 1
+        }]);
+      }
+      
+      toast.success('Produto adicionado!', {
+        description: `${product.nome} - R$ ${product.preco.toFixed(2)}`
+      });
+    }
+  };
+
+  const handleRemoveProduct = (index: number) => {
+    const removedProduct = selectedProducts[index];
+    
+    if (removedProduct.quantidade > 1) {
+      setSelectedProducts(selectedProducts.map((p, i) =>
+        i === index
+          ? { ...p, quantidade: p.quantidade - 1 }
+          : p
+      ));
+    } else {
+      setSelectedProducts(selectedProducts.filter((_, i) => i !== index));
+      toast.info('Produto removido', {
+        description: removedProduct.nome
+      });
+    }
   };
 
   const startCheckout = async () => {
@@ -508,6 +574,8 @@ const TotemCheckout: React.FC = () => {
     }
 
     setProcessing(true);
+    
+    const totalWithProducts = resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
 
     if (method === 'pix') {
       navigate('/totem/payment-pix', {
@@ -516,7 +584,8 @@ const TotemCheckout: React.FC = () => {
           session_id: sessionId,
           appointment: appointment,
           client: client,
-          total: resumo.total
+          total: totalWithProducts,
+          selectedProducts: selectedProducts
         }
       });
     } else {
@@ -526,7 +595,8 @@ const TotemCheckout: React.FC = () => {
           session_id: sessionId,
           appointment: appointment,
           client: client,
-          total: resumo.total
+          total: totalWithProducts,
+          selectedProducts: selectedProducts
         }
       });
     }
@@ -602,7 +672,7 @@ const TotemCheckout: React.FC = () => {
       <div className="flex-1 z-10 flex items-center justify-center overflow-hidden">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 md:gap-4 h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] px-2 sm:px-4">
           
-          {/* Left Column - Services */}
+          {/* Left Column - Services & Products */}
           <div className="flex flex-col gap-2 sm:gap-3 h-full overflow-y-auto">
             {/* Add Extra Services Card */}
             <Card className="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10 flex-shrink-0">
@@ -679,6 +749,67 @@ const TotemCheckout: React.FC = () => {
               )}
             </Card>
 
+            {/* Add Products Card */}
+            <Card className="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-urbana-gold-vibrant to-urbana-gold flex items-center justify-center shadow-lg shadow-urbana-gold-vibrant/30">
+                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-black" />
+                </div>
+                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light">
+                  Adicionar Produtos
+                </h2>
+              </div>
+              
+              <Select onValueChange={handleAddProduct} disabled={isUpdating}>
+                <SelectTrigger className="w-full h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-urbana-black/50 border-2 border-urbana-gray/50 hover:border-urbana-gold/50 transition-colors">
+                  <SelectValue placeholder="Selecione um produto" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-urbana-gold/30">
+                  {availableProducts.map((product) => (
+                    <SelectItem 
+                      key={product.id} 
+                      value={product.id} 
+                      className="text-sm sm:text-base text-urbana-light hover:bg-urbana-gold/10 cursor-pointer"
+                    >
+                      {product.nome} - <span className="text-urbana-gold font-bold">R$ {product.preco.toFixed(2)}</span>
+                      <span className="text-xs text-urbana-light/60 ml-2">(Est: {product.estoque})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* List of added products */}
+              {selectedProducts.length > 0 && (
+                <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                  {selectedProducts.map((product, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-urbana-black/40 rounded-lg border border-urbana-gold-vibrant/20">
+                      <div className="flex items-center gap-2 flex-1">
+                        <CheckCircle2 className="w-4 h-4 text-urbana-gold-vibrant flex-shrink-0" />
+                        <span className="text-xs sm:text-sm md:text-base text-urbana-light font-medium truncate">
+                          {product.nome}
+                        </span>
+                        <span className="text-xs text-urbana-light/60">x{product.quantidade}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm sm:text-base md:text-lg text-urbana-gold-vibrant font-bold whitespace-nowrap">
+                          R$ {(product.preco * product.quantidade).toFixed(2)}
+                        </span>
+                        <Button
+                          onClick={() => handleRemoveProduct(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 w-7 p-0"
+                          disabled={isUpdating}
+                        >
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
             {/* Summary Card */}
             {resumo && (
               <Card className="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20 flex-1 overflow-y-auto">
@@ -721,11 +852,29 @@ const TotemCheckout: React.FC = () => {
                     </div>
                   ))}
 
+                  {/* Products */}
+                  {selectedProducts.map((product, index) => (
+                    <div key={`product-${index}`} className="flex items-center justify-between py-2 border-b border-urbana-gray/20">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-2 h-2 rounded-full bg-urbana-gold-vibrant animate-pulse flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs sm:text-sm md:text-base font-semibold text-urbana-light truncate">
+                            {product.nome} x{product.quantidade}
+                          </p>
+                          <p className="text-[10px] sm:text-xs text-urbana-gray-light">Produto</p>
+                        </div>
+                      </div>
+                      <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold-vibrant whitespace-nowrap ml-2">
+                        R$ {(product.preco * product.quantidade).toFixed(2)}
+                      </p>
+                    </div>
+                  ))}
+
                   {/* Totals */}
                   <div className="space-y-2 pt-3 mt-3 border-t-2 border-urbana-gold/30">
                     <div className="flex items-center justify-between text-xs sm:text-sm md:text-base">
                       <span className="text-urbana-gray-light">Subtotal:</span>
-                      <span className="text-urbana-light font-semibold">R$ {resumo.subtotal.toFixed(2)}</span>
+                      <span className="text-urbana-light font-semibold">R$ {(resumo.subtotal + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}</span>
                     </div>
                     
                     {resumo.discount > 0 && (
@@ -738,7 +887,7 @@ const TotemCheckout: React.FC = () => {
                     <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold-dark/10 rounded-xl border-2 border-urbana-gold shadow-lg shadow-urbana-gold/20">
                       <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-urbana-light">TOTAL:</span>
                       <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold animate-pulse">
-                        R$ {resumo.total.toFixed(2)}
+                        R$ {(resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -749,7 +898,7 @@ const TotemCheckout: React.FC = () => {
 
           {/* Right Column - Payment */}
           <div className="flex flex-col gap-2 sm:gap-3 h-full">
-            <Card className="flex-1 p-3 sm:p-4 md:p-5 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10 flex flex-col">
+            <Card className="flex-1 p-3 sm:p-4 md:p-5 bg-card/30 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10 flex flex-col">
               <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 sm:mb-4 text-center">
                 Forma de Pagamento
               </h3>
@@ -759,11 +908,11 @@ const TotemCheckout: React.FC = () => {
                 <button
                   onClick={() => handlePaymentMethod('pix')}
                   disabled={processing || needsRecalculation || isUpdating}
-                  className="group relative h-full min-h-[120px] bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  className="group relative h-full min-h-[120px] bg-card/40 backdrop-blur-lg active:bg-card/60 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 to-urbana-gold-dark/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col items-center justify-center gap-2 sm:gap-3">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 backdrop-blur-sm group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
                       <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
                     </div>
                     <span className="text-xl sm:text-2xl md:text-3xl font-black text-urbana-gold">PIX</span>
@@ -775,11 +924,11 @@ const TotemCheckout: React.FC = () => {
                 <button
                   onClick={() => handlePaymentMethod('card')}
                   disabled={processing || needsRecalculation || isUpdating}
-                  className="group relative h-full min-h-[120px] bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  className="group relative h-full min-h-[120px] bg-card/40 backdrop-blur-lg active:bg-card/60 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 to-urbana-gold-dark/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col items-center justify-center gap-2 sm:gap-3">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 backdrop-blur-sm group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
                       <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
                     </div>
                     <span className="text-xl sm:text-2xl md:text-3xl font-black text-urbana-gold">CARTÃO</span>
