@@ -10,7 +10,7 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemProductPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sale, client, paymentMethod } = location.state || {};
+  const { sale, client, cardType } = location.state || {};
   const [isProcessing, setIsProcessing] = useState(true);
   const [simulationTimer, setSimulationTimer] = useState(15); // 15 segundos para simulação
 
@@ -104,6 +104,10 @@ const TotemProductPaymentCard: React.FC = () => {
           <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold">
             Processando Pagamento
           </h1>
+          
+          <p className="text-xl text-urbana-gold/80 font-semibold">
+            {cardType === 'debit' ? 'DÉBITO' : 'CRÉDITO'}
+          </p>
           
           <p className="text-2xl font-black text-urbana-gold">
             R$ {sale.total.toFixed(2)}

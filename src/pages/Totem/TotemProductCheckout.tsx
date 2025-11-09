@@ -35,50 +35,46 @@ const TotemProductCheckout: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      // Create sale
-      const { data: sale, error: saleError } = await supabase
-        .from('totem_product_sales')
-        .insert({
-          cliente_id: client.id,
-          total: cartTotal,
-          payment_method: paymentMethod,
-          payment_status: paymentMethod === 'pix' ? 'pending' : 'completed',
-          ...(paymentMethod === 'pix' && {
+      // For PIX, create sale immediately
+      if (paymentMethod === 'pix') {
+        const { data: sale, error: saleError } = await supabase
+          .from('totem_product_sales')
+          .insert({
+            cliente_id: client.id,
+            total: cartTotal,
+            payment_method: paymentMethod,
+            payment_status: 'pending',
             pix_key: '31996857008',
             transaction_id: `PROD${Date.now()}`
-          }),
-          ...(paymentMethod !== 'pix' && {
-            paid_at: new Date().toISOString()
           })
-        })
-        .select()
-        .single();
+          .select()
+          .single();
 
-      if (saleError) throw saleError;
+        if (saleError) throw saleError;
 
-      // Create sale items
-      const saleItems = (cart as CartItem[]).map(item => ({
-        sale_id: sale.id,
-        produto_id: item.product.id,
-        quantidade: item.quantity,
-        preco_unitario: item.product.preco,
-        subtotal: item.product.preco * item.quantity
-      }));
+        // Create sale items
+        const saleItems = (cart as CartItem[]).map(item => ({
+          sale_id: sale.id,
+          produto_id: item.product.id,
+          quantidade: item.quantity,
+          preco_unitario: item.product.preco,
+          subtotal: item.product.preco * item.quantity
+        }));
 
-      const { error: itemsError } = await supabase
-        .from('totem_product_sale_items')
-        .insert(saleItems);
+        const { error: itemsError } = await supabase
+          .from('totem_product_sale_items')
+          .insert(saleItems);
 
-      if (itemsError) throw itemsError;
+        if (itemsError) throw itemsError;
 
-      // Navigate to payment screen
-      if (paymentMethod === 'pix') {
+        // Navigate to PIX payment screen
         navigate('/totem/product-payment-pix', {
           state: { sale, client, cart }
         });
       } else {
-        navigate('/totem/product-payment-card', {
-          state: { sale, client, cart, paymentMethod: 'card' }
+        // Navigate to card type selection
+        navigate('/totem/product-card-type', {
+          state: { client, cart }
         });
       }
 
