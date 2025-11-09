@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, Smartphone, Package, Loader2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Package, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
@@ -31,7 +31,7 @@ const TotemProductCheckout: React.FC = () => {
 
   const cartTotal = (cart as CartItem[]).reduce((sum, item) => sum + (item.product.preco * item.quantity), 0);
 
-  const handlePayment = async (paymentMethod: 'pix' | 'credit' | 'debit') => {
+  const handlePayment = async (paymentMethod: 'pix' | 'card') => {
     setIsProcessing(true);
 
     try {
@@ -78,7 +78,7 @@ const TotemProductCheckout: React.FC = () => {
         });
       } else {
         navigate('/totem/product-payment-card', {
-          state: { sale, client, cart, paymentMethod }
+          state: { sale, client, cart, paymentMethod: 'card' }
         });
       }
 
@@ -166,37 +166,42 @@ const TotemProductCheckout: React.FC = () => {
 
         {/* Payment Methods */}
         <Card className="p-4 sm:p-6 bg-white/5 backdrop-blur-sm border-2 border-urbana-gold/30">
-          <h2 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4">
-            Escolha a forma de pagamento
-          </h2>
+          <h3 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 text-center">
+            Forma de Pagamento
+          </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Button
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* PIX Button */}
+            <button
               onClick={() => handlePayment('pix')}
               disabled={isProcessing}
-              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-teal-500/20 to-teal-600/20 hover:from-teal-500/30 hover:to-teal-600/30 border-2 border-teal-500/40 hover:border-teal-400 active:border-teal-500 text-teal-300 hover:text-teal-200 active:text-teal-100 transition-all duration-200 active:scale-95 rounded-xl shadow-lg shadow-teal-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
-              <Smartphone className="w-12 h-12" />
-              <span className="text-lg font-bold">PIX</span>
-            </Button>
+              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative h-full flex flex-col items-center justify-center gap-3">
+                <div className="w-16 h-16 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
+                  <DollarSign className="w-10 h-10 text-urbana-gold" />
+                </div>
+                <span className="text-3xl font-black text-urbana-gold">PIX</span>
+                <span className="text-sm text-urbana-gray-light">Instantâneo</span>
+              </div>
+            </button>
 
-            <Button
-              onClick={() => handlePayment('credit')}
+            {/* Card Button */}
+            <button
+              onClick={() => handlePayment('card')}
               disabled={isProcessing}
-              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-blue-500/20 to-blue-600/20 hover:from-blue-500/30 hover:to-blue-600/30 border-2 border-blue-500/40 hover:border-blue-400 active:border-blue-500 text-blue-300 hover:text-blue-200 active:text-blue-100 transition-all duration-200 active:scale-95 rounded-xl shadow-lg shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
-              <CreditCard className="w-12 h-12" />
-              <span className="text-lg font-bold">Crédito</span>
-            </Button>
-
-            <Button
-              onClick={() => handlePayment('debit')}
-              disabled={isProcessing}
-              className="h-32 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border-2 border-purple-500/40 hover:border-purple-400 active:border-purple-500 text-purple-300 hover:text-purple-200 active:text-purple-100 transition-all duration-200 active:scale-95 rounded-xl shadow-lg shadow-purple-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <CreditCard className="w-12 h-12" />
-              <span className="text-lg font-bold">Débito</span>
-            </Button>
+              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative h-full flex flex-col items-center justify-center gap-3">
+                <div className="w-16 h-16 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
+                  <CreditCard className="w-10 h-10 text-urbana-gold" />
+                </div>
+                <span className="text-3xl font-black text-urbana-gold">CARTÃO</span>
+                <span className="text-sm text-urbana-gray-light">Crédito/Débito</span>
+              </div>
+            </button>
           </div>
 
           {isProcessing && (
