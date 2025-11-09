@@ -199,13 +199,32 @@ const TotemCheckout: React.FC = () => {
           return;
         }
 
-        // Montar resumo a partir dos dados existentes
-        const servicoPrincipal = itens.find(item => item.tipo === 'SERVICO' && item.ref_id === appointment.servico_id);
-        const servicosExtras = itens.filter(item => item.tipo === 'SERVICO' && item.ref_id !== appointment.servico_id);
+        // 🔍 Montar resumo a partir dos itens da venda
+        console.log('📦 Itens encontrados na venda:', itens.length);
+        
+        const servicoPrincipal = itens.find(item => 
+          item.tipo === 'SERVICO' && 
+          (item.ref_id === appointment.servico_id || item.ref_id === appointment.servico?.id)
+        );
+        
+        const servicosExtras = itens.filter(item => 
+          item.tipo === 'SERVICO' && 
+          item.ref_id !== appointment.servico_id &&
+          item.ref_id !== appointment.servico?.id
+        );
+
+        console.log('🎯 Serviço principal:', servicoPrincipal?.nome || 'NÃO ENCONTRADO');
+        console.log('➕ Serviços extras:', servicosExtras.length);
+
+        if (!servicoPrincipal) {
+          console.error('❌ ERRO: Serviço principal não encontrado nos itens!');
+          console.log('   Serviço esperado ID:', appointment.servico_id || appointment.servico?.id);
+          console.log('   Itens disponíveis:', itens.map(i => ({ tipo: i.tipo, ref_id: i.ref_id, nome: i.nome })));
+        }
 
         const resumoData: CheckoutSummary = {
           original_service: {
-            nome: servicoPrincipal?.nome || appointment.servico?.nome || '',
+            nome: servicoPrincipal?.nome || appointment.servico?.nome || 'Serviço Principal',
             preco: servicoPrincipal?.preco_unit || appointment.servico?.preco || 0
           },
           extra_services: servicosExtras.map(item => ({
@@ -222,7 +241,8 @@ const TotemCheckout: React.FC = () => {
         setResumo(resumoData);
         setNeedsRecalculation(false);
         
-        console.log('✅ Checkout carregado com sucesso - Total:', venda.total);
+        console.log('✅ Checkout carregado - Venda:', venda.id, 'Total: R$', venda.total);
+        console.log('📋 Resumo:', resumoData);
       } else {
         console.log('⚠️ Nenhuma venda encontrada para sessão:', session.id, '- Iniciando novo checkout...');
         await startCheckout();

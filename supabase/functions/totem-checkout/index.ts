@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('agendamento_id', agendamento_id)
         .eq('status', 'ABERTA')
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle()
 
