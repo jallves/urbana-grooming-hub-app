@@ -6,7 +6,35 @@ Documentação completa do sistema de design e padrões de implementação do To
 
 ## 📖 Documentos Principais
 
-### 🎨 [TOTEM_DESIGN_SYSTEM.md](./TOTEM_DESIGN_SYSTEM.md)
+### 🚀 Referências Rápidas (COMECE AQUI) ⭐
+
+#### [TOTEM_QUICK_REFERENCE.md](./TOTEM_QUICK_REFERENCE.md)
+**Guia de Bolso para Implementação**
+
+- ⚠️ Regra OBRIGATÓRIA do teclado padrão
+- ✅ Exemplos corretos vs ❌ Erros comuns
+- 📋 Checklist antes de implementar
+- 🎯 Telas que devem usar TotemPinKeypad
+
+📌 **USE ESTE DOCUMENTO** sempre que criar/modificar telas do Totem
+
+---
+
+#### [TOTEM_IMPLEMENTATION_RULES.md](./TOTEM_IMPLEMENTATION_RULES.md)
+**Regras de Implementação**
+
+- 🔒 5 Regras OBRIGATÓRIAS críticas
+- 🎨 Padrões visuais padronizados
+- 🚫 Lista de "O Que NUNCA Fazer"
+- ✅ Checklist antes de commit
+
+📌 **CONSULTE ESTE DOCUMENTO** antes de fazer commit
+
+---
+
+### 📚 Documentação Detalhada
+
+#### 🎨 [TOTEM_DESIGN_SYSTEM.md](./TOTEM_DESIGN_SYSTEM.md)
 **Sistema de Design Completo**
 
 Define todos os padrões visuais e componentes do Totem:
@@ -21,7 +49,7 @@ Define todos os padrões visuais e componentes do Totem:
 
 ---
 
-### ✅ [TOTEM_IMPLEMENTATION_CHECKLIST.md](./TOTEM_IMPLEMENTATION_CHECKLIST.md)
+#### ✅ [TOTEM_IMPLEMENTATION_CHECKLIST.md](./TOTEM_IMPLEMENTATION_CHECKLIST.md)
 **Lista de Implementação**
 
 Lista completa de todas as telas e componentes do Totem que devem seguir o padrão:
@@ -35,7 +63,7 @@ Lista completa de todas as telas e componentes do Totem que devem seguir o padr�
 
 ---
 
-### 🧩 [TOTEM_COMPONENTS_USAGE.md](./TOTEM_COMPONENTS_USAGE.md)
+#### 🧩 [TOTEM_COMPONENTS_USAGE.md](./TOTEM_COMPONENTS_USAGE.md)
 **Guia de Uso dos Componentes**
 
 Exemplos práticos de como usar os componentes reutilizáveis:
@@ -50,7 +78,7 @@ Exemplos práticos de como usar os componentes reutilizáveis:
 
 ---
 
-### 🔢 [TOTEM_KEYPAD_PATTERN.md](./TOTEM_KEYPAD_PATTERN.md)
+#### 🔢 [TOTEM_KEYPAD_PATTERN.md](./TOTEM_KEYPAD_PATTERN.md)
 **Padrão de Teclado com Logo** ⚠️ **OBRIGATÓRIO**
 
 Define o padrão de teclado numérico que deve ser usado em TODAS as telas de autenticação:
@@ -307,6 +335,8 @@ Antes de marcar uma tela como concluída:
 ## 📄 Arquivos Criados
 
 ### Documentação
+- ✅ `docs/TOTEM_QUICK_REFERENCE.md` (Referência rápida) **NOVO**
+- ✅ `docs/TOTEM_IMPLEMENTATION_RULES.md` (Regras obrigatórias) **NOVO**
 - ✅ `docs/TOTEM_DESIGN_SYSTEM.md` (788 linhas)
 - ✅ `docs/TOTEM_IMPLEMENTATION_CHECKLIST.md` (600+ linhas)
 - ✅ `docs/TOTEM_COMPONENTS_USAGE.md` (450+ linhas)
