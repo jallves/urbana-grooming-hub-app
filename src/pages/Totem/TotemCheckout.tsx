@@ -803,11 +803,11 @@ const TotemCheckout: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 z-10 flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 md:gap-4 h-[calc(100vh-8rem)] sm:h-[calc(100vh-10rem)] px-2 sm:px-4">
+      <div className="flex-1 z-10 flex items-start justify-center overflow-y-auto pb-4">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 px-2 sm:px-4">
           
           {/* Left Column - Services & Products */}
-          <div className="flex flex-col gap-2 sm:gap-3 h-full overflow-y-auto">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {/* Add Extra Services Card */}
             <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
@@ -946,14 +946,14 @@ const TotemCheckout: React.FC = () => {
 
             {/* Summary Card */}
             {resumo && (
-              <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-1 overflow-y-auto">
-                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 pb-2 border-b-2 border-urbana-gold/30">
-                  Resumo
+              <Card className="p-4 sm:p-5 md:p-6 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/10">
+                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold mb-4 pb-3 border-b-2 border-urbana-gold/40">
+                  Resumo do Atendimento
                 </h2>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {/* Original Service */}
-                  <div className="flex items-center justify-between py-2 border-b border-urbana-gray/20">
+                  <div className="flex items-center justify-between py-3 border-b border-urbana-gray/30">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className="w-2 h-2 rounded-full bg-urbana-gold animate-pulse flex-shrink-0" />
                       <div className="min-w-0 flex-1">
@@ -970,7 +970,7 @@ const TotemCheckout: React.FC = () => {
 
                   {/* Extra Services */}
                   {resumo.extra_services.map((service, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b border-urbana-gray/20">
+                    <div key={index} className="flex items-center justify-between py-3 border-b border-urbana-gray/30">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="w-2 h-2 rounded-full bg-urbana-gold-light animate-pulse flex-shrink-0" />
                         <div className="min-w-0 flex-1">
@@ -988,7 +988,7 @@ const TotemCheckout: React.FC = () => {
 
                   {/* Products */}
                   {selectedProducts.map((product, index) => (
-                    <div key={`product-${index}`} className="flex items-center justify-between py-2 border-b border-urbana-gray/20">
+                    <div key={`product-${index}`} className="flex items-center justify-between py-3 border-b border-urbana-gray/30">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="w-2 h-2 rounded-full bg-urbana-gold-vibrant animate-pulse flex-shrink-0" />
                         <div className="min-w-0 flex-1">
@@ -1005,22 +1005,22 @@ const TotemCheckout: React.FC = () => {
                   ))}
 
                   {/* Totals */}
-                  <div className="space-y-2 pt-3 mt-3 border-t-2 border-urbana-gold/30">
-                    <div className="flex items-center justify-between text-xs sm:text-sm md:text-base">
-                      <span className="text-urbana-gray-light">Subtotal:</span>
-                      <span className="text-urbana-light font-semibold">R$ {(resumo.subtotal + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}</span>
+                  <div className="space-y-3 pt-4 mt-4 border-t-2 border-urbana-gold/40">
+                    <div className="flex items-center justify-between text-sm sm:text-base md:text-lg">
+                      <span className="text-urbana-light/80 font-medium">Subtotal:</span>
+                      <span className="text-urbana-light font-bold">R$ {(resumo.subtotal + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}</span>
                     </div>
                     
                     {resumo.discount > 0 && (
-                      <div className="flex items-center justify-between text-xs sm:text-sm md:text-base">
-                        <span className="text-urbana-gray-light">Desconto:</span>
-                        <span className="text-green-400 font-semibold">- R$ {resumo.discount.toFixed(2)}</span>
+                      <div className="flex items-center justify-between text-sm sm:text-base md:text-lg">
+                        <span className="text-urbana-light/80 font-medium">Desconto:</span>
+                        <span className="text-green-400 font-bold">- R$ {resumo.discount.toFixed(2)}</span>
                       </div>
                     )}
                     
-                    <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold-dark/10 rounded-xl border-2 border-urbana-gold shadow-lg shadow-urbana-gold/20">
-                      <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-urbana-light">TOTAL:</span>
-                      <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold animate-pulse">
+                    <div className="flex items-center justify-between p-4 sm:p-5 md:p-6 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-2xl border-3 border-urbana-gold shadow-2xl shadow-urbana-gold/40 mt-3">
+                      <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-urbana-light drop-shadow-lg">TOTAL:</span>
+                      <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold animate-pulse drop-shadow-2xl">
                         R$ {(resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}
                       </span>
                     </div>
@@ -1031,8 +1031,8 @@ const TotemCheckout: React.FC = () => {
           </div>
 
           {/* Right Column - Payment */}
-          <div className="flex flex-col gap-2 sm:gap-3 h-full">
-            <Card className="flex-1 p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex flex-col">
+          <div className="flex flex-col gap-3 sm:gap-4 lg:sticky lg:top-0">
+            <Card className="p-4 sm:p-5 md:p-6 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/10 flex flex-col min-h-[400px]">
               <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 sm:mb-4 text-center">
                 Forma de Pagamento
               </h3>
