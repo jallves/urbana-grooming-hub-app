@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { CreditCard, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentCard: React.FC = () => {
@@ -13,6 +14,7 @@ const TotemProductPaymentCard: React.FC = () => {
   const { sale, client, cardType } = location.state || {};
   const [isProcessing, setIsProcessing] = useState(true);
   const [simulationTimer, setSimulationTimer] = useState(15); // 15 segundos para simulação
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!sale || !client) {
@@ -50,7 +52,14 @@ const TotemProductPaymentCard: React.FC = () => {
         .eq('venda_id', sale.id)
         .eq('tipo', 'PRODUTO');
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Erro ao buscar itens:', itemsError);
+        setError({
+          title: 'Erro ao processar venda',
+          message: 'Não foi possível buscar os itens da venda. Procure um atendente.'
+        });
+        return;
+      }
 
       // Atualizar estoque de cada produto
       if (saleItems && saleItems.length > 0) {
@@ -76,18 +85,43 @@ const TotemProductPaymentCard: React.FC = () => {
         })
         .eq('id', sale.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar venda:', error);
+        setError({
+          title: 'Erro ao finalizar pagamento',
+          message: 'O pagamento foi aprovado, mas houve um erro ao finalizar a venda. Procure um atendente.'
+        });
+        return;
+      }
       
       toast.success('Pagamento aprovado!');
       navigate('/totem/product-payment-success', { state: { sale, client } });
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
-      toast.error('Erro ao processar pagamento');
+      setError({
+        title: 'Erro inesperado',
+        message: 'Ocorreu um erro ao processar o pagamento. Por favor, procure um atendente.'
+      });
       setIsProcessing(false);
     }
   };
 
   if (!sale) return null;
+
+  if (error) {
+    return (
+      <TotemErrorFeedback
+        title={error.title}
+        message={error.message}
+        onRetry={() => {
+          setError(null);
+          setIsProcessing(true);
+          handlePaymentSuccess();
+        }}
+        onGoHome={() => navigate('/totem')}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-4 font-poppins relative overflow-hidden">

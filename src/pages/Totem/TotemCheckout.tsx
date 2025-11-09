@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ExtraServicesUpsell } from '@/components/totem/ExtraServicesUpsell';
 import { NextAppointmentScheduler } from '@/components/totem/NextAppointmentScheduler';
+import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface CheckoutSummary {

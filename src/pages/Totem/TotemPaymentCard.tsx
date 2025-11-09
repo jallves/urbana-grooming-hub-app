@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, CreditCard, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 
 const TotemPaymentCard: React.FC = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const TotemPaymentCard: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
   const [simulationTimer, setSimulationTimer] = useState(15); // Timer de simulação (15 segundos)
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     setPaymentType(type);

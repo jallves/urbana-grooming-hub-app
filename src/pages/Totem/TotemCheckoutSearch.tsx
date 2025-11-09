@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { TotemPinKeypad } from '@/components/totem/TotemPinKeypad';
+import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 
 const TotemCheckoutSearch: React.FC = () => {
   const navigate = useNavigate();
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   React.useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -17,9 +19,19 @@ const TotemCheckoutSearch: React.FC = () => {
 
   const handleSearch = async (phone: string) => {
     setIsSearching(true);
+    setError(null);
 
     try {
       const cleanPhone = phone.replace(/\D/g, '');
+      
+      if (!cleanPhone || cleanPhone.length < 10) {
+        setError({
+          title: 'Telefone inválido',
+          message: 'Por favor, digite um número de telefone válido com DDD'
+        });
+        setIsSearching(false);
+        return;
+      }
       
       console.log('🔍 Buscando cliente para checkout:', cleanPhone);
 
@@ -30,8 +42,9 @@ const TotemCheckoutSearch: React.FC = () => {
 
       if (response.error) {
         console.error('❌ Erro ao buscar cliente:', response.error);
-        toast.error('Erro no sistema', {
-          description: 'Não foi possível buscar o cliente. Tente novamente.'
+        setError({
+          title: 'Erro de conexão',
+          message: 'Não foi possível conectar ao sistema. Verifique sua conexão e tente novamente.'
         });
         setIsSearching(false);
         return;
@@ -43,9 +56,9 @@ const TotemCheckoutSearch: React.FC = () => {
       }) || [];
 
       if (!clientes || clientes.length === 0) {
-        toast.error('Telefone não cadastrado', {
-          description: 'Este número não está cadastrado no sistema. Procure a recepção.',
-          duration: 8000
+        setError({
+          title: 'Cliente não encontrado',
+          message: 'Não encontramos nenhum cadastro com este telefone. Verifique o número digitado ou procure a recepção.'
         });
         setIsSearching(false);
         return;
@@ -74,16 +87,19 @@ const TotemCheckoutSearch: React.FC = () => {
 
       if (sessionResponse.error) {
         console.error('❌ Erro ao buscar sessão:', sessionResponse.error);
-        toast.error('Erro ao buscar sessão ativa');
+        setError({
+          title: 'Erro ao buscar atendimento',
+          message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.'
+        });
         setIsSearching(false);
         return;
       }
 
       const sessions = sessionResponse.data;
       if (!sessions || sessions.length === 0) {
-        toast.error('Nenhuma sessão ativa encontrada', {
-          description: 'Você precisa fazer check-in antes de fazer checkout.',
-          duration: 8000
+        setError({
+          title: 'Nenhum atendimento encontrado',
+          message: 'Você não possui um atendimento ativo no momento. Procure a recepção para fazer check-in.'
         });
         setIsSearching(false);
         return;
@@ -102,13 +118,25 @@ const TotemCheckoutSearch: React.FC = () => {
 
     } catch (error) {
       console.error('❌ Erro inesperado:', error);
-      toast.error('Erro inesperado', {
-        description: 'Ocorreu um erro. Por favor, procure a recepção.'
+      setError({
+        title: 'Erro inesperado',
+        message: 'Ocorreu um erro inesperado. Por favor, tente novamente ou procure um atendente.'
       });
     } finally {
       setIsSearching(false);
     }
   };
+
+  if (error) {
+    return (
+      <TotemErrorFeedback
+        title={error.title}
+        message={error.message}
+        onRetry={() => setError(null)}
+        onGoHome={() => navigate('/totem')}
+      />
+    );
+  }
 
   return (
     <TotemPinKeypad

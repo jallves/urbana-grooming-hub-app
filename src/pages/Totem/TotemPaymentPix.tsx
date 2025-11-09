@@ -6,6 +6,7 @@ import { ArrowLeft, CheckCircle, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const TotemPaymentPix: React.FC = () => {
   const [paymentId, setPaymentId] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
   const [simulationTimer, setSimulationTimer] = useState(15); // Timer de simulação (15 segundos)
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!venda_id || !session_id || !total) {

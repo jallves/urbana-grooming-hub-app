@@ -6,6 +6,7 @@ import { CheckCircle2, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
+import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentPix: React.FC = () => {
@@ -14,6 +15,7 @@ const TotemProductPaymentPix: React.FC = () => {
   const { sale, client } = location.state || {};
   const [isProcessing, setIsProcessing] = useState(true);
   const [simulationTimer, setSimulationTimer] = useState(15); // 15 segundos para simulação
+  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
     if (!sale || !client) {
@@ -51,7 +53,14 @@ const TotemProductPaymentPix: React.FC = () => {
         .eq('venda_id', sale.id)
         .eq('tipo', 'PRODUTO');
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Erro ao buscar itens:', itemsError);
+        setError({
+          title: 'Erro ao processar venda',
+          message: 'Não foi possível buscar os itens da venda. Procure um atendente.'
+        });
+        return;
+      }
 
       // Atualizar estoque de cada produto
       if (saleItems && saleItems.length > 0) {
@@ -77,18 +86,43 @@ const TotemProductPaymentPix: React.FC = () => {
         })
         .eq('id', sale.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar venda:', error);
+        setError({
+          title: 'Erro ao finalizar pagamento',
+          message: 'O pagamento foi aprovado, mas houve um erro ao finalizar a venda. Procure um atendente.'
+        });
+        return;
+      }
       
       toast.success('Pagamento aprovado!');
       navigate('/totem/product-payment-success', { state: { sale, client } });
     } catch (error) {
       console.error('Erro ao confirmar pagamento:', error);
-      toast.error('Erro ao confirmar pagamento');
+      setError({
+        title: 'Erro inesperado',
+        message: 'Ocorreu um erro ao processar o pagamento PIX. Por favor, procure um atendente.'
+      });
       setIsProcessing(false);
     }
   };
 
   if (!sale) return null;
+
+  if (error) {
+    return (
+      <TotemErrorFeedback
+        title={error.title}
+        message={error.message}
+        onRetry={() => {
+          setError(null);
+          setIsProcessing(true);
+          handlePaymentSuccess();
+        }}
+        onGoHome={() => navigate('/totem')}
+      />
+    );
+  }
 
   const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${sale.pix_key || '31996857008'}52040000530398654${sale.total.toFixed(2)}5802BR5925COSTA URBANA BARBEARIA6014BELO HORIZONTE62070503***6304${sale.transaction_id}`;
 
