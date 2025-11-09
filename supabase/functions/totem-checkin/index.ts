@@ -13,7 +13,9 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, qr_token, modo } = await req.json()
+    const { agendamento_id, qr_token, modo, table_source = 'painel' } = await req.json()
+
+    console.log('🔍 Check-in iniciado - ID:', agendamento_id, 'Origem:', table_source)
 
     // Validar QR se fornecido
     if (modo === 'QRCODE' && qr_token) {
@@ -30,8 +32,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Buscar agendamento
-    const { data: agendamento, error: agendError } = await supabase
+    // 🔒 SUPORTE UNIFICADO: Buscar em ambas as tabelas
+    let agendamento
+    let agendError
+    let barbeiro_id
+    let cliente_id
+    
+    // Tentar buscar em painel_agendamentos primeiro
+    const painelResult = await supabase
       .from('painel_agendamentos')
       .select(`
         *,
@@ -40,23 +48,81 @@ Deno.serve(async (req) => {
         servico:painel_servicos(*)
       `)
       .eq('id', agendamento_id)
-      .single()
+      .maybeSingle()
 
-    if (agendError || !agendamento) {
-      return new Response(
-        JSON.stringify({ error: 'Agendamento não encontrado' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      )
+    if (painelResult.data) {
+      console.log('✅ Agendamento encontrado em painel_agendamentos')
+      agendamento = painelResult.data
+      barbeiro_id = agendamento.barbeiro_id
+      cliente_id = agendamento.cliente_id
+      
+      // Atualizar status para CHEGOU
+      await supabase
+        .from('painel_agendamentos')
+        .update({ status_totem: 'CHEGOU' })
+        .eq('id', agendamento_id)
+    } else {
+      // Tentar em appointments (painel cliente)
+      console.log('⚠️ Não encontrado em painel_agendamentos, buscando em appointments...')
+      const appointmentsResult = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          client:clients(*),
+          staff:staff(*),
+          service:services(*)
+        `)
+        .eq('id', agendamento_id)
+        .maybeSingle()
+
+      if (appointmentsResult.data) {
+        console.log('✅ Agendamento encontrado em appointments')
+        const apt = appointmentsResult.data
+        
+        // Normalizar estrutura
+        agendamento = {
+          id: apt.id,
+          cliente_id: apt.client_id,
+          barbeiro_id: apt.staff_id,
+          servico_id: apt.service_id,
+          data: apt.start_time?.split('T')[0],
+          hora: apt.start_time?.split('T')[1]?.substring(0, 5),
+          status: apt.status,
+          cliente: {
+            id: apt.client?.id,
+            nome: apt.client?.name,
+            whatsapp: apt.client?.phone
+          },
+          barbeiro: {
+            id: apt.staff?.id,
+            nome: apt.staff?.name
+          },
+          servico: {
+            id: apt.service?.id,
+            nome: apt.service?.name,
+            preco: apt.service?.price,
+            duracao: apt.service?.duration
+          }
+        }
+        
+        barbeiro_id = apt.staff_id
+        cliente_id = apt.client_id
+        
+        // Atualizar status
+        await supabase
+          .from('appointments')
+          .update({ status: 'confirmed' })
+          .eq('id', agendamento_id)
+      } else {
+        agendError = appointmentsResult.error
+      }
     }
 
-    // Atualizar status para CHEGOU
-    const { error: updateError } = await supabase
-      .from('painel_agendamentos')
-      .update({ status_totem: 'CHEGOU' })
-      .eq('id', agendamento_id)
-
-    if (updateError) {
-      throw updateError
+    if (!agendamento) {
+      return new Response(
+        JSON.stringify({ error: 'Agendamento não encontrado em nenhuma tabela' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      )
     }
 
     // Verificar se já existe sessão ativa
@@ -95,15 +161,15 @@ Deno.serve(async (req) => {
     }
 
     // Publicar evento realtime
-    const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)
+    const channel = supabase.channel(`barbearia:${barbeiro_id}`)
     await channel.send({
       type: 'broadcast',
       event: 'CHECKIN',
       payload: {
         tipo: 'CHECKIN',
         agendamento_id: agendamento.id,
-        cliente_id: agendamento.cliente_id,
-        barbeiro_id: agendamento.barbeiro_id,
+        cliente_id: cliente_id,
+        barbeiro_id: barbeiro_id,
         cliente_nome: agendamento.cliente?.nome,
         horario: agendamento.hora,
         timestamp: new Date().toISOString()

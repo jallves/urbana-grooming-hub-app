@@ -118,13 +118,55 @@ const TotemCheckout: React.FC = () => {
         })));
       }
 
-      // Buscar venda existente PARA ESTA SESSÃO ESPECÍFICA
-      const { data: venda, error: vendaError } = await supabase
+      // 🔒 CORREÇÃO CRÍTICA: Buscar venda ABERTA por AGENDAMENTO, não só por sessão
+      console.log('🔍 Buscando venda ABERTA por agendamento_id:', appointment.id);
+      
+      let venda;
+      let vendaError;
+      
+      // Primeiro: tentar buscar venda pela sessão atual
+      const vendaPorSessao = await supabase
         .from('vendas')
         .select('*')
         .eq('totem_session_id', session.id)
         .eq('status', 'ABERTA')
         .maybeSingle();
+      
+      if (vendaPorSessao.data) {
+        console.log('✅ Venda encontrada pela sessão atual:', vendaPorSessao.data.id);
+        venda = vendaPorSessao.data;
+        vendaError = vendaPorSessao.error;
+      } else {
+        // Segundo: buscar qualquer venda ABERTA para este agendamento
+        console.log('⚠️ Nenhuma venda na sessão atual. Buscando venda ABERTA por agendamento...');
+        const vendaPorAgendamento = await supabase
+          .from('vendas')
+          .select('*')
+          .eq('agendamento_id', appointment.id)
+          .eq('status', 'ABERTA')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (vendaPorAgendamento.data) {
+          console.log('✅ Venda ABERTA encontrada por agendamento:', vendaPorAgendamento.data.id);
+          venda = vendaPorAgendamento.data;
+          vendaError = vendaPorAgendamento.error;
+          
+          // 🔒 VINCULAR venda à sessão atual
+          console.log('🔄 Vinculando venda', venda.id, 'à sessão atual:', session.id);
+          await supabase
+            .from('vendas')
+            .update({ totem_session_id: session.id })
+            .eq('id', venda.id);
+          
+          toast.info('Checkout retomado', {
+            description: 'Encontramos seu checkout em aberto!'
+          });
+        } else {
+          vendaError = vendaPorAgendamento.error;
+        }
+      }
 
       if (vendaError) {
         console.error('❌ Erro ao buscar venda:', vendaError);

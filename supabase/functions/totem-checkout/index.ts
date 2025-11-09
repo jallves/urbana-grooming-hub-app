@@ -17,8 +17,12 @@ Deno.serve(async (req) => {
     if (action === 'start') {
       console.log('🛒 Iniciando checkout para agendamento:', agendamento_id, 'sessão fornecida:', session_id)
 
-      // Buscar agendamento completo
-      const { data: agendamento, error: agendError } = await supabase
+      // 🔒 SUPORTE UNIFICADO: Buscar agendamento em ambas as tabelas
+      let agendamento
+      let barbeiro_staff_id
+      
+      // Tentar buscar em painel_agendamentos primeiro
+      const painelResult = await supabase
         .from('painel_agendamentos')
         .select(`
           *,
@@ -27,11 +31,68 @@ Deno.serve(async (req) => {
           servico:painel_servicos(*)
         `)
         .eq('id', agendamento_id)
-        .single()
+        .maybeSingle()
 
-      if (agendError || !agendamento) {
-        console.error('❌ Agendamento não encontrado:', agendamento_id, agendError)
-        throw new Error('Agendamento não encontrado')
+      if (painelResult.data) {
+        console.log('✅ Agendamento encontrado em painel_agendamentos')
+        agendamento = painelResult.data
+        
+        // Buscar staff_id do barbeiro
+        const { data: barbeiro } = await supabase
+          .from('painel_barbeiros')
+          .select('staff_id')
+          .eq('id', agendamento.barbeiro_id)
+          .single()
+        
+        barbeiro_staff_id = barbeiro?.staff_id
+      } else {
+        // Tentar em appointments
+        console.log('⚠️ Não encontrado em painel_agendamentos, buscando em appointments...')
+        const appointmentsResult = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            client:clients(*),
+            staff:staff(*),
+            service:services(*)
+          `)
+          .eq('id', agendamento_id)
+          .maybeSingle()
+
+        if (appointmentsResult.data) {
+          console.log('✅ Agendamento encontrado em appointments')
+          const apt = appointmentsResult.data
+          
+          // Normalizar estrutura
+          agendamento = {
+            id: apt.id,
+            cliente_id: apt.client_id,
+            barbeiro_id: apt.staff_id,
+            servico_id: apt.service_id,
+            data: apt.start_time?.split('T')[0],
+            hora: apt.start_time?.split('T')[1]?.substring(0, 5),
+            cliente: {
+              id: apt.client?.id,
+              nome: apt.client?.name
+            },
+            barbeiro: {
+              id: apt.staff?.id,
+              nome: apt.staff?.name
+            },
+            servico: {
+              id: apt.service?.id,
+              nome: apt.service?.name,
+              preco: apt.service?.price
+            }
+          }
+          
+          barbeiro_staff_id = apt.staff_id
+        }
+      }
+
+      if (!agendamento) {
+        console.error('❌ Agendamento não encontrado:', agendamento_id)
+        throw new Error('Agendamento não encontrado em nenhuma tabela')
       }
 
       console.log('✅ Agendamento encontrado:', agendamento.id, 'Cliente:', agendamento.cliente?.nome, 'Hora:', agendamento.hora)
@@ -80,39 +141,49 @@ Deno.serve(async (req) => {
         console.log('✅ Sessão ativa encontrada:', totemSession.id, 'Status:', totemSession.status, 'Check-in:', totemSession.check_in_time)
       }
 
-      // Buscar barbeiro staff_id
-      const { data: barbeiro } = await supabase
-        .from('painel_barbeiros')
-        .select('staff_id')
-        .eq('id', agendamento.barbeiro_id)
-        .single()
+      // barbeiro_staff_id já foi definido acima na busca unificada
 
-      // Verificar se já existe venda para esta sessão
+      // 🔒 CORREÇÃO CRÍTICA: Verificar venda ABERTA por AGENDAMENTO primeiro
       let venda
-      const { data: vendaExistente } = await supabase
+      
+      // Buscar venda ABERTA por agendamento (não só por sessão)
+      const { data: vendaExistentePorAgendamento } = await supabase
         .from('vendas')
         .select('*')
-        .eq('totem_session_id', totemSession.id)
+        .eq('agendamento_id', agendamento_id)
         .eq('status', 'ABERTA')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
-      if (vendaExistente) {
-        console.log('Venda existente encontrada para sessão:', totemSession.id)
-        venda = vendaExistente
+      if (vendaExistentePorAgendamento) {
+        console.log('✅ Venda ABERTA encontrada para agendamento:', agendamento_id, '- venda:', vendaExistentePorAgendamento.id)
+        venda = vendaExistentePorAgendamento
+        
+        // Vincular venda à sessão atual se ainda não estiver vinculada
+        if (venda.totem_session_id !== totemSession.id) {
+          console.log('🔄 Vinculando venda existente à nova sessão:', totemSession.id)
+          await supabase
+            .from('vendas')
+            .update({ totem_session_id: totemSession.id })
+            .eq('id', venda.id)
+        }
         
         // Deletar itens antigos para recalcular
+        console.log('🗑️ Deletando itens antigos para recalcular total...')
         await supabase
           .from('vendas_itens')
           .delete()
           .eq('venda_id', venda.id)
       } else {
-        // Criar venda vinculada à sessão
+        // Criar nova venda vinculada à sessão
+        console.log('➕ Criando nova venda para agendamento:', agendamento_id)
         const { data: novaVenda, error: vendaError } = await supabase
           .from('vendas')
           .insert({
             agendamento_id: agendamento_id,
             cliente_id: agendamento.cliente_id,
-            barbeiro_id: barbeiro?.staff_id,
+            barbeiro_id: barbeiro_staff_id,
             totem_session_id: totemSession.id,
             status: 'ABERTA'
           })
@@ -120,7 +191,7 @@ Deno.serve(async (req) => {
           .single()
 
         if (vendaError) {
-          console.error('Erro detalhado ao criar venda:', vendaError)
+          console.error('❌ Erro detalhado ao criar venda:', vendaError)
           throw new Error(`Erro ao criar venda: ${vendaError.message}`)
         }
 
@@ -129,7 +200,7 @@ Deno.serve(async (req) => {
         }
 
         venda = novaVenda
-        console.log('✅ Nova venda criada para sessão:', totemSession.id, '- venda:', venda.id)
+        console.log('✅ Nova venda criada - ID:', venda.id, 'sessão:', totemSession.id)
       }
 
       console.log('📝 Venda ID:', venda.id, 'vinculada à sessão:', totemSession.id)

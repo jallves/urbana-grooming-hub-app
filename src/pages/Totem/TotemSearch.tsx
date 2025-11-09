@@ -41,29 +41,59 @@ const TotemSearch: React.FC = () => {
       
       console.log('🔍 Buscando cliente com telefone:', cleanPhone);
 
-      // Buscar todos os clientes e filtrar removendo formatação
-      // @ts-ignore
-      const response = await supabase
+      // 🔒 SUPORTE UNIFICADO: Buscar em ambas as tabelas de clientes
+      
+      // Buscar em painel_clientes primeiro
+      const painelClientesResponse = await supabase
         .from('painel_clientes')
         .select('*');
 
-      if (response.error) {
-        console.error('❌ Erro ao buscar cliente:', response.error);
-        toast.error('Erro no sistema', {
-          description: 'Não foi possível buscar o cliente. Tente novamente.'
+      let cliente = null;
+      let clientSource = 'painel';
+
+      if (painelClientesResponse.data) {
+        const clientesPainel = painelClientesResponse.data.filter((c: any) => {
+          const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
+          return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
         });
-        setIsSearching(false);
-        return;
+
+        if (clientesPainel && clientesPainel.length > 0) {
+          cliente = clientesPainel[0];
+          console.log('✅ Cliente encontrado em painel_clientes:', cliente.nome);
+        }
       }
 
-      // Filtrar clientes comparando apenas os dígitos
-      const clientes = response.data?.filter((c: any) => {
-        const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
-        return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
-      }) || [];
+      // Se não encontrou em painel_clientes, buscar em clients (appointments)
+      if (!cliente) {
+        console.log('⚠️ Cliente não encontrado em painel_clientes, buscando em clients...');
+        const clientsResponse = await supabase
+          .from('clients')
+          .select('*');
 
-      if (!clientes || clientes.length === 0) {
-        console.log('❌ Nenhum cliente encontrado com telefone:', cleanPhone);
+        if (clientsResponse.data) {
+          const clientsData = clientsResponse.data.filter((c: any) => {
+            const clientPhoneClean = (c.phone || '').replace(/\D/g, '');
+            return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
+          });
+
+          if (clientsData && clientsData.length > 0) {
+            const clientData = clientsData[0];
+            console.log('✅ Cliente encontrado em clients (painel):', clientData.name);
+            
+            // Normalizar estrutura
+            cliente = {
+              id: clientData.id,
+              nome: clientData.name,
+              whatsapp: clientData.phone,
+              email: clientData.email
+            };
+            clientSource = 'clients';
+          }
+        }
+      }
+
+      if (!cliente) {
+        console.log('❌ Nenhum cliente encontrado em nenhuma tabela com telefone:', cleanPhone);
         toast.error('Telefone não cadastrado', {
           description: 'Este número não está cadastrado no sistema. Procure a recepção para fazer seu cadastro.',
           duration: 8000,
@@ -80,16 +110,18 @@ const TotemSearch: React.FC = () => {
         return;
       }
 
-      const cliente = clientes[0];
-      console.log('✅ Cliente encontrado:', cliente.nome);
+      console.log('✅ Cliente encontrado (origem:', clientSource, '):', cliente.nome);
 
       // Buscar agendamentos do cliente - usar data local do Brasil
       const hoje = format(new Date(), 'yyyy-MM-dd');
       
       console.log('📅 Buscando agendamentos a partir de:', hoje);
       
-      // @ts-ignore
-      const agendamentosResponse = await supabase
+      // 🔒 SUPORTE UNIFICADO: Buscar agendamentos em ambas as tabelas
+      let agendamentos: any[] = [];
+      
+      // Buscar em painel_agendamentos
+      const painelAgendamentosResponse = await supabase
         .from('painel_agendamentos')
         .select(`
           *,
@@ -101,16 +133,58 @@ const TotemSearch: React.FC = () => {
         .order('data', { ascending: true })
         .order('hora', { ascending: true });
 
-      if (agendamentosResponse.error) {
-        console.error('❌ Erro ao buscar agendamentos:', agendamentosResponse.error);
-        toast.error('Erro no sistema', {
-          description: 'Não foi possível buscar seus agendamentos. Tente novamente.'
-        });
-        setIsSearching(false);
-        return;
+      if (painelAgendamentosResponse.data && painelAgendamentosResponse.data.length > 0) {
+        console.log('📦 Agendamentos em painel_agendamentos:', painelAgendamentosResponse.data.length);
+        agendamentos = [...agendamentos, ...painelAgendamentosResponse.data];
+      }
+      
+      // Se cliente veio de clients, buscar também em appointments
+      if (clientSource === 'clients') {
+        console.log('🔍 Buscando também em appointments (painel cliente)...');
+        const appointmentsResponse = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            service:services(*),
+            staff:staff(*)
+          `)
+          .eq('client_id', cliente.id)
+          .gte('start_time', `${hoje}T00:00:00`)
+          .order('start_time', { ascending: true });
+
+        if (appointmentsResponse.data && appointmentsResponse.data.length > 0) {
+          console.log('📦 Agendamentos em appointments:', appointmentsResponse.data.length);
+          
+          // Normalizar estrutura para appointments
+          const normalizedAppointments = appointmentsResponse.data.map((apt: any) => ({
+            id: apt.id,
+            cliente_id: apt.client_id,
+            barbeiro_id: apt.staff_id,
+            servico_id: apt.service_id,
+            data: apt.start_time?.split('T')[0],
+            hora: apt.start_time?.split('T')[1]?.substring(0, 5),
+            status: apt.status === 'scheduled' ? 'CONFIRMADO' : 
+                    apt.status === 'confirmed' ? 'CONFIRMADO' :
+                    apt.status === 'completed' ? 'FINALIZADO' : 'CONFIRMADO',
+            status_totem: apt.status === 'confirmed' ? 'CHEGOU' : 'AGUARDANDO',
+            servico: apt.service ? {
+              id: apt.service.id,
+              nome: apt.service.name,
+              preco: apt.service.price,
+              duracao: apt.service.duration
+            } : null,
+            barbeiro: apt.staff ? {
+              id: apt.staff.id,
+              nome: apt.staff.name
+            } : null,
+            _source: 'appointments' // Flag para identificar origem
+          }));
+          
+          agendamentos = [...agendamentos, ...normalizedAppointments];
+        }
       }
 
-      console.log('📅 Agendamentos encontrados:', agendamentosResponse.data?.length || 0);
+      console.log('📅 Total de agendamentos encontrados:', agendamentos.length);
 
       // Verificar qual ação foi solicitada
       if (action === 'novo-agendamento') {
@@ -138,7 +212,6 @@ const TotemSearch: React.FC = () => {
       }
 
       // Para CHECK-IN, verificar se há agendamentos
-      const agendamentos = agendamentosResponse.data;
       if (!agendamentos || agendamentos.length === 0) {
         toast.error('Nenhum agendamento encontrado', {
           description: `${cliente.nome.split(' ')[0]}, você não possui agendamentos futuros para fazer check-in. Por favor, procure a recepção para agendar.`,
