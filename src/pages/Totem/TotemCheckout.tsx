@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ExtraServicesUpsell } from '@/components/totem/ExtraServicesUpsell';
 import { NextAppointmentScheduler } from '@/components/totem/NextAppointmentScheduler';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface CheckoutSummary {
   original_service: {
@@ -692,12 +693,22 @@ const TotemCheckout: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-brown/10 to-urbana-black flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden relative">
       
-      {/* Animated background patterns */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse delay-1000" />
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+      </div>
+
+      {/* Premium background effects */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl opacity-40" />
       </div>
       
       {/* Header */}
@@ -729,7 +740,7 @@ const TotemCheckout: React.FC = () => {
           {/* Left Column - Services & Products */}
           <div className="flex flex-col gap-2 sm:gap-3 h-full overflow-y-auto">
             {/* Add Extra Services Card */}
-            <Card className="p-3 sm:p-4 md:p-5 bg-card/30 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10 flex-shrink-0">
+            <Card className="p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-lg shadow-urbana-gold/30">
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-black" />
@@ -741,10 +752,10 @@ const TotemCheckout: React.FC = () => {
               
               <div className="flex gap-2">
                 <Select onValueChange={handleAddExtraService} disabled={isUpdating}>
-                  <SelectTrigger className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-urbana-black/50 border-2 border-urbana-gray/50 hover:border-urbana-gold/50 transition-colors">
+                  <SelectTrigger className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-card/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
                     <SelectValue placeholder="Selecione um serviço" />
                   </SelectTrigger>
-                  <SelectContent className="bg-card border-urbana-gold/30">
+                  <SelectContent className="bg-card backdrop-blur-xl border-urbana-gold/30">
                     {availableServices.map((service) => (
                       <SelectItem 
                         key={service.id} 
@@ -804,7 +815,7 @@ const TotemCheckout: React.FC = () => {
             </Card>
 
             {/* Add Products Card */}
-            <Card className="p-3 sm:p-4 md:p-5 bg-card/30 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10 flex-shrink-0">
+            <Card className="p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-urbana-gold-vibrant to-urbana-gold flex items-center justify-center shadow-lg shadow-urbana-gold-vibrant/30">
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-black" />
@@ -815,10 +826,10 @@ const TotemCheckout: React.FC = () => {
               </div>
               
               <Select onValueChange={handleAddProduct} disabled={isUpdating}>
-                <SelectTrigger className="w-full h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-urbana-black/50 border-2 border-urbana-gray/50 hover:border-urbana-gold/50 transition-colors">
+                <SelectTrigger className="w-full h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-card/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
                   <SelectValue placeholder="Selecione um produto" />
                 </SelectTrigger>
-                <SelectContent className="bg-card border-urbana-gold/30">
+                <SelectContent className="bg-card backdrop-blur-xl border-urbana-gold/30">
                   {availableProducts.map((product) => (
                     <SelectItem 
                       key={product.id} 
@@ -866,7 +877,7 @@ const TotemCheckout: React.FC = () => {
 
             {/* Summary Card */}
             {resumo && (
-              <Card className="p-3 sm:p-4 md:p-5 bg-card/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20 flex-1 overflow-y-auto">
+              <Card className="p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex-1 overflow-y-auto">
                 <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 pb-2 border-b-2 border-urbana-gold/30">
                   Resumo
                 </h2>
@@ -952,7 +963,7 @@ const TotemCheckout: React.FC = () => {
 
           {/* Right Column - Payment */}
           <div className="flex flex-col gap-2 sm:gap-3 h-full">
-            <Card className="flex-1 p-3 sm:p-4 md:p-5 bg-card/30 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl shadow-urbana-gold/10 flex flex-col">
+            <Card className="flex-1 p-3 sm:p-4 md:p-5 bg-card/50 backdrop-blur-xl border-2 border-urbana-gold/30 flex flex-col">
               <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 sm:mb-4 text-center">
                 Forma de Pagamento
               </h3>
@@ -962,9 +973,9 @@ const TotemCheckout: React.FC = () => {
                 <button
                   onClick={() => handlePaymentMethod('pix')}
                   disabled={processing || needsRecalculation || isUpdating}
-                  className="group relative h-full min-h-[120px] bg-card/40 backdrop-blur-lg active:bg-card/60 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  className="group relative h-full min-h-[120px] bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 to-urbana-gold-dark/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col items-center justify-center gap-2 sm:gap-3">
                     <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 backdrop-blur-sm group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
                       <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
@@ -978,9 +989,9 @@ const TotemCheckout: React.FC = () => {
                 <button
                   onClick={() => handlePaymentMethod('card')}
                   disabled={processing || needsRecalculation || isUpdating}
-                  className="group relative h-full min-h-[120px] bg-card/40 backdrop-blur-lg active:bg-card/60 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  className="group relative h-full min-h-[120px] bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 to-urbana-gold-dark/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col items-center justify-center gap-2 sm:gap-3">
                     <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 backdrop-blur-sm group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
                       <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
