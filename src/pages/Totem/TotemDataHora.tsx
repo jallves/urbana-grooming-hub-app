@@ -23,12 +23,52 @@ const TotemDataHora: React.FC = () => {
   const location = useLocation();
   const { client, service, barber } = location.state || {};
   
-  const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingDates, setLoadingDates] = useState(true);
   const [creating, setCreating] = useState(false);
+
+  // Verificar se uma data tem horários disponíveis
+  const hasAvailableSlots = async (date: Date): Promise<boolean> => {
+    const now = new Date();
+    const today = startOfToday();
+    const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+    
+    // Gerar horários de 8h às 20h
+    for (let hour = 8; hour <= 20; hour++) {
+      for (let minute of [0, 30]) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        // Se é hoje, verificar se horário já passou
+        if (isToday) {
+          const [slotHour, slotMinute] = timeStr.split(':').map(Number);
+          const slotTime = new Date(today);
+          slotTime.setHours(slotHour, slotMinute, 0, 0);
+          if (slotTime < now) continue;
+        }
+        
+        // Verificar se horário está disponível
+        // @ts-ignore
+        const response = await supabase
+          .from('painel_agendamentos')
+          .select('*')
+          .eq('data', format(date, 'yyyy-MM-dd'))
+          .eq('hora', timeStr)
+          .eq('barbeiro_id', barber.id)
+          .neq('status', 'cancelado');
+
+        // Se encontrou pelo menos um horário disponível, retornar true
+        if (!response.data || response.data.length === 0) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  };
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -38,9 +78,37 @@ const TotemDataHora: React.FC = () => {
       return;
     }
     
-    // Gerar próximos 7 dias
-    const dates = Array.from({ length: 7 }, (_, i) => addDays(startOfToday(), i));
-    setAvailableDates(dates);
+    // Carregar datas disponíveis
+    const loadAvailableDates = async () => {
+      setLoadingDates(true);
+      try {
+        const dates: Date[] = [];
+        
+        // Verificar próximos 14 dias para garantir pelo menos 7 dias com horários
+        for (let i = 0; i < 14 && dates.length < 7; i++) {
+          const date = addDays(startOfToday(), i);
+          const hasSlots = await hasAvailableSlots(date);
+          
+          if (hasSlots) {
+            dates.push(date);
+          }
+        }
+        
+        setAvailableDates(dates);
+        
+        // Selecionar a primeira data disponível automaticamente
+        if (dates.length > 0) {
+          setSelectedDate(dates[0]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar datas:', error);
+        toast.error('Erro ao carregar datas disponíveis');
+      } finally {
+        setLoadingDates(false);
+      }
+    };
+    
+    loadAvailableDates();
     
     return () => {
       document.documentElement.classList.remove('totem-mode');
@@ -165,27 +233,39 @@ const TotemDataHora: React.FC = () => {
               <Calendar className="w-6 h-6" />
               Selecione o Dia
             </h3>
-            <TotemGrid columns={4} gap={3}>
-              {availableDates.map((date) => (
-                <TotemCard
-                  key={date.toISOString()}
-                  icon={Calendar}
-                  variant={
-                    format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-                      ? 'selected'
-                      : 'default'
-                  }
-                  onClick={() => setSelectedDate(date)}
-                >
-                  <TotemCardTitle>
-                    {format(date, "dd 'de' MMMM", { locale: ptBR })}
-                  </TotemCardTitle>
-                  <p className="text-sm text-urbana-light/60">
-                    {format(date, 'EEEE', { locale: ptBR })}
-                  </p>
-                </TotemCard>
-              ))}
-            </TotemGrid>
+            {loadingDates ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-12 h-12 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin" />
+              </div>
+            ) : availableDates.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-xl text-urbana-light/60">
+                  Não há horários disponíveis nos próximos dias
+                </p>
+              </div>
+            ) : (
+              <TotemGrid columns={4} gap={3}>
+                {availableDates.map((date) => (
+                  <TotemCard
+                    key={date.toISOString()}
+                    icon={Calendar}
+                    variant={
+                      selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+                        ? 'selected'
+                        : 'default'
+                    }
+                    onClick={() => setSelectedDate(date)}
+                  >
+                    <TotemCardTitle>
+                      {format(date, "dd 'de' MMMM", { locale: ptBR })}
+                    </TotemCardTitle>
+                    <p className="text-sm text-urbana-light/60">
+                      {format(date, 'EEEE', { locale: ptBR })}
+                    </p>
+                  </TotemCard>
+                ))}
+              </TotemGrid>
+            )}
           </div>
 
           {/* Seleção de Horário */}
