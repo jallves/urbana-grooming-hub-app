@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, Clock } from 'lucide-react';
-import { format, addDays, startOfToday } from 'date-fns';
+import { format, addDays, startOfToday, addMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -127,10 +127,17 @@ const TotemDataHora: React.FC = () => {
   const loadTimeSlots = async () => {
     if (!selectedDate || !service) return;
     
-    console.log('🕐 Carregando slots para:', {
-      date: format(selectedDate, 'yyyy-MM-dd HH:mm:ss'),
-      now: new Date().toISOString(),
-      isToday: format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+    const now = new Date();
+    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const isToday = selectedDateStr === todayStr;
+    
+    console.log('🕐 Carregando slots:', {
+      selectedDate: selectedDateStr,
+      today: todayStr,
+      isToday,
+      currentTime: format(now, 'HH:mm:ss'),
+      minTimeRequired: format(addMinutes(now, 30), 'HH:mm:ss')
     });
     
     setLoading(true);
@@ -141,9 +148,12 @@ const TotemDataHora: React.FC = () => {
         service.duracao || 60
       );
 
-      console.log('📊 Total de slots recebidos:', slots.length);
-      console.log('📊 Slots disponíveis:', slots.filter(s => s.available).length);
-      console.log('📊 Slots ocupados:', slots.filter(s => !s.available).length);
+      console.log('📊 Slots recebidos:', {
+        total: slots.length,
+        available: slots.filter(s => s.available).length,
+        unavailable: slots.filter(s => !s.available).length,
+        reasons: slots.filter(s => !s.available).map(s => ({ time: s.time, reason: s.reason }))
+      });
 
       // Filtrar apenas horários disponíveis
       const availableSlots: TimeSlot[] = slots
@@ -153,11 +163,13 @@ const TotemDataHora: React.FC = () => {
           disponivel: true
         }));
       
-      console.log('✅ Horários disponíveis carregados:', availableSlots.length);
+      console.log('✅ Horários finais disponíveis:', availableSlots.map(s => s.hora));
       
       if (availableSlots.length === 0) {
         toast.info('Não há horários disponíveis para esta data', {
-          description: 'Selecione outra data ou tente mais tarde.'
+          description: isToday 
+            ? 'Não há mais horários disponíveis hoje. Selecione outra data.' 
+            : 'Selecione outra data ou tente mais tarde.'
         });
       }
       

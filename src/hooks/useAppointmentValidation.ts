@@ -290,6 +290,15 @@ export const useAppointmentValidation = () => {
       const isToday = dateStr === today;
       const now = new Date();
 
+      console.log('🔍 getAvailableTimeSlots:', {
+        dateStr,
+        today,
+        isToday,
+        currentTime: format(now, 'HH:mm:ss'),
+        barberId,
+        serviceDuration
+      });
+
       // Buscar agendamentos existentes
       const { data: appointments, error } = await supabase
         .from('painel_agendamentos')
@@ -340,22 +349,24 @@ export const useAppointmentValidation = () => {
           let available = true;
           let reason: string | undefined;
 
-          // Se for hoje, verificar se já passou
+          // Se for hoje, verificar se já passou (com buffer de 30 min)
           if (isToday) {
-            const slotTime = new Date(date);
-            slotTime.setHours(hour, minute, 0, 0);
-            const minTime = addMinutes(now, 30);
+            const slotDateTime = new Date(date);
+            slotDateTime.setHours(hour, minute, 0, 0);
             
-            console.log('⏰ Verificando horário:', {
-              slot: timeString,
-              slotTime: slotTime.toISOString(),
-              minTime: minTime.toISOString(),
-              isPast: isBefore(slotTime, minTime)
-            });
+            // Buffer de 30 minutos
+            const minDateTime = addMinutes(now, 30);
             
-            if (isBefore(slotTime, minTime)) {
+            if (isBefore(slotDateTime, minDateTime)) {
               available = false;
               reason = 'Horário já passou';
+              
+              console.log('⏰ Horário filtrado:', {
+                time: timeString,
+                slotDateTime: format(slotDateTime, 'HH:mm:ss'),
+                minDateTime: format(minDateTime, 'HH:mm:ss'),
+                reason: 'já passou ou < 30min'
+              });
             }
           }
 
