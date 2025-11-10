@@ -26,7 +26,9 @@ Deno.serve(async (req) => {
       items, // Array de { type: 'service' | 'product', id, name, quantity, price, discount }
       payment_method: rawPaymentMethod,
       discount_amount = 0,
-      notes
+      notes,
+      transaction_date: providedTransactionDate,
+      transaction_datetime: providedTransactionDateTime
     } = await req.json()
 
     // Mapear payment_method do totem para os valores corretos do ENUM
@@ -43,13 +45,42 @@ Deno.serve(async (req) => {
 
     const payment_method = paymentMethodMap[rawPaymentMethod] || rawPaymentMethod
 
+    // Buscar data/hora do agendamento se disponível
+    let transactionDate = providedTransactionDate
+    let transactionDateTime = providedTransactionDateTime
+
+    if (appointment_id && (!transactionDate || !transactionDateTime)) {
+      const { data: appointmentData } = await supabase
+        .from('painel_agendamentos')
+        .select('data, hora')
+        .eq('id', appointment_id)
+        .single()
+
+      if (appointmentData) {
+        // Usar data e hora do agendamento
+        transactionDate = appointmentData.data
+        transactionDateTime = `${appointmentData.data}T${appointmentData.hora}:00`
+        console.log('📅 Usando data/hora do agendamento:', { date: transactionDate, datetime: transactionDateTime })
+      }
+    }
+
+    // Se ainda não tiver, usar data/hora atual
+    if (!transactionDate || !transactionDateTime) {
+      const now = new Date()
+      transactionDate = now.toISOString().split('T')[0]
+      transactionDateTime = now.toISOString()
+      console.log('⏰ Usando data/hora atual:', { date: transactionDate, datetime: transactionDateTime })
+    }
+
     console.log('💰 Criando transação financeira:', {
       appointment_id,
       client_id,
       barber_id,
       items: items?.length,
       payment_method_original: rawPaymentMethod,
-      payment_method_normalized: payment_method
+      payment_method_normalized: payment_method,
+      transaction_date: transactionDate,
+      transaction_datetime: transactionDateTime
     })
 
     // Validar dados obrigatórios
@@ -66,10 +97,6 @@ Deno.serve(async (req) => {
     if (!validPaymentMethods.includes(payment_method)) {
       throw new Error(`Forma de pagamento inválida: ${payment_method}. Use: ${validPaymentMethods.join(', ')}`)
     }
-
-    const now = new Date()
-    const transactionDate = now.toISOString().split('T')[0]
-    const transactionDateTime = now.toISOString()
 
     // Separar itens por tipo
     const serviceItems = items.filter((i: any) => i.type === 'service')
@@ -193,8 +220,8 @@ Deno.serve(async (req) => {
           confirmed_at: transactionDateTime,
           metadata: {
             payment_datetime: transactionDateTime,
-            payment_time: now.toLocaleTimeString('pt-BR'),
-            payment_date_formatted: now.toLocaleDateString('pt-BR')
+            payment_time: new Date(transactionDateTime).toLocaleTimeString('pt-BR'),
+            payment_date_formatted: new Date(transactionDateTime).toLocaleDateString('pt-BR')
           }
         })
 
@@ -208,9 +235,20 @@ Deno.serve(async (req) => {
         datetime: transactionDateTime
       })
 
-      // 4. Criar COMISSÃO de 40% para o serviço (Contas a Pagar)
+      // 4. Criar COMISSÃO para o serviço (Contas a Pagar)
       if (barber_id) {
-        const commissionRate = 40 // 40% fixo
+        // Buscar taxa de comissão do barbeiro
+        const { data: barberData, error: barberError } = await supabase
+          .from('staff')
+          .select('commission_rate')
+          .eq('id', barber_id)
+          .single()
+
+        if (barberError) {
+          console.error('❌ Erro ao buscar comissão do barbeiro:', barberError)
+        }
+
+        const commissionRate = barberData?.commission_rate || 40 // Default 40%
         const commissionAmount = serviceNetAmount * (commissionRate / 100)
 
         const { data: commissionRecord, error: commissionError } = await supabase
@@ -386,8 +424,8 @@ Deno.serve(async (req) => {
           confirmed_at: transactionDateTime,
           metadata: {
             payment_datetime: transactionDateTime,
-            payment_time: now.toLocaleTimeString('pt-BR'),
-            payment_date_formatted: now.toLocaleDateString('pt-BR')
+            payment_time: new Date(transactionDateTime).toLocaleTimeString('pt-BR'),
+            payment_date_formatted: new Date(transactionDateTime).toLocaleDateString('pt-BR')
           }
         })
 

@@ -81,6 +81,8 @@ export interface CreateTransactionRequest {
   payment_method: PaymentMethod;
   discount_amount?: number;
   notes?: string;
+  transaction_date?: string;
+  transaction_datetime?: string;
 }
 
 export interface TransactionSummary {

@@ -1387,6 +1387,7 @@ export type Database = {
       }
       employees: {
         Row: {
+          commission_rate: number | null
           created_at: string
           email: string
           id: string
@@ -1400,6 +1401,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          commission_rate?: number | null
           created_at?: string
           email: string
           id?: string
@@ -1413,6 +1415,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          commission_rate?: number | null
           created_at?: string
           email?: string
           id?: string

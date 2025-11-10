@@ -7,6 +7,7 @@ export interface Employee {
   role: 'admin' | 'manager' | 'barber';
   status: 'active' | 'inactive';
   photo_url?: string;
+  commission_rate?: number;
   created_at: string;
   updated_at: string;
   last_login?: string;
@@ -20,6 +21,7 @@ export interface CreateEmployeeData {
   status: 'active' | 'inactive';
   password: string;
   photo_url?: string;
+  commission_rate?: number;
 }
 
 export interface UpdateEmployeeData {
@@ -30,4 +32,5 @@ export interface UpdateEmployeeData {
   status?: 'active' | 'inactive';
   password?: string;
   photo_url?: string;
+  commission_rate?: number;
 }

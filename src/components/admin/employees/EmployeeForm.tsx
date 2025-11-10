@@ -29,6 +29,7 @@ const employeeSchema = z.object({
   status: z.enum(['active', 'inactive'], {
     required_error: 'Selecione um status',
   }),
+  commission_rate: z.number().min(0).max(100).optional(),
 });
 
 type EmployeeFormData = z.infer<typeof employeeSchema>;
@@ -54,6 +55,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       phone: employee?.phone || '',
       role: employee?.role || 'barber',
       status: employee?.status || 'active',
+      commission_rate: employee?.commission_rate || 40,
     },
   });
 
@@ -97,6 +99,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         role: 'barber',
         is_active: data.status === 'active',
         image_url: photoUrl,
+        commission_rate: data.commission_rate || 40,
       };
 
       console.log('Creating staff member:', staffData);
@@ -118,6 +121,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         role: data.role,
         status: data.status,
         photo_url: photoUrl,
+        commission_rate: data.commission_rate || 40,
       };
 
       console.log('Employee data to insert:', employeeData);
@@ -158,6 +162,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
             phone: data.phone,
             is_active: data.status === 'active',
             image_url: photoUrl,
+            commission_rate: data.commission_rate || 40,
           })
           .eq('id', staffData.id);
 
@@ -180,6 +185,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       role: data.role,
       status: data.status,
       photo_url: photoUrl,
+      commission_rate: data.commission_rate || 40,
     };
 
     console.log('Update data:', updateData);
@@ -366,6 +372,31 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
               <p className="text-sm text-red-600 font-raleway">{form.formState.errors.status.message}</p>
             )}
           </div>
+
+          {/* Taxa de Comissão (apenas para barbeiros) */}
+          {form.watch('role') === 'barber' && (
+            <div className="space-y-2 md:col-span-1">
+              <Label htmlFor="commission_rate" className="text-gray-900 font-raleway font-medium">
+                Taxa de Comissão (%) *
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={form.watch('commission_rate') || 40}
+                onChange={(e) => form.setValue('commission_rate', parseFloat(e.target.value))}
+                className="bg-white border-gray-200 text-gray-900 font-raleway focus:border-urbana-gold focus:ring-urbana-gold/20"
+                placeholder="40.00"
+              />
+              {form.formState.errors.commission_rate && (
+                <p className="text-sm text-red-600 font-raleway">{form.formState.errors.commission_rate.message}</p>
+              )}
+              <p className="text-xs text-gray-500 font-raleway">
+                Porcentagem de comissão sobre serviços (0-100%)
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Botões */}
