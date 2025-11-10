@@ -6,6 +6,7 @@ import { ArrowLeft, CreditCard, Loader2, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentCard: React.FC = () => {
   const navigate = useNavigate();
@@ -152,7 +153,12 @@ const TotemPaymentCard: React.FC = () => {
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden relative">
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-black/85 to-urbana-brown/80" />
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-urbana-black/60" />
       </div>
 
       {/* Premium background effects */}
