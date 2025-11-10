@@ -54,6 +54,7 @@ const ClientAppointmentModal: React.FC<ClientAppointmentModalProps> = ({
   // Get form values for StaffSelect
   const selectedDate = form.watch('date');
   const selectedTime = form.watch('time');
+  const selectedStaffId = form.watch('staff_id');
   
   if (!client) {
     return null;
@@ -83,7 +84,11 @@ const ClientAppointmentModal: React.FC<ClientAppointmentModalProps> = ({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <ServiceSelect services={services} form={form} />
             
-            <ClientDateTimePicker form={form} />
+            <ClientDateTimePicker 
+              form={form}
+              barberId={selectedStaffId}
+              serviceDuration={selectedService?.duration}
+            />
             
             <ClientStaffSelect 
               staffMembers={staffMembers} 

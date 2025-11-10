@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, addDays, isAfter, isBefore, startOfDay, addMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
@@ -10,45 +10,63 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from 'react-hook-form';
+import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 
 interface ClientDateTimePickerProps {
   form: UseFormReturn<any>;
+  barberId?: string;
+  serviceDuration?: number;
 }
 
-const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => {
-  // Gerar horários disponíveis com base no horário atual (com margem de 30 min)
-  const generateTimeSlots = (selectedDate?: Date) => {
-    const slots = [];
-    const now = new Date();
-    // Adicionar 30 minutos de margem para preparação
-    const minTime = addMinutes(now, 30);
-    
-    const isToday = selectedDate && 
-      selectedDate.getDate() === now.getDate() &&
-      selectedDate.getMonth() === now.getMonth() &&
-      selectedDate.getFullYear() === now.getFullYear();
+const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ 
+  form, 
+  barberId = '',
+  serviceDuration = 60 
+}) => {
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const { getAvailableTimeSlots } = useAppointmentValidation();
+  
+  const selectedDate = form.watch('date');
 
-    // Horário de funcionamento: 08:00 às 20:00
-    for (let hour = 8; hour < 20; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        // Se for hoje, só mostrar horários futuros (com 30 min de margem)
-        if (isToday) {
-          const slotDateTime = new Date(selectedDate);
-          slotDateTime.setHours(hour, minute, 0, 0);
-          
-          if (slotDateTime < minTime) {
-            continue;
-          }
-        }
-        
-        slots.push(slotTime);
+  // Carregar horários disponíveis quando a data mudar
+  useEffect(() => {
+    const loadAvailableSlots = async () => {
+      if (!selectedDate || !barberId) {
+        setAvailableTimeSlots([]);
+        return;
       }
-    }
-    
-    return slots;
-  };
+
+      setIsLoadingSlots(true);
+      try {
+        const slots = await getAvailableTimeSlots(
+          barberId,
+          selectedDate,
+          serviceDuration
+        );
+
+        // Filtrar apenas horários disponíveis
+        const available = slots
+          .filter(slot => slot.available)
+          .map(slot => slot.time);
+
+        setAvailableTimeSlots(available);
+        
+        // Se o horário selecionado não está mais disponível, limpar
+        const currentTime = form.getValues('time');
+        if (currentTime && !available.includes(currentTime)) {
+          form.setValue('time', '');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar horários:', error);
+        setAvailableTimeSlots([]);
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    loadAvailableSlots();
+  }, [selectedDate, barberId, serviceDuration, getAvailableTimeSlots, form]);
 
   // Função para determinar data mínima disponível
   const getMinimumDate = () => {
@@ -83,9 +101,6 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => 
     
     return isPastDate || isSunday || isTooFarAhead;
   };
-
-  const selectedDate = form.watch('date');
-  const timeSlots = generateTimeSlots(selectedDate);
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -143,35 +158,45 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => 
         name="time"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-black">Hora</FormLabel>
-            <Select
-              onValueChange={field.onChange}
+            <FormLabel className="text-black">Horário</FormLabel>
+            <Select 
+              onValueChange={field.onChange} 
               value={field.value}
-              disabled={!selectedDate}
+              disabled={!selectedDate || isLoadingSlots}
             >
               <FormControl>
-                <SelectTrigger className="text-black">
-                  <SelectValue placeholder="Selecione um horário" />
+                <SelectTrigger className="w-full bg-white text-black border-gray-300">
+                  {isLoadingSlots ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Carregando...</span>
+                    </div>
+                  ) : (
+                    <SelectValue placeholder={
+                      !selectedDate 
+                        ? "Selecione uma data primeiro" 
+                        : availableTimeSlots.length === 0 
+                        ? "Sem horários disponíveis" 
+                        : "Selecione o horário"
+                    } />
+                  )}
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {timeSlots.length > 0 ? (
-                  timeSlots.map((time) => (
-                    <SelectItem key={time} value={time} className="text-black">
+                {availableTimeSlots.length === 0 && !isLoadingSlots ? (
+                  <div className="p-2 text-sm text-gray-500 text-center">
+                    Nenhum horário disponível
+                  </div>
+                ) : (
+                  availableTimeSlots.map((time) => (
+                    <SelectItem key={time} value={time}>
                       {time}
                     </SelectItem>
                   ))
-                ) : (
-                  <SelectItem value="" disabled className="text-gray-500">
-                    {selectedDate ? 'Nenhum horário disponível' : 'Selecione uma data primeiro'}
-                  </SelectItem>
                 )}
               </SelectContent>
             </Select>
             <FormMessage />
-            <p className="text-xs text-gray-600">
-              * Atendimento das 08h às 20h (agende com 30 min de antecedência)
-            </p>
           </FormItem>
         )}
       />

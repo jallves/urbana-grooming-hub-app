@@ -135,13 +135,16 @@ const TotemDataHora: React.FC = () => {
         service.duracao || 60
       );
 
-      // Converter para o formato esperado pelo componente
-      const formattedSlots: TimeSlot[] = slots.map(slot => ({
-        hora: slot.time,
-        disponivel: slot.available
-      }));
+      // Filtrar apenas horários disponíveis
+      const availableSlots: TimeSlot[] = slots
+        .filter(slot => slot.available)
+        .map(slot => ({
+          hora: slot.time,
+          disponivel: true
+        }));
       
-      setTimeSlots(formattedSlots);
+      console.log('✅ Horários disponíveis carregados:', availableSlots.length);
+      setTimeSlots(availableSlots);
     } catch (error) {
       console.error('Erro ao carregar horários:', error);
       toast.error('Erro ao carregar horários disponíveis');

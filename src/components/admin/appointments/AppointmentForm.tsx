@@ -47,6 +47,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
   const selectedDate = form.watch('date');
   const selectedTime = form.watch('time');
+  const selectedStaffId = form.watch('staff_id');
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -63,7 +64,11 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
             
             <ServiceSelect services={services} form={form} />
             
-            <DateTimePicker form={form} />
+            <DateTimePicker 
+              form={form}
+              barberId={selectedStaffId}
+              serviceDuration={selectedService?.duration}
+            />
             
             <StaffSelect 
               staffMembers={staffMembers} 
