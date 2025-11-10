@@ -199,7 +199,7 @@ const TotemProducts: React.FC = () => {
             <p className="text-xl text-urbana-light">Nenhum produto disponível nesta categoria</p>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 pb-4">
             {filteredProducts.map(product => {
               const cartItem = cart.find(item => item.product.id === product.id);
               const inCart = cartItem ? cartItem.quantity : 0;
@@ -207,77 +207,109 @@ const TotemProducts: React.FC = () => {
               return (
                 <Card
                   key={product.id}
-                  className="relative overflow-hidden bg-transparent backdrop-blur-md border-2 border-urbana-gold/30 active:border-urbana-gold transition-all"
+                  className="group relative overflow-hidden bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl border-2 border-white/20 hover:border-urbana-gold/60 transition-all duration-300 hover:shadow-2xl hover:shadow-urbana-gold/20 hover:-translate-y-1"
                 >
                   {/* Product Image */}
-                  <div className="aspect-square bg-urbana-black/50 relative overflow-hidden">
+                  <div className="relative aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 overflow-hidden">
                     {product.imagens && product.imagens.length > 0 ? (
-                      <img
-                        src={product.imagens[0]}
-                        alt={product.nome}
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={product.imagens[0]}
+                          alt={product.nome}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        {/* Image Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-16 h-16 text-urbana-gold/50" />
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black/80 to-urbana-brown/60">
+                        <Package className="w-20 h-20 text-urbana-gold/40 group-hover:text-urbana-gold/60 transition-colors" />
                       </div>
                     )}
-                    {product.destaque && (
-                      <div className="absolute top-2 right-2 bg-urbana-gold text-urbana-black px-2 py-1 rounded-lg text-xs font-bold">
-                        DESTAQUE
-                      </div>
-                    )}
+                    
+                    {/* Badges */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between items-start z-10">
+                      {product.destaque && (
+                        <div className="bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black px-3 py-1.5 rounded-full text-xs font-black shadow-lg animate-pulse">
+                          ⭐ DESTAQUE
+                        </div>
+                      )}
+                      {product.estoque <= product.estoque_minimo && (
+                        <div className="bg-red-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ml-auto">
+                          Estoque Baixo
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stock Badge */}
+                    <div className="absolute bottom-3 right-3 bg-urbana-black/80 backdrop-blur-sm text-urbana-light px-3 py-1.5 rounded-full text-xs font-semibold border border-urbana-gold/30">
+                      {product.estoque} unid.
+                    </div>
                   </div>
 
                   {/* Product Info */}
-                  <div className="p-3 sm:p-4 space-y-2">
-                    <h3 className="font-bold text-base sm:text-lg text-urbana-light line-clamp-2">
+                  <div className="p-4 sm:p-5 space-y-3 bg-gradient-to-b from-transparent to-white/5">
+                    {/* Category Tag */}
+                    <div className="inline-block">
+                      <span className="text-xs font-semibold text-urbana-gold/70 uppercase tracking-wider">
+                        {product.categoria}
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-lg sm:text-xl text-urbana-light line-clamp-2 group-hover:text-urbana-gold transition-colors leading-tight">
                       {product.nome}
                     </h3>
                     
                     {product.descricao && (
-                      <p className="text-xs sm:text-sm text-urbana-light/60 line-clamp-2">
+                      <p className="text-sm text-urbana-light/70 line-clamp-2 leading-relaxed">
                         {product.descricao}
                       </p>
                     )}
 
-                    <div className="flex items-center justify-between">
-                      <p className="text-xl sm:text-2xl font-black text-urbana-gold">
+                    {/* Price */}
+                    <div className="pt-2 border-t border-white/10">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs text-urbana-light/50 font-medium">A partir de</span>
+                      </div>
+                      <p className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light">
                         R$ {product.preco.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-urbana-light/60">
-                        Est: {product.estoque}
                       </p>
                     </div>
 
                     {/* Add to Cart Controls */}
-                    {inCart > 0 ? (
-                      <div className="flex items-center justify-between gap-2">
-                        <Button
-                          onClick={() => removeFromCart(product.id)}
-                          size="sm"
-                          className="flex-1 bg-red-500/20 text-red-300 border-2 border-red-500/40 active:bg-red-500/40"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="text-lg font-bold text-urbana-light px-4">{inCart}</span>
+                    <div className="pt-2">
+                      {inCart > 0 ? (
+                        <div className="flex items-center gap-3">
+                          <Button
+                            onClick={() => removeFromCart(product.id)}
+                            size="lg"
+                            className="flex-1 h-12 bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-300 border-2 border-red-500/40 hover:bg-red-500/30 hover:border-red-400 transition-all shadow-lg"
+                          >
+                            <Minus className="w-5 h-5" />
+                          </Button>
+                          <div className="flex flex-col items-center min-w-[60px]">
+                            <span className="text-xs text-urbana-light/60 font-medium">Qtd.</span>
+                            <span className="text-2xl font-black text-urbana-gold">{inCart}</span>
+                          </div>
+                          <Button
+                            onClick={() => addToCart(product)}
+                            size="lg"
+                            className="flex-1 h-12 bg-gradient-to-r from-urbana-gold/30 to-urbana-gold-vibrant/30 text-urbana-gold border-2 border-urbana-gold/50 hover:bg-urbana-gold/40 hover:border-urbana-gold transition-all shadow-lg"
+                          >
+                            <Plus className="w-5 h-5" />
+                          </Button>
+                        </div>
+                      ) : (
                         <Button
                           onClick={() => addToCart(product)}
-                          size="sm"
-                          className="flex-1 bg-urbana-gold/20 text-urbana-gold border-2 border-urbana-gold/40 active:bg-urbana-gold/40"
+                          size="lg"
+                          className="w-full h-12 bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-dark text-urbana-black font-bold text-base hover:from-urbana-gold hover:to-urbana-gold-vibrant shadow-xl hover:shadow-2xl hover:shadow-urbana-gold/30 transition-all duration-300 group-hover:scale-105"
                         >
-                          <Plus className="w-4 h-4" />
+                          <ShoppingCart className="w-5 h-5 mr-2" />
+                          Adicionar ao Carrinho
                         </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => addToCart(product)}
-                        className="w-full bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black active:from-urbana-gold-dark active:to-urbana-gold"
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Adicionar
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </Card>
               );
