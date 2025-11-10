@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useTotemTimeout } from '@/hooks/useTotemTimeout';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 /**
  * Tela de espera inteligente após check-in
@@ -93,7 +94,12 @@ const TotemWaiting: React.FC = () => {
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/60 via-urbana-brown/30 to-urbana-black/50" />
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-urbana-black/60" />
       </div>
 
       {/* Premium background effects */}
