@@ -65,9 +65,28 @@ Deno.serve(async (req) => {
     // PROCESSAR SERVIÇOS
     // ========================================
     for (const service of serviceItems) {
+      // Buscar nome real do serviço do banco de dados
+      const { data: serviceData, error: serviceDataError } = await supabase
+        .from('painel_servicos')
+        .select('nome, preco')
+        .eq('id', service.id)
+        .single()
+
+      if (serviceDataError || !serviceData) {
+        console.error('❌ Serviço não encontrado:', service.id, serviceDataError)
+        throw new Error(`Serviço não encontrado: ${service.id}`)
+      }
+
+      const serviceName = serviceData.nome
       const serviceGrossAmount = service.quantity * service.price
       const serviceDiscount = service.discount || 0
       const serviceNetAmount = serviceGrossAmount - serviceDiscount
+
+      console.log('📋 Processando serviço:', {
+        id: service.id,
+        name: serviceName,
+        price: service.price
+      })
 
       // Gerar número de transação único
       const { data: transactionNumber } = await supabase
@@ -90,7 +109,7 @@ Deno.serve(async (req) => {
           tax_amount: 0,
           net_amount: serviceNetAmount,
           status: 'completed',
-          description: `Serviço: ${service.name}`,
+          description: `Serviço: ${serviceName}`,
           notes,
           transaction_date: transactionDate,
           completed_at: transactionDateTime,
@@ -100,7 +119,7 @@ Deno.serve(async (req) => {
           metadata: {
             source: appointment_id ? 'appointment' : 'direct_sale',
             service_id: service.id,
-            service_name: service.name,
+            service_name: serviceName,
             payment_time: transactionDateTime
           }
         })
@@ -114,7 +133,7 @@ Deno.serve(async (req) => {
 
       console.log('✅ Receita de serviço criada:', {
         id: serviceRecord.id,
-        service: service.name,
+        service: serviceName,
         amount: serviceNetAmount
       })
 
@@ -125,7 +144,7 @@ Deno.serve(async (req) => {
           financial_record_id: serviceRecord.id,
           item_type: 'service',
           item_id: service.id,
-          item_name: service.name,
+          item_name: serviceName,
           quantity: service.quantity,
           unit_price: service.price,
           discount: serviceDiscount,
@@ -185,7 +204,7 @@ Deno.serve(async (req) => {
             tax_amount: 0,
             net_amount: commissionAmount,
             status: 'pending', // Comissões sempre pendentes
-            description: `Comissão ${commissionRate}% - Serviço: ${service.name}`,
+            description: `Comissão ${commissionRate}% - Serviço: ${serviceName}`,
             notes: `Comissão sobre serviço realizado`,
             transaction_date: transactionDate,
             appointment_id,
@@ -195,7 +214,7 @@ Deno.serve(async (req) => {
               commission_rate: commissionRate,
               source_transaction: serviceRecord.id,
               service_id: service.id,
-              service_name: service.name,
+              service_name: serviceName,
               service_amount: serviceNetAmount
             }
           })
@@ -223,13 +242,13 @@ Deno.serve(async (req) => {
           id: commissionRecord.id,
           rate: commissionRate,
           amount: commissionAmount,
-          service: service.name
+          service: serviceName
         })
       }
 
       createdRecords.push({
         type: 'service',
-        name: service.name,
+        name: serviceName,
         revenue_id: serviceRecord.id,
         amount: serviceNetAmount
       })
@@ -239,9 +258,28 @@ Deno.serve(async (req) => {
     // PROCESSAR PRODUTOS
     // ========================================
     for (const product of productItems) {
+      // Buscar nome real do produto do banco de dados
+      const { data: productData, error: productDataError } = await supabase
+        .from('painel_produtos')
+        .select('nome, preco')
+        .eq('id', product.id)
+        .single()
+
+      if (productDataError || !productData) {
+        console.error('❌ Produto não encontrado:', product.id, productDataError)
+        throw new Error(`Produto não encontrado: ${product.id}`)
+      }
+
+      const productName = productData.nome
       const productGrossAmount = product.quantity * product.price
       const productDiscount = product.discount || 0
       const productNetAmount = productGrossAmount - productDiscount
+
+      console.log('📦 Processando produto:', {
+        id: product.id,
+        name: productName,
+        price: product.price
+      })
 
       // Gerar número de transação único
       const { data: transactionNumber } = await supabase
@@ -264,7 +302,7 @@ Deno.serve(async (req) => {
           tax_amount: 0,
           net_amount: productNetAmount,
           status: 'completed',
-          description: `Produto: ${product.name}`,
+          description: `Produto: ${productName}`,
           notes,
           transaction_date: transactionDate,
           completed_at: transactionDateTime,
@@ -274,7 +312,7 @@ Deno.serve(async (req) => {
           metadata: {
             source: appointment_id ? 'appointment' : 'direct_sale',
             product_id: product.id,
-            product_name: product.name,
+            product_name: productName,
             payment_time: transactionDateTime
           }
         })
@@ -288,7 +326,7 @@ Deno.serve(async (req) => {
 
       console.log('✅ Receita de produto criada:', {
         id: productRecord.id,
-        product: product.name,
+        product: productName,
         amount: productNetAmount
       })
 
@@ -299,7 +337,7 @@ Deno.serve(async (req) => {
           financial_record_id: productRecord.id,
           item_type: 'product',
           item_id: product.id,
-          item_name: product.name,
+          item_name: productName,
           quantity: product.quantity,
           unit_price: product.price,
           discount: productDiscount,
@@ -349,13 +387,13 @@ Deno.serve(async (req) => {
       })
 
       console.log('✅ Estoque atualizado:', {
-        product: product.name,
+        product: productName,
         quantity: -product.quantity
       })
 
       createdRecords.push({
         type: 'product',
-        name: product.name,
+        name: productName,
         revenue_id: productRecord.id,
         amount: productNetAmount
       })
