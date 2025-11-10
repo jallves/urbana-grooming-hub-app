@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, addDays, isAfter, isBefore, startOfDay, addMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from "@/lib/utils";
@@ -16,26 +16,29 @@ interface ClientDateTimePickerProps {
 }
 
 const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => {
-  // Gerar horários disponíveis com base no horário atual
+  // Gerar horários disponíveis com base no horário atual (com margem de 30 min)
   const generateTimeSlots = (selectedDate?: Date) => {
     const slots = [];
     const now = new Date();
+    // Adicionar 30 minutos de margem para preparação
+    const minTime = addMinutes(now, 30);
+    
     const isToday = selectedDate && 
       selectedDate.getDate() === now.getDate() &&
       selectedDate.getMonth() === now.getMonth() &&
       selectedDate.getFullYear() === now.getFullYear();
 
-    // Horário de funcionamento: 09:00 às 20:00
-    for (let hour = 9; hour < 20; hour++) {
+    // Horário de funcionamento: 08:00 às 20:00
+    for (let hour = 8; hour < 20; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const slotTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         
-        // Se for hoje, só mostrar horários futuros
+        // Se for hoje, só mostrar horários futuros (com 30 min de margem)
         if (isToday) {
-          const currentHour = now.getHours();
-          const currentMinute = now.getMinutes();
+          const slotDateTime = new Date(selectedDate);
+          slotDateTime.setHours(hour, minute, 0, 0);
           
-          if (hour < currentHour || (hour === currentHour && minute <= currentMinute)) {
+          if (slotDateTime < minTime) {
             continue;
           }
         }
@@ -51,9 +54,11 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => 
   const getMinimumDate = () => {
     const now = new Date();
     const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
     
-    // Se já passou das 20h, o próximo dia disponível é amanhã
-    if (currentHour >= 20) {
+    // Se já passou das 19h30 (considerando 30 min de margem), 
+    // o próximo dia disponível é amanhã
+    if (currentHour >= 19 && currentMinute >= 30) {
       return addDays(startOfDay(now), 1);
     }
     
@@ -165,7 +170,7 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({ form }) => 
             </Select>
             <FormMessage />
             <p className="text-xs text-gray-600">
-              * Atendimento das 09h às 20h
+              * Atendimento das 08h às 20h (agende com 30 min de antecedência)
             </p>
           </FormItem>
         )}

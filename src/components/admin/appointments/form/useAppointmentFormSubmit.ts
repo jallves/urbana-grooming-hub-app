@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { Service } from '@/types/appointment';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 
 interface UseAppointmentFormSubmitProps {
   appointmentId?: string;
@@ -17,6 +18,7 @@ export const useAppointmentFormSubmit = ({
   onClose 
 }: UseAppointmentFormSubmitProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { validateAppointment } = useAppointmentValidation();
   
   const handleSubmit = async (data: FormValues, selectedService: Service | null) => {
     try {
@@ -63,6 +65,21 @@ export const useAppointmentFormSubmit = ({
       console.log('Original date:', data.date, 'Original time:', data.time);
       console.log('Converted startDate:', startDate);
       console.log('Start time ISO:', startTimeISO);
+      
+      // Validar disponibilidade antes de salvar
+      const validation = await validateAppointment(
+        data.staff_id,
+        data.date,
+        data.time,
+        selectedService.duration,
+        appointmentId // Excluir o próprio agendamento se for edição
+      );
+
+      if (!validation.valid) {
+        // Erro já foi mostrado pelo hook
+        setIsLoading(false);
+        return;
+      }
       
       // Insert or update appointment
       if (appointmentId) {

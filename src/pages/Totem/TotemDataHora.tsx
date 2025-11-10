@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { TotemLayout, TotemContentContainer, TotemGrid } from '@/components/totem/TotemLayout';
 import { TotemCard, TotemCardTitle } from '@/components/totem/TotemCard';
 import { TotemButton } from '@/components/totem/TotemButton';
+import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 
 interface TimeSlot {
   hora: string;
@@ -30,6 +31,8 @@ const TotemDataHora: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingDates, setLoadingDates] = useState(true);
   const [creating, setCreating] = useState(false);
+
+  const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
 
   // Verificar se uma data tem horários disponíveis
   const hasAvailableSlots = async (date: Date): Promise<boolean> => {
@@ -122,50 +125,23 @@ const TotemDataHora: React.FC = () => {
   }, [selectedDate]);
 
   const loadTimeSlots = async () => {
+    if (!selectedDate || !service) return;
+    
     setLoading(true);
     try {
-      const now = new Date();
-      const today = startOfToday();
-      const isToday = format(selectedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
-      
-      // Gerar horários de 8h às 20h
-      const slots: TimeSlot[] = [];
-      for (let hour = 8; hour <= 20; hour++) {
-        for (let minute of [0, 30]) {
-          const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          
-          // Se é hoje, filtrar horários passados
-          let isPast = false;
-          if (isToday) {
-            const [slotHour, slotMinute] = timeStr.split(':').map(Number);
-            const slotTime = new Date(today);
-            slotTime.setHours(slotHour, slotMinute, 0, 0);
-            isPast = slotTime < now;
-          }
-          
-          // Se é horário passado, pular
-          if (isPast) {
-            continue;
-          }
-          
-          // Verificar se horário está ocupado
-          // @ts-ignore - Evitar inferência profunda de tipos do Supabase
-          const response = await supabase
-            .from('painel_agendamentos')
-            .select('*')
-            .eq('data', format(selectedDate, 'yyyy-MM-dd'))
-            .eq('hora', timeStr)
-            .eq('barbeiro_id', barber.id)
-            .neq('status', 'cancelado');
+      const slots = await getAvailableTimeSlots(
+        barber.id,
+        selectedDate,
+        service.duracao || 60
+      );
 
-          slots.push({
-            hora: timeStr,
-            disponivel: !response.data || response.data.length === 0
-          });
-        }
-      }
+      // Converter para o formato esperado pelo componente
+      const formattedSlots: TimeSlot[] = slots.map(slot => ({
+        hora: slot.time,
+        disponivel: slot.available
+      }));
       
-      setTimeSlots(slots);
+      setTimeSlots(formattedSlots);
     } catch (error) {
       console.error('Erro ao carregar horários:', error);
       toast.error('Erro ao carregar horários disponíveis');
@@ -175,13 +151,28 @@ const TotemDataHora: React.FC = () => {
   };
 
   const handleConfirm = async () => {
-    if (!selectedTime) {
-      toast.error('Selecione um horário');
+    if (!selectedTime || !selectedDate) {
+      toast.error('Selecione uma data e horário');
       return;
     }
 
     setCreating(true);
     try {
+      // Validação robusta antes de criar
+      const validation = await validateAppointment(
+        barber.id,
+        selectedDate,
+        selectedTime,
+        service.duracao || 60
+      );
+
+      if (!validation.valid) {
+        // Erro já foi mostrado pelo hook
+        setCreating(false);
+        return;
+      }
+
+      // Validação passou, criar agendamento
       // @ts-ignore - Evitar inferência profunda de tipos do Supabase
       const response = await supabase
         .from('painel_agendamentos')
@@ -196,7 +187,18 @@ const TotemDataHora: React.FC = () => {
         .select()
         .single();
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        // Verificar se é erro de conflito (race condition)
+        if (response.error.message?.includes('duplicate') || 
+            response.error.message?.includes('conflict')) {
+          toast.error('Este horário acabou de ser reservado. Por favor, escolha outro horário.');
+          // Recarregar horários
+          loadTimeSlots();
+          setCreating(false);
+          return;
+        }
+        throw response.error;
+      }
 
       toast.success('Agendamento criado com sucesso!');
       
@@ -308,10 +310,11 @@ const TotemDataHora: React.FC = () => {
                 variant="primary"
                 size="xl"
                 onClick={handleConfirm}
-                loading={creating}
+                loading={creating || isValidating}
+                disabled={creating || isValidating}
                 className="w-full"
               >
-                Confirmar Agendamento
+                {isValidating ? 'Validando...' : 'Confirmar Agendamento'}
               </TotemButton>
             </div>
           )}
