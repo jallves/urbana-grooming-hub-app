@@ -7,12 +7,14 @@ import {
   TrendingDown, 
   Calculator,
   Activity,
-  CreditCard
+  ArrowUpCircle,
+  ArrowDownCircle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { DashboardMetrics } from '@/types/erp';
-import { FinancialTransactionsList } from './FinancialTransactionsList';
+import { ContasAReceber } from './ContasAReceber';
+import { ContasAPagar } from './ContasAPagar';
 
 const FinancialDashboard: React.FC = () => {
   const { data: metrics, isLoading } = useQuery({
@@ -161,88 +163,33 @@ const FinancialDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Tabs de Período */}
-      <Tabs defaultValue="month" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200 h-auto">
+      {/* Tabs Principais: Contas a Receber e Contas a Pagar */}
+      <Tabs defaultValue="receber" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 h-auto">
           <TabsTrigger 
-            value="today"
-            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
+            value="receber"
+            className="text-sm sm:text-base py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-gray-700 font-semibold"
           >
-            Hoje
+            <ArrowUpCircle className="h-4 w-4 mr-2" />
+            Contas a Receber
           </TabsTrigger>
           <TabsTrigger 
-            value="week"
-            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
+            value="pagar"
+            className="text-sm sm:text-base py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-rose-500 data-[state=active]:text-white text-gray-700 font-semibold"
           >
-            Semana
-          </TabsTrigger>
-          <TabsTrigger 
-            value="month"
-            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
-          >
-            Mês
-          </TabsTrigger>
-          <TabsTrigger 
-            value="year"
-            className="text-xs sm:text-sm py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white text-gray-700"
-          >
-            Ano
+            <ArrowDownCircle className="h-4 w-4 mr-2" />
+            Contas a Pagar
           </TabsTrigger>
         </TabsList>
 
-        {['today', 'week', 'month', 'year'].map(period => (
-          <TabsContent key={period} value={period} className="space-y-3 sm:space-y-4 mt-3 sm:mt-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              <Card className="bg-white border-gray-200">
-                <CardHeader className="p-3 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm text-gray-700">Transações</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-6 pt-0">
-                  <div className="flex items-center space-x-2">
-                    <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600" />
-                    <span className="text-xl sm:text-2xl font-bold text-gray-900">
-                      {metrics?.[period as keyof DashboardMetrics]?.transaction_count || 0}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+        <TabsContent value="receber" className="mt-6">
+          <ContasAReceber />
+        </TabsContent>
 
-              <Card className="bg-white border-gray-200">
-                <CardHeader className="p-3 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm text-gray-700">Pendente</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-6 pt-0">
-                  <div className="flex items-center space-x-2">
-                    <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-600" />
-                    <span className="text-lg sm:text-2xl font-bold text-yellow-600">
-                      R$ {(metrics?.[period as keyof DashboardMetrics]?.pending_amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-gray-200 sm:col-span-2 lg:col-span-1">
-                <CardHeader className="p-3 sm:p-6">
-                  <CardTitle className="text-xs sm:text-sm text-gray-700">Margem</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 sm:p-6 pt-0">
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-                    <span className="text-xl sm:text-2xl font-bold text-green-600">
-                      {metrics?.[period as keyof DashboardMetrics]?.profit_margin.toFixed(1)}%
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        ))}
+        <TabsContent value="pagar" className="mt-6">
+          <ContasAPagar />
+        </TabsContent>
       </Tabs>
-
-      {/* Lista de Transações */}
-      <div className="mt-6">
-        <FinancialTransactionsList />
-      </div>
     </div>
   );
 };
