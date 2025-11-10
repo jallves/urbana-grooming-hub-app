@@ -191,35 +191,44 @@ const TotemHome: React.FC = () => {
               <button
                 key={index}
                 onClick={item.onClick}
-                className="group relative bg-white/5 backdrop-blur-2xl rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-3 md:p-5 transition-all duration-150 active:scale-94 border-2 border-urbana-gold/30 active:border-urbana-gold/50 overflow-hidden animate-slide-up min-h-[80px] sm:min-h-[110px] md:min-h-[140px] shadow-[0_4px_16px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
+                className="group relative backdrop-blur-xl rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 transition-all duration-300 active:scale-95 border border-white/10 overflow-hidden animate-slide-up min-h-[100px] sm:min-h-[130px] md:min-h-[160px] shadow-lg active:shadow-2xl"
                 style={{ 
                   animationDelay: `${0.6 + index * 0.1}s`,
                   touchAction: 'manipulation',
-                  WebkitTapHighlightColor: 'transparent'
+                  WebkitTapHighlightColor: 'transparent',
+                  background: 'rgba(255, 255, 255, 0.03)'
                 }}
               >
-                {/* Multi-layered gradient overlay with depth */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-active:opacity-15 transition-all duration-200`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-50" />
+                {/* Glassmorphism background com tema do módulo */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-[0.08] group-active:opacity-[0.15] transition-all duration-300`} />
+                
+                {/* Efeito de profundidade */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
+                
+                {/* Border glow temático */}
+                <div className={`absolute inset-0 rounded-xl md:rounded-2xl border border-transparent group-active:border-white/20 transition-all duration-300`} />
                 
                 {/* Content */}
-                <div className="relative flex flex-col items-center gap-1 sm:gap-2 md:gap-3">
-                  {/* Icon with premium frame */}
+                <div className="relative flex flex-col items-center justify-center gap-2 sm:gap-3 md:gap-4 h-full">
+                  {/* Icon container com tema */}
                   <div className="relative">
-                    {/* Subtle glow behind icon */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${item.iconGradient} blur-xl opacity-40`} />
+                    {/* Glow effect temático */}
+                    <div className={`absolute -inset-3 bg-gradient-to-br ${item.iconGradient} blur-2xl opacity-30 group-active:opacity-50 transition-all duration-300`} />
                     
-                    <div className={`relative w-8 h-8 sm:w-11 sm:h-11 md:w-14 md:h-14 lg:w-20 lg:h-20 rounded-lg sm:rounded-xl bg-gradient-to-br ${item.iconGradient} opacity-90 group-active:opacity-100 flex items-center justify-center transition-all duration-200 shadow-2xl ${item.glowColor} group-active:shadow-3xl border border-white/10`}>
-                      <Icon className={`w-4 h-4 sm:w-5 sm:h-5 md:w-7 md:h-7 lg:w-10 lg:h-10 ${item.iconColor} group-active:text-white transition-all duration-200 drop-shadow-2xl group-active:scale-110`} />
+                    {/* Icon background glassmorphism */}
+                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-xl backdrop-blur-sm flex items-center justify-center transition-all duration-300 border border-white/10"
+                         style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                      <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${item.iconGradient} opacity-20 group-active:opacity-30 transition-all duration-300`} />
+                      <Icon className={`relative w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 lg:w-10 lg:h-10 ${item.iconColor} group-active:scale-110 transition-all duration-300 drop-shadow-lg`} />
                     </div>
                   </div>
                   
-                  {/* Text */}
-                  <div className="text-center space-y-0">
-                    <h3 className="text-[10px] sm:text-xs md:text-base lg:text-lg font-bold text-urbana-light group-active:text-white transition-colors duration-150">
+                  {/* Text com melhor contraste */}
+                  <div className="text-center space-y-0.5">
+                    <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-white drop-shadow-lg">
                       {item.title}
                     </h3>
-                    <p className="text-[8px] sm:text-[10px] md:text-sm text-urbana-light/60 group-active:text-urbana-light/80 transition-colors duration-150">
+                    <p className="text-[9px] sm:text-xs md:text-sm text-white/70 drop-shadow-md">
                       {item.subtitle}
                     </p>
                   </div>
