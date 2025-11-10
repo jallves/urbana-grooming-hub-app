@@ -112,8 +112,12 @@ const TotemSearch: React.FC = () => {
 
       console.log('✅ Cliente encontrado (origem:', clientSource, '):', cliente.nome);
 
-      // Buscar agendamentos do cliente - usar data local do Brasil
-      const hoje = format(new Date(), 'yyyy-MM-dd');
+      // Buscar agendamentos do cliente - garantir data local sem conversão de timezone
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hoje = `${year}-${month}-${day}`;
       
       console.log('📅 Buscando agendamentos a partir de:', hoje);
       

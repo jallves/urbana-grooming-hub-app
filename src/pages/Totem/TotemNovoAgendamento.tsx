@@ -225,6 +225,12 @@ const TotemNovoAgendamento: React.FC = () => {
       }
 
       // Criar agendamento com retry
+      // Garantir data local sem conversão de timezone
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dataLocal = `${year}-${month}-${day}`;
+      
       const result = await executeWithRetry(
         async () => {
           const { data, error } = await supabase
@@ -233,7 +239,7 @@ const TotemNovoAgendamento: React.FC = () => {
               cliente_id: clientData.id,
               barbeiro_id: selectedBarber.id,
               servico_id: selectedService.id,
-              data: format(selectedDate, 'yyyy-MM-dd'),
+              data: dataLocal,
               hora: selectedTime,
               status: 'confirmado'
             })

@@ -38,7 +38,15 @@ const TotemDataHora: React.FC = () => {
   const hasAvailableSlots = async (date: Date): Promise<boolean> => {
     const now = new Date();
     const today = startOfToday();
-    const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+    
+    // Comparar datas sem conversão de timezone
+    const dateDay = date.getDate();
+    const dateMonth = date.getMonth();
+    const dateYear = date.getFullYear();
+    const todayDay = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+    const isToday = dateDay === todayDay && dateMonth === todayMonth && dateYear === todayYear;
     
     // Gerar horários de 8h às 20h
     for (let hour = 8; hour <= 20; hour++) {
@@ -54,11 +62,17 @@ const TotemDataHora: React.FC = () => {
         }
         
         // Verificar se horário está disponível
+        // Garantir data local sem conversão de timezone
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const dataLocal = `${year}-${month}-${day}`;
+        
         // @ts-ignore
         const response = await supabase
           .from('painel_agendamentos')
           .select('*')
-          .eq('data', format(date, 'yyyy-MM-dd'))
+          .eq('data', dataLocal)
           .eq('hora', timeStr)
           .eq('barbeiro_id', barber.id)
           .neq('status', 'cancelado');
@@ -128,13 +142,19 @@ const TotemDataHora: React.FC = () => {
     if (!selectedDate || !service) return;
     
     const now = new Date();
-    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
-    const todayStr = format(now, 'yyyy-MM-dd');
-    const isToday = selectedDateStr === todayStr;
+    
+    // Comparar datas sem conversão de timezone
+    const isToday = selectedDate.getDate() === now.getDate() &&
+                    selectedDate.getMonth() === now.getMonth() &&
+                    selectedDate.getFullYear() === now.getFullYear();
+    
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
+    const selectedDateStr = `${year}-${month}-${day}`;
     
     console.log('🕐 Carregando slots:', {
       selectedDate: selectedDateStr,
-      today: todayStr,
       isToday,
       currentTime: format(now, 'HH:mm:ss'),
       minTimeRequired: format(addMinutes(now, 30), 'HH:mm:ss')
@@ -308,7 +328,10 @@ const TotemDataHora: React.FC = () => {
                     key={date.toISOString()}
                     icon={Calendar}
                     variant={
-                      selectedDate && format(selectedDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+                      selectedDate && 
+                      selectedDate.getDate() === date.getDate() &&
+                      selectedDate.getMonth() === date.getMonth() &&
+                      selectedDate.getFullYear() === date.getFullYear()
                         ? 'selected'
                         : 'default'
                     }
