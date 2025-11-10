@@ -57,11 +57,17 @@ export const NextAppointmentScheduler: React.FC<NextAppointmentSchedulerProps> =
       // Usar o horário do último agendamento ou padrão
       const timeToUse = lastAppointmentTime || '09:00';
       
+      // Garantir que a data seja formatada sem conversão de timezone
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dataLocal = `${year}-${month}-${day}`;
+      
       const { error } = await supabase.from('painel_agendamentos').insert({
         cliente_id: clientId,
         barbeiro_id: barberId,
         servico_id: serviceId,
-        data: format(selectedDate, 'yyyy-MM-dd'),
+        data: dataLocal,
         hora: timeToUse,
         status: 'agendado',
         observacoes: 'Agendamento via Totem - Retorno programado',
