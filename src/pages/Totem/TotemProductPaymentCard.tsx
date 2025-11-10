@@ -45,10 +45,10 @@ const TotemProductPaymentCard: React.FC = () => {
     try {
       console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
       
-      // 🔒 CORREÇÃO: Buscar itens da venda usando vendas_itens
+      // 1. Buscar itens da venda
       const { data: saleItems, error: itemsError } = await supabase
         .from('vendas_itens')
-        .select('ref_id, quantidade')
+        .select('*')
         .eq('venda_id', sale.id)
         .eq('tipo', 'PRODUTO');
 
@@ -61,7 +61,7 @@ const TotemProductPaymentCard: React.FC = () => {
         return;
       }
 
-      // Atualizar estoque de cada produto
+      // 2. Atualizar estoque de cada produto
       if (saleItems && saleItems.length > 0) {
         for (const item of saleItems) {
           const { error: stockError } = await supabase.rpc('decrease_product_stock', {
@@ -71,12 +71,50 @@ const TotemProductPaymentCard: React.FC = () => {
 
           if (stockError) {
             console.error('Erro ao atualizar estoque:', stockError);
-            // Continua mesmo com erro de estoque para não bloquear a venda
           }
         }
       }
 
-      // 🔒 CORREÇÃO: Atualizar status usando tabela 'vendas'
+      // 3. Preparar itens para o ERP (formato CheckoutItem)
+      const erpItems = saleItems.map(item => ({
+        type: 'product' as const,
+        id: item.ref_id,
+        name: item.nome,
+        quantity: item.quantidade,
+        price: Number(item.preco_unit),
+        discount: 0
+      }))
+
+      console.log('💰 Integrando venda de produtos com ERP Financeiro...', {
+        client_id: sale.cliente_id,
+        items_count: erpItems.length,
+        payment_method: cardType, // 'debit' ou 'credit'
+        total: sale.total
+      })
+
+      // 4. Chamar edge function para criar registros financeiros (APENAS produtos, sem comissão)
+      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+        'create-financial-transaction',
+        {
+          body: {
+            client_id: sale.cliente_id,
+            items: erpItems,
+            payment_method: cardType, // 'debit' ou 'credit'
+            discount_amount: Number(sale.desconto) || 0,
+            notes: `Venda de Produtos - Totem`
+          }
+        }
+      )
+
+      if (erpError) {
+        console.error('❌ Erro ao integrar com ERP:', erpError)
+        // Não bloquear finalização por erro no ERP, apenas logar
+        console.log('⚠️ Continuando finalização sem integração ERP')
+      } else {
+        console.log('✅ ERP Financeiro integrado com sucesso (produtos):', erpResult)
+      }
+
+      // 5. Atualizar venda para PAGA
       const { error } = await supabase
         .from('vendas')
         .update({

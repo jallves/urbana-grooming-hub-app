@@ -470,7 +470,77 @@ Deno.serve(async (req) => {
         })
         .eq('id', venda_id)
 
-      // 4. Atualizar agendamento para CONCLUÍDO (trigger automático cria financeiro)
+      // 4. Buscar itens da venda para integrar com ERP Financeiro
+      console.log('📦 Buscando itens da venda para ERP...')
+      const { data: vendaItens, error: itensError } = await supabase
+        .from('vendas_itens')
+        .select('*')
+        .eq('venda_id', venda_id)
+
+      if (itensError) {
+        console.error('❌ Erro ao buscar itens:', itensError)
+        throw new Error('Erro ao buscar itens da venda')
+      }
+
+      console.log('✅ Itens da venda encontrados:', vendaItens.length)
+
+      // 5. Buscar barbeiro staff_id
+      const { data: barbeiro, error: barbeiroError } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', agendamento.barbeiro_id)
+        .single()
+
+      if (barbeiroError) {
+        console.error('❌ Erro ao buscar barbeiro:', barbeiroError)
+      }
+
+      const barber_staff_id = barbeiro?.staff_id || venda.barbeiro_id
+
+      // 6. Preparar itens para o ERP (formato CheckoutItem)
+      const erpItems = vendaItens.map(item => ({
+        type: item.tipo === 'SERVICO' ? 'service' : 'product',
+        id: item.ref_id,
+        name: item.nome,
+        quantity: item.quantidade,
+        price: Number(item.preco_unit),
+        discount: 0
+      }))
+
+      console.log('💰 Integrando com ERP Financeiro...', {
+        appointment_id: venda.agendamento_id,
+        client_id: venda.cliente_id,
+        barber_id: barber_staff_id,
+        items_count: erpItems.length,
+        payment_method: payment.payment_method,
+        total: venda.total
+      })
+
+      // 7. Chamar edge function para criar registros financeiros completos
+      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+        'create-financial-transaction',
+        {
+          body: {
+            appointment_id: venda.agendamento_id,
+            client_id: venda.cliente_id,
+            barber_id: barber_staff_id,
+            items: erpItems,
+            payment_method: payment.payment_method,
+            discount_amount: Number(venda.desconto) || 0,
+            notes: `Checkout Totem - Sessão ${session_id}`
+          }
+        }
+      )
+
+      if (erpError) {
+        console.error('❌ Erro ao integrar com ERP:', erpError)
+        // Não bloquear finalização por erro no ERP, apenas logar
+        console.log('⚠️ Continuando finalização sem integração ERP')
+      } else {
+        console.log('✅ ERP Financeiro integrado com sucesso:', erpResult)
+      }
+
+      // 8. Atualizar agendamento para CONCLUÍDO
       console.log('✅ Finalizando agendamento...')
       const { error: updateError } = await supabase
         .from('painel_agendamentos')
@@ -486,7 +556,7 @@ Deno.serve(async (req) => {
         throw new Error('Erro ao finalizar agendamento: ' + updateError.message)
       }
 
-      console.log('✅ Agendamento atualizado para CONCLUÍDO - Trigger criará registros financeiros')
+      console.log('✅ Agendamento atualizado para CONCLUÍDO')
 
       // 5. Notificar barbeiro via Realtime
       console.log('📢 Notificando barbeiro...')

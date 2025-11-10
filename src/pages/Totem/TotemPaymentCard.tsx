@@ -121,7 +121,7 @@ const TotemPaymentCard: React.FC = () => {
           }
         }
 
-        // Finalizar checkout de serviço
+        // Finalizar checkout de serviço - a edge function totem-checkout agora integra com ERP
         const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
           body: {
             action: 'finish',
@@ -139,6 +139,7 @@ const TotemPaymentCard: React.FC = () => {
           appointment, 
           client,
           total,
+          paymentMethod: paymentType,
           isDirect
         } 
       });
