@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,19 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import FinancialRecordForm from './FinancialRecordForm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface PaymentRecord {
   payment_method: string;
@@ -19,17 +30,24 @@ interface FinancialRecord {
   transaction_number: string;
   transaction_type: string;
   category: string;
+  subcategory?: string;
   gross_amount: number;
   discount_amount: number;
+  tax_amount: number;
   net_amount: number;
   status: string;
   description: string;
   transaction_date: string;
   created_at: string;
   payment_records: PaymentRecord[];
+  metadata?: any;
 }
 
 export const ContasAPagar: React.FC = () => {
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: payables, isLoading } = useQuery({
@@ -58,7 +76,8 @@ export const ContasAPagar: React.FC = () => {
         .from('financial_records')
         .update({ 
           status: 'completed',
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', recordId);
 
@@ -74,6 +93,140 @@ export const ContasAPagar: React.FC = () => {
       });
     }
   });
+
+  const createMutation = useMutation({
+    mutationFn: async (values: any) => {
+      const netAmount = values.gross_amount - (values.discount_amount || 0) - (values.tax_amount || 0);
+      const transactionNumber = values.transaction_type === 'commission' 
+        ? 'COM-' + Date.now() 
+        : 'EXP-' + Date.now();
+
+      const { error } = await supabase.from('financial_records').insert({
+        transaction_number: transactionNumber,
+        transaction_type: values.transaction_type,
+        category: values.category,
+        subcategory: values.subcategory,
+        gross_amount: values.gross_amount,
+        discount_amount: values.discount_amount || 0,
+        tax_amount: values.tax_amount || 0,
+        net_amount: netAmount,
+        status: values.status,
+        description: values.description,
+        transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
+        completed_at: values.status === 'completed' ? new Date().toISOString() : null,
+        metadata: {
+          payment_method: values.payment_method,
+          notes: values.notes,
+        },
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      toast.success('Lançamento criado com sucesso!');
+      setFormOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao criar lançamento', { description: error.message });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, values }: { id: string; values: any }) => {
+      const netAmount = values.gross_amount - (values.discount_amount || 0) - (values.tax_amount || 0);
+
+      const { error } = await supabase
+        .from('financial_records')
+        .update({
+          category: values.category,
+          subcategory: values.subcategory,
+          gross_amount: values.gross_amount,
+          discount_amount: values.discount_amount || 0,
+          tax_amount: values.tax_amount || 0,
+          net_amount: netAmount,
+          status: values.status,
+          description: values.description,
+          transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
+          completed_at: values.status === 'completed' ? new Date().toISOString() : null,
+          metadata: {
+            payment_method: values.payment_method,
+            notes: values.notes,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      toast.success('Lançamento atualizado com sucesso!');
+      setFormOpen(false);
+      setEditingRecord(null);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao atualizar lançamento', { description: error.message });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('financial_records').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      toast.success('Lançamento excluído com sucesso!');
+      setDeleteDialogOpen(false);
+      setRecordToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao excluir lançamento', { description: error.message });
+    },
+  });
+
+  const handleMarkAsPaid = (recordId: string) => {
+    if (window.confirm('Tem certeza que deseja marcar esta comissão como paga?')) {
+      markAsPaidMutation.mutate(recordId);
+    }
+  };
+
+  const handleEdit = (record: FinancialRecord) => {
+    setEditingRecord({
+      id: record.id,
+      transaction_type: record.transaction_type,
+      category: record.category,
+      subcategory: record.subcategory,
+      gross_amount: record.gross_amount,
+      discount_amount: record.discount_amount,
+      tax_amount: record.tax_amount,
+      description: record.description,
+      transaction_date: new Date(record.transaction_date),
+      status: record.status,
+      payment_method: record.payment_records?.[0]?.payment_method || record.metadata?.payment_method,
+      notes: record.metadata?.notes,
+    });
+    setFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setRecordToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleFormSubmit = async (values: any) => {
+    if (editingRecord?.id) {
+      await updateMutation.mutateAsync({ id: editingRecord.id, values });
+    } else {
+      await createMutation.mutateAsync(values);
+    }
+  };
+
+  const handleCloseForm = () => {
+    setFormOpen(false);
+    setEditingRecord(null);
+  };
 
   // Calcular totais
   const totals = React.useMemo(() => {
@@ -123,18 +276,12 @@ export const ContasAPagar: React.FC = () => {
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
       cash: 'Dinheiro',
-      debit_card: 'Débito',
-      credit_card: 'Crédito',
+      debit: 'Débito',
+      credit: 'Crédito',
       pix: 'PIX',
-      bank_transfer: 'Transferência'
+      transfer: 'Transferência'
     };
     return labels[method] || method;
-  };
-
-  const handleMarkAsPaid = (recordId: string) => {
-    if (window.confirm('Tem certeza que deseja marcar esta comissão como paga?')) {
-      markAsPaidMutation.mutate(recordId);
-    }
   };
 
   if (isLoading) {
@@ -146,158 +293,212 @@ export const ContasAPagar: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-red-700 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Total a Pagar
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-700">
-              R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Contas a Pagar</h2>
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Lançamento
+          </Button>
+        </div>
 
-        <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
-              <ArrowDownCircle className="h-4 w-4" />
-              Pendente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-700">
-              R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Cards de Resumo */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-red-700 flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Total a Pagar
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-700">
+                R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700 flex items-center gap-2">
-              <ArrowDownCircle className="h-4 w-4" />
-              Comissões
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-700">
-              R$ {totals.commissions.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
+                <ArrowDownCircle className="h-4 w-4" />
+                Pendente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-700">
+                R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-orange-700 flex items-center gap-2">
-              <ArrowDownCircle className="h-4 w-4" />
-              Despesas
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-blue-700 flex items-center gap-2">
+                <ArrowDownCircle className="h-4 w-4" />
+                Comissões
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-700">
+                R$ {totals.commissions.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-orange-700 flex items-center gap-2">
+                <ArrowDownCircle className="h-4 w-4" />
+                Despesas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-700">
+                R$ {totals.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabela de Contas a Pagar */}
+        <Card className="bg-white border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              Despesas e Comissões Recentes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-700">
-              R$ {totals.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Número</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Pagamento</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payables && payables.length > 0 ? (
+                    payables.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-mono text-xs">
+                          {record.transaction_number}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <Badge variant="outline" className={
+                            record.transaction_type === 'commission' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : 'bg-orange-100 text-orange-700'
+                          }>
+                            {getTypeLabel(record.transaction_type)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-sm">
+                          {record.description}
+                        </TableCell>
+                        <TableCell className="text-sm capitalize">
+                          {record.category.replace('_', ' ')}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {record.payment_records && record.payment_records.length > 0 ? (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                              <CreditCard className="h-3 w-3 mr-1" />
+                              {getPaymentMethodLabel(record.payment_records[0].payment_method)}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-red-600">
+                          R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getStatusBadge(record.status)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            {record.transaction_type === 'commission' && record.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                onClick={() => handleMarkAsPaid(record.id)}
+                                disabled={markAsPaidMutation.isPending}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Marcar como Pago
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(record)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(record.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                        Nenhuma despesa ou comissão encontrada
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabela de Contas a Pagar */}
-      <Card className="bg-white border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">
-            Despesas e Comissões Recentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Número</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Pagamento</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-center">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payables && payables.length > 0 ? (
-                  payables.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-mono text-xs">
-                        {record.transaction_number}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        <Badge variant="outline" className={
-                          record.transaction_type === 'commission' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : 'bg-orange-100 text-orange-700'
-                        }>
-                          {getTypeLabel(record.transaction_type)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-sm">
-                        {record.description}
-                      </TableCell>
-                      <TableCell className="text-sm capitalize">
-                        {record.category.replace('_', ' ')}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {record.payment_records && record.payment_records.length > 0 ? (
-                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                            <CreditCard className="h-3 w-3 mr-1" />
-                            {getPaymentMethodLabel(record.payment_records[0].payment_method)}
-                          </Badge>
-                        ) : (
-                          <span className="text-gray-400 text-xs">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-red-600">
-                        R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getStatusBadge(record.status)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {record.transaction_type === 'commission' && record.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                            onClick={() => handleMarkAsPaid(record.id)}
-                            disabled={markAsPaidMutation.isPending}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Marcar como Pago
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center text-gray-500 py-8">
-                      Nenhuma despesa ou comissão encontrada
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <FinancialRecordForm
+        open={formOpen}
+        onClose={handleCloseForm}
+        onSubmit={handleFormSubmit}
+        initialData={editingRecord}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => recordToDelete && deleteMutation.mutate(recordToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

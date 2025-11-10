@@ -1,27 +1,50 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, Loader2, DollarSign } from 'lucide-react';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import FinancialRecordForm from './FinancialRecordForm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface FinancialRecord {
   id: string;
   transaction_number: string;
   category: string;
+  subcategory?: string;
   gross_amount: number;
   discount_amount: number;
+  tax_amount: number;
   net_amount: number;
   status: string;
   description: string;
   transaction_date: string;
+  transaction_type: string;
   created_at: string;
+  metadata?: any;
 }
 
 export const ContasAReceber: React.FC = () => {
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
   const { data: receivables, isLoading } = useQuery({
     queryKey: ['contas-receber'],
     queryFn: async () => {
@@ -38,6 +61,132 @@ export const ContasAReceber: React.FC = () => {
     },
     refetchInterval: 10000
   });
+
+  const createMutation = useMutation({
+    mutationFn: async (values: any) => {
+      const netAmount = values.gross_amount - (values.discount_amount || 0) - (values.tax_amount || 0);
+      const transactionNumber = 'TRX-' + Date.now();
+
+      const { error } = await supabase.from('financial_records').insert({
+        transaction_number: transactionNumber,
+        transaction_type: 'revenue',
+        category: values.category,
+        subcategory: values.subcategory,
+        gross_amount: values.gross_amount,
+        discount_amount: values.discount_amount || 0,
+        tax_amount: values.tax_amount || 0,
+        net_amount: netAmount,
+        status: values.status,
+        description: values.description,
+        transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
+        completed_at: values.status === 'completed' ? new Date().toISOString() : null,
+        metadata: {
+          payment_method: values.payment_method,
+          notes: values.notes,
+        },
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+      toast.success('Receita criada com sucesso!');
+      setFormOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao criar receita', { description: error.message });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, values }: { id: string; values: any }) => {
+      const netAmount = values.gross_amount - (values.discount_amount || 0) - (values.tax_amount || 0);
+
+      const { error } = await supabase
+        .from('financial_records')
+        .update({
+          category: values.category,
+          subcategory: values.subcategory,
+          gross_amount: values.gross_amount,
+          discount_amount: values.discount_amount || 0,
+          tax_amount: values.tax_amount || 0,
+          net_amount: netAmount,
+          status: values.status,
+          description: values.description,
+          transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
+          completed_at: values.status === 'completed' ? new Date().toISOString() : null,
+          metadata: {
+            payment_method: values.payment_method,
+            notes: values.notes,
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+      toast.success('Receita atualizada com sucesso!');
+      setFormOpen(false);
+      setEditingRecord(null);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao atualizar receita', { description: error.message });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('financial_records').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+      toast.success('Receita excluída com sucesso!');
+      setDeleteDialogOpen(false);
+      setRecordToDelete(null);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao excluir receita', { description: error.message });
+    },
+  });
+
+  const handleEdit = (record: FinancialRecord) => {
+    setEditingRecord({
+      id: record.id,
+      transaction_type: record.transaction_type,
+      category: record.category,
+      subcategory: record.subcategory,
+      gross_amount: record.gross_amount,
+      discount_amount: record.discount_amount,
+      tax_amount: record.tax_amount,
+      description: record.description,
+      transaction_date: new Date(record.transaction_date),
+      status: record.status,
+      payment_method: record.metadata?.payment_method,
+      notes: record.metadata?.notes,
+    });
+    setFormOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    setRecordToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleFormSubmit = async (values: any) => {
+    if (editingRecord?.id) {
+      await updateMutation.mutateAsync({ id: editingRecord.id, values });
+    } else {
+      await createMutation.mutateAsync(values);
+    }
+  };
+
+  const handleCloseForm = () => {
+    setFormOpen(false);
+    setEditingRecord(null);
+  };
 
   // Calcular totais
   const totals = React.useMemo(() => {
@@ -79,120 +228,177 @@ export const ContasAReceber: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-green-700 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Total a Receber
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Contas a Receber</h2>
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Receita
+          </Button>
+        </div>
 
-        <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
-              <ArrowUpCircle className="h-4 w-4" />
-              Pendente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-700">
-              R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Cards de Resumo */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-green-700 flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Total a Receber
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-700">
+                R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-emerald-700 flex items-center gap-2">
-              <ArrowUpCircle className="h-4 w-4" />
-              Recebido
+          <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
+                <ArrowUpCircle className="h-4 w-4" />
+                Pendente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-700">
+                R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-emerald-700 flex items-center gap-2">
+                <ArrowUpCircle className="h-4 w-4" />
+                Recebido
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-emerald-700">
+                R$ {totals.completed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabela de Contas a Receber */}
+        <Card className="bg-white border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              Receitas Recentes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-700">
-              R$ {totals.completed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Número</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Valor Bruto</TableHead>
+                    <TableHead className="text-right">Desconto</TableHead>
+                    <TableHead className="text-right">Valor Líquido</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {receivables && receivables.length > 0 ? (
+                    receivables.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-mono text-xs">
+                          {record.transaction_number}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-sm">
+                          {record.description}
+                        </TableCell>
+                        <TableCell className="text-sm capitalize">
+                          {record.category.replace('_', ' ')}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-gray-600">
+                          R$ {record.gross_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-red-600">
+                          {record.discount_amount > 0 ? (
+                            `- R$ ${record.discount_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          ) : (
+                            '-'
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-green-600">
+                          R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {getStatusBadge(record.status)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(record)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(record.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                        Nenhuma receita encontrada
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabela de Contas a Receber */}
-      <Card className="bg-white border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">
-            Receitas Recentes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Número</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead className="text-right">Valor Bruto</TableHead>
-                  <TableHead className="text-right">Desconto</TableHead>
-                  <TableHead className="text-right">Valor Líquido</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {receivables && receivables.length > 0 ? (
-                  receivables.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-mono text-xs">
-                        {record.transaction_number}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-sm">
-                        {record.description}
-                      </TableCell>
-                      <TableCell className="text-sm capitalize">
-                        {record.category.replace('_', ' ')}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-gray-600">
-                        R$ {record.gross_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-red-600">
-                        {record.discount_amount > 0 ? (
-                          `- R$ ${record.discount_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-green-600">
-                        R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {getStatusBadge(record.status)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center text-gray-500 py-8">
-                      Nenhuma receita encontrada
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <FinancialRecordForm
+        open={formOpen}
+        onClose={handleCloseForm}
+        onSubmit={handleFormSubmit}
+        initialData={editingRecord}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta receita? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => recordToDelete && deleteMutation.mutate(recordToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
