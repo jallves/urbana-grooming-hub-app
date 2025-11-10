@@ -154,14 +154,18 @@ const TotemDataHora: React.FC = () => {
   };
 
   const handleConfirm = async () => {
+    console.log('🔘 Botão confirmar clicado!', { selectedTime, selectedDate });
+    
     if (!selectedTime || !selectedDate) {
       toast.error('Selecione uma data e horário');
       return;
     }
 
+    console.log('✅ Iniciando criação de agendamento...');
     setCreating(true);
     try {
       // Validação robusta antes de criar
+      console.log('🔐 Iniciando validação...');
       const validation = await validateAppointment(
         barber.id,
         selectedDate,
@@ -170,11 +174,13 @@ const TotemDataHora: React.FC = () => {
       );
 
       if (!validation.valid) {
+        console.log('❌ Validação falhou:', validation.error);
         // Erro já foi mostrado pelo hook
         setCreating(false);
         return;
       }
 
+      console.log('✅ Validação passou! Criando agendamento...');
       // Validação passou, criar agendamento
       // @ts-ignore - Evitar inferência profunda de tipos do Supabase
       const response = await supabase
@@ -191,6 +197,7 @@ const TotemDataHora: React.FC = () => {
         .single();
 
       if (response.error) {
+        console.error('❌ Erro do banco:', response.error);
         // Usar extração de erro do banco de dados
         const errorMessage = extractDatabaseError(response.error);
         toast.error(errorMessage);
@@ -205,6 +212,7 @@ const TotemDataHora: React.FC = () => {
         return;
       }
 
+      console.log('✅ Agendamento criado:', response.data);
       toast.success('Agendamento criado com sucesso!');
       
       navigate('/totem/agendamento-sucesso', {
@@ -314,13 +322,19 @@ const TotemDataHora: React.FC = () => {
               <TotemButton
                 variant="primary"
                 size="xl"
-                onClick={handleConfirm}
+                onClick={() => {
+                  console.log('🖱️ Click no botão detectado!');
+                  handleConfirm();
+                }}
                 loading={creating || isValidating}
                 disabled={creating || isValidating}
                 className="w-full"
               >
                 {isValidating ? 'Validando...' : 'Confirmar Agendamento'}
               </TotemButton>
+              <p className="text-xs text-urbana-light/40 text-center mt-2">
+                Debug: selectedTime={selectedTime}, creating={String(creating)}, validating={String(isValidating)}
+              </p>
             </div>
           )}
         </div>
