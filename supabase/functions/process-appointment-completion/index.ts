@@ -15,20 +15,72 @@ Deno.serve(async (req) => {
 
     console.log('🎯 Finalizando agendamento:', agendamento_id, 'Fonte:', source)
 
-    // 1. Buscar agendamento completo
-    const { data: agendamento, error: agendError } = await supabase
-      .from('painel_agendamentos')
+    // 1. Tentar buscar na tabela appointments primeiro
+    let agendamento: any = null
+    let isNewTable = false
+
+    const { data: appointmentData, error: appointmentError } = await supabase
+      .from('appointments')
       .select(`
         *,
-        cliente:painel_clientes(*),
-        barbeiro:painel_barbeiros(*),
-        servico:painel_servicos(*)
+        client:clients!appointments_client_id_fkey(*),
+        service:services!appointments_service_id_fkey(*),
+        staff:staff!appointments_staff_id_fkey(*)
       `)
       .eq('id', agendamento_id)
       .single()
 
-    if (agendError || !agendamento) {
-      console.error('❌ Agendamento não encontrado:', agendamento_id, agendError)
+    if (appointmentData) {
+      console.log('✅ Agendamento encontrado na tabela appointments')
+      isNewTable = true
+      agendamento = {
+        id: appointmentData.id,
+        cliente_id: appointmentData.client_id,
+        barbeiro_id: appointmentData.staff_id,
+        servico_id: appointmentData.service_id,
+        status: appointmentData.status,
+        cliente: appointmentData.client ? {
+          id: appointmentData.client.id,
+          nome: appointmentData.client.full_name,
+          whatsapp: appointmentData.client.phone,
+          email: appointmentData.client.email
+        } : null,
+        barbeiro: appointmentData.staff ? {
+          id: appointmentData.staff.id,
+          nome: appointmentData.staff.full_name,
+          staff_id: appointmentData.staff.id
+        } : null,
+        servico: appointmentData.service ? {
+          id: appointmentData.service.id,
+          nome: appointmentData.service.name,
+          preco: appointmentData.service.price,
+          duracao: appointmentData.service.duration
+        } : null
+      }
+    } else {
+      // 2. Se não encontrou, buscar na tabela painel_agendamentos (legado)
+      const { data: painelData, error: painelError } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          cliente:painel_clientes(*),
+          barbeiro:painel_barbeiros(*),
+          servico:painel_servicos(*)
+        `)
+        .eq('id', agendamento_id)
+        .single()
+
+      if (painelError || !painelData) {
+        console.error('❌ Agendamento não encontrado em nenhuma tabela:', agendamento_id)
+        throw new Error('Agendamento não encontrado')
+      }
+
+      console.log('✅ Agendamento encontrado na tabela painel_agendamentos')
+      agendamento = painelData
+    }
+
+    if (!agendamento) {
+      console.error('❌ Agendamento não encontrado:', agendamento_id)
       throw new Error('Agendamento não encontrado')
     }
 
@@ -41,18 +93,27 @@ Deno.serve(async (req) => {
     })
 
     // 2. Buscar staff_id do barbeiro
-    const { data: barbeiro } = await supabase
-      .from('painel_barbeiros')
-      .select('staff_id')
-      .eq('id', agendamento.barbeiro_id)
-      .single()
+    let staff_id: string
+    
+    if (isNewTable) {
+      // Na nova tabela, barbeiro_id já é o staff_id
+      staff_id = agendamento.barbeiro_id
+      console.log('👤 Staff ID do barbeiro (nova tabela):', staff_id)
+    } else {
+      // Na tabela antiga, precisa buscar na tabela painel_barbeiros
+      const { data: barbeiro } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', agendamento.barbeiro_id)
+        .single()
 
-    if (!barbeiro?.staff_id) {
-      throw new Error('Barbeiro não encontrado no sistema')
+      if (!barbeiro?.staff_id) {
+        throw new Error('Barbeiro não encontrado no sistema')
+      }
+
+      staff_id = barbeiro.staff_id
+      console.log('👤 Staff ID do barbeiro (tabela antiga):', staff_id)
     }
-
-    const staff_id = barbeiro.staff_id
-    console.log('👤 Staff ID do barbeiro:', staff_id)
 
     // 3. Buscar taxa de comissão do staff
     const { data: staff, error: staffError } = await supabase
@@ -108,21 +169,40 @@ Deno.serve(async (req) => {
     })
 
     // 5. Atualizar status do agendamento para CONCLUÍDO (trigger automático cria financeiro)
-    const { error: updateError } = await supabase
-      .from('painel_agendamentos')
-      .update({ 
-        status: 'concluido', // Status correto para trigger de financeiro
-        status_totem: 'FINALIZADO',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', agendamento_id)
+    if (isNewTable) {
+      // Atualizar na tabela appointments
+      const { error: updateError } = await supabase
+        .from('appointments')
+        .update({ 
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', agendamento_id)
 
-    if (updateError) {
-      console.error('❌ Erro ao atualizar agendamento:', updateError)
-      throw new Error('Erro ao atualizar status do agendamento')
+      if (updateError) {
+        console.error('❌ Erro ao atualizar agendamento:', updateError)
+        throw new Error('Erro ao atualizar status do agendamento')
+      }
+
+      console.log('✅ Status atualizado para completed na tabela appointments')
+    } else {
+      // Atualizar na tabela painel_agendamentos
+      const { error: updateError } = await supabase
+        .from('painel_agendamentos')
+        .update({ 
+          status: 'concluido',
+          status_totem: 'FINALIZADO',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', agendamento_id)
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar agendamento:', updateError)
+        throw new Error('Erro ao atualizar status do agendamento')
+      }
+
+      console.log('✅ Status atualizado para concluído na tabela painel_agendamentos')
     }
-
-    console.log('✅ Status atualizado para CONCLUÍDO (trigger criará registros financeiros)')
 
     // 6-7. Trigger automático já cria comissões e transações financeiras
     // quando status é atualizado para 'concluido' - comissão fixa de 40%
