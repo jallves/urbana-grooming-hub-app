@@ -7,6 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Scissors, Edit, Trash2, MoreVertical, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ServiceForm from './ServiceForm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +39,10 @@ const ServiceList: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchServices();
@@ -36,18 +51,70 @@ const ServiceList: React.FC = () => {
   const fetchServices = async () => {
     try {
       setIsLoading(true);
+      // ✅ MIGRADO: Agora usa painel_servicos (fonte única de verdade)
       const { data, error } = await supabase
-        .from('services')
+        .from('painel_servicos')
         .select('*')
-        .order('name');
+        .order('nome');
 
       if (error) throw error;
-      setServices(data || []);
+      
+      // Mapear campos para compatibilidade com interface Service
+      const mappedServices = (data || []).map(ps => ({
+        id: ps.id,
+        name: ps.nome,
+        description: ps.descricao || '',
+        price: ps.preco,
+        duration: ps.duracao,
+        is_active: ps.is_active ?? true,
+        created_at: ps.created_at
+      }));
+      
+      setServices(mappedServices);
     } catch (error) {
       console.error('Erro ao buscar serviços:', error);
       toast.error('Erro ao carregar serviços');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCreateService = () => {
+    setSelectedService(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEditService = (serviceId: string) => {
+    setSelectedService(serviceId);
+    setIsFormOpen(true);
+  };
+
+  const confirmDeleteService = (serviceId: string) => {
+    setServiceToDelete(serviceId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteService = async () => {
+    if (!serviceToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('painel_servicos')
+        .delete()
+        .eq('id', serviceToDelete);
+
+      if (error) throw error;
+
+      setServices(services.filter(s => s.id !== serviceToDelete));
+      toast.success('Serviço excluído com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao excluir serviço:', error);
+      toast.error('Erro ao excluir serviço', {
+        description: error.message
+      });
+    } finally {
+      setServiceToDelete(null);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -70,6 +137,7 @@ const ServiceList: React.FC = () => {
             />
           </div>
           <Button 
+            onClick={handleCreateService}
             className="h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
           >
             <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -109,11 +177,17 @@ const ServiceList: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="text-xs sm:text-sm cursor-pointer">
+                          <DropdownMenuItem 
+                            onClick={() => handleEditService(service.id)}
+                            className="text-xs sm:text-sm cursor-pointer"
+                          >
                             <Edit className="h-3 w-3 mr-2" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive text-xs sm:text-sm cursor-pointer">
+                          <DropdownMenuItem 
+                            onClick={() => confirmDeleteService(service.id)}
+                            className="text-destructive text-xs sm:text-sm cursor-pointer"
+                          >
                             <Trash2 className="h-3 w-3 mr-2" />
                             Excluir
                           </DropdownMenuItem>
@@ -160,8 +234,43 @@ const ServiceList: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Formulário de Serviço */}
+      <ServiceForm
+        serviceId={selectedService}
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedService(null);
+        }}
+        onSuccess={() => {
+          fetchServices();
+        }}
+      />
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir serviço</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita e o serviço também será removido da sincronização.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteService}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
 export default ServiceList;
+

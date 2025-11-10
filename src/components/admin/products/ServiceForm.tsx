@@ -1,244 +1,276 @@
-
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 
 interface ServiceFormProps {
   serviceId: string | null;
-  onCancel: () => void;
+  isOpen: boolean;
+  onClose: () => void;
   onSuccess: () => void;
 }
 
-const serviceFormSchema = z.object({
-  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres' }),
-  description: z.string().nullable().optional(),
-  price: z.coerce.number().positive({ message: 'O preço deve ser maior que zero' }),
-  duration: z.coerce.number().int().positive({ message: 'A duração deve ser maior que zero' }),
-  is_active: z.boolean().default(true),
-});
+interface ServiceFormData {
+  nome: string;
+  descricao: string;
+  preco: number;
+  duracao: number;
+  is_active: boolean;
+  show_on_home: boolean;
+}
 
-type ServiceFormValues = z.infer<typeof serviceFormSchema>;
+const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, onSuccess }) => {
+  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(!!serviceId);
+  const [formData, setFormData] = useState<ServiceFormData>({
+    nome: '',
+    descricao: '',
+    preco: 0,
+    duracao: 30,
+    is_active: true,
+    show_on_home: true
+  });
 
-const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, onCancel, onSuccess }) => {
-  const isEditing = !!serviceId;
+  useEffect(() => {
+    if (serviceId) {
+      loadServiceData();
+    } else {
+      resetForm();
+    }
+  }, [serviceId]);
 
-  const { data: serviceData, isLoading: isLoadingService } = useQuery({
-    queryKey: ['service', serviceId],
-    queryFn: async () => {
-      if (!serviceId) return null;
-      
+  const resetForm = () => {
+    setFormData({
+      nome: '',
+      descricao: '',
+      preco: 0,
+      duracao: 30,
+      is_active: true,
+      show_on_home: true
+    });
+  };
+
+  const loadServiceData = async () => {
+    try {
+      setLoadingData(true);
       const { data, error } = await supabase
-        .from('services')
+        .from('painel_servicos')
         .select('*')
         .eq('id', serviceId)
         .single();
-      
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    enabled: isEditing,
-  });
 
-  const form = useForm<ServiceFormValues>({
-    resolver: zodResolver(serviceFormSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      price: 0,
-      duration: 30,
-      is_active: true,
-    },
-    values: serviceData || undefined,
-  });
-  
-  const { formState } = form;
-  const { isSubmitting } = formState;
+      if (error) throw error;
 
-  const onSubmit = async (values: ServiceFormValues) => {
+      if (data) {
+        setFormData({
+          nome: data.nome || '',
+          descricao: data.descricao || '',
+          preco: data.preco || 0,
+          duracao: data.duracao || 30,
+          is_active: data.is_active ?? true,
+          show_on_home: data.show_on_home ?? true
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar serviço:', error);
+      toast.error('Erro ao carregar dados do serviço');
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.nome.trim()) {
+      toast.error('Nome do serviço é obrigatório');
+      return;
+    }
+
+    if (formData.preco <= 0) {
+      toast.error('Preço deve ser maior que zero');
+      return;
+    }
+
+    if (formData.duracao <= 0) {
+      toast.error('Duração deve ser maior que zero');
+      return;
+    }
+
     try {
-      if (isEditing) {
+      setLoading(true);
+
+      if (serviceId) {
+        // Atualizar serviço existente
         const { error } = await supabase
-          .from('services')
+          .from('painel_servicos')
           .update({
-            name: values.name,
-            description: values.description,
-            price: values.price,
-            duration: values.duration,
-            is_active: values.is_active,
+            nome: formData.nome.trim(),
+            descricao: formData.descricao.trim(),
+            preco: formData.preco,
+            duracao: formData.duracao,
+            is_active: formData.is_active,
+            show_on_home: formData.show_on_home,
+            updated_at: new Date().toISOString()
           })
           .eq('id', serviceId);
 
         if (error) throw error;
-        toast.success('Serviço atualizado com sucesso!');
+        
+        toast.success('Serviço atualizado com sucesso!', {
+          description: 'O serviço foi atualizado e sincronizado automaticamente'
+        });
       } else {
-        const serviceData = {
-          name: values.name,
-          description: values.description || null,
-          price: values.price,
-          duration: values.duration,
-          is_active: values.is_active,
-        };
-
+        // Criar novo serviço
         const { error } = await supabase
-          .from('services')
-          .insert([serviceData]);
+          .from('painel_servicos')
+          .insert({
+            nome: formData.nome.trim(),
+            descricao: formData.descricao.trim(),
+            preco: formData.preco,
+            duracao: formData.duracao,
+            is_active: formData.is_active,
+            show_on_home: formData.show_on_home,
+            display_order: 0
+          });
 
         if (error) throw error;
-        toast.success('Serviço criado com sucesso!');
+        
+        toast.success('Serviço criado com sucesso!', {
+          description: 'O serviço foi criado e sincronizado automaticamente'
+        });
       }
-      
+
       onSuccess();
-    } catch (error) {
-      toast.error('Erro ao salvar serviço', {
-        description: (error as Error).message
+      onClose();
+    } catch (error: any) {
+      console.error('Erro ao salvar serviço:', error);
+      toast.error(serviceId ? 'Erro ao atualizar serviço' : 'Erro ao criar serviço', {
+        description: error.message
       });
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleCancel = () => {
+    resetForm();
+    onClose();
+  };
+
   return (
-    <Dialog open={true} onOpenChange={onCancel}>
-      <DialogContent className="sm:max-w-[550px]">
+    <Dialog open={isOpen} onOpenChange={handleCancel}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Serviço' : 'Novo Serviço'}</DialogTitle>
+          <DialogTitle>
+            {serviceId ? 'Editar Serviço' : 'Novo Serviço'}
+          </DialogTitle>
         </DialogHeader>
 
-        {isEditing && isLoadingService ? (
-          <div className="flex justify-center py-8">
+        {loadingData ? (
+          <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do serviço" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome do Serviço *</Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                placeholder="Ex: Corte + Barba"
+                required
               />
-              
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Descrição do serviço" 
-                        {...field} 
-                        value={field.value || ''}
-                        className="resize-none min-h-[80px]"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="descricao">Descrição</Label>
+              <Textarea
+                id="descricao"
+                value={formData.descricao}
+                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                placeholder="Descreva o serviço..."
+                rows={3}
               />
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00" 
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="duration"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Duração (minutos) *</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          min="5"
-                          step="5"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="preco">Preço (R$) *</Label>
+                <Input
+                  id="preco"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.preco}
+                  onChange={(e) => setFormData({ ...formData, preco: parseFloat(e.target.value) })}
+                  placeholder="0.00"
+                  required
                 />
               </div>
-              
-              <FormField
-                control={form.control}
-                name="is_active"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Serviço Ativo</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        Serviços inativos não aparecerão na lista de agendamentos.
-                      </p>
-                    </div>
-                  </FormItem>
+
+              <div className="space-y-2">
+                <Label htmlFor="duracao">Duração (min) *</Label>
+                <Input
+                  id="duracao"
+                  type="number"
+                  min="1"
+                  value={formData.duracao}
+                  onChange={(e) => setFormData({ ...formData, duracao: parseInt(e.target.value) })}
+                  placeholder="30"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="is_active">Serviço Ativo</Label>
+                <Switch
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show_on_home">Exibir na Home</Label>
+                <Switch
+                  id="show_on_home"
+                  checked={formData.show_on_home}
+                  onCheckedChange={(checked) => setFormData({ ...formData, show_on_home: checked })}
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={loading}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  serviceId ? 'Atualizar' : 'Criar'
                 )}
-              />
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={onCancel}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isEditing ? 'Salvar Alterações' : 'Criar Serviço'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+              </Button>
+            </DialogFooter>
+          </form>
         )}
       </DialogContent>
     </Dialog>

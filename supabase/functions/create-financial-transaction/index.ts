@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
         amount: serviceNetAmount
       })
 
-      // 2. Criar item da transação
+      // 2. Criar item da transação com source_table
       await supabase
         .from('transaction_items')
         .insert({
@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
           unit_price: service.price,
           discount: serviceDiscount,
           subtotal: serviceNetAmount,
+          source_table: 'painel_servicos', // ✅ RASTREAMENTO DE ORIGEM
           metadata: {}
         })
 
@@ -389,7 +390,7 @@ Deno.serve(async (req) => {
         amount: productNetAmount
       })
 
-      // 2. Criar item da transação
+      // 2. Criar item da transação com source_table
       await supabase
         .from('transaction_items')
         .insert({
@@ -401,6 +402,7 @@ Deno.serve(async (req) => {
           unit_price: product.price,
           discount: productDiscount,
           subtotal: productNetAmount,
+          source_table: 'painel_produtos', // ✅ RASTREAMENTO DE ORIGEM
           metadata: {}
         })
 

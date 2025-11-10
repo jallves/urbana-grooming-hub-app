@@ -2709,6 +2709,42 @@ export type Database = {
         }
         Relationships: []
       }
+      service_id_mapping: {
+        Row: {
+          created_at: string | null
+          painel_servicos_id: string
+          services_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          painel_servicos_id: string
+          services_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          painel_servicos_id?: string
+          services_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_id_mapping_painel_servicos_id_fkey"
+            columns: ["painel_servicos_id"]
+            isOneToOne: false
+            referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_id_mapping_services_id_fkey"
+            columns: ["services_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           created_at: string | null
@@ -3431,6 +3467,7 @@ export type Database = {
           item_type: string
           metadata: Json | null
           quantity: number
+          source_table: string | null
           subtotal: number
           unit_price: number
         }
@@ -3444,6 +3481,7 @@ export type Database = {
           item_type: string
           metadata?: Json | null
           quantity?: number
+          source_table?: string | null
           subtotal: number
           unit_price: number
         }
@@ -3457,6 +3495,7 @@ export type Database = {
           item_type?: string
           metadata?: Json | null
           quantity?: number
+          source_table?: string | null
           subtotal?: number
           unit_price?: number
         }
