@@ -178,194 +178,226 @@ const TotemCadastro: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-urbana-dark via-urbana-brown to-urbana-dark flex items-center justify-center p-8">
-      <div className="w-full max-w-4xl">
-        {/* Header com logo e título */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-6">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-urbana-gold via-urbana-gold-light to-urbana-gold flex items-center justify-center shadow-2xl shadow-urbana-gold/50">
-                <span className="text-4xl font-bold text-urbana-dark">U</span>
+    <div className="fixed inset-0 w-screen h-screen overflow-y-auto">
+      {/* Background com imagem */}
+      <div 
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: 'url(/barbearia-background.jpg)' }}
+      />
+      
+      {/* Overlay escuro */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/80" />
+
+      {/* Efeito de brilho animado */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }} />
+      </div>
+
+      {/* Conteúdo */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-6 sm:p-8">
+        <div className="w-full max-w-5xl">
+          {/* Header com logo e título */}
+          <div className="text-center mb-8 animate-fade-in">
+            <div className="inline-flex items-center justify-center mb-6">
+              <div className="relative">
+                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-urbana-gold via-urbana-gold-light to-urbana-gold flex items-center justify-center shadow-[0_0_50px_rgba(218,165,32,0.6)] animate-pulse">
+                  <img 
+                    src="/logo-costa-urbana-new.png" 
+                    alt="Costa Urbana" 
+                    className="w-20 h-20 object-contain"
+                  />
+                </div>
               </div>
-              <div className="absolute -top-1 -right-1 w-8 h-8 bg-urbana-gold rounded-full border-4 border-urbana-dark"></div>
             </div>
+            <h1 className="text-5xl sm:text-6xl font-bold text-white mb-3 drop-shadow-2xl">
+              Novo Cadastro
+            </h1>
+            <p className="text-xl sm:text-2xl text-urbana-gold font-light">
+              Preencha seus dados para continuar
+            </p>
           </div>
-          <h1 className="text-5xl font-bold text-urbana-light mb-2">Novo Cadastro</h1>
-          <p className="text-xl text-urbana-gold">Preencha seus dados para continuar</p>
-        </div>
 
-        {/* Formulário */}
-        <div className="bg-white/10 backdrop-blur-3xl border-2 border-urbana-gold/40 rounded-3xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="nome" className="text-urbana-light text-lg font-semibold">
-                  Nome Completo *
-                </Label>
-                <Input
-                  id="nome"
-                  type="text"
-                  value={formData.nome}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
-                  placeholder="Seu nome completo"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-urbana-light text-lg font-semibold">
-                  E-mail *
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
-                  placeholder="seu.email@exemplo.com"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp" className="text-urbana-light text-lg font-semibold">
-                  WhatsApp *
-                </Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
-                  value={formData.whatsapp}
-                  onChange={handleWhatsAppChange}
-                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
-                  placeholder="(11) 99999-9999"
-                  maxLength={15}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="data_nascimento" className="text-urbana-light text-lg font-semibold">
-                  Data de Nascimento *
-                </Label>
-                <Input
-                  id="data_nascimento"
-                  type="date"
-                  value={formData.data_nascimento}
-                  onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
-                  className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="senha" className="text-urbana-light text-lg font-semibold">
-                  Senha *
-                </Label>
-                <div className="relative">
+          {/* Card glassmorphism */}
+          <div className="bg-black/40 backdrop-blur-2xl border-2 border-urbana-gold/30 rounded-3xl p-8 sm:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] hover:border-urbana-gold/50 transition-all duration-300 animate-scale-in">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="nome" className="text-white text-lg font-semibold">
+                    Nome Completo *
+                  </Label>
                   <Input
-                    id="senha"
-                    type={mostrarSenha ? "text" : "password"}
-                    value={formData.senha}
-                    onChange={(e) => setFormData(prev => ({ ...prev, senha: e.target.value }))}
-                    className="bg-white/10 backdrop-blur-sm border-2 border-urbana-gold/30 text-urbana-light text-lg h-14 focus:border-urbana-gold pr-12"
-                    placeholder="Sua senha"
+                    id="nome"
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                    className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder:text-white/50 text-lg h-14 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/50 rounded-xl transition-all"
+                    placeholder="Seu nome completo"
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setMostrarSenha(!mostrarSenha)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-urbana-gold hover:text-urbana-gold-light"
-                  >
-                    {mostrarSenha ? <EyeOff className="h-6 w-6" /> : <Eye className="h-6 w-6" />}
-                  </button>
                 </div>
 
-                {formData.senha && (
-                  <div className="space-y-1 text-sm mt-2">
-                    {Object.entries({
-                      minimo8: 'Mínimo 8 caracteres',
-                      maiuscula: 'Pelo menos 1 maiúscula',
-                      minuscula: 'Pelo menos 1 minúscula',
-                      numero: 'Pelo menos 1 número',
-                      especial: 'Pelo menos 1 caractere especial'
-                    }).map(([key, label]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        {validacoesSenha[key as keyof typeof validacoesSenha] ? (
-                          <Check className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500" />
-                        )}
-                        <span className={validacoesSenha[key as keyof typeof validacoesSenha] ? 'text-green-400' : 'text-red-400'}>
-                          {label}
-                        </span>
-                      </div>
-                    ))}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-white text-lg font-semibold">
+                    E-mail *
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder:text-white/50 text-lg h-14 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/50 rounded-xl transition-all"
+                    placeholder="seu.email@exemplo.com"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp" className="text-white text-lg font-semibold">
+                    WhatsApp *
+                  </Label>
+                  <Input
+                    id="whatsapp"
+                    type="tel"
+                    value={formData.whatsapp}
+                    onChange={handleWhatsAppChange}
+                    className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder:text-white/50 text-lg h-14 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/50 rounded-xl transition-all"
+                    placeholder="(11) 99999-9999"
+                    maxLength={15}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="data_nascimento" className="text-white text-lg font-semibold">
+                    Data de Nascimento *
+                  </Label>
+                  <Input
+                    id="data_nascimento"
+                    type="date"
+                    value={formData.data_nascimento}
+                    onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                    className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder:text-white/50 text-lg h-14 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/50 rounded-xl transition-all"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="senha" className="text-white text-lg font-semibold">
+                    Senha *
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="senha"
+                      type={mostrarSenha ? "text" : "password"}
+                      value={formData.senha}
+                      onChange={(e) => setFormData(prev => ({ ...prev, senha: e.target.value }))}
+                      className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder:text-white/50 text-lg h-14 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/50 rounded-xl transition-all pr-12"
+                      placeholder="Sua senha"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarSenha(!mostrarSenha)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-urbana-gold hover:text-urbana-gold-light transition-colors"
+                    >
+                      {mostrarSenha ? <EyeOff className="h-6 w-6" /> : <Eye className="h-6 w-6" />}
+                    </button>
                   </div>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmarSenha" className="text-urbana-light text-lg font-semibold">
-                  Confirmar Senha *
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="confirmarSenha"
-                    type={mostrarConfirmarSenha ? "text" : "password"}
-                    value={formData.confirmarSenha}
-                    onChange={(e) => setFormData(prev => ({ ...prev, confirmarSenha: e.target.value }))}
-                    className={`bg-white/10 backdrop-blur-sm border-2 text-urbana-light text-lg h-14 pr-12 ${
-                      formData.confirmarSenha && !senhasIguais ? 'border-red-500 focus:border-red-500' : 
-                      formData.confirmarSenha && senhasIguais ? 'border-green-500 focus:border-green-500' : 
-                      'border-urbana-gold/30 focus:border-urbana-gold'
-                    }`}
-                    placeholder="Confirme sua senha"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-urbana-gold hover:text-urbana-gold-light"
-                  >
-                    {mostrarConfirmarSenha ? <EyeOff className="h-6 w-6" /> : <Eye className="h-6 w-6" />}
-                  </button>
+                  {formData.senha && (
+                    <div className="space-y-2 text-sm mt-3 bg-black/30 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+                      {Object.entries({
+                        minimo8: 'Mínimo 8 caracteres',
+                        maiuscula: 'Pelo menos 1 maiúscula',
+                        minuscula: 'Pelo menos 1 minúscula',
+                        numero: 'Pelo menos 1 número',
+                        especial: 'Pelo menos 1 caractere especial'
+                      }).map(([key, label]) => (
+                        <div key={key} className="flex items-center gap-2">
+                          {validacoesSenha[key as keyof typeof validacoesSenha] ? (
+                            <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-400 flex-shrink-0" />
+                          )}
+                          <span className={validacoesSenha[key as keyof typeof validacoesSenha] ? 'text-green-400' : 'text-red-400'}>
+                            {label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {formData.confirmarSenha && !senhasIguais && (
-                  <p className="text-red-400 text-sm">As senhas não coincidem</p>
-                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmarSenha" className="text-white text-lg font-semibold">
+                    Confirmar Senha *
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmarSenha"
+                      type={mostrarConfirmarSenha ? "text" : "password"}
+                      value={formData.confirmarSenha}
+                      onChange={(e) => setFormData(prev => ({ ...prev, confirmarSenha: e.target.value }))}
+                      className={`bg-white/10 backdrop-blur-sm border-2 text-white placeholder:text-white/50 text-lg h-14 rounded-xl transition-all pr-12 ${
+                        formData.confirmarSenha && !senhasIguais ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/50' : 
+                        formData.confirmarSenha && senhasIguais ? 'border-green-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/50' : 
+                        'border-white/20 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/50'
+                      }`}
+                      placeholder="Confirme sua senha"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-urbana-gold hover:text-urbana-gold-light transition-colors"
+                    >
+                      {mostrarConfirmarSenha ? <EyeOff className="h-6 w-6" /> : <Eye className="h-6 w-6" />}
+                    </button>
+                  </div>
+                  {formData.confirmarSenha && !senhasIguais && (
+                    <p className="text-red-400 text-sm flex items-center gap-2">
+                      <X className="h-4 w-4" />
+                      As senhas não coincidem
+                    </p>
+                  )}
+                  {formData.confirmarSenha && senhasIguais && (
+                    <p className="text-green-400 text-sm flex items-center gap-2">
+                      <Check className="h-4 w-4" />
+                      Senhas conferem
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="button"
-                onClick={() => navigate('/totem/search', { state: { action } })}
-                className="flex-1 h-16 bg-urbana-brown/50 hover:bg-urbana-brown border-2 border-urbana-gold/30 text-urbana-light text-xl font-semibold"
-              >
-                <ArrowLeft className="mr-2 h-6 w-6" />
-                Voltar
-              </Button>
-              
-              <Button
-                type="submit"
-                className="flex-1 h-16 bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold hover:opacity-90 text-urbana-dark text-xl font-bold shadow-lg shadow-urbana-gold/50"
-                disabled={loading || !senhaValida || !senhasIguais}
-              >
-                {loading ? 'Cadastrando...' : 'Criar Cadastro'}
-              </Button>
-            </div>
-          </form>
-        </div>
+              <div className="flex gap-4 pt-6">
+                <Button
+                  type="button"
+                  onClick={() => navigate('/totem/search', { state: { action } })}
+                  className="flex-1 h-16 bg-white/10 backdrop-blur-sm hover:bg-white/20 border-2 border-white/30 hover:border-white/50 text-white text-xl font-semibold rounded-xl transition-all shadow-lg"
+                >
+                  <ArrowLeft className="mr-2 h-6 w-6" />
+                  Voltar
+                </Button>
+                
+                <Button
+                  type="submit"
+                  className="flex-1 h-16 bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold hover:shadow-[0_0_40px_rgba(218,165,32,0.6)] text-black text-xl font-bold rounded-xl transition-all shadow-lg shadow-urbana-gold/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading || !senhaValida || !senhasIguais}
+                >
+                  {loading ? 'Cadastrando...' : 'Criar Cadastro'}
+                </Button>
+              </div>
+            </form>
+          </div>
 
-        {/* Botão Sistema Exclusivo no canto superior direito */}
-        <div className="fixed top-8 right-8">
-          <div className="relative inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold rounded-full shadow-lg shadow-urbana-gold/50">
-            <div className="absolute -top-1 -left-1 w-3 h-3 bg-urbana-light rounded-full"></div>
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-urbana-light rounded-full"></div>
-            <span className="text-urbana-dark font-bold text-sm uppercase tracking-wider">
-              Sistema Exclusivo
-            </span>
+          {/* Badge Sistema Exclusivo */}
+          <div className="fixed top-6 right-6 sm:top-8 sm:right-8 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <div className="relative inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold rounded-full shadow-[0_0_30px_rgba(218,165,32,0.5)]">
+              <span className="text-black font-bold text-sm uppercase tracking-wider">
+                Sistema Exclusivo
+              </span>
+            </div>
           </div>
         </div>
       </div>
