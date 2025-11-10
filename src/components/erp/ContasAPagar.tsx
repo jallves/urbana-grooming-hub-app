@@ -1,12 +1,18 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface PaymentRecord {
+  payment_method: string;
+}
 
 interface FinancialRecord {
   id: string;
@@ -20,15 +26,21 @@ interface FinancialRecord {
   description: string;
   transaction_date: string;
   created_at: string;
+  payment_records: PaymentRecord[];
 }
 
 export const ContasAPagar: React.FC = () => {
+  const queryClient = useQueryClient();
+
   const { data: payables, isLoading } = useQuery({
     queryKey: ['contas-pagar'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('financial_records')
-        .select('*')
+        .select(`
+          *,
+          payment_records(payment_method)
+        `)
         .in('transaction_type', ['expense', 'commission'])
         .order('transaction_date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -38,6 +50,29 @@ export const ContasAPagar: React.FC = () => {
       return data as FinancialRecord[];
     },
     refetchInterval: 10000
+  });
+
+  const markAsPaidMutation = useMutation({
+    mutationFn: async (recordId: string) => {
+      const { error } = await supabase
+        .from('financial_records')
+        .update({ 
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', recordId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      toast.success('Comissão marcada como paga!');
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao marcar como paga', {
+        description: error.message
+      });
+    }
   });
 
   // Calcular totais
@@ -83,6 +118,23 @@ export const ContasAPagar: React.FC = () => {
       commission: 'Comissão'
     };
     return labels[type] || type;
+  };
+
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      cash: 'Dinheiro',
+      debit_card: 'Débito',
+      credit_card: 'Crédito',
+      pix: 'PIX',
+      bank_transfer: 'Transferência'
+    };
+    return labels[method] || method;
+  };
+
+  const handleMarkAsPaid = (recordId: string) => {
+    if (window.confirm('Tem certeza que deseja marcar esta comissão como paga?')) {
+      markAsPaidMutation.mutate(recordId);
+    }
   };
 
   if (isLoading) {
@@ -171,8 +223,10 @@ export const ContasAPagar: React.FC = () => {
                   <TableHead>Descrição</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Data</TableHead>
+                  <TableHead>Pagamento</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -200,17 +254,41 @@ export const ContasAPagar: React.FC = () => {
                       <TableCell className="text-sm">
                         {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
                       </TableCell>
+                      <TableCell className="text-sm">
+                        {record.payment_records && record.payment_records.length > 0 ? (
+                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            <CreditCard className="h-3 w-3 mr-1" />
+                            {getPaymentMethodLabel(record.payment_records[0].payment_method)}
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right font-semibold text-red-600">
                         R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-center">
                         {getStatusBadge(record.status)}
                       </TableCell>
+                      <TableCell className="text-center">
+                        {record.transaction_type === 'commission' && record.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                            onClick={() => handleMarkAsPaid(record.id)}
+                            disabled={markAsPaidMutation.isPending}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Marcar como Pago
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                    <TableCell colSpan={9} className="text-center text-gray-500 py-8">
                       Nenhuma despesa ou comissão encontrada
                     </TableCell>
                   </TableRow>
