@@ -35,10 +35,6 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   };
-  totem_sessions: Array<{
-    check_in_time: string | null;
-    check_out_time: string | null;
-  }>;
 }
 
 export const useClientAppointments = () => {
@@ -55,8 +51,7 @@ export const useClientAppointments = () => {
           *,
           painel_clientes!inner(nome, email, whatsapp),
           painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
-          painel_servicos!inner(nome, preco, duracao),
-          totem_sessions(check_in_time, check_out_time)
+          painel_servicos!inner(nome, preco, duracao)
         `)
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
