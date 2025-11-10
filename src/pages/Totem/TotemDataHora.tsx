@@ -210,6 +210,20 @@ const TotemDataHora: React.FC = () => {
       }
 
       console.log('✅ Validação passou! Criando agendamento...');
+      
+      // Garantir que a data seja formatada sem conversão de timezone
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dataLocal = `${year}-${month}-${day}`;
+      
+      console.log('📅 Data sendo salva:', {
+        selectedDate,
+        dataLocal,
+        hora: selectedTime,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      });
+      
       // Validação passou, criar agendamento
       // @ts-ignore - Evitar inferência profunda de tipos do Supabase
       const response = await supabase
@@ -218,7 +232,7 @@ const TotemDataHora: React.FC = () => {
           cliente_id: client.id,
           barbeiro_id: barber.id,
           servico_id: service.id,
-          data: format(selectedDate, 'yyyy-MM-dd'),
+          data: dataLocal,
           hora: selectedTime,
           status: 'agendado'
         })

@@ -136,11 +136,17 @@ export const useAppointmentFormSubmit = ({
           .single();
 
         if (clientData && staffData) {
+          // Garantir que a data seja formatada sem conversão de timezone
+          const year = startDate.getFullYear();
+          const month = String(startDate.getMonth() + 1).padStart(2, '0');
+          const day = String(startDate.getDate()).padStart(2, '0');
+          const dataLocal = `${year}-${month}-${day}`;
+          
           const painelData = {
             cliente_id: data.client_id,
             barbeiro_id: staffData.id,
             servico_id: data.service_id,
-            data: format(startDate, 'yyyy-MM-dd'),
+            data: dataLocal,
             hora: format(startDate, 'HH:mm'),
             status: 'confirmado'
           };
