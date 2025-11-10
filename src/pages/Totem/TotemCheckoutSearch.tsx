@@ -67,9 +67,36 @@ const TotemCheckoutSearch: React.FC = () => {
       const cliente = clientes[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // Buscar sessão ativa de totem
-      // @ts-ignore
-      const sessionResponse = await supabase
+      // Primeiro, buscar agendamentos ativos do cliente
+      const { data: agendamentos, error: agendError } = await supabase
+        .from('painel_agendamentos')
+        .select('id')
+        .eq('cliente_id', cliente.id)
+        .in('status_totem', ['CHEGOU'])
+        .order('created_at', { ascending: false });
+
+      if (agendError) {
+        console.error('❌ Erro ao buscar agendamentos:', agendError);
+        setError({
+          title: 'Erro ao buscar atendimento',
+          message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.'
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      if (!agendamentos || agendamentos.length === 0) {
+        setError({
+          title: 'Nenhum atendimento encontrado',
+          message: 'Você não possui um atendimento ativo no momento. Procure a recepção para fazer check-in.'
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      // Buscar sessão ativa baseada nos agendamentos encontrados
+      const appointmentIds = agendamentos.map(a => a.id);
+      const { data: sessionData, error: sessionError } = await supabase
         .from('totem_sessions')
         .select(`
           *,
@@ -80,13 +107,13 @@ const TotemCheckoutSearch: React.FC = () => {
             cliente:painel_clientes(*)
           )
         `)
-        .eq('appointment.cliente_id', cliente.id)
+        .in('appointment_id', appointmentIds)
         .in('status', ['check_in', 'in_service'])
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (sessionResponse.error) {
-        console.error('❌ Erro ao buscar sessão:', sessionResponse.error);
+      if (sessionError) {
+        console.error('❌ Erro ao buscar sessão:', sessionError);
         setError({
           title: 'Erro ao buscar atendimento',
           message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.'
@@ -95,8 +122,7 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      const sessions = sessionResponse.data;
-      if (!sessions || sessions.length === 0) {
+      if (!sessionData || sessionData.length === 0) {
         setError({
           title: 'Nenhum atendimento encontrado',
           message: 'Você não possui um atendimento ativo no momento. Procure a recepção para fazer check-in.'
@@ -105,7 +131,7 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      const session = sessions[0];
+      const session = sessionData[0];
       console.log('✅ Sessão ativa encontrada');
 
       navigate('/totem/checkout', {
