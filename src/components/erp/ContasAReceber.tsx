@@ -35,7 +35,14 @@ interface FinancialRecord {
   transaction_date: string;
   transaction_type: string;
   created_at: string;
-  metadata?: any;
+  metadata?: {
+    service_name?: string;
+    product_name?: string;
+    payment_time?: string;
+    payment_method?: string;
+    notes?: string;
+    [key: string]: any;
+  };
 }
 
 export const ContasAReceber: React.FC = () => {
@@ -313,11 +320,34 @@ export const ContasAReceber: React.FC = () => {
                         <TableCell className="font-mono text-xs">
                           {record.transaction_number}
                         </TableCell>
-                        <TableCell className="max-w-xs truncate text-sm">
-                          {record.description}
+                        <TableCell className="max-w-xs text-sm">
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium">{record.description}</span>
+                            {record.metadata?.service_name && (
+                              <span className="text-xs text-muted-foreground">
+                                🔧 {record.metadata.service_name}
+                              </span>
+                            )}
+                            {record.metadata?.product_name && (
+                              <span className="text-xs text-muted-foreground">
+                                📦 {record.metadata.product_name}
+                              </span>
+                            )}
+                            {record.metadata?.payment_time && (
+                              <span className="text-xs text-muted-foreground">
+                                ⏰ {format(new Date(record.metadata.payment_time), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell className="text-sm capitalize">
-                          {record.category.replace('_', ' ')}
+                        <TableCell className="text-sm">
+                          <Badge variant="outline" className={
+                            record.category === 'services' 
+                              ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                              : 'bg-green-50 text-green-700 border-green-200'
+                          }>
+                            {record.category === 'services' ? '🔧 Serviço' : '📦 Produto'}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
                           {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}

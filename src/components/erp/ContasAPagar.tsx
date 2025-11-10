@@ -40,7 +40,16 @@ interface FinancialRecord {
   transaction_date: string;
   created_at: string;
   payment_records: PaymentRecord[];
-  metadata?: any;
+  metadata?: {
+    service_name?: string;
+    product_name?: string;
+    commission_rate?: number;
+    service_amount?: number;
+    payment_time?: string;
+    payment_method?: string;
+    notes?: string;
+    [key: string]: any;
+  };
 }
 
 export const ContasAPagar: React.FC = () => {
@@ -401,8 +410,25 @@ export const ContasAPagar: React.FC = () => {
                             {getTypeLabel(record.transaction_type)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-xs truncate text-sm">
-                          {record.description}
+                        <TableCell className="max-w-xs text-sm">
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium">{record.description}</span>
+                            {record.metadata?.service_name && (
+                              <span className="text-xs text-muted-foreground">
+                                🔧 Serviço: {record.metadata.service_name}
+                              </span>
+                            )}
+                            {record.metadata?.commission_rate && (
+                              <span className="text-xs text-muted-foreground">
+                                💰 Taxa: {record.metadata.commission_rate}%
+                              </span>
+                            )}
+                            {record.metadata?.service_amount && (
+                              <span className="text-xs text-muted-foreground">
+                                💵 Valor base: R$ {Number(record.metadata.service_amount).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm capitalize">
                           {record.category.replace('_', ' ')}
