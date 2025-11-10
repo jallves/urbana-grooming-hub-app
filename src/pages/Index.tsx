@@ -9,6 +9,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { GoldenDivider } from '@/components/decorative/GoldenDivider';
+import { ClientReviews } from '@/components/ClientReviews';
 
 const Index = () => {
   return (
@@ -81,6 +82,20 @@ const Index = () => {
       <div className="w-full bg-gradient-to-b from-urbana-black to-urbana-brown py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <GoldenDivider variant="geometric" />
+        </div>
+      </div>
+      
+      {/* Client Reviews */}
+      <section className="w-full py-12 transition-all duration-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ClientReviews />
+        </div>
+      </section>
+      
+      {/* Decorative divider */}
+      <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <GoldenDivider variant="ornate" />
         </div>
       </div>
       
