@@ -107,11 +107,12 @@ Deno.serve(async (req) => {
       comissao_total: total_commission
     })
 
-    // 5. Atualizar status do agendamento
+    // 5. Atualizar status do agendamento para CONCLUÍDO (trigger automático cria financeiro)
     const { error: updateError } = await supabase
       .from('painel_agendamentos')
       .update({ 
-        status: 'FINALIZADO',
+        status: 'concluido', // Status correto para trigger de financeiro
+        status_totem: 'FINALIZADO',
         updated_at: new Date().toISOString()
       })
       .eq('id', agendamento_id)
@@ -121,80 +122,11 @@ Deno.serve(async (req) => {
       throw new Error('Erro ao atualizar status do agendamento')
     }
 
-    console.log('✅ Status atualizado para FINALIZADO')
+    console.log('✅ Status atualizado para CONCLUÍDO (trigger criará registros financeiros)')
 
-    // 6. Gerar comissão (TABELA CORRETA)
-    const { error: commissionError } = await supabase
-      .from('barber_commissions')
-      .insert({
-        barber_id: staff_id,
-        appointment_id: agendamento_id,
-        amount: total_commission,
-        commission_rate: commission_rate,
-        status: 'pending',
-        appointment_source: source || 'painel'
-      })
-
-    if (commissionError) {
-      console.error('❌ Erro ao gerar comissão:', commissionError)
-      // Não falhar se comissão já existe (duplicate key)
-      if (!commissionError.message?.includes('duplicate')) {
-        throw new Error('Erro ao gerar comissão')
-      }
-      console.log('⚠️ Comissão já existe, continuando...')
-    } else {
-      console.log('✅ Comissão gerada com sucesso')
-    }
-
-    // 7. Criar transação financeira completa no novo sistema ERP
-    console.log('💰 Criando transação financeira no ERP...')
-    
-    // Preparar itens da transação
-    const items = [{
-      type: 'service',
-      id: agendamento.servico_id,
-      name: agendamento.servico?.nome,
-      quantity: 1,
-      price: service_price,
-      discount: 0
-    }]
-    
-    // Adicionar serviços extras aos itens
-    if (extras && extras.length > 0) {
-      extras.forEach((extra: any) => {
-        items.push({
-          type: 'service',
-          id: extra.service_id,
-          name: extra.painel_servicos?.nome,
-          quantity: 1,
-          price: extra.painel_servicos?.preco || 0,
-          discount: 0
-        })
-      })
-    }
-    
-    // Chamar função para criar transação financeira
-    const { data: financialResult, error: financialError } = await supabase.functions.invoke(
-      'create-financial-transaction',
-      {
-        body: {
-          appointment_id: agendamento_id,
-          client_id: agendamento.cliente_id,
-          barber_id: staff_id,
-          items,
-          payment_method: 'cash', // Default, pode ser atualizado depois
-          discount_amount: 0,
-          notes: `Atendimento finalizado - Fonte: ${source || 'painel'}`
-        }
-      }
-    )
-    
-    if (financialError) {
-      console.error('❌ Erro ao criar transação financeira:', financialError)
-      // Não falhar o processo se o financeiro der erro
-    } else {
-      console.log('✅ Transação financeira criada:', financialResult)
-    }
+    // 6-7. Trigger automático já cria comissões e transações financeiras
+    // quando status é atualizado para 'concluido' - comissão fixa de 40%
+    console.log('✅ Trigger automático criará registros financeiros com comissão de 40%')
 
     // 9. Notificar barbeiro via Realtime
     const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)

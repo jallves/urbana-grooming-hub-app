@@ -417,82 +417,20 @@ Deno.serve(async (req) => {
         .update({ status: 'PAGA' })
         .eq('id', venda_id)
 
-      // 4. Atualizar agendamento
+      // 4. Atualizar agendamento para CONCLUÍDO (trigger automático cria financeiro)
       await supabase
         .from('painel_agendamentos')
-        .update({ status: 'FINALIZADO' })
+        .update({ 
+          status: 'concluido', // Status correto para trigger de financeiro
+          status_totem: 'FINALIZADO'
+        })
         .eq('id', session.appointment_id)
+      
+      console.log('✅ Agendamento atualizado para CONCLUÍDO')
 
-      // 5. Buscar taxa de comissão do barbeiro
-      const { data: barbeiro } = await supabase
-        .from('staff')
-        .select('commission_rate')
-        .eq('id', venda.barbeiro_id)
-        .single()
-
-      const commission_rate = barbeiro?.commission_rate || 50
-
-      // 6. Calcular e gerar comissão (TABELA CORRETA)
-      const commission_amount = venda.total * (commission_rate / 100)
-
-      console.log('💰 Gerando comissão:', {
-        barber_id: venda.barbeiro_id,
-        appointment_id: session.appointment_id,
-        amount: commission_amount,
-        rate: commission_rate
-      })
-
-      // 🔒 CORREÇÃO CRÍTICA: Verificar se comissão já existe antes de inserir
-      const { data: existingCommission } = await supabase
-        .from('barber_commissions')
-        .select('id')
-        .eq('appointment_id', session.appointment_id)
-        .maybeSingle()
-
-      if (!existingCommission) {
-        await supabase
-          .from('barber_commissions')
-          .insert({
-            barber_id: venda.barbeiro_id,
-            appointment_id: session.appointment_id,
-            amount: commission_amount,
-            commission_rate: commission_rate,
-            status: 'pending',
-            appointment_source: 'totem'
-          })
-        console.log('✅ Comissão criada')
-      } else {
-        console.log('⚠️ Comissão já existe, pulando inserção')
-      }
-
-      // 7. Criar transações financeiras
-      // Receita
-      await supabase
-        .from('finance_transactions')
-        .insert({
-          tipo: 'receita',
-          categoria: 'servico',
-          descricao: 'Atendimento finalizado via Totem',
-          valor: venda.total,
-          data: new Date().toISOString().split('T')[0],
-          agendamento_id: session.appointment_id,
-          barbeiro_id: venda.barbeiro_id,
-          status: 'pago'
-        })
-
-      // Despesa (comissão)
-      await supabase
-        .from('finance_transactions')
-        .insert({
-          tipo: 'despesa',
-          categoria: 'comissao',
-          descricao: `Comissão ${commission_rate}% - Atendimento`,
-          valor: commission_amount,
-          data: new Date().toISOString().split('T')[0],
-          agendamento_id: session.appointment_id,
-          barbeiro_id: venda.barbeiro_id,
-          status: 'pago'
-        })
+      // 5-7. Trigger automático já cria comissões e transações financeiras
+      // quando status é atualizado para 'concluido'
+      console.log('✅ Trigger automático criará registros financeiros')
 
       // 8. Notificar barbeiro via Realtime
       const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)
