@@ -3910,6 +3910,13 @@ export type Database = {
           specialties: string
         }[]
       }
+      get_available_slots: {
+        Args: { p_barbeiro_id: string; p_data: string; p_duracao?: number }
+        Returns: {
+          disponivel: boolean
+          hora: string
+        }[]
+      }
       get_available_time_slots: {
         Args: { p_date: string; p_service_duration: number; p_staff_id: string }
         Returns: {

@@ -32,7 +32,7 @@ const TotemDataHora: React.FC = () => {
   const [loadingDates, setLoadingDates] = useState(true);
   const [creating, setCreating] = useState(false);
 
-  const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
+  const { getAvailableTimeSlots, validateAppointment, isValidating, extractDatabaseError } = useAppointmentValidation();
 
   // Verificar se uma data tem horários disponíveis
   const hasAvailableSlots = async (date: Date): Promise<boolean> => {
@@ -188,16 +188,18 @@ const TotemDataHora: React.FC = () => {
         .single();
 
       if (response.error) {
-        // Verificar se é erro de conflito (race condition)
-        if (response.error.message?.includes('duplicate') || 
-            response.error.message?.includes('conflict')) {
-          toast.error('Este horário acabou de ser reservado. Por favor, escolha outro horário.');
-          // Recarregar horários
+        // Usar extração de erro do banco de dados
+        const errorMessage = extractDatabaseError(response.error);
+        toast.error(errorMessage);
+        
+        // Recarregar horários se for erro de conflito
+        if (response.error.message?.includes('Conflito') || 
+            response.error.message?.includes('duplicate')) {
           loadTimeSlots();
-          setCreating(false);
-          return;
         }
-        throw response.error;
+        
+        setCreating(false);
+        return;
       }
 
       toast.success('Agendamento criado com sucesso!');

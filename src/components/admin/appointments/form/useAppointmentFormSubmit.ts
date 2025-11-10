@@ -18,7 +18,7 @@ export const useAppointmentFormSubmit = ({
   onClose 
 }: UseAppointmentFormSubmitProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { validateAppointment } = useAppointmentValidation();
+  const { validateAppointment, extractDatabaseError } = useAppointmentValidation();
   
   const handleSubmit = async (data: FormValues, selectedService: Service | null) => {
     try {
@@ -88,7 +88,17 @@ export const useAppointmentFormSubmit = ({
           .update(appointmentData)
           .eq('id', appointmentId);
           
-        if (error) throw error;
+        if (error) {
+          // Tratar erro do banco de dados
+          const errorMessage = extractDatabaseError(error);
+          toast({
+            variant: "destructive",
+            title: "Erro ao Atualizar",
+            description: errorMessage,
+          });
+          setIsLoading(false);
+          return;
+        }
         
         toast({
           title: "✅ Agendamento Atualizado!",
@@ -100,7 +110,17 @@ export const useAppointmentFormSubmit = ({
           .from('appointments')
           .insert(appointmentData);
           
-        if (error) throw error;
+        if (error) {
+          // Tratar erro do banco de dados
+          const errorMessage = extractDatabaseError(error);
+          toast({
+            variant: "destructive",
+            title: "Erro ao Criar",
+            description: errorMessage,
+          });
+          setIsLoading(false);
+          return;
+        }
         
         // Também inserir no painel_agendamentos para sincronização
         const { data: clientData } = await supabase

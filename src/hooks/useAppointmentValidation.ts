@@ -26,6 +26,50 @@ export const useAppointmentValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
 
   /**
+   * Extrai mensagem de erro amigável do banco de dados
+   */
+  const extractDatabaseError = useCallback((error: any): string => {
+    if (!error?.message) return 'Erro ao processar agendamento';
+    
+    const message = error.message;
+    
+    // Erros de conflito de horário
+    if (message.includes('Conflito de horário')) {
+      const match = message.match(/às (\d{2}:\d{2})/);
+      if (match) {
+        return `Este horário conflita com um agendamento às ${match[1]}. Escolha outro horário.`;
+      }
+      return 'Este horário já está ocupado. Escolha outro horário.';
+    }
+    
+    // Erros de horário passado
+    if (message.includes('30 minutos de antecedência')) {
+      return 'Este horário já passou ou está muito próximo. Escolha um horário com pelo menos 30 minutos de antecedência.';
+    }
+    
+    // Erros de horário de funcionamento
+    if (message.includes('Horário fora do expediente')) {
+      return 'Nosso horário de funcionamento é das 08:00 às 20:00.';
+    }
+    
+    if (message.includes('intervalos de 30 minutos')) {
+      return 'Agendamentos devem ser feitos em intervalos de 30 minutos (XX:00 ou XX:30).';
+    }
+    
+    // Erros de data
+    if (message.includes('datas passadas')) {
+      return 'Não é possível agendar para datas passadas.';
+    }
+    
+    if (message.includes('60 dias de antecedência')) {
+      return 'Agendamentos podem ser feitos com até 60 dias de antecedência.';
+    }
+    
+    // Erro genérico
+    return 'Não foi possível realizar o agendamento. Tente novamente.';
+  }, []);
+
+  /**
    * Valida se o horário não é passado (apenas para o dia atual)
    */
   const validateNotPastTime = useCallback((date: Date, time: string): ValidationResult => {
@@ -337,6 +381,7 @@ export const useAppointmentValidation = () => {
     getAvailableTimeSlots,
     checkAppointmentConflict,
     validateNotPastTime,
-    checkBusinessHours
+    checkBusinessHours,
+    extractDatabaseError
   };
 };
