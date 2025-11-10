@@ -20,14 +20,36 @@ const ClientAppointmentList: React.FC = () => {
   } = useClientAppointments();
   
   const filteredAppointments = appointments.filter(appointment => {
+    // Filtro por status
     if (statusFilter !== 'all' && appointment.status !== statusFilter) {
       return false;
     }
     
+    // Filtro por nome do cliente
     const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
     const query = searchQuery.toLowerCase();
     
-    return clientName.includes(query);
+    if (!clientName.includes(query)) {
+      return false;
+    }
+    
+    // Filtro de check-in/check-out
+    const totemSession = appointment.totem_sessions?.[0];
+    const hasCheckIn = totemSession?.check_in_time;
+    const hasCheckOut = totemSession?.check_out_time;
+    
+    // Se tem check-in mas não tem check-out, verificar se o horário já passou
+    if (hasCheckIn && !hasCheckOut) {
+      const appointmentDate = new Date(appointment.data + 'T' + appointment.hora);
+      const now = new Date();
+      
+      // Se o horário já passou, não mostrar (precisa de check-out)
+      if (now > appointmentDate) {
+        return false;
+      }
+    }
+    
+    return true;
   });
   
   const handleEditAppointment = (appointmentId: string) => {
