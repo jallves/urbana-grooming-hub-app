@@ -168,7 +168,12 @@ const TotemConfirmation: React.FC = () => {
                   <div className="flex-1">
                     <p className="text-base md:text-lg text-urbana-gold/70 font-medium mb-2">Data</p>
                     <p className="text-2xl md:text-3xl font-bold text-urbana-light">
-                      {format(new Date(appointment.data), "dd 'de' MMMM", { locale: ptBR })}
+                      {(() => {
+                        // Parsear data manualmente para evitar problemas de timezone
+                        const [year, month, day] = appointment.data.split('-').map(Number);
+                        const localDate = new Date(year, month - 1, day);
+                        return format(localDate, "dd 'de' MMMM", { locale: ptBR });
+                      })()}
                     </p>
                   </div>
                 </div>
