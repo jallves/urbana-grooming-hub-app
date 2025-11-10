@@ -29,6 +29,7 @@ interface PainelAgendamento {
   data: string;
   hora: string;
   status: string;
+  status_totem: string | null;
   created_at: string;
   updated_at: string;
   painel_clientes: {
@@ -53,6 +54,15 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   };
+  totem_sessions?: {
+    check_in_time: string | null;
+    check_out_time: string | null;
+    status: string;
+  }[];
+  vendas?: {
+    id: string;
+    status: string;
+  }[];
 }
 
 interface ClientAppointmentCompactRowProps {
@@ -68,6 +78,32 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   onStatusChange,
   onDelete
 }) => {
+  // Determinar status real do agendamento
+  const getActualStatus = () => {
+    // Verificar checkout pendente
+    const hasCheckIn = appointment.totem_sessions && 
+      appointment.totem_sessions.some((s: any) => s.check_in_time);
+    
+    const hasCheckOut = appointment.totem_sessions && 
+      appointment.totem_sessions.some((s: any) => s.check_out_time);
+    
+    const hasOpenSale = appointment.vendas && 
+      appointment.vendas.some((v: any) => v.status === 'ABERTA');
+    
+    const isInCheckout = appointment.totem_sessions && 
+      appointment.totem_sessions.some((s: any) => s.status === 'checkout');
+
+    // Checkout pendente: tem check-in, não tem check-out, e tem venda aberta ou está em checkout
+    if (hasCheckIn && !hasCheckOut && (hasOpenSale || isInCheckout)) {
+      return 'checkout_pendente';
+    }
+
+    // Retornar status do banco
+    return appointment.status || 'agendado';
+  };
+
+  const actualStatus = getActualStatus();
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'agendado': { 
@@ -79,6 +115,11 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
         label: 'Confirmado', 
         className: 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200',
         icon: '✓'
+      },
+      'checkout_pendente': {
+        label: 'Checkout Pendente',
+        className: 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200',
+        icon: '💳'
       },
       'concluido': { 
         label: 'Concluído', 

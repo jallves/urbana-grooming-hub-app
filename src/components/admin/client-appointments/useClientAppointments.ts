@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface PainelAgendamento {
+export interface PainelAgendamento {
   id: string;
   cliente_id: string;
   barbeiro_id: string;
@@ -11,6 +11,7 @@ interface PainelAgendamento {
   data: string;
   hora: string;
   status: string;
+  status_totem: string | null;
   created_at: string;
   updated_at: string;
   painel_clientes: {
@@ -35,6 +36,15 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   };
+  totem_sessions?: {
+    check_in_time: string | null;
+    check_out_time: string | null;
+    status: string;
+  }[];
+  vendas?: {
+    id: string;
+    status: string;
+  }[];
 }
 
 export const useClientAppointments = () => {
@@ -51,7 +61,9 @@ export const useClientAppointments = () => {
           *,
           painel_clientes!inner(nome, email, whatsapp),
           painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
-          painel_servicos!inner(nome, preco, duracao)
+          painel_servicos!inner(nome, preco, duracao),
+          totem_sessions(check_in_time, check_out_time, status),
+          vendas(id, status)
         `)
         .order('data', { ascending: false })
         .order('hora', { ascending: false });

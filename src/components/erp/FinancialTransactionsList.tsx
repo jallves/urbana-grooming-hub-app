@@ -1,0 +1,158 @@
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ArrowUpCircle, ArrowDownCircle, DollarSign, Loader2 } from 'lucide-react';
+
+interface FinancialRecord {
+  id: string;
+  transaction_number: string;
+  transaction_type: string;
+  category: string;
+  gross_amount: number;
+  discount_amount: number;
+  net_amount: number;
+  status: string;
+  description: string;
+  transaction_date: string;
+  created_at: string;
+}
+
+export const FinancialTransactionsList: React.FC = () => {
+  const { data: transactions, isLoading } = useQuery({
+    queryKey: ['financial-transactions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('financial_records')
+        .select('*')
+        .order('transaction_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return data as FinancialRecord[];
+    },
+    refetchInterval: 10000
+  });
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'revenue':
+        return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
+      case 'expense':
+        return <ArrowDownCircle className="h-4 w-4 text-red-600" />;
+      case 'commission':
+        return <DollarSign className="h-4 w-4 text-blue-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      revenue: 'Receita',
+      expense: 'Despesa',
+      commission: 'Comissão'
+    };
+    return labels[type] || type;
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, { label: string; className: string }> = {
+      completed: { label: 'Concluído', className: 'bg-green-100 text-green-700' },
+      pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700' },
+      canceled: { label: 'Cancelado', className: 'bg-red-100 text-red-700' }
+    };
+
+    const config = variants[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
+
+    return (
+      <Badge variant="outline" className={config.className}>
+        {config.label}
+      </Badge>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white border-gray-200">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-gray-900">
+          Transações Recentes
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Número</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions && transactions.length > 0 ? (
+                transactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="font-mono text-xs">
+                      {transaction.transaction_number}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getTypeIcon(transaction.transaction_type)}
+                        <span className="text-sm">{getTypeLabel(transaction.transaction_type)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate text-sm">
+                      {transaction.description}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">
+                      <span className={
+                        transaction.transaction_type === 'revenue' 
+                          ? 'text-green-600' 
+                          : transaction.transaction_type === 'expense' || transaction.transaction_type === 'commission'
+                          ? 'text-red-600'
+                          : 'text-gray-900'
+                      }>
+                        R$ {transaction.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {getStatusBadge(transaction.status)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                    Nenhuma transação encontrada
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

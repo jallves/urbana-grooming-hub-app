@@ -6,14 +6,13 @@ import {
   TrendingUp, 
   TrendingDown, 
   Calculator,
-  Package,
-  Users,
-  CreditCard,
-  Activity
+  Activity,
+  CreditCard
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { DashboardMetrics } from '@/types/erp';
+import { FinancialTransactionsList } from './FinancialTransactionsList';
 
 const FinancialDashboard: React.FC = () => {
   const { data: metrics, isLoading } = useQuery({
@@ -239,6 +238,11 @@ const FinancialDashboard: React.FC = () => {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Lista de Transações */}
+      <div className="mt-6">
+        <FinancialTransactionsList />
+      </div>
     </div>
   );
 };

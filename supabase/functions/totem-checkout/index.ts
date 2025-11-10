@@ -359,50 +359,99 @@ Deno.serve(async (req) => {
 
     // ==================== ACTION: FINISH ====================
     if (action === 'finish') {
-      console.log('Finalizando checkout - venda:', venda_id, 'session:', session_id)
+      console.log('🎯 Finalizando checkout - venda:', venda_id, 'session:', session_id, 'payment:', payment_id)
 
       if (!venda_id || !session_id || !payment_id) {
-        throw new Error('Dados insuficientes para finalizar')
+        console.error('❌ Dados insuficientes:', { venda_id, session_id, payment_id })
+        throw new Error('Dados insuficientes para finalizar checkout')
       }
 
+      // 🔒 Validar que o pagamento existe e está completo
+      const { data: payment, error: paymentError } = await supabase
+        .from('totem_payments')
+        .select('*')
+        .eq('id', payment_id)
+        .single()
+
+      if (paymentError || !payment) {
+        console.error('❌ Pagamento não encontrado:', payment_id)
+        throw new Error('Pagamento não encontrado. Gere o pagamento antes de finalizar.')
+      }
+
+      if (payment.status !== 'completed' && payment.status !== 'paid') {
+        console.error('❌ Pagamento não está completo:', payment.status)
+        throw new Error('Pagamento ainda não foi confirmado. Complete o pagamento primeiro.')
+      }
+
+      console.log('✅ Pagamento validado:', payment.id, 'Status:', payment.status)
+
       // Buscar venda
-      const { data: venda } = await supabase
+      const { data: venda, error: vendaError } = await supabase
         .from('vendas')
-        .select('*, barbeiro_id')
+        .select('*, barbeiro_id, agendamento_id')
         .eq('id', venda_id)
         .single()
 
-      if (!venda) {
+      if (vendaError || !venda) {
+        console.error('❌ Venda não encontrada:', venda_id)
         throw new Error('Venda não encontrada')
       }
 
+      // Verificar se venda já foi finalizada
+      if (venda.status === 'PAGA' || venda.status === 'FINALIZADA') {
+        console.log('⚠️ Venda já foi finalizada anteriormente')
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Checkout já foi finalizado anteriormente',
+            already_completed: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      console.log('✅ Venda encontrada:', venda.id, 'Agendamento:', venda.agendamento_id)
+
       // Buscar sessão
-      const { data: session } = await supabase
+      const { data: session, error: sessionError } = await supabase
         .from('totem_sessions')
         .select('appointment_id')
         .eq('id', session_id)
         .single()
 
-      if (!session) {
+      if (sessionError || !session) {
+        console.error('❌ Sessão não encontrada:', session_id)
         throw new Error('Sessão não encontrada')
       }
 
+      console.log('✅ Sessão encontrada:', session.id)
+
       // Buscar agendamento
-      const { data: agendamento } = await supabase
+      const { data: agendamento, error: agendError } = await supabase
         .from('painel_agendamentos')
-        .select('barbeiro_id')
-        .eq('id', session.appointment_id)
+        .select('barbeiro_id, status')
+        .eq('id', venda.agendamento_id)
         .single()
 
-      // 1. Atualizar pagamento
+      if (agendError || !agendamento) {
+        console.error('❌ Agendamento não encontrado:', venda.agendamento_id)
+        throw new Error('Agendamento não encontrado')
+      }
+
+      console.log('✅ Agendamento encontrado:', venda.agendamento_id, 'Status atual:', agendamento.status)
+
+      // 1. Atualizar pagamento com confirmação
+      console.log('💳 Confirmando pagamento...')
       await supabase
         .from('totem_payments')
         .update({ 
-          paid_at: new Date().toISOString()
+          paid_at: new Date().toISOString(),
+          status: 'completed'
         })
         .eq('id', payment_id)
 
-      // 2. Atualizar sessão totem
+      // 2. Atualizar sessão totem para completed
+      console.log('🔄 Finalizando sessão...')
       await supabase
         .from('totem_sessions')
         .update({ 
@@ -411,47 +460,65 @@ Deno.serve(async (req) => {
         })
         .eq('id', session_id)
 
-      // 3. Atualizar venda
+      // 3. Atualizar venda para PAGA
+      console.log('💰 Marcando venda como PAGA...')
       await supabase
         .from('vendas')
-        .update({ status: 'PAGA' })
+        .update({ 
+          status: 'PAGA',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', venda_id)
 
       // 4. Atualizar agendamento para CONCLUÍDO (trigger automático cria financeiro)
-      await supabase
+      console.log('✅ Finalizando agendamento...')
+      const { error: updateError } = await supabase
         .from('painel_agendamentos')
         .update({ 
-          status: 'concluido', // Status correto para trigger de financeiro
-          status_totem: 'FINALIZADO'
+          status: 'concluido',
+          status_totem: 'FINALIZADO',
+          updated_at: new Date().toISOString()
         })
-        .eq('id', session.appointment_id)
+        .eq('id', venda.agendamento_id)
       
-      console.log('✅ Agendamento atualizado para CONCLUÍDO')
+      if (updateError) {
+        console.error('❌ Erro ao atualizar agendamento:', updateError)
+        throw new Error('Erro ao finalizar agendamento: ' + updateError.message)
+      }
 
-      // 5-7. Trigger automático já cria comissões e transações financeiras
-      // quando status é atualizado para 'concluido'
-      console.log('✅ Trigger automático criará registros financeiros')
+      console.log('✅ Agendamento atualizado para CONCLUÍDO - Trigger criará registros financeiros')
 
-      // 8. Notificar barbeiro via Realtime
+      // 5. Notificar barbeiro via Realtime
+      console.log('📢 Notificando barbeiro...')
       const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)
       await channel.send({
         type: 'broadcast',
         event: 'FINALIZADO',
         payload: {
           tipo: 'FINALIZADO',
-          agendamento_id: session.appointment_id,
+          agendamento_id: venda.agendamento_id,
           venda_id: venda_id,
           total: venda.total,
           timestamp: new Date().toISOString()
         }
       })
 
-      console.log('Checkout finalizado com sucesso')
+      console.log('✅ Checkout finalizado com sucesso!')
+      console.log('   💰 Venda:', venda.id)
+      console.log('   📅 Agendamento:', venda.agendamento_id)
+      console.log('   💳 Pagamento:', payment.id)
+      console.log('   💵 Total:', venda.total)
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Checkout finalizado com sucesso'
+          message: 'Checkout finalizado com sucesso',
+          data: {
+            venda_id: venda.id,
+            agendamento_id: venda.agendamento_id,
+            total: venda.total,
+            payment_id: payment.id
+          }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )

@@ -16,6 +16,7 @@ interface PainelAgendamento {
   data: string;
   hora: string;
   status: string;
+  status_totem: string | null;
   created_at: string;
   updated_at: string;
   painel_clientes: {
@@ -40,6 +41,15 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   };
+  totem_sessions?: {
+    check_in_time: string | null;
+    check_out_time: string | null;
+    status: string;
+  }[];
+  vendas?: {
+    id: string;
+    status: string;
+  }[];
 }
 
 interface ClientAppointmentCompactTableProps {
