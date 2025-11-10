@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { CheckCircle, Calendar, Clock, User, Scissors, Home, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { TotemButton } from '@/components/totem/TotemButton';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
@@ -14,9 +13,15 @@ const TotemAgendamentoSucesso: React.FC = () => {
   const { appointment, service, barber, client } = location.state || {};
 
   useEffect(() => {
+    document.documentElement.classList.add('totem-mode');
+    
     if (!appointment) {
       navigate('/totem/home');
     }
+    
+    return () => {
+      document.documentElement.classList.remove('totem-mode');
+    };
   }, [appointment, navigate]);
 
   const handleGoHome = () => {
@@ -61,7 +66,7 @@ const TotemAgendamentoSucesso: React.FC = () => {
         <div className="flex justify-center animate-scale-in" style={{ animationDelay: '0.2s' }}>
           <div className="relative">
             <div className="absolute inset-0 bg-green-500/30 rounded-full blur-2xl animate-pulse" />
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(34,197,94,0.5)]">
               <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
             </div>
           </div>
@@ -78,7 +83,7 @@ const TotemAgendamentoSucesso: React.FC = () => {
         </div>
 
         {/* Appointment Details Card */}
-        <Card className="bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/40 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-6 sm:p-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <div className="bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/40 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] p-6 sm:p-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <div className="space-y-6">
             {/* Client Info */}
             <div className="text-center pb-4 border-b border-urbana-gray/20">
@@ -146,36 +151,39 @@ const TotemAgendamentoSucesso: React.FC = () => {
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Important Message */}
-        <Card className="bg-urbana-gold/10 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-4 sm:p-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+        <div className="bg-urbana-gold/10 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-4 sm:p-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <p className="text-center text-sm sm:text-base text-urbana-light">
             📱 <strong>Importante:</strong> Chegue 10 minutos antes do horário agendado.
             <br />
             Em caso de atraso ou cancelamento, avise com antecedência.
           </p>
-        </Card>
+        </div>
 
         {/* Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
-          <Button
+          <TotemButton
             onClick={handleNewAppointment}
-            variant="outline"
-            className="h-14 sm:h-16 text-base sm:text-lg font-semibold gap-2 border-urbana-gold/50 text-urbana-gold hover:bg-urbana-gold/10"
+            variant="secondary"
+            size="xl"
+            className="gap-2"
           >
             <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
             Novo Agendamento
             <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
-          </Button>
+          </TotemButton>
 
-          <Button
+          <TotemButton
             onClick={handleGoHome}
-            className="h-14 sm:h-16 text-base sm:text-lg font-semibold gap-2 bg-urbana-gold hover:bg-urbana-gold-vibrant text-urbana-black"
+            variant="primary"
+            size="xl"
+            className="gap-2"
           >
             <Home className="w-5 h-5 sm:w-6 sm:h-6" />
             Voltar ao Início
-          </Button>
+          </TotemButton>
         </div>
       </div>
     </div>
