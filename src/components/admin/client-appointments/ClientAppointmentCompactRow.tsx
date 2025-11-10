@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle, Calendar, Clock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -127,7 +127,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
         <TableCell className="py-4">
           <div className="flex flex-col gap-1">
             <div className="text-sm font-medium text-gray-900">
-              {format(new Date(appointment.data), 'dd/MM/yyyy')}
+              {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}
             </div>
             <div className="text-xs text-gray-500 flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -196,7 +196,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
         <div className="space-y-2 bg-gray-50 rounded-lg p-3 mb-3">
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-            <span className="font-medium text-gray-900">{format(new Date(appointment.data), 'dd/MM/yyyy')}</span>
+            <span className="font-medium text-gray-900">{format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}</span>
             <Clock className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
             <span className="font-medium text-gray-900">{appointment.hora}</span>
           </div>
