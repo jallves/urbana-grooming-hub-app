@@ -24,17 +24,32 @@ Deno.serve(async (req) => {
       client_id,
       barber_id,
       items, // Array de { type: 'service' | 'product', id, name, quantity, price, discount }
-      payment_method,
+      payment_method: rawPaymentMethod,
       discount_amount = 0,
       notes
     } = await req.json()
+
+    // Mapear payment_method do totem para os valores corretos do ENUM
+    const paymentMethodMap: Record<string, string> = {
+      'credit': 'credit_card',
+      'debit': 'debit_card',
+      'pix': 'pix',
+      'cash': 'cash',
+      'bank_transfer': 'bank_transfer',
+      // Aceitar também os valores corretos diretamente
+      'credit_card': 'credit_card',
+      'debit_card': 'debit_card'
+    }
+
+    const payment_method = paymentMethodMap[rawPaymentMethod] || rawPaymentMethod
 
     console.log('💰 Criando transação financeira:', {
       appointment_id,
       client_id,
       barber_id,
       items: items?.length,
-      payment_method
+      payment_method_original: rawPaymentMethod,
+      payment_method_normalized: payment_method
     })
 
     // Validar dados obrigatórios
@@ -44,6 +59,12 @@ Deno.serve(async (req) => {
 
     if (!payment_method) {
       throw new Error('Forma de pagamento é obrigatória')
+    }
+
+    // Validar que o payment_method é válido
+    const validPaymentMethods = ['cash', 'credit_card', 'debit_card', 'pix', 'bank_transfer']
+    if (!validPaymentMethods.includes(payment_method)) {
+      throw new Error(`Forma de pagamento inválida: ${payment_method}. Use: ${validPaymentMethods.join(', ')}`)
     }
 
     const now = new Date()

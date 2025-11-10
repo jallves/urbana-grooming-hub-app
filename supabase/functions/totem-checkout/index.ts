@@ -516,6 +516,20 @@ Deno.serve(async (req) => {
         total: venda.total
       })
 
+      // Normalizar payment_method para os valores corretos do ENUM
+      const paymentMethodMap: Record<string, string> = {
+        'credit': 'credit_card',
+        'debit': 'debit_card',
+        'pix': 'pix',
+        'cash': 'cash',
+        'bank_transfer': 'bank_transfer',
+        'credit_card': 'credit_card',
+        'debit_card': 'debit_card'
+      }
+      const normalizedPaymentMethod = paymentMethodMap[payment.payment_method] || payment.payment_method
+
+      console.log('🔄 Payment method normalizado:', payment.payment_method, '->', normalizedPaymentMethod)
+
       // 7. Chamar edge function para criar registros financeiros completos
       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
@@ -525,7 +539,7 @@ Deno.serve(async (req) => {
             client_id: venda.cliente_id,
             barber_id: barber_staff_id,
             items: erpItems,
-            payment_method: payment.payment_method,
+            payment_method: normalizedPaymentMethod,
             discount_amount: Number(venda.desconto) || 0,
             notes: `Checkout Totem - Sessão ${session_id}`
           }

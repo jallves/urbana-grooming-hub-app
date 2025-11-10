@@ -85,10 +85,14 @@ const TotemProductPaymentCard: React.FC = () => {
         discount: 0
       }))
 
+      // Normalizar payment method para valores corretos do ENUM
+      const normalizedPaymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card'
+
       console.log('💰 Integrando venda de produtos com ERP Financeiro...', {
         client_id: sale.cliente_id,
         items_count: erpItems.length,
-        payment_method: cardType, // 'debit' ou 'credit'
+        payment_method_original: cardType,
+        payment_method_normalized: normalizedPaymentMethod,
         total: sale.total
       })
 
@@ -99,9 +103,9 @@ const TotemProductPaymentCard: React.FC = () => {
           body: {
             client_id: sale.cliente_id,
             items: erpItems,
-            payment_method: cardType, // 'debit' ou 'credit'
+            payment_method: normalizedPaymentMethod,
             discount_amount: Number(sale.desconto) || 0,
-            notes: `Venda de Produtos - Totem`
+            notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'}`
           }
         }
       )
