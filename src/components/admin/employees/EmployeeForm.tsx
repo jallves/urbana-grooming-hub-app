@@ -90,7 +90,29 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const createEmployee = async (data: EmployeeFormData) => {
     console.log('Creating new employee...');
     
-    // Se for barbeiro, criar na tabela staff primeiro
+    // 🔒 CORREÇÃO: SEMPRE criar em employees primeiro
+    const employeeData = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role: data.role,
+      status: data.status,
+      photo_url: photoUrl,
+      commission_rate: data.commission_rate || 40,
+    };
+
+    console.log('Employee data to insert:', employeeData);
+
+    const { error: employeeError } = await supabase
+      .from('employees')
+      .insert([employeeData]);
+
+    if (employeeError) {
+      console.error('Error inserting employee:', employeeError);
+      throw new Error(employeeError.message);
+    }
+
+    // 🔒 CORREÇÃO: Se for barbeiro, criar TAMBÉM na tabela staff (migração automática)
     if (data.role === 'barber') {
       const staffData = {
         name: data.name,
@@ -102,41 +124,21 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         commission_rate: data.commission_rate || 40,
       };
 
-      console.log('Creating staff member:', staffData);
+      console.log('🔄 Migrando barbeiro para tabela staff:', staffData);
 
       const { error: staffError } = await supabase
         .from('staff')
         .insert([staffData]);
 
       if (staffError) {
-        console.error('Error inserting staff:', staffError);
-        throw new Error(staffError.message);
-      }
-    } else {
-      // Para outros roles, criar diretamente na tabela employees
-      const employeeData = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        role: data.role,
-        status: data.status,
-        photo_url: photoUrl,
-        commission_rate: data.commission_rate || 40,
-      };
-
-      console.log('Employee data to insert:', employeeData);
-
-      const { error } = await supabase
-        .from('employees')
-        .insert([employeeData]);
-
-      if (error) {
-        console.error('Error inserting employee:', error);
-        throw new Error(error.message);
+        console.error('⚠️ Aviso: Erro ao migrar para staff (não crítico):', staffError);
+        // Não bloquear criação se falhar migração para staff
+      } else {
+        console.log('✅ Barbeiro migrado automaticamente para staff');
       }
     }
 
-    console.log('Employee created successfully');
+    console.log('✅ Employee created successfully');
   };
 
   const updateEmployee = async (data: EmployeeFormData) => {
