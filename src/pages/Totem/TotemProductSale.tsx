@@ -6,6 +6,8 @@ import { ArrowLeft, Plus, Minus, ShoppingCart, CreditCard, DollarSign, Package }
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import TotemProductPaymentPixModal from '@/components/totem/TotemProductPaymentPixModal';
+import TotemProductPaymentCardModal from '@/components/totem/TotemProductPaymentCardModal';
 
 interface Product {
   id: string;
@@ -36,6 +38,10 @@ const TotemProductSale: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [paymentType, setPaymentType] = useState<'credit' | 'debit'>('credit');
+  const [currentSaleId, setCurrentSaleId] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -129,7 +135,7 @@ const TotemProductSale: React.FC = () => {
     return cart.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
   };
 
-  const handlePayment = async (method: 'pix' | 'card') => {
+  const handlePayment = async (method: 'pix' | 'credit' | 'debit') => {
     if (cart.length === 0) {
       toast.error('Adicione produtos ao carrinho');
       return;
@@ -145,7 +151,7 @@ const TotemProductSale: React.FC = () => {
         .from('vendas')
         .insert({
           cliente_id: client.id,
-          agendamento_id: null, // Venda direta de produtos
+          agendamento_id: null,
           totem_session_id: null,
           subtotal: calculateTotal(),
           desconto: 0,
@@ -178,45 +184,14 @@ const TotemProductSale: React.FC = () => {
 
       console.log('✅ Itens adicionados à venda');
 
-      // Criar pagamento
-      const { data: payment, error: paymentError } = await supabase
-        .from('totem_payments')
-        .insert({
-          session_id: null, // Venda direta
-          payment_method: method,
-          amount: calculateTotal(),
-          status: 'pending'
-        })
-        .select()
-        .single();
+      setCurrentSaleId(venda.id);
 
-      if (paymentError) throw paymentError;
-
-      console.log('✅ Pagamento criado:', payment.id);
-
-      // Navegar para tela de pagamento
+      // Abrir modal de pagamento
       if (method === 'pix') {
-        navigate('/totem/payment-pix', {
-          state: {
-            venda_id: venda.id,
-            session_id: null,
-            client,
-            total: calculateTotal(),
-            isDirect: true,
-            payment_id: payment.id
-          }
-        });
+        setShowPixModal(true);
       } else {
-        navigate('/totem/payment-card', {
-          state: {
-            venda_id: venda.id,
-            session_id: null,
-            client,
-            total: calculateTotal(),
-            isDirect: true,
-            payment_id: payment.id
-          }
-        });
+        setPaymentType(method);
+        setShowCardModal(true);
       }
 
     } catch (error: any) {
@@ -226,6 +201,43 @@ const TotemProductSale: React.FC = () => {
       });
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (!currentSaleId) return;
+
+    try {
+      // Atualizar status da venda
+      const { error: updateError } = await supabase
+        .from('vendas')
+        .update({ status: 'PAGA' })
+        .eq('id', currentSaleId);
+
+      if (updateError) throw updateError;
+
+      // Diminuir estoque
+      for (const item of cart) {
+        const { error: stockError } = await supabase
+          .rpc('decrease_product_stock', {
+            p_product_id: item.product_id,
+            p_quantity: item.quantidade
+          });
+
+        if (stockError) throw stockError;
+      }
+
+      // Redirecionar para tela de sucesso
+      navigate('/totem/product-payment-success', {
+        state: {
+          sale: { id: currentSaleId, total: calculateTotal() },
+          client
+        }
+      });
+
+    } catch (error) {
+      console.error('Erro ao finalizar pagamento:', error);
+      toast.error('Erro ao finalizar pagamento');
     }
   };
 
@@ -450,35 +462,64 @@ const TotemProductSale: React.FC = () => {
                 Forma de Pagamento
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <button
                   onClick={() => handlePayment('pix')}
                   disabled={processing}
-                  className="group h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
+                  className="group h-40 bg-gradient-to-br from-blue-500/20 to-blue-600/20 active:from-blue-500/30 active:to-blue-600/30 border-2 border-blue-500/50 active:border-blue-500 rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
                 >
                   <div className="flex flex-col items-center justify-center gap-3 h-full">
-                    <DollarSign className="w-14 h-14 text-urbana-gold" />
-                    <span className="text-3xl font-black text-urbana-gold">PIX</span>
+                    <DollarSign className="w-14 h-14 text-blue-400" />
+                    <span className="text-3xl font-black text-blue-400">PIX</span>
                     <span className="text-sm text-urbana-gray-light">Instantâneo</span>
                   </div>
                 </button>
 
-                <button
-                  onClick={() => handlePayment('card')}
-                  disabled={processing}
-                  className="group h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
-                >
-                  <div className="flex flex-col items-center justify-center gap-3 h-full">
-                    <CreditCard className="w-14 h-14 text-urbana-gold" />
-                    <span className="text-3xl font-black text-urbana-gold">CARTÃO</span>
-                    <span className="text-sm text-urbana-gray-light">Crédito/Débito</span>
-                  </div>
-                </button>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => handlePayment('credit')}
+                    disabled={processing}
+                    className="group h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-3 h-full">
+                      <CreditCard className="w-14 h-14 text-urbana-gold" />
+                      <span className="text-3xl font-black text-urbana-gold">CRÉDITO</span>
+                      <span className="text-sm text-urbana-gray-light">Cartão</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => handlePayment('debit')}
+                    disabled={processing}
+                    className="group h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
+                  >
+                    <div className="flex flex-col items-center justify-center gap-3 h-full">
+                      <CreditCard className="w-14 h-14 text-urbana-gold" />
+                      <span className="text-3xl font-black text-urbana-gold">DÉBITO</span>
+                      <span className="text-sm text-urbana-gray-light">Cartão</span>
+                    </div>
+                  </button>
+                </div>
               </div>
             </Card>
           </div>
         )}
       </div>
+
+      <TotemProductPaymentPixModal
+        isOpen={showPixModal}
+        onClose={() => setShowPixModal(false)}
+        onSuccess={handlePaymentSuccess}
+        total={calculateTotal()}
+      />
+
+      <TotemProductPaymentCardModal
+        isOpen={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onSuccess={handlePaymentSuccess}
+        total={calculateTotal()}
+        paymentType={paymentType}
+      />
     </div>
   );
 };
