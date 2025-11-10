@@ -111,17 +111,17 @@ const TotemRating: React.FC = () => {
       <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-brown/40 to-urbana-black/85" />
+          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/70 via-urbana-brown/30 to-urbana-black/60" />
         </div>
 
         {/* Background effects */}
         <div className="absolute inset-0 overflow-hidden z-0">
-          <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/15 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
 
         {/* Glassmorphism Card */}
-        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-black/15 backdrop-blur-2xl border-2 border-urbana-gold/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in rounded-3xl overflow-hidden">
+        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] animate-scale-in rounded-3xl overflow-hidden">
           <div className="relative z-10 text-center space-y-6 sm:space-y-8">
             <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-urbana-gold/20 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-lg">
               <Calendar className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold drop-shadow-lg" />
@@ -171,27 +171,27 @@ const TotemRating: React.FC = () => {
       <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-brown/40 to-urbana-black/85" />
+          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/70 via-urbana-brown/30 to-urbana-black/60" />
         </div>
 
         {/* Background effects */}
         <div className="absolute inset-0 overflow-hidden z-0">
-          <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/15 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
 
         {/* Success Card */}
-        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-black/15 backdrop-blur-2xl border-2 border-emerald-500/40 shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in rounded-3xl overflow-hidden">
+        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/40 shadow-[0_8px_32px_rgba(212,175,55,0.3)] animate-scale-in rounded-3xl overflow-hidden">
           <div className="relative z-10 text-center space-y-4 sm:space-y-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-emerald-500/20 backdrop-blur-sm border-2 border-emerald-500/50 shadow-lg">
-              <Star className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-emerald-400 fill-emerald-400 drop-shadow-lg" />
+            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-urbana-gold/30 backdrop-blur-sm border-2 border-urbana-gold/60 shadow-lg">
+              <Star className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold fill-urbana-gold drop-shadow-lg" />
             </div>
             
             <div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-emerald-400 mb-2 sm:mb-3 drop-shadow-lg">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold mb-2 sm:mb-3 drop-shadow-lg">
                 Avaliação Enviada! ✓
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-urbana-gold/80">
+              <p className="text-base sm:text-lg md:text-xl text-urbana-gold/80 drop-shadow-md">
                 Obrigado pelo seu feedback, {client.nome.split(' ')[0]}!
               </p>
             </div>
@@ -211,13 +211,13 @@ const TotemRating: React.FC = () => {
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-brown/40 to-urbana-black/85" />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/70 via-urbana-brown/30 to-urbana-black/60" />
       </div>
 
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/15 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
       {/* Header */}
@@ -240,7 +240,7 @@ const TotemRating: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 md:space-y-8 bg-black/15 backdrop-blur-xl border-2 border-urbana-gold/20 shadow-2xl animate-scale-in rounded-3xl">
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 md:space-y-8 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] animate-scale-in rounded-3xl">
           {/* Greeting */}
           <div className="text-center space-y-2 sm:space-y-3">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-urbana-gold/20 mb-2 sm:mb-3 border-2 border-urbana-gold/50">
