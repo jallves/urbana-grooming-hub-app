@@ -4,7 +4,9 @@ import { corsHeaders } from '../_shared/cors.ts'
 /**
  * Edge Function: create-financial-transaction
  * Cria transações financeiras completas no sistema ERP
- * Integra serviços + produtos + pagamentos
+ * - Receitas: produtos e serviços separados
+ * - Comissões: 40% apenas para serviços
+ * - Inclui forma de pagamento, data e horário completo
  */
 
 Deno.serve(async (req) => {
@@ -30,7 +32,9 @@ Deno.serve(async (req) => {
     console.log('💰 Criando transação financeira:', {
       appointment_id,
       client_id,
-      items: items?.length
+      barber_id,
+      items: items?.length,
+      payment_method
     })
 
     // Validar dados obrigatórios
@@ -38,186 +42,360 @@ Deno.serve(async (req) => {
       throw new Error('Nenhum item fornecido para a transação')
     }
 
-    // 1. Calcular valores totais
-    const gross_amount = items.reduce((sum: number, item: any) => 
-      sum + (item.quantity * item.price), 0
-    )
-    
-    const total_discount = discount_amount + items.reduce((sum: number, item: any) => 
-      sum + (item.discount || 0), 0
-    )
-    
-    const net_amount = gross_amount - total_discount
+    if (!payment_method) {
+      throw new Error('Forma de pagamento é obrigatória')
+    }
 
-    console.log('📊 Valores calculados:', {
-      gross_amount,
-      total_discount,
-      net_amount
+    const now = new Date()
+    const transactionDate = now.toISOString().split('T')[0]
+    const transactionDateTime = now.toISOString()
+
+    // Separar itens por tipo
+    const serviceItems = items.filter((i: any) => i.type === 'service')
+    const productItems = items.filter((i: any) => i.type === 'product')
+
+    console.log('📦 Itens separados:', {
+      services: serviceItems.length,
+      products: productItems.length
     })
 
-    // 2. Gerar número de transação único
-    const { data: transactionNumber } = await supabase
-      .rpc('generate_transaction_number')
+    const createdRecords = []
 
-    if (!transactionNumber) {
-      throw new Error('Erro ao gerar número de transação')
-    }
+    // ========================================
+    // PROCESSAR SERVIÇOS
+    // ========================================
+    for (const service of serviceItems) {
+      const serviceGrossAmount = service.quantity * service.price
+      const serviceDiscount = service.discount || 0
+      const serviceNetAmount = serviceGrossAmount - serviceDiscount
 
-    // 3. Criar registro financeiro principal
-    const { data: financialRecord, error: recordError } = await supabase
-      .from('financial_records')
-      .insert({
-        transaction_number: transactionNumber,
-        transaction_type: 'revenue',
-        category: 'service',
-        subcategory: items.find((i: any) => i.type === 'product') ? 'service_product' : 'service_only',
-        gross_amount,
-        discount_amount: total_discount,
-        net_amount,
-        status: payment_method === 'pix' ? 'pending' : 'completed',
-        description: `Atendimento ${appointment_id ? `#${appointment_id}` : 'direto'}`,
-        notes,
-        transaction_date: new Date().toISOString().split('T')[0],
-        completed_at: payment_method !== 'pix' ? new Date().toISOString() : null,
-        appointment_id,
-        client_id,
-        barber_id,
-        metadata: {
-          source: appointment_id ? 'appointment' : 'direct_sale',
-          items_count: items.length
-        }
-      })
-      .select()
-      .single()
+      // Gerar número de transação único
+      const { data: transactionNumber } = await supabase
+        .rpc('generate_transaction_number')
 
-    if (recordError) {
-      console.error('❌ Erro ao criar registro financeiro:', recordError)
-      throw new Error('Erro ao criar registro financeiro')
-    }
+      if (!transactionNumber) {
+        throw new Error('Erro ao gerar número de transação')
+      }
 
-    console.log('✅ Registro financeiro criado:', financialRecord.id)
-
-    // 4. Criar itens da transação
-    const transactionItems = items.map((item: any) => ({
-      financial_record_id: financialRecord.id,
-      item_type: item.type,
-      item_id: item.id,
-      item_name: item.name,
-      quantity: item.quantity,
-      unit_price: item.price,
-      discount: item.discount || 0,
-      subtotal: (item.quantity * item.price) - (item.discount || 0)
-    }))
-
-    const { error: itemsError } = await supabase
-      .from('transaction_items')
-      .insert(transactionItems)
-
-    if (itemsError) {
-      console.error('❌ Erro ao criar itens:', itemsError)
-      throw new Error('Erro ao criar itens da transação')
-    }
-
-    console.log('✅ Itens criados:', transactionItems.length)
-
-    // 5. Criar registro de pagamento
-    const { data: paymentNumber } = await supabase
-      .rpc('generate_payment_number')
-
-    if (!paymentNumber) {
-      throw new Error('Erro ao gerar número de pagamento')
-    }
-
-    const { data: paymentRecord, error: paymentError } = await supabase
-      .from('payment_records')
-      .insert({
-        payment_number: paymentNumber,
-        financial_record_id: financialRecord.id,
-        payment_method,
-        amount: net_amount,
-        status: payment_method === 'pix' ? 'pending' : 'paid',
-        payment_date: payment_method !== 'pix' ? new Date().toISOString() : null,
-        confirmed_at: payment_method !== 'pix' ? new Date().toISOString() : null
-      })
-      .select()
-      .single()
-
-    if (paymentError) {
-      console.error('❌ Erro ao criar registro de pagamento:', paymentError)
-      throw new Error('Erro ao criar registro de pagamento')
-    }
-
-    console.log('✅ Pagamento registrado:', paymentRecord.id)
-
-    // 6. Atualizar estoque de produtos (se houver)
-    for (const item of items.filter((i: any) => i.type === 'product')) {
-      await supabase.rpc('update_product_stock', {
-        product_id: item.id,
-        quantity: -item.quantity
-      })
-    }
-
-    // 7. Gerar comissão do barbeiro (se houver)
-    if (barber_id) {
-      const { data: staff } = await supabase
-        .from('staff')
-        .select('commission_rate')
-        .eq('id', barber_id)
+      // 1. Criar registro financeiro de RECEITA para o serviço
+      const { data: serviceRecord, error: serviceError } = await supabase
+        .from('financial_records')
+        .insert({
+          transaction_number: transactionNumber,
+          transaction_type: 'revenue',
+          category: 'services',
+          subcategory: 'service',
+          gross_amount: serviceGrossAmount,
+          discount_amount: serviceDiscount,
+          tax_amount: 0,
+          net_amount: serviceNetAmount,
+          status: 'completed',
+          description: `Serviço: ${service.name}`,
+          notes,
+          transaction_date: transactionDate,
+          completed_at: transactionDateTime,
+          appointment_id,
+          client_id,
+          barber_id,
+          metadata: {
+            source: appointment_id ? 'appointment' : 'direct_sale',
+            service_id: service.id,
+            service_name: service.name,
+            payment_time: transactionDateTime
+          }
+        })
+        .select()
         .single()
 
-      if (staff?.commission_rate) {
-        const commission_amount = net_amount * (staff.commission_rate / 100)
+      if (serviceError) {
+        console.error('❌ Erro ao criar registro de serviço:', serviceError)
+        throw new Error(`Erro ao criar registro de serviço: ${service.name}`)
+      }
 
-        // Criar registro de comissão
-        await supabase
+      console.log('✅ Receita de serviço criada:', {
+        id: serviceRecord.id,
+        service: service.name,
+        amount: serviceNetAmount
+      })
+
+      // 2. Criar item da transação
+      await supabase
+        .from('transaction_items')
+        .insert({
+          financial_record_id: serviceRecord.id,
+          item_type: 'service',
+          item_id: service.id,
+          item_name: service.name,
+          quantity: service.quantity,
+          unit_price: service.price,
+          discount: serviceDiscount,
+          subtotal: serviceNetAmount,
+          metadata: {}
+        })
+
+      // 3. Criar registro de pagamento com forma de pagamento e data/hora
+      const { data: paymentNumber } = await supabase
+        .rpc('generate_payment_number')
+
+      if (!paymentNumber) {
+        throw new Error('Erro ao gerar número de pagamento')
+      }
+
+      const { error: paymentError } = await supabase
+        .from('payment_records')
+        .insert({
+          payment_number: paymentNumber,
+          financial_record_id: serviceRecord.id,
+          payment_method,
+          amount: serviceNetAmount,
+          status: 'paid',
+          payment_date: transactionDateTime,
+          confirmed_at: transactionDateTime,
+          metadata: {
+            payment_datetime: transactionDateTime,
+            payment_time: now.toLocaleTimeString('pt-BR'),
+            payment_date_formatted: now.toLocaleDateString('pt-BR')
+          }
+        })
+
+      if (paymentError) {
+        console.error('❌ Erro ao criar pagamento:', paymentError)
+        throw new Error('Erro ao criar registro de pagamento')
+      }
+
+      console.log('✅ Pagamento registrado:', {
+        method: payment_method,
+        datetime: transactionDateTime
+      })
+
+      // 4. Criar COMISSÃO de 40% para o serviço (Contas a Pagar)
+      if (barber_id) {
+        const commissionRate = 40 // 40% fixo
+        const commissionAmount = serviceNetAmount * (commissionRate / 100)
+
+        const { data: commissionRecord, error: commissionError } = await supabase
           .from('financial_records')
           .insert({
             transaction_number: `COM-${transactionNumber}`,
             transaction_type: 'commission',
-            category: 'barber_commission',
-            gross_amount: commission_amount,
-            net_amount: commission_amount,
-            status: 'pending',
-            description: `Comissão ${staff.commission_rate}% - ${transactionNumber}`,
-            transaction_date: new Date().toISOString().split('T')[0],
+            category: 'staff_payments',
+            subcategory: 'commission',
+            gross_amount: commissionAmount,
+            discount_amount: 0,
+            tax_amount: 0,
+            net_amount: commissionAmount,
+            status: 'pending', // Comissões sempre pendentes
+            description: `Comissão ${commissionRate}% - Serviço: ${service.name}`,
+            notes: `Comissão sobre serviço realizado`,
+            transaction_date: transactionDate,
             appointment_id,
             client_id,
             barber_id,
             metadata: {
-              commission_rate: staff.commission_rate,
-              source_transaction: financialRecord.id
+              commission_rate: commissionRate,
+              source_transaction: serviceRecord.id,
+              service_id: service.id,
+              service_name: service.name,
+              service_amount: serviceNetAmount
             }
           })
+          .select()
+          .single()
 
-        // Criar na tabela de comissões do barbeiro
+        if (commissionError) {
+          console.error('❌ Erro ao criar comissão:', commissionError)
+          throw new Error('Erro ao criar comissão')
+        }
+
+        // Criar também na tabela de comissões do barbeiro
         await supabase
           .from('barber_commissions')
           .insert({
             barber_id,
             appointment_id,
-            amount: commission_amount,
-            commission_rate: staff.commission_rate,
+            amount: commissionAmount,
+            commission_rate: commissionRate,
             status: 'pending',
             appointment_source: appointment_id ? 'painel' : 'totem'
           })
 
-        console.log('✅ Comissão gerada:', commission_amount)
+        console.log('✅ Comissão criada:', {
+          id: commissionRecord.id,
+          rate: commissionRate,
+          amount: commissionAmount,
+          service: service.name
+        })
       }
+
+      createdRecords.push({
+        type: 'service',
+        name: service.name,
+        revenue_id: serviceRecord.id,
+        amount: serviceNetAmount
+      })
     }
+
+    // ========================================
+    // PROCESSAR PRODUTOS
+    // ========================================
+    for (const product of productItems) {
+      const productGrossAmount = product.quantity * product.price
+      const productDiscount = product.discount || 0
+      const productNetAmount = productGrossAmount - productDiscount
+
+      // Gerar número de transação único
+      const { data: transactionNumber } = await supabase
+        .rpc('generate_transaction_number')
+
+      if (!transactionNumber) {
+        throw new Error('Erro ao gerar número de transação')
+      }
+
+      // 1. Criar registro financeiro de RECEITA para o produto (APENAS CONTAS A RECEBER)
+      const { data: productRecord, error: productError } = await supabase
+        .from('financial_records')
+        .insert({
+          transaction_number: transactionNumber,
+          transaction_type: 'revenue',
+          category: 'products',
+          subcategory: 'product',
+          gross_amount: productGrossAmount,
+          discount_amount: productDiscount,
+          tax_amount: 0,
+          net_amount: productNetAmount,
+          status: 'completed',
+          description: `Produto: ${product.name}`,
+          notes,
+          transaction_date: transactionDate,
+          completed_at: transactionDateTime,
+          appointment_id,
+          client_id,
+          barber_id: null, // Produtos não têm comissão, então não vincula barbeiro
+          metadata: {
+            source: appointment_id ? 'appointment' : 'direct_sale',
+            product_id: product.id,
+            product_name: product.name,
+            payment_time: transactionDateTime
+          }
+        })
+        .select()
+        .single()
+
+      if (productError) {
+        console.error('❌ Erro ao criar registro de produto:', productError)
+        throw new Error(`Erro ao criar registro de produto: ${product.name}`)
+      }
+
+      console.log('✅ Receita de produto criada:', {
+        id: productRecord.id,
+        product: product.name,
+        amount: productNetAmount
+      })
+
+      // 2. Criar item da transação
+      await supabase
+        .from('transaction_items')
+        .insert({
+          financial_record_id: productRecord.id,
+          item_type: 'product',
+          item_id: product.id,
+          item_name: product.name,
+          quantity: product.quantity,
+          unit_price: product.price,
+          discount: productDiscount,
+          subtotal: productNetAmount,
+          metadata: {}
+        })
+
+      // 3. Criar registro de pagamento com forma de pagamento e data/hora
+      const { data: paymentNumber } = await supabase
+        .rpc('generate_payment_number')
+
+      if (!paymentNumber) {
+        throw new Error('Erro ao gerar número de pagamento')
+      }
+
+      const { error: paymentError } = await supabase
+        .from('payment_records')
+        .insert({
+          payment_number: paymentNumber,
+          financial_record_id: productRecord.id,
+          payment_method,
+          amount: productNetAmount,
+          status: 'paid',
+          payment_date: transactionDateTime,
+          confirmed_at: transactionDateTime,
+          metadata: {
+            payment_datetime: transactionDateTime,
+            payment_time: now.toLocaleTimeString('pt-BR'),
+            payment_date_formatted: now.toLocaleDateString('pt-BR')
+          }
+        })
+
+      if (paymentError) {
+        console.error('❌ Erro ao criar pagamento de produto:', paymentError)
+        throw new Error('Erro ao criar registro de pagamento do produto')
+      }
+
+      console.log('✅ Pagamento de produto registrado:', {
+        method: payment_method,
+        datetime: transactionDateTime
+      })
+
+      // 4. Atualizar estoque do produto
+      await supabase.rpc('update_product_stock', {
+        product_id: product.id,
+        quantity: -product.quantity
+      })
+
+      console.log('✅ Estoque atualizado:', {
+        product: product.name,
+        quantity: -product.quantity
+      })
+
+      createdRecords.push({
+        type: 'product',
+        name: product.name,
+        revenue_id: productRecord.id,
+        amount: productNetAmount
+      })
+    }
+
+    // Calcular totais
+    const totalRevenue = createdRecords.reduce((sum, r) => sum + r.amount, 0)
+    const totalCommissions = serviceItems.length > 0 && barber_id 
+      ? serviceItems.reduce((sum: number, s: any) => {
+          const netAmount = (s.quantity * s.price) - (s.discount || 0)
+          return sum + (netAmount * 0.4)
+        }, 0)
+      : 0
+
+    console.log('✅ Transação financeira concluída:', {
+      total_items: createdRecords.length,
+      services: serviceItems.length,
+      products: productItems.length,
+      total_revenue: totalRevenue,
+      total_commissions: totalCommissions,
+      payment_method,
+      datetime: transactionDateTime
+    })
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Transação financeira criada com sucesso',
         data: {
-          financial_record_id: financialRecord.id,
-          transaction_number: transactionNumber,
-          payment_number: paymentNumber,
-          gross_amount,
-          discount_amount: total_discount,
-          net_amount,
-          status: financialRecord.status,
-          payment_status: paymentRecord.status
+          records: createdRecords,
+          summary: {
+            total_items: createdRecords.length,
+            services_count: serviceItems.length,
+            products_count: productItems.length,
+            total_revenue: totalRevenue,
+            total_commissions: totalCommissions,
+            payment_method,
+            transaction_datetime: transactionDateTime,
+            transaction_date: transactionDate
+          }
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
