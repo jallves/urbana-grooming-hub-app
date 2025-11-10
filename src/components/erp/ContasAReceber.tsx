@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, Loader2, DollarSign, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, Pencil, Trash2, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import FinancialRecordForm from './FinancialRecordForm';
 import {
@@ -20,6 +20,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+interface PaymentRecord {
+  payment_method: string;
+  payment_date?: string;
+}
 
 interface FinancialRecord {
   id: string;
@@ -35,6 +40,7 @@ interface FinancialRecord {
   transaction_date: string;
   transaction_type: string;
   created_at: string;
+  payment_records: PaymentRecord[];
   metadata?: {
     service_name?: string;
     product_name?: string;
@@ -57,7 +63,10 @@ export const ContasAReceber: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('financial_records')
-        .select('*')
+        .select(`
+          *,
+          payment_records(payment_method, payment_date)
+        `)
         .eq('transaction_type', 'revenue')
         .order('transaction_date', { ascending: false })
         .order('created_at', { ascending: false })
@@ -226,6 +235,20 @@ export const ContasAReceber: React.FC = () => {
     );
   };
 
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      cash: 'Dinheiro',
+      debit: 'Cartão Débito',
+      credit: 'Cartão Crédito',
+      pix: 'PIX',
+      transfer: 'Transferência',
+      debit_card: 'Cartão Débito',
+      credit_card: 'Cartão Crédito',
+      bank_transfer: 'Transferência'
+    };
+    return labels[method] || method;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -305,6 +328,7 @@ export const ContasAReceber: React.FC = () => {
                     <TableHead>Número</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Categoria</TableHead>
+                    <TableHead>Pagamento</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead className="text-right">Valor Bruto</TableHead>
                     <TableHead className="text-right">Desconto</TableHead>
@@ -350,6 +374,16 @@ export const ContasAReceber: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
+                          {record.payment_records && record.payment_records.length > 0 ? (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                              <CreditCard className="h-3 w-3 mr-1" />
+                              {getPaymentMethodLabel(record.payment_records[0].payment_method)}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
                           {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-right text-sm text-gray-600">
@@ -390,7 +424,7 @@ export const ContasAReceber: React.FC = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                      <TableCell colSpan={10} className="text-center text-gray-500 py-8">
                         Nenhuma receita encontrada
                       </TableCell>
                     </TableRow>
