@@ -127,6 +127,12 @@ const TotemDataHora: React.FC = () => {
   const loadTimeSlots = async () => {
     if (!selectedDate || !service) return;
     
+    console.log('🕐 Carregando slots para:', {
+      date: format(selectedDate, 'yyyy-MM-dd HH:mm:ss'),
+      now: new Date().toISOString(),
+      isToday: format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+    });
+    
     setLoading(true);
     try {
       const slots = await getAvailableTimeSlots(
@@ -134,6 +140,10 @@ const TotemDataHora: React.FC = () => {
         selectedDate,
         service.duracao || 60
       );
+
+      console.log('📊 Total de slots recebidos:', slots.length);
+      console.log('📊 Slots disponíveis:', slots.filter(s => s.available).length);
+      console.log('📊 Slots ocupados:', slots.filter(s => !s.available).length);
 
       // Filtrar apenas horários disponíveis
       const availableSlots: TimeSlot[] = slots
@@ -144,6 +154,13 @@ const TotemDataHora: React.FC = () => {
         }));
       
       console.log('✅ Horários disponíveis carregados:', availableSlots.length);
+      
+      if (availableSlots.length === 0) {
+        toast.info('Não há horários disponíveis para esta data', {
+          description: 'Selecione outra data ou tente mais tarde.'
+        });
+      }
+      
       setTimeSlots(availableSlots);
     } catch (error) {
       console.error('Erro ao carregar horários:', error);

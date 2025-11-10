@@ -346,6 +346,13 @@ export const useAppointmentValidation = () => {
             slotTime.setHours(hour, minute, 0, 0);
             const minTime = addMinutes(now, 30);
             
+            console.log('⏰ Verificando horário:', {
+              slot: timeString,
+              slotTime: slotTime.toISOString(),
+              minTime: minTime.toISOString(),
+              isPast: isBefore(slotTime, minTime)
+            });
+            
             if (isBefore(slotTime, minTime)) {
               available = false;
               reason = 'Horário já passou';
