@@ -7,6 +7,7 @@ import { Star, Send, Home, Sparkles, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemRating: React.FC = () => {
   const navigate = useNavigate();
@@ -111,7 +112,12 @@ const TotemRating: React.FC = () => {
       <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/70 via-urbana-brown/30 to-urbana-black/60" />
+          <img 
+            src={barbershopBg} 
+            alt="Barbearia" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-urbana-black/60" />
         </div>
 
         {/* Background effects */}
@@ -171,7 +177,12 @@ const TotemRating: React.FC = () => {
       <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/70 via-urbana-brown/30 to-urbana-black/60" />
+          <img 
+            src={barbershopBg} 
+            alt="Barbearia" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-urbana-black/60" />
         </div>
 
         {/* Background effects */}
@@ -211,7 +222,12 @@ const TotemRating: React.FC = () => {
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/70 via-urbana-brown/30 to-urbana-black/60" />
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-urbana-black/60" />
       </div>
 
       {/* Animated background */}
