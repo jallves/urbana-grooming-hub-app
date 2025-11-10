@@ -11,7 +11,15 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      db: {
+        schema: 'public'
+      }
+    })
 
     const { agendamento_id, qr_token, modo, table_source = 'painel' } = await req.json()
 
@@ -56,11 +64,36 @@ Deno.serve(async (req) => {
       barbeiro_id = agendamento.barbeiro_id
       cliente_id = agendamento.cliente_id
       
-      // Atualizar status para CHEGOU
-      await supabase
-        .from('painel_agendamentos')
-        .update({ status_totem: 'CHEGOU' })
-        .eq('id', agendamento_id)
+      // Atualizar status para CHEGOU usando RPC para bypass RLS
+      try {
+        // Tentativa 1: Update direto
+        const { data: updateData, error: updateError } = await supabase
+          .from('painel_agendamentos')
+          .update({ status_totem: 'CHEGOU', status: 'confirmado' })
+          .eq('id', agendamento_id)
+          .select()
+        
+        if (updateError) {
+          console.error('❌ Erro ao atualizar status_totem (tentativa 1):', updateError)
+          
+          // Tentativa 2: Usar rpc direto
+          const { error: rpcError } = await supabase.rpc('update_agendamento_status_totem', {
+            p_agendamento_id: agendamento_id,
+            p_status_totem: 'CHEGOU',
+            p_status: 'confirmado'
+          })
+          
+          if (rpcError) {
+            console.error('❌ Erro ao atualizar status via RPC:', rpcError)
+          } else {
+            console.log('✅ Status atualizado via RPC')
+          }
+        } else {
+          console.log('✅ Status do agendamento atualizado para CHEGOU:', updateData)
+        }
+      } catch (updateErr) {
+        console.error('❌ Exceção ao atualizar status:', updateErr)
+      }
     } else {
       // Tentar em appointments (painel cliente)
       console.log('⚠️ Não encontrado em painel_agendamentos, buscando em appointments...')

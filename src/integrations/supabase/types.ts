@@ -4037,6 +4037,14 @@ export type Database = {
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_staff_member: { Args: { user_email: string }; Returns: boolean }
+      update_agendamento_status_totem: {
+        Args: {
+          p_agendamento_id: string
+          p_status: string
+          p_status_totem: string
+        }
+        Returns: undefined
+      }
       update_painel_cliente: {
         Args: {
           cliente_id: string
