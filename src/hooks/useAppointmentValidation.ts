@@ -288,13 +288,18 @@ export const useAppointmentValidation = () => {
       const dateStr = format(date, 'yyyy-MM-dd');
       const today = format(new Date(), 'yyyy-MM-dd');
       const isToday = dateStr === today;
+      
+      // Usar horário local do Brasil (não UTC)
       const now = new Date();
-
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
       console.log('🔍 getAvailableTimeSlots:', {
         dateStr,
         today,
         isToday,
-        currentTime: format(now, 'HH:mm:ss'),
+        currentTime: `${currentHour}:${currentMinute}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         barberId,
         serviceDuration
       });
@@ -351,21 +356,24 @@ export const useAppointmentValidation = () => {
 
           // Se for hoje, verificar se já passou (com buffer de 30 min)
           if (isToday) {
-            const slotDateTime = new Date(date);
-            slotDateTime.setHours(hour, minute, 0, 0);
+            // Comparar diretamente hora e minuto (timezone local)
+            const slotHour = hour;
+            const slotMinute = minute;
             
-            // Buffer de 30 minutos
-            const minDateTime = addMinutes(now, 30);
+            // Calcular tempo mínimo necessário (agora + 30 min)
+            const minTotalMinutes = currentHour * 60 + currentMinute + 30;
+            const slotTotalMinutes = slotHour * 60 + slotMinute;
             
-            if (isBefore(slotDateTime, minDateTime)) {
+            if (slotTotalMinutes < minTotalMinutes) {
               available = false;
-              reason = 'Horário já passou';
+              reason = 'Horário já passou ou < 30min';
               
               console.log('⏰ Horário filtrado:', {
                 time: timeString,
-                slotDateTime: format(slotDateTime, 'HH:mm:ss'),
-                minDateTime: format(minDateTime, 'HH:mm:ss'),
-                reason: 'já passou ou < 30min'
+                slotMinutes: slotTotalMinutes,
+                minMinutes: minTotalMinutes,
+                currentTime: `${currentHour}:${currentMinute}`,
+                reason
               });
             }
           }
