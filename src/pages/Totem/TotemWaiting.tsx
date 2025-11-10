@@ -93,7 +93,7 @@ const TotemWaiting: React.FC = () => {
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-brown/40 to-urbana-black/85" />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/60 via-urbana-brown/30 to-urbana-black/50" />
       </div>
 
       {/* Premium background effects */}
@@ -127,7 +127,7 @@ const TotemWaiting: React.FC = () => {
         {/* Left Column: Queue Info */}
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
           {/* Queue Position Card */}
-          <Card className="bg-black/15 backdrop-blur-xl border-2 border-urbana-gold/20 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-urbana-gold/40 transition-all duration-300">
+          <Card className="bg-white/5 backdrop-blur-xl border-2 border-urbana-gold/30 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:border-urbana-gold/50 transition-all duration-300">
             <div className="text-center space-y-2 sm:space-y-3 md:space-y-4">
               <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-urbana-gold/20 border-2 border-urbana-gold/50 backdrop-blur-sm">
                 <TrendingUp className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold drop-shadow-lg" />
@@ -149,7 +149,7 @@ const TotemWaiting: React.FC = () => {
           </Card>
 
           {/* Estimated Time Card */}
-          <Card className="bg-black/15 backdrop-blur-xl border-2 border-urbana-gold/20 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-urbana-gold/40 transition-all duration-300">
+          <Card className="bg-white/5 backdrop-blur-xl border-2 border-urbana-gold/30 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:border-urbana-gold/50 transition-all duration-300">
             <div className="flex items-center gap-3 sm:gap-4 md:gap-6">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-urbana-gold/15 backdrop-blur-sm flex items-center justify-center border border-urbana-gold/30">
@@ -166,7 +166,7 @@ const TotemWaiting: React.FC = () => {
           </Card>
 
           {/* Service Info Card */}
-          <Card className="bg-black/15 backdrop-blur-xl border-2 border-urbana-gold/20 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-urbana-gold/40 transition-all duration-300">
+          <Card className="bg-white/5 backdrop-blur-xl border-2 border-urbana-gold/30 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:border-urbana-gold/50 transition-all duration-300">
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center gap-3 sm:gap-4">
                 <Scissors className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-urbana-gold flex-shrink-0 drop-shadow-lg" />
@@ -196,7 +196,7 @@ const TotemWaiting: React.FC = () => {
         {/* Right Column: Content */}
         <div className="space-y-3 sm:space-y-4 md:space-y-6">
           {/* Tips Card */}
-          <Card className="bg-black/15 backdrop-blur-xl border-2 border-urbana-gold/20 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-urbana-gold/40 transition-all duration-300">
+          <Card className="bg-white/5 backdrop-blur-xl border-2 border-urbana-gold/30 p-4 sm:p-6 md:p-8 shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:border-urbana-gold/50 transition-all duration-300">
             <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-gold mb-3 sm:mb-4 drop-shadow-lg">
               Dicas de Cuidados
             </h3>
@@ -224,7 +224,7 @@ const TotemWaiting: React.FC = () => {
 
       {/* Footer */}
       <div className="relative z-10 mt-3 sm:mt-4 md:mt-6 text-center pb-2 sm:pb-3">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-black/15 backdrop-blur-md border border-urbana-gold/20 rounded-full shadow-lg">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md border border-urbana-gold/30 rounded-full shadow-lg">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <p className="text-urbana-gold/70 text-sm sm:text-base md:text-lg font-light">
             Você será notificado quando for sua vez
