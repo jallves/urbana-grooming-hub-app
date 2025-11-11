@@ -43,41 +43,56 @@ const TotemPaymentPix: React.FC = () => {
       return;
     }
 
-    // Se já tem payment_id (venda direta), usar ele
-    if (payment_id) {
-      console.log('✅ Payment ID já existe (venda direta):', payment_id);
-      setPaymentId(payment_id);
-    }
-
-    // Iniciar processos
-    generatePixCode();
-    startTimer();
-    
-    console.log('⏱️ Iniciando timer de simulação (10 segundos)');
-    setIsSimulationActive(true);
-    
-    // ⏱️ Timer de simulação: aprovar pagamento após 10 segundos
-    let countdown = 10;
-    const simulationInterval = setInterval(() => {
-      countdown--;
-      console.log(`⏱️ Simulação: ${countdown}s restantes`);
-      setSimulationTimer(countdown);
-      
-      if (countdown <= 0) {
-        clearInterval(simulationInterval);
-        console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
-        setIsSimulationActive(false);
-        toast.info('Modo Teste', {
-          description: '✅ Pagamento PIX aprovado automaticamente',
-          duration: 3000
-        });
-        handlePaymentSuccess();
+    // Iniciar processos de forma assíncrona
+    const initializePayment = async () => {
+      // Se já tem payment_id (venda direta), usar ele
+      if (payment_id) {
+        console.log('✅ Payment ID já existe (venda direta):', payment_id);
+        setPaymentId(payment_id);
       }
-    }, 1000);
+
+      // Gerar código PIX e aguardar conclusão
+      await generatePixCode();
+      
+      // Iniciar timer de expiração
+      startTimer();
+      
+      console.log('⏱️ Iniciando timer de simulação (10 segundos)');
+      setIsSimulationActive(true);
+      
+      // ⏱️ Timer de simulação: aprovar pagamento após 10 segundos
+      let countdown = 10;
+      const simulationInterval = setInterval(() => {
+        countdown--;
+        console.log(`⏱️ Simulação: ${countdown}s restantes`);
+        setSimulationTimer(countdown);
+        
+        if (countdown <= 0) {
+          clearInterval(simulationInterval);
+          console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
+          setIsSimulationActive(false);
+          toast.info('Modo Teste', {
+            description: '✅ Pagamento PIX aprovado automaticamente',
+            duration: 3000
+          });
+          handlePaymentSuccess();
+        }
+      }, 1000);
+
+      return simulationInterval;
+    };
+
+    let cleanupInterval: NodeJS.Timeout | null = null;
+    
+    initializePayment().then(interval => {
+      cleanupInterval = interval;
+    });
 
     return () => {
       console.log('🧹 Limpando timer de simulação');
-      clearInterval(simulationInterval);
+      if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+      }
     };
   }, []);
 
