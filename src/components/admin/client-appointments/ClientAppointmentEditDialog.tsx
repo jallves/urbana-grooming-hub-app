@@ -55,11 +55,23 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       if (error) throw error;
 
       setAppointment(data);
+      
+      // Normalizar hora para formato HH:mm (remover segundos se existirem)
+      const horaNormalizada = data.hora?.substring(0, 5) || '';
+      
       setFormData({
         data: data.data,
-        hora: data.hora,
+        hora: horaNormalizada,
         barbeiro_id: data.barbeiro_id,
         servico_id: data.servico_id
+      });
+      
+      console.log('📋 Agendamento carregado:', {
+        id: appointmentId,
+        data: data.data,
+        hora: horaNormalizada,
+        barbeiro: data.painel_barbeiros?.nome,
+        servico: data.painel_servicos?.nome
       });
     } catch (error) {
       console.error('Error loading appointment:', error);
@@ -100,8 +112,23 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     setLoading(true);
 
     try {
-      const success = await onUpdate(appointmentId, formData);
+      // Garantir que a hora tenha o formato correto (HH:mm:ss)
+      const horaFormatada = formData.hora.includes(':') && formData.hora.split(':').length === 2 
+        ? `${formData.hora}:00` 
+        : formData.hora;
+
+      const updateData = {
+        data: formData.data,
+        hora: horaFormatada,
+        barbeiro_id: formData.barbeiro_id,
+        servico_id: formData.servico_id
+      };
+
+      console.log('📝 Atualizando agendamento:', appointmentId, updateData);
+      
+      const success = await onUpdate(appointmentId, updateData);
       if (success) {
+        toast.success('✅ Agendamento atualizado com sucesso!');
         onClose();
       }
     } catch (error) {

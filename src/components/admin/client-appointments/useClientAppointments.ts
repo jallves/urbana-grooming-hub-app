@@ -219,6 +219,8 @@ export const useClientAppointments = () => {
   // Atualiza agendamento (data, hora, barbeiro, serviço)
   const handleUpdateAppointment = useCallback(async (appointmentId: string, data: any) => {
     try {
+      console.log('📝 [Update] Atualizando agendamento:', appointmentId, data);
+      
       const { error } = await supabase
         .from('painel_agendamentos')
         .update({
@@ -227,11 +229,17 @@ export const useClientAppointments = () => {
         })
         .eq('id', appointmentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [Update] Erro ao atualizar:', error);
+        throw error;
+      }
 
-      // Atualiza lista após edição
-      fetchAppointments();
-      toast.success('Agendamento atualizado com sucesso!');
+      console.log('✅ [Update] Agendamento atualizado com sucesso');
+      
+      // Atualiza lista após edição (o real-time também vai atualizar, mas fazemos aqui para feedback imediato)
+      await fetchAppointments();
+      
+      toast.success('✅ Agendamento atualizado com sucesso!');
       return true;
     } catch (error) {
       console.error('Erro ao atualizar agendamento:', error);

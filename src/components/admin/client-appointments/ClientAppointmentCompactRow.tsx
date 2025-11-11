@@ -204,7 +204,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
         </TableCell>
 
         <TableCell className="py-4">
-          {getStatusBadge(appointment.status)}
+          {getStatusBadge(actualStatus)}
         </TableCell>
 
         <TableCell className="text-right py-4">
@@ -231,7 +231,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
               <p className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</p>
             </div>
           </div>
-          {getStatusBadge(appointment.status)}
+          {getStatusBadge(actualStatus)}
         </div>
 
         <div className="space-y-2 bg-gray-50 rounded-lg p-3 mb-3">
