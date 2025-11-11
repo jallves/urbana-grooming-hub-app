@@ -22,19 +22,37 @@ const TotemPaymentPix: React.FC = () => {
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
+    console.log('🎬 TotemPaymentPix montado - Estado recebido:', {
+      venda_id,
+      total,
+      session_id,
+      payment_id,
+      isDirect,
+      hasAppointment: !!appointment,
+      hasClient: !!client,
+      productsCount: selectedProducts?.length || 0
+    });
+
     if (!venda_id || !total) {
-      navigate('/totem');
+      console.error('❌ Dados incompletos - venda_id ou total ausente');
+      toast.error('Erro', {
+        description: 'Dados de pagamento incompletos'
+      });
+      navigate('/totem/home');
       return;
     }
 
     // Se já tem payment_id (venda direta), usar ele
     if (payment_id) {
+      console.log('✅ Payment ID já existe (venda direta):', payment_id);
       setPaymentId(payment_id);
     }
 
     // Iniciar processos
     generatePixCode();
     startTimer();
+    
+    console.log('⏱️ Iniciando timer de simulação (10 segundos)');
     
     // ⏱️ Timer de simulação: aprovar pagamento após 10 segundos
     const simulationInterval = setInterval(() => {
@@ -43,16 +61,21 @@ const TotemPaymentPix: React.FC = () => {
           clearInterval(simulationInterval);
           console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
           toast.info('Modo Teste', {
-            description: '✅ Pagamento PIX aprovado automaticamente'
+            description: '✅ Pagamento PIX aprovado automaticamente',
+            duration: 3000
           });
           handlePaymentSuccess();
           return 0;
         }
+        console.log(`⏱️ Simulação: ${prev - 1}s restantes`);
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(simulationInterval);
+    return () => {
+      console.log('🧹 Limpando timer de simulação');
+      clearInterval(simulationInterval);
+    };
   }, []);
 
   const generatePixCode = async () => {
@@ -111,7 +134,25 @@ const TotemPaymentPix: React.FC = () => {
 
   const handlePaymentSuccess = async () => {
     try {
-      console.log('✅ Pagamento PIX confirmado! Finalizando venda...');
+      console.log('✅ Pagamento PIX confirmado! Finalizando venda...', {
+        paymentId,
+        venda_id,
+        session_id,
+        isDirect,
+        total
+      });
+
+      // Verificar se tem payment_id antes de atualizar
+      if (!paymentId && !payment_id) {
+        console.error('❌ Nenhum payment_id disponível');
+        toast.error('Erro no pagamento', {
+          description: 'ID de pagamento não encontrado'
+        });
+        return;
+      }
+
+      const finalPaymentId = paymentId || payment_id;
+      console.log('💳 Usando payment_id:', finalPaymentId);
 
       // Atualizar status do pagamento
       const { error: updateError } = await supabase
@@ -120,76 +161,101 @@ const TotemPaymentPix: React.FC = () => {
           status: 'completed',
           paid_at: new Date().toISOString()
         })
-        .eq('id', paymentId);
+        .eq('id', finalPaymentId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('❌ Erro ao atualizar pagamento:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ Status do pagamento atualizado para completed');
 
       // Se é venda direta de produtos, chamar edge function específica
       if (isDirect) {
         console.log('📦 Finalizando venda direta de produtos');
-        const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
+        const { data: directSaleData, error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
           body: {
             action: 'finish',
             venda_id: venda_id,
-            payment_id: paymentId
+            payment_id: finalPaymentId
           }
         });
 
         if (finishError) {
-          console.error('Erro ao finalizar venda direta:', finishError);
+          console.error('❌ Erro ao finalizar venda direta:', finishError);
           toast.error('Erro ao finalizar', {
             description: 'Por favor, informe a recepção'
           });
+        } else {
+          console.log('✅ Venda direta finalizada:', directSaleData);
         }
       } else {
         // Venda de serviço (checkout normal)
+        console.log('💈 Finalizando checkout de serviço');
+        
         // 🔒 Produtos já foram salvos no TotemCheckout, apenas atualizar estoque
         if (selectedProducts && selectedProducts.length > 0) {
-          console.log('📦 Atualizando estoque dos produtos');
+          console.log('📦 Atualizando estoque de', selectedProducts.length, 'produtos');
           
           for (const product of selectedProducts) {
+            console.log('📦 Atualizando estoque - Produto:', product.product_id, 'Quantidade:', product.quantidade);
             const { error: stockError } = await supabase.rpc('decrease_product_stock', {
               p_product_id: product.product_id,
               p_quantity: product.quantidade
             });
 
             if (stockError) {
-              console.error('Erro ao atualizar estoque:', stockError);
+              console.error('❌ Erro ao atualizar estoque:', stockError);
               // Continua mesmo com erro de estoque
+            } else {
+              console.log('✅ Estoque atualizado para produto:', product.product_id);
             }
           }
         }
 
         // 🔒 Chamar edge function para finalizar checkout de serviço
-        const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
+        console.log('🔄 Chamando totem-checkout para finalizar');
+        const { data: checkoutData, error: finishError } = await supabase.functions.invoke('totem-checkout', {
           body: {
             action: 'finish',
             venda_id: venda_id,
             session_id: session_id,
-            payment_id: paymentId
+            payment_id: finalPaymentId
           }
         });
 
         if (finishError) {
-          console.error('Erro ao finalizar checkout:', finishError);
+          console.error('❌ Erro ao finalizar checkout:', finishError);
           toast.error('Erro ao finalizar', {
             description: 'Por favor, informe a recepção'
           });
+        } else {
+          console.log('✅ Checkout finalizado:', checkoutData);
         }
       }
 
-      toast.success('Pagamento confirmado!');
+      console.log('✅ Todos os processos finalizados! Navegando para tela de sucesso');
+      toast.success('Pagamento confirmado!', {
+        description: 'Obrigado pela preferência!',
+        duration: 3000
+      });
+      
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
           client,
           total,
           isDirect
-        } 
+        },
+        replace: true
       });
-    } catch (error) {
-      console.error('Erro ao confirmar pagamento:', error);
-      toast.error('Erro ao processar pagamento');
+    } catch (error: any) {
+      console.error('❌ Erro ao confirmar pagamento:', error);
+      toast.error('Erro ao processar pagamento', {
+        description: error.message || 'Por favor, informe a recepção'
+      });
+      
+      // Não navegar de volta em caso de erro, deixar o usuário ver a mensagem
     }
   };
 
