@@ -53,6 +53,7 @@ import TotemServico from './pages/Totem/TotemServico';
 import TotemBarbeiro from './pages/Totem/TotemBarbeiro';
 import TotemDataHora from './pages/Totem/TotemDataHora';
 import TotemCheckoutSearch from './pages/Totem/TotemCheckoutSearch';
+import PendingCheckouts from './pages/Admin/PendingCheckouts';
 import TotemAppointmentsList from './pages/Totem/TotemAppointmentsList';
 import TotemConfirmation from './pages/Totem/TotemConfirmation';
 import TotemCheckInSuccess from './pages/Totem/TotemCheckInSuccess';
@@ -196,6 +197,11 @@ function App() {
                   <Route path="/admin/agendamentos-clientes" element={
                     <AdminRoute>
                       <AdminClientAppointments />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/checkouts-pendentes" element={
+                    <AdminRoute>
+                      <PendingCheckouts />
                     </AdminRoute>
                   } />
                   <Route path="/admin/produtos-totem" element={

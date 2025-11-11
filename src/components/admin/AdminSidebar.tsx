@@ -13,6 +13,7 @@ import {
   X,
   Star,
   Globe,
+  AlertCircle,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -24,6 +25,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
   const menuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, href: '/admin', color: 'from-blue-500 to-cyan-500' },
     { title: 'Agendamentos Clientes', icon: UserCheck, href: '/admin/agendamentos-clientes', color: 'from-purple-500 to-violet-500' },
+    { title: 'Checkouts Pendentes', icon: AlertCircle, href: '/admin/checkouts-pendentes', color: 'from-orange-500 to-yellow-500' },
     { title: 'Clientes', icon: Users, href: '/admin/clientes', color: 'from-orange-500 to-red-500' },
     { title: 'Funcionários', icon: UserCheck, href: '/admin/funcionarios', color: 'from-pink-500 to-rose-500' },
     { title: 'Barbeiros', icon: Scissors, href: '/admin/barbeiros', color: 'from-indigo-500 to-blue-500' },
