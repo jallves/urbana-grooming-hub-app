@@ -65,14 +65,7 @@ Deno.serve(async (req) => {
         // Buscar itens da venda
         const { data: itens, error: itensError } = await supabase
           .from('vendas_itens')
-          .select(`
-            *,
-            painel_produtos:ref_id (
-              id,
-              nome,
-              preco
-            )
-          `)
+          .select('*')
           .eq('venda_id', venda.id)
           .eq('tipo', 'PRODUTO')
 
@@ -93,15 +86,25 @@ Deno.serve(async (req) => {
 
         const paymentMethod = payments?.[0]?.payment_method || 'cash'
 
-        // Preparar itens para a transação financeira
-        const transactionItems = itens.map((item: any) => ({
-          type: 'product',
-          id: item.ref_id,
-          name: item.painel_produtos?.nome || item.nome,
-          quantity: item.quantidade,
-          price: item.preco_unit,
-          discount: 0
-        }))
+        // Buscar informações dos produtos para cada item
+        const transactionItems = await Promise.all(
+          itens.map(async (item: any) => {
+            const { data: produto } = await supabase
+              .from('painel_produtos')
+              .select('nome')
+              .eq('id', item.ref_id)
+              .single()
+            
+            return {
+              type: 'product',
+              id: item.ref_id,
+              name: produto?.nome || item.nome || 'Produto',
+              quantity: item.quantidade,
+              price: item.preco_unitario,
+              discount: 0
+            }
+          })
+        )
 
         console.log(`💰 Criando registros no ERP para venda ${venda.id}`)
 
