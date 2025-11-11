@@ -215,13 +215,24 @@ export const useClientAppointments = () => {
 
       if (fetchError) throw fetchError;
 
-      // Validações de integridade
+      // Validações de integridade (com log detalhado)
+      console.log('📋 Validando exclusão de agendamento:', {
+        id: appointmentId,
+        status: appointment.status,
+        totem_sessions: appointment.totem_sessions,
+        vendas: appointment.vendas
+      });
+
       const hasCheckIn = appointment.totem_sessions?.some((s: any) => s.check_in_time);
       const hasSales = appointment.vendas?.length > 0;
-      const isFinalized = appointment.status === 'FINALIZADO' || appointment.status === 'concluido';
+      const statusUpper = appointment.status?.toUpperCase() || '';
+      const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
 
       if (hasCheckIn) {
-        console.error('❌ Tentativa de excluir agendamento com check-in');
+        console.error('❌ BLOQUEIO: Agendamento possui check-in', {
+          appointmentId,
+          totem_sessions: appointment.totem_sessions
+        });
         toast.error('Operação bloqueada', {
           description: 'Não é possível excluir agendamento com check-in realizado'
         });
@@ -229,7 +240,10 @@ export const useClientAppointments = () => {
       }
 
       if (hasSales) {
-        console.error('❌ Tentativa de excluir agendamento com vendas');
+        console.error('❌ BLOQUEIO: Agendamento possui vendas associadas', {
+          appointmentId,
+          vendas: appointment.vendas
+        });
         toast.error('Operação bloqueada', {
           description: 'Não é possível excluir agendamento com vendas associadas'
         });
@@ -237,12 +251,18 @@ export const useClientAppointments = () => {
       }
 
       if (isFinalized) {
-        console.error('❌ Tentativa de excluir agendamento finalizado');
+        console.error('❌ BLOQUEIO: Agendamento está finalizado/concluído', {
+          appointmentId,
+          status: appointment.status,
+          statusUpper
+        });
         toast.error('Operação bloqueada', {
-          description: 'Não é possível excluir agendamento finalizado'
+          description: 'Não é possível excluir agendamento finalizado ou concluído'
         });
         return false;
       }
+
+      console.log('✅ Validações aprovadas, prosseguindo com exclusão');
 
       // Registrar auditoria antes de excluir
       const { data: { user } } = await supabase.auth.getUser();

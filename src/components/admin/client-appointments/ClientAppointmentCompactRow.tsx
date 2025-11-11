@@ -157,8 +157,8 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     
     const hasSales = appointment.vendas && appointment.vendas.length > 0;
     
-    const isFinalized = appointment.status === 'FINALIZADO' || 
-                       appointment.status === 'concluido';
+    const statusUpper = appointment.status?.toUpperCase() || '';
+    const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
 
     return !hasCheckIn && !hasSales && !isFinalized;
   };
@@ -169,12 +169,12 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     
     const hasSales = appointment.vendas && appointment.vendas.length > 0;
     
-    const isFinalized = appointment.status === 'FINALIZADO' || 
-                       appointment.status === 'concluido';
+    const statusUpper = appointment.status?.toUpperCase() || '';
+    const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
 
     if (hasCheckIn) return 'Este agendamento possui check-in realizado e não pode ser excluído.';
     if (hasSales) return 'Este agendamento possui vendas associadas e não pode ser excluído.';
-    if (isFinalized) return 'Este agendamento está finalizado e não pode ser excluído.';
+    if (isFinalized) return 'Este agendamento está finalizado/concluído e não pode ser excluído.';
     return null;
   };
 
