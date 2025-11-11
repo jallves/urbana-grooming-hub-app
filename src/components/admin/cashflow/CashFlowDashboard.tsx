@@ -18,15 +18,22 @@ const CashFlowDashboard: React.FC = () => {
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
       
+      // 💰 Buscar de financial_records (tabela correta do ERP)
       const { data, error } = await supabase
-        .from('cash_flow')
+        .from('financial_records')
         .select('*')
         .gte('transaction_date', format(start, 'yyyy-MM-dd'))
-        .lte('transaction_date', format(end, 'yyyy-MM-dd'));
+        .lte('transaction_date', format(end, 'yyyy-MM-dd'))
+        .order('transaction_date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar dados financeiros:', error);
+        throw error;
+      }
+      
       return data || [];
     },
+    refetchInterval: 10000, // Atualizar a cada 10 segundos
   });
 
   const { data: lastMonthData } = useQuery({
@@ -35,23 +42,43 @@ const CashFlowDashboard: React.FC = () => {
       const start = startOfMonth(lastMonth);
       const end = endOfMonth(lastMonth);
       
+      // 💰 Buscar de financial_records (tabela correta do ERP)
       const { data, error } = await supabase
-        .from('cash_flow')
+        .from('financial_records')
         .select('*')
         .gte('transaction_date', format(start, 'yyyy-MM-dd'))
         .lte('transaction_date', format(end, 'yyyy-MM-dd'));
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar dados financeiros do mês anterior:', error);
+        throw error;
+      }
+      
       return data || [];
     },
   });
 
-  const currentIncome = currentMonthData?.filter(t => t.transaction_type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-  const currentExpense = currentMonthData?.filter(t => t.transaction_type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+  // 💰 Calcular valores usando financial_records (transaction_type: revenue, expense, commission)
+  const currentIncome = currentMonthData?.filter(t => 
+    t.transaction_type === 'revenue' && t.status === 'completed'
+  ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+  
+  const currentExpense = currentMonthData?.filter(t => 
+    (t.transaction_type === 'expense' || t.transaction_type === 'commission') && 
+    t.status === 'completed'
+  ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+  
   const currentNet = currentIncome - currentExpense;
 
-  const lastIncome = lastMonthData?.filter(t => t.transaction_type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-  const lastExpense = lastMonthData?.filter(t => t.transaction_type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+  const lastIncome = lastMonthData?.filter(t => 
+    t.transaction_type === 'revenue' && t.status === 'completed'
+  ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+  
+  const lastExpense = lastMonthData?.filter(t => 
+    (t.transaction_type === 'expense' || t.transaction_type === 'commission') && 
+    t.status === 'completed'
+  ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+  
   const lastNet = lastIncome - lastExpense;
 
   const incomeGrowth = lastIncome > 0 ? ((currentIncome - lastIncome) / lastIncome) * 100 : 0;
@@ -178,31 +205,36 @@ const CashFlowDashboard: React.FC = () => {
         <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
           {currentMonthData && currentMonthData.length > 0 ? (
             <div className="space-y-2 sm:space-y-3">
-              {currentMonthData.slice(-5).reverse().map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${transaction.transaction_type === 'income' ? 'bg-green-600' : 'bg-red-600'}`}></div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-black text-xs sm:text-sm truncate">
-                          {transaction.description}
-                        </p>
-                        <p className="text-xs text-gray-600 truncate">
-                          {transaction.category}
-                        </p>
+              {currentMonthData.slice(0, 5).map((transaction) => {
+                const isRevenue = transaction.transaction_type === 'revenue';
+                const isExpense = transaction.transaction_type === 'expense' || transaction.transaction_type === 'commission';
+                
+                return (
+                  <div key={transaction.id} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${isRevenue ? 'bg-green-600' : 'bg-red-600'}`}></div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-black text-xs sm:text-sm truncate">
+                            {transaction.description}
+                          </p>
+                          <p className="text-xs text-gray-600 truncate">
+                            {transaction.category} • {transaction.subcategory}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <p className={`font-semibold text-xs sm:text-sm ${isRevenue ? 'text-green-600' : 'text-red-600'}`}>
+                        {isRevenue ? '+' : '-'}R$ {Number(transaction.net_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {format(parseISO(transaction.transaction_date), "dd/MM/yy", { locale: ptBR })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right flex-shrink-0 ml-2">
-                    <p className={`font-semibold text-xs sm:text-sm ${transaction.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                      {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {format(parseISO(transaction.transaction_date + 'T00:00:00'), "dd/MM", { locale: ptBR })}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-6 sm:py-8">

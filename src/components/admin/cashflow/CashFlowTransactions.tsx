@@ -23,22 +23,37 @@ const CashFlowTransactions: React.FC = () => {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['cash-flow-transactions', searchTerm, typeFilter, categoryFilter],
     queryFn: async () => {
-      let query = supabase.from('cash_flow').select('*').order('transaction_date', { ascending: false });
+      // 💰 Buscar de financial_records (tabela correta do ERP)
+      let query = supabase
+        .from('financial_records')
+        .select('*')
+        .order('transaction_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (searchTerm) {
         query = query.ilike('description', `%${searchTerm}%`);
       }
-      if (typeFilter !== 'all') {
-        query = query.eq('transaction_type', typeFilter);
+      
+      // Filtrar por tipo (mapear income/expense para revenue/expense/commission)
+      if (typeFilter === 'income') {
+        query = query.eq('transaction_type', 'revenue');
+      } else if (typeFilter === 'expense') {
+        query = query.in('transaction_type', ['expense', 'commission']);
       }
+      
       if (categoryFilter !== 'all') {
         query = query.eq('category', categoryFilter);
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar transações:', error);
+        throw error;
+      }
       return data || [];
     },
+    refetchInterval: 10000, // Atualizar a cada 10 segundos
   });
 
   if (isLoading) {
@@ -101,71 +116,73 @@ const CashFlowTransactions: React.FC = () => {
       {/* Transactions List - Mobile optimized */}
       <div className="flex-1 space-y-2 overflow-auto">
         {transactions && transactions.length > 0 ? (
-          transactions.map((transaction) => (
-            <div key={transaction.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    transaction.transaction_type === 'income' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {transaction.transaction_type === 'income' ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4" />
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-gray-900 text-sm truncate">
-                          {transaction.description}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200">
-                            {transaction.category}
-                          </span>
-                          {transaction.payment_method && (
-                            <span className="text-xs text-gray-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">
-                              {transaction.payment_method}
+          transactions.map((transaction) => {
+            const isRevenue = transaction.transaction_type === 'revenue';
+            const isExpense = transaction.transaction_type === 'expense' || transaction.transaction_type === 'commission';
+            
+            return (
+              <div key={transaction.id} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isRevenue 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {isRevenue ? (
+                        <TrendingUp className="h-4 w-4" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-4">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-gray-900 text-sm truncate">
+                            {transaction.description}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                              {transaction.category} • {transaction.subcategory}
                             </span>
-                          )}
-                          {transaction.reference_type && (
-                            <span className="text-xs text-purple-700 bg-purple-50 px-2 py-1 rounded border border-purple-200">
-                              📋 Origem: {transaction.reference_type === 'financial_record' ? 'Contas a Receber/Pagar' : transaction.reference_type}
+                            <span className={`text-xs px-2 py-1 rounded border ${
+                              transaction.status === 'completed' 
+                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                            }`}>
+                              {transaction.status === 'completed' ? '✅ Pago' : '⏳ Pendente'}
                             </span>
-                          )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-right flex-shrink-0">
+                          <div className={`font-bold text-sm sm:text-base ${
+                            isRevenue ? 'text-green-700' : 'text-red-700'
+                          }`}>
+                            {isRevenue ? '+' : '-'}R$ {Number(transaction.net_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(parseISO(transaction.transaction_date), "dd/MM/yyyy", { locale: ptBR })}
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="text-right flex-shrink-0">
-                        <div className={`font-bold text-sm sm:text-base ${
-                          transaction.transaction_type === 'income' ? 'text-green-700' : 'text-red-700'
-                        }`}>
-                          {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(parseISO(transaction.transaction_date + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}
-                        </div>
-                      </div>
+                      {transaction.notes && (
+                        <p className="text-xs text-gray-600 mt-2 line-clamp-2 bg-gray-50 p-2 rounded border border-gray-200">{transaction.notes}</p>
+                      )}
                     </div>
-                    
-                    {transaction.notes && (
-                      <p className="text-xs text-gray-600 mt-2 line-clamp-2 bg-gray-50 p-2 rounded border border-gray-200">{transaction.notes}</p>
-                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="flex flex-col items-center justify-center h-64 text-center bg-gray-50 rounded-lg border border-gray-200">
             <DollarSign className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhuma transação encontrada</h3>
-            <p className="text-sm text-gray-600">As transações aparecerão aqui quando você marcar contas como pagas/recebidas</p>
+            <p className="text-sm text-gray-600">As transações do ERP financeiro aparecerão aqui</p>
           </div>
         )}
       </div>

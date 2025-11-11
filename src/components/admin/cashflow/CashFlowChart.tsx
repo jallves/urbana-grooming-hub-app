@@ -18,16 +18,28 @@ const CashFlowChart: React.FC = () => {
         const start = startOfMonth(monthDate);
         const end = endOfMonth(monthDate);
         
+        // 💰 Buscar de financial_records (tabela correta do ERP)
         const { data, error } = await supabase
-          .from('cash_flow')
+          .from('financial_records')
           .select('*')
           .gte('transaction_date', format(start, 'yyyy-MM-dd'))
           .lte('transaction_date', format(end, 'yyyy-MM-dd'));
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao buscar dados do gráfico:', error);
+          throw error;
+        }
 
-        const income = data?.filter(t => t.transaction_type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-        const expense = data?.filter(t => t.transaction_type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+        // Receitas = revenue completed
+        const income = data?.filter(t => 
+          t.transaction_type === 'revenue' && t.status === 'completed'
+        ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+        
+        // Despesas = expense + commission completed
+        const expense = data?.filter(t => 
+          (t.transaction_type === 'expense' || t.transaction_type === 'commission') && 
+          t.status === 'completed'
+        ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
 
         months.push({
           month: format(monthDate, 'MMM/yy', { locale: ptBR }),
@@ -39,6 +51,7 @@ const CashFlowChart: React.FC = () => {
 
       return months;
     },
+    refetchInterval: 10000, // Atualizar a cada 10 segundos
   });
 
   if (isLoading) {

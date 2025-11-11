@@ -13,20 +13,25 @@ const CategoryChart: React.FC = () => {
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
       
+      // 💰 Buscar de financial_records (tabela correta do ERP)
       const { data, error } = await supabase
-        .from('cash_flow')
+        .from('financial_records')
         .select('*')
-        .eq('transaction_type', 'expense')
+        .in('transaction_type', ['expense', 'commission'])
+        .eq('status', 'completed')
         .gte('transaction_date', format(start, 'yyyy-MM-dd'))
         .lte('transaction_date', format(end, 'yyyy-MM-dd'));
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar dados de categorias:', error);
+        throw error;
+      }
 
       // Agrupar por categoria
       const categoryTotals: Record<string, number> = {};
       data?.forEach(transaction => {
         const category = transaction.category;
-        categoryTotals[category] = (categoryTotals[category] || 0) + Number(transaction.amount);
+        categoryTotals[category] = (categoryTotals[category] || 0) + Number(transaction.net_amount);
       });
 
       // Converter para formato do gráfico
@@ -37,6 +42,7 @@ const CategoryChart: React.FC = () => {
 
       return chartData.sort((a, b) => b.value - a.value);
     },
+    refetchInterval: 10000, // Atualizar a cada 10 segundos
   });
 
   const { data: categories } = useQuery({
