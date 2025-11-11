@@ -16,13 +16,8 @@ import type { DashboardMetrics } from '@/types/erp';
 import { ContasAReceber } from './ContasAReceber';
 import { ContasAPagar } from './ContasAPagar';
 import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
-import { useMigrateFinancialRecords } from '@/hooks/financial/useMigrateFinancialRecords';
-import { Button } from '@/components/ui/button';
-import { Database, Loader2 } from 'lucide-react';
 
 const FinancialDashboard: React.FC = () => {
-  const { migrateRecords, isMigrating } = useMigrateFinancialRecords();
-  
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['financial-dashboard-metrics'],
     queryFn: async (): Promise<DashboardMetrics> => {
@@ -145,28 +140,6 @@ const FinancialDashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
-      {/* Botão de Migração */}
-      <div className="flex justify-end">
-        <Button
-          onClick={() => migrateRecords()}
-          disabled={isMigrating}
-          variant="outline"
-          className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
-        >
-          {isMigrating ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Migrando...
-            </>
-          ) : (
-            <>
-              <Database className="h-4 w-4 mr-2" />
-              Migrar Dados Existentes
-            </>
-          )}
-        </Button>
-      </div>
-
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {summaryCards.map((card, index) => (
