@@ -135,22 +135,21 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 font-poppins relative overflow-hidden"
+      className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 font-poppins overflow-hidden"
       onKeyDown={handleKeyDown}
       tabIndex={0}
+      style={{
+        backgroundImage: `url(${barbershopBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
     >
-      {/* Background image */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src={barbershopBg} 
-          alt="Barbearia" 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
-      </div>
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
 
       {/* Premium background effects */}
-      <div className="absolute inset-0 overflow-hidden z-0">
+      <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
