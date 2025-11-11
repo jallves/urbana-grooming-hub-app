@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { TotemPinKeypad } from '@/components/totem/TotemPinKeypad';
-import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 
 const TotemCheckoutSearch: React.FC = () => {
   const navigate = useNavigate();
   const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   React.useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -19,17 +16,22 @@ const TotemCheckoutSearch: React.FC = () => {
 
   const handleSearch = async (phone: string) => {
     setIsSearching(true);
-    setError(null);
 
     try {
       const cleanPhone = phone.replace(/\D/g, '');
       
       if (!cleanPhone || cleanPhone.length < 10) {
-        setError({
-          title: 'Telefone inválido',
-          message: 'Por favor, digite um número de telefone válido com DDD'
-        });
         setIsSearching(false);
+        
+        navigate('/totem/error', {
+          state: {
+            title: 'Telefone inválido',
+            message: 'Por favor, digite um número de telefone válido com DDD',
+            type: 'warning',
+            showRetry: false,
+            showGoHome: true
+          }
+        });
         return;
       }
       
@@ -42,11 +44,17 @@ const TotemCheckoutSearch: React.FC = () => {
 
       if (clientError) {
         console.error('❌ Erro ao buscar cliente:', clientError);
-        setError({
-          title: 'Erro de conexão',
-          message: 'Não foi possível conectar ao sistema. Verifique sua conexão e tente novamente.'
-        });
         setIsSearching(false);
+        
+        navigate('/totem/error', {
+          state: {
+            title: 'Erro de conexão',
+            message: 'Não foi possível conectar ao sistema. Verifique sua conexão e tente novamente.',
+            type: 'error',
+            showRetry: false,
+            showGoHome: true
+          }
+        });
         return;
       }
 
@@ -56,11 +64,18 @@ const TotemCheckoutSearch: React.FC = () => {
       }) || [];
 
       if (!clientesFiltrados || clientesFiltrados.length === 0) {
-        setError({
-          title: 'Cliente não encontrado',
-          message: 'Não encontramos nenhum cadastro com este telefone. Verifique o número digitado ou procure a recepção.'
-        });
         setIsSearching(false);
+        
+        navigate('/totem/error', {
+          state: {
+            title: 'Cliente não encontrado',
+            message: 'Favor realizar seu cadastro',
+            type: 'info',
+            showRetry: false,
+            showRegister: true,
+            action: 'checkout'
+          }
+        });
         return;
       }
 
@@ -120,20 +135,32 @@ const TotemCheckoutSearch: React.FC = () => {
 
       if (agendError) {
         console.error('❌ Erro ao buscar agendamentos:', agendError);
-        setError({
-          title: 'Erro ao buscar atendimento',
-          message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.'
-        });
         setIsSearching(false);
+        
+        navigate('/totem/error', {
+          state: {
+            title: 'Erro ao buscar atendimento',
+            message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.',
+            type: 'error',
+            showRetry: false,
+            showGoHome: true
+          }
+        });
         return;
       }
 
       if (!agendamentos || agendamentos.length === 0) {
-        setError({
-          title: 'Nenhum atendimento encontrado',
-          message: 'Você não possui um atendimento ativo no momento. Procure a recepção para fazer check-in.'
-        });
         setIsSearching(false);
+        
+        navigate('/totem/error', {
+          state: {
+            title: 'Checkout não disponível',
+            message: 'Cliente não possui checkout, favor realizar agendamento ou check-in primeiro',
+            type: 'warning',
+            showRetry: false,
+            showGoHome: true
+          }
+        });
         return;
       }
 
@@ -149,20 +176,32 @@ const TotemCheckoutSearch: React.FC = () => {
 
       if (sessionError) {
         console.error('❌ Erro ao buscar sessão:', sessionError);
-        setError({
-          title: 'Erro ao buscar atendimento',
-          message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.'
-        });
         setIsSearching(false);
+        
+        navigate('/totem/error', {
+          state: {
+            title: 'Erro ao buscar atendimento',
+            message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.',
+            type: 'error',
+            showRetry: false,
+            showGoHome: true
+          }
+        });
         return;
       }
 
       if (!sessionData || sessionData.length === 0) {
-        setError({
-          title: 'Nenhum atendimento encontrado',
-          message: 'Você não possui um atendimento ativo no momento. Procure a recepção para fazer check-in.'
-        });
         setIsSearching(false);
+        
+        navigate('/totem/error', {
+          state: {
+            title: 'Checkout não disponível',
+            message: 'Cliente não possui checkout, favor realizar agendamento ou check-in primeiro',
+            type: 'warning',
+            showRetry: false,
+            showGoHome: true
+          }
+        });
         return;
       }
 
@@ -191,25 +230,19 @@ const TotemCheckoutSearch: React.FC = () => {
 
     } catch (error) {
       console.error('❌ Erro inesperado:', error);
-      setError({
-        title: 'Erro inesperado',
-        message: 'Ocorreu um erro inesperado. Por favor, tente novamente ou procure um atendente.'
-      });
-    } finally {
       setIsSearching(false);
+      
+      navigate('/totem/error', {
+        state: {
+          title: 'Erro inesperado',
+          message: 'Ocorreu um erro inesperado. Por favor, tente novamente ou procure um atendente.',
+          type: 'error',
+          showRetry: false,
+          showGoHome: true
+        }
+      });
     }
   };
-
-  if (error) {
-    return (
-      <TotemErrorFeedback
-        title={error.title}
-        message={error.message}
-        onRetry={() => setError(null)}
-        onGoHome={() => navigate('/totem')}
-      />
-    );
-  }
 
   return (
     <TotemPinKeypad

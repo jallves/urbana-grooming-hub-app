@@ -94,19 +94,19 @@ const TotemSearch: React.FC = () => {
 
       if (!cliente) {
         console.log('❌ Nenhum cliente encontrado em nenhuma tabela com telefone:', cleanPhone);
-        toast.error('Telefone não cadastrado', {
-          description: 'Este número não está cadastrado no sistema. Procure a recepção para fazer seu cadastro.',
-          duration: 8000,
-          style: {
-            background: 'hsl(var(--urbana-brown))',
-            color: 'hsl(var(--urbana-light))',
-            border: '3px solid hsl(var(--destructive))',
-            fontSize: '1.25rem',
-            padding: '1.5rem',
-            maxWidth: '600px'
+        setIsSearching(false);
+        
+        // Redirecionar para tela de erro com opção de cadastro
+        navigate('/totem/error', {
+          state: {
+            title: 'Cliente não encontrado',
+            message: 'Favor realizar seu cadastro',
+            type: 'info',
+            showRetry: false,
+            showRegister: true,
+            action
           }
         });
-        setIsSearching(false);
         return;
       }
 
@@ -253,19 +253,18 @@ const TotemSearch: React.FC = () => {
 
       // Para CHECK-IN, verificar se há agendamentos
       if (!agendamentos || agendamentos.length === 0) {
-        toast.error('Nenhum agendamento encontrado', {
-          description: `${cliente.nome.split(' ')[0]}, você não possui agendamentos futuros para fazer check-in. Por favor, procure a recepção para agendar.`,
-          duration: 10000,
-          style: {
-            background: 'hsl(var(--urbana-brown))',
-            color: 'hsl(var(--urbana-light))',
-            border: '3px solid hsl(var(--urbana-gold))',
-            fontSize: '1.25rem',
-            padding: '1.5rem',
-            maxWidth: '600px'
+        setIsSearching(false);
+        
+        // Redirecionar para tela de erro
+        navigate('/totem/error', {
+          state: {
+            title: 'Check-in não disponível',
+            message: 'Cliente não possui check-in pendente, favor realizar agendamento',
+            type: 'warning',
+            showRetry: false,
+            showGoHome: true
           }
         });
-        setIsSearching(false);
         return;
       }
       

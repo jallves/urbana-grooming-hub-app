@@ -47,7 +47,17 @@ const TotemProductSale: React.FC = () => {
     document.documentElement.classList.add('totem-mode');
     
     if (!client) {
-      navigate('/totem/home');
+      // Redirecionar para erro se não tiver cliente
+      navigate('/totem/error', {
+        state: {
+          title: 'Cliente não encontrado',
+          message: 'Favor realizar seu cadastro para comprar produtos',
+          type: 'info',
+          showRetry: false,
+          showRegister: true,
+          action: 'produtos'
+        }
+      });
       return;
     }
     
@@ -56,7 +66,7 @@ const TotemProductSale: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client]);
+  }, [client, navigate]);
 
   const loadProducts = async () => {
     try {
