@@ -49,6 +49,12 @@ export function useCashFlowSync() {
 
       // Mapear o tipo de transação
       const cashFlowType = transactionType === 'revenue' ? 'income' : 'expense';
+      
+      // Mapear categoria para português
+      let categoryPT = category;
+      if (category === 'staff_payments' || category === 'commissions') {
+        categoryPT = 'Pagamento Comissão';
+      }
 
       // Criar entrada no cash_flow
       const { data: cashFlowEntry, error } = await supabase
@@ -57,7 +63,7 @@ export function useCashFlowSync() {
           transaction_type: cashFlowType,
           amount: amount,
           description: description,
-          category: category,
+          category: categoryPT,
           payment_method: paymentMethod || 'other',
           transaction_date: format(new Date(transactionDate), 'yyyy-MM-dd'),
           reference_type: 'financial_record',

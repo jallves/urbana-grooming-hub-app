@@ -1537,6 +1537,7 @@ export type Database = {
           metadata: Json | null
           net_amount: number
           notes: string | null
+          payment_date: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           subcategory: string | null
           tax_amount: number | null
@@ -1561,6 +1562,7 @@ export type Database = {
           metadata?: Json | null
           net_amount?: number
           notes?: string | null
+          payment_date?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           subcategory?: string | null
           tax_amount?: number | null
@@ -1585,6 +1587,7 @@ export type Database = {
           metadata?: Json | null
           net_amount?: number
           notes?: string | null
+          payment_date?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           subcategory?: string | null
           tax_amount?: number | null

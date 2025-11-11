@@ -54,6 +54,12 @@ export function useMigrateFinancialRecords() {
 
           const paymentMethod = metadata?.payment_method || 'other';
 
+          // Mapear categoria para português
+          let categoryPT = record.category;
+          if (record.category === 'staff_payments' || record.category === 'commissions') {
+            categoryPT = 'Pagamento Comissão';
+          }
+
           // Criar entrada no cash_flow
           const { error: insertError } = await supabase
             .from('cash_flow')
@@ -61,7 +67,7 @@ export function useMigrateFinancialRecords() {
               transaction_type: cashFlowType,
               amount: record.net_amount,
               description: record.description,
-              category: record.category,
+              category: categoryPT,
               payment_method: paymentMethod,
               transaction_date: format(new Date(record.transaction_date), 'yyyy-MM-dd'),
               reference_type: 'financial_record',

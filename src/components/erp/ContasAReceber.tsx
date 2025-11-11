@@ -41,6 +41,8 @@ interface FinancialRecord {
   transaction_date: string;
   transaction_type: string;
   created_at: string;
+  payment_date?: string;
+  completed_at?: string;
   payment_records: PaymentRecord[];
   metadata?: {
     service_name?: string;
@@ -75,7 +77,29 @@ export const ContasAReceber: React.FC = () => {
         .limit(100);
 
       if (error) throw error;
-      return data as FinancialRecord[];
+      
+      // Processar para garantir que o payment_method do metadata seja usado quando não houver payment_records
+      const processed = data?.map(record => {
+        if ((!record.payment_records || record.payment_records.length === 0) && record.metadata) {
+          const metadata = typeof record.metadata === 'object' && record.metadata !== null 
+            ? record.metadata as Record<string, any>
+            : {};
+          
+          // Criar um payment_record virtual do metadata se existir
+          if (metadata.payment_method) {
+            return {
+              ...record,
+              payment_records: [{
+                payment_method: metadata.payment_method,
+                payment_date: record.payment_date || record.completed_at
+              }]
+            };
+          }
+        }
+        return record;
+      });
+      
+      return processed as FinancialRecord[];
     },
     refetchInterval: 10000
   });

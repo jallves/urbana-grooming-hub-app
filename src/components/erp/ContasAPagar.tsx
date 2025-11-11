@@ -40,6 +40,7 @@ interface FinancialRecord {
   description: string;
   transaction_date: string;
   created_at: string;
+  payment_date?: string;
   payment_records: PaymentRecord[];
   metadata?: {
     service_name?: string;
@@ -68,7 +69,8 @@ export const ContasAPagar: React.FC = () => {
         .from('financial_records')
         .select(`
           *,
-          payment_records(payment_method)
+          payment_records(payment_method),
+          staff:barber_id(name)
         `)
         .in('transaction_type', ['expense', 'commission'])
         .order('transaction_date', { ascending: false })
@@ -76,7 +78,20 @@ export const ContasAPagar: React.FC = () => {
         .limit(100);
 
       if (error) throw error;
-      return data as FinancialRecord[];
+      
+      // Concatenar nome do barbeiro na descrição quando for comissão
+      const processed = data?.map(record => {
+        const anyRecord = record as any;
+        if (record.transaction_type === 'commission' && anyRecord.staff && anyRecord.staff.name) {
+          return {
+            ...record,
+            description: `Comissão do Barbeiro ${anyRecord.staff.name}`
+          };
+        }
+        return record;
+      });
+      
+      return processed as FinancialRecord[];
     },
     refetchInterval: 10000
   });
@@ -92,12 +107,15 @@ export const ContasAPagar: React.FC = () => {
 
       if (fetchError) throw fetchError;
 
+      const paymentDate = new Date().toISOString();
+
       const { error } = await supabase
         .from('financial_records')
         .update({ 
           status: 'completed',
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          completed_at: paymentDate,
+          payment_date: paymentDate,
+          updated_at: paymentDate,
         })
         .eq('id', recordId);
 
@@ -145,6 +163,8 @@ export const ContasAPagar: React.FC = () => {
         ? 'COM-' + Date.now() 
         : 'EXP-' + Date.now();
 
+      const paymentDate = values.status === 'completed' ? new Date().toISOString() : null;
+
       const { error } = await supabase.from('financial_records').insert({
         transaction_number: transactionNumber,
         transaction_type: values.transaction_type,
@@ -157,7 +177,8 @@ export const ContasAPagar: React.FC = () => {
         status: values.status,
         description: values.description,
         transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
-        completed_at: values.status === 'completed' ? new Date().toISOString() : null,
+        completed_at: paymentDate,
+        payment_date: paymentDate,
         metadata: {
           payment_method: values.payment_method,
           notes: values.notes,
@@ -179,6 +200,7 @@ export const ContasAPagar: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: async ({ id, values }: { id: string; values: any }) => {
       const netAmount = values.gross_amount - (values.discount_amount || 0) - (values.tax_amount || 0);
+      const paymentDate = values.status === 'completed' ? new Date().toISOString() : null;
 
       const { error } = await supabase
         .from('financial_records')
@@ -192,7 +214,8 @@ export const ContasAPagar: React.FC = () => {
           status: values.status,
           description: values.description,
           transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
-          completed_at: values.status === 'completed' ? new Date().toISOString() : null,
+          completed_at: paymentDate,
+          payment_date: paymentDate,
           metadata: {
             payment_method: values.payment_method,
             notes: values.notes,
@@ -441,8 +464,8 @@ export const ContasAPagar: React.FC = () => {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Descrição</TableHead>
                     <TableHead>Categoria</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Pagamento</TableHead>
+                    <TableHead>Data Transação</TableHead>
+                    <TableHead>Data Pagamento</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                     <TableHead className="text-center">Fluxo Caixa</TableHead>
@@ -486,19 +509,18 @@ export const ContasAPagar: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm capitalize">
-                          {record.category.replace('_', ' ')}
+                          {record.category === 'staff_payments' ? 'Pagamento Comissão' : record.category.replace('_', ' ')}
                         </TableCell>
                         <TableCell className="text-sm">
                           {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {record.payment_records && record.payment_records.length > 0 ? (
-                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                              <CreditCard className="h-3 w-3 mr-1" />
-                              {getPaymentMethodLabel(record.payment_records[0].payment_method)}
-                            </Badge>
+                          {record.payment_date ? (
+                            <span className="text-green-700 font-medium">
+                              {format(new Date(record.payment_date), 'dd/MM/yyyy', { locale: ptBR })}
+                            </span>
                           ) : (
-                            <span className="text-gray-400 text-xs">-</span>
+                            <span className="text-gray-400 text-xs">Pendente</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-red-600">
@@ -551,7 +573,7 @@ export const ContasAPagar: React.FC = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                      <TableCell colSpan={10} className="text-center text-gray-500 py-8">
                         Nenhuma despesa ou comissão encontrada
                       </TableCell>
                     </TableRow>
