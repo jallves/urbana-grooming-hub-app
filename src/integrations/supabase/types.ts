@@ -192,6 +192,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointment_extra_services_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
+          },
+          {
             foreignKeyName: "appointment_extra_services_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
@@ -276,6 +283,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "painel_agendamentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_ratings_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
           },
           {
             foreignKeyName: "appointment_ratings_barber_id_fkey"
@@ -1147,6 +1161,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comissoes_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
+          },
+          {
             foreignKeyName: "comissoes_barbeiro_id_fkey"
             columns: ["barbeiro_id"]
             isOneToOne: false
@@ -1512,6 +1533,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "finance_transactions_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
+          },
+          {
             foreignKeyName: "finance_transactions_barbeiro_id_fkey"
             columns: ["barbeiro_id"]
             isOneToOne: false
@@ -1603,6 +1631,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "painel_agendamentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_records_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
           },
           {
             foreignKeyName: "financial_records_barber_id_fkey"
@@ -1820,6 +1855,57 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_error_logs: {
+        Row: {
+          appointment_id: string | null
+          created_at: string | null
+          error_details: Json | null
+          error_message: string
+          error_type: string
+          id: string
+          last_retry_at: string | null
+          max_retries: number | null
+          resolved_at: string | null
+          retry_count: number | null
+          session_id: string | null
+          stack_trace: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string | null
+          error_details?: Json | null
+          error_message: string
+          error_type: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          resolved_at?: string | null
+          retry_count?: number | null
+          session_id?: string | null
+          stack_trace?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string | null
+          error_details?: Json | null
+          error_message?: string
+          error_type?: string
+          id?: string
+          last_retry_at?: string | null
+          max_retries?: number | null
+          resolved_at?: string | null
+          retry_count?: number | null
+          session_id?: string | null
+          stack_trace?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       job_roles: {
         Row: {
           created_at: string | null
@@ -2019,6 +2105,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vendas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["venda_id"]
           },
           {
             foreignKeyName: "pagamentos_venda_id_fkey"
@@ -3457,6 +3550,13 @@ export type Database = {
             referencedRelation: "painel_agendamentos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "totem_sessions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
+          },
         ]
       }
       transaction_items: {
@@ -3582,6 +3682,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vendas_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
+          },
+          {
             foreignKeyName: "vendas_barbeiro_id_fkey"
             columns: ["barbeiro_id"]
             isOneToOne: false
@@ -3645,6 +3752,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vendas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_itens_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["venda_id"]
           },
           {
             foreignKeyName: "vendas_itens_venda_id_fkey"
@@ -3732,6 +3846,40 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_agendamentos_sem_financeiro: {
+        Row: {
+          agendamento_data: string | null
+          agendamento_hora: string | null
+          agendamento_id: string | null
+          barbeiro_id: string | null
+          barbeiro_nome: string | null
+          cliente_id: string | null
+          cliente_nome: string | null
+          minutos_desde_finalizacao: number | null
+          registros_financeiros_count: number | null
+          status: string | null
+          status_totem: Database["public"]["Enums"]["status_agendamento"] | null
+          updated_at: string | null
+          venda_id: string | null
+          venda_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "painel_agendamentos_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "painel_barbeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_vendas_abertas: {
         Row: {
           agendamento_id: string | null
@@ -3754,6 +3902,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "painel_agendamentos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_agendamento_id_fkey"
+            columns: ["agendamento_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
           },
           {
             foreignKeyName: "vendas_cliente_id_fkey"
@@ -4069,6 +4224,10 @@ export type Database = {
             }
             Returns: boolean
           }
+      increment_retry_count: {
+        Args: { p_error_log_id: string }
+        Returns: undefined
+      }
       insert_painel_agendamento: {
         Args: {
           p_barbeiro_id: string
@@ -4082,6 +4241,14 @@ export type Database = {
       }
       is_admin: { Args: { user_id: string }; Returns: boolean }
       is_staff_member: { Args: { user_email: string }; Returns: boolean }
+      mark_error_resolved: {
+        Args: { p_error_log_id: string }
+        Returns: undefined
+      }
+      reprocess_failed_appointment: {
+        Args: { p_agendamento_id: string }
+        Returns: Json
+      }
       update_agendamento_status_totem: {
         Args: {
           p_agendamento_id: string

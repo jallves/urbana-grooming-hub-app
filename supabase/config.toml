@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.seed-test-data]
 verify_jwt = false
+
+[functions.monitor-failed-transactions]
+verify_jwt = false
+# Executa a cada hora
+[functions.monitor-failed-transactions.cron]
+schedule = "0 * * * *"

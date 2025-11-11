@@ -7,20 +7,82 @@ import { corsHeaders } from '../_shared/cors.ts'
  * - Receitas: produtos e serviços separados
  * - Comissões: 40% apenas para serviços
  * - Inclui forma de pagamento, data e horário completo
+ * - Sistema de retry automático em caso de falhas
+ * - Logs de erro para monitoramento
  */
+
+// Função auxiliar para registrar erros
+async function logError(
+  supabase: any,
+  errorType: string,
+  appointmentId: string | null,
+  sessionId: string | null,
+  errorMessage: string,
+  errorDetails: any,
+  stackTrace?: string
+) {
+  try {
+    await supabase
+      .from('integration_error_logs')
+      .insert({
+        error_type: errorType,
+        appointment_id: appointmentId,
+        session_id: sessionId,
+        error_message: errorMessage,
+        error_details: errorDetails,
+        stack_trace: stackTrace,
+        status: 'pending'
+      })
+    console.log('📝 Erro registrado no sistema de monitoramento')
+  } catch (logErr) {
+    console.error('❌ Falha ao registrar erro:', logErr)
+  }
+}
+
+// Função auxiliar para retry com backoff exponencial
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      lastError = error
+      
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt)
+        console.log(`⚠️ Tentativa ${attempt + 1}/${maxRetries + 1} falhou. Aguardando ${delay}ms...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+  }
+  
+  throw lastError
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const supabase = createClient(supabaseUrl, supabaseKey)
+  
+  let appointment_id: string | null = null
+  let session_id: string | null = null
 
+  try {
+
+    const requestBody = await req.json()
+    appointment_id = requestBody.appointment_id
+    session_id = requestBody.session_id || null
+    
     const {
-      appointment_id,
       client_id,
       barber_id,
       items, // Array de { type: 'service' | 'product', id, name, quantity, price, discount }
@@ -28,8 +90,9 @@ Deno.serve(async (req) => {
       discount_amount = 0,
       notes,
       transaction_date: providedTransactionDate,
-      transaction_datetime: providedTransactionDateTime
-    } = await req.json()
+      transaction_datetime: providedTransactionDateTime,
+      error_log_id // ID do log de erro se for um reprocessamento
+    } = requestBody
 
     // Mapear payment_method do totem para os valores corretos do ENUM
     const paymentMethodMap: Record<string, string> = {
@@ -59,7 +122,7 @@ Deno.serve(async (req) => {
       if (appointmentData) {
         // Usar data e hora do agendamento
         transactionDate = appointmentData.data
-        // appointmentData.hora já vem no formato HH:MM:SS, não adicionar :00 extra
+        // appointmentData.hora já vem no formato HH:MM:SS, não adicionar segundos extras
         transactionDateTime = `${appointmentData.data}T${appointmentData.hora}`
         console.log('📅 Usando data/hora do agendamento:', { date: transactionDate, datetime: transactionDateTime })
       }
@@ -145,41 +208,41 @@ Deno.serve(async (req) => {
         throw new Error('Erro ao gerar número de transação')
       }
 
-      // 1. Criar registro financeiro de RECEITA para o serviço
-      const { data: serviceRecord, error: serviceError } = await supabase
-        .from('financial_records')
-        .insert({
-          transaction_number: transactionNumber,
-          transaction_type: 'revenue',
-          category: 'services',
-          subcategory: 'service',
-          gross_amount: serviceGrossAmount,
-          discount_amount: serviceDiscount,
-          tax_amount: 0,
-          net_amount: serviceNetAmount,
-          status: 'completed',
-          description: `Serviço: ${serviceName}`,
-          notes,
-          transaction_date: transactionDate,
-          completed_at: transactionDateTime,
-          appointment_id,
-          client_id,
-          barber_id,
-          metadata: {
-            source: appointment_id ? 'appointment' : 'direct_sale',
-            service_id: service.id,
-            service_name: serviceName,
-            payment_method: payment_method, // ✅ ADICIONADO: payment_method no metadata
-            payment_time: transactionDateTime
-          }
-        })
-        .select()
-        .single()
+      // 1. Criar registro financeiro de RECEITA para o serviço (com retry)
+      const serviceRecord = await retryWithBackoff(async () => {
+        const { data, error } = await supabase
+          .from('financial_records')
+          .insert({
+            transaction_number: transactionNumber,
+            transaction_type: 'revenue',
+            category: 'services',
+            subcategory: 'service',
+            gross_amount: serviceGrossAmount,
+            discount_amount: serviceDiscount,
+            tax_amount: 0,
+            net_amount: serviceNetAmount,
+            status: 'completed',
+            description: `Serviço: ${serviceName}`,
+            notes,
+            transaction_date: transactionDate,
+            completed_at: transactionDateTime,
+            appointment_id,
+            client_id,
+            barber_id,
+            metadata: {
+              source: appointment_id ? 'appointment' : 'direct_sale',
+              service_id: service.id,
+              service_name: serviceName,
+              payment_method: payment_method,
+              payment_time: transactionDateTime
+            }
+          })
+          .select()
+          .single()
 
-      if (serviceError) {
-        console.error('❌ Erro ao criar registro de serviço:', serviceError)
-        throw new Error(`Erro ao criar registro de serviço: ${service.name}`)
-      }
+        if (error) throw error
+        return data
+      })
 
       console.log('✅ Receita de serviço criada:', {
         id: serviceRecord.id,
@@ -481,6 +544,12 @@ Deno.serve(async (req) => {
       payment_method,
       datetime: transactionDateTime
     })
+    
+    // Se for um reprocessamento, marcar erro como resolvido
+    if (error_log_id) {
+      await supabase.rpc('mark_error_resolved', { p_error_log_id: error_log_id })
+      console.log('✅ Erro marcado como resolvido:', error_log_id)
+    }
 
     return new Response(
       JSON.stringify({
@@ -503,12 +572,28 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erro ao criar transação financeira:', error)
+    
+    // Registrar erro no sistema de monitoramento
+    await logError(
+      supabase,
+      'financial_transaction',
+      appointment_id,
+      session_id,
+      error.message || 'Erro desconhecido ao criar transação financeira',
+      {
+        error: error.toString(),
+        stack: error.stack
+      },
+      error.stack
+    )
+    
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error.message || 'Erro desconhecido',
+        logged: true // Indica que o erro foi registrado para retry
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
