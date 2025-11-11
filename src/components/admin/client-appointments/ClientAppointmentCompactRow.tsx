@@ -78,6 +78,16 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   onStatusChange,
   onDelete
 }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar se é mobile
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Determinar status real do agendamento
   const getActualStatus = () => {
     // Verificar checkout pendente
@@ -149,128 +159,130 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 
   return (
     <>
-      {/* DESKTOP (Tabela) */}
-      <TableRow className="hidden sm:table-row hover:bg-gray-50 transition-colors duration-150">
-        <TableCell className="py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-sm">
-              {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
-            </div>
-            <div>
-              <div className="font-semibold text-sm text-gray-900">
-                {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+      {isMobile ? (
+        // MOBILE (Card)
+        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
+                {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
               </div>
-              <div className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-base text-gray-900 truncate">
+                  {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+                </h4>
+                <p className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</p>
+              </div>
+            </div>
+            {getStatusBadge(actualStatus)}
+          </div>
+
+          <div className="space-y-2 bg-gray-50 rounded-lg p-3 mb-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <span className="font-medium text-gray-900">{format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}</span>
+              <Clock className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
+              <span className="font-medium text-gray-900">{appointment.hora}</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm">
+              <CheckCircle className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <span className="font-medium text-gray-900">{appointment.painel_servicos?.nome || 'N/A'}</span>
+                <span className="ml-2 font-bold text-green-600">
+                  R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
+                </span>
+              </div>
             </div>
           </div>
-        </TableCell>
 
-        <TableCell className="py-4">
-          <div className="flex flex-col gap-1">
-            <div className="text-sm font-medium text-gray-900">
-              {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}
+          <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              {appointment.painel_barbeiros?.image_url && (
+                <img 
+                  src={appointment.painel_barbeiros.image_url} 
+                  alt={appointment.painel_barbeiros.nome}
+                  className="w-6 h-6 rounded-full object-cover border border-gray-200"
+                />
+              )}
+              <span className="font-medium truncate">{appointment.painel_barbeiros?.nome || 'N/A'}</span>
             </div>
-            <div className="text-xs text-gray-500 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {appointment.hora}
-            </div>
+            <ActionMenu
+              appointment={appointment}
+              onEdit={onEdit}
+              onStatusChange={onStatusChange}
+              onDelete={onDelete}
+            />
           </div>
-        </TableCell>
-
-        <TableCell className="py-4">
-          <div className="flex flex-col gap-1">
-            <div className="text-sm font-medium text-gray-900">
-              {appointment.painel_servicos?.nome || 'N/A'}
-            </div>
-            <div className="text-xs font-semibold text-green-600">
-              R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
-            </div>
-          </div>
-        </TableCell>
-
-        <TableCell className="py-4">
-          <div className="flex items-center gap-2">
-            {appointment.painel_barbeiros?.image_url && (
-              <img 
-                src={appointment.painel_barbeiros.image_url} 
-                alt={appointment.painel_barbeiros.nome}
-                className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
-              />
-            )}
-            <span className="text-sm font-medium text-gray-900">
-              {appointment.painel_barbeiros?.nome || 'N/A'}
-            </span>
-          </div>
-        </TableCell>
-
-        <TableCell className="py-4">
-          {getStatusBadge(actualStatus)}
-        </TableCell>
-
-        <TableCell className="text-right py-4">
-          <ActionMenu
-            appointment={appointment}
-            onEdit={onEdit}
-            onStatusChange={onStatusChange}
-            onDelete={onDelete}
-          />
-        </TableCell>
-      </TableRow>
-
-      {/* MOBILE (Card) */}
-      <div className="sm:hidden bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
-              {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-base text-gray-900 truncate">
-                {appointment.painel_clientes?.nome || 'Nome não encontrado'}
-              </h4>
-              <p className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</p>
-            </div>
-          </div>
-          {getStatusBadge(actualStatus)}
         </div>
+      ) : (
+        // DESKTOP (Tabela)
+        <TableRow className="hover:bg-gray-50 transition-colors duration-150">
+          <TableCell className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-sm">
+                {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
+              </div>
+              <div>
+                <div className="font-semibold text-sm text-gray-900">
+                  {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+                </div>
+                <div className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</div>
+              </div>
+            </div>
+          </TableCell>
 
-        <div className="space-y-2 bg-gray-50 rounded-lg p-3 mb-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-            <span className="font-medium text-gray-900">{format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}</span>
-            <Clock className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
-            <span className="font-medium text-gray-900">{appointment.hora}</span>
-          </div>
-          <div className="flex items-start gap-2 text-sm">
-            <CheckCircle className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <span className="font-medium text-gray-900">{appointment.painel_servicos?.nome || 'N/A'}</span>
-              <span className="ml-2 font-bold text-green-600">
+          <TableCell className="py-4">
+            <div className="flex flex-col gap-1">
+              <div className="text-sm font-medium text-gray-900">
+                {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}
+              </div>
+              <div className="text-xs text-gray-500 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {appointment.hora}
+              </div>
+            </div>
+          </TableCell>
+
+          <TableCell className="py-4">
+            <div className="flex flex-col gap-1">
+              <div className="text-sm font-medium text-gray-900">
+                {appointment.painel_servicos?.nome || 'N/A'}
+              </div>
+              <div className="text-xs font-semibold text-green-600">
                 R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
+              </div>
+            </div>
+          </TableCell>
+
+          <TableCell className="py-4">
+            <div className="flex items-center gap-2">
+              {appointment.painel_barbeiros?.image_url && (
+                <img 
+                  src={appointment.painel_barbeiros.image_url} 
+                  alt={appointment.painel_barbeiros.nome}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                />
+              )}
+              <span className="text-sm font-medium text-gray-900">
+                {appointment.painel_barbeiros?.nome || 'N/A'}
               </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            {appointment.painel_barbeiros?.image_url && (
-              <img 
-                src={appointment.painel_barbeiros.image_url} 
-                alt={appointment.painel_barbeiros.nome}
-                className="w-6 h-6 rounded-full object-cover border-2 border-white"
-              />
-            )}
-            <span className="font-medium text-gray-900">{appointment.painel_barbeiros?.nome || 'N/A'}</span>
-          </div>
-        </div>
+          </TableCell>
 
-        <div className="flex justify-end">
-          <ActionMenu
-            appointment={appointment}
-            onEdit={onEdit}
-            onStatusChange={onStatusChange}
-            onDelete={onDelete}
-          />
-        </div>
-      </div>
+          <TableCell className="py-4">
+            {getStatusBadge(actualStatus)}
+          </TableCell>
+
+          <TableCell className="text-right py-4">
+            <ActionMenu
+              appointment={appointment}
+              onEdit={onEdit}
+              onStatusChange={onStatusChange}
+              onDelete={onDelete}
+            />
+          </TableCell>
+        </TableRow>
+      )}
     </>
   );
 };
