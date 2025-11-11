@@ -2,6 +2,7 @@ import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import FinancialDashboard from '@/components/erp/FinancialDashboard';
 import IntegrationErrorsMonitor from '@/components/admin/monitoring/IntegrationErrorsMonitor';
+import { FixCashPaymentMethod } from '@/components/admin/erp/FixCashPaymentMethod';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const AdminERPFinancial: React.FC = () => {
@@ -18,15 +19,21 @@ const AdminERPFinancial: React.FC = () => {
         </div>
         <div className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
           <Tabs defaultValue="dashboard" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="dashboard">Dashboard Financeiro</TabsTrigger>
               <TabsTrigger value="monitoring">Monitor de Integrações</TabsTrigger>
+              <TabsTrigger value="tools">Ferramentas</TabsTrigger>
             </TabsList>
             <TabsContent value="dashboard">
               <FinancialDashboard />
             </TabsContent>
             <TabsContent value="monitoring">
               <IntegrationErrorsMonitor />
+            </TabsContent>
+            <TabsContent value="tools">
+              <div className="space-y-6">
+                <FixCashPaymentMethod />
+              </div>
             </TabsContent>
           </Tabs>
         </div>

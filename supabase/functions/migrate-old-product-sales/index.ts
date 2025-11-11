@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Buscar pagamento (se existir)
+        // Buscar pagamento (OBRIGATÓRIO)
         const { data: payments } = await supabase
           .from('totem_payments')
           .select('payment_method')
@@ -84,7 +84,14 @@ Deno.serve(async (req) => {
           .order('created_at', { ascending: false })
           .limit(1)
 
-        const paymentMethod = payments?.[0]?.payment_method || 'cash'
+        // 🚫 NÃO usar 'cash' como fallback - pular venda se não tiver pagamento
+        if (!payments || payments.length === 0 || !payments[0].payment_method) {
+          console.log(`⚠️ Venda ${venda.id} sem método de pagamento válido - pulando`)
+          skipped++
+          continue
+        }
+
+        const paymentMethod = payments[0].payment_method
 
         // Buscar informações dos produtos para cada item
         const productIds = itens.map((item: any) => item.ref_id)
