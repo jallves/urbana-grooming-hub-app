@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from 'sonner';
 
 interface PainelAgendamento {
   id: string;
@@ -300,6 +301,44 @@ const ActionMenu = ({
 }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  // Verificar se o agendamento pode ser excluído
+  const canDelete = () => {
+    const hasCheckIn = appointment.totem_sessions && 
+      appointment.totem_sessions.some((s: any) => s.check_in_time);
+    
+    const hasSales = appointment.vendas && appointment.vendas.length > 0;
+    
+    const isFinalized = appointment.status === 'FINALIZADO' || 
+                       appointment.status === 'concluido';
+
+    return !hasCheckIn && !hasSales && !isFinalized;
+  };
+
+  const getDeleteBlockedReason = () => {
+    const hasCheckIn = appointment.totem_sessions && 
+      appointment.totem_sessions.some((s: any) => s.check_in_time);
+    
+    const hasSales = appointment.vendas && appointment.vendas.length > 0;
+    
+    const isFinalized = appointment.status === 'FINALIZADO' || 
+                       appointment.status === 'concluido';
+
+    if (hasCheckIn) return 'Este agendamento possui check-in realizado e não pode ser excluído.';
+    if (hasSales) return 'Este agendamento possui vendas associadas e não pode ser excluído.';
+    if (isFinalized) return 'Este agendamento está finalizado e não pode ser excluído.';
+    return null;
+  };
+
+  const handleDeleteClick = () => {
+    if (!canDelete()) {
+      toast.error('Não é possível excluir', {
+        description: getDeleteBlockedReason()
+      });
+      return;
+    }
+    setIsDeleteDialogOpen(true);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -349,8 +388,9 @@ const ActionMenu = ({
       )}
 
       <DropdownMenuItem
-        className="cursor-pointer hover:bg-red-50 focus:bg-red-50 py-2.5 text-red-600"
-        onClick={() => setIsDeleteDialogOpen(true)}
+        className={`cursor-pointer py-2.5 ${canDelete() ? 'hover:bg-red-50 focus:bg-red-50 text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+        onClick={handleDeleteClick}
+        disabled={!canDelete()}
       >
         <Trash2 className="mr-3 h-4 w-4" />
         <span className="text-sm font-medium">Excluir Permanentemente</span>
@@ -361,22 +401,41 @@ const ActionMenu = ({
   <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-        <AlertDialogDescription>
-          Tem certeza que deseja excluir este agendamento de{' '}
-          <strong>{appointment.painel_clientes?.nome}</strong>? Esta ação não pode ser desfeita.
+        <AlertDialogTitle className="text-red-600 font-bold">⚠️ Confirmar Exclusão Permanente</AlertDialogTitle>
+        <AlertDialogDescription className="space-y-3">
+          <p className="font-semibold text-gray-900">
+            Você está prestes a excluir permanentemente o agendamento de{' '}
+            <strong className="text-red-600">{appointment.painel_clientes?.nome}</strong>
+          </p>
+          
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
+            <p className="text-sm text-yellow-800 font-medium">
+              <strong>ATENÇÃO:</strong> Esta ação é irreversível e pode:
+            </p>
+            <ul className="text-xs text-yellow-700 mt-2 ml-4 space-y-1 list-disc">
+              <li>Comprometer a integridade dos registros administrativos</li>
+              <li>Dificultar auditorias e relatórios financeiros</li>
+              <li>Causar inconsistências no histórico de atendimentos</li>
+            </ul>
+          </div>
+
+          <p className="text-sm text-gray-700 font-medium">
+            💡 <strong>Recomendação:</strong> Em vez de excluir, considere <strong>cancelar</strong> o agendamento para manter o histórico.
+          </p>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+        <AlertDialogCancel className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100">
+          Cancelar (Recomendado)
+        </AlertDialogCancel>
         <AlertDialogAction
           onClick={() => {
             onDelete(appointment.id);
             setIsDeleteDialogOpen(false);
           }}
-          className="bg-red-600 hover:bg-red-700"
+          className="bg-red-600 hover:bg-red-700 text-white font-bold"
         >
-          Excluir
+          Excluir Permanentemente
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

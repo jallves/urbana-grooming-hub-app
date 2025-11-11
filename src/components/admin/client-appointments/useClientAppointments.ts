@@ -199,6 +199,70 @@ export const useClientAppointments = () => {
   // Deleta agendamento
   const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
     try {
+      console.log('🗑️ Tentando excluir agendamento:', appointmentId);
+
+      // Buscar agendamento completo com validações
+      const { data: appointment, error: fetchError } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          painel_clientes(nome),
+          totem_sessions(check_in_time, check_out_time, status),
+          vendas(id, status)
+        `)
+        .eq('id', appointmentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Validações de integridade
+      const hasCheckIn = appointment.totem_sessions?.some((s: any) => s.check_in_time);
+      const hasSales = appointment.vendas?.length > 0;
+      const isFinalized = appointment.status === 'FINALIZADO' || appointment.status === 'concluido';
+
+      if (hasCheckIn) {
+        console.error('❌ Tentativa de excluir agendamento com check-in');
+        toast.error('Operação bloqueada', {
+          description: 'Não é possível excluir agendamento com check-in realizado'
+        });
+        return false;
+      }
+
+      if (hasSales) {
+        console.error('❌ Tentativa de excluir agendamento com vendas');
+        toast.error('Operação bloqueada', {
+          description: 'Não é possível excluir agendamento com vendas associadas'
+        });
+        return false;
+      }
+
+      if (isFinalized) {
+        console.error('❌ Tentativa de excluir agendamento finalizado');
+        toast.error('Operação bloqueada', {
+          description: 'Não é possível excluir agendamento finalizado'
+        });
+        return false;
+      }
+
+      // Registrar auditoria antes de excluir
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('admin_activity_log').insert({
+          admin_id: user.id,
+          action: 'delete_appointment',
+          entity: 'painel_agendamentos',
+          entity_id: appointmentId,
+          details: {
+            client_name: appointment.painel_clientes?.nome,
+            date: appointment.data,
+            time: appointment.hora,
+            status: appointment.status,
+            reason: 'permanent_deletion'
+          }
+        });
+      }
+
+      // Proceder com a exclusão
       const { error } = await supabase
         .from('painel_agendamentos')
         .delete()
@@ -206,12 +270,17 @@ export const useClientAppointments = () => {
 
       if (error) throw error;
 
+      console.log('✅ Agendamento excluído com sucesso');
       setAppointments(prev => prev.filter(appointment => appointment.id !== appointmentId));
-      toast.success('Agendamento excluído com sucesso!');
+      toast.success('Agendamento excluído', {
+        description: 'O registro foi permanentemente removido do sistema'
+      });
       return true;
-    } catch (error) {
-      console.error('Erro ao deletar agendamento:', error);
-      toast.error('Erro ao excluir agendamento');
+    } catch (error: any) {
+      console.error('❌ Erro ao excluir agendamento:', error);
+      toast.error('Erro ao excluir agendamento', {
+        description: error.message
+      });
       return false;
     }
   }, []);
