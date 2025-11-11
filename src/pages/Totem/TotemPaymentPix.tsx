@@ -248,6 +248,7 @@ const TotemPaymentPix: React.FC = () => {
           appointment, 
           client,
           total,
+          paymentMethod: 'pix', // ✅ Indicar que foi PIX
           isDirect
         },
         replace: true
