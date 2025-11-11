@@ -136,65 +136,82 @@ export const useClientAppointments = () => {
     };
   }, [fetchAppointments]);
 
-  // Atualiza status de agendamento com feedback visual
+  // Cancela agendamento (Lei Pétrea: apenas 'agendado' e 'check_in_finalizado' podem ser cancelados)
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
-      console.log('Atualizando status do agendamento:', appointmentId, 'para:', newStatus);
+      console.log('🚫 Cancelando agendamento:', appointmentId);
       
-      // Se for FINALIZADO, chamar edge function para processar tudo
-      if (newStatus === 'FINALIZADO') {
-        console.log('🎯 Finalizando agendamento via edge function...');
-        
-        const { data, error } = await supabase.functions.invoke('process-appointment-completion', {
-          body: {
-            agendamento_id: appointmentId,
-            source: 'admin',
-            completed_by: (await supabase.auth.getUser()).data.user?.id
-          }
-        });
-
-        if (error) throw error;
-
-        console.log('✅ Agendamento finalizado:', data);
-        toast.success('Atendimento finalizado!', {
-          description: 'Comissão e lançamentos financeiros gerados automaticamente.'
-        });
-      } else {
-        // Para outros status, apenas atualizar
-        const { error } = await supabase
-          .from('painel_agendamentos')
-          .update({ 
-            status: newStatus,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', appointmentId);
-
-        if (error) throw error;
-
-        // Feedback visual baseado no status
-        const statusMessages = {
-          'confirmado': 'Agendamento confirmado com sucesso!',
-          'concluido': 'Agendamento marcado como concluído!',
-          'cancelado': 'Agendamento cancelado!'
-        };
-
-        toast.success(statusMessages[newStatus as keyof typeof statusMessages] || 'Status atualizado!');
+      // Validar se pode cancelar
+      const appointment = appointments.find(a => a.id === appointmentId);
+      if (!appointment) {
+        toast.error('Agendamento não encontrado');
+        return;
       }
 
-      // Atualiza localmente para refletir mudanças imediatas
+      const hasCheckIn = appointment.totem_sessions?.some((s: any) => s.check_in_time);
+      const hasCheckOut = appointment.totem_sessions?.some((s: any) => s.check_out_time);
+      
+      // Determinar status atual
+      let currentStatus: string;
+      if (!hasCheckIn) {
+        currentStatus = 'agendado';
+      } else if (hasCheckIn && !hasCheckOut) {
+        currentStatus = 'check_in_finalizado';
+      } else {
+        currentStatus = 'concluido';
+      }
+
+      // Validar se pode cancelar (apenas agendado e check_in_finalizado)
+      if (currentStatus !== 'agendado' && currentStatus !== 'check_in_finalizado') {
+        toast.error('Não é possível cancelar', {
+          description: 'Apenas agendamentos com status "Agendado" ou "Check-in Finalizado" podem ser cancelados'
+        });
+        return;
+      }
+
+      // Atualizar status para cancelado
+      const { error } = await supabase
+        .from('painel_agendamentos')
+        .update({ 
+          status: 'cancelado',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      // Registrar auditoria
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('admin_activity_log').insert({
+          admin_id: user.id,
+          action: 'cancel_appointment',
+          entity: 'painel_agendamentos',
+          entity_id: appointmentId,
+          details: {
+            previous_status: currentStatus,
+            new_status: 'cancelado',
+            client_name: appointment.painel_clientes?.nome
+          }
+        });
+      }
+
+      toast.success('Agendamento cancelado com sucesso');
+      
+      // Atualiza localmente
       setAppointments(prev =>
-        prev.map(appointment =>
-          appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
+        prev.map(a =>
+          a.id === appointmentId ? { ...a, status: 'cancelado' } : a
         )
       );
       
     } catch (error: any) {
-      console.error('Erro ao atualizar status do agendamento:', error);
-      toast.error('Erro ao atualizar status', {
+      console.error('Erro ao cancelar agendamento:', error);
+      toast.error('Erro ao cancelar agendamento', {
         description: error.message || 'Tente novamente'
       });
     }
-  }, []);
+  }, [appointments]);
 
   // Deleta agendamento
   const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
@@ -227,7 +244,9 @@ export const useClientAppointments = () => {
       const hasSales = appointment.vendas?.length > 0;
       const statusUpper = appointment.status?.toUpperCase() || '';
       const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
+      const isCancelled = statusUpper === 'CANCELADO';
 
+      // Lei Pétrea: só pode excluir se não tiver NENHUMA informação
       if (hasCheckIn) {
         console.error('❌ BLOQUEIO: Agendamento possui check-in', {
           appointmentId,
@@ -258,6 +277,18 @@ export const useClientAppointments = () => {
         });
         toast.error('Operação bloqueada', {
           description: 'Não é possível excluir agendamento finalizado ou concluído'
+        });
+        return false;
+      }
+
+      if (isCancelled) {
+        console.error('❌ BLOQUEIO: Agendamento está cancelado', {
+          appointmentId,
+          status: appointment.status,
+          statusUpper
+        });
+        toast.error('Operação bloqueada', {
+          description: 'Não é possível excluir agendamento cancelado. O status "cancelado" deve ser mantido para fins de auditoria.'
         });
         return false;
       }

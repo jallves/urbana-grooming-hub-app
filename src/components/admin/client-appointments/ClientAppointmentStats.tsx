@@ -47,8 +47,14 @@ interface ClientAppointmentStatsProps {
 }
 
 const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appointments }) => {
-  // LEI PÉTREA: Calcular estatísticas baseadas nos 3 estados únicos
+  // LEI PÉTREA: Calcular estatísticas baseadas nos 4 estados (3 automáticos + 1 manual)
   const getAppointmentStatus = (apt: PainelAgendamento): string => {
+    // Verificar se foi cancelado manualmente
+    const statusUpper = apt.status?.toUpperCase() || '';
+    if (statusUpper === 'CANCELADO') {
+      return 'cancelado';
+    }
+
     const hasCheckIn = apt.totem_sessions && 
       apt.totem_sessions.some(s => s.check_in_time);
     
@@ -65,6 +71,7 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
     agendados: appointments.filter(apt => getAppointmentStatus(apt) === 'agendado').length,
     checkInFinalizados: appointments.filter(apt => getAppointmentStatus(apt) === 'check_in_finalizado').length,
     concluidos: appointments.filter(apt => getAppointmentStatus(apt) === 'concluido').length,
+    cancelados: appointments.filter(apt => getAppointmentStatus(apt) === 'cancelado').length,
   };
 
   const statCards = [
@@ -104,10 +111,19 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
       iconColor: 'text-green-600',
       description: 'atendimentos finalizados'
     },
+    {
+      title: 'Cancelado',
+      value: stats.cancelados,
+      icon: XCircle,
+      gradient: 'from-red-500 to-rose-500',
+      iconBg: 'bg-red-100',
+      iconColor: 'text-red-600',
+      description: 'agendamentos cancelados'
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
       {statCards.map((stat, index) => (
         <Card 
           key={stat.title} 

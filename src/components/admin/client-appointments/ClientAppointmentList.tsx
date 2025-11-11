@@ -20,23 +20,30 @@ const ClientAppointmentList: React.FC = () => {
     handleUpdateAppointment
   } = useClientAppointments();
   
-  // LEI PÉTREA: Filtrar agendamentos baseado nos 3 estados únicos
+  // LEI PÉTREA: Filtrar agendamentos baseado nos 4 estados (3 automáticos + 1 manual)
   const filteredAppointments = appointments.filter((appointment: PainelAgendamento) => {
-    const hasCheckIn = appointment.totem_sessions && 
-      appointment.totem_sessions.length > 0 && 
-      appointment.totem_sessions.some(s => s.check_in_time);
-    
-    const hasCheckOut = appointment.totem_sessions && 
-      appointment.totem_sessions.some(s => s.check_out_time);
-
-    // Determinar status atual (Lei Pétrea)
+    // Verificar se foi cancelado manualmente
+    const statusUpper = appointment.status?.toUpperCase() || '';
     let currentStatus: string;
-    if (!hasCheckIn) {
-      currentStatus = 'agendado'; // Check-in Pendente
-    } else if (hasCheckIn && !hasCheckOut) {
-      currentStatus = 'check_in_finalizado'; // Checkout Pendente
+    
+    if (statusUpper === 'CANCELADO') {
+      currentStatus = 'cancelado';
     } else {
-      currentStatus = 'concluido'; // Concluído
+      const hasCheckIn = appointment.totem_sessions && 
+        appointment.totem_sessions.length > 0 && 
+        appointment.totem_sessions.some(s => s.check_in_time);
+      
+      const hasCheckOut = appointment.totem_sessions && 
+        appointment.totem_sessions.some(s => s.check_out_time);
+
+      // Determinar status atual (Lei Pétrea)
+      if (!hasCheckIn) {
+        currentStatus = 'agendado'; // Check-in Pendente
+      } else if (hasCheckIn && !hasCheckOut) {
+        currentStatus = 'check_in_finalizado'; // Checkout Pendente
+      } else {
+        currentStatus = 'concluido'; // Concluído
+      }
     }
 
     // Aplicar filtro de status

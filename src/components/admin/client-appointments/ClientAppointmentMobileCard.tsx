@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -82,23 +82,29 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
 
   // LEI PÉTREA: Determinar status didático do agendamento
   const getActualStatus = () => {
+    // Verificar se foi cancelado manualmente
+    const statusUpper = appointment.status?.toUpperCase() || '';
+    if (statusUpper === 'CANCELADO') {
+      return 'cancelado';
+    }
+
     const hasCheckIn = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_in_time);
     
     const hasCheckOut = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_out_time);
 
-    // 3 ESTADOS ÚNICOS E IMUTÁVEIS:
+    // 3 ESTADOS AUTOMÁTICOS:
     if (!hasCheckIn) {
-      return 'agendado'; // "Agendado / Check-in Pendente"
+      return 'agendado';
     }
 
     if (hasCheckIn && !hasCheckOut) {
-      return 'check_in_finalizado'; // "Check-in Finalizado / Checkout Pendente"
+      return 'check_in_finalizado';
     }
 
     if (hasCheckIn && hasCheckOut) {
-      return 'concluido'; // "Concluído"
+      return 'concluido';
     }
 
     return 'agendado';
@@ -125,6 +131,12 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
         sublabel: null,
         className: 'bg-green-100 text-green-700 border-green-300',
         icon: '🎉'
+      },
+      'cancelado': {
+        label: 'Cancelado',
+        sublabel: null,
+        className: 'bg-red-100 text-red-700 border-red-300',
+        icon: '❌'
       },
     };
 
@@ -153,8 +165,15 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
     
     const statusUpper = appointment.status?.toUpperCase() || '';
     const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
+    const isCancelled = statusUpper === 'CANCELADO';
 
-    return !hasCheckIn && !hasSales && !isFinalized;
+    return !hasCheckIn && !hasSales && !isFinalized && !isCancelled;
+  };
+
+  // Verificar se pode cancelar
+  const canCancel = () => {
+    const currentStatus = actualStatus;
+    return currentStatus === 'agendado' || currentStatus === 'check_in_finalizado';
   };
 
   const getDeleteBlockedReason = () => {
@@ -165,10 +184,12 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
     
     const statusUpper = appointment.status?.toUpperCase() || '';
     const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
+    const isCancelled = statusUpper === 'CANCELADO';
 
     if (hasCheckIn) return 'Este agendamento possui check-in realizado e não pode ser excluído.';
     if (hasSales) return 'Este agendamento possui vendas associadas e não pode ser excluído.';
     if (isFinalized) return 'Este agendamento está finalizado/concluído e não pode ser excluído.';
+    if (isCancelled) return 'Agendamentos cancelados devem ser mantidos para auditoria.';
     return null;
   };
 
@@ -244,6 +265,20 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
                 <Edit className="mr-3 h-4 w-4 text-gray-600" />
                 <span className="text-sm font-medium">Editar</span>
               </DropdownMenuItem>
+
+              {canCancel() && (
+                <DropdownMenuItem
+                  className="cursor-pointer text-orange-600 py-2.5"
+                  onClick={() => {
+                    if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
+                      onStatusChange(appointment.id, 'cancelado');
+                    }
+                  }}
+                >
+                  <X className="mr-3 h-4 w-4" />
+                  <span className="text-sm font-medium">Cancelar</span>
+                </DropdownMenuItem>
+              )}
 
               <DropdownMenuItem
                 className={`cursor-pointer py-2.5 ${canDelete() ? 'text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}

@@ -50,6 +50,9 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
             <SelectItem value="concluido" className="cursor-pointer hover:bg-green-50 text-sm">
               <span className="font-medium">🎉 Concluído</span>
             </SelectItem>
+            <SelectItem value="cancelado" className="cursor-pointer hover:bg-red-50 text-sm">
+              <span className="font-medium">❌ Cancelado</span>
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>

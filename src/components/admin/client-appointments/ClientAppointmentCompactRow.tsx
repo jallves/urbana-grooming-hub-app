@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { MoreHorizontal, Edit, Trash2, Clock } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Clock, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -83,13 +83,19 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 
   // LEI PÉTREA: Determinar status didático do agendamento
   const getActualStatus = () => {
+    // Verificar se foi cancelado manualmente
+    const statusUpper = appointment.status?.toUpperCase() || '';
+    if (statusUpper === 'CANCELADO') {
+      return 'cancelado';
+    }
+
     const hasCheckIn = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_in_time);
     
     const hasCheckOut = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_out_time);
 
-    // 3 ESTADOS ÚNICOS E IMUTÁVEIS:
+    // 3 ESTADOS AUTOMÁTICOS:
     // 1. Cliente agendou, não fez check-in ainda
     if (!hasCheckIn) {
       return 'agendado'; // "Agendado / Check-in Pendente"
@@ -105,7 +111,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
       return 'concluido'; // "Concluído"
     }
 
-    // Fallback (nunca deve acontecer)
+    // Fallback
     return 'agendado';
   };
 
@@ -131,6 +137,12 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
         className: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200',
         icon: '🎉'
       },
+      'cancelado': {
+        label: 'Cancelado',
+        sublabel: null,
+        className: 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200',
+        icon: '❌'
+      },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.agendado;
@@ -149,7 +161,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     );
   };
 
-  // Verificar se pode deletar
+  // Verificar se pode deletar (Lei Pétrea: apenas sem nenhuma informação)
   const canDelete = () => {
     const hasCheckIn = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_in_time);
@@ -158,8 +170,15 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     
     const statusUpper = appointment.status?.toUpperCase() || '';
     const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
+    const isCancelled = statusUpper === 'CANCELADO';
 
-    return !hasCheckIn && !hasSales && !isFinalized;
+    return !hasCheckIn && !hasSales && !isFinalized && !isCancelled;
+  };
+
+  // Verificar se pode cancelar (Lei Pétrea: apenas 'agendado' e 'check_in_finalizado')
+  const canCancel = () => {
+    const currentStatus = actualStatus;
+    return currentStatus === 'agendado' || currentStatus === 'check_in_finalizado';
   };
 
   const getDeleteBlockedReason = () => {
@@ -170,10 +189,12 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     
     const statusUpper = appointment.status?.toUpperCase() || '';
     const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
+    const isCancelled = statusUpper === 'CANCELADO';
 
     if (hasCheckIn) return 'Este agendamento possui check-in realizado e não pode ser excluído.';
     if (hasSales) return 'Este agendamento possui vendas associadas e não pode ser excluído.';
     if (isFinalized) return 'Este agendamento está finalizado/concluído e não pode ser excluído.';
+    if (isCancelled) return 'Agendamentos cancelados devem ser mantidos para auditoria e não podem ser excluídos.';
     return null;
   };
 
@@ -261,6 +282,20 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
               <Edit className="mr-3 h-4 w-4 text-gray-600" />
               <span className="text-sm font-medium">Editar Agendamento</span>
             </DropdownMenuItem>
+
+            {canCancel() && (
+              <DropdownMenuItem
+                className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50 text-orange-600 py-2.5"
+                onClick={() => {
+                  if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
+                    onStatusChange(appointment.id, 'cancelado');
+                  }
+                }}
+              >
+                <X className="mr-3 h-4 w-4" />
+                <span className="text-sm font-medium">Cancelar Agendamento</span>
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuItem
               className={`cursor-pointer py-2.5 ${canDelete() ? 'hover:bg-red-50 focus:bg-red-50 text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
