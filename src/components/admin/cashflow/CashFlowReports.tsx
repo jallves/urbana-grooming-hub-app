@@ -104,69 +104,69 @@ const CashFlowReports: React.FC = () => {
     <div className="h-full space-y-4 overflow-auto">
       {/* Summary Cards - Mobile Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700/50">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
-            <CardTitle className="text-xs font-medium text-green-400">
+            <CardTitle className="text-xs font-medium text-green-700">
               Receita Anual
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-400" />
+            <TrendingUp className="h-4 w-4 text-green-700" />
           </CardHeader>
           <CardContent className="p-3 pt-0">
-            <div className="text-lg font-bold text-green-400">
+            <div className="text-lg font-bold text-green-700">
               R$ {(yearlyData?.totalIncome || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-green-400/70 mt-1">
+            <p className="text-xs text-green-600 mt-1">
               {yearlyData?.transactionCount || 0} transações
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-red-900/30 to-red-800/20 border-red-700/50">
+        <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
-            <CardTitle className="text-xs font-medium text-red-400">
+            <CardTitle className="text-xs font-medium text-red-700">
               Despesa Anual
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-400" />
+            <TrendingDown className="h-4 w-4 text-red-700" />
           </CardHeader>
           <CardContent className="p-3 pt-0">
-            <div className="text-lg font-bold text-red-400">
+            <div className="text-lg font-bold text-red-700">
               R$ {(yearlyData?.totalExpense || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-red-400/70 mt-1">
+            <p className="text-xs text-red-600 mt-1">
               Este ano
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-urbana-gold/30 to-yellow-800/20 border-urbana-gold/50">
+        <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
-            <CardTitle className="text-xs font-medium text-urbana-gold">
+            <CardTitle className="text-xs font-medium text-yellow-700">
               Lucro Anual
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-urbana-gold" />
+            <DollarSign className="h-4 w-4 text-yellow-700" />
           </CardHeader>
           <CardContent className="p-3 pt-0">
-            <div className="text-lg font-bold text-urbana-gold">
+            <div className="text-lg font-bold text-yellow-700">
               R$ {(yearlyData?.totalNet || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className={`text-xs mt-1 ${monthlyGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-xs mt-1 ${monthlyGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {monthlyGrowth >= 0 ? '+' : ''}{monthlyGrowth.toFixed(1)}% vs mês anterior
             </p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border-blue-700/50">
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3">
-            <CardTitle className="text-xs font-medium text-blue-400">
+            <CardTitle className="text-xs font-medium text-blue-700">
               Mês Atual
             </CardTitle>
-            <Calendar className="h-4 w-4 text-blue-400" />
+            <Calendar className="h-4 w-4 text-blue-700" />
           </CardHeader>
           <CardContent className="p-3 pt-0">
-            <div className="text-lg font-bold text-blue-400">
+            <div className="text-lg font-bold text-blue-700">
               R$ {(currentMonthData?.net || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-blue-400/70 mt-1">
+            <p className="text-xs text-blue-600 mt-1">
               {format(currentDate, 'MMMM yyyy', { locale: ptBR })}
             </p>
           </CardContent>
@@ -174,9 +174,9 @@ const CashFlowReports: React.FC = () => {
       </div>
 
       {/* Monthly Performance - Horizontal Scroll on Mobile */}
-      <Card className="bg-gray-900/50 border-gray-700">
+      <Card className="bg-white border-gray-200">
         <CardHeader className="p-3">
-          <CardTitle className="text-sm font-semibold text-urbana-gold flex items-center gap-2">
+          <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Performance Mensal (12 meses)
           </CardTitle>
@@ -186,16 +186,16 @@ const CashFlowReports: React.FC = () => {
             <div className="flex gap-2 min-w-max pb-2">
               {monthlyData?.map((month, index) => (
                 <div key={index} className="flex-shrink-0 w-24 text-center">
-                  <div className="bg-gray-800/50 rounded-lg p-2 space-y-1">
-                    <div className="text-xs font-semibold text-gray-300">{month.month}</div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 space-y-1">
+                    <div className="text-xs font-semibold text-gray-900">{month.month}</div>
                     <div className="space-y-1">
-                      <div className="text-xs text-green-400">
+                      <div className="text-xs text-green-700">
                         +{(month.income / 1000).toFixed(0)}k
                       </div>
-                      <div className="text-xs text-red-400">
+                      <div className="text-xs text-red-700">
                         -{(month.expense / 1000).toFixed(0)}k
                       </div>
-                      <div className={`text-xs font-bold ${month.net >= 0 ? 'text-urbana-gold' : 'text-red-400'}`}>
+                      <div className={`text-xs font-bold ${month.net >= 0 ? 'text-yellow-700' : 'text-red-700'}`}>
                         {month.net >= 0 ? '+' : ''}{(month.net / 1000).toFixed(0)}k
                       </div>
                     </div>
@@ -208,9 +208,9 @@ const CashFlowReports: React.FC = () => {
       </Card>
 
       {/* Categories Breakdown */}
-      <Card className="bg-gray-900/50 border-gray-700">
+      <Card className="bg-white border-gray-200">
         <CardHeader className="p-3">
-          <CardTitle className="text-sm font-semibold text-urbana-gold flex items-center gap-2">
+          <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
             <PieChart className="h-4 w-4" />
             Resumo por Categoria (Ano Atual)
           </CardTitle>
@@ -218,13 +218,13 @@ const CashFlowReports: React.FC = () => {
         <CardContent className="p-3 pt-0">
           <div className="space-y-2">
             {yearlyData?.categories && Object.entries(yearlyData.categories).map(([category, data]) => (
-              <div key={category} className="flex justify-between items-center p-2 bg-gray-800/50 rounded">
-                <span className="text-sm text-gray-300 truncate">{category}</span>
+              <div key={category} className="flex justify-between items-center p-2 bg-gray-50 rounded border border-gray-200">
+                <span className="text-sm text-gray-900 truncate font-medium">{category}</span>
                 <div className="text-right">
-                  <div className="text-xs text-green-400">
+                  <div className="text-xs text-green-700 font-semibold">
                     +R$ {data.income.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
                   </div>
-                  <div className="text-xs text-red-400">
+                  <div className="text-xs text-red-700 font-semibold">
                     -R$ {data.expense.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
                   </div>
                 </div>
