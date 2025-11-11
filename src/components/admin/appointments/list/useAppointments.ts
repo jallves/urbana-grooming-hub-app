@@ -234,6 +234,8 @@ export const useAppointments = () => {
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
+      console.log('🔄 Atualizando status do agendamento:', appointmentId, 'para:', newStatus);
+      
       const isPainelAppointment = appointmentId.startsWith('painel_');
       
       if (isPainelAppointment) {
@@ -242,33 +244,74 @@ export const useAppointments = () => {
                             newStatus === 'confirmed' ? 'confirmado' : 
                             newStatus === 'completed' ? 'concluido' : 'confirmado';
 
-        const { error } = await supabase
+        console.log('📝 Atualizando painel_agendamentos:', realId, 'status:', painelStatus);
+
+        const { data, error } = await supabase
           .from('painel_agendamentos')
-          .update({ status: painelStatus })
-          .eq('id', realId);
+          .update({ 
+            status: painelStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', realId)
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Erro ao atualizar painel_agendamentos:', error);
+          throw error;
+        }
+
+        console.log('✅ Agendamento atualizado:', data);
       } else {
-        const { error } = await supabase
-          .from('appointments')
-          .update({ status: newStatus })
-          .eq('id', appointmentId);
+        console.log('📝 Atualizando appointments:', appointmentId, 'status:', newStatus);
 
-        if (error) throw error;
+        const { data, error } = await supabase
+          .from('appointments')
+          .update({ 
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', appointmentId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ Erro ao atualizar appointments:', error);
+          throw error;
+        }
+
+        console.log('✅ Agendamento atualizado:', data);
       }
       
       // Atualizar estado local
       setAppointments(prev => prev.map(appointment => 
         appointment.id === appointmentId ? { ...appointment, status: newStatus } : appointment
       ));
+
+      // Feedback visual de sucesso
+      const statusLabels: Record<string, string> = {
+        confirmed: 'confirmado',
+        completed: 'concluído',
+        cancelled: 'cancelado',
+        scheduled: 'agendado'
+      };
+
+      toast.success('✅ Status atualizado!', {
+        description: `Agendamento marcado como ${statusLabels[newStatus] || newStatus}`,
+      });
+
+      // Recarregar lista após pequeno delay para garantir propagação
+      setTimeout(() => {
+        fetchAppointments();
+      }, 500);
       
-    } catch (error) {
-      console.error('Error updating appointment status:', error);
-      toast.error("Erro", {
-        description: "Não foi possível atualizar o status.",
+    } catch (error: any) {
+      console.error('❌ Erro fatal ao atualizar status:', error);
+      toast.error("Erro ao atualizar status", {
+        description: error.message || "Não foi possível atualizar o status do agendamento.",
       });
     }
-  }, []);
+  }, [fetchAppointments]);
   
   const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
     try {
