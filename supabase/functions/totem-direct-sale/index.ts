@@ -50,14 +50,7 @@ serve(async (req) => {
       // 3. Buscar itens da venda (produtos)
       const { data: itens, error: itensError } = await supabase
         .from('vendas_itens')
-        .select(`
-          *,
-          painel_produtos:ref_id (
-            id,
-            nome,
-            preco
-          )
-        `)
+        .select('*')
         .eq('venda_id', venda_id)
         .eq('tipo', 'PRODUTO')
 
@@ -65,6 +58,8 @@ serve(async (req) => {
         console.error('❌ Erro ao buscar itens da venda:', itensError)
         throw new Error('Erro ao buscar itens da venda')
       }
+
+      console.log('📦 Itens da venda encontrados:', itens?.length || 0)
 
       // 4. Buscar método de pagamento
       const { data: payment, error: paymentFetchError } = await supabase
@@ -82,10 +77,10 @@ serve(async (req) => {
       const transactionItems = itens.map((item: any) => ({
         type: 'product',
         id: item.ref_id,
-        name: item.painel_produtos?.nome || 'Produto',
+        name: item.nome, // Usar nome já salvo em vendas_itens
         quantity: item.quantidade,
-        price: item.preco_unitario,
-        discount: item.desconto || 0
+        price: item.preco_unit, // Campo correto: preco_unit
+        discount: 0
       }))
 
       console.log('💰 Criando transação financeira no ERP:', {
@@ -118,15 +113,22 @@ serve(async (req) => {
       }
 
       // 7. Atualizar estoque dos produtos
-      if (itens) {
+      if (itens && itens.length > 0) {
+        console.log('📦 Atualizando estoque de', itens.length, 'produtos')
+        
         for (const item of itens) {
-          const { error: stockError } = await supabase.rpc('update_product_stock', {
-            product_id: item.ref_id,
-            quantity: -item.quantidade
+          console.log('📦 Diminuindo estoque do produto:', item.ref_id, 'Quantidade:', item.quantidade)
+          
+          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
+            p_product_id: item.ref_id,
+            p_quantity: item.quantidade
           })
           
           if (stockError) {
             console.error('❌ Erro ao atualizar estoque:', stockError)
+            // Continua mesmo com erro de estoque
+          } else {
+            console.log('✅ Estoque atualizado para produto:', item.ref_id)
           }
         }
       }
