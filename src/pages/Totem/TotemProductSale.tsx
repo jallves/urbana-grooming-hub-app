@@ -194,6 +194,22 @@ const TotemProductSale: React.FC = () => {
 
       console.log('✅ Itens adicionados à venda');
 
+      // Criar registro de pagamento
+      const { data: payment, error: paymentError } = await supabase
+        .from('totem_payments')
+        .insert({
+          session_id: null,
+          payment_method: method,
+          amount: calculateTotal(),
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      console.log('✅ Pagamento criado:', payment.id);
+
       setCurrentSaleId(venda.id);
 
       // Abrir modal de pagamento
@@ -218,24 +234,42 @@ const TotemProductSale: React.FC = () => {
     if (!currentSaleId) return;
 
     try {
-      // Atualizar status da venda
-      const { error: updateError } = await supabase
-        .from('vendas')
-        .update({ status: 'PAGA' })
-        .eq('id', currentSaleId);
+      console.log('💳 Finalizando pagamento da venda:', currentSaleId);
 
-      if (updateError) throw updateError;
+      // Buscar o payment_id criado
+      const { data: payments, error: paymentsError } = await supabase
+        .from('totem_payments')
+        .select('id')
+        .eq('amount', calculateTotal())
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      // Diminuir estoque
-      for (const item of cart) {
-        const { error: stockError } = await supabase
-          .rpc('decrease_product_stock', {
-            p_product_id: item.product_id,
-            p_quantity: item.quantidade
-          });
-
-        if (stockError) throw stockError;
+      if (paymentsError || !payments || payments.length === 0) {
+        throw new Error('Pagamento não encontrado');
       }
+
+      const paymentId = payments[0].id;
+
+      // Chamar edge function para finalizar venda e criar registros no ERP
+      console.log('📦 Chamando edge function totem-direct-sale');
+      const { data: finishResult, error: finishError } = await supabase.functions.invoke(
+        'totem-direct-sale',
+        {
+          body: {
+            action: 'finish',
+            venda_id: currentSaleId,
+            payment_id: paymentId
+          }
+        }
+      );
+
+      if (finishError) {
+        console.error('❌ Erro ao finalizar venda direta:', finishError);
+        throw finishError;
+      }
+
+      console.log('✅ Venda finalizada e registros criados no ERP:', finishResult);
 
       // Redirecionar para tela de sucesso
       navigate('/totem/product-payment-success', {
@@ -245,9 +279,11 @@ const TotemProductSale: React.FC = () => {
         }
       });
 
-    } catch (error) {
-      console.error('Erro ao finalizar pagamento:', error);
-      toast.error('Erro ao finalizar pagamento');
+    } catch (error: any) {
+      console.error('❌ Erro ao finalizar pagamento:', error);
+      toast.error('Erro ao finalizar pagamento', {
+        description: error.message
+      });
     }
   };
 

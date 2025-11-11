@@ -17,3 +17,6 @@ verify_jwt = false
 # Executa a cada hora
 [functions.monitor-failed-transactions.cron]
 schedule = "0 * * * *"
+
+[functions.migrate-old-product-sales]
+verify_jwt = false

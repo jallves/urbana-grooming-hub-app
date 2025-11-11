@@ -109,6 +109,33 @@ export default function IntegrationErrorsMonitor() {
     }
   };
 
+  const migrateOldProductSales = async () => {
+    setLoading(true);
+    try {
+      toast.info('Iniciando migração de vendas antigas...');
+      
+      const { data, error } = await supabase.functions.invoke('migrate-old-product-sales');
+
+      if (error) throw error;
+
+      const migrationResult = data as any;
+      if (migrationResult?.success) {
+        const summary = migrationResult.summary;
+        toast.success(
+          `Migração concluída: ${summary.migrated} migradas, ${summary.skipped} já existentes, ${summary.failed} falharam de ${summary.total_found} encontradas`
+        );
+        fetchErrors();
+      } else {
+        throw new Error(migrationResult?.error || 'Erro na migração');
+      }
+    } catch (error: any) {
+      console.error('Erro ao migrar vendas:', error);
+      toast.error('Erro ao migrar vendas antigas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchErrors();
 
@@ -182,6 +209,15 @@ export default function IntegrationErrorsMonitor() {
             >
               <AlertTriangle className="h-4 w-4 mr-2" />
               Executar Monitoramento
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={migrateOldProductSales}
+              disabled={loading}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Migrar Vendas Antigas
             </Button>
           </div>
         </div>
