@@ -19,6 +19,7 @@ const TotemPaymentPix: React.FC = () => {
   const [paymentId, setPaymentId] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
   const [simulationTimer, setSimulationTimer] = useState(10); // ⏱️ TESTE: 10 segundos
+  const [isSimulationActive, setIsSimulationActive] = useState(true); // Controle de simulação
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -53,23 +54,25 @@ const TotemPaymentPix: React.FC = () => {
     startTimer();
     
     console.log('⏱️ Iniciando timer de simulação (10 segundos)');
+    setIsSimulationActive(true);
     
     // ⏱️ Timer de simulação: aprovar pagamento após 10 segundos
+    let countdown = 10;
     const simulationInterval = setInterval(() => {
-      setSimulationTimer((prev) => {
-        if (prev <= 1) {
-          clearInterval(simulationInterval);
-          console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
-          toast.info('Modo Teste', {
-            description: '✅ Pagamento PIX aprovado automaticamente',
-            duration: 3000
-          });
-          handlePaymentSuccess();
-          return 0;
-        }
-        console.log(`⏱️ Simulação: ${prev - 1}s restantes`);
-        return prev - 1;
-      });
+      countdown--;
+      console.log(`⏱️ Simulação: ${countdown}s restantes`);
+      setSimulationTimer(countdown);
+      
+      if (countdown <= 0) {
+        clearInterval(simulationInterval);
+        console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
+        setIsSimulationActive(false);
+        toast.info('Modo Teste', {
+          description: '✅ Pagamento PIX aprovado automaticamente',
+          duration: 3000
+        });
+        handlePaymentSuccess();
+      }
     }, 1000);
 
     return () => {
@@ -314,18 +317,38 @@ const TotemPaymentPix: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center overflow-y-auto py-2 z-10">
         <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20 text-center">
-          {/* Indicador de Simulação */}
-          <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-2xl p-4 sm:p-5 animate-pulse shadow-lg shadow-urbana-gold/20">
-            <div className="flex items-center justify-center gap-2 sm:gap-3">
-              <div className="relative">
-                <div className="w-3 h-3 bg-urbana-gold rounded-full animate-ping absolute" />
-                <div className="w-3 h-3 bg-urbana-gold rounded-full" />
+          {/* Indicador de Simulação - DESTAQUE */}
+          {isSimulationActive && (
+            <div className="bg-gradient-to-r from-emerald-500/30 via-green-500/20 to-emerald-500/30 border-4 border-emerald-500/60 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-emerald-500/40">
+              <div className="flex flex-col items-center justify-center gap-4">
+                <div className="relative flex items-center gap-4">
+                  {/* Animação pulsante */}
+                  <div className="relative">
+                    <div className="w-6 h-6 bg-emerald-400 rounded-full animate-ping absolute opacity-75" />
+                    <div className="w-6 h-6 bg-emerald-400 rounded-full relative z-10" />
+                  </div>
+                  
+                  <p className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-400 drop-shadow-lg">
+                    🤖 MODO TESTE ATIVO
+                  </p>
+                  
+                  <div className="relative">
+                    <div className="w-6 h-6 bg-emerald-400 rounded-full animate-ping absolute opacity-75" />
+                    <div className="w-6 h-6 bg-emerald-400 rounded-full relative z-10" />
+                  </div>
+                </div>
+                
+                {/* Contador grande e visível */}
+                <div className="bg-urbana-black/50 backdrop-blur-sm rounded-xl p-6 border-2 border-emerald-500/50">
+                  <p className="text-urbana-light/70 text-lg mb-2">Aprovação automática em:</p>
+                  <p className="text-7xl sm:text-8xl md:text-9xl font-black text-emerald-400 tabular-nums">
+                    {simulationTimer}
+                  </p>
+                  <p className="text-urbana-light/70 text-xl mt-2">segundos</p>
+                </div>
               </div>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-black text-urbana-gold">
-                🤖 MODO TESTE: Aprovação automática em {simulationTimer}s
-              </p>
             </div>
-          </div>
+          )}
 
           {/* Timer */}
           <div className="flex items-center justify-center gap-3 sm:gap-4 p-4 bg-urbana-black/30 rounded-2xl border border-urbana-gold/20">
