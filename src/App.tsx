@@ -73,6 +73,7 @@ import TotemProductPaymentCard from './pages/Totem/TotemProductPaymentCard';
 import TotemProductPaymentSuccess from './pages/Totem/TotemProductPaymentSuccess';
 import TotemProductSale from './pages/Totem/TotemProductSale';
 import TotemError from './pages/Totem/TotemError';
+import TotemPendingCheckouts from './pages/Totem/TotemPendingCheckouts';
 import AdminProductsManagement from './pages/AdminProductsManagement';
 import Install from './pages/Install';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -299,6 +300,7 @@ function App() {
                   <Route path="/totem/product-payment-card" element={<TotemProtectedRoute><TotemProductPaymentCard /></TotemProtectedRoute>} />
                   <Route path="/totem/product-payment-success" element={<TotemProtectedRoute><TotemProductPaymentSuccess /></TotemProtectedRoute>} />
                   <Route path="/totem/product-sale" element={<TotemProtectedRoute><TotemProductSale /></TotemProtectedRoute>} />
+                  <Route path="/totem/pending-checkouts" element={<TotemProtectedRoute><TotemPendingCheckouts /></TotemProtectedRoute>} />
                   <Route path="/totem/error" element={<TotemProtectedRoute><TotemError /></TotemProtectedRoute>} />
 
                   {/* PWA Install Page */}
