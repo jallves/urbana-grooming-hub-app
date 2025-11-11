@@ -168,6 +168,7 @@ Deno.serve(async (req) => {
             source: appointment_id ? 'appointment' : 'direct_sale',
             service_id: service.id,
             service_name: serviceName,
+            payment_method: payment_method, // ✅ ADICIONADO: payment_method no metadata
             payment_time: transactionDateTime
           }
         })
@@ -373,6 +374,7 @@ Deno.serve(async (req) => {
             source: appointment_id ? 'appointment' : 'direct_sale',
             product_id: product.id,
             product_name: productName,
+            payment_method: payment_method, // ✅ ADICIONADO: payment_method no metadata
             payment_time: transactionDateTime
           }
         })
