@@ -234,7 +234,7 @@ export const useAppointments = () => {
 
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
-      console.log('🔄 Atualizando status do agendamento:', appointmentId, 'para:', newStatus);
+      console.log('🔄 [PAINEL ADMIN] Atualizando status do agendamento:', appointmentId, 'para:', newStatus);
       
       const isPainelAppointment = appointmentId.startsWith('painel_');
       
@@ -242,9 +242,14 @@ export const useAppointments = () => {
         const realId = appointmentId.replace('painel_', '');
         const painelStatus = newStatus === 'cancelled' ? 'cancelado' : 
                             newStatus === 'confirmed' ? 'confirmado' : 
-                            newStatus === 'completed' ? 'concluido' : 'confirmado';
+                            newStatus === 'completed' ? 'concluido' : 
+                            newStatus === 'scheduled' ? 'agendado' : 'confirmado';
 
-        console.log('📝 Atualizando painel_agendamentos:', realId, 'status:', painelStatus);
+        console.log('📝 [PAINEL ADMIN] Atualizando painel_agendamentos:', { 
+          realId, 
+          statusOriginal: newStatus, 
+          statusConvertido: painelStatus 
+        });
 
         const { data, error } = await supabase
           .from('painel_agendamentos')
@@ -257,13 +262,17 @@ export const useAppointments = () => {
           .single();
 
         if (error) {
-          console.error('❌ Erro ao atualizar painel_agendamentos:', error);
+          console.error('❌ [PAINEL ADMIN] Erro ao atualizar painel_agendamentos:', error);
           throw error;
         }
 
-        console.log('✅ Agendamento atualizado:', data);
+        console.log('✅ [PAINEL ADMIN] painel_agendamentos atualizado com sucesso:', {
+          id: data.id,
+          status: data.status,
+          updated_at: data.updated_at
+        });
       } else {
-        console.log('📝 Atualizando appointments:', appointmentId, 'status:', newStatus);
+        console.log('📝 [PAINEL ADMIN] Atualizando appointments:', { appointmentId, status: newStatus });
 
         const { data, error } = await supabase
           .from('appointments')
@@ -276,11 +285,15 @@ export const useAppointments = () => {
           .single();
 
         if (error) {
-          console.error('❌ Erro ao atualizar appointments:', error);
+          console.error('❌ [PAINEL ADMIN] Erro ao atualizar appointments:', error);
           throw error;
         }
 
-        console.log('✅ Agendamento atualizado:', data);
+        console.log('✅ [PAINEL ADMIN] appointments atualizado com sucesso:', {
+          id: data.id,
+          status: data.status,
+          updated_at: data.updated_at
+        });
       }
       
       // Atualizar estado local

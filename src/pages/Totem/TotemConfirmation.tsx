@@ -33,7 +33,12 @@ const TotemConfirmation: React.FC = () => {
     try {
       setIsProcessing(true);
       
-      console.log('🔄 Iniciando check-in para agendamento:', appointment?.id);
+      console.log('🔄 [TOTEM] Iniciando check-in para agendamento:', {
+        id: appointment?.id,
+        cliente: client?.nome,
+        data: appointment?.data,
+        hora: appointment?.hora
+      });
 
       const { data, error } = await supabase.functions.invoke('totem-checkin', {
         body: {
@@ -43,7 +48,7 @@ const TotemConfirmation: React.FC = () => {
       });
 
       if (error) {
-        console.error('❌ Erro no check-in:', error);
+        console.error('❌ [TOTEM] Erro no check-in:', error);
         
         // Tratamento específico de erros
         if (error.message?.includes('já foi realizado')) {
@@ -67,15 +72,16 @@ const TotemConfirmation: React.FC = () => {
       }
 
       if (!data?.success) {
-        console.error('❌ Falha no check-in:', data?.error);
+        console.error('❌ [TOTEM] Falha no check-in:', data?.error);
         toast.error('Erro no check-in', {
           description: data?.error || 'Não foi possível fazer o check-in.'
         });
         throw new Error(data?.error || 'Erro ao fazer check-in');
       }
 
-      console.log('✅ Check-in realizado com sucesso!');
-      console.log('📦 Session ID retornada:', data.session_id);
+      console.log('✅ [TOTEM] Check-in realizado com sucesso!');
+      console.log('📦 [TOTEM] Session ID retornada:', data.session_id);
+      console.log('📊 [TOTEM] Dados completos:', data);
 
       // Navegar para tela de sucesso
       navigate('/totem/check-in-success', {

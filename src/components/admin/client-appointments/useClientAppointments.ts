@@ -139,7 +139,7 @@ export const useClientAppointments = () => {
   // Cancela agendamento (Lei Pétrea: apenas 'agendado' e 'check_in_finalizado' podem ser cancelados)
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
-      console.log('🚫 Cancelando agendamento:', appointmentId);
+      console.log('🔄 [PAINEL CLIENTE] Atualizando status:', { appointmentId, newStatus });
       
       // Validar se pode cancelar
       const appointment = appointments.find(a => a.id === appointmentId);
@@ -170,15 +170,24 @@ export const useClientAppointments = () => {
       }
 
       // Atualizar status para cancelado
-      const { error } = await supabase
+      console.log('📝 [PAINEL CLIENTE] Atualizando painel_agendamentos para cancelado:', appointmentId);
+      
+      const { data, error } = await supabase
         .from('painel_agendamentos')
         .update({ 
           status: 'cancelado',
           updated_at: new Date().toISOString()
         })
-        .eq('id', appointmentId);
+        .eq('id', appointmentId)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [PAINEL CLIENTE] Erro ao cancelar:', error);
+        throw error;
+      }
+      
+      console.log('✅ [PAINEL CLIENTE] Agendamento cancelado:', data);
 
       // Registrar auditoria
       const { data: { user } } = await supabase.auth.getUser();
