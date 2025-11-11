@@ -18,24 +18,8 @@ const CashFlowManagement: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-3 sm:p-4 border-b border-gray-300">
         <div>
           <h1 className="text-lg sm:text-xl font-bold text-black">Fluxo de Caixa</h1>
-          <p className="text-xs sm:text-sm text-gray-700">Gerencie entradas e saídas financeiras</p>
+          <p className="text-xs sm:text-sm text-gray-700">Controle centralizado de todas as movimentações financeiras</p>
         </div>
-        
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto bg-black hover:bg-gray-800 text-white text-sm">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Nova Transação</span>
-              <span className="sm:hidden">Nova</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-white border-gray-300 max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-black">Nova Transação</DialogTitle>
-            </DialogHeader>
-            <CashFlowForm onSuccess={() => setIsFormOpen(false)} />
-          </DialogContent>
-        </Dialog>
       </div>
 
       <div className="flex-1 min-h-0 p-3 sm:p-4">
