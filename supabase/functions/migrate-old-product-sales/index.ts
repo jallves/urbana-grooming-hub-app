@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
           id: item.ref_id,
           name: productMap.get(item.ref_id) || item.nome || 'Produto',
           quantity: item.quantidade,
-          price: item.preco_unitario,
+          price: item.preco_unit,
           discount: 0
         }))
 
