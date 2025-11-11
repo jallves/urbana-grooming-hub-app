@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { DashboardMetrics } from '@/types/erp';
 import { ContasAReceber } from './ContasAReceber';
 import { ContasAPagar } from './ContasAPagar';
+import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
 
 const FinancialDashboard: React.FC = () => {
   const { data: metrics, isLoading } = useQuery({
@@ -163,22 +164,32 @@ const FinancialDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Tabs Principais: Contas a Receber e Contas a Pagar */}
+      {/* Tabs Principais: Contas a Receber, Contas a Pagar e Fluxo de Caixa */}
       <Tabs defaultValue="receber" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 h-auto">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto">
           <TabsTrigger 
             value="receber"
-            className="text-sm sm:text-base py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-gray-700 font-semibold"
+            className="text-xs sm:text-sm lg:text-base py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-gray-700 font-semibold"
           >
-            <ArrowUpCircle className="h-4 w-4 mr-2" />
-            Contas a Receber
+            <ArrowUpCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Contas a Receber</span>
+            <span className="sm:hidden">Receber</span>
           </TabsTrigger>
           <TabsTrigger 
             value="pagar"
-            className="text-sm sm:text-base py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-rose-500 data-[state=active]:text-white text-gray-700 font-semibold"
+            className="text-xs sm:text-sm lg:text-base py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-rose-500 data-[state=active]:text-white text-gray-700 font-semibold"
           >
-            <ArrowDownCircle className="h-4 w-4 mr-2" />
-            Contas a Pagar
+            <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Contas a Pagar</span>
+            <span className="sm:hidden">Pagar</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="fluxo"
+            className="text-xs sm:text-sm lg:text-base py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white text-gray-700 font-semibold"
+          >
+            <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Fluxo de Caixa</span>
+            <span className="sm:hidden">Fluxo</span>
           </TabsTrigger>
         </TabsList>
 
@@ -188,6 +199,12 @@ const FinancialDashboard: React.FC = () => {
 
         <TabsContent value="pagar" className="mt-6">
           <ContasAPagar />
+        </TabsContent>
+
+        <TabsContent value="fluxo" className="mt-6">
+          <div className="bg-white rounded-lg border border-gray-200">
+            <CashFlowManagement />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
