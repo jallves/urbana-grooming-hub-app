@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCashFlowSync } from '@/hooks/financial/useCashFlowSync';
 import FinancialRecordForm from './FinancialRecordForm';
 import {
   AlertDialog,
@@ -58,6 +59,7 @@ export const ContasAPagar: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { syncToCashFlowAsync, isSyncing } = useCashFlowSync();
 
   const { data: payables, isLoading } = useQuery({
     queryKey: ['contas-pagar'],
@@ -81,6 +83,15 @@ export const ContasAPagar: React.FC = () => {
 
   const markAsPaidMutation = useMutation({
     mutationFn: async (recordId: string) => {
+      // Buscar o registro para sincronizar
+      const { data: record, error: fetchError } = await supabase
+        .from('financial_records')
+        .select('*')
+        .eq('id', recordId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       const { error } = await supabase
         .from('financial_records')
         .update({ 
@@ -91,10 +102,34 @@ export const ContasAPagar: React.FC = () => {
         .eq('id', recordId);
 
       if (error) throw error;
+
+      // 🔄 INTEGRAÇÃO COM FLUXO DE CAIXA
+      // Sincronizar automaticamente com o fluxo de caixa
+      const transactionType = (record.transaction_type === 'revenue' || 
+                               record.transaction_type === 'expense' || 
+                               record.transaction_type === 'commission') 
+                               ? record.transaction_type 
+                               : 'expense';
+      
+      const metadata = typeof record.metadata === 'object' && record.metadata !== null 
+        ? record.metadata as Record<string, any>
+        : {};
+
+      await syncToCashFlowAsync({
+        financialRecordId: recordId,
+        transactionType: transactionType,
+        amount: record.net_amount,
+        description: record.description,
+        category: record.category,
+        paymentMethod: metadata?.payment_method || 'other',
+        transactionDate: record.transaction_date,
+        metadata: metadata
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      toast.success('Comissão marcada como paga!');
+      queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      toast.success('Pagamento registrado e sincronizado!');
     },
     onError: (error: any) => {
       toast.error('Erro ao marcar como paga', {
@@ -167,10 +202,29 @@ export const ContasAPagar: React.FC = () => {
         .eq('id', id);
 
       if (error) throw error;
+
+      // 🔄 INTEGRAÇÃO COM FLUXO DE CAIXA
+      // Se foi marcado como pago, sincronizar automaticamente com o fluxo de caixa
+      if (values.status === 'completed') {
+        await syncToCashFlowAsync({
+          financialRecordId: id,
+          transactionType: values.transaction_type,
+          amount: netAmount,
+          description: values.description,
+          category: values.category,
+          paymentMethod: values.payment_method,
+          transactionDate: format(values.transaction_date, 'yyyy-MM-dd'),
+          metadata: {
+            payment_method: values.payment_method,
+            notes: values.notes,
+          }
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      toast.success('Lançamento atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      toast.success('Lançamento atualizado e sincronizado!');
       setFormOpen(false);
       setEditingRecord(null);
     },
@@ -391,6 +445,7 @@ export const ContasAPagar: React.FC = () => {
                     <TableHead>Pagamento</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Fluxo Caixa</TableHead>
                     <TableHead className="text-center">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -451,6 +506,16 @@ export const ContasAPagar: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-center">
                           {getStatusBadge(record.status)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {record.status === 'completed' ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Registrado
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex justify-center gap-2">
