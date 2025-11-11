@@ -25,6 +25,7 @@ export default function IntegrationErrorsMonitor() {
   const [errors, setErrors] = useState<IntegrationError[]>([]);
   const [loading, setLoading] = useState(true);
   const [reprocessing, setReprocessing] = useState<string | null>(null);
+  const [migrationResult, setMigrationResult] = useState<any>(null);
 
   const fetchErrors = async () => {
     setLoading(true);
@@ -111,6 +112,7 @@ export default function IntegrationErrorsMonitor() {
 
   const migrateOldProductSales = async () => {
     setLoading(true);
+    setMigrationResult(null);
     try {
       toast.info('Iniciando migração de vendas antigas...');
       
@@ -118,15 +120,16 @@ export default function IntegrationErrorsMonitor() {
 
       if (error) throw error;
 
-      const migrationResult = data as any;
-      if (migrationResult?.success) {
-        const summary = migrationResult.summary;
+      const migrationData = data as any;
+      if (migrationData?.success) {
+        const summary = migrationData.summary;
+        setMigrationResult(summary);
         toast.success(
           `Migração concluída: ${summary.migrated} migradas, ${summary.skipped} já existentes, ${summary.failed} falharam de ${summary.total_found} encontradas`
         );
         fetchErrors();
       } else {
-        throw new Error(migrationResult?.error || 'Erro na migração');
+        throw new Error(migrationData?.error || 'Erro na migração');
       }
     } catch (error: any) {
       console.error('Erro ao migrar vendas:', error);
@@ -223,6 +226,71 @@ export default function IntegrationErrorsMonitor() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Migration Result */}
+        {migrationResult && (
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Resultado da Migração
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center p-3 bg-white rounded-lg">
+                  <div className="text-2xl font-bold">{migrationResult.total_found}</div>
+                  <div className="text-xs text-muted-foreground">Total Encontrado</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">{migrationResult.migrated}</div>
+                  <div className="text-xs text-muted-foreground">✅ Migrados</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">{migrationResult.skipped}</div>
+                  <div className="text-xs text-muted-foreground">⏭️ Já Existentes</div>
+                </div>
+                <div className="text-center p-3 bg-white rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">{migrationResult.failed}</div>
+                  <div className="text-xs text-muted-foreground">❌ Falhas</div>
+                </div>
+              </div>
+              
+              {migrationResult.details && migrationResult.details.length > 0 && (
+                <div className="space-y-2">
+                  <h5 className="text-sm font-semibold">Detalhes das Vendas:</h5>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {migrationResult.details.map((detail: any, idx: number) => (
+                      <div 
+                        key={idx} 
+                        className={`text-xs p-2 rounded flex justify-between items-center ${
+                          detail.status === 'migrated' 
+                            ? 'bg-white border border-green-200' 
+                            : 'bg-red-50 border border-red-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {detail.status === 'migrated' ? '✅' : '❌'}
+                          <span className="font-mono text-xs">{detail.venda_id.slice(0, 13)}</span>
+                        </div>
+                        {detail.status === 'migrated' && detail.total && (
+                          <span className="font-semibold text-green-700">
+                            R$ {detail.total.toFixed(2)}
+                          </span>
+                        )}
+                        {detail.error && (
+                          <span className="text-red-600 text-xs">
+                            {detail.error}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Summary */}
         <div className="grid grid-cols-3 gap-4">
           <Card>

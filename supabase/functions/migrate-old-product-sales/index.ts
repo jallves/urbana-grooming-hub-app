@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
         console.log(`🔄 Migrando venda ${venda.id}...`)
 
-        // Buscar itens da venda
+        // Buscar itens da venda (sem relacionamento, vamos buscar produtos separadamente)
         const { data: itens, error: itensError } = await supabase
           .from('vendas_itens')
           .select('*')
@@ -87,24 +87,22 @@ Deno.serve(async (req) => {
         const paymentMethod = payments?.[0]?.payment_method || 'cash'
 
         // Buscar informações dos produtos para cada item
-        const transactionItems = await Promise.all(
-          itens.map(async (item: any) => {
-            const { data: produto } = await supabase
-              .from('painel_produtos')
-              .select('nome')
-              .eq('id', item.ref_id)
-              .single()
-            
-            return {
-              type: 'product',
-              id: item.ref_id,
-              name: produto?.nome || item.nome || 'Produto',
-              quantity: item.quantidade,
-              price: item.preco_unitario,
-              discount: 0
-            }
-          })
-        )
+        const productIds = itens.map((item: any) => item.ref_id)
+        const { data: produtos } = await supabase
+          .from('painel_produtos')
+          .select('id, nome')
+          .in('id', productIds)
+
+        const productMap = new Map(produtos?.map(p => [p.id, p.nome]) || [])
+
+        const transactionItems = itens.map((item: any) => ({
+          type: 'product',
+          id: item.ref_id,
+          name: productMap.get(item.ref_id) || item.nome || 'Produto',
+          quantity: item.quantidade,
+          price: item.preco_unitario,
+          discount: 0
+        }))
 
         console.log(`💰 Criando registros no ERP para venda ${venda.id}`)
 
