@@ -205,23 +205,6 @@ export default function IntegrationErrorsMonitor() {
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
-            <Button
-              size="sm"
-              onClick={runMonitoring}
-              disabled={loading}
-            >
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Executar Monitoramento
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={migrateOldProductSales}
-              disabled={loading}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Migrar Vendas Antigas
-            </Button>
           </div>
         </div>
       </CardHeader>
