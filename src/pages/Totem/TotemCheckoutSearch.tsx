@@ -35,13 +35,13 @@ const TotemCheckoutSearch: React.FC = () => {
       
       console.log('🔍 Buscando cliente para checkout:', cleanPhone);
 
-      // @ts-ignore
-      const response = await supabase
+      // Buscar cliente
+      const { data: clientes, error: clientError } = await supabase
         .from('painel_clientes')
         .select('*');
 
-      if (response.error) {
-        console.error('❌ Erro ao buscar cliente:', response.error);
+      if (clientError) {
+        console.error('❌ Erro ao buscar cliente:', clientError);
         setError({
           title: 'Erro de conexão',
           message: 'Não foi possível conectar ao sistema. Verifique sua conexão e tente novamente.'
@@ -50,12 +50,12 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      const clientes = response.data?.filter((c: any) => {
+      const clientesFiltrados = clientes?.filter((c: any) => {
         const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
         return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
       }) || [];
 
-      if (!clientes || clientes.length === 0) {
+      if (!clientesFiltrados || clientesFiltrados.length === 0) {
         setError({
           title: 'Cliente não encontrado',
           message: 'Não encontramos nenhum cadastro com este telefone. Verifique o número digitado ou procure a recepção.'
@@ -64,10 +64,53 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      const cliente = clientes[0];
+      const cliente = clientesFiltrados[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // Primeiro, buscar agendamentos ativos do cliente
+      // PRIORIDADE 1: Buscar sessões com checkout pendente (check-in feito, sem checkout)
+      // @ts-ignore - Evitar erro de tipos infinitos do Supabase
+      const pendingResponse = await supabase
+        .from('totem_sessions')
+        .select('*')
+        .eq('cliente_whatsapp', cleanPhone)
+        .not('checkin_at', 'is', null)
+        .is('checkout_at', null)
+        .order('checkin_at', { ascending: false });
+      
+      const { data: pendingSessions, error: pendingError } = pendingResponse;
+
+      if (pendingError) {
+        console.error('⚠️ Erro ao buscar checkouts pendentes:', pendingError);
+      }
+
+      // Se encontrou checkout pendente, buscar detalhes do agendamento
+      if (pendingSessions && pendingSessions.length > 0) {
+        const pendingSession = pendingSessions[0];
+        console.log('✅ Checkout pendente encontrado');
+
+        // Buscar detalhes do agendamento
+        const { data: appointment } = await supabase
+          .from('painel_agendamentos')
+          .select(`
+            *,
+            servico:painel_servicos(*),
+            barbeiro:painel_barbeiros(*),
+            cliente:painel_clientes(*)
+          `)
+          .eq('id', pendingSession.appointment_id)
+          .single();
+
+        navigate('/totem/checkout', {
+          state: {
+            session: pendingSession,
+            client: cliente,
+            appointment: appointment
+          }
+        });
+        return;
+      }
+
+      // PRIORIDADE 2: Buscar sessões ativas normais (check-in do dia)
       const { data: agendamentos, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select('id')
@@ -98,15 +141,7 @@ const TotemCheckoutSearch: React.FC = () => {
       const appointmentIds = agendamentos.map(a => a.id);
       const { data: sessionData, error: sessionError } = await supabase
         .from('totem_sessions')
-        .select(`
-          *,
-          appointment:painel_agendamentos(
-            *,
-            servico:painel_servicos(*),
-            barbeiro:painel_barbeiros(*),
-            cliente:painel_clientes(*)
-          )
-        `)
+        .select('*')
         .in('appointment_id', appointmentIds)
         .in('status', ['check_in', 'in_service'])
         .order('created_at', { ascending: false })
@@ -134,11 +169,23 @@ const TotemCheckoutSearch: React.FC = () => {
       const session = sessionData[0];
       console.log('✅ Sessão ativa encontrada');
 
+      // Buscar detalhes do agendamento
+      const { data: appointment } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          *,
+          servico:painel_servicos(*),
+          barbeiro:painel_barbeiros(*),
+          cliente:painel_clientes(*)
+        `)
+        .eq('id', session.appointment_id)
+        .single();
+
       navigate('/totem/checkout', {
         state: {
           session,
           client: cliente,
-          appointment: session.appointment
+          appointment: appointment
         }
       });
 
