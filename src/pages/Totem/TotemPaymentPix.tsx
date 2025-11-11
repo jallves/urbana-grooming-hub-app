@@ -24,6 +24,8 @@ const TotemPaymentPix: React.FC = () => {
   
   // 🔒 Usar ref para garantir que temos o payment_id disponível imediatamente
   const paymentIdRef = useRef<string>('');
+  // 🔒 Flag para evitar execução duplicada do pagamento
+  const isProcessingPaymentRef = useRef<boolean>(false);
 
   useEffect(() => {
     console.log('🎬 TotemPaymentPix montado - Estado recebido:', {
@@ -99,6 +101,8 @@ const TotemPaymentPix: React.FC = () => {
       if (cleanupInterval) {
         clearInterval(cleanupInterval);
       }
+      // Reset flag on unmount
+      isProcessingPaymentRef.current = false;
     };
   }, []);
 
@@ -166,6 +170,14 @@ const TotemPaymentPix: React.FC = () => {
 
 
   const handlePaymentSuccess = async () => {
+    // 🔒 PROTEÇÃO: Evitar execução duplicada
+    if (isProcessingPaymentRef.current) {
+      console.log('⏭️ Pagamento já está sendo processado, ignorando chamada duplicada');
+      return;
+    }
+    
+    isProcessingPaymentRef.current = true;
+    
     try {
       // 🔒 ROBUSTEZ: Usar paymentIdRef para garantir valor correto
       const finalPaymentId = paymentIdRef.current || payment_id;
@@ -184,6 +196,7 @@ const TotemPaymentPix: React.FC = () => {
       // Verificar se tem payment_id antes de atualizar
       if (!finalPaymentId) {
         console.error('❌ Nenhum payment_id disponível');
+        isProcessingPaymentRef.current = false;
         toast.error('Erro no pagamento', {
           description: 'ID de pagamento não encontrado'
         });
@@ -290,6 +303,7 @@ const TotemPaymentPix: React.FC = () => {
       });
     } catch (error: any) {
       console.error('❌ Erro ao confirmar pagamento:', error);
+      isProcessingPaymentRef.current = false;
       toast.error('Erro ao processar pagamento', {
         description: error.message || 'Por favor, informe a recepção'
       });
