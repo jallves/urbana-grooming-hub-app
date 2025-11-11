@@ -99,37 +99,37 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
       {statCards.map((stat, index) => (
         <Card 
           key={stat.title} 
-          className="relative overflow-hidden border-0 bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+          className="relative overflow-hidden border-0 bg-white shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
           style={{ animationDelay: `${index * 50}ms` }}
         >
           {/* Gradiente de fundo sutil */}
           <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
           
-          <CardHeader className="pb-3 relative z-10">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-sm font-semibold text-gray-700 mb-1 font-raleway">
+          <CardHeader className="pb-2 sm:pb-3 relative z-10 p-3 sm:p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 mb-0.5 sm:mb-1 font-raleway leading-tight truncate">
                   {stat.title}
                 </CardTitle>
-                <p className="text-xs text-gray-500 font-raleway">{stat.description}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-raleway leading-tight truncate">{stat.description}</p>
               </div>
-              <div className={`p-3 rounded-xl ${stat.iconBg} group-hover:scale-110 transition-transform duration-300`}>
-                <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
+              <div className={`p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl ${stat.iconBg} group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ${stat.iconColor}`} />
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 relative z-10">
-            <div className={`text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent font-playfair`}>
+          <CardContent className="pt-0 pb-3 sm:pb-4 px-3 sm:px-4 relative z-10">
+            <div className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent font-playfair`}>
               {stat.value}
             </div>
           </CardContent>
           
           {/* Barra decorativa no rodapé */}
-          <div className={`h-1 w-full bg-gradient-to-r ${stat.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
+          <div className={`h-0.5 sm:h-1 w-full bg-gradient-to-r ${stat.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
         </Card>
       ))}
     </div>

@@ -125,8 +125,8 @@ const ClientAppointmentCompactTable: React.FC<ClientAppointmentCompactTableProps
         </Table>
       </div>
 
-      {/* Lista mobile (cards) - Otimizada para scroll */}
-      <div className="sm:hidden space-y-3 overflow-y-auto" style={{ willChange: 'transform' }}>
+      {/* Lista mobile (cards) - Otimizada e com padding */}
+      <div className="sm:hidden space-y-3 p-3" style={{ willChange: 'transform' }}>
         {appointments.map((appointment) => (
           <ClientAppointmentMobileCard
             key={appointment.id}
