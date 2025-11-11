@@ -49,6 +49,7 @@ const TotemConfirmation: React.FC = () => {
 
       if (error) {
         console.error('❌ [TOTEM] Erro no check-in:', error);
+        setIsProcessing(false);
         
         // Tratamento específico de erros
         if (error.message?.includes('já foi realizado')) {
@@ -68,15 +69,21 @@ const TotemConfirmation: React.FC = () => {
             description: error.message || 'Não foi possível fazer o check-in. Procure a recepção.'
           });
         }
-        throw error;
+        
+        // Permanecer na página para permitir nova tentativa
+        return;
       }
 
       if (!data?.success) {
         console.error('❌ [TOTEM] Falha no check-in:', data?.error);
+        setIsProcessing(false);
+        
         toast.error('Erro no check-in', {
           description: data?.error || 'Não foi possível fazer o check-in.'
         });
-        throw new Error(data?.error || 'Erro ao fazer check-in');
+        
+        // Permanecer na página para permitir nova tentativa
+        return;
       }
 
       console.log('✅ [TOTEM] Check-in realizado com sucesso!');
@@ -93,13 +100,16 @@ const TotemConfirmation: React.FC = () => {
             appointment_id: appointment.id,
             status: 'check_in'
           }
-        }
+        },
+        replace: true
       });
     } catch (error: any) {
       console.error('❌ Erro inesperado no check-in:', error);
-      // Erro já foi tratado acima
-    } finally {
       setIsProcessing(false);
+      
+      toast.error('Erro no sistema', {
+        description: 'Ocorreu um erro inesperado. Por favor, tente novamente.'
+      });
     }
   };
 
