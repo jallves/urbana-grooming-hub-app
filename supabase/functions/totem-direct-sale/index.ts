@@ -47,51 +47,87 @@ serve(async (req) => {
         throw new Error('Erro ao atualizar venda')
       }
 
-      // 3. Buscar venda para criar transação financeira
-      const { data: venda, error: vendaFetchError } = await supabase
-        .from('vendas')
-        .select('*')
-        .eq('id', venda_id)
-        .single()
-
-      if (vendaFetchError) throw vendaFetchError
-
-      // 4. Criar transação financeira de receita
-      const { error: transactionError } = await supabase
-        .from('finance_transactions')
-        .insert({
-          tipo: 'receita',
-          categoria: 'produto',
-          descricao: 'Venda direta de produtos no totem',
-          valor: venda.total,
-          data: new Date().toISOString().split('T')[0],
-          status: 'pago',
-          agendamento_id: null // Venda direta
-        })
-
-      if (transactionError) {
-        console.error('❌ Erro ao criar transação:', transactionError)
-        // Não falhar a venda por causa disso, apenas logar
-      }
-
-      // 5. Atualizar estoque dos produtos
+      // 3. Buscar itens da venda (produtos)
       const { data: itens, error: itensError } = await supabase
         .from('vendas_itens')
-        .select('*')
+        .select(`
+          *,
+          painel_produtos:ref_id (
+            id,
+            nome,
+            preco
+          )
+        `)
         .eq('venda_id', venda_id)
         .eq('tipo', 'PRODUTO')
 
-      if (!itensError && itens) {
+      if (itensError) {
+        console.error('❌ Erro ao buscar itens da venda:', itensError)
+        throw new Error('Erro ao buscar itens da venda')
+      }
+
+      // 4. Buscar método de pagamento
+      const { data: payment, error: paymentFetchError } = await supabase
+        .from('totem_payments')
+        .select('payment_method')
+        .eq('id', payment_id)
+        .single()
+
+      if (paymentFetchError) {
+        console.error('❌ Erro ao buscar pagamento:', paymentFetchError)
+        throw new Error('Erro ao buscar método de pagamento')
+      }
+
+      // 5. Preparar itens para a transação financeira
+      const transactionItems = itens.map((item: any) => ({
+        type: 'product',
+        id: item.ref_id,
+        name: item.painel_produtos?.nome || 'Produto',
+        quantity: item.quantidade,
+        price: item.preco_unitario,
+        discount: item.desconto || 0
+      }))
+
+      console.log('💰 Criando transação financeira no ERP:', {
+        items: transactionItems.length,
+        payment_method: payment.payment_method
+      })
+
+      // 6. Chamar edge function para criar registros no ERP financeiro
+      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+        'create-financial-transaction',
+        {
+          body: {
+            client_id: null, // Venda direta sem cliente
+            barber_id: null, // Sem barbeiro
+            items: transactionItems,
+            payment_method: payment.payment_method,
+            discount_amount: 0,
+            notes: `Venda direta de produtos no totem - ID: ${venda_id}`,
+            transaction_date: new Date().toISOString().split('T')[0],
+            transaction_datetime: new Date().toISOString()
+          }
+        }
+      )
+
+      if (erpError) {
+        console.error('❌ Erro ao criar transação no ERP:', erpError)
+        // Não falhar a venda, apenas logar o erro para retry automático
+      } else {
+        console.log('✅ Transação financeira criada no ERP:', erpResult)
+      }
+
+      // 7. Atualizar estoque dos produtos
+      if (itens) {
         for (const item of itens) {
-          await supabase
-            .from('painel_produtos')
-            .update({ 
-              estoque: supabase.rpc('decrement_estoque', { 
-                product_id: item.ref_id, 
-                quantity: item.quantidade 
-              })
-            })
-            .eq('id', item.ref_id)
+          const { error: stockError } = await supabase.rpc('update_product_stock', {
+            product_id: item.ref_id,
+            quantity: -item.quantidade
+          })
+          
+          if (stockError) {
+            console.error('❌ Erro ao atualizar estoque:', stockError)
+          }
         }
       }
 
