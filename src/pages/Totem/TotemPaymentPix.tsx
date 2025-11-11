@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -21,6 +21,9 @@ const TotemPaymentPix: React.FC = () => {
   const [simulationTimer, setSimulationTimer] = useState(10); // ⏱️ TESTE: 10 segundos
   const [isSimulationActive, setIsSimulationActive] = useState(true); // Controle de simulação
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  
+  // 🔒 Usar ref para garantir que temos o payment_id disponível imediatamente
+  const paymentIdRef = useRef<string>('');
 
   useEffect(() => {
     console.log('🎬 TotemPaymentPix montado - Estado recebido:', {
@@ -45,14 +48,16 @@ const TotemPaymentPix: React.FC = () => {
 
     // Iniciar processos de forma assíncrona
     const initializePayment = async () => {
-      // Se já tem payment_id (venda direta), usar ele
-      if (payment_id) {
-        console.log('✅ Payment ID já existe (venda direta):', payment_id);
-        setPaymentId(payment_id);
+      // 🔒 ROBUSTEZ: Gerar PIX e obter payment_id ANTES de iniciar timer
+      const finalPaymentId = await generatePixCode();
+      
+      if (!finalPaymentId) {
+        console.error('❌ Falha ao gerar payment_id');
+        toast.error('Erro ao inicializar pagamento PIX');
+        return null;
       }
-
-      // Gerar código PIX e aguardar conclusão
-      await generatePixCode();
+      
+      console.log('✅ Payment ID confirmado antes do timer:', finalPaymentId);
       
       // Iniciar timer de expiração
       startTimer();
@@ -70,6 +75,7 @@ const TotemPaymentPix: React.FC = () => {
         if (countdown <= 0) {
           clearInterval(simulationInterval);
           console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
+          console.log('🔒 Payment ID no momento da aprovação:', paymentIdRef.current);
           setIsSimulationActive(false);
           toast.info('Modo Teste', {
             description: '✅ Pagamento PIX aprovado automaticamente',
@@ -96,14 +102,16 @@ const TotemPaymentPix: React.FC = () => {
     };
   }, []);
 
-  const generatePixCode = async () => {
+  const generatePixCode = async (): Promise<string> => {
     try {
       // Se já tem payment_id (venda direta), apenas gerar QR code
       if (payment_id) {
         const transactionId = `TOTEM${Date.now()}`;
         const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${pixKey}52040000530398654${total.toFixed(2)}5802BR5925BARBEARIA COSTA URBANA6014BELO HORIZONTE62070503***6304${transactionId}`;
         setPixCode(pixPayload);
-        return;
+        paymentIdRef.current = payment_id;
+        setPaymentId(payment_id);
+        return payment_id;
       }
 
       // Gerar código PIX (simplificado - integrar com API real depois)
@@ -128,10 +136,17 @@ const TotemPaymentPix: React.FC = () => {
         .single();
 
       if (error) throw error;
+      
+      // 🔒 ROBUSTEZ: Armazenar na ref E no estado
+      paymentIdRef.current = payment.id;
       setPaymentId(payment.id);
+      console.log('✅ Payment ID criado e armazenado:', payment.id);
+      
+      return payment.id;
     } catch (error) {
       console.error('Erro ao gerar PIX:', error);
       toast.error('Erro ao gerar código PIX');
+      return '';
     }
   };
 
@@ -152,8 +167,14 @@ const TotemPaymentPix: React.FC = () => {
 
   const handlePaymentSuccess = async () => {
     try {
+      // 🔒 ROBUSTEZ: Usar paymentIdRef para garantir valor correto
+      const finalPaymentId = paymentIdRef.current || payment_id;
+      
       console.log('✅ Pagamento PIX confirmado! Finalizando venda...', {
-        paymentId,
+        paymentIdRef: paymentIdRef.current,
+        paymentIdState: paymentId,
+        payment_id_prop: payment_id,
+        finalPaymentId,
         venda_id,
         session_id,
         isDirect,
@@ -161,7 +182,7 @@ const TotemPaymentPix: React.FC = () => {
       });
 
       // Verificar se tem payment_id antes de atualizar
-      if (!paymentId && !payment_id) {
+      if (!finalPaymentId) {
         console.error('❌ Nenhum payment_id disponível');
         toast.error('Erro no pagamento', {
           description: 'ID de pagamento não encontrado'
@@ -169,7 +190,6 @@ const TotemPaymentPix: React.FC = () => {
         return;
       }
 
-      const finalPaymentId = paymentId || payment_id;
       console.log('💳 Usando payment_id:', finalPaymentId);
 
       // Atualizar status do pagamento
