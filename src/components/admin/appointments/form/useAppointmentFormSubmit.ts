@@ -83,21 +83,76 @@ export const useAppointmentFormSubmit = ({
       
       // Insert or update appointment
       if (appointmentId) {
-        const { error } = await supabase
-          .from('appointments')
-          .update(appointmentData)
-          .eq('id', appointmentId);
+        // Verificar se é um agendamento do painel
+        const isPainelAppointment = appointmentId.startsWith('painel_');
+        
+        if (isPainelAppointment) {
+          // Atualizar na tabela painel_agendamentos
+          const realId = appointmentId.replace('painel_', '');
           
-        if (error) {
-          // Tratar erro do banco de dados
-          const errorMessage = extractDatabaseError(error);
-          toast({
-            variant: "destructive",
-            title: "Erro ao Atualizar",
-            description: errorMessage,
-          });
-          setIsLoading(false);
-          return;
+          // Garantir que a data seja formatada sem conversão de timezone
+          const year = startDate.getFullYear();
+          const month = String(startDate.getMonth() + 1).padStart(2, '0');
+          const day = String(startDate.getDate()).padStart(2, '0');
+          const dataLocal = `${year}-${month}-${day}`;
+
+          // Buscar barbeiro_id da tabela painel_barbeiros
+          const { data: staffData } = await supabase
+            .from('painel_barbeiros')
+            .select('id')
+            .eq('staff_id', data.staff_id)
+            .maybeSingle();
+
+          if (!staffData) {
+            toast({
+              variant: "destructive",
+              title: "Erro",
+              description: "Barbeiro não encontrado no sistema do painel.",
+            });
+            setIsLoading(false);
+            return;
+          }
+          
+          const painelUpdateData = {
+            cliente_id: data.client_id,
+            barbeiro_id: staffData.id,
+            servico_id: data.service_id,
+            data: dataLocal,
+            hora: format(startDate, 'HH:mm'),
+          };
+
+          const { error } = await supabase
+            .from('painel_agendamentos')
+            .update(painelUpdateData)
+            .eq('id', realId);
+            
+          if (error) {
+            const errorMessage = extractDatabaseError(error);
+            toast({
+              variant: "destructive",
+              title: "Erro ao Atualizar",
+              description: errorMessage,
+            });
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          // Atualizar na tabela appointments
+          const { error } = await supabase
+            .from('appointments')
+            .update(appointmentData)
+            .eq('id', appointmentId);
+            
+          if (error) {
+            const errorMessage = extractDatabaseError(error);
+            toast({
+              variant: "destructive",
+              title: "Erro ao Atualizar",
+              description: errorMessage,
+            });
+            setIsLoading(false);
+            return;
+          }
         }
         
         toast({

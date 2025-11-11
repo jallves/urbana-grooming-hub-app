@@ -180,6 +180,58 @@ export const useAppointments = () => {
     }
   }, [user, fetchAppointments]);
 
+  // Configurar listeners de real-time
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('🔴 [Real-time] Configurando listeners para agendamentos');
+
+    // Canal para tabela appointments
+    const appointmentsChannel = supabase
+      .channel('appointments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointments'
+        },
+        (payload) => {
+          console.log('🔴 [Real-time] Mudança detectada em appointments:', payload);
+          fetchAppointments();
+        }
+      )
+      .subscribe();
+
+    // Canal para tabela painel_agendamentos (apenas para admins)
+    let painelChannel: any = null;
+    if (isAdmin) {
+      painelChannel = supabase
+        .channel('painel-agendamentos-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'painel_agendamentos'
+          },
+          (payload) => {
+            console.log('🔴 [Real-time] Mudança detectada em painel_agendamentos:', payload);
+            fetchAppointments();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      console.log('🔴 [Real-time] Removendo listeners de agendamentos');
+      supabase.removeChannel(appointmentsChannel);
+      if (painelChannel) {
+        supabase.removeChannel(painelChannel);
+      }
+    };
+  }, [user, isAdmin, fetchAppointments]);
+
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
     try {
       const isPainelAppointment = appointmentId.startsWith('painel_');
