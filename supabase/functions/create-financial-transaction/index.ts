@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
       if (appointmentData) {
         // Usar data e hora do agendamento
         transactionDate = appointmentData.data
-        transactionDateTime = `${appointmentData.data}T${appointmentData.hora}:00`
+        // appointmentData.hora já vem no formato HH:MM:SS, não adicionar :00 extra
+        transactionDateTime = `${appointmentData.data}T${appointmentData.hora}`
         console.log('📅 Usando data/hora do agendamento:', { date: transactionDate, datetime: transactionDateTime })
       }
     }
