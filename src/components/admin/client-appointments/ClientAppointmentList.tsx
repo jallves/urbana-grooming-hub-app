@@ -20,65 +20,34 @@ const ClientAppointmentList: React.FC = () => {
     handleUpdateAppointment
   } = useClientAppointments();
   
+  // LEI PÉTREA: Filtrar agendamentos baseado nos 3 estados únicos
   const filteredAppointments = appointments.filter((appointment: PainelAgendamento) => {
-    // Se não tem sessão de totem, cliente não apareceu - não mostrar
-    if (!appointment.totem_sessions || appointment.totem_sessions.length === 0) {
+    const hasCheckIn = appointment.totem_sessions && 
+      appointment.totem_sessions.length > 0 && 
+      appointment.totem_sessions.some(s => s.check_in_time);
+    
+    const hasCheckOut = appointment.totem_sessions && 
+      appointment.totem_sessions.some(s => s.check_out_time);
+
+    // Determinar status atual (Lei Pétrea)
+    let currentStatus: string;
+    if (!hasCheckIn) {
+      currentStatus = 'agendado'; // Check-in Pendente
+    } else if (hasCheckIn && !hasCheckOut) {
+      currentStatus = 'check_in_finalizado'; // Checkout Pendente
+    } else {
+      currentStatus = 'concluido'; // Concluído
+    }
+
+    // Aplicar filtro de status
+    if (statusFilter !== 'all' && currentStatus !== statusFilter) {
       return false;
     }
 
-    const latestSession = appointment.totem_sessions[appointment.totem_sessions.length - 1];
-    
-    // Tem check-in E check-out (completo) - SEMPRE mostrar
-    if (latestSession.check_in_time && latestSession.check_out_time) {
-      // Aplicar filtro de status
-      if (statusFilter !== 'all' && appointment.status !== statusFilter) {
-        return false;
-      }
-      
-      // Aplicar filtro de busca
-      const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
-      const query = searchQuery.toLowerCase();
-      return clientName.includes(query);
-    }
-
-    // Tem check-in mas NÃO tem check-out (em andamento ou checkout pendente)
-    if (latestSession.check_in_time && !latestSession.check_out_time) {
-      // Verificar se tem checkout pendente (venda aberta)
-      const hasOpenSale = appointment.vendas && 
-        appointment.vendas.some((v: any) => v.status === 'ABERTA');
-      
-      // Verificar se está no status de checkout
-      const isInCheckout = latestSession.status === 'checkout';
-      
-      // Se tem venda aberta OU está em checkout, sempre mostrar (checkout pendente)
-      if (hasOpenSale || isInCheckout) {
-        // Aplicar filtro de status
-        if (statusFilter !== 'all' && appointment.status !== statusFilter) {
-          return false;
-        }
-        
-        // Aplicar filtro de busca
-        const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
-        const query = searchQuery.toLowerCase();
-        return clientName.includes(query);
-      }
-      
-      // Caso contrário, apenas mostrar se ainda não passou o horário
-      const appointmentDate = parseISO(appointment.data + 'T' + appointment.hora);
-      if (appointmentDate > new Date()) {
-        // Aplicar filtro de status
-        if (statusFilter !== 'all' && appointment.status !== statusFilter) {
-          return false;
-        }
-        
-        // Aplicar filtro de busca
-        const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
-        const query = searchQuery.toLowerCase();
-        return clientName.includes(query);
-      }
-    }
-
-    return false;
+    // Aplicar filtro de busca
+    const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
+    return clientName.includes(query);
   });
   
   const handleEditAppointment = (appointmentId: string) => {

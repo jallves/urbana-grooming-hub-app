@@ -41,17 +41,14 @@ const ClientAppointmentFilters: React.FC<ClientAppointmentFiltersProps> = ({
             <SelectItem value="all" className="cursor-pointer hover:bg-gray-50 text-sm">
               <span className="font-medium">📋 Todos</span>
             </SelectItem>
-            <SelectItem value="agendado" className="cursor-pointer hover:bg-yellow-50 text-sm">
-              <span className="font-medium">⏰ Agendado</span>
+            <SelectItem value="agendado" className="cursor-pointer hover:bg-blue-50 text-sm">
+              <span className="font-medium">📅 Agendado (Check-in Pendente)</span>
             </SelectItem>
-            <SelectItem value="confirmado" className="cursor-pointer hover:bg-blue-50 text-sm">
-              <span className="font-medium">✓ Confirmado</span>
+            <SelectItem value="check_in_finalizado" className="cursor-pointer hover:bg-orange-50 text-sm">
+              <span className="font-medium">✅ Check-in Finalizado (Checkout Pendente)</span>
             </SelectItem>
             <SelectItem value="concluido" className="cursor-pointer hover:bg-green-50 text-sm">
-              <span className="font-medium">✓ Concluído</span>
-            </SelectItem>
-            <SelectItem value="cancelado" className="cursor-pointer hover:bg-red-50 text-sm">
-              <span className="font-medium">✗ Cancelado</span>
+              <span className="font-medium">🎉 Concluído</span>
             </SelectItem>
           </SelectContent>
         </Select>

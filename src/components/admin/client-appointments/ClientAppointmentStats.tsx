@@ -35,6 +35,11 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   };
+  totem_sessions?: {
+    check_in_time: string | null;
+    check_out_time: string | null;
+    status: string;
+  }[];
 }
 
 interface ClientAppointmentStatsProps {
@@ -42,12 +47,24 @@ interface ClientAppointmentStatsProps {
 }
 
 const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appointments }) => {
+  // LEI PÉTREA: Calcular estatísticas baseadas nos 3 estados únicos
+  const getAppointmentStatus = (apt: PainelAgendamento): string => {
+    const hasCheckIn = apt.totem_sessions && 
+      apt.totem_sessions.some(s => s.check_in_time);
+    
+    const hasCheckOut = apt.totem_sessions && 
+      apt.totem_sessions.some(s => s.check_out_time);
+
+    if (!hasCheckIn) return 'agendado'; // Check-in Pendente
+    if (hasCheckIn && !hasCheckOut) return 'check_in_finalizado'; // Checkout Pendente
+    return 'concluido'; // Concluído
+  };
+
   const stats = {
     total: appointments.length,
-    agendados: appointments.filter(apt => apt.status === 'agendado').length,
-    confirmados: appointments.filter(apt => apt.status === 'confirmado').length,
-    concluidos: appointments.filter(apt => apt.status === 'concluido' || apt.status === 'FINALIZADO').length,
-    cancelados: appointments.filter(apt => apt.status === 'cancelado').length,
+    agendados: appointments.filter(apt => getAppointmentStatus(apt) === 'agendado').length,
+    checkInFinalizados: appointments.filter(apt => getAppointmentStatus(apt) === 'check_in_finalizado').length,
+    concluidos: appointments.filter(apt => getAppointmentStatus(apt) === 'concluido').length,
   };
 
   const statCards = [
@@ -61,25 +78,25 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
       description: 'todos os agendamentos'
     },
     {
-      title: 'Agendados',
+      title: 'Agendado',
       value: stats.agendados,
       icon: AlertCircle,
-      gradient: 'from-yellow-500 to-orange-500',
-      iconBg: 'bg-yellow-100',
-      iconColor: 'text-yellow-600',
-      description: 'aguardando confirmação'
+      gradient: 'from-blue-500 to-indigo-500',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      description: 'check-in pendente'
     },
     {
-      title: 'Confirmados',
-      value: stats.confirmados,
+      title: 'Check-in Finalizado',
+      value: stats.checkInFinalizados,
       icon: Clock,
-      gradient: 'from-indigo-500 to-purple-500',
-      iconBg: 'bg-indigo-100',
-      iconColor: 'text-indigo-600',
-      description: 'confirmados pelo cliente'
+      gradient: 'from-orange-500 to-amber-500',
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      description: 'checkout pendente'
     },
     {
-      title: 'Concluídos',
+      title: 'Concluído',
       value: stats.concluidos,
       icon: CheckCircle,
       gradient: 'from-green-500 to-emerald-500',
@@ -87,19 +104,10 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
       iconColor: 'text-green-600',
       description: 'atendimentos finalizados'
     },
-    {
-      title: 'Cancelados',
-      value: stats.cancelados,
-      icon: XCircle,
-      gradient: 'from-red-500 to-rose-500',
-      iconBg: 'bg-red-100',
-      iconColor: 'text-red-600',
-      description: 'agendamentos cancelados'
-    },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
       {statCards.map((stat, index) => (
         <Card 
           key={stat.title} 

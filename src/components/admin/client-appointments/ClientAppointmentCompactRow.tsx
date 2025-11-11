@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle, Calendar, Clock } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Clock } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -81,28 +81,32 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Determinar status real do agendamento
+  // LEI PÉTREA: Determinar status didático do agendamento
   const getActualStatus = () => {
-    // Verificar checkout pendente
     const hasCheckIn = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_in_time);
     
     const hasCheckOut = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_out_time);
-    
-    const hasOpenSale = appointment.vendas && 
-      appointment.vendas.some((v: any) => v.status === 'ABERTA');
-    
-    const isInCheckout = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.status === 'checkout');
 
-    // Checkout pendente: tem check-in, não tem check-out, e tem venda aberta ou está em checkout
-    if (hasCheckIn && !hasCheckOut && (hasOpenSale || isInCheckout)) {
-      return 'checkout_pendente';
+    // 3 ESTADOS ÚNICOS E IMUTÁVEIS:
+    // 1. Cliente agendou, não fez check-in ainda
+    if (!hasCheckIn) {
+      return 'agendado'; // "Agendado / Check-in Pendente"
     }
 
-    // Retornar status do banco
-    return appointment.status || 'agendado';
+    // 2. Cliente fez check-in, mas não fez checkout ainda
+    if (hasCheckIn && !hasCheckOut) {
+      return 'check_in_finalizado'; // "Check-in Finalizado / Checkout Pendente"
+    }
+
+    // 3. Cliente fez checkout (processo completo)
+    if (hasCheckIn && hasCheckOut) {
+      return 'concluido'; // "Concluído"
+    }
+
+    // Fallback (nunca deve acontecer)
+    return 'agendado';
   };
 
   const actualStatus = getActualStatus();
@@ -110,42 +114,37 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'agendado': { 
-        label: 'Agendado', 
-        className: 'bg-yellow-100 text-yellow-700 border-yellow-300 hover:bg-yellow-200',
-        icon: '⏰'
-      },
-      'confirmado': { 
-        label: 'Confirmado', 
+        label: 'Agendado',
+        sublabel: 'Check-in Pendente',
         className: 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200',
-        icon: '✓'
+        icon: '📅'
       },
-      'checkout_pendente': {
-        label: 'Checkout Pendente',
+      'check_in_finalizado': {
+        label: 'Check-in Finalizado',
+        sublabel: 'Checkout Pendente',
         className: 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200',
-        icon: '💳'
+        icon: '✅'
       },
       'concluido': { 
-        label: 'Concluído', 
+        label: 'Concluído',
+        sublabel: null,
         className: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200',
-        icon: '✓'
-      },
-      'FINALIZADO': { 
-        label: 'Finalizado', 
-        className: 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200',
-        icon: '✓'
-      },
-      'cancelado': { 
-        label: 'Cancelado', 
-        className: 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200',
-        icon: '✗'
+        icon: '🎉'
       },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.agendado;
     return (
-      <Badge className={`text-xs font-semibold px-3 py-1 border ${config.className} transition-colors duration-200`}>
-        <span className="mr-1">{config.icon}</span>
-        {config.label}
+      <Badge className={`text-xs font-semibold px-3 py-1.5 border ${config.className} transition-colors duration-200`}>
+        <div className="flex flex-col items-center">
+          <div className="flex items-center gap-1">
+            <span>{config.icon}</span>
+            <span>{config.label}</span>
+          </div>
+          {config.sublabel && (
+            <span className="text-[10px] font-normal opacity-80">{config.sublabel}</span>
+          )}
+        </div>
       </Badge>
     );
   };
@@ -262,36 +261,6 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
               <Edit className="mr-3 h-4 w-4 text-gray-600" />
               <span className="text-sm font-medium">Editar Agendamento</span>
             </DropdownMenuItem>
-
-            {appointment.status !== 'confirmado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
-              <DropdownMenuItem 
-                onClick={() => onStatusChange(appointment.id, 'confirmado')}
-                className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50 py-2.5"
-              >
-                <Check className="mr-3 h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">Confirmar</span>
-              </DropdownMenuItem>
-            )}
-
-            {(appointment.status === 'confirmado' || appointment.status === 'agendado') && (
-              <DropdownMenuItem 
-                onClick={() => onStatusChange(appointment.id, 'FINALIZADO')}
-                className="cursor-pointer hover:bg-green-50 focus:bg-green-50 py-2.5"
-              >
-                <CheckCircle className="mr-3 h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-green-700">Finalizar Atendimento</span>
-              </DropdownMenuItem>
-            )}
-
-            {appointment.status !== 'cancelado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
-              <DropdownMenuItem 
-                onClick={() => onStatusChange(appointment.id, 'cancelado')}
-                className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50 py-2.5"
-              >
-                <X className="mr-3 h-4 w-4 text-orange-600" />
-                <span className="text-sm font-medium text-orange-700">Cancelar</span>
-              </DropdownMenuItem>
-            )}
 
             <DropdownMenuItem
               className={`cursor-pointer py-2.5 ${canDelete() ? 'hover:bg-red-50 focus:bg-red-50 text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
