@@ -112,6 +112,42 @@ const TotemSearch: React.FC = () => {
 
       console.log('✅ Cliente encontrado (origem:', clientSource, '):', cliente.nome);
 
+      // 🔔 VERIFICAR CHECKOUTS PENDENTES (prioridade máxima)
+      console.log('🔍 Verificando checkouts pendentes para:', cliente.nome);
+      const { data: checkoutsPendentes, error: checkoutsError } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          id,
+          totem_sessions!inner(
+            id,
+            check_in_time,
+            check_out_time
+          )
+        `)
+        .eq('cliente_id', cliente.id)
+        .not('totem_sessions.check_in_time', 'is', null)
+        .is('totem_sessions.check_out_time', null);
+
+      if (!checkoutsError && checkoutsPendentes && checkoutsPendentes.length > 0) {
+        console.log(`🔔 ALERTA: ${checkoutsPendentes.length} checkout(s) pendente(s) detectado(s)!`);
+        toast.info('Checkouts Pendentes', {
+          description: `Você possui ${checkoutsPendentes.length} atendimento(s) aguardando pagamento!`,
+          duration: 5000
+        });
+        
+        // Redirecionar para tela de checkouts pendentes
+        navigate('/totem/pending-checkouts', {
+          state: {
+            whatsapp: cliente.whatsapp,
+            cliente: cliente
+          }
+        });
+        setIsSearching(false);
+        return;
+      }
+
+      console.log('✅ Nenhum checkout pendente encontrado');
+
       // Buscar agendamentos do cliente - garantir data local sem conversão de timezone
       const now = new Date();
       const year = now.getFullYear();
