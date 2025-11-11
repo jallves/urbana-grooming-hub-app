@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -512,12 +512,12 @@ export const ContasAPagar: React.FC = () => {
                           {record.category === 'staff_payments' ? 'Pagamento Comissão' : record.category.replace('_', ' ')}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                          {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-sm">
                           {record.payment_date ? (
                             <span className="text-green-700 font-medium">
-                              {format(new Date(record.payment_date), 'dd/MM/yyyy', { locale: ptBR })}
+                              {format(new Date(record.payment_date), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                             </span>
                           ) : (
                             <span className="text-gray-400 text-xs">Pendente</span>

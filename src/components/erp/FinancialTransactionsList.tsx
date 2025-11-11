@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowUpCircle, ArrowDownCircle, DollarSign, Loader2 } from 'lucide-react';
 
@@ -124,7 +124,7 @@ export const FinancialTransactionsList: React.FC = () => {
                       {transaction.description}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                      {format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
                       <span className={

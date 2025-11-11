@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowUpCircle, Loader2, DollarSign, Plus, Pencil, Trash2, CreditCard, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -430,7 +430,7 @@ export const ContasAReceber: React.FC = () => {
                           )}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {format(new Date(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                          {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-right text-sm text-gray-600">
                           R$ {record.gross_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}

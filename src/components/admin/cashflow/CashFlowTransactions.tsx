@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const CashFlowTransactions: React.FC = () => {
@@ -148,7 +148,7 @@ const CashFlowTransactions: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
                           <Calendar className="h-3 w-3" />
-                          {format(new Date(transaction.transaction_date), "dd/MM/yyyy", { locale: ptBR })}
+                          {format(parseISO(transaction.transaction_date + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}
                         </div>
                       </div>
                     </div>

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Plus, ArrowUpRight, ArrowDownRight, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -400,7 +400,7 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
                     <div>
                       <p className="font-medium text-gray-900">{transaction.description}</p>
                       <p className="text-sm text-gray-600">
-                        {transaction.category} • {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        {transaction.category} • {format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                       </p>
                       {transaction.payment_method && (
                         <p className="text-xs text-gray-500">Via: {transaction.payment_method}</p>

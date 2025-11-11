@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CashFlowChart from './CashFlowChart';
 import CategoryChart from './CategoryChart';
@@ -198,7 +198,7 @@ const CashFlowDashboard: React.FC = () => {
                       {transaction.transaction_type === 'income' ? '+' : '-'}R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-gray-600">
-                      {format(new Date(transaction.transaction_date), "dd/MM", { locale: ptBR })}
+                      {format(parseISO(transaction.transaction_date + 'T00:00:00'), "dd/MM", { locale: ptBR })}
                     </p>
                   </div>
                 </div>

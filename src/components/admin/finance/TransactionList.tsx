@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Plus, DollarSign, TrendingUp, TrendingDown, Calendar, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface Transaction {
@@ -210,7 +210,7 @@ const TransactionList: React.FC = () => {
                             <span>{transaction.payment_method}</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3 text-urbana-gold" />
-                              {format(new Date(transaction.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                              {format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                             </span>
                           </div>
                         </div>
