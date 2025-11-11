@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import ClientAppointmentCompactRow from './ClientAppointmentCompactRow';
+import ClientAppointmentMobileCard from './ClientAppointmentMobileCard';
 
 interface PainelAgendamento {
   id: string;
@@ -124,10 +125,10 @@ const ClientAppointmentCompactTable: React.FC<ClientAppointmentCompactTableProps
         </Table>
       </div>
 
-      {/* Lista mobile (cards) */}
-      <div className="sm:hidden space-y-3 p-4">
-        {appointments.map((appointment, index) => (
-          <ClientAppointmentCompactRow
+      {/* Lista mobile (cards) - Otimizada para scroll */}
+      <div className="sm:hidden space-y-3 overflow-y-auto" style={{ willChange: 'transform' }}>
+        {appointments.map((appointment) => (
+          <ClientAppointmentMobileCard
             key={appointment.id}
             appointment={appointment}
             onEdit={onEdit}

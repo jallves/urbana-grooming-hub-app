@@ -79,15 +79,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   onStatusChange,
   onDelete
 }) => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detectar se é mobile
-  React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Determinar status real do agendamento
   const getActualStatus = () => {
@@ -158,150 +150,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     );
   };
 
-  return (
-    <>
-      {isMobile ? (
-        // MOBILE (Card)
-        <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
-          <div className="flex justify-between items-start mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
-                {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-bold text-base text-gray-900 truncate">
-                  {appointment.painel_clientes?.nome || 'Nome não encontrado'}
-                </h4>
-                <p className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</p>
-              </div>
-            </div>
-            {getStatusBadge(actualStatus)}
-          </div>
-
-          <div className="space-y-2 bg-gray-50 rounded-lg p-3 mb-3">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              <span className="font-medium text-gray-900">{format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}</span>
-              <Clock className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
-              <span className="font-medium text-gray-900">{appointment.hora}</span>
-            </div>
-            <div className="flex items-start gap-2 text-sm">
-              <CheckCircle className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span className="font-medium text-gray-900">{appointment.painel_servicos?.nome || 'N/A'}</span>
-                <span className="ml-2 font-bold text-green-600">
-                  R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              {appointment.painel_barbeiros?.image_url && (
-                <img 
-                  src={appointment.painel_barbeiros.image_url} 
-                  alt={appointment.painel_barbeiros.nome}
-                  className="w-6 h-6 rounded-full object-cover border border-gray-200"
-                />
-              )}
-              <span className="font-medium truncate">{appointment.painel_barbeiros?.nome || 'N/A'}</span>
-            </div>
-            <ActionMenu
-              appointment={appointment}
-              onEdit={onEdit}
-              onStatusChange={onStatusChange}
-              onDelete={onDelete}
-            />
-          </div>
-        </div>
-      ) : (
-        // DESKTOP (Tabela)
-        <TableRow className="hover:bg-gray-50 transition-colors duration-150">
-          <TableCell className="py-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-sm">
-                {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
-              </div>
-              <div>
-                <div className="font-semibold text-sm text-gray-900">
-                  {appointment.painel_clientes?.nome || 'Nome não encontrado'}
-                </div>
-                <div className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</div>
-              </div>
-            </div>
-          </TableCell>
-
-          <TableCell className="py-4">
-            <div className="flex flex-col gap-1">
-              <div className="text-sm font-medium text-gray-900">
-                {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}
-              </div>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {appointment.hora}
-              </div>
-            </div>
-          </TableCell>
-
-          <TableCell className="py-4">
-            <div className="flex flex-col gap-1">
-              <div className="text-sm font-medium text-gray-900">
-                {appointment.painel_servicos?.nome || 'N/A'}
-              </div>
-              <div className="text-xs font-semibold text-green-600">
-                R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
-              </div>
-            </div>
-          </TableCell>
-
-          <TableCell className="py-4">
-            <div className="flex items-center gap-2">
-              {appointment.painel_barbeiros?.image_url && (
-                <img 
-                  src={appointment.painel_barbeiros.image_url} 
-                  alt={appointment.painel_barbeiros.nome}
-                  className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
-                />
-              )}
-              <span className="text-sm font-medium text-gray-900">
-                {appointment.painel_barbeiros?.nome || 'N/A'}
-              </span>
-            </div>
-          </TableCell>
-
-          <TableCell className="py-4">
-            {getStatusBadge(actualStatus)}
-          </TableCell>
-
-          <TableCell className="text-right py-4">
-            <ActionMenu
-              appointment={appointment}
-              onEdit={onEdit}
-              onStatusChange={onStatusChange}
-              onDelete={onDelete}
-            />
-          </TableCell>
-        </TableRow>
-      )}
-    </>
-  );
-};
-
-const ActionMenu = ({
-  appointment,
-  onEdit,
-  onStatusChange,
-  onDelete,
-}: {
-  appointment: PainelAgendamento;
-  onEdit: (id: string) => void;
-  onStatusChange: (id: string, status: string) => void;
-  onDelete: (id: string) => void;
-}) => {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  // Verificar se o agendamento pode ser excluído
+  // Verificar se pode deletar
   const canDelete = () => {
     const hasCheckIn = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_in_time);
@@ -340,107 +189,165 @@ const ActionMenu = ({
   };
 
   return (
-    <>
-      <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-gray-100 rounded-lg transition-colors">
-        <MoreHorizontal className="h-5 w-5 text-gray-600" />
-        <span className="sr-only">Abrir menu</span>
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200 shadow-lg">
-      <DropdownMenuItem 
-        onClick={() => onEdit(appointment.id)}
-        className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5"
-      >
-        <Edit className="mr-3 h-4 w-4 text-gray-600" />
-        <span className="text-sm font-medium">Editar Agendamento</span>
-      </DropdownMenuItem>
-
-      {appointment.status !== 'confirmado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
-        <DropdownMenuItem 
-          onClick={() => onStatusChange(appointment.id, 'confirmado')}
-          className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50 py-2.5"
-        >
-          <Check className="mr-3 h-4 w-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-700">Confirmar</span>
-        </DropdownMenuItem>
-      )}
-
-      {(appointment.status === 'confirmado' || appointment.status === 'agendado') && (
-        <DropdownMenuItem 
-          onClick={() => onStatusChange(appointment.id, 'FINALIZADO')}
-          className="cursor-pointer hover:bg-green-50 focus:bg-green-50 py-2.5"
-        >
-          <CheckCircle className="mr-3 h-4 w-4 text-green-600" />
-          <span className="text-sm font-medium text-green-700">Finalizar Atendimento</span>
-        </DropdownMenuItem>
-      )}
-
-      {appointment.status !== 'cancelado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
-        <DropdownMenuItem 
-          onClick={() => onStatusChange(appointment.id, 'cancelado')}
-          className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50 py-2.5"
-        >
-          <X className="mr-3 h-4 w-4 text-orange-600" />
-          <span className="text-sm font-medium text-orange-700">Cancelar</span>
-        </DropdownMenuItem>
-      )}
-
-      <DropdownMenuItem
-        className={`cursor-pointer py-2.5 ${canDelete() ? 'hover:bg-red-50 focus:bg-red-50 text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
-        onClick={handleDeleteClick}
-        disabled={!canDelete()}
-      >
-        <Trash2 className="mr-3 h-4 w-4" />
-        <span className="text-sm font-medium">Excluir Permanentemente</span>
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-
-  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-    <AlertDialogContent>
-      <AlertDialogHeader>
-        <AlertDialogTitle className="text-red-600 font-bold">⚠️ Confirmar Exclusão Permanente</AlertDialogTitle>
-        <AlertDialogDescription className="space-y-3">
-          <p className="font-semibold text-gray-900">
-            Você está prestes a excluir permanentemente o agendamento de{' '}
-            <strong className="text-red-600">{appointment.painel_clientes?.nome}</strong>
-          </p>
-          
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
-            <p className="text-sm text-yellow-800 font-medium">
-              <strong>ATENÇÃO:</strong> Esta ação é irreversível e pode:
-            </p>
-            <ul className="text-xs text-yellow-700 mt-2 ml-4 space-y-1 list-disc">
-              <li>Comprometer a integridade dos registros administrativos</li>
-              <li>Dificultar auditorias e relatórios financeiros</li>
-              <li>Causar inconsistências no histórico de atendimentos</li>
-            </ul>
+    <TableRow className="hover:bg-gray-50 transition-colors duration-150">
+      <TableCell className="py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-sm">
+            {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
           </div>
+          <div>
+            <div className="font-semibold text-sm text-gray-900">
+              {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+            </div>
+            <div className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</div>
+          </div>
+        </div>
+      </TableCell>
 
-          <p className="text-sm text-gray-700 font-medium">
-            💡 <strong>Recomendação:</strong> Em vez de excluir, considere <strong>cancelar</strong> o agendamento para manter o histórico.
-          </p>
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100">
-          Cancelar (Recomendado)
-        </AlertDialogCancel>
-        <AlertDialogAction
-          onClick={() => {
-            onDelete(appointment.id);
-            setIsDeleteDialogOpen(false);
-          }}
-          className="bg-red-600 hover:bg-red-700 text-white font-bold"
-        >
-          Excluir Permanentemente
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-</>
+      <TableCell className="py-4 hidden sm:table-cell">
+        <div className="flex flex-col gap-1">
+          <div className="text-sm font-medium text-gray-900">
+            {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}
+          </div>
+          <div className="text-xs text-gray-500 flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {appointment.hora}
+          </div>
+        </div>
+      </TableCell>
+
+      <TableCell className="py-4 hidden md:table-cell">
+        <div className="flex flex-col gap-1">
+          <div className="text-sm font-medium text-gray-900">
+            {appointment.painel_servicos?.nome || 'N/A'}
+          </div>
+          <div className="text-xs font-semibold text-green-600">
+            R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
+          </div>
+        </div>
+      </TableCell>
+
+      <TableCell className="py-4 hidden lg:table-cell">
+        <div className="flex items-center gap-2">
+          {appointment.painel_barbeiros?.image_url && (
+            <img 
+              src={appointment.painel_barbeiros.image_url} 
+              alt={appointment.painel_barbeiros.nome}
+              className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+            />
+          )}
+          <span className="text-sm font-medium text-gray-900">
+            {appointment.painel_barbeiros?.nome || 'N/A'}
+          </span>
+        </div>
+      </TableCell>
+
+      <TableCell className="py-4">
+        {getStatusBadge(actualStatus)}
+      </TableCell>
+
+      <TableCell className="text-right py-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-gray-100 rounded-lg transition-colors">
+              <MoreHorizontal className="h-5 w-5 text-gray-600" />
+              <span className="sr-only">Abrir menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200 shadow-lg">
+            <DropdownMenuItem 
+              onClick={() => onEdit(appointment.id)}
+              className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 py-2.5"
+            >
+              <Edit className="mr-3 h-4 w-4 text-gray-600" />
+              <span className="text-sm font-medium">Editar Agendamento</span>
+            </DropdownMenuItem>
+
+            {appointment.status !== 'confirmado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
+              <DropdownMenuItem 
+                onClick={() => onStatusChange(appointment.id, 'confirmado')}
+                className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50 py-2.5"
+              >
+                <Check className="mr-3 h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">Confirmar</span>
+              </DropdownMenuItem>
+            )}
+
+            {(appointment.status === 'confirmado' || appointment.status === 'agendado') && (
+              <DropdownMenuItem 
+                onClick={() => onStatusChange(appointment.id, 'FINALIZADO')}
+                className="cursor-pointer hover:bg-green-50 focus:bg-green-50 py-2.5"
+              >
+                <CheckCircle className="mr-3 h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium text-green-700">Finalizar Atendimento</span>
+              </DropdownMenuItem>
+            )}
+
+            {appointment.status !== 'cancelado' && appointment.status !== 'FINALIZADO' && appointment.status !== 'concluido' && (
+              <DropdownMenuItem 
+                onClick={() => onStatusChange(appointment.id, 'cancelado')}
+                className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50 py-2.5"
+              >
+                <X className="mr-3 h-4 w-4 text-orange-600" />
+                <span className="text-sm font-medium text-orange-700">Cancelar</span>
+              </DropdownMenuItem>
+            )}
+
+            <DropdownMenuItem
+              className={`cursor-pointer py-2.5 ${canDelete() ? 'hover:bg-red-50 focus:bg-red-50 text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
+              onClick={handleDeleteClick}
+              disabled={!canDelete()}
+            >
+              <Trash2 className="mr-3 h-4 w-4" />
+              <span className="text-sm font-medium">Excluir Permanentemente</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-red-600 font-bold">⚠️ Confirmar Exclusão Permanente</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p className="font-semibold text-gray-900">
+                  Você está prestes a excluir permanentemente o agendamento de{' '}
+                  <strong className="text-red-600">{appointment.painel_clientes?.nome}</strong>
+                </p>
+                
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
+                  <p className="text-sm text-yellow-800 font-medium">
+                    <strong>ATENÇÃO:</strong> Esta ação é irreversível e pode:
+                  </p>
+                  <ul className="text-xs text-yellow-700 mt-2 ml-4 space-y-1 list-disc">
+                    <li>Comprometer a integridade dos registros administrativos</li>
+                    <li>Dificultar auditorias e relatórios financeiros</li>
+                    <li>Causar inconsistências no histórico de atendimentos</li>
+                  </ul>
+                </div>
+
+                <p className="text-sm text-gray-700 font-medium">
+                  💡 <strong>Recomendação:</strong> Em vez de excluir, considere <strong>cancelar</strong> o agendamento para manter o histórico.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100">
+                Cancelar (Recomendado)
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  onDelete(appointment.id);
+                  setIsDeleteDialogOpen(false);
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+              >
+                Excluir Permanentemente
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </TableCell>
+    </TableRow>
   );
 };
 
