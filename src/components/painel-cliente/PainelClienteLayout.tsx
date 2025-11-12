@@ -182,7 +182,7 @@ const PainelClienteLayout: React.FC = () => {
       </nav>
 
       {/* Main Content */}
-      <main className="relative w-screen min-h-screen">
+      <main className="relative z-10 w-screen">
         <AnimatePresence mode="wait">
           <PageTransition mode="fade">
             <Outlet />
