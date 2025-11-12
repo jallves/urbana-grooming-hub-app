@@ -62,11 +62,11 @@ const PainelClienteLayout: React.FC = () => {
             >
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl blur-sm opacity-75" />
-                <div className="relative p-2 sm:p-3 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl shadow-lg">
+                <div className="relative p-2 sm:p-2.5 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl shadow-lg">
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana" 
-                    className="h-4 w-4 sm:h-5 md:h-6 w-5 md:w-6 object-contain"
+                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain drop-shadow-lg"
                   />
                 </div>
               </div>
