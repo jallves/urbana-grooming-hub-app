@@ -65,7 +65,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 md:hidden" onClick={closeMenu} />
+        <div className="fixed inset-0 z-50 bg-black md:hidden" onClick={closeMenu} />
       )}
 
       {/* Mobile Sidebar */}
