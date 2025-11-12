@@ -11,7 +11,7 @@ interface DailyScheduleProps {
 }
 
 const BUSINESS_HOURS = {
-  start: 8, // 8 AM
+  start: 9, // 9 AM
   end: 20, // 8 PM
 };
 

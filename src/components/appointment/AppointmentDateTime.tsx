@@ -16,10 +16,10 @@ interface AppointmentDateTimeProps {
 const AppointmentDateTime: React.FC<AppointmentDateTimeProps> = ({ date, handleDateChange }) => {
   const [selectedTime, setSelectedTime] = useState<string>("");
 
-  // Generate time slots in 30-minute intervals from 8:00 to 20:00
+  // Generate time slots in 30-minute intervals from 9:00 to 20:00
   const generateTimeSlots = () => {
     const slots = [];
-    for (let hour = 8; hour < 20; hour++) {
+    for (let hour = 9; hour < 20; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
         const formattedHour = hour.toString().padStart(2, '0');
         const formattedMinute = minute.toString().padStart(2, '0');

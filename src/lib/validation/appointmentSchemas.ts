@@ -19,9 +19,9 @@ export const createAppointmentSchema = z.object({
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Formato de hora inválido').refine(
     (time) => {
       const [hours] = time.split(':').map(Number);
-      return hours >= 8 && hours < 20;
+      return hours >= 9 && hours < 20;
     },
-    'Horário deve estar entre 08:00 e 20:00'
+    'Horário deve estar entre 09:00 e 20:00'
   ),
   notes: z.string().optional().transform(val => val ? sanitizeInput(val) : undefined),
   couponCode: z.string().optional().transform(val => val ? sanitizeInput(val) : undefined),

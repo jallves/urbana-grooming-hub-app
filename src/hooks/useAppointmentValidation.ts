@@ -203,11 +203,11 @@ export const useAppointmentValidation = () => {
   const checkBusinessHours = useCallback((time: string): ValidationResult => {
     const [hours] = time.split(':').map(Number);
     
-    // Horário de funcionamento: 8h às 20h
-    if (hours < 8 || hours >= 20) {
+    // Horário de funcionamento: 9h às 20h
+    if (hours < 9 || hours >= 20) {
       return {
         valid: false,
-        error: 'Nosso horário de funcionamento é das 08:00 às 20:00.'
+        error: 'Nosso horário de funcionamento é das 09:00 às 20:00.'
       };
     }
 

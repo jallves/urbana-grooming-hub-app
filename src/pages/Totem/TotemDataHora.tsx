@@ -48,8 +48,8 @@ const TotemDataHora: React.FC = () => {
     const todayYear = today.getFullYear();
     const isToday = dateDay === todayDay && dateMonth === todayMonth && dateYear === todayYear;
     
-    // Gerar horários de 8h às 20h
-    for (let hour = 8; hour <= 20; hour++) {
+    // Gerar horários de 9h às 20h
+    for (let hour = 9; hour <= 20; hour++) {
       for (let minute of [0, 30]) {
         const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         

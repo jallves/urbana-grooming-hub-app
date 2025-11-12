@@ -275,11 +275,11 @@ export default function PainelClienteAgendar() {
 
   if (loadingData) {
     return (
-      <div className="flex items-center justify-center min-h-screen w-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
+      <div className="flex items-center justify-center min-h-screen">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full"
+          className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full"
         />
       </div>
     );
@@ -288,8 +288,11 @@ export default function PainelClienteAgendar() {
   const horariosDisponiveis = gerarHorariosDisponiveis();
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      <div className="absolute inset-0 bg-gradient-to-r from-green-600/5 via-blue-600/5 to-green-600/5" />
+    <div className="min-h-screen w-full">
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+      </div>
       
       <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
         <motion.div
@@ -304,25 +307,25 @@ export default function PainelClienteAgendar() {
               onClick={() => navigate('/painel-cliente/dashboard')}
               variant="outline"
               size="sm"
-              className="border-gray-800 text-gray-300 bg-transparent rounded-lg px-4 py-3 backdrop-blur-md flex items-center gap-2"
+              className="border-urbana-gold/30 text-urbana-light bg-urbana-black/40 backdrop-blur-xl hover:bg-urbana-gold/10 hover:border-urbana-gold rounded-lg px-4 py-3 flex items-center gap-2 transition-all"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Voltar</span>
             </Button>
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 via-blue-400 to-green-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-urbana-gold drop-shadow-lg">
                 Novo Agendamento
               </h1>
-              <p className="text-gray-400 text-base sm:text-lg mt-2">Agende seu próximo corte</p>
+              <p className="text-urbana-light/70 text-base sm:text-lg mt-2">Agende seu próximo corte</p>
             </div>
           </div>
 
           {/* Formulário */}
-          <Card className="bg-gradient-to-br from-gray-900/90 to-gray-950/90 border-gray-800/50 backdrop-blur-md shadow-2xl">
+          <Card className="bg-urbana-black/40 border-urbana-gold/20 backdrop-blur-2xl shadow-2xl">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-white flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg">
-                  <Scissors className="h-5 w-5 text-white" />
+              <CardTitle className="text-xl font-bold text-urbana-light flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-lg shadow-lg shadow-urbana-gold/30">
+                  <Scissors className="h-5 w-5 text-urbana-black" />
                 </div>
                 Detalhes do Agendamento
               </CardTitle>
@@ -330,27 +333,27 @@ export default function PainelClienteAgendar() {
             <CardContent className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Cliente Info */}
-                <div className="p-4 bg-gradient-to-r from-green-900/20 to-blue-900/20 rounded-lg border border-green-800/30">
+                <div className="p-4 bg-urbana-gold/10 backdrop-blur-sm rounded-lg border border-urbana-gold/30">
                   <div className="flex items-center gap-3 mb-2">
-                    <User className="h-5 w-5 text-green-400" />
-                    <span className="text-green-400 font-medium">Cliente</span>
+                    <User className="h-5 w-5 text-urbana-gold" />
+                    <span className="text-urbana-gold font-medium">Cliente</span>
                   </div>
-                  <p className="text-white font-semibold text-lg">{cliente.nome}</p>
-                  <p className="text-gray-400">{cliente.email}</p>
+                  <p className="text-urbana-light font-semibold text-lg">{cliente.nome}</p>
+                  <p className="text-urbana-light/70">{cliente.email}</p>
                 </div>
 
                 {/* Serviço */}
                 <div className="space-y-2">
-                  <Label htmlFor="servico" className="text-gray-300 font-medium">
+                  <Label htmlFor="servico" className="text-urbana-light font-medium">
                     Serviço *
                   </Label>
                   <Select value={formData.servico_id} onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}>
-                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                    <SelectTrigger className="bg-urbana-black/50 backdrop-blur-sm border-urbana-gold/30 text-urbana-light hover:border-urbana-gold transition-colors">
                       <SelectValue placeholder="Selecione um serviço" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectContent className="bg-urbana-black/95 backdrop-blur-xl border-urbana-gold/30">
                       {servicos.map((servico) => (
-                        <SelectItem key={servico.id} value={servico.id} className="text-white">
+                        <SelectItem key={servico.id} value={servico.id} className="text-urbana-light hover:bg-urbana-gold/20 focus:bg-urbana-gold/20">
                           {servico.nome} - R$ {servico.preco.toFixed(2)} ({servico.duracao}min)
                         </SelectItem>
                       ))}
@@ -360,16 +363,16 @@ export default function PainelClienteAgendar() {
 
                 {/* Barbeiro */}
                 <div className="space-y-2">
-                  <Label htmlFor="barbeiro" className="text-gray-300 font-medium">
+                  <Label htmlFor="barbeiro" className="text-urbana-light font-medium">
                     Barbeiro *
                   </Label>
                   <Select value={formData.barbeiro_id} onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}>
-                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                    <SelectTrigger className="bg-urbana-black/50 backdrop-blur-sm border-urbana-gold/30 text-urbana-light hover:border-urbana-gold transition-colors">
                       <SelectValue placeholder="Selecione um barbeiro" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectContent className="bg-urbana-black/95 backdrop-blur-xl border-urbana-gold/30">
                       {barbeiros.map((barbeiro) => (
-                        <SelectItem key={barbeiro.id} value={barbeiro.id} className="text-white">
+                        <SelectItem key={barbeiro.id} value={barbeiro.id} className="text-urbana-light hover:bg-urbana-gold/20 focus:bg-urbana-gold/20">
                           {barbeiro.nome}
                         </SelectItem>
                       ))}
@@ -379,22 +382,22 @@ export default function PainelClienteAgendar() {
 
                 {/* Data */}
                 <div className="space-y-2">
-                  <Label htmlFor="data" className="text-gray-300 font-medium">
+                  <Label htmlFor="data" className="text-urbana-light font-medium">
                     Data *
                   </Label>
                   <Select 
                     value={formData.data} 
                     onValueChange={(value) => {
                       console.log('Data selecionada:', value);
-                      setFormData(prev => ({ ...prev, data: value, hora: '' })); // Limpar hora ao mudar data
+                      setFormData(prev => ({ ...prev, data: value, hora: '' }));
                     }}
                   >
-                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                    <SelectTrigger className="bg-urbana-black/50 backdrop-blur-sm border-urbana-gold/30 text-urbana-light hover:border-urbana-gold transition-colors">
                       <SelectValue placeholder="Selecione uma data" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectContent className="bg-urbana-black/95 backdrop-blur-xl border-urbana-gold/30">
                       {gerarDatasDisponiveis().map((data) => (
-                        <SelectItem key={data.value} value={data.value} className="text-white">
+                        <SelectItem key={data.value} value={data.value} className="text-urbana-light hover:bg-urbana-gold/20 focus:bg-urbana-gold/20">
                           {data.label}
                         </SelectItem>
                       ))}
@@ -404,7 +407,7 @@ export default function PainelClienteAgendar() {
 
                 {/* Hora */}
                 <div className="space-y-2">
-                  <Label htmlFor="hora" className="text-gray-300 font-medium">
+                  <Label htmlFor="hora" className="text-urbana-light font-medium">
                     Horário *
                   </Label>
                   <Select 
@@ -415,7 +418,7 @@ export default function PainelClienteAgendar() {
                     }}
                     disabled={!formData.data}
                   >
-                    <SelectTrigger className="bg-gray-800/50 border-gray-700 text-white">
+                    <SelectTrigger className="bg-urbana-black/50 backdrop-blur-sm border-urbana-gold/30 text-urbana-light hover:border-urbana-gold transition-colors disabled:opacity-50">
                       <SelectValue 
                         placeholder={
                           !formData.data 
@@ -426,15 +429,15 @@ export default function PainelClienteAgendar() {
                         } 
                       />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectContent className="bg-urbana-black/95 backdrop-blur-xl border-urbana-gold/30">
                       {horariosDisponiveis.length > 0 ? (
                         horariosDisponiveis.map((hora) => (
-                          <SelectItem key={hora} value={hora} className="text-white">
+                          <SelectItem key={hora} value={hora} className="text-urbana-light hover:bg-urbana-gold/20 focus:bg-urbana-gold/20">
                             {hora}
                           </SelectItem>
                         ))
                       ) : (
-                        <div className="p-2 text-gray-500 text-sm text-center">
+                        <div className="p-2 text-urbana-light/50 text-sm text-center">
                           {!formData.data ? 'Selecione uma data primeiro' : 'Nenhum horário disponível'}
                         </div>
                       )}
@@ -444,7 +447,7 @@ export default function PainelClienteAgendar() {
 
                 {/* Observações */}
                 <div className="space-y-2">
-                  <Label htmlFor="observacoes" className="text-gray-300 font-medium">
+                  <Label htmlFor="observacoes" className="text-urbana-light font-medium">
                     Observações
                   </Label>
                   <Textarea
@@ -452,7 +455,7 @@ export default function PainelClienteAgendar() {
                     value={formData.observacoes}
                     onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
                     placeholder="Digite suas observações (opcional)"
-                    className="bg-gray-800/50 border-gray-700 text-white placeholder-gray-500"
+                    className="bg-urbana-black/50 backdrop-blur-sm border-urbana-gold/30 text-urbana-light placeholder-urbana-light/40 hover:border-urbana-gold transition-colors"
                     rows={3}
                   />
                 </div>
@@ -463,18 +466,18 @@ export default function PainelClienteAgendar() {
                     type="button"
                     variant="outline"
                     onClick={() => navigate('/painel-cliente/dashboard')}
-                    className="border-gray-700 text-gray-300 bg-transparent hover:bg-gray-800/50"
+                    className="border-urbana-gold/30 text-urbana-light bg-urbana-black/50 backdrop-blur-sm hover:bg-urbana-gold/10 hover:border-urbana-gold transition-all"
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-medium px-8 py-3 rounded-lg shadow-xl flex-1"
+                    className="bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-bold px-8 py-3 rounded-lg shadow-xl shadow-urbana-gold/30 flex-1 transition-all disabled:opacity-50"
                   >
                     {loading ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-urbana-black border-t-transparent rounded-full animate-spin" />
                         Agendando...
                       </div>
                     ) : (

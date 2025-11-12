@@ -61,12 +61,11 @@ const PainelClienteLayout: React.FC = () => {
               transition={{ duration: 0.5 }}
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl blur-sm opacity-75" />
-                <div className="relative p-2 sm:p-2.5 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl shadow-lg">
+                <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana" 
-                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain drop-shadow-lg"
+                    className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
