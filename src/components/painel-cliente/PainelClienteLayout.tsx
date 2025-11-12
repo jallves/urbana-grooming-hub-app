@@ -2,13 +2,14 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Calendar, Home, Scissors, Bell } from 'lucide-react';
+import { LogOut, User, Calendar, Home, Bell, Clock } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageTransition from '@/components/transitions/PageTransition';
 import LoadingBar from '@/components/ui/loading/LoadingBar';
 import { usePageTransition } from '@/hooks/usePageTransition';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
 const PainelClienteLayout: React.FC = () => {
   const { cliente, logout } = usePainelClienteAuth();
@@ -24,7 +25,7 @@ const PainelClienteLayout: React.FC = () => {
   const navigationItems = [
     { path: '/painel-cliente/dashboard', icon: Home, label: 'Home', color: 'from-blue-500 to-cyan-500' },
     { path: '/painel-cliente/agendar', icon: Calendar, label: 'Agendar', color: 'from-green-500 to-emerald-500' },
-    { path: '/painel-cliente/agendamentos', icon: Scissors, label: 'Histórico', color: 'from-purple-500 to-pink-500' },
+    { path: '/painel-cliente/agendamentos', icon: Clock, label: 'Histórico', color: 'from-purple-500 to-pink-500' },
     { path: '/painel-cliente/perfil', icon: User, label: 'Perfil', color: 'from-orange-500 to-red-500' },
   ];
 
@@ -62,12 +63,16 @@ const PainelClienteLayout: React.FC = () => {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl blur-sm opacity-75" />
                 <div className="relative p-2 sm:p-3 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl shadow-lg">
-                  <Scissors className="h-4 w-4 sm:h-5 md:h-6 w-5 md:w-6 text-urbana-black" />
+                  <img 
+                    src={costaUrbanaLogo} 
+                    alt="Costa Urbana" 
+                    className="h-4 w-4 sm:h-5 md:h-6 w-5 md:w-6 object-contain"
+                  />
                 </div>
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
-                  Urbana Barbearia
+                  Barbearia Costa Urbana
                 </h1>
                 <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Cliente</p>
               </div>

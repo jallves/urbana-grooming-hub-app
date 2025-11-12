@@ -7,7 +7,6 @@ import {
   Settings,
   LogOut,
   User,
-  Scissors,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { 
