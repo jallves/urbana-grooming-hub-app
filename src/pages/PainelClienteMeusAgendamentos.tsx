@@ -86,7 +86,7 @@ export default function PainelClienteMeusAgendamentos() {
     const statusConfig = {
       agendado: { label: 'Agendado', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
       confirmado: { label: 'Confirmado', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
-      concluido: { label: 'Concluído', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+      concluido: { label: 'Concluído', color: 'bg-urbana-gold/20 text-urbana-gold border-urbana-gold/30' },
       cancelado: { label: 'Cancelado', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
     };
     
@@ -190,15 +190,15 @@ export default function PainelClienteMeusAgendamentos() {
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-urbana-gold drop-shadow-lg">
                 Meus Agendamentos
               </h1>
-              <p className="text-gray-400 text-base sm:text-lg mt-2">Acompanhe todos os seus agendamentos</p>
+              <p className="text-urbana-light/70 text-base sm:text-lg mt-2 drop-shadow-md">Acompanhe todos os seus agendamentos</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={() => navigate('/painel-cliente/agendar')}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                className="bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Agendamento
@@ -206,7 +206,7 @@ export default function PainelClienteMeusAgendamentos() {
               <Button
                 variant="outline"
                 onClick={() => navigate('/painel-cliente/dashboard')}
-                className="text-gray-300 border border-gray-600 bg-transparent rounded-xl px-6 py-3 text-sm font-medium transition-none shadow-none hover:bg-transparent hover:text-gray-300 hover:border-gray-600 flex items-center justify-center"
+                className="text-urbana-light border border-urbana-gold/30 bg-transparent rounded-xl px-6 py-3 text-sm font-medium hover:bg-urbana-gold/10 hover:border-urbana-gold/50 transition-all duration-300"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
@@ -221,14 +221,14 @@ export default function PainelClienteMeusAgendamentos() {
                 { key: 'todos', label: 'Todos', color: 'from-gray-500 to-gray-600' },
                 { key: 'agendado', label: 'Agendados', color: 'from-blue-500 to-blue-600' },
                 { key: 'confirmado', label: 'Confirmados', color: 'from-green-500 to-green-600' },
-                { key: 'concluido', label: 'Concluídos', color: 'from-purple-500 to-purple-600' },
+                { key: 'concluido', label: 'Concluídos', color: 'from-urbana-gold to-urbana-gold-vibrant' },
                 { key: 'cancelado', label: 'Cancelados', color: 'from-red-500 to-red-600' }
               ].map((filtro) => (
                 <Button
                   key={filtro.key}
                   onClick={() => setFiltroStatus(filtro.key)}
                   size="sm"
-                  className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm bg-gradient-to-r ${filtro.color} text-white shadow-lg transition-all duration-300`}
+                  className={`flex-shrink-0 rounded-xl px-4 py-2 text-sm bg-gradient-to-r ${filtro.color} ${filtro.key === 'concluido' ? 'text-urbana-black' : 'text-white'} shadow-lg transition-all duration-300`}
                 >
                   {filtro.label}
                 </Button>
@@ -243,7 +243,7 @@ export default function PainelClienteMeusAgendamentos() {
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full"
+                  className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full"
                 />
               </div>
             ) : agendamentosFiltrados.length === 0 ? (
@@ -267,7 +267,7 @@ export default function PainelClienteMeusAgendamentos() {
                   </p>
                   <Button
                     onClick={() => navigate('/painel-cliente/agendar')}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                    className="bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
                   >
                     <Plus className="h-5 w-5 mr-2" />
                     {filtroStatus === 'todos' ? 'Fazer Primeiro Agendamento' : 'Novo Agendamento'}
@@ -291,7 +291,7 @@ export default function PainelClienteMeusAgendamentos() {
                       <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl hover:border-slate-600/70 transition-all duration-300 shadow-xl hover:shadow-2xl">
                         <CardHeader className="pb-4">
                           <div className="flex justify-between items-start gap-3">
-                            <CardTitle className="text-white text-lg font-semibold group-hover:text-purple-300 transition-colors truncate pr-2 flex-1">
+                            <CardTitle className="text-white text-lg font-semibold group-hover:text-urbana-gold transition-colors truncate pr-2 flex-1">
                               {agendamento.painel_servicos.nome}
                             </CardTitle>
                             {getStatusBadge(agendamento.status)}
@@ -300,17 +300,17 @@ export default function PainelClienteMeusAgendamentos() {
                         <CardContent className="space-y-4">
                           <div className="space-y-3">
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
-                              <Calendar className="h-4 w-4 mr-3 text-purple-400 flex-shrink-0" />
+                              <Calendar className="h-4 w-4 mr-3 text-urbana-gold flex-shrink-0" />
                               <span className="text-sm font-medium">
                                 {format(new Date(agendamento.data), 'EEEE, dd \'de\' MMMM', { locale: ptBR })}
                               </span>
                             </div>
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
-                              <Clock className="h-4 w-4 mr-3 text-purple-400 flex-shrink-0" />
+                              <Clock className="h-4 w-4 mr-3 text-urbana-gold flex-shrink-0" />
                               <span className="text-sm font-medium">{agendamento.hora}</span>
                             </div>
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
-                              <User className="h-4 w-4 mr-3 text-purple-400 flex-shrink-0" />
+                              <User className="h-4 w-4 mr-3 text-urbana-gold flex-shrink-0" />
                               <span className="text-sm font-medium">{agendamento.painel_barbeiros.nome}</span>
                             </div>
                           </div>
@@ -318,7 +318,7 @@ export default function PainelClienteMeusAgendamentos() {
                           <div className="pt-4 border-t border-slate-700/50">
                             <div className="flex justify-between items-center mb-2">
                               <span className="text-xs text-gray-400">Valor</span>
-                              <span className="text-purple-400 font-bold text-lg">
+                              <span className="text-urbana-gold font-bold text-lg">
                                 R$ {agendamento.painel_servicos.preco.toFixed(2)}
                               </span>
                             </div>
