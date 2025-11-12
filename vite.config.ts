@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
         name: 'Costa Urbana Barbearia',
         short_name: 'Costa Urbana',
         description: 'Sistema de Gestão e Totem de Autoatendimento',
-        theme_color: '#000000',
-        background_color: '#000000',
+        theme_color: '#DAA520',
+        background_color: '#1A1410',
         display: 'standalone',
         icons: [
           {
@@ -41,6 +41,12 @@ export default defineConfig(({ mode }) => ({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'apple touch icon'
           }
         ]
       },
