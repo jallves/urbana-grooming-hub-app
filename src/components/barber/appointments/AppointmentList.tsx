@@ -214,21 +214,10 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
               {appointment.status !== 'completed' && appointment.status !== 'cancelled' && (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(appointment.id, appointment.start_time, appointment.client_name)}
-                    disabled={updatingId === appointment.id}
-                    className="border-gray-600 text-gray-300 bg-gray-800 hover:bg-gray-700"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                  
-                  <Button
                     size="sm"
                     onClick={() => handleComplete(appointment.id, appointment.client_name)}
                     disabled={updatingId === appointment.id}
-                    className="bg-green-600 text-white hover:bg-green-700 border-0 min-w-[120px]"
+                    className="bg-green-600 text-white hover:bg-green-700 border-0 min-w-[160px]"
                   >
                     <Check className="h-4 w-4 mr-2" />
                     {updatingId === appointment.id ? (
@@ -237,19 +226,8 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                         Processando...
                       </span>
                     ) : (
-                      'Concluir'
+                      'Concluir Atendimento'
                     )}
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCancel(appointment.id, appointment.client_name)}
-                    disabled={updatingId === appointment.id}
-                    className="border-red-600 text-red-400 bg-gray-800 hover:bg-red-600/10"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancelar
                   </Button>
                 </div>
               )}

@@ -229,11 +229,6 @@ function App() {
                       <BarberAppointments />
                     </BarberRoute>
                   } />
-                  <Route path="/barbeiro/clientes" element={
-                    <BarberRoute allowBarber={true}>
-                      <BarberClients />
-                    </BarberRoute>
-                  } />
                   <Route path="/barbeiro/comissoes" element={
                     <BarberRoute allowBarber={true}>
                       <BarberCommissions />

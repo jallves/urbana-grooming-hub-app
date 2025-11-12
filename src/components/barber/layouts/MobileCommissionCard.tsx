@@ -33,7 +33,7 @@ const MobileCommissionCard: React.FC<MobileCommissionCardProps> = ({
   getStatusBadge
 }) => {
   return (
-    <Card className="w-full bg-gray-700/50 border-gray-600/50 mb-3">
+    <Card className="w-full bg-urbana-black/40 backdrop-blur-2xl border border-urbana-gold/20 shadow-2xl shadow-urbana-black/50 mb-3">
       <CardContent className="p-3">
         <div className="space-y-3">
           {/* Header */}
@@ -86,7 +86,7 @@ const MobileCommissionCard: React.FC<MobileCommissionCardProps> = ({
           </div>
 
           {/* Commission Amount */}
-          <div className="pt-2 border-t border-gray-600/50">
+          <div className="pt-2 border-t border-urbana-gold/20">
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-400">Comissão</span>
               <span className="text-sm font-bold text-urbana-gold">

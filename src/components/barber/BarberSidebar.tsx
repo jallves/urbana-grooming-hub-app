@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Calendar, Users, DollarSign, Settings, BarChart2, Scissors, Clock, X } from 'lucide-react';
+import { Calendar, DollarSign, Settings, BarChart2, Scissors, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BarberSidebarProps {
@@ -20,11 +20,6 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
       name: 'Agendamentos', 
       href: '/barbeiro/agendamentos', 
       icon: <Calendar className="h-5 w-5" />
-    },
-    { 
-      name: 'Clientes', 
-      href: '/barbeiro/clientes', 
-      icon: <Users className="h-5 w-5" />
     },
     { 
       name: 'Comissões', 

@@ -1,6 +1,6 @@
 
 import React, { memo } from 'react';
-import { Clock, User, CheckCircle, XCircle, Edit3, Loader2 } from 'lucide-react';
+import { Clock, User, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
@@ -26,9 +26,7 @@ interface AppointmentCardOptimizedProps {
 const AppointmentCardOptimized = memo(({ 
   appointment, 
   updatingId, 
-  onComplete, 
-  onCancel, 
-  onEdit 
+  onComplete,
 }: AppointmentCardOptimizedProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -90,33 +88,14 @@ const AppointmentCardOptimized = memo(({
             size="sm"
             onClick={() => onComplete(appointment.id)}
             disabled={isUpdating}
-            className="bg-green-600 text-white flex-1"
+            className="bg-green-600 hover:bg-green-700 text-white w-full"
           >
             {isUpdating ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <CheckCircle className="h-4 w-4 mr-2" />
             )}
-            Concluir
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onEdit(appointment.id, appointment.start_time)}
-            disabled={isUpdating}
-            className="border-gray-600"
-          >
-            <Edit3 className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onCancel(appointment.id)}
-            disabled={isUpdating}
-            className="border-red-600 text-red-400"
-          >
-            <XCircle className="h-4 w-4" />
+            Concluir Atendimento
           </Button>
         </div>
       )}

@@ -33,15 +33,6 @@ const BarberDashboard: React.FC = () => {
       stats: loading ? '...' : `R$ ${metrics.totalRevenue.toFixed(0)}`
     },
     {
-      title: 'Meus Clientes',
-      description: 'Histórico de atendimentos',
-      icon: Users,
-      path: '/barbeiro/clientes',
-      color: 'text-green-400',
-      bgColor: 'from-green-500/10 to-emerald-600/5',
-      stats: loading ? '...' : metrics.completedAppointments
-    },
-    {
       title: 'Agenda Completa',
       description: 'Visualizar calendário',
       icon: Clock,
@@ -121,7 +112,7 @@ const BarberDashboard: React.FC = () => {
         </div>
 
         {/* Quick Access Cards */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
           {quickAccessItems.map((item, index) => (
             <StandardCard 
               key={index}

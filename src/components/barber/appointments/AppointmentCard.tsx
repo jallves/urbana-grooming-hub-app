@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Edit, CalendarX, Clock } from 'lucide-react';
+import { Check, Clock } from 'lucide-react';
 
 interface AppointmentCardProps {
   appointment: any;
@@ -69,7 +69,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="border-green-600 text-green-600 hover:bg-green-50 flex-1"
+                className="border-green-600 text-green-600 hover:bg-green-50 w-full"
                 onClick={() => onComplete(appointment.id)}
                 disabled={updatingId === appointment.id}
               >
@@ -78,27 +78,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
                 ) : (
                   <Check className="h-4 w-4 mr-2" />
                 )}
-                Finalizar
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="border-blue-600 text-blue-600 hover:bg-blue-50 flex-1"
-                onClick={() => onEdit(appointment.id, appointment.start_time)}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="border-red-600 text-red-600 hover:bg-red-50 flex-1"
-                onClick={() => onCancel(appointment.id)}
-              >
-                <CalendarX className="h-4 w-4 mr-2" />
-                Cancelar
+                Concluir Atendimento
               </Button>
             </div>
           )}
