@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
   DollarSign, 
@@ -13,6 +13,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import RealtimeNotifications from '@/components/ui/notifications/RealtimeNotifications';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 interface BarberLayoutProps {
   children: React.ReactNode;
@@ -21,6 +23,7 @@ interface BarberLayoutProps {
 
 const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { signOut } = useAuth();
 
   const navigationItems = [
@@ -112,9 +115,9 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         </div>
       </header>
 
-      {/* Navigation */}
-      <nav className="sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
-        <div className="w-full px-3 sm:px-4 md:px-6">
+      {/* Desktop Navigation */}
+      <nav className="hidden lg:block sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
+        <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide py-2">
             {navigationItems.map((item) => (
               <Link
@@ -130,6 +133,67 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 <span>{item.name}</span>
               </Link>
             ))}
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile/Tablet Navigation */}
+      <nav className="lg:hidden sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
+        <div className="w-full px-2 sm:px-3 md:px-4">
+          <div className="grid grid-cols-5 gap-1 py-2 sm:py-3">
+            {navigationItems.map((item, index) => {
+              const Icon = item.icon;
+              const isActive = isActiveRoute(item.path);
+              
+              return (
+                <motion.div
+                  key={item.path}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="relative"
+                >
+                  <Button
+                    variant="ghost"
+                    onClick={() => navigate(item.path)}
+                    className={`
+                      w-full h-auto flex flex-col items-center justify-center 
+                      p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
+                      relative overflow-hidden min-h-[60px] sm:min-h-[70px]
+                      ${isActive 
+                        ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
+                        : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
+                      }
+                    `}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="mobileActiveTabBarber"
+                        className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl"
+                        initial={false}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    
+                    <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-xs sm:text-sm font-medium leading-tight text-center">
+                        {item.name}
+                      </span>
+                    </div>
+                    
+                    {isActive && (
+                      <motion.div
+                        className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                      />
+                    )}
+                  </Button>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </nav>
