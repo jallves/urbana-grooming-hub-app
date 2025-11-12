@@ -72,19 +72,19 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
       <div className={`fixed inset-y-0 right-0 z-50 w-[280px] bg-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 ${
         isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
-        <div className="flex items-center justify-between p-4 border-b border-urbana-gold/30 bg-black">
+        <div className="flex items-center justify-between p-4 border-b border-urbana-gold/30">
           <h2 className="text-lg font-semibold text-urbana-gold">Menu</h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={closeMenu}
-            className="text-urbana-gold hover:bg-urbana-gold hover:text-urbana-black"
+            className="text-urbana-gold hover:bg-urbana-gold/20 hover:text-urbana-gold"
           >
             <X className="h-6 w-6" />
           </Button>
         </div>
 
-        <div className="flex flex-col p-4 h-full bg-black">
+        <div className="flex flex-col p-4 h-full">
           <div className="flex flex-col space-y-3 flex-1">
             <Link 
               to="/" 
@@ -114,7 +114,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             </Link>
           </div>
 
-          <div className="border-t border-urbana-gold/30 pt-4 mt-auto bg-black rounded-t-lg -mx-4 px-4">
+          <div className="border-t border-urbana-gold/30 pt-4 mt-auto rounded-t-lg -mx-4 px-4">
             {user ? (
               <div className="space-y-3">
                 <Button
