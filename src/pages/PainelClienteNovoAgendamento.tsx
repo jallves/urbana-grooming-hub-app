@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,8 +10,10 @@ import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Clock } from 'lucide-react';
+import { CalendarIcon, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Service {
   id: string;
@@ -31,6 +32,7 @@ interface Barber {
 export default function PainelClienteNovoAgendamento() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
+  const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
   
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +43,7 @@ export default function PainelClienteNovoAgendamento() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<{ time: string; available: boolean; reason?: string }[]>([]);
 
   // Carregar serviços e barbeiros
   useEffect(() => {
@@ -70,16 +72,13 @@ export default function PainelClienteNovoAgendamento() {
     fetchData();
   }, []);
 
-  // Gerar horários disponíveis quando barbeiro e data são selecionados
+  // Gerar horários disponíveis quando barbeiro, data e serviço são selecionados
   useEffect(() => {
     const generateAvailableTimes = async () => {
-      if (!selectedBarber || !selectedDate) {
+      if (!selectedBarber || !selectedDate || !selectedService) {
         setAvailableTimes([]);
         return;
       }
-
-      const weekday = selectedDate.getDay();
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
       try {
         // Buscar staff_id do barbeiro selecionado
@@ -89,53 +88,27 @@ export default function PainelClienteNovoAgendamento() {
           return;
         }
 
-        // Buscar horário de trabalho do barbeiro via staff_id
-        const { data: schedules } = await supabase
-          .from('barber_schedules')
-          .select('start_time, end_time')
-          .eq('barber_id', selectedBarberData.staff_id)
-          .eq('weekday', weekday)
-          .eq('is_active', true)
-          .single();
+        // Buscar duração do serviço
+        const selectedServiceData = services.find(s => s.id === selectedService);
+        const serviceDuration = selectedServiceData?.duracao || 60;
 
-        if (!schedules) {
-          setAvailableTimes([]);
-          return;
-        }
+        // Usar o hook de validação para obter horários disponíveis
+        // Isso já filtra horários passados e com menos de 30 minutos
+        const slots = await getAvailableTimeSlots(
+          selectedBarberData.staff_id,
+          selectedDate,
+          serviceDuration
+        );
 
-        // Buscar agendamentos existentes apenas do painel
-        const { data: existingAppointments } = await supabase
-          .from('painel_agendamentos')
-          .select('hora')
-          .eq('barbeiro_id', selectedBarber)
-          .eq('data', dateStr)
-          .not('status', 'eq', 'cancelado');
-
-        const bookedTimes = existingAppointments?.map(apt => apt.hora) || [];
-
-        // Gerar horários disponíveis (intervalos de 30 minutos)
-        const times: string[] = [];
-        const startHour = parseInt(schedules.start_time.split(':')[0]);
-        const endHour = parseInt(schedules.end_time.split(':')[0]);
-
-        for (let hour = startHour; hour < endHour; hour++) {
-          const timeSlots = [`${hour.toString().padStart(2, '0')}:00`, `${hour.toString().padStart(2, '0')}:30`];
-          timeSlots.forEach(time => {
-            if (!bookedTimes.includes(time)) {
-              times.push(time);
-            }
-          });
-        }
-
-        setAvailableTimes(times);
+        setAvailableTimes(slots);
       } catch (error) {
-      console.error('Erro ao gerar horários:', error);
+        console.error('Erro ao gerar horários:', error);
         setAvailableTimes([]);
       }
     };
 
     generateAvailableTimes();
-  }, [selectedBarber, selectedDate, barbers]);
+  }, [selectedBarber, selectedDate, selectedService, barbers, services, getAvailableTimeSlots]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,6 +120,29 @@ export default function PainelClienteNovoAgendamento() {
 
     setIsLoading(true);
     try {
+      // Buscar staff_id e duração do serviço
+      const selectedBarberData = barbers.find(b => b.id === selectedBarber);
+      const selectedServiceData = services.find(s => s.id === selectedService);
+      
+      if (!selectedBarberData?.staff_id || !selectedServiceData) {
+        toast.error('Dados inválidos. Tente novamente.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Validar o agendamento antes de inserir
+      const validation = await validateAppointment(
+        selectedBarberData.staff_id,
+        selectedDate,
+        selectedTime,
+        selectedServiceData.duracao
+      );
+
+      if (!validation.valid) {
+        setIsLoading(false);
+        return; // O toast de erro já foi exibido pelo hook
+      }
+
       // Salvar diretamente em painel_agendamentos
       const { error } = await supabase
         .from('painel_agendamentos')
@@ -243,27 +239,43 @@ export default function PainelClienteNovoAgendamento() {
             {selectedBarber && selectedDate && (
               <div className="space-y-2">
                 <Label htmlFor="time">Horário *</Label>
-                <Select value={selectedTime} onValueChange={setSelectedTime}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um horário" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTimes.length > 0 ? (
-                      availableTimes.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            {time}
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>
-                        Nenhum horário disponível
-                      </SelectItem>
+                {isValidating ? (
+                  <div className="text-sm text-muted-foreground">Carregando horários...</div>
+                ) : (
+                  <>
+                    <Select value={selectedTime} onValueChange={setSelectedTime}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um horário" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTimes.filter(slot => slot.available).length > 0 ? (
+                          availableTimes
+                            .filter(slot => slot.available)
+                            .map((slot) => (
+                              <SelectItem key={slot.time} value={slot.time}>
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4" />
+                                  {slot.time}
+                                </div>
+                              </SelectItem>
+                            ))
+                        ) : (
+                          <SelectItem value="" disabled>
+                            Nenhum horário disponível
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {availableTimes.length > 0 && availableTimes.filter(slot => slot.available).length === 0 && (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Não há horários disponíveis para esta data. Tente selecionar outro dia ou barbeiro.
+                        </AlertDescription>
+                      </Alert>
                     )}
-                  </SelectContent>
-                </Select>
+                  </>
+                )}
               </div>
             )}
 
