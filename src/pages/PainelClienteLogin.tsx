@@ -93,7 +93,7 @@ export default function PainelClienteLogin() {
 
         <Button
           variant="outline"
-          className="w-full border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 hover:border-urbana-gold h-12 rounded-xl transition-all"
+          className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-urbana-gold/20 hover:text-urbana-gold hover:border-urbana-gold/50 h-12 rounded-xl transition-all"
           onClick={handleGoHome}
         >
           <Home className="h-4 w-4 mr-2" />
