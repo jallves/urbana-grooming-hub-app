@@ -42,16 +42,6 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       path: '/barbeiro/comissoes', 
       icon: DollarSign 
     },
-    { 
-      name: 'Clientes', 
-      path: '/barbeiro/clientes', 
-      icon: Users 
-    },
-    { 
-      name: 'Relatórios', 
-      path: '/barbeiro/relatorios', 
-      icon: BarChart3 
-    },
   ];
 
   const isActiveRoute = (path: string) => {
@@ -140,7 +130,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       {/* Mobile/Tablet Navigation */}
       <nav className="lg:hidden sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
         <div className="w-full px-2 sm:px-3 md:px-4">
-          <div className="grid grid-cols-5 gap-1 py-2 sm:py-3">
+          <div className="grid grid-cols-3 gap-1 py-2 sm:py-3">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = isActiveRoute(item.path);

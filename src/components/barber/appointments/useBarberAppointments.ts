@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -132,13 +132,13 @@ export const useBarberAppointments = () => {
         console.log('Barber appointments found:', data.length);
         
         const appointmentsWithDetails = data.map((appointment: PainelAgendamento) => {
-          // Corrigir criação da data para evitar problemas de timezone
-          const appointmentDate = new Date(appointment.data + 'T' + appointment.hora);
-          const endTime = new Date(appointmentDate.getTime() + (appointment.painel_servicos.duracao * 60000));
+          // Usar parseISO para garantir timezone correto
+          const appointmentDateTime = parseISO(`${appointment.data}T${appointment.hora}`);
+          const endTime = new Date(appointmentDateTime.getTime() + (appointment.painel_servicos.duracao * 60000));
 
           return {
             id: appointment.id,
-            start_time: appointmentDate.toISOString(),
+            start_time: appointmentDateTime.toISOString(),
             end_time: endTime.toISOString(),
             status: appointment.status === 'cancelado' ? 'cancelled' : 
                     appointment.status === 'confirmado' ? 'confirmed' : 

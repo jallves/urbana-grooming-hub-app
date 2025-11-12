@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { parseISO } from 'date-fns';
 
 interface PainelAgendamento {
   id: string;
@@ -68,12 +69,13 @@ export const useBarberAppointmentFetch = (barberId: string | null) => {
 
       if (data) {
         const appointmentsWithDetails = data.map((appointment: PainelAgendamento) => {
-          const appointmentDate = new Date(appointment.data + 'T' + appointment.hora);
-          const endTime = new Date(appointmentDate.getTime() + (appointment.painel_servicos.duracao * 60000));
+          // Usar parseISO para garantir timezone correto
+          const appointmentDateTime = parseISO(`${appointment.data}T${appointment.hora}`);
+          const endTime = new Date(appointmentDateTime.getTime() + (appointment.painel_servicos.duracao * 60000));
 
           return {
             id: appointment.id,
-            start_time: appointmentDate.toISOString(),
+            start_time: appointmentDateTime.toISOString(),
             end_time: endTime.toISOString(),
             status: appointment.status === 'cancelado' ? 'cancelled' : 
                     appointment.status === 'confirmado' ? 'confirmed' : 

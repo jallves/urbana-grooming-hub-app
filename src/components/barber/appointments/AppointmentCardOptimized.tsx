@@ -3,7 +3,7 @@ import React, { memo } from 'react';
 import { Clock, User, CheckCircle, XCircle, Edit3, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface AppointmentCardOptimizedProps {
@@ -49,7 +49,8 @@ const AppointmentCardOptimized = memo(({
   };
 
   const isUpdating = updatingId === appointment.id;
-  const appointmentDate = new Date(appointment.start_time);
+  // Usar parseISO para garantir timezone correto
+  const appointmentDate = parseISO(appointment.start_time);
   const canEdit = appointment.status !== 'completed' && appointment.status !== 'cancelled';
 
   return (

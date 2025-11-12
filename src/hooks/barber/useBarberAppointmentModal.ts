@@ -1,5 +1,6 @@
 
 import { useState, useCallback } from 'react';
+import { parseISO } from 'date-fns';
 
 export const useBarberAppointmentModal = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -8,7 +9,7 @@ export const useBarberAppointmentModal = () => {
 
   const handleEditAppointment = useCallback((appointmentId: string, startTime: string) => {
     try {
-      const appointmentDate = new Date(startTime);
+      const appointmentDate = parseISO(startTime);
       setSelectedAppointmentId(appointmentId);
       setSelectedAppointmentDate(appointmentDate);
       setIsEditModalOpen(true);

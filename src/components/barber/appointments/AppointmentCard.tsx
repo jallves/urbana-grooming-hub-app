@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   updatingId
 }) => {
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
+    return format(parseISO(dateString), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: ptBR });
   };
 
   const getStatusBadgeClass = (status: string) => {

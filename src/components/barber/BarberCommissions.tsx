@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DollarSign, TrendingUp, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -291,8 +291,8 @@ const BarberCommissions: React.FC = () => {
                       <TableRow key={`${commission.source}-${commission.id}`} className="border-gray-700/50">
                         <TableCell className="text-gray-300">
                           {commission.appointment_details?.appointment_date
-                            ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
-                            : format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
+                            ? format(parseISO(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
+                            : format(parseISO(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
                           }
                         </TableCell>
                         <TableCell className="text-white font-medium">
@@ -315,7 +315,7 @@ const BarberCommissions: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-gray-300">
                           {(commission.payment_date || commission.paid_at)
-                            ? format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
+                            ? format(parseISO(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
                             : '-'
                           }
                         </TableCell>

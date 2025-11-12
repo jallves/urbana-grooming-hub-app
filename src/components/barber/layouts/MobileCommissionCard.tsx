@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface Commission {
@@ -60,8 +60,8 @@ const MobileCommissionCard: React.FC<MobileCommissionCardProps> = ({
               <p className="text-gray-400 mb-1">Data</p>
               <p className="text-white">
                 {commission.appointment_details?.appointment_date
-                  ? format(new Date(commission.appointment_details.appointment_date), 'dd/MM', { locale: ptBR })
-                  : format(new Date(commission.created_at), 'dd/MM', { locale: ptBR })
+                  ? format(parseISO(commission.appointment_details.appointment_date), 'dd/MM', { locale: ptBR })
+                  : format(parseISO(commission.created_at), 'dd/MM', { locale: ptBR })
                 }
               </p>
             </div>
@@ -98,7 +98,7 @@ const MobileCommissionCard: React.FC<MobileCommissionCardProps> = ({
           {/* Payment Date */}
           {(commission.payment_date || commission.paid_at) && (
             <div className="text-xs text-gray-400 pt-1">
-              Pago em: {format(new Date(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })}
+              Pago em: {format(parseISO(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })}
             </div>
           )}
         </div>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, Scissors, Edit, Check, X, Phone, MessageCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
@@ -143,14 +143,14 @@ export const AppointmentList: React.FC<AppointmentListProps> = ({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-urbana-gold" />
                     <span className="font-medium text-white">
-                      {format(new Date(appointment.start_time), 'dd/MM/yyyy', { locale: ptBR })}
+                      {format(parseISO(appointment.start_time), 'dd/MM/yyyy', { locale: ptBR })}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-urbana-gold" />
                     <span className="text-gray-300">
-                      {format(new Date(appointment.start_time), 'HH:mm', { locale: ptBR })} - 
-                      {format(new Date(appointment.end_time), 'HH:mm', { locale: ptBR })}
+                      {format(parseISO(appointment.start_time), 'HH:mm', { locale: ptBR })} - 
+                      {format(parseISO(appointment.end_time), 'HH:mm', { locale: ptBR })}
                     </span>
                   </div>
                 </div>

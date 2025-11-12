@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface AppointmentWithDetails {
@@ -58,7 +58,7 @@ export const useBarberAppointmentActions = ({ barberId, onUpdate }: UseBarberApp
 
       if (error) throw error;
 
-      const appointmentDate = new Date(appointment.start_time);
+      const appointmentDate = parseISO(appointment.start_time);
       toast.success('❌ Agendamento Cancelado', {
         description: `Agendamento de ${format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} foi cancelado.`,
         duration: 4000,
