@@ -10,8 +10,14 @@ import {
   Scissors,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import DashboardContainer from "@/components/ui/containers/DashboardContainer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  PainelClienteCard, 
+  PainelClienteCardTitle, 
+  PainelClienteCardDescription,
+  PainelClienteCardHeader,
+  PainelClienteCardContent 
+} from "@/components/painel-cliente/PainelClienteCard";
+import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
 import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
@@ -114,172 +120,173 @@ export default function PainelClienteDashboard() {
 
   if (loading) {
     return (
-      <DashboardContainer>
+      <PainelClienteContentContainer>
         <div className="flex justify-center items-center h-64">
           <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
         </div>
-      </DashboardContainer>
+      </PainelClienteContentContainer>
     );
   }
 
   return (
-    <DashboardContainer>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-urbana-gold font-playfair">
-              Olá, {cliente?.nome}!
-            </h1>
-            <p className="text-gray-400">Bem-vindo à Urbana Barbearia</p>
-          </div>
-        </div>
-
-        {/* Estatísticas em Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {[
-            {
-              label: "Total de Agendamentos",
-              value: stats.total,
-              icon: <Calendar className="h-5 w-5 text-urbana-gold" />,
-              status: "todos",
-            },
-            {
-              label: "Próximos 30 Dias", 
-              value: stats.proximos,
-              icon: <Clock className="h-5 w-5 text-urbana-gold" />,
-              status: "confirmado",
-            },
-            {
-              label: "Atendimentos Concluídos",
-              value: stats.concluidos,
-              icon: <CheckCircle className="h-5 w-5 text-urbana-gold" />,
-              status: "concluido",
-            },
-          ].map((stat, i) => (
-            <Card key={i} className="bg-gray-900 border border-gray-700">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-white text-sm font-medium flex items-center gap-2">
-                    {stat.icon}
-                    {stat.label}
-                  </CardTitle>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      stat.status === 'concluido' 
-                        ? 'bg-green-400/10 text-green-400'
-                        : stat.status === 'confirmado'
-                        ? 'bg-blue-400/10 text-blue-400'
-                        : 'bg-gray-800 text-gray-300'
-                    }`}
-                  >
-                    {stat.status === 'concluido' 
-                      ? 'Concluído'
-                      : stat.status === 'confirmado'
-                      ? 'Agendado'
-                      : 'Total'
-                    }
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-white">
-                  {stat.value}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Próximos Agendamentos */}
-        {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-urbana-gold mb-4">
-              Próximos Agendamentos
-            </h2>
-            <div className="space-y-4">
-              {stats.agendamentosFuturos.map((ag, index) => (
-                <Card key={index} className="bg-gray-900 border border-gray-700">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-white text-lg flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-urbana-gold" />
-                        {ag.servico}
-                      </CardTitle>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-400/10 text-blue-400">
-                        Agendado
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center text-gray-300">
-                        <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
-                        <span className="text-sm">
-                          {new Date(ag.data).toLocaleDateString("pt-BR", {
-                            weekday: "long",
-                            day: "numeric", 
-                            month: "long"
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-gray-300">
-                        <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
-                        <span className="text-sm">{ag.hora}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center text-gray-300">
-                      <User className="h-4 w-4 mr-2 text-urbana-gold" />
-                      <span className="text-sm">{ag.barbeiro}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Ações Rápidas */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Novo Agendamento",
-              icon: <Calendar className="h-6 w-6" />,
-              action: () => navigate("/painel-cliente/agendar"),
-              color: "bg-gradient-to-r from-pink-500 to-violet-500",
-            },
-            {
-              label: "Meus Agendamentos",
-              icon: <Clock className="h-6 w-6" />,
-              action: () => navigate("/painel-cliente/agendamentos"),
-              color: "bg-blue-600",
-            },
-            {
-              label: "Meu Perfil",
-              icon: <Settings className="h-6 w-6" />,
-              action: () => navigate("/painel-cliente/perfil"),
-              color: "bg-gray-600",
-            },
-            {
-              label: "Sair", 
-              icon: <LogOut className="h-6 w-6" />,
-              action: handleLogout,
-              color: "bg-red-600",
-            },
-          ].map((item, index) => (
-            <button
-              key={index}
-              onClick={item.action}
-              className={`${item.color} text-white rounded-lg p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-200 hover:brightness-110`}
-            >
-              {item.icon}
-              <span className="text-sm font-medium text-center">
-                {item.label}
-              </span>
-            </button>
-          ))}
+    <PainelClienteContentContainer>
+      {/* Cabeçalho */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
+            Olá, {cliente?.nome}!
+          </h1>
+          <p className="text-urbana-light/70 drop-shadow-md">Bem-vindo à Urbana Barbearia</p>
         </div>
       </div>
-    </DashboardContainer>
+
+      {/* Estatísticas em Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {[
+          {
+            label: "Total de Agendamentos",
+            value: stats.total,
+            IconComponent: Calendar,
+            status: "todos",
+            variant: 'default' as const,
+          },
+          {
+            label: "Próximos 30 Dias", 
+            value: stats.proximos,
+            IconComponent: Clock,
+            status: "confirmado",
+            variant: 'info' as const,
+          },
+          {
+            label: "Atendimentos Concluídos",
+            value: stats.concluidos,
+            IconComponent: CheckCircle,
+            status: "concluido",
+            variant: 'success' as const,
+          },
+        ].map((stat, i) => (
+          <PainelClienteCard key={i} variant={stat.variant} icon={stat.IconComponent}>
+            <PainelClienteCardHeader>
+              <div className="flex justify-between items-start">
+                <PainelClienteCardTitle className="text-sm font-medium">
+                  {stat.label}
+                </PainelClienteCardTitle>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    stat.status === 'concluido' 
+                      ? 'bg-green-400/10 text-green-400'
+                      : stat.status === 'confirmado'
+                      ? 'bg-blue-400/10 text-blue-400'
+                      : 'bg-urbana-gold/10 text-urbana-gold'
+                  }`}
+                >
+                  {stat.status === 'concluido' 
+                    ? 'Concluído'
+                    : stat.status === 'confirmado'
+                    ? 'Agendado'
+                    : 'Total'
+                  }
+                </span>
+              </div>
+            </PainelClienteCardHeader>
+            <PainelClienteCardContent>
+              <div className="text-3xl font-bold text-urbana-light">
+                {stat.value}
+              </div>
+            </PainelClienteCardContent>
+          </PainelClienteCard>
+        ))}
+      </div>
+
+      {/* Próximos Agendamentos */}
+      {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-urbana-gold mb-4 drop-shadow-lg">
+            Próximos Agendamentos
+          </h2>
+          <div className="space-y-4">
+            {stats.agendamentosFuturos.map((ag, index) => (
+              <PainelClienteCard key={index} variant="info" icon={Calendar}>
+                <PainelClienteCardHeader>
+                  <div className="flex justify-between items-start">
+                    <PainelClienteCardTitle className="text-lg">
+                      {ag.servico}
+                    </PainelClienteCardTitle>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-400/10 text-blue-400">
+                      Agendado
+                    </span>
+                  </div>
+                </PainelClienteCardHeader>
+                <PainelClienteCardContent className="space-y-3">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center text-urbana-light/70">
+                      <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
+                      <span className="text-sm">
+                        {new Date(ag.data).toLocaleDateString("pt-BR", {
+                          weekday: "long",
+                          day: "numeric", 
+                          month: "long"
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center text-urbana-light/70">
+                      <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
+                      <span className="text-sm">{ag.hora}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center text-urbana-light/70">
+                    <User className="h-4 w-4 mr-2 text-urbana-gold" />
+                    <span className="text-sm">{ag.barbeiro}</span>
+                  </div>
+                </PainelClienteCardContent>
+              </PainelClienteCard>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Ações Rápidas */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            label: "Novo Agendamento",
+            IconComponent: Calendar,
+            action: () => navigate("/painel-cliente/agendar"),
+            variant: "highlight" as const,
+          },
+          {
+            label: "Meus Agendamentos",
+            IconComponent: Clock,
+            action: () => navigate("/painel-cliente/agendamentos"),
+            variant: "info" as const,
+          },
+          {
+            label: "Meu Perfil",
+            IconComponent: Settings,
+            action: () => navigate("/painel-cliente/perfil"),
+            variant: "default" as const,
+          },
+          {
+            label: "Sair", 
+            IconComponent: LogOut,
+            action: handleLogout,
+            variant: "warning" as const,
+          },
+        ].map((item, index) => (
+          <PainelClienteCard
+            key={index}
+            onClick={item.action}
+            variant={item.variant}
+            icon={item.IconComponent}
+            className="p-6 flex flex-col items-center justify-center space-y-3 min-h-[120px]"
+          >
+            <item.IconComponent className="h-8 w-8 text-urbana-light" />
+            <span className="text-sm font-medium text-center text-urbana-light">
+              {item.label}
+            </span>
+          </PainelClienteCard>
+        ))}
+      </div>
+    </PainelClienteContentContainer>
   );
 }

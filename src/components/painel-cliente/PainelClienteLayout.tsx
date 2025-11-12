@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PageTransition from '@/components/transitions/PageTransition';
 import LoadingBar from '@/components/ui/loading/LoadingBar';
 import { usePageTransition } from '@/hooks/usePageTransition';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const PainelClienteLayout: React.FC = () => {
   const { cliente, logout } = usePainelClienteAuth();
@@ -28,16 +29,28 @@ const PainelClienteLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-screen bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950 overflow-x-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-cyan-600/5 animate-pulse pointer-events-none" />
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-      <div className="fixed bottom-0 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+    <div className="min-h-screen w-screen overflow-x-hidden relative font-poppins">
+      {/* Background image */}
+      <div className="fixed inset-0 z-0">
+        <img 
+          src={barbershopBg} 
+          alt="Barbearia" 
+          className="w-full h-full object-cover"
+        />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+      </div>
+
+      {/* Animated background effects */}
+      <div className="fixed inset-0 overflow-hidden z-0">
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+      </div>
       
       <LoadingBar isLoading={isLoading} />
       
       {/* Modern Header */}
-      <header className="sticky top-0 z-50 w-screen backdrop-blur-2xl bg-slate-900/80 border-b border-slate-700/50 shadow-2xl">
+      <header className="sticky top-0 z-50 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4">
           <div className="flex items-center justify-between">
             <motion.div 
@@ -47,16 +60,16 @@ const PainelClienteLayout: React.FC = () => {
               transition={{ duration: 0.5 }}
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl sm:rounded-2xl blur-sm opacity-75" />
-                <div className="relative p-2 sm:p-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl sm:rounded-2xl shadow-lg">
-                  <Scissors className="h-4 w-4 sm:h-5 md:h-6 w-5 md:w-6 text-black" />
+                <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl blur-sm opacity-75" />
+                <div className="relative p-2 sm:p-3 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl shadow-lg">
+                  <Scissors className="h-4 w-4 sm:h-5 md:h-6 w-5 md:w-6 text-urbana-black" />
                 </div>
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-300 bg-clip-text text-transparent">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
                   Urbana Barbearia
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-400 hidden sm:block">Painel do Cliente</p>
+                <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Cliente</p>
               </div>
             </motion.div>
             
@@ -65,16 +78,16 @@ const PainelClienteLayout: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="relative text-gray-300 hover:text-white hover:bg-slate-800/50 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
+                  className="relative text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
                 >
                   <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                  <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse" />
+                  <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-urbana-gold rounded-full animate-pulse" />
                 </Button>
               </motion.div>
               
-              <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-slate-800/50 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-slate-700/50">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-xs sm:text-sm text-gray-300 font-medium">
+              <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
+                <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
+                <span className="text-xs sm:text-sm text-urbana-light font-medium">
                   {cliente?.nome?.split(' ')[0]}
                 </span>
               </div>
@@ -84,7 +97,7 @@ const PainelClienteLayout: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}
-                  className="text-gray-400 hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
+                  className="text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
                 >
                   <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
@@ -95,7 +108,7 @@ const PainelClienteLayout: React.FC = () => {
       </header>
 
       {/* Enhanced Mobile Navigation */}
-      <nav className="lg:hidden sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-slate-900/95 border-b border-slate-700/50 shadow-xl">
+      <nav className="lg:hidden sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
         <div className="w-full px-2 sm:px-3 md:px-4">
           {/* Mobile Tab Navigation */}
           <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
@@ -119,8 +132,8 @@ const PainelClienteLayout: React.FC = () => {
                       p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
                       relative overflow-hidden min-h-[60px] sm:min-h-[70px]
                       ${isActive 
-                        ? `bg-gradient-to-r ${item.color} text-white shadow-lg shadow-black/20 border border-white/20` 
-                        : 'text-gray-400 hover:text-white hover:bg-slate-800/50 border border-transparent hover:border-slate-600/50'
+                        ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
+                        : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
                       }
                     `}
                   >
@@ -128,7 +141,7 @@ const PainelClienteLayout: React.FC = () => {
                     {isActive && (
                       <motion.div
                         layoutId="mobileActiveTab"
-                        className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 rounded-xl sm:rounded-2xl"
+                        className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl"
                         initial={false}
                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
@@ -144,7 +157,7 @@ const PainelClienteLayout: React.FC = () => {
                     {/* Active indicator dot */}
                     {isActive && (
                       <motion.div
-                        className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"
+                        className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.2 }}
@@ -157,10 +170,10 @@ const PainelClienteLayout: React.FC = () => {
           </div>
           
           {/* Mobile User Info Bar - Only visible on very small screens */}
-          <div className="md:hidden border-t border-slate-700/30 py-2">
-            <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-slate-800/30 rounded-lg backdrop-blur-sm">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-xs text-gray-300 font-medium truncate">
+          <div className="md:hidden border-t border-urbana-gold/20 py-2">
+            <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-urbana-black/30 rounded-lg backdrop-blur-sm">
+              <div className="w-1.5 h-1.5 bg-urbana-gold rounded-full animate-pulse" />
+              <span className="text-xs text-urbana-light font-medium truncate">
                 Olá, {cliente?.nome?.split(' ')[0]}
               </span>
             </div>

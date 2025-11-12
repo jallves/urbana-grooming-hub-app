@@ -4,11 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, User, Save, Mail, Phone, Edit3, Shield, Calendar } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { 
+  PainelClienteCard, 
+  PainelClienteCardTitle, 
+  PainelClienteCardHeader,
+  PainelClienteCardContent 
+} from "@/components/painel-cliente/PainelClienteCard";
+import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
 
 export default function PainelClientePerfil() {
   const navigate = useNavigate();
@@ -91,198 +97,185 @@ export default function PainelClientePerfil() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-gray-900 to-slate-950">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-r from-orange-600/5 via-red-600/5 to-orange-600/5" />
-      <div className="absolute top-20 left-10 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-10 w-80 h-80 bg-red-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      
-      <div className="relative w-full px-4 py-8 sm:px-6 lg:px-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="max-w-2xl mx-auto space-y-8"
-        >
-          {/* Header */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <Button
-              onClick={() => navigate('/painel-cliente/dashboard')}
-              variant="ghost"
-              size="sm"
-              className="text-gray-300 hover:bg-slate-800/50 hover:text-white rounded-2xl px-6 py-3 transition-all duration-300"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 bg-clip-text text-transparent">
-                Editar Perfil
-              </h1>
-              <p className="text-gray-400 text-lg mt-2">Mantenha suas informações sempre atualizadas</p>
-            </div>
-          </motion.div>
+    <PainelClienteContentContainer maxWidth="2xl">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-8"
+      >
+        {/* Header */}
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <Button
+            onClick={() => navigate('/painel-cliente/dashboard')}
+            variant="ghost"
+            size="sm"
+            className="text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-gold rounded-2xl px-6 py-3 transition-all duration-300"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-3xl sm:text-4xl font-bold text-urbana-gold drop-shadow-lg">
+              Editar Perfil
+            </h1>
+            <p className="text-urbana-light/70 text-lg mt-2 drop-shadow-md">Mantenha suas informações sempre atualizadas</p>
+          </div>
+        </motion.div>
 
-          {/* Profile Card */}
-          <motion.div variants={itemVariants}>
-            <Card className="bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden">
-              <CardHeader className="pb-6 bg-gradient-to-r from-orange-500/10 to-red-500/10">
-                <CardTitle className="text-2xl text-white flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-lg">
-                    <Edit3 className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">Suas Informações</div>
-                    <div className="text-sm text-gray-400 font-normal mt-1">Dados pessoais e contato</div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
+        {/* Profile Card */}
+        <motion.div variants={itemVariants}>
+          <PainelClienteCard variant="highlight" icon={Edit3}>
+            <PainelClienteCardHeader className="pb-6">
+              <PainelClienteCardTitle>
+                Suas Informações
+              </PainelClienteCardTitle>
+              <p className="text-sm text-urbana-light/70">Dados pessoais e contato</p>
+            </PainelClienteCardHeader>
 
-              <CardContent className="p-8">
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {erro && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-sm"
-                    >
-                      <p className="text-red-400 text-sm font-medium">{erro}</p>
-                    </motion.div>
-                  )}
+            <PainelClienteCardContent className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {erro && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-sm"
+                  >
+                    <p className="text-red-400 text-sm font-medium">{erro}</p>
+                  </motion.div>
+                )}
 
-                  <div className="space-y-8">
-                    {/* Nome */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
-                      <Label htmlFor="nome" className="text-white text-base font-semibold flex items-center gap-3">
-                        <div className="p-2 bg-orange-500/20 rounded-xl">
-                          <User className="h-4 w-4 text-orange-400" />
-                        </div>
-                        Nome Completo
-                      </Label>
-                      <Input
-                        id="nome"
-                        type="text"
-                        value={formData.nome}
-                        onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                        className="bg-slate-800/50 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                        placeholder="Seu nome completo"
-                        required
-                      />
-                    </motion.div>
-
-                    {/* Email */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
-                      <Label htmlFor="email" className="text-white text-base font-semibold flex items-center gap-3">
-                        <div className="p-2 bg-orange-500/20 rounded-xl">
-                          <Mail className="h-4 w-4 text-orange-400" />
-                        </div>
-                        E-mail
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        className="bg-slate-800/50 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                        placeholder="seu.email@exemplo.com"
-                        required
-                      />
-                    </motion.div>
-
-                    {/* WhatsApp */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
-                      <Label htmlFor="whatsapp" className="text-white text-base font-semibold flex items-center gap-3">
-                        <div className="p-2 bg-orange-500/20 rounded-xl">
-                          <Phone className="h-4 w-4 text-orange-400" />
-                        </div>
-                        WhatsApp
-                      </Label>
-                      <Input
-                        id="whatsapp"
-                        type="tel"
-                        value={formData.whatsapp}
-                        onChange={handleWhatsAppChange}
-                        className="bg-slate-800/50 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                        placeholder="(11) 99999-9999"
-                        maxLength={15}
-                        required
-                      />
-                    </motion.div>
-
-                    {/* Data de Nascimento */}
-                    <motion.div 
-                      variants={itemVariants}
-                      className="space-y-3"
-                    >
-                      <Label htmlFor="data_nascimento" className="text-white text-base font-semibold flex items-center gap-3">
-                        <div className="p-2 bg-orange-500/20 rounded-xl">
-                          <Calendar className="h-4 w-4 text-orange-400" />
-                        </div>
-                        Data de Nascimento
-                      </Label>
-                      <Input
-                        id="data_nascimento"
-                        type="date"
-                        value={formData.data_nascimento}
-                        onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
-                        className="bg-slate-800/50 border-slate-600 text-white h-14 text-base rounded-2xl backdrop-blur-sm hover:border-slate-500 transition-all duration-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
-                        required
-                      />
-                    </motion.div>
-                  </div>
-
-                  {/* Submit Button */}
+                <div className="space-y-8">
+                  {/* Nome */}
                   <motion.div 
                     variants={itemVariants}
-                    className="pt-6"
+                    className="space-y-3"
                   >
-                    <Button
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold h-16 text-lg rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-6 h-6 border-2 border-white border-t-transparent rounded-full mr-3"
-                        />
-                      ) : (
-                        <Save className="h-5 w-5 mr-3" />
-                      )}
-                      {loading ? 'Salvando...' : 'Salvar Alterações'}
-                    </Button>
+                    <Label htmlFor="nome" className="text-urbana-light text-base font-semibold flex items-center gap-3">
+                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
+                        <User className="h-4 w-4 text-urbana-gold" />
+                      </div>
+                      Nome Completo
+                    </Label>
+                    <Input
+                      id="nome"
+                      type="text"
+                      value={formData.nome}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                      placeholder="Seu nome completo"
+                      required
+                    />
                   </motion.div>
-                </form>
-              </CardContent>
-            </Card>
-          </motion.div>
 
-          {/* Security Notice */}
-          <motion.div variants={itemVariants}>
-            <Card className="bg-blue-500/10 border border-blue-500/30 backdrop-blur-xl rounded-2xl">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-blue-400" />
-                  <div>
-                    <h3 className="text-white font-semibold">Informações Seguras</h3>
-                    <p className="text-blue-300 text-sm">Seus dados são protegidos e criptografados.</p>
-                  </div>
+                  {/* Email */}
+                  <motion.div 
+                    variants={itemVariants}
+                    className="space-y-3"
+                  >
+                    <Label htmlFor="email" className="text-urbana-light text-base font-semibold flex items-center gap-3">
+                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
+                        <Mail className="h-4 w-4 text-urbana-gold" />
+                      </div>
+                      E-mail
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                      placeholder="seu.email@exemplo.com"
+                      required
+                    />
+                  </motion.div>
+
+                  {/* WhatsApp */}
+                  <motion.div 
+                    variants={itemVariants}
+                    className="space-y-3"
+                  >
+                    <Label htmlFor="whatsapp" className="text-urbana-light text-base font-semibold flex items-center gap-3">
+                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
+                        <Phone className="h-4 w-4 text-urbana-gold" />
+                      </div>
+                      WhatsApp
+                    </Label>
+                    <Input
+                      id="whatsapp"
+                      type="tel"
+                      value={formData.whatsapp}
+                      onChange={handleWhatsAppChange}
+                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                      placeholder="(11) 99999-9999"
+                      maxLength={15}
+                      required
+                    />
+                  </motion.div>
+
+                  {/* Data de Nascimento */}
+                  <motion.div 
+                    variants={itemVariants}
+                    className="space-y-3"
+                  >
+                    <Label htmlFor="data_nascimento" className="text-urbana-light text-base font-semibold flex items-center gap-3">
+                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
+                        <Calendar className="h-4 w-4 text-urbana-gold" />
+                      </div>
+                      Data de Nascimento
+                    </Label>
+                    <Input
+                      id="data_nascimento"
+                      type="date"
+                      value={formData.data_nascimento}
+                      onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                      required
+                    />
+                  </motion.div>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+
+                {/* Submit Button */}
+                <motion.div 
+                  variants={itemVariants}
+                  className="pt-6"
+                >
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold h-16 text-lg rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-6 h-6 border-2 border-urbana-black border-t-transparent rounded-full mr-3"
+                      />
+                    ) : (
+                      <Save className="h-5 w-5 mr-3" />
+                    )}
+                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </motion.div>
+              </form>
+            </PainelClienteCardContent>
+          </PainelClienteCard>
         </motion.div>
-      </div>
-    </div>
+
+        {/* Security Notice */}
+        <motion.div variants={itemVariants}>
+          <PainelClienteCard variant="info" icon={Shield}>
+            <PainelClienteCardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <div>
+                  <h3 className="text-urbana-light font-semibold">Informações Seguras</h3>
+                  <p className="text-urbana-light/70 text-sm">Seus dados são protegidos e criptografados.</p>
+                </div>
+              </div>
+            </PainelClienteCardContent>
+          </PainelClienteCard>
+        </motion.div>
+      </motion.div>
+    </PainelClienteContentContainer>
   );
 }
