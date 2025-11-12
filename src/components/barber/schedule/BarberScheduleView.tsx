@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isToday } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,7 @@ const BarberScheduleView: React.FC = () => {
     const groupedAppointments: { [key: string]: any[] } = {};
     
     appointments.forEach(appointment => {
-      const appointmentDate = new Date(appointment.data);
+      const appointmentDate = parseISO(appointment.data);
       const dayKey = format(appointmentDate, 'yyyy-MM-dd');
       
       if (!groupedAppointments[dayKey]) {

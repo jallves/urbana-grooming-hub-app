@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, Calendar, Clock, User, Scissors, Home, ArrowRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TotemButton } from '@/components/totem/TotemButton';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
@@ -132,7 +132,7 @@ const TotemAgendamentoSucesso: React.FC = () => {
                 <div>
                   <p className="text-xs sm:text-sm text-urbana-light/60 mb-1">Data</p>
                   <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">
-                    {format(new Date(appointment.data), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    {format(parseISO(appointment.data), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                   </p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -98,9 +98,9 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
       {/* Data */}
       <TableCell className="px-2 sm:px-4 py-2 sm:py-3 max-w-[70px] truncate">
         <div className="text-[10px] sm:text-xs truncate">
-          {format(new Date(appointment.data), 'dd/MM')}
+          {format(parseISO(appointment.data), 'dd/MM')}
           <div className="sm:hidden text-[9px] text-muted-foreground truncate">
-            {format(new Date(appointment.data), 'yyyy')}
+            {format(parseISO(appointment.data), 'yyyy')}
           </div>
         </div>
       </TableCell>

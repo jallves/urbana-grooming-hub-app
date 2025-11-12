@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
 import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
+import { parseISO, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const FinancialMetrics: React.FC = () => {
   const queryKey = useMemo(() => ['financial-metrics'], []);
@@ -32,7 +34,7 @@ const FinancialMetrics: React.FC = () => {
 
       // Agrupar por mês
       const monthlyData = appointments?.reduce((acc, apt) => {
-        const month = new Date(apt.data).toLocaleString('pt-BR', { month: 'short' });
+        const month = format(parseISO(apt.data), 'MMM', { locale: ptBR });
         if (!acc[month]) {
           acc[month] = { month, revenue: 0, count: 0 };
         }
@@ -61,7 +63,7 @@ const FinancialMetrics: React.FC = () => {
       const avgTicket = appointments?.length ? totalRevenue / appointments.length : 0;
       const thisMonth = new Date().getMonth();
       const currentMonthRevenue = appointments?.filter(apt => 
-        new Date(apt.data).getMonth() === thisMonth
+        parseISO(apt.data).getMonth() === thisMonth
       ).reduce((sum, apt) => sum + (apt.painel_servicos?.preco || 0), 0) || 0;
 
       const currentMonthCashFlow = cashFlow?.filter(transaction => 

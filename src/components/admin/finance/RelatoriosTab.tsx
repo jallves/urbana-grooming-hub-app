@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Download, BarChart3, TrendingUp } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
@@ -180,7 +180,7 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
       // Adicionar receitas
       agendamentos?.forEach(agendamento => {
         exportData.push({
-          Data: format(new Date(agendamento.data), 'dd/MM/yyyy'),
+          Data: format(parseISO(agendamento.data), 'dd/MM/yyyy'),
           Tipo: 'Receita',
           Categoria: 'Serviços',
           Descrição: agendamento.painel_servicos?.nome,

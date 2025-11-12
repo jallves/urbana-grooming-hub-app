@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import {
   Calendar,
@@ -205,7 +207,7 @@ export default function PainelClienteAgendamentos() {
                         <div className="flex items-center text-gray-300">
                           <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
                           <span className="text-sm">
-                            {new Date(agendamento.data).toLocaleDateString('pt-BR')}
+                            {format(parseISO(agendamento.data), 'dd/MM/yyyy', { locale: ptBR })}
                           </span>
                         </div>
                         <div className="flex items-center text-gray-300">

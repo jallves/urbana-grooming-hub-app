@@ -7,7 +7,7 @@ import { ArrowLeft, Calendar, Clock, User, Scissors, Plus, Edit, Trash2 } from '
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
@@ -302,7 +302,7 @@ export default function PainelClienteMeusAgendamentos() {
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
                               <Calendar className="h-4 w-4 mr-3 text-urbana-gold flex-shrink-0" />
                               <span className="text-sm font-medium">
-                                {format(new Date(agendamento.data), 'EEEE, dd \'de\' MMMM', { locale: ptBR })}
+                                {format(parseISO(agendamento.data), 'EEEE, dd \'de\' MMMM', { locale: ptBR })}
                               </span>
                             </div>
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">

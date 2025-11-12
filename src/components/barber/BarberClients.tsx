@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Users, Search, Phone, Mail, Calendar, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import StandardCard from './layouts/StandardCard';
 
@@ -218,7 +218,7 @@ const BarberClients: React.FC = () => {
                             <div className="flex items-center gap-2 text-xs text-gray-400">
                               <Calendar className="h-3 w-3 flex-shrink-0" />
                               <span>
-                                {format(new Date(client.data_nascimento), 'dd/MM/yyyy', { locale: ptBR })}
+                                {format(parseISO(client.data_nascimento), 'dd/MM/yyyy', { locale: ptBR })}
                               </span>
                             </div>
                           )}
@@ -257,7 +257,7 @@ const BarberClients: React.FC = () => {
                                   <span className="text-white truncate">{appointment.servico_nome}</span>
                                 </div>
                                 <div className="text-gray-400 mt-1">
-                                  {format(new Date(appointment.data), 'dd/MM/yyyy', { locale: ptBR })} às {appointment.hora}
+                                  {format(parseISO(appointment.data), 'dd/MM/yyyy', { locale: ptBR })} às {appointment.hora}
                                 </div>
                               </div>
                               <div className="flex flex-col items-end gap-1 ml-2">

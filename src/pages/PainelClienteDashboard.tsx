@@ -9,6 +9,8 @@ import {
   User,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   PainelClienteCard, 
   PainelClienteCardTitle, 
@@ -221,10 +223,8 @@ export default function PainelClienteDashboard() {
                     <div className="flex items-center text-urbana-light/70">
                       <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
                       <span className="text-sm">
-                        {new Date(ag.data).toLocaleDateString("pt-BR", {
-                          weekday: "long",
-                          day: "numeric", 
-                          month: "long"
+                        {format(parseISO(ag.data), "EEEE, dd 'de' MMMM", {
+                          locale: ptBR
                         })}
                       </span>
                     </div>
