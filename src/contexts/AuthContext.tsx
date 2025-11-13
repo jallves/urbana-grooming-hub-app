@@ -33,24 +33,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
+    let initTimeout: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (mounted) {
-          setUser(session?.user || null);
-          if (session?.user) {
-            // Check roles before setting loading to false
-            await checkUserRoles(session.user);
-          } else {
-            setIsAdmin(false);
-            setIsBarber(false);
+        console.log('[AuthContext] 🔄 Inicializando autenticação...');
+        
+        // Timeout de segurança: se demorar mais de 10 segundos, desistir
+        initTimeout = setTimeout(() => {
+          if (mounted) {
+            console.warn('[AuthContext] ⚠️ Timeout na inicialização, definindo loading=false');
+            setLoading(false);
           }
+        }, 10000);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        setUser(session?.user || null);
+        
+        if (session?.user) {
+          console.log('[AuthContext] 👤 Usuário encontrado, verificando roles...');
+          await checkUserRoles(session.user);
+        } else {
+          console.log('[AuthContext] 👤 Nenhum usuário encontrado');
+          setIsAdmin(false);
+          setIsBarber(false);
+        }
+        
+        clearTimeout(initTimeout);
+        setLoading(false);
+        console.log('[AuthContext] ✅ Inicialização completa');
+      } catch (error) {
+        console.error('[AuthContext] ❌ Error initializing auth:', error);
+        if (mounted) {
+          setIsAdmin(false);
+          setIsBarber(false);
           setLoading(false);
         }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (mounted) setLoading(false);
       }
     };
 
@@ -59,48 +80,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
+      
+      console.log('[AuthContext] 🔄 Auth state changed:', event);
+      
       setUser(session?.user || null);
+      
       if (session?.user) {
-        // Check roles before updating loading state
         await checkUserRoles(session.user);
       } else {
         setIsAdmin(false);
         setIsBarber(false);
       }
+      
       setLoading(false);
     });
 
     return () => {
       mounted = false;
+      if (initTimeout) clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
   }, []);
 
   const checkUserRoles = async (user: User) => {
-    if (!user) return;
+    if (!user) {
+      setIsAdmin(false);
+      setIsBarber(false);
+      return;
+    }
     
     try {
       console.log('[AuthContext] 🔍 Verificando roles para usuário:', user.id, user.email);
       
-      // Usar funções SECURITY DEFINER do banco para evitar problemas de RLS
-      const { data: isAdminData, error: adminError } = await supabase
-        .rpc('is_admin' as any, { user_id: user.id });
-
-      const { data: isBarberData, error: barberError } = await supabase
-        .rpc('is_barber' as any, { user_id: user.id });
-
-      if (adminError) console.error('[AuthContext] Erro ao verificar admin:', adminError);
-      if (barberError) console.error('[AuthContext] Erro ao verificar barber:', barberError);
-
-      const isAdminUser = isAdminData === true;
-      const isBarberUser = isBarberData === true;
+      // Timeout de 5 segundos para evitar loops infinitos
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout verificando roles')), 5000)
+      );
       
-      console.log('[AuthContext] ✅ Roles definidas - isAdmin:', isAdminUser, 'isBarber:', isBarberUser);
+      const checkRolesPromise = async () => {
+        // Usar funções SECURITY DEFINER do banco para evitar problemas de RLS
+        const { data: isAdminData, error: adminError } = await supabase
+          .rpc('is_admin' as any, { user_id: user.id });
+
+        const { data: isBarberData, error: barberError } = await supabase
+          .rpc('is_barber' as any, { user_id: user.id });
+
+        if (adminError) throw adminError;
+        if (barberError) throw barberError;
+
+        return {
+          isAdmin: isAdminData === true,
+          isBarber: isBarberData === true
+        };
+      };
+
+      const roles = await Promise.race([checkRolesPromise(), timeoutPromise]) as { isAdmin: boolean; isBarber: boolean };
       
-      setIsAdmin(isAdminUser);
-      setIsBarber(isBarberUser);
+      console.log('[AuthContext] ✅ Roles definidas - isAdmin:', roles.isAdmin, 'isBarber:', roles.isBarber);
+      
+      setIsAdmin(roles.isAdmin);
+      setIsBarber(roles.isBarber);
     } catch (error) {
       console.error('[AuthContext] ❌ Error checking user roles:', error);
+      // Em caso de erro, assumir que não é admin nem barber
       setIsAdmin(false);
       setIsBarber(false);
     }
