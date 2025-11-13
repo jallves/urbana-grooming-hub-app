@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Star, Users, TrendingUp, MessageCircle } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { motion } from 'framer-motion';
 
 interface ReviewStats {
   totalReviews: number;
@@ -103,11 +103,11 @@ export const ClientReviews: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full py-12 sm:py-16 md:py-20">
+      <section className="relative py-20 md:py-32 bg-gradient-to-b from-urbana-brown via-urbana-black to-urbana-brown">
         <div className="text-center">
-          <div className="inline-block w-8 h-8 border-4 border-urbana-gold border-t-transparent rounded-full animate-spin" />
+          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-urbana-gold border-r-transparent"></div>
         </div>
-      </div>
+      </section>
     );
   }
 
@@ -116,136 +116,266 @@ export const ClientReviews: React.FC = () => {
   }
 
   return (
-    <div className="w-full py-12 sm:py-16 md:py-20 px-4 md:px-6 lg:px-8">
-      <div className="text-center mb-8 sm:mb-12">
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-light mb-3 sm:mb-4">
-          O Que Nossos Clientes Dizem
-        </h2>
-        <p className="text-base sm:text-lg md:text-xl text-urbana-light/70">
-          Avaliações reais de quem já passou por aqui
-        </p>
+    <section className="relative py-20 md:py-32 bg-gradient-to-b from-urbana-brown via-urbana-black to-urbana-brown overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
+        <div className="absolute top-40 left-20 w-96 h-96 bg-gradient-radial from-urbana-gold via-yellow-400 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-40 right-20 w-80 h-80 bg-gradient-radial from-yellow-400 via-urbana-gold to-transparent rounded-full blur-3xl" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        {/* Stats Overview */}
-        <Card className="p-6 sm:p-8 bg-gradient-to-br from-urbana-brown/20 to-urbana-black/40 border-urbana-gold/20 backdrop-blur-sm">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-urbana-gold/20 mb-4">
-              <Star className="w-10 h-10 text-urbana-gold fill-urbana-gold" />
-            </div>
-            <div className="text-5xl font-bold text-urbana-gold mb-2">
-              {stats.averageRating.toFixed(1)}
-            </div>
-            <div className="flex items-center justify-center gap-1 mb-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`w-6 h-6 ${
-                    star <= Math.round(stats.averageRating)
-                      ? 'text-urbana-gold fill-urbana-gold'
-                      : 'text-urbana-gold/30'
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-urbana-light/70 flex items-center justify-center gap-2">
-              <Users className="w-4 h-4" />
-              {stats.totalReviews} avaliações
-            </p>
-          </div>
+      {/* Geometric pattern */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
+        backgroundImage: 'linear-gradient(30deg, transparent 45%, rgba(255, 215, 0, 0.3) 45%, rgba(255, 215, 0, 0.3) 55%, transparent 55%), linear-gradient(150deg, transparent 45%, rgba(255, 215, 0, 0.3) 45%, rgba(255, 215, 0, 0.3) 55%, transparent 55%)',
+        backgroundSize: '60px 60px'
+      }} />
 
-          {/* Rating Distribution */}
-          <div className="space-y-3">
-            {[5, 4, 3, 2, 1].map((rating) => {
-              const count = rating === 5 ? stats.fiveStarCount :
-                           rating === 4 ? stats.fourStarCount :
-                           rating === 3 ? stats.threeStarCount :
-                           rating === 2 ? stats.twoStarCount :
-                           stats.oneStarCount;
-              const percentage = getPercentage(count);
+      <div className="w-full relative z-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center mx-auto mb-16 px-4"
+        >
+          <h2 
+            className="text-5xl md:text-6xl lg:text-7xl font-playfair font-bold mb-6 leading-tight tracking-tight relative inline-block"
+            style={{
+              background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textShadow: '0 0 60px rgba(255, 215, 0, 0.3)'
+            }}
+          >
+            O Que Nossos{" "}
+            <span className="block md:inline text-urbana-light font-bold" style={{
+              WebkitTextFillColor: '#f5f5f5',
+              textShadow: '0 0 30px rgba(255, 215, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.5)'
+            }}>
+              Clientes Dizem
+            </span>
+            {/* Decorative underline */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              transition={{ duration: 1, delay: 0.5 }}
+              viewport={{ once: true }}
+              className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-urbana-gold to-transparent rounded-full shadow-[0_0_15px_rgba(255,215,0,0.6)]"
+            />
+          </h2>
+          <p className="text-urbana-light/90 font-raleway text-xl md:text-2xl leading-relaxed font-light tracking-wide max-w-3xl mx-auto">
+            Avaliações reais de quem já passou por aqui
+          </p>
+        </motion.div>
 
-              return (
-                <div key={rating} className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 w-20">
-                    <span className="text-urbana-light font-medium">{rating}</span>
-                    <Star className="w-4 h-4 text-urbana-gold fill-urbana-gold" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 md:px-6 lg:px-8">
+          {/* Stats Overview */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            viewport={{ once: true }}
+            className="relative group"
+          >
+            <div className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-2xl p-8 hover:border-urbana-gold transition-all duration-500 overflow-hidden hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)]">
+              {/* Background glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 via-transparent to-urbana-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
+              {/* Geometric pattern */}
+              <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500" style={{
+                backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.8) 1px, transparent 0)',
+                backgroundSize: '32px 32px'
+              }} />
+
+              <div className="relative z-10">
+                <div className="text-center mb-6">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                    className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-urbana-gold via-yellow-400 to-amber-500 rounded-xl shadow-[0_8px_32px_rgba(255,215,0,0.4),inset_0_2px_8px_rgba(255,255,255,0.2)] mb-4"
+                  >
+                    <Star className="w-10 h-10 text-urbana-black" />
+                  </motion.div>
+                  <div 
+                    className="text-6xl font-bold font-playfair mb-2"
+                    style={{
+                      background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                      textShadow: '0 0 40px rgba(255, 215, 0, 0.3)'
+                    }}
+                  >
+                    {stats.averageRating.toFixed(1)}
                   </div>
-                  <div className="flex-1 h-3 bg-urbana-black/50 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-urbana-gold to-urbana-gold-light transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <span className="text-urbana-light/70 w-12 text-right">{count}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-urbana-gold/20">
-            <div className="text-center">
-              <TrendingUp className="w-6 h-6 text-urbana-gold mx-auto mb-2" />
-              <div className="text-2xl font-bold text-urbana-gold">
-                {Math.round(getPercentage(stats.fiveStarCount + stats.fourStarCount))}%
-              </div>
-              <div className="text-sm text-urbana-light/70">Satisfação</div>
-            </div>
-            <div className="text-center">
-              <MessageCircle className="w-6 h-6 text-urbana-gold mx-auto mb-2" />
-              <div className="text-2xl font-bold text-urbana-gold">
-                {stats.recentReviews.length}
-              </div>
-              <div className="text-sm text-urbana-light/70">Com Comentário</div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Recent Reviews */}
-        <div className="space-y-4">
-          <h3 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4">
-            Avaliações Recentes
-          </h3>
-          
-          {stats.recentReviews.length > 0 ? (
-            <div className="space-y-4">
-              {stats.recentReviews.map((review, index) => (
-                <Card
-                  key={index}
-                  className="p-4 sm:p-6 bg-gradient-to-br from-urbana-brown/20 to-urbana-black/40 border-urbana-gold/20 backdrop-blur-sm hover:border-urbana-gold/40 transition-all duration-300"
-                >
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center justify-center gap-1 mb-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        className={`w-5 h-5 ${
-                          star <= review.rating
+                        className={`w-6 h-6 ${
+                          star <= Math.round(stats.averageRating)
                             ? 'text-urbana-gold fill-urbana-gold'
                             : 'text-urbana-gold/30'
                         }`}
                       />
                     ))}
                   </div>
-                  <p className="text-urbana-light/90 mb-2 italic">"{review.comment}"</p>
-                  <p className="text-sm text-urbana-light/50">
-                    {new Date(review.created_at).toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric'
-                    })}
+                  <p className="text-urbana-light/70 flex items-center justify-center gap-2 font-raleway">
+                    <Users className="w-4 h-4" />
+                    {stats.totalReviews} avaliações
                   </p>
-                </Card>
-              ))}
+                </div>
+
+                {/* Rating Distribution */}
+                <div className="space-y-3 mb-6">
+                  {[5, 4, 3, 2, 1].map((rating) => {
+                    const count = rating === 5 ? stats.fiveStarCount :
+                                 rating === 4 ? stats.fourStarCount :
+                                 rating === 3 ? stats.threeStarCount :
+                                 rating === 2 ? stats.twoStarCount :
+                                 stats.oneStarCount;
+                    const percentage = getPercentage(count);
+
+                    return (
+                      <div key={rating} className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 w-20">
+                          <span className="text-urbana-light font-medium font-raleway">{rating}</span>
+                          <Star className="w-4 h-4 text-urbana-gold fill-urbana-gold" />
+                        </div>
+                        <div className="flex-1 h-3 bg-urbana-black/50 rounded-full overflow-hidden border border-urbana-gold/10">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${percentage}%` }}
+                            transition={{ duration: 1, delay: 0.2 + rating * 0.1 }}
+                            viewport={{ once: true }}
+                            className="h-full bg-gradient-to-r from-urbana-gold to-yellow-400 rounded-full shadow-[0_0_10px_rgba(255,215,0,0.4)]"
+                          />
+                        </div>
+                        <span className="text-urbana-light/70 w-12 text-right font-raleway">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-urbana-gold/20">
+                  <div className="text-center">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="w-12 h-12 bg-gradient-to-br from-urbana-gold via-yellow-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-[0_4px_16px_rgba(255,215,0,0.3)]"
+                    >
+                      <TrendingUp className="w-6 h-6 text-urbana-black" />
+                    </motion.div>
+                    <div 
+                      className="text-2xl font-bold font-playfair"
+                      style={{
+                        background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text'
+                      }}
+                    >
+                      {Math.round(getPercentage(stats.fiveStarCount + stats.fourStarCount))}%
+                    </div>
+                    <div className="text-sm text-urbana-light/70 font-raleway">Satisfação</div>
+                  </div>
+                  <div className="text-center">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="w-12 h-12 bg-gradient-to-br from-urbana-gold via-yellow-400 to-amber-500 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-[0_4px_16px_rgba(255,215,0,0.3)]"
+                    >
+                      <MessageCircle className="w-6 h-6 text-urbana-black" />
+                    </motion.div>
+                    <div 
+                      className="text-2xl font-bold font-playfair"
+                      style={{
+                        background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text'
+                      }}
+                    >
+                      {stats.recentReviews.length}
+                    </div>
+                    <div className="text-sm text-urbana-light/70 font-raleway">Com Comentário</div>
+                  </div>
+                </div>
+              </div>
             </div>
-          ) : (
-            <Card className="p-6 bg-gradient-to-br from-urbana-brown/20 to-urbana-black/40 border-urbana-gold/20">
-              <p className="text-center text-urbana-light/70">
-                Seja o primeiro a deixar um comentário!
-              </p>
-            </Card>
-          )}
+          </motion.div>
+
+          {/* Recent Reviews */}
+          <div className="space-y-6">
+            <h3 className="text-3xl md:text-4xl font-bold text-urbana-light font-playfair">
+              Avaliações Recentes
+            </h3>
+            
+            {stats.recentReviews.length > 0 ? (
+              <div className="space-y-4">
+                {stats.recentReviews.map((review, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 + index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="relative group"
+                  >
+                    <div className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl p-6 hover:border-urbana-gold transition-all duration-500 overflow-hidden hover:shadow-[0_10px_40px_rgba(255,215,0,0.2)]">
+                      {/* Background glow */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 via-transparent to-urbana-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      {/* Geometric pattern */}
+                      <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500" style={{
+                        backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.8) 1px, transparent 0)',
+                        backgroundSize: '32px 32px'
+                      }} />
+
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-3">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-5 h-5 ${
+                                star <= review.rating
+                                  ? 'text-urbana-gold fill-urbana-gold'
+                                  : 'text-urbana-gold/30'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-urbana-light/90 mb-3 italic font-raleway text-lg leading-relaxed">
+                          "{review.comment}"
+                        </p>
+                        <p className="text-sm text-urbana-light/50 font-raleway">
+                          {new Date(review.created_at).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+                className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl p-8 text-center"
+              >
+                <p className="text-urbana-light/70 font-raleway text-lg">
+                  Seja o primeiro a deixar um comentário!
+                </p>
+              </motion.div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
