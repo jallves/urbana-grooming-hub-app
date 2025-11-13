@@ -10,32 +10,49 @@ import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const { user, isAdmin, loading: authLoading } = useAuth();
 
-  // Redireciona admin para o painel, outros para home
+  // Redireciona admin para o painel, outros para home (COM PROTEÇÃO CONTRA LOOPS)
   useEffect(() => {
     console.log('[Auth.tsx] Estado atual:', { 
       authLoading, 
       user: user?.email, 
       isAdmin,
-      hasUser: !!user 
+      hasUser: !!user,
+      redirectAttempted 
     });
+    
+    // Prevenir múltiplas tentativas de redirecionamento
+    if (redirectAttempted) {
+      console.log('[Auth.tsx] ⚠️ Redirecionamento já tentado, ignorando...');
+      return;
+    }
     
     if (!authLoading && user && user.email) {
       console.log('[Auth.tsx] 🔄 Usuário autenticado, verificando redirecionamento...');
+      setRedirectAttempted(true);
       
-      if (isAdmin) {
-        console.log('[Auth.tsx] ✅ Admin detectado, redirecionando para /admin');
-        navigate('/admin', { replace: true });
-      } else {
-        console.log('[Auth.tsx] ℹ️ Não é admin, redirecionando para home');
-        navigate('/', { replace: true });
-      }
+      // Usar setTimeout para garantir que o state está atualizado
+      setTimeout(() => {
+        if (isAdmin) {
+          console.log('[Auth.tsx] ✅ Admin detectado, redirecionando para /admin');
+          navigate('/admin', { replace: true });
+        } else {
+          console.log('[Auth.tsx] ℹ️ Não é admin, redirecionando para home');
+          navigate('/', { replace: true });
+        }
+      }, 100);
     }
-  }, [user, isAdmin, navigate, authLoading, location.state]);
+  }, [user, isAdmin, authLoading, redirectAttempted]);
+
+  // Reset redirectAttempted quando o usuário muda
+  useEffect(() => {
+    setRedirectAttempted(false);
+  }, [user?.id]);
 
   // Credenciais de admin removidas por segurança
   // Use o Supabase Dashboard para criar usuários admin manualmente
