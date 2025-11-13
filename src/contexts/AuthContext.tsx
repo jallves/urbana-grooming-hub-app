@@ -114,6 +114,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
     
+    // CRÍTICO: Resetar rolesChecked ao iniciar verificação
+    console.log('[AuthContext] 🔄 Resetando rolesChecked e iniciando verificação...');
+    setRolesChecked(false);
+    
     try {
       console.log('[AuthContext] 🔍 Verificando roles para usuário:', user.id, user.email);
       
