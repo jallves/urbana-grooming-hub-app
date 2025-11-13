@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isBarber: boolean;
+  rolesChecked: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -30,6 +31,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBarber, setIsBarber] = useState(false);
+  const [rolesChecked, setRolesChecked] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -60,6 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('[AuthContext] 👤 Nenhum usuário encontrado');
           setIsAdmin(false);
           setIsBarber(false);
+          setRolesChecked(true);
         }
         
         clearTimeout(initTimeout);
@@ -90,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setIsAdmin(false);
         setIsBarber(false);
+        setRolesChecked(true);
       }
       
       setLoading(false);
@@ -106,6 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) {
       setIsAdmin(false);
       setIsBarber(false);
+      setRolesChecked(true);
       return;
     }
     
@@ -140,11 +145,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setIsAdmin(roles.isAdmin);
       setIsBarber(roles.isBarber);
+      setRolesChecked(true);
     } catch (error) {
       console.error('[AuthContext] ❌ Error checking user roles:', error);
       // Em caso de erro, assumir que não é admin nem barber
       setIsAdmin(false);
       setIsBarber(false);
+      setRolesChecked(true);
     }
   };
 
@@ -177,6 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     isAdmin,
     isBarber,
+    rolesChecked,
     signOut,
   };
 
