@@ -1,25 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
+import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Scissors, User, ChevronRight, Check, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface Service {
   id: string;
   nome: string;
   preco: number;
   duracao: number;
+  descricao?: string;
 }
 
 interface Barber {
@@ -29,127 +28,199 @@ interface Barber {
   staff_id: string;
 }
 
+type Step = 'service' | 'barber' | 'date' | 'time' | 'confirm';
+
 export default function PainelClienteNovoAgendamento() {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
   
-  const [barbers, setBarbers] = useState<Barber[]>([]);
+  // Estado geral
+  const [currentStep, setCurrentStep] = useState<Step>('service');
   const [isLoading, setIsLoading] = useState(false);
   
+  // Dados disponíveis
   const [services, setServices] = useState<Service[]>([]);
-  const [selectedService, setSelectedService] = useState<string>('');
-  const [selectedBarber, setSelectedBarber] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<Date>();
-  const [selectedTime, setSelectedTime] = useState<string>('');
-  const [notes, setNotes] = useState<string>('');
-  const [availableTimes, setAvailableTimes] = useState<{ time: string; available: boolean; reason?: string }[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<{ time: string; available: boolean }[]>([]);
+  
+  // Seleções
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
 
-  // Carregar serviços e barbeiros
+  // Carregar serviços
   useEffect(() => {
-    const fetchData = async () => {
-      // Buscar serviços do painel
-      const { data: servicesData } = await supabase
+    const fetchServices = async () => {
+      const { data } = await supabase
         .from('painel_servicos')
         .select('*')
         .order('nome');
       
-      if (servicesData) {
-        setServices(servicesData);
-      }
-
-      // Buscar barbeiros do painel
-      const { data: barbersData } = await supabase
-        .from('painel_barbeiros')
-        .select('id, nome, email, staff_id')
-        .order('nome');
-      
-      if (barbersData) {
-        setBarbers(barbersData);
-      }
+      if (data) setServices(data);
     };
-
-    fetchData();
+    fetchServices();
   }, []);
 
-  // Gerar horários disponíveis quando barbeiro, data e serviço são selecionados
+  // Carregar barbeiros quando serviço é selecionado
   useEffect(() => {
-    const generateAvailableTimes = async () => {
-      if (!selectedBarber || !selectedDate || !selectedService) {
-        setAvailableTimes([]);
-        return;
-      }
+    if (selectedService) {
+      const fetchBarbers = async () => {
+        const { data } = await supabase
+          .from('painel_barbeiros')
+          .select('id, nome, email, staff_id')
+          .order('nome');
+        
+        if (data) setBarbers(data);
+      };
+      fetchBarbers();
+    }
+  }, [selectedService]);
 
-      try {
-        // Buscar staff_id do barbeiro selecionado
-        const selectedBarberData = barbers.find(b => b.id === selectedBarber);
-        if (!selectedBarberData?.staff_id) {
-          setAvailableTimes([]);
-          return;
-        }
+  // Carregar datas disponíveis quando barbeiro é selecionado
+  useEffect(() => {
+    if (selectedBarber && selectedService) {
+      loadAvailableDates();
+    }
+  }, [selectedBarber, selectedService]);
 
-        // Buscar duração do serviço
-        const selectedServiceData = services.find(s => s.id === selectedService);
-        const serviceDuration = selectedServiceData?.duracao || 60;
+  // Carregar horários quando data é selecionada
+  useEffect(() => {
+    if (selectedDate && selectedBarber && selectedService) {
+      loadAvailableTimes();
+    }
+  }, [selectedDate, selectedBarber, selectedService]);
 
-        // Usar o hook de validação para obter horários disponíveis
-        // Isso já filtra horários passados e com menos de 30 minutos
-        const slots = await getAvailableTimeSlots(
-          selectedBarberData.staff_id,
-          selectedDate,
-          serviceDuration
-        );
+  const loadAvailableDates = async () => {
+    if (!selectedBarber || !selectedService) return;
 
-        setAvailableTimes(slots);
-      } catch (error) {
-        console.error('Erro ao gerar horários:', error);
-        setAvailableTimes([]);
-      }
-    };
-
-    generateAvailableTimes();
-  }, [selectedBarber, selectedDate, selectedService, barbers, services, getAvailableTimeSlots]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    setIsLoading(true);
+    const dates: Date[] = [];
     
+    try {
+      // Verificar próximos 14 dias para garantir pelo menos 7 com horários
+      for (let i = 0; i < 14 && dates.length < 7; i++) {
+        const date = addDays(startOfToday(), i);
+        
+        // Verificar se há horários disponíveis nesta data
+        const slots = await getAvailableTimeSlots(
+          selectedBarber.staff_id,
+          date,
+          selectedService.duracao
+        );
+        
+        if (slots.some(slot => slot.available)) {
+          dates.push(date);
+        }
+      }
+      
+      setAvailableDates(dates);
+      
+      // Auto-selecionar primeira data se houver
+      if (dates.length > 0 && !selectedDate) {
+        setSelectedDate(dates[0]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar datas:', error);
+      toast.error('Erro ao carregar datas disponíveis');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadAvailableTimes = async () => {
+    if (!selectedDate || !selectedBarber || !selectedService) return;
+
+    setIsLoading(true);
+    try {
+      const slots = await getAvailableTimeSlots(
+        selectedBarber.staff_id,
+        selectedDate,
+        selectedService.duracao
+      );
+      
+      setAvailableTimes(slots);
+      
+      if (!slots.some(s => s.available)) {
+        toast.info('Não há horários disponíveis para esta data');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar horários:', error);
+      toast.error('Erro ao carregar horários');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleServiceSelect = (service: Service) => {
+    setSelectedService(service);
+    setCurrentStep('barber');
+    
+    // Reset próximas etapas
+    setSelectedBarber(null);
+    setSelectedDate(null);
+    setSelectedTime(null);
+  };
+
+  const handleBarberSelect = (barber: Barber) => {
+    setSelectedBarber(barber);
+    setCurrentStep('date');
+    
+    // Reset próximas etapas
+    setSelectedDate(null);
+    setSelectedTime(null);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setCurrentStep('time');
+    setSelectedTime(null);
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    setCurrentStep('confirm');
+  };
+
+  const handleBack = () => {
+    const steps: Step[] = ['service', 'barber', 'date', 'time', 'confirm'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1]);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (!cliente || !selectedService || !selectedBarber || !selectedDate || !selectedTime) {
-      toast.error('Preencha todos os campos obrigatórios');
+      toast.error('Preencha todos os campos');
       return;
     }
 
     setIsLoading(true);
     try {
-      // Buscar staff_id e duração do serviço
-      const selectedBarberData = barbers.find(b => b.id === selectedBarber);
-      const selectedServiceData = services.find(s => s.id === selectedService);
-      
-      if (!selectedBarberData?.staff_id || !selectedServiceData) {
-        toast.error('Dados inválidos. Tente novamente.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Validar o agendamento antes de inserir
+      // Validação final
       const validation = await validateAppointment(
-        selectedBarberData.staff_id,
+        selectedBarber.staff_id,
         selectedDate,
         selectedTime,
-        selectedServiceData.duracao
+        selectedService.duracao
       );
 
       if (!validation.valid) {
         setIsLoading(false);
-        return; // O toast de erro já foi exibido pelo hook
+        return;
       }
 
-      // Salvar diretamente em painel_agendamentos
+      // Criar agendamento
       const { error } = await supabase
         .from('painel_agendamentos')
         .insert({
           cliente_id: cliente.id,
-          barbeiro_id: selectedBarber,
-          servico_id: selectedService,
+          barbeiro_id: selectedBarber.id,
+          servico_id: selectedService.id,
           data: format(selectedDate, 'yyyy-MM-dd'),
           hora: selectedTime,
           status: 'confirmado',
@@ -162,7 +233,7 @@ export default function PainelClienteNovoAgendamento() {
       navigate('/painel-cliente/agendamentos');
     } catch (error) {
       console.error('Erro ao criar agendamento:', error);
-      toast.error('Erro ao criar agendamento. Tente novamente.');
+      toast.error('Erro ao criar agendamento');
     } finally {
       setIsLoading(false);
     }
@@ -173,151 +244,324 @@ export default function PainelClienteNovoAgendamento() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5" />
-            Novo Agendamento
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Serviço */}
-            <div className="space-y-2">
-              <Label htmlFor="service">Serviço *</Label>
-              <Select value={selectedService} onValueChange={setSelectedService}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  {services.map((service) => (
-                    <SelectItem key={service.id} value={service.id}>
-                      {service.nome} - R$ {service.preco.toFixed(2)} ({service.duracao}min)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-urbana-brown/5 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/painel-cliente/agendamentos')}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Novo Agendamento</h1>
+              <p className="text-muted-foreground">Selecione os detalhes do seu atendimento</p>
             </div>
+          </div>
 
-            {/* Barbeiro */}
-            <div className="space-y-2">
-              <Label htmlFor="barber">Barbeiro *</Label>
-              <Select value={selectedBarber} onValueChange={setSelectedBarber}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um barbeiro" />
-                </SelectTrigger>
-                <SelectContent>
-                  {barbers.map((barber) => (
-                    <SelectItem key={barber.id} value={barber.id}>
-                      {barber.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Progress Steps */}
+          <div className="flex items-center gap-2 mt-6">
+            {[
+              { key: 'service', label: 'Serviço', icon: Scissors },
+              { key: 'barber', label: 'Barbeiro', icon: User },
+              { key: 'date', label: 'Data', icon: Calendar },
+              { key: 'time', label: 'Horário', icon: Clock },
+              { key: 'confirm', label: 'Confirmar', icon: Check }
+            ].map((step, index) => {
+              const isActive = currentStep === step.key;
+              const isCompleted = ['service', 'barber', 'date', 'time', 'confirm'].indexOf(currentStep) > index;
+              const Icon = step.icon;
+
+              return (
+                <div key={step.key} className="flex items-center flex-1">
+                  <div className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-all",
+                    isActive && "bg-primary/10 border-2 border-primary",
+                    isCompleted && "bg-green-500/10 border-2 border-green-500"
+                  )}>
+                    <Icon className={cn(
+                      "w-4 h-4",
+                      isActive && "text-primary",
+                      isCompleted && "text-green-500",
+                      !isActive && !isCompleted && "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium hidden md:inline",
+                      isActive && "text-primary",
+                      isCompleted && "text-green-500",
+                      !isActive && !isCompleted && "text-muted-foreground"
+                    )}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {index < 4 && (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground mx-1 flex-shrink-0" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-6">
+          {/* Step: Serviço */}
+          {currentStep === 'service' && (
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold text-urbana-gold flex items-center gap-2">
+                <Scissors className="w-6 h-6" />
+                Escolha o Serviço
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {services.map((service) => (
+                  <Card
+                    key={service.id}
+                    onClick={() => handleServiceSelect(service)}
+                    className={cn(
+                      "p-6 cursor-pointer transition-all hover:scale-105 hover:shadow-lg",
+                      "bg-card/50 backdrop-blur-sm border-2",
+                      selectedService?.id === service.id 
+                        ? "border-urbana-gold shadow-lg shadow-urbana-gold/20" 
+                        : "border-border hover:border-urbana-gold/50"
+                    )}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2 rounded-full bg-urbana-gold/10">
+                        <Scissors className="w-5 h-5 text-urbana-gold" />
+                      </div>
+                      {selectedService?.id === service.id && (
+                        <div className="p-1 rounded-full bg-urbana-gold">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-2">{service.nome}</h3>
+                    {service.descricao && (
+                      <p className="text-sm text-muted-foreground mb-3">{service.descricao}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-urbana-gold">
+                        R$ {service.preco.toFixed(2)}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {service.duracao} min
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             </div>
+          )}
 
-            {/* Data */}
-            <div className="space-y-2">
-              <Label>Data *</Label>
-              <div className="border rounded-md p-3">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  locale={ptBR}
-                  disabled={(date) => 
-                    isBefore(date, startOfDay(new Date())) || 
-                    isAfter(date, addDays(new Date(), 30))
-                  }
-                  className="rounded-md"
+          {/* Step: Barbeiro */}
+          {currentStep === 'barber' && selectedService && (
+            <div className="space-y-4">
+              <Button variant="ghost" onClick={handleBack} className="mb-2">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+              </Button>
+              <h2 className="text-2xl font-bold text-urbana-gold flex items-center gap-2">
+                <User className="w-6 h-6" />
+                Escolha o Profissional
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {barbers.map((barber) => (
+                  <Card
+                    key={barber.id}
+                    onClick={() => handleBarberSelect(barber)}
+                    className={cn(
+                      "p-6 cursor-pointer transition-all hover:scale-105 hover:shadow-lg",
+                      "bg-card/50 backdrop-blur-sm border-2",
+                      selectedBarber?.id === barber.id 
+                        ? "border-urbana-gold shadow-lg shadow-urbana-gold/20" 
+                        : "border-border hover:border-urbana-gold/50"
+                    )}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2 rounded-full bg-urbana-gold/10">
+                        <User className="w-5 h-5 text-urbana-gold" />
+                      </div>
+                      {selectedBarber?.id === barber.id && (
+                        <div className="p-1 rounded-full bg-urbana-gold">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground">{barber.nome}</h3>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step: Data */}
+          {currentStep === 'date' && selectedBarber && (
+            <div className="space-y-4">
+              <Button variant="ghost" onClick={handleBack} className="mb-2">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+              </Button>
+              <h2 className="text-2xl font-bold text-urbana-gold flex items-center gap-2">
+                <Calendar className="w-6 h-6" />
+                Escolha a Data
+              </h2>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin" />
+                </div>
+              ) : availableDates.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Não há datas disponíveis</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {availableDates.map((date) => (
+                    <Card
+                      key={date.toISOString()}
+                      onClick={() => handleDateSelect(date)}
+                      className={cn(
+                        "p-6 cursor-pointer transition-all hover:scale-105 hover:shadow-lg",
+                        "bg-card/50 backdrop-blur-sm border-2",
+                        selectedDate && 
+                        selectedDate.getDate() === date.getDate() &&
+                        selectedDate.getMonth() === date.getMonth() &&
+                        selectedDate.getFullYear() === date.getFullYear()
+                          ? "border-urbana-gold shadow-lg shadow-urbana-gold/20" 
+                          : "border-border hover:border-urbana-gold/50"
+                      )}
+                    >
+                      <div className="text-center">
+                        <Calendar className="w-6 h-6 text-urbana-gold mx-auto mb-2" />
+                        <p className="text-lg font-bold text-foreground">
+                          {format(date, "dd 'de' MMMM", { locale: ptBR })}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(date, 'EEEE', { locale: ptBR })}
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step: Horário */}
+          {currentStep === 'time' && selectedDate && (
+            <div className="space-y-4">
+              <Button variant="ghost" onClick={handleBack} className="mb-2">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+              </Button>
+              <h2 className="text-2xl font-bold text-urbana-gold flex items-center gap-2">
+                <Clock className="w-6 h-6" />
+                Escolha o Horário
+              </h2>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {availableTimes
+                    .filter(slot => slot.available)
+                    .map((slot) => (
+                      <Card
+                        key={slot.time}
+                        onClick={() => handleTimeSelect(slot.time)}
+                        className={cn(
+                          "p-4 cursor-pointer transition-all hover:scale-105 hover:shadow-lg",
+                          "bg-card/50 backdrop-blur-sm border-2",
+                          selectedTime === slot.time 
+                            ? "border-urbana-gold shadow-lg shadow-urbana-gold/20" 
+                            : "border-border hover:border-urbana-gold/50"
+                        )}
+                      >
+                        <div className="text-center">
+                          <Clock className="w-5 h-5 text-urbana-gold mx-auto mb-1" />
+                          <p className="text-lg font-bold text-foreground">{slot.time}</p>
+                        </div>
+                      </Card>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step: Confirmar */}
+          {currentStep === 'confirm' && selectedTime && (
+            <div className="space-y-6">
+              <Button variant="ghost" onClick={handleBack} className="mb-2">
+                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+              </Button>
+              <h2 className="text-2xl font-bold text-urbana-gold flex items-center gap-2">
+                <Check className="w-6 h-6" />
+                Confirmar Agendamento
+              </h2>
+
+              {/* Resumo */}
+              <Card className="p-6 bg-card/50 backdrop-blur-sm border-2 border-border">
+                <h3 className="text-lg font-bold text-foreground mb-4">Resumo do Agendamento</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Scissors className="w-5 h-5 text-urbana-gold" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Serviço</p>
+                      <p className="font-semibold text-foreground">{selectedService?.nome}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <User className="w-5 h-5 text-urbana-gold" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Profissional</p>
+                      <p className="font-semibold text-foreground">{selectedBarber?.nome}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-urbana-gold" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Data</p>
+                      <p className="font-semibold text-foreground">
+                        {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-urbana-gold" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Horário</p>
+                      <p className="font-semibold text-foreground">{selectedTime}</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Observações */}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Observações (opcional)</Label>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Alguma observação especial para o profissional..."
+                  rows={3}
+                  className="resize-none"
                 />
               </div>
-            </div>
 
-            {/* Horário */}
-            {selectedBarber && selectedDate && (
-              <div className="space-y-2">
-                <Label htmlFor="time">Horário *</Label>
-                {isValidating ? (
-                  <div className="text-sm text-muted-foreground">Carregando horários...</div>
-                ) : (
-                  <>
-                    <Select value={selectedTime} onValueChange={setSelectedTime}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um horário" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableTimes.filter(slot => slot.available).length > 0 ? (
-                          availableTimes
-                            .filter(slot => slot.available)
-                            .map((slot) => (
-                              <SelectItem key={slot.time} value={slot.time}>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4" />
-                                  {slot.time}
-                                </div>
-                              </SelectItem>
-                            ))
-                        ) : (
-                          <SelectItem value="" disabled>
-                            Nenhum horário disponível
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {availableTimes.length > 0 && availableTimes.filter(slot => slot.available).length === 0 && (
-                      <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Não há horários disponíveis para esta data. Tente selecionar outro dia ou barbeiro.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Observações */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Alguma observação especial..."
-                rows={3}
-              />
-            </div>
-
-            {/* Botões */}
-            <div className="flex gap-4">
+              {/* Botão Confirmar */}
               <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/painel-cliente/agendamentos')}
-                className="flex-1"
+                onClick={handleSubmit}
+                disabled={isLoading || isValidating}
+                size="lg"
+                className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-white font-bold"
               >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  isLoading || 
-                  !selectedService || 
-                  !selectedBarber || 
-                  !selectedDate || 
-                  !selectedTime
-                }
-                className="flex-1"
-              >
-                {isLoading ? 'Agendando...' : 'Agendar'}
+                {isLoading || isValidating ? 'Confirmando...' : 'Confirmar Agendamento'}
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
