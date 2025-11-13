@@ -121,14 +121,14 @@ const Statistics: React.FC = () => {
         backgroundSize: '60px 60px'
       }} />
 
-      <div className="urbana-container relative z-10">
+      <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center max-w-4xl mx-auto mb-16 px-4"
+          className="text-center mx-auto mb-16"
         >
           <h2 
             className="text-5xl md:text-6xl lg:text-7xl font-playfair font-bold mb-6 leading-tight tracking-tight relative inline-block"

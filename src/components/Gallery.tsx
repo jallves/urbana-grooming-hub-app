@@ -142,9 +142,9 @@ const Gallery: React.FC = () => {
       <div className="absolute top-40 left-20 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl" />
       <div className="absolute bottom-40 right-20 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl" />
       
-      <div className="urbana-container relative z-10">
+      <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
         <div className="text-center mb-12 md:mb-16">
-          <h2 
+          <h2
             className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-6 leading-tight font-playfair tracking-tight relative inline-block"
             style={{
               background: 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFA500 100%)',

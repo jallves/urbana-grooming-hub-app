@@ -116,7 +116,7 @@ export const ClientReviews: React.FC = () => {
   }
 
   return (
-    <div className="w-full py-12 sm:py-16 md:py-20">
+    <div className="w-full py-12 sm:py-16 md:py-20 px-4 md:px-6 lg:px-8">
       <div className="text-center mb-8 sm:mb-12">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-light mb-3 sm:mb-4">
           O Que Nossos Clientes Dizem

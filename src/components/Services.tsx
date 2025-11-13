@@ -159,7 +159,7 @@ const Services: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center max-w-7xl mx-auto mb-16"
+          className="text-center mx-auto mb-16"
         >
           <h2 
             className="text-6xl md:text-7xl lg:text-8xl font-playfair font-bold mb-6 leading-tight tracking-tight relative inline-block"
@@ -222,7 +222,7 @@ const Services: React.FC = () => {
             </p>
           </motion.div>
         ) : services && services.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.map((service, i) => (
               <ServiceCard
                 key={service.id}
