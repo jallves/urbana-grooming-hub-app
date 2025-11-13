@@ -2,6 +2,18 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addMinutes, parse, startOfDay, isAfter, isBefore } from 'date-fns';
 import { toast } from 'sonner';
+import { 
+  hasTimeOverlap, 
+  isWithinBusinessHours, 
+  isPastTime,
+  getOccupiedSlots,
+  calculateEndTimeWithBuffer,
+  BUSINESS_START_HOUR,
+  BUSINESS_END_HOUR,
+  BUFFER_MINUTES,
+  timeToMinutes,
+  minutesToTime
+} from '@/lib/utils/timeCalculations';
 
 export interface ValidationResult {
   valid: boolean;
@@ -73,35 +85,18 @@ export const useAppointmentValidation = () => {
    * Valida se o horário não é passado (apenas para o dia atual)
    */
   const validateNotPastTime = useCallback((date: Date, time: string): ValidationResult => {
-    const now = new Date();
-    const today = startOfDay(now);
-    const selectedDay = startOfDay(date);
-    
-    // Se não é hoje, sempre válido
-    if (selectedDay.getTime() !== today.getTime()) {
-      return { valid: true };
-    }
-
-    // Extrair hora e minuto
-    const [hours, minutes] = time.split(':').map(Number);
-    const selectedDateTime = new Date(date);
-    selectedDateTime.setHours(hours, minutes, 0, 0);
-
-    // Adicionar 30 minutos de margem para preparação
-    const minTime = addMinutes(now, 30);
-
-    if (isBefore(selectedDateTime, minTime)) {
+    if (isPastTime(date, time)) {
       return {
         valid: false,
         error: 'Este horário já passou ou está muito próximo. Escolha um horário com pelo menos 30 minutos de antecedência.'
       };
     }
-
     return { valid: true };
   }, []);
 
   /**
    * Verifica se há conflito com agendamentos existentes
+   * IMPORTANTE: Considera buffer de 10 minutos entre agendamentos
    */
   const checkAppointmentConflict = useCallback(async (
     barberId: string,
@@ -112,21 +107,15 @@ export const useAppointmentValidation = () => {
   ): Promise<ValidationResult> => {
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const [hours, minutes] = time.split(':').map(Number);
-      
-      // Calcular horário de fim
-      const startMinutes = hours * 60 + minutes;
-      const endMinutes = startMinutes + serviceDuration;
-      const endHour = Math.floor(endMinutes / 60);
-      const endMinute = endMinutes % 60;
-      const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+      const endTimeWithBuffer = calculateEndTimeWithBuffer(time, serviceDuration);
 
-      console.log('🔍 Verificando conflitos:', {
+      console.log('🔍 Verificando conflitos com buffer de 10min:', {
         barberId,
         dateStr,
-        time,
-        endTime,
-        serviceDuration
+        startTime: time,
+        serviceDuration,
+        endTimeWithBuffer,
+        buffer: `${BUFFER_MINUTES}min`
       });
 
       // Buscar agendamentos do barbeiro nesta data (exceto cancelados)
@@ -157,39 +146,32 @@ export const useAppointmentValidation = () => {
         return { valid: true };
       }
 
-      // Verificar cada agendamento para conflitos
+      // Verificar cada agendamento para conflitos (com buffer)
       for (const apt of appointments) {
         const aptTime = apt.hora;
         const aptDuration = (apt.servico as any)?.duracao || 60;
         
-        const [aptHours, aptMinutes] = aptTime.split(':').map(Number);
-        const aptStartMinutes = aptHours * 60 + aptMinutes;
-        const aptEndMinutes = aptStartMinutes + aptDuration;
-        
-        // Verificar sobreposição
-        // Caso 1: Novo agendamento começa durante um existente
-        const startsInside = startMinutes >= aptStartMinutes && startMinutes < aptEndMinutes;
-        // Caso 2: Novo agendamento termina durante um existente
-        const endsInside = endMinutes > aptStartMinutes && endMinutes <= aptEndMinutes;
-        // Caso 3: Novo agendamento engloba um existente
-        const englobes = startMinutes <= aptStartMinutes && endMinutes >= aptEndMinutes;
-
-        if (startsInside || endsInside || englobes) {
-          console.log('⚠️ Conflito encontrado:', {
+        // Usar função que considera o buffer de 10 minutos
+        if (hasTimeOverlap(time, serviceDuration, aptTime, aptDuration)) {
+          const aptEndWithBuffer = calculateEndTimeWithBuffer(aptTime, aptDuration);
+          
+          console.log('⚠️ Conflito encontrado (com buffer):', {
             existingStart: aptTime,
             existingDuration: aptDuration,
+            existingEndWithBuffer: aptEndWithBuffer,
             requestedStart: time,
-            requestedDuration: serviceDuration
+            requestedDuration: serviceDuration,
+            requestedEndWithBuffer: endTimeWithBuffer
           });
 
           return {
             valid: false,
-            error: `Este horário conflita com um agendamento às ${aptTime}. Por favor, escolha outro horário.`
+            error: `Este horário conflita com um agendamento às ${aptTime}. Próximo horário disponível: ${aptEndWithBuffer}.`
           };
         }
       }
 
-      console.log('✅ Nenhum conflito encontrado');
+      console.log('✅ Nenhum conflito encontrado (buffer validado)');
       return { valid: true };
     } catch (error) {
       console.error('💥 Erro na verificação de conflitos:', error);
@@ -199,18 +181,15 @@ export const useAppointmentValidation = () => {
 
   /**
    * Verifica horário de funcionamento
+   * Considera que o serviço precisa terminar antes do fechamento
    */
-  const checkBusinessHours = useCallback((time: string): ValidationResult => {
-    const [hours] = time.split(':').map(Number);
-    
-    // Horário de funcionamento: 9h às 20h
-    if (hours < 9 || hours >= 20) {
+  const checkBusinessHours = useCallback((time: string, serviceDuration: number = 60): ValidationResult => {
+    if (!isWithinBusinessHours(time, serviceDuration)) {
       return {
         valid: false,
-        error: 'Nosso horário de funcionamento é das 09:00 às 20:00.'
+        error: `Nosso horário de funcionamento é das ${BUSINESS_START_HOUR}:00 às ${BUSINESS_END_HOUR}:00. Este serviço não pode ser concluído dentro do expediente.`
       };
     }
-
     return { valid: true };
   }, []);
 
@@ -235,8 +214,8 @@ export const useAppointmentValidation = () => {
         excludeAppointmentId
       });
 
-      // 1. Validar horário de funcionamento
-      const businessHoursCheck = checkBusinessHours(time);
+      // 1. Validar horário de funcionamento (considerando duração do serviço)
+      const businessHoursCheck = checkBusinessHours(time, serviceDuration);
       if (!businessHoursCheck.valid) {
         toast.error(businessHoursCheck.error);
         return businessHoursCheck;
@@ -320,34 +299,31 @@ export const useAppointmentValidation = () => {
         return [];
       }
 
-      // Marcar slots ocupados
+      // Marcar slots ocupados (INCLUINDO BUFFER DE 10 MINUTOS)
       const occupiedSlots = new Set<string>();
       
       appointments?.forEach((apt) => {
         const aptDuration = (apt.servico as any)?.duracao || 60;
-        const [aptHours, aptMinutes] = apt.hora.split(':').map(Number);
+        const aptTime = apt.hora;
         
-        // Marcar todos os slots de 30 minutos que o agendamento ocupa
-        for (let i = 0; i < aptDuration; i += 30) {
-          const occupiedMinutes = aptHours * 60 + aptMinutes + i;
-          const occupiedHour = Math.floor(occupiedMinutes / 60);
-          const occupiedMinute = occupiedMinutes % 60;
-          const slot = `${occupiedHour.toString().padStart(2, '0')}:${occupiedMinute.toString().padStart(2, '0')}`;
-          occupiedSlots.add(slot);
-        }
+        // Usar função que calcula slots ocupados com buffer
+        const slots = getOccupiedSlots(aptTime, aptDuration);
+        slots.forEach(slot => occupiedSlots.add(slot));
+        
+        console.log(`📅 Agendamento ${aptTime} (${aptDuration}min) ocupa slots:`, slots);
       });
 
-      // Gerar slots de 8h às 20h (intervalos de 30 min)
+      console.log('🔒 Total de slots ocupados:', Array.from(occupiedSlots));
+
+      // Gerar slots (horário de funcionamento configurável)
       const slots: TimeSlot[] = [];
       
-      for (let hour = 8; hour < 20; hour++) {
+      for (let hour = BUSINESS_START_HOUR; hour < BUSINESS_END_HOUR; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           
-          // Verificar se o serviço cabe antes do fechamento
-          const serviceEndMinutes = hour * 60 + minute + serviceDuration;
-          const serviceEndHour = Math.floor(serviceEndMinutes / 60);
-          if (serviceEndHour > 20 || (serviceEndHour === 20 && serviceEndMinutes % 60 > 0)) {
+          // Verificar se o serviço cabe antes do fechamento (SEM buffer, apenas o serviço)
+          if (!isWithinBusinessHours(timeString, serviceDuration)) {
             continue;
           }
 
@@ -355,33 +331,15 @@ export const useAppointmentValidation = () => {
           let reason: string | undefined;
 
           // Se for hoje, verificar se já passou (com buffer de 30 min)
-          if (isToday) {
-            // Comparar diretamente hora e minuto (timezone local)
-            const slotHour = hour;
-            const slotMinute = minute;
-            
-            // Calcular tempo mínimo necessário (agora + 30 min)
-            const minTotalMinutes = currentHour * 60 + currentMinute + 30;
-            const slotTotalMinutes = slotHour * 60 + slotMinute;
-            
-            if (slotTotalMinutes < minTotalMinutes) {
-              available = false;
-              reason = 'Horário já passou ou < 30min';
-              
-              console.log('⏰ Horário filtrado:', {
-                time: timeString,
-                slotMinutes: slotTotalMinutes,
-                minMinutes: minTotalMinutes,
-                currentTime: `${currentHour}:${currentMinute}`,
-                reason
-              });
-            }
+          if (isToday && isPastTime(date, timeString)) {
+            available = false;
+            reason = 'Horário já passou ou < 30min';
           }
 
-          // Verificar se está ocupado
+          // Verificar se está ocupado (já considera buffer de 10min)
           if (available && occupiedSlots.has(timeString)) {
             available = false;
-            reason = 'Horário ocupado';
+            reason = 'Horário ocupado (inclui buffer de 10min)';
           }
 
           slots.push({
@@ -391,6 +349,8 @@ export const useAppointmentValidation = () => {
           });
         }
       }
+
+      console.log(`📊 Total de slots gerados: ${slots.length}, Disponíveis: ${slots.filter(s => s.available).length}`);
 
       return slots;
     } catch (error) {
