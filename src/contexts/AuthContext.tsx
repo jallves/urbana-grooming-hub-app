@@ -82,33 +82,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 🔍 Verificando roles para usuário:', user.id, user.email);
       
-      // Check admin role
-      const { data: adminRole, error: adminError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+      // Usar funções SECURITY DEFINER do banco para evitar problemas de RLS
+      const { data: isAdminData, error: adminError } = await supabase
+        .rpc('is_admin', { _user_id: user.id });
 
-      console.log('[AuthContext] Admin role encontrada:', adminRole, 'Erro:', adminError);
+      const { data: isBarberData, error: barberError } = await supabase
+        .rpc('is_barber', { _user_id: user.id });
 
-      // Check barber role - both from user_roles and painel_barbeiros
-      const { data: barberRole } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'barber')
-        .maybeSingle();
+      if (adminError) console.error('[AuthContext] Erro ao verificar admin:', adminError);
+      if (barberError) console.error('[AuthContext] Erro ao verificar barber:', barberError);
 
-      const { data: barberData } = await supabase
-        .from('painel_barbeiros')
-        .select('id')
-        .eq('email', user.email)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      const isAdminUser = !!adminRole;
-      const isBarberUser = !!barberRole || !!barberData;
+      const isAdminUser = isAdminData === true;
+      const isBarberUser = isBarberData === true;
       
       console.log('[AuthContext] ✅ Roles definidas - isAdmin:', isAdminUser, 'isBarber:', isBarberUser);
       
