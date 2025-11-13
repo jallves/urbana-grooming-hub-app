@@ -17,23 +17,25 @@ const AdminBarbers: React.FC = () => {
           onValueChange={(value) => setActiveTab(value as 'barbers' | 'access')}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 bg-gray-800 border border-gray-700 rounded-lg p-1 mb-6">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 rounded-lg p-1 mb-6 gap-1">
             <TabsTrigger 
               value="barbers" 
-              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-gray-300 py-2 px-3 text-sm font-medium transition-all font-raleway"
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 rounded-md text-sm font-semibold transition-all font-raleway data-[state=active]:shadow-lg data-[state=active]:scale-[1.02]"
             >
               <div className="flex items-center justify-center sm:justify-start">
                 <UserCheck className="h-4 w-4 mr-0 sm:mr-2" />
-                <span className="hidden sm:inline">Barbeiros</span>
+                <span className="hidden sm:inline">👤 Gestão de Barbeiros</span>
+                <span className="sm:hidden">Barbeiros</span>
               </div>
             </TabsTrigger>
             <TabsTrigger 
               value="access" 
-              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-gray-300 py-2 px-3 text-sm font-medium transition-all font-raleway"
+              className="bg-gradient-to-r from-teal-600 to-cyan-600 text-white py-3 px-4 rounded-md text-sm font-semibold transition-all font-raleway data-[state=active]:shadow-lg data-[state=active]:scale-[1.02]"
             >
               <div className="flex items-center justify-center sm:justify-start">
                 <Shield className="h-4 w-4 mr-0 sm:mr-2" />
-                <span className="hidden sm:inline">Acesso ao Painel</span>
+                <span className="hidden sm:inline">🔐 Permissões de Acesso</span>
+                <span className="sm:hidden">Acesso</span>
               </div>
             </TabsTrigger>
           </TabsList>

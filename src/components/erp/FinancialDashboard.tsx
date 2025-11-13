@@ -166,10 +166,10 @@ const FinancialDashboard: React.FC = () => {
 
       {/* Tabs Principais: Contas a Receber, Contas a Pagar e Fluxo de Caixa */}
       <Tabs defaultValue="receber" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto">
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto p-1 gap-1">
           <TabsTrigger 
             value="receber"
-            className="text-xs sm:text-sm lg:text-base py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white text-gray-700 font-semibold"
+            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm lg:text-base py-2 sm:py-3 font-semibold rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
           >
             <ArrowUpCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Contas a Receber</span>
@@ -177,7 +177,7 @@ const FinancialDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger 
             value="pagar"
-            className="text-xs sm:text-sm lg:text-base py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-rose-500 data-[state=active]:text-white text-gray-700 font-semibold"
+            className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-xs sm:text-sm lg:text-base py-2 sm:py-3 font-semibold rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
           >
             <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Contas a Pagar</span>
@@ -185,7 +185,7 @@ const FinancialDashboard: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger 
             value="fluxo"
-            className="text-xs sm:text-sm lg:text-base py-2 sm:py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white text-gray-700 font-semibold"
+            className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs sm:text-sm lg:text-base py-2 sm:py-3 font-semibold rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
           >
             <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">Fluxo de Caixa</span>

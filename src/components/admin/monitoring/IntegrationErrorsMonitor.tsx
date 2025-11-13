@@ -110,6 +110,23 @@ export default function IntegrationErrorsMonitor() {
     }
   };
 
+  const clearResolvedErrors = async () => {
+    try {
+      const { error } = await supabase
+        .from('integration_error_logs')
+        .delete()
+        .eq('status', 'resolved');
+
+      if (error) throw error;
+
+      toast.success('Erros resolvidos limpos com sucesso');
+      fetchErrors();
+    } catch (error: any) {
+      console.error('Erro ao limpar erros:', error);
+      toast.error('Erro ao limpar erros resolvidos');
+    }
+  };
+
   const migrateOldProductSales = async () => {
     setLoading(true);
     setMigrationResult(null);
@@ -204,6 +221,25 @@ export default function IntegrationErrorsMonitor() {
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={runMonitoring}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Executar Novamente
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={clearResolvedErrors}
+              disabled={loading}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Limpar Resolvidos
             </Button>
           </div>
         </div>
