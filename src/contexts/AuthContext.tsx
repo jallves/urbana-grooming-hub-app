@@ -39,11 +39,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted) {
           setUser(session?.user || null);
-          // Defer role check to avoid deadlocks
           if (session?.user) {
-            setTimeout(() => {
-              checkUserRoles(session.user);
-            }, 0);
+            // Check roles before setting loading to false
+            await checkUserRoles(session.user);
           } else {
             setIsAdmin(false);
             setIsBarber(false);
@@ -59,14 +57,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       setUser(session?.user || null);
-      // Defer role lookup to avoid blocking callback
       if (session?.user) {
-        setTimeout(() => {
-          checkUserRoles(session.user);
-        }, 0);
+        // Check roles before updating loading state
+        await checkUserRoles(session.user);
       } else {
         setIsAdmin(false);
         setIsBarber(false);
