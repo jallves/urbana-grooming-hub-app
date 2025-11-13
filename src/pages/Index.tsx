@@ -45,7 +45,7 @@ const Index = () => {
       
       {/* Services */}
       <section className="w-full py-12 transition-all duration-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <Services />
         </div>
       </section>
@@ -59,7 +59,7 @@ const Index = () => {
       
       {/* Statistics Section */}
       <section className="w-full transition-all duration-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <Statistics />
         </div>
       </section>
@@ -73,7 +73,7 @@ const Index = () => {
       
       {/* Gallery */}
       <section className="w-full py-12 transition-all duration-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <Gallery />
         </div>
       </section>
@@ -87,7 +87,7 @@ const Index = () => {
       
       {/* Client Reviews */}
       <section className="w-full py-12 transition-all duration-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <ClientReviews />
         </div>
       </section>
