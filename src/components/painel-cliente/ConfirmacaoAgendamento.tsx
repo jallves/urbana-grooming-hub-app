@@ -51,26 +51,26 @@ export default function ConfirmacaoAgendamento({
           className="relative w-full max-w-md mx-auto"
         >
           <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 shadow-2xl backdrop-blur-xl">
-            <CardContent className="p-8 text-center">
+            <CardContent className="p-4 sm:p-6 lg:p-8 text-center">
               {/* Ícone */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
-                className="mb-6"
+                className="mb-4 sm:mb-6"
               >
                 {tipo === 'sucesso' ? (
-                  <div className="relative mx-auto w-20 h-20">
+                  <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20">
                     <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full blur-md opacity-75 animate-pulse" />
-                    <div className="relative flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full">
-                      <CheckCircle className="h-10 w-10 text-white" />
+                    <div className="relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full">
+                      <CheckCircle className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                     </div>
                   </div>
                 ) : (
-                  <div className="relative mx-auto w-20 h-20">
+                  <div className="relative mx-auto w-16 h-16 sm:w-20 sm:h-20">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-500 rounded-full blur-md opacity-75 animate-pulse" />
-                    <div className="relative flex items-center justify-center w-20 h-20 bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
-                      <XCircle className="h-10 w-10 text-white" />
+                    <div className="relative flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
+                      <XCircle className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                     </div>
                   </div>
                 )}
@@ -81,7 +81,7 @@ export default function ConfirmacaoAgendamento({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-2xl font-bold text-white mb-3"
+                className="text-xl sm:text-2xl font-bold text-white mb-2 sm:mb-3 px-2"
               >
                 {titulo}
               </motion.h2>
@@ -91,7 +91,7 @@ export default function ConfirmacaoAgendamento({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="text-gray-300 mb-6 leading-relaxed"
+                className="text-sm sm:text-base text-gray-300 mb-4 sm:mb-6 leading-relaxed px-2"
               >
                 {mensagem}
               </motion.p>
