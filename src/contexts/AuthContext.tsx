@@ -84,10 +84,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Usar funções SECURITY DEFINER do banco para evitar problemas de RLS
       const { data: isAdminData, error: adminError } = await supabase
-        .rpc('is_admin', { user_id: user.id });
+        .rpc('is_admin' as any, { user_id: user.id });
 
       const { data: isBarberData, error: barberError } = await supabase
-        .rpc('is_barber', { user_id: user.id });
+        .rpc('is_barber' as any, { user_id: user.id });
 
       if (adminError) console.error('[AuthContext] Erro ao verificar admin:', adminError);
       if (barberError) console.error('[AuthContext] Erro ao verificar barber:', barberError);
