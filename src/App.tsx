@@ -76,6 +76,8 @@ import TotemError from './pages/Totem/TotemError';
 import TotemPendingCheckouts from './pages/Totem/TotemPendingCheckouts';
 import AdminProductsManagement from './pages/AdminProductsManagement';
 import Install from './pages/Install';
+import InstallContext from './pages/InstallContext';
+import PWAInstallPromptContext from './components/PWAInstallPromptContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
@@ -298,12 +300,14 @@ function App() {
                   <Route path="/totem/pending-checkouts" element={<TotemProtectedRoute><TotemPendingCheckouts /></TotemProtectedRoute>} />
                   <Route path="/totem/error" element={<TotemProtectedRoute><TotemError /></TotemProtectedRoute>} />
 
-                  {/* PWA Install Page */}
+                  {/* PWA Install Pages */}
                   <Route path="/install" element={<Install />} />
+                  <Route path="/install/:context" element={<InstallContext />} />
 
                   {/* Catch all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+                <PWAInstallPromptContext />
               </div>
             </RealtimeProvider>
           </QueryClientProvider>
