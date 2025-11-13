@@ -7,7 +7,11 @@ import TEFSettingsForm from '@/components/admin/tef/TEFSettingsForm';
 
 const AdminSettings: React.FC = () => {
   return (
-    <AdminLayout title="Configurações">
+    <AdminLayout 
+      title="Configurações do Sistema" 
+      description="Configure o TEF e outras integrações"
+      icon="⚙️"
+    >
       <div className="w-full h-full p-6">
         <Tabs defaultValue="tef-homologacao" className="w-full">
           <TabsList className="bg-white border border-gray-200">

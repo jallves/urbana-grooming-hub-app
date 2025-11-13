@@ -21,7 +21,11 @@ const AdminAnalytics: React.FC = () => {
   ];
 
   return (
-    <AdminLayout title="Analytics & Insights">
+    <AdminLayout 
+      title="Analytics & Insights" 
+      description="Análises detalhadas e insights do negócio"
+      icon="📊"
+    >
       <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 bg-gray-950 text-gray-100">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
             <TabsList className="grid grid-cols-3 sm:grid-cols-5 bg-gray-800 border border-gray-700 mb-4 mx-4 mt-2">

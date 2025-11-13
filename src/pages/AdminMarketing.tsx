@@ -5,7 +5,11 @@ import MarketingManagement from '@/components/admin/marketing/MarketingManagemen
 
 const AdminMarketing: React.FC = () => {
   return (
-    <AdminLayout title="Marketing">
+    <AdminLayout 
+      title="Gestão de Marketing" 
+      description="Campanhas, cupons e relatórios de marketing"
+      icon="📢"
+    >
       <MarketingManagement />
     </AdminLayout>
   );

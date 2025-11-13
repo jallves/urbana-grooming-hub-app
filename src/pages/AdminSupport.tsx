@@ -117,7 +117,11 @@ const AdminSupport: React.FC = () => {
 
   if (loading) {
     return (
-      <AdminLayout title="Suporte">
+      <AdminLayout 
+        title="Gestão de Suporte" 
+        description="Gerencie tickets de suporte dos clientes"
+        icon="💬"
+      >
         <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-urbana-gold"></div>
@@ -128,16 +132,14 @@ const AdminSupport: React.FC = () => {
   }
 
   return (
-    <AdminLayout title="Suporte">
+    <AdminLayout 
+      title="Gestão de Suporte" 
+      description="Gerencie tickets de suporte dos clientes"
+      icon="💬"
+    >
       <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
-          {/* Header */}
-          <div className="mb-4 sm:mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-base sm:text-lg font-bold text-gray-900">Gestão de Suporte</h1>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">Gerencie tickets de suporte dos clientes</p>
-              </div>
-              <Button 
+          <div className="flex items-center justify-end mb-4 sm:mb-6">
+            <Button
                 onClick={() => navigate('/admin/support/new')} 
                 size="sm" 
                 className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 text-xs px-3 py-1.5 h-auto shadow-md"
@@ -146,7 +148,6 @@ const AdminSupport: React.FC = () => {
                 <span className="hidden sm:inline">Novo Ticket</span>
                 <span className="sm:hidden">Novo</span>
               </Button>
-            </div>
           </div>
 
           {/* Content */}

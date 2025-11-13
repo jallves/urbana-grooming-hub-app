@@ -5,7 +5,11 @@ import ClientManagement from '@/components/admin/clients/ClientManagement';
 
 const AdminClients: React.FC = () => {
   return (
-    <AdminLayout title="Clientes">
+    <AdminLayout 
+      title="Gestão de Clientes" 
+      description="Gerencie todos os clientes da barbearia"
+      icon="👥"
+    >
       <ClientManagement />
     </AdminLayout>
   );

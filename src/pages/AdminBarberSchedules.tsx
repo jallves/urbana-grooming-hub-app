@@ -5,7 +5,11 @@ import BarberScheduleManagement from '@/components/admin/barbers/BarberScheduleM
 
 const AdminBarberSchedules: React.FC = () => {
   return (
-    <AdminLayout title="Horários dos Barbeiros">
+    <AdminLayout 
+      title="Horários dos Barbeiros" 
+      description="Configure os horários de trabalho da equipe"
+      icon="📅"
+    >
       <BarberScheduleManagement />
     </AdminLayout>
   );

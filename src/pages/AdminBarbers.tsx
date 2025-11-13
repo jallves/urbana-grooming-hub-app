@@ -10,9 +10,13 @@ const AdminBarbers: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'barbers' | 'access'>('barbers');
 
   return (
-    <AdminLayout title="Equipe">
+    <AdminLayout 
+      title="Gestão de Barbeiros" 
+      description="Gerencie a equipe e permissões de acesso"
+      icon="✂️"
+    >
       <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6 bg-gray-50">
-        <Tabs 
+        <Tabs
           value={activeTab} 
           onValueChange={(value) => setActiveTab(value as 'barbers' | 'access')}
           className="w-full"

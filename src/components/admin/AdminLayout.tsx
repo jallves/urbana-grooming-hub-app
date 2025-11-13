@@ -19,9 +19,11 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 interface AdminLayoutProps {
   children: React.ReactNode;
   title?: string;
+  description?: string;
+  icon?: React.ReactNode;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Administrativo" }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Administrativo", description, icon }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,9 +67,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
               >
                 <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900 font-playfair">
-                {title}
-              </h1>
+              <div className="flex items-center gap-2 sm:gap-3">
+                {icon && <div className="text-xl sm:text-2xl">{icon}</div>}
+                <div>
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 font-playfair">
+                    {title}
+                  </h1>
+                  {description && (
+                    <p className="text-xs sm:text-sm text-gray-700 font-raleway mt-0.5">
+                      {description}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2">

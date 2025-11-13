@@ -13,18 +13,12 @@ const AdminSiteSettings: React.FC = () => {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
 
   return (
-    <AdminLayout title="Gestão do Site">
+    <AdminLayout 
+      title="Gestão do Site" 
+      description="Gerencie banners, galeria, serviços em destaque e configurações gerais"
+      icon="🌐"
+    >
       <div className="w-full h-full flex flex-col bg-gray-50">
-        {/* Header */}
-        <div className="p-3 sm:p-4 lg:p-6 border-b bg-white shadow-sm">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 font-playfair">
-            🌐 Gestão do Site
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-700 font-raleway mt-1">
-            Gerencie banners, galeria, serviços em destaque e configurações gerais do site
-          </p>
-        </div>
-
         {/* Tabs */}
         <div className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
           <Tabs defaultValue="banners" className="w-full">
