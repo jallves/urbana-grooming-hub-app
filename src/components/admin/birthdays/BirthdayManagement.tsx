@@ -65,38 +65,47 @@ const BirthdayManagement: React.FC = () => {
   }
 
   const filters = [
-    { key: 'today', label: 'Hoje' },
-    { key: 'week', label: 'Semana' },
-    { key: 'month', label: 'Mês' },
+    { key: 'today', label: '🎂 Hoje', gradient: 'from-pink-600 to-rose-600' },
+    { key: 'week', label: '📅 Semana', gradient: 'from-purple-600 to-indigo-600' },
+    { key: 'month', label: '📆 Mês', gradient: 'from-blue-600 to-cyan-600' },
   ];
 
   return (
-    <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
-      {/* Header */}
+    <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6 bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header com estilo da barbearia */}
       <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="text-center sm:text-left"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6"
         >
-          <h1 className="text-lg sm:text-3xl font-bold leading-tight text-gray-900">Aniversariantes</h1>
-          <p className="text-gray-600 text-xs sm:text-sm max-w-xl mx-auto sm:mx-0">
-            Gerencie aniversários e campanhas especiais
-          </p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-urbana-gold to-yellow-500 flex items-center justify-center shadow-lg">
+              <span className="text-2xl">🎉</span>
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-playfair text-gray-900">
+                Aniversariantes
+              </h1>
+              <p className="text-gray-600 text-xs sm:text-sm font-raleway">
+                Celebre com seus clientes em momentos especiais
+              </p>
+            </div>
+          </div>
         </motion.div>
 
-        {/* Barra de filtros */}
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+        {/* Barra de filtros com cores fixas */}
+        <div className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pb-2">
           {filters.map(item => (
             <motion.button
               key={item.key}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setFilter(item.key as FilterType)}
-              className={`flex-shrink-0 px-5 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all duration-300 ${
+              className={`flex-shrink-0 px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-300 shadow-md bg-gradient-to-r ${item.gradient} text-white ${
                 filter === item.key
-                  ? 'bg-gradient-to-r from-urbana-gold to-yellow-500 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200'
+                  ? 'ring-4 ring-offset-2 ring-gray-300 scale-105'
+                  : 'opacity-80 hover:opacity-100'
               }`}
             >
               {item.label}
@@ -104,14 +113,15 @@ const BirthdayManagement: React.FC = () => {
           ))}
         </div>
 
-        {/* Lista */}
+        {/* Lista com visual melhorado */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="overflow-x-auto"
         >
-          <Card className="bg-white border border-gray-200 shadow-sm rounded-xl min-w-full">
+          <Card className="bg-white border-2 border-gray-200 shadow-lg rounded-xl min-w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-urbana-gold via-yellow-500 to-urbana-gold h-1"></div>
             <BirthdayList
               clients={clients || []}
               isLoading={isLoading}
