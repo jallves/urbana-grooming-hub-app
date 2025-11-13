@@ -2981,9 +2981,11 @@ export type Database = {
           is_active: boolean | null
           name: string
           phone: string | null
+          requires_password_change: boolean | null
           role: string | null
           specialties: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           commission_rate?: number | null
@@ -2995,9 +2997,11 @@ export type Database = {
           is_active?: boolean | null
           name: string
           phone?: string | null
+          requires_password_change?: boolean | null
           role?: string | null
           specialties?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           commission_rate?: number | null
@@ -3009,9 +3013,11 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           phone?: string | null
+          requires_password_change?: boolean | null
           role?: string | null
           specialties?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3964,6 +3970,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_barber_auth_exists: { Args: { p_email: string }; Returns: boolean }
       check_client_appointment_conflict: {
         Args: {
           p_client_id: string
@@ -3996,6 +4003,15 @@ export type Database = {
         Returns: boolean
       }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
+      create_barber_auth_user: {
+        Args: {
+          p_email: string
+          p_name: string
+          p_password: string
+          p_staff_id: string
+        }
+        Returns: Json
+      }
       create_painel_agendamento: {
         Args: {
           barbeiro_id: string
@@ -4077,6 +4093,7 @@ export type Database = {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
       }
+      disable_barber_auth_user: { Args: { p_email: string }; Returns: Json }
       generate_payment_number: { Args: never; Returns: string }
       generate_qr_checkin: {
         Args: { p_agendamento_id: string; p_secret: string }
