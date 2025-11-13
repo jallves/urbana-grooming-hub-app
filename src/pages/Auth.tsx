@@ -34,11 +34,11 @@ const Auth: React.FC = () => {
         if (isAdmin) {
           console.log('[Auth.tsx] ✅ Admin detectado, redirecionando para /admin');
           navigate('/admin', { replace: true });
-        } else if (!location.state?.from) {
+        } else {
           console.log('[Auth.tsx] ℹ️ Não é admin, redirecionando para home');
           navigate('/', { replace: true });
         }
-      }, 100);
+      }, 150);
       
       return () => clearTimeout(timer);
     }
