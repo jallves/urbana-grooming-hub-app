@@ -215,38 +215,34 @@ export default function PainelClienteMeusAgendamentos() {
           </motion.div>
 
           {/* Filters */}
-          <motion.div variants={itemVariants} className="relative">
-            <div className="overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-              <div className="flex gap-2 sm:gap-3 min-w-max sm:min-w-0">
-                {[
-                  { key: 'todos', label: 'Todos', color: 'from-gray-500 to-gray-600' },
-                  { key: 'agendado', label: 'Agendados', color: 'from-blue-500 to-blue-600' },
-                  { key: 'confirmado', label: 'Confirmados', color: 'from-green-500 to-green-600' },
-                  { key: 'concluido', label: 'Concluídos', color: 'from-urbana-gold to-urbana-gold-vibrant' },
-                  { key: 'cancelado', label: 'Cancelados', color: 'from-red-500 to-red-600' }
-                ].map((filtro) => (
-                  <Button
-                    key={filtro.key}
-                    onClick={() => setFiltroStatus(filtro.key)}
-                    className={`
-                      flex-shrink-0 rounded-xl 
-                      px-3 sm:px-4 py-2 
-                      text-xs sm:text-sm 
-                      font-medium
-                      bg-gradient-to-r ${filtro.color} 
-                      ${filtro.key === 'concluido' ? 'text-urbana-black' : 'text-white'} 
-                      ${filtroStatus === filtro.key ? 'ring-2 ring-white/50 scale-105 shadow-xl' : 'shadow-lg hover:scale-105'} 
-                      transition-all duration-300
-                      whitespace-nowrap
-                    `}
-                  >
-                    {filtro.label}
-                  </Button>
-                ))}
-              </div>
+          <motion.div variants={itemVariants}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
+              {[
+                { key: 'todos', label: 'Todos', color: 'from-gray-500 to-gray-600' },
+                { key: 'agendado', label: 'Agendados', color: 'from-blue-500 to-blue-600' },
+                { key: 'confirmado', label: 'Confirmados', color: 'from-green-500 to-green-600' },
+                { key: 'concluido', label: 'Concluídos', color: 'from-urbana-gold to-urbana-gold-vibrant' },
+                { key: 'cancelado', label: 'Cancelados', color: 'from-red-500 to-red-600' }
+              ].map((filtro) => (
+                <Button
+                  key={filtro.key}
+                  onClick={() => setFiltroStatus(filtro.key)}
+                  className={`
+                    w-full rounded-xl 
+                    px-3 sm:px-4 py-2 
+                    text-xs sm:text-sm 
+                    font-medium
+                    bg-gradient-to-r ${filtro.color} 
+                    ${filtro.key === 'concluido' ? 'text-urbana-black' : 'text-white'} 
+                    ${filtroStatus === filtro.key ? 'ring-2 ring-white/50 shadow-xl' : 'shadow-lg hover:scale-[1.02]'} 
+                    transition-all duration-300
+                    whitespace-nowrap
+                  `}
+                >
+                  {filtro.label}
+                </Button>
+              ))}
             </div>
-            {/* Scroll indicator for mobile */}
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none sm:hidden" />
           </motion.div>
 
           {/* Content */}
