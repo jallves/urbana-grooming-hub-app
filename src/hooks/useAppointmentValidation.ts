@@ -330,10 +330,10 @@ export const useAppointmentValidation = () => {
           let available = true;
           let reason: string | undefined;
 
-          // Se for hoje, verificar se já passou (com buffer de 30 min)
+          // Se for hoje, verificar se já passou (com buffer de 10 min para processamento)
           if (isToday && isPastTime(date, timeString)) {
             available = false;
-            reason = 'Horário já passou ou < 30min';
+            reason = 'Horário já passou ou < 10min';
           }
 
           // Verificar se está ocupado (já considera buffer de 10min)

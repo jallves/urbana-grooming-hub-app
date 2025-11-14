@@ -99,12 +99,19 @@ export default function PainelClienteAgendar() {
       for (let minuto = 0; minuto < 60; minuto += 30) {
         const horaFormatada = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
         
-        // Se for hoje, só mostrar horários futuros
+        // Se for hoje, só mostrar horários com pelo menos 10 minutos de antecedência
         if (isToday) {
           const currentHour = now.getHours();
           const currentMinute = now.getMinutes();
           
-          if (hora < currentHour || (hora === currentHour && minuto <= currentMinute)) {
+          // Criar data/hora para comparação
+          const slotTime = new Date(now);
+          slotTime.setHours(hora, minuto, 0, 0);
+          
+          // Adicionar 10 minutos de buffer ao horário atual
+          const minTime = new Date(now.getTime() + 10 * 60 * 1000);
+          
+          if (slotTime < minTime) {
             continue;
           }
         }

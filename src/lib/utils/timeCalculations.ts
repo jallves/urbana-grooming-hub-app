@@ -126,7 +126,7 @@ export const getNextAvailableTime = (startTime: string, serviceDuration: number)
 
 /**
  * Verifica se um horário já passou (apenas para o dia atual)
- * Considera buffer de 30 minutos de antecedência mínima
+ * Considera buffer de 10 minutos de antecedência mínima para processamento
  */
 export const isPastTime = (date: Date, time: string): boolean => {
   const now = new Date();
@@ -146,8 +146,8 @@ export const isPastTime = (date: Date, time: string): boolean => {
   const selectedDateTime = new Date(date);
   selectedDateTime.setHours(hours, minutes, 0, 0);
   
-  // Adicionar 30 minutos de margem
-  const minTime = new Date(now.getTime() + 30 * 60 * 1000);
+  // Adicionar apenas 10 minutos de margem para processamento
+  const minTime = new Date(now.getTime() + 10 * 60 * 1000);
   
   return selectedDateTime < minTime;
 };
