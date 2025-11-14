@@ -194,6 +194,21 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'E-mail e senha são obrigatórios' };
       }
 
+      // Primeiro, verificar se o email existe
+      const { data: emailExists, error: checkError } = await supabase
+        .rpc('check_painel_cliente_email', { email_to_check: email.trim().toLowerCase() });
+
+      if (checkError) {
+        console.error('Erro ao verificar email:', checkError);
+        return { error: 'Erro ao validar credenciais. Tente novamente.' };
+      }
+
+      // Se o email não existe, retornar mensagem amistosa
+      if (!emailExists) {
+        return { error: 'cadastro_nao_encontrado' };
+      }
+
+      // Email existe, agora tentar autenticar
       const senhaHash = btoa(senha);
 
       const { data: clienteData, error } = await supabase
@@ -204,11 +219,11 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       if (error) {
         console.error('Erro na consulta de login:', error);
-        return { error: 'E-mail ou senha incorretos' };
+        return { error: 'senha_incorreta' };
       }
 
       if (!clienteData) {
-        return { error: 'E-mail ou senha incorretos' };
+        return { error: 'senha_incorreta' };
       }
 
       const cliente = clienteData as Cliente;
