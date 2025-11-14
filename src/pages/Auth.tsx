@@ -75,6 +75,31 @@ const Auth: React.FC = () => {
     navigate('/');
   };
 
+  // Show access denied if user is logged in but not admin
+  if (!authLoading && user && rolesChecked && !isAdmin) {
+    return (
+      <AuthContainer 
+        title="Costa Urbana"
+        subtitle="Acesso Negado"
+      >
+        <div className="w-full space-y-6">
+          <div className="p-6 bg-red-50 border border-red-200 rounded-xl text-center">
+            <p className="text-red-600 font-medium">Você não tem acesso ao painel administrador.</p>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-urbana-gold/20 hover:text-urbana-gold hover:border-urbana-gold/50 h-12 rounded-xl transition-all"
+            onClick={handleGoHome}
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Voltar ao site
+          </Button>
+        </div>
+      </AuthContainer>
+    );
+  }
+
   return (
     <AuthContainer 
       title="Costa Urbana"
