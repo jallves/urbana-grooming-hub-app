@@ -22,8 +22,10 @@ export default function PainelClienteLogin() {
     const { error } = await login(email, senha);
 
     if (error) {
-      if (error.includes('incorretos') || error.includes('inválido')) {
-        setErro('Email ou senha incorretos. Caso não tenha conta, cadastre-se abaixo.');
+      if (error === 'cadastro_nao_encontrado') {
+        setErro('😊 Parece que você ainda não tem cadastro! Clique em "Criar conta" abaixo para se cadastrar e aproveitar nossos serviços.');
+      } else if (error === 'senha_incorreta') {
+        setErro('Senha incorreta. Por favor, verifique sua senha e tente novamente.');
       } else {
         setErro(error);
       }
