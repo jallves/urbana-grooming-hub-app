@@ -99,17 +99,14 @@ export default function PainelClienteAgendar() {
       for (let minuto = 0; minuto < 60; minuto += 30) {
         const horaFormatada = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
         
-        // Se for hoje, só mostrar horários com pelo menos 10 minutos de antecedência
+        // Se for hoje, permitir horários até 10 minutos após passar
+        // Ex: horário 19:00 disponível até 19:10
         if (isToday) {
-          const currentHour = now.getHours();
-          const currentMinute = now.getMinutes();
-          
-          // Criar data/hora para comparação
           const slotTime = new Date(now);
           slotTime.setHours(hora, minuto, 0, 0);
           
-          // Adicionar 10 minutos de buffer ao horário atual
-          const minTime = new Date(now.getTime() + 10 * 60 * 1000);
+          // Permitir até 10 minutos depois do horário passar
+          const minTime = new Date(now.getTime() - 10 * 60 * 1000);
           
           if (slotTime < minTime) {
             continue;
