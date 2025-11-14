@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { ProductImageUpload } from './ProductImageUpload';
 
 interface ProductFormProps {
   productId: string | null;
@@ -33,6 +34,7 @@ const productFormSchema = z.object({
   cost_price: z.coerce.number().nonnegative().nullable().optional(),
   stock_quantity: z.coerce.number().int().nonnegative().nullable().optional(),
   is_active: z.boolean().default(true),
+  images: z.array(z.string()).default([]),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -66,6 +68,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       cost_price: 0,
       stock_quantity: 0,
       is_active: true,
+      images: [],
     },
     values: productData ? {
       name: productData.nome || '',
@@ -74,6 +77,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       cost_price: 0,
       stock_quantity: productData.estoque || 0,
       is_active: productData.is_active ?? true,
+      images: Array.isArray(productData.imagens) ? productData.imagens.filter((img): img is string => typeof img === 'string') : [],
     } : undefined,
   });
   
@@ -91,6 +95,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
             preco: values.price,
             estoque: values.stock_quantity || 0,
             is_active: values.is_active,
+            imagens: values.images,
           })
           .eq('id', productId);
 
@@ -104,7 +109,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           estoque: values.stock_quantity || 0,
           estoque_minimo: 0,
           categoria: 'Geral',
-          imagens: [],
+          imagens: values.images,
           is_active: values.is_active,
           destaque: false,
         };
@@ -157,7 +162,23 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
                   placeholder="Descrição do produto" 
                   {...field} 
                   value={field.value || ''}
-                  className="min-h-[100px]"
+                  className="min-h-[80px] sm:min-h-[100px]"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="images"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <ProductImageUpload
+                  images={field.value}
+                  onImagesChange={field.onChange}
                 />
               </FormControl>
               <FormMessage />
@@ -234,7 +255,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
             control={form.control}
             name="is_active"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-6">
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 sm:p-4 mt-6">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
@@ -242,18 +263,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>Produto Ativo</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">Produto Ativo</FormLabel>
                 </div>
               </FormItem>
             )}
           />
         </div>
         
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0 sm:space-x-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="w-full sm:w-auto"
+          >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isEditing ? 'Salvar Alterações' : 'Criar Produto'}
           </Button>

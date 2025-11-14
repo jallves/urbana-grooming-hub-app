@@ -156,37 +156,23 @@ const AdminProductsManagement: React.FC = () => {
     setIsDialogOpen(true);
   };
 
-  const addImageUrl = () => {
-    const url = prompt('Digite a URL da imagem:');
-    if (url) {
-      setFormData({ ...formData, imagens: [...formData.imagens, url] });
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setFormData({
-      ...formData,
-      imagens: formData.imagens.filter((_, i) => i !== index)
-    });
-  };
-
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Gestão de Produtos</h1>
-        <Button onClick={handleNewProduct} className="gap-2">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold">Gestão de Produtos</h1>
+        <Button onClick={handleNewProduct} className="gap-2 w-full sm:w-auto">
           <Plus className="w-4 h-4" />
           Novo Produto
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {products.map(product => (
-          <Card key={product.id} className="p-4 space-y-3">
+          <Card key={product.id} className="p-3 sm:p-4 space-y-3">
             {/* Product Image */}
             <div className="aspect-square bg-muted rounded-lg overflow-hidden">
               {product.imagens.length > 0 ? (
@@ -197,41 +183,42 @@ const AdminProductsManagement: React.FC = () => {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Package className="w-16 h-16 text-muted-foreground" />
+                  <Package className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
                 </div>
               )}
             </div>
 
             {/* Product Info */}
             <div className="space-y-2">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg">{product.nome}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base sm:text-lg truncate">{product.nome}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                     {product.descricao}
                   </p>
                 </div>
                 {product.destaque && (
-                  <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                  <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded flex-shrink-0">
                     Destaque
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-primary">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xl sm:text-2xl font-bold text-primary">
                     R$ {product.preco.toFixed(2)}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Estoque: {product.estoque} un.
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleEdit(product)}
+                    className="h-8 w-8 p-0"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -239,6 +226,7 @@ const AdminProductsManagement: React.FC = () => {
                     size="sm"
                     variant="destructive"
                     onClick={() => handleDelete(product.id)}
+                    className="h-8 w-8 p-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -260,51 +248,54 @@ const AdminProductsManagement: React.FC = () => {
 
       {/* Product Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl sm:text-2xl">
               {editingProduct ? 'Editar Produto' : 'Novo Produto'}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="nome">Nome do Produto *</Label>
+              <Label htmlFor="nome" className="text-sm sm:text-base">Nome do Produto *</Label>
               <Input
                 id="nome"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 placeholder="Ex: Pomada Modeladora"
+                className="text-sm sm:text-base"
               />
             </div>
 
             <div>
-              <Label htmlFor="descricao">Descrição</Label>
+              <Label htmlFor="descricao" className="text-sm sm:text-base">Descrição</Label>
               <Textarea
                 id="descricao"
                 value={formData.descricao}
                 onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                 placeholder="Descreva o produto..."
                 rows={3}
+                className="text-sm sm:text-base"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="preco">Preço *</Label>
+                <Label htmlFor="preco" className="text-sm sm:text-base">Preço *</Label>
                 <Input
                   id="preco"
                   type="number"
                   step="0.01"
                   value={formData.preco}
                   onChange={(e) => setFormData({ ...formData, preco: parseFloat(e.target.value) || 0 })}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
               <div>
-                <Label htmlFor="categoria">Categoria</Label>
+                <Label htmlFor="categoria" className="text-sm sm:text-base">Categoria</Label>
                 <Select value={formData.categoria} onValueChange={(value) => setFormData({ ...formData, categoria: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm sm:text-base">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -318,63 +309,45 @@ const AdminProductsManagement: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="estoque">Estoque</Label>
+                <Label htmlFor="estoque" className="text-sm sm:text-base">Estoque</Label>
                 <Input
                   id="estoque"
                   type="number"
                   value={formData.estoque}
                   onChange={(e) => setFormData({ ...formData, estoque: parseInt(e.target.value) || 0 })}
+                  className="text-sm sm:text-base"
                 />
               </div>
 
               <div>
-                <Label htmlFor="estoque_minimo">Estoque Mínimo</Label>
+                <Label htmlFor="estoque_minimo" className="text-sm sm:text-base">Estoque Mínimo</Label>
                 <Input
                   id="estoque_minimo"
                   type="number"
                   value={formData.estoque_minimo}
                   onChange={(e) => setFormData({ ...formData, estoque_minimo: parseInt(e.target.value) || 5 })}
+                  className="text-sm sm:text-base"
                 />
               </div>
             </div>
 
             <div>
-              <Label>Imagens</Label>
-              <div className="space-y-2">
-                {formData.imagens.map((url, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input value={url} readOnly className="flex-1" />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => removeImage(index)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addImageUrl}
-                  className="w-full"
-                >
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  Adicionar Imagem
-                </Button>
-              </div>
+              <Label className="text-sm sm:text-base">Imagens</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                Para adicionar imagens com upload, use o formulário principal de produtos
+              </p>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <Switch
                   id="is_active"
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
-                <Label htmlFor="is_active">Produto Ativo</Label>
+                <Label htmlFor="is_active" className="text-sm sm:text-base">Produto Ativo</Label>
               </div>
 
               <div className="flex items-center gap-2">
@@ -383,16 +356,16 @@ const AdminProductsManagement: React.FC = () => {
                   checked={formData.destaque}
                   onCheckedChange={(checked) => setFormData({ ...formData, destaque: checked })}
                 />
-                <Label htmlFor="destaque">Produto em Destaque</Label>
+                <Label htmlFor="destaque" className="text-sm sm:text-base">Produto em Destaque</Label>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 mt-4">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} className="w-full sm:w-auto">
               Salvar Produto
             </Button>
           </DialogFooter>
