@@ -125,8 +125,8 @@ export const getNextAvailableTime = (startTime: string, serviceDuration: number)
 };
 
 /**
- * Verifica se um horário já passou (apenas para o dia atual)
- * Considera buffer de 10 minutos de antecedência mínima para processamento
+ * Verifica se um horário já passou há mais de 10 minutos (apenas para o dia atual)
+ * Permite agendamento até 10 minutos APÓS o horário (ex: horário 19:00 disponível até 19:10)
  */
 export const isPastTime = (date: Date, time: string): boolean => {
   const now = new Date();
@@ -146,8 +146,9 @@ export const isPastTime = (date: Date, time: string): boolean => {
   const selectedDateTime = new Date(date);
   selectedDateTime.setHours(hours, minutes, 0, 0);
   
-  // Adicionar apenas 10 minutos de margem para processamento
-  const minTime = new Date(now.getTime() + 10 * 60 * 1000);
+  // Permitir agendamento até 10 minutos DEPOIS do horário passar
+  // Ex: horário 19:00 disponível de 19:00 até 19:10
+  const minTime = new Date(now.getTime() - 10 * 60 * 1000);
   
   return selectedDateTime < minTime;
 };

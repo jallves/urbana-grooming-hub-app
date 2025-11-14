@@ -53,14 +53,14 @@ const TotemDataHora: React.FC = () => {
       for (let minute of [0, 30]) {
         const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         
-        // Se é hoje, verificar se horário já passou (com 10min de buffer)
+        // Se é hoje, permitir horários até 10 minutos após passar
         if (isToday) {
           const [slotHour, slotMinute] = timeStr.split(':').map(Number);
           const slotTime = new Date(today);
           slotTime.setHours(slotHour, slotMinute, 0, 0);
           
-          // Adicionar 10 minutos de buffer ao horário atual
-          const minTime = new Date(now.getTime() + 10 * 60 * 1000);
+          // Permitir até 10 minutos depois do horário passar
+          const minTime = new Date(now.getTime() - 10 * 60 * 1000);
           
           if (slotTime < minTime) continue;
         }

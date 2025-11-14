@@ -55,8 +55,8 @@ export const useAppointmentValidation = () => {
     }
     
     // Erros de horário passado
-    if (message.includes('30 minutos de antecedência')) {
-      return 'Este horário já passou ou está muito próximo. Escolha um horário com pelo menos 30 minutos de antecedência.';
+    if (message.includes('mais de 10 minutos') || message.includes('30 minutos de antecedência')) {
+      return 'Este horário não está mais disponível. Já passaram mais de 10 minutos desde o horário agendado.';
     }
     
     // Erros de horário de funcionamento
@@ -88,7 +88,7 @@ export const useAppointmentValidation = () => {
     if (isPastTime(date, time)) {
       return {
         valid: false,
-        error: 'Este horário já passou ou está muito próximo. Escolha um horário com pelo menos 30 minutos de antecedência.'
+        error: 'Este horário não está mais disponível. Já passaram mais de 10 minutos desde o horário agendado.'
       };
     }
     return { valid: true };
@@ -330,10 +330,10 @@ export const useAppointmentValidation = () => {
           let available = true;
           let reason: string | undefined;
 
-          // Se for hoje, verificar se já passou (com buffer de 10 min para processamento)
+          // Se for hoje, verificar se passou há mais de 10 minutos
           if (isToday && isPastTime(date, timeString)) {
             available = false;
-            reason = 'Horário já passou ou < 10min';
+            reason = 'Passou há mais de 10min';
           }
 
           // Verificar se está ocupado (já considera buffer de 10min)
