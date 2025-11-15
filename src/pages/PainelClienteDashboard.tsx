@@ -228,35 +228,42 @@ export default function PainelClienteDashboard() {
           </h2>
           <div className="space-y-4">
             {stats.agendamentosFuturos.map((ag, index) => (
-              <PainelClienteCard key={index} variant="info" icon={Calendar}>
-                <PainelClienteCardHeader>
-                  <div className="flex justify-between items-start">
-                    <PainelClienteCardTitle className="text-lg">
-                      {ag.servico}
-                    </PainelClienteCardTitle>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-400/10 text-blue-400">
+              <PainelClienteCard key={index} variant="info">
+                <PainelClienteCardHeader className="pb-2">
+                  <div className="flex justify-end">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-400/10 text-blue-400">
                       Agendado
                     </span>
                   </div>
                 </PainelClienteCardHeader>
-                <PainelClienteCardContent className="space-y-3">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center text-urbana-light/70">
-                      <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
-                      <span className="text-sm">
-                        {format(parseISO(ag.data), "EEEE, dd 'de' MMMM", {
-                          locale: ptBR
-                        })}
-                      </span>
+                <PainelClienteCardContent>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl shrink-0 bg-blue-500/20">
+                      <Calendar className="h-8 w-8 text-blue-400" />
                     </div>
-                    <div className="flex items-center text-urbana-light/70">
-                      <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
-                      <span className="text-sm">{ag.hora}</span>
+                    <div className="flex-1 space-y-3">
+                      <PainelClienteCardTitle className="text-lg text-urbana-light">
+                        {ag.servico}
+                      </PainelClienteCardTitle>
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center text-urbana-light/70">
+                          <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
+                          <span className="text-sm">
+                            {format(parseISO(ag.data), "EEEE, dd 'de' MMMM", {
+                              locale: ptBR
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-urbana-light/70">
+                          <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
+                          <span className="text-sm">{ag.hora}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-urbana-light/70">
+                        <User className="h-4 w-4 mr-2 text-urbana-gold" />
+                        <span className="text-sm">{ag.barbeiro}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center text-urbana-light/70">
-                    <User className="h-4 w-4 mr-2 text-urbana-gold" />
-                    <span className="text-sm">{ag.barbeiro}</span>
                   </div>
                 </PainelClienteCardContent>
               </PainelClienteCard>
