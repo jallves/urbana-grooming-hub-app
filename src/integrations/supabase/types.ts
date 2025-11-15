@@ -4183,6 +4183,13 @@ export type Database = {
           time_slot: string
         }[]
       }
+      get_available_time_slots_optimized: {
+        Args: { p_date: string; p_service_duration: number; p_staff_id: string }
+        Returns: {
+          is_available: boolean
+          time_slot: string
+        }[]
+      }
       get_barbeiro_horarios_disponiveis: {
         Args: {
           p_barbeiro_id: string
