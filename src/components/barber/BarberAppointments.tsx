@@ -5,7 +5,6 @@ import StandardCard from './layouts/StandardCard';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
 import ActionFeedback from '@/components/ui/feedback/ActionFeedback';
-import EditAppointmentModal from './appointments/EditAppointmentModal';
 import { useBarberAppointmentsOptimized } from '@/hooks/barber/useBarberAppointmentsOptimized';
 
 const BarberAppointments: React.FC = () => {
@@ -15,12 +14,6 @@ const BarberAppointments: React.FC = () => {
     stats,
     updatingId,
     handleCompleteAppointment,
-    handleCancelAppointment,
-    isEditModalOpen,
-    selectedAppointmentId,
-    selectedAppointmentDate,
-    handleEditAppointment,
-    closeEditModal,
     fetchAppointments
   } = useBarberAppointmentsOptimized();
 
@@ -120,22 +113,13 @@ const BarberAppointments: React.FC = () => {
                 appointment={appointment}
                 updatingId={updatingId}
                 onComplete={handleCompleteAppointment}
-                onCancel={handleCancelAppointment}
-                onEdit={handleEditAppointment}
+                onCancel={() => {}}
+                onEdit={() => {}}
               />
             ))}
           </div>
         )}
       </StandardCard>
-
-      {/* Edit Modal */}
-      <EditAppointmentModal
-        isOpen={isEditModalOpen}
-        onClose={closeEditModal}
-        appointmentId={selectedAppointmentId}
-        currentDate={selectedAppointmentDate}
-        onSuccess={fetchAppointments}
-      />
     </div>
   );
 };
