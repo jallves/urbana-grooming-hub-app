@@ -115,12 +115,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const loadAvailableDates = async () => {
     setLoading(true);
     try {
+      console.log('🔍 Iniciando loadAvailableDates', {
+        selectedBarber: selectedBarber?.id,
+        selectedService: selectedService?.id,
+        serviceDuration: selectedService?.duracao
+      });
+
       const dates: Date[] = [];
       const today = startOfToday();
       
       // Carregar até 10 dias disponíveis
       for (let i = 0; dates.length < 10 && i < 30; i++) {
         const date = addDays(today, i);
+        
+        console.log(`📅 Verificando data: ${format(date, 'dd/MM/yyyy')}`);
         
         // Buscar horários disponíveis para esta data
         const slots = await getAvailableTimeSlots(
@@ -129,12 +137,15 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           selectedService!.duracao
         );
 
+        console.log(`   → ${slots.length} slots encontrados, ${slots.filter(s => s.available).length} disponíveis`);
+
         // Se tem pelo menos 1 horário disponível, adicionar a data
         if (slots.some(slot => slot.available)) {
           dates.push(date);
         }
       }
       
+      console.log(`✅ Total de datas disponíveis: ${dates.length}`);
       setAvailableDates(dates);
       
       // Se não há datas disponíveis
@@ -142,7 +153,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         toast.warning('Não há horários disponíveis para este barbeiro nos próximos dias');
       }
     } catch (error) {
-      console.error('Erro ao carregar datas disponíveis:', error);
+      console.error('❌ Erro ao carregar datas disponíveis:', error);
       toast.error('Erro ao carregar datas disponíveis');
     } finally {
       setLoading(false);
@@ -161,14 +172,28 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
     setLoading(true);
     try {
+      console.log('🕐 Carregando horários:', {
+        barbeiro: selectedBarber.nome,
+        data: format(selectedDate, 'dd/MM/yyyy'),
+        servico: selectedService.nome,
+        duracao: selectedService.duracao
+      });
+
       const slots = await getAvailableTimeSlots(
         selectedBarber.id,
         selectedDate,
         selectedService.duracao
       );
+      
+      console.log('📋 Slots recebidos:', {
+        total: slots.length,
+        disponiveis: slots.filter(s => s.available).length,
+        slots: slots.map(s => ({ time: s.time, available: s.available, reason: s.reason }))
+      });
+
       setTimeSlots(slots);
     } catch (error) {
-      console.error('Erro ao carregar horários:', error);
+      console.error('❌ Erro ao carregar horários:', error);
       toast.error('Erro ao carregar horários disponíveis');
     } finally {
       setLoading(false);
