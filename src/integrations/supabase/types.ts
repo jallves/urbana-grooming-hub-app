@@ -2282,6 +2282,8 @@ export type Database = {
       painel_produtos: {
         Row: {
           categoria: string
+          commission_percentage: number | null
+          commission_value: number | null
           created_at: string | null
           descricao: string | null
           destaque: boolean | null
@@ -2296,6 +2298,8 @@ export type Database = {
         }
         Insert: {
           categoria?: string
+          commission_percentage?: number | null
+          commission_value?: number | null
           created_at?: string | null
           descricao?: string | null
           destaque?: boolean | null
@@ -2310,6 +2314,8 @@ export type Database = {
         }
         Update: {
           categoria?: string
+          commission_percentage?: number | null
+          commission_value?: number | null
           created_at?: string | null
           descricao?: string | null
           destaque?: boolean | null
