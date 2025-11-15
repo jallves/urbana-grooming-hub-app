@@ -3886,6 +3886,33 @@ export type Database = {
           },
         ]
       }
+      vw_barber_commissions_complete: {
+        Row: {
+          amount: number | null
+          appointment_date: string | null
+          appointment_id: string | null
+          appointment_source: string | null
+          appointment_time: string | null
+          barber_id: string | null
+          client_name: string | null
+          commission_rate: number | null
+          created_at: string | null
+          id: string | null
+          payment_date: string | null
+          service_name: string | null
+          service_price: number | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_commissions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_vendas_abertas: {
         Row: {
           agendamento_id: string | null
