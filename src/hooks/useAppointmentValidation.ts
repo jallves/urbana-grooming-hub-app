@@ -228,7 +228,7 @@ export const useAppointmentValidation = () => {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       
-      console.log('🔍 getAvailableTimeSlots (UNIFICADO):', {
+      console.log('🔍 getAvailableTimeSlots (OTIMIZADO):', {
         dateStr,
         today,
         isToday,
@@ -236,62 +236,47 @@ export const useAppointmentValidation = () => {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         staffId,
         serviceDuration,
-        note: 'Usando check_unified_slot_availability - verifica painel_agendamentos + appointments'
+        note: 'Usando get_available_time_slots_optimized - busca todos os slots de uma vez'
       });
 
-      // Gerar slots (horário de funcionamento configurável)
-      const slots: TimeSlot[] = [];
-      
-      for (let hour = BUSINESS_START_HOUR; hour < BUSINESS_END_HOUR; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          
-          // Verificar se o serviço cabe antes do fechamento
-          if (!isWithinBusinessHours(timeString, serviceDuration)) {
-            continue;
-          }
+      // Buscar todos os slots disponíveis de uma vez usando função RPC otimizada
+      const { data: slotsData, error: rpcError } = await supabase.rpc('get_available_time_slots_optimized', {
+        p_staff_id: staffId,
+        p_date: dateStr,
+        p_service_duration: serviceDuration
+      });
 
-          let available = true;
-          let reason: string | undefined;
-
-          // Se for hoje, verificar se passou há mais de 10 minutos
-          if (isToday && isPastTime(date, timeString)) {
-            available = false;
-            reason = 'Passou há mais de 10min';
-          } else {
-            // Usar função unificada do banco para verificar disponibilidade
-            const { data: isAvailable, error } = await supabase.rpc('check_unified_slot_availability', {
-              p_staff_id: staffId,
-              p_date: dateStr,
-              p_time: timeString,
-              p_duration_minutes: serviceDuration
-            });
-
-            if (error) {
-              console.error('Erro ao verificar slot:', error);
-              available = false;
-              reason = 'Erro ao verificar';
-            } else {
-              available = isAvailable || false;
-              if (!available) {
-                reason = 'Horário ocupado';
-              }
-            }
-          }
-
-          slots.push({
-            time: timeString,
-            available,
-            reason
-          });
-        }
+      if (rpcError) {
+        console.error('❌ Erro ao buscar slots:', rpcError);
+        throw rpcError;
       }
 
-      console.log(`📊 Total de slots gerados: ${slots.length}, Disponíveis: ${slots.filter(s => s.available).length}`);
+      // Converter dados do banco para o formato TimeSlot
+      const slots: TimeSlot[] = (slotsData || []).map((slot: any) => {
+        const timeString = slot.time_slot;
+        let available = slot.is_available;
+        let reason: string | undefined;
+
+        // Se for hoje, verificar se passou há mais de 10 minutos
+        if (isToday && isPastTime(date, timeString)) {
+          available = false;
+          reason = 'Passou há mais de 10min';
+        } else if (!available) {
+          reason = 'Horário ocupado';
+        }
+
+        return {
+          time: timeString,
+          available,
+          reason
+        };
+      });
+
+      console.log(`📊 Total de slots retornados: ${slots.length}, Disponíveis: ${slots.filter(s => s.available).length}`);
 
       return slots;
     } catch (error) {
-      console.error('Erro ao buscar horários disponíveis:', error);
+      console.error('❌ Erro ao buscar horários disponíveis:', error);
       return [];
     } finally {
       setIsValidating(false);
