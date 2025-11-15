@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 import { TotemCard, TotemCardTitle } from '@/components/totem/TotemCard';
 import { TotemGrid } from '@/components/totem/TotemLayout';
-import { useClientAuth } from '@/contexts/ClientAuthContext';
+import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -34,7 +34,7 @@ interface TimeSlot {
 
 const PainelClienteNovoAgendamento: React.FC = () => {
   const navigate = useNavigate();
-  const { client } = useClientAuth();
+  const { cliente } = usePainelClienteAuth();
   const [step, setStep] = useState<'service' | 'barber' | 'datetime'>('service');
   
   // State para os dados do agendamento
@@ -195,7 +195,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   // Handler para confirmar agendamento
   const handleConfirm = async () => {
-    if (!client) {
+    if (!cliente) {
       toast.error('Cliente não autenticado');
       navigate('/painel-cliente/login');
       return;
@@ -235,7 +235,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const { error: insertError } = await supabase
         .from('appointments')
         .insert({
-          client_id: client.id,
+          client_id: cliente.id,
           service_id: selectedService.id,
           staff_id: selectedBarber.id,
           start_time: startDateTime.toISOString(),
