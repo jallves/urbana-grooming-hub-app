@@ -207,9 +207,10 @@ const Footer: React.FC = () => {
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
           viewport={{ once: true }}
-          className="border-t border-urbana-gold/10 pt-6 text-center text-xs text-urbana-light/50 font-raleway"
+          className="border-t border-urbana-gold/10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-urbana-light/50 font-raleway"
         >
-          © {new Date().getFullYear()} Barbearia Costa Urbana. Todos os direitos reservados.
+          <p>© {new Date().getFullYear()} Barbearia Costa Urbana. Todos os direitos reservados.</p>
+          <p>Made by Beltec Soluções</p>
         </motion.div>
       </div>
     </footer>
