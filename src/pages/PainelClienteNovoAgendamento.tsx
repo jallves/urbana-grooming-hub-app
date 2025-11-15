@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Scissors, User } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Scissors, User, ArrowLeft, Check } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,8 +8,10 @@ import { toast } from 'sonner';
 import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 import { TotemCard, TotemCardTitle } from '@/components/totem/TotemCard';
 import { TotemGrid } from '@/components/totem/TotemLayout';
+import { useClientAuth } from '@/contexts/ClientAuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface Service {
   id: string;
@@ -32,6 +34,7 @@ interface TimeSlot {
 
 const PainelClienteNovoAgendamento: React.FC = () => {
   const navigate = useNavigate();
+  const { client } = useClientAuth();
   const [step, setStep] = useState<'service' | 'barber' | 'datetime'>('service');
   
   // State para os dados do agendamento
@@ -63,6 +66,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const { data, error } = await supabase
         .from('painel_servicos')
         .select('*')
+        .eq('is_active', true)
         .order('nome');
 
       if (error) throw error;
@@ -75,12 +79,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     }
   };
 
-  // Carregar barbeiros quando selecionar serviço
+  // Carregar barbeiros quando avançar para step de barbeiro
   useEffect(() => {
-    if (selectedService) {
+    if (step === 'barber' && selectedService) {
       loadBarbers();
     }
-  }, [selectedService]);
+  }, [step, selectedService]);
 
   const loadBarbers = async () => {
     setLoading(true);
@@ -101,12 +105,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     }
   };
 
-  // Carregar datas disponíveis quando selecionar barbeiro
+  // Carregar datas disponíveis quando avançar para step de data/hora
   useEffect(() => {
-    if (selectedBarber && selectedService) {
+    if (step === 'datetime' && selectedBarber && selectedService) {
       loadAvailableDates();
     }
-  }, [selectedBarber, selectedService]);
+  }, [step, selectedBarber, selectedService]);
 
   const loadAvailableDates = async () => {
     setLoading(true);
@@ -122,10 +126,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         const slots = await getAvailableTimeSlots(
           selectedBarber!.id,
           date,
-          selectedService!.duracao || 60
+          selectedService!.duracao
         );
-        
-        // Se tem pelo menos um horário disponível, adicionar a data
+
+        // Se tem pelo menos 1 horário disponível, adicionar a data
         if (slots.some(slot => slot.available)) {
           dates.push(date);
         }
@@ -133,19 +137,19 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       
       setAvailableDates(dates);
       
-      // Selecionar automaticamente a primeira data disponível
-      if (dates.length > 0 && !selectedDate) {
-        setSelectedDate(dates[0]);
+      // Se não há datas disponíveis
+      if (dates.length === 0) {
+        toast.warning('Não há horários disponíveis para este barbeiro nos próximos dias');
       }
     } catch (error) {
-      console.error('Erro ao carregar datas:', error);
+      console.error('Erro ao carregar datas disponíveis:', error);
       toast.error('Erro ao carregar datas disponíveis');
     } finally {
       setLoading(false);
     }
   };
 
-  // Carregar horários quando selecionar data
+  // Carregar horários quando selecionar uma data
   useEffect(() => {
     if (selectedDate && selectedBarber && selectedService) {
       loadTimeSlots();
@@ -154,15 +158,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   const loadTimeSlots = async () => {
     if (!selectedDate || !selectedBarber || !selectedService) return;
-    
+
     setLoading(true);
     try {
       const slots = await getAvailableTimeSlots(
         selectedBarber.id,
         selectedDate,
-        selectedService.duracao || 60
+        selectedService.duracao
       );
-      
       setTimeSlots(slots);
     } catch (error) {
       console.error('Erro ao carregar horários:', error);
@@ -172,335 +175,380 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     }
   };
 
+  // Handler para selecionar serviço - avança automaticamente
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
     setStep('barber');
-    setSelectedBarber(null);
-    setSelectedDate(null);
-    setSelectedTime(null);
   };
 
+  // Handler para selecionar barbeiro - avança automaticamente
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
     setStep('datetime');
-    setSelectedDate(null);
+  };
+
+  // Handler para selecionar data
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
     setSelectedTime(null);
   };
 
+  // Handler para confirmar agendamento
   const handleConfirm = async () => {
+    if (!client) {
+      toast.error('Cliente não autenticado');
+      navigate('/painel-cliente/login');
+      return;
+    }
+
     if (!selectedService || !selectedBarber || !selectedDate || !selectedTime) {
-      toast.error('Preencha todos os campos');
+      toast.error('Selecione todos os campos');
       return;
     }
 
     setCreating(true);
+
     try {
-      // Obter cliente logado
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Você precisa estar logado');
-        navigate('/painel-cliente/login');
-        return;
-      }
-
-      // Buscar cliente
-      const { data: cliente, error: clientError } = await supabase
-        .from('painel_clientes')
-        .select('*')
-        .eq('email', user.email)
-        .single();
-
-      if (clientError || !cliente) {
-        toast.error('Cliente não encontrado');
-        return;
-      }
-
-      // Validação
+      // Validar disponibilidade final
       const validation = await validateAppointment(
         selectedBarber.id,
         selectedDate,
         selectedTime,
-        selectedService.duracao || 60
+        selectedService.duracao
       );
 
       if (!validation.valid) {
-        setCreating(false);
+        toast.error(validation.error || 'Horário não disponível');
+        await loadTimeSlots();
         return;
       }
 
-      // Formatar data
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      const dataLocal = `${year}-${month}-${day}`;
+      // Calcular end_time
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const startDateTime = new Date(selectedDate);
+      startDateTime.setHours(hours, minutes, 0, 0);
+      
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setMinutes(endDateTime.getMinutes() + selectedService.duracao);
 
       // Criar agendamento
-      const { error } = await supabase
-        .from('painel_agendamentos')
+      const { error: insertError } = await supabase
+        .from('appointments')
         .insert({
-          cliente_id: cliente.id,
-          barbeiro_id: selectedBarber.id,
-          servico_id: selectedService.id,
-          data: dataLocal,
-          hora: selectedTime,
-          status: 'agendado'
+          client_id: client.id,
+          service_id: selectedService.id,
+          staff_id: selectedBarber.id,
+          start_time: startDateTime.toISOString(),
+          end_time: endDateTime.toISOString(),
+          status: 'confirmed'
         });
 
-      if (error) {
-        console.error('Erro ao criar agendamento:', error);
-        toast.error('Erro ao criar agendamento');
-        return;
-      }
+      if (insertError) throw insertError;
 
       toast.success('Agendamento criado com sucesso!');
       navigate('/painel-cliente/agendamentos');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar agendamento:', error);
-      toast.error('Erro ao criar agendamento');
+      toast.error(error.message || 'Erro ao criar agendamento');
     } finally {
       setCreating(false);
     }
   };
 
+  // Handler para voltar
+  const handleBack = () => {
+    if (step === 'barber') {
+      setStep('service');
+      setSelectedBarber(null);
+      setSelectedDate(null);
+      setSelectedTime(null);
+    } else if (step === 'datetime') {
+      setStep('barber');
+      setSelectedDate(null);
+      setSelectedTime(null);
+    } else {
+      navigate('/painel-cliente/dashboard');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <Card className="border-primary/20 shadow-2xl">
-          <CardHeader className="space-y-1 pb-8">
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Novo Agendamento
-            </CardTitle>
-            <CardDescription className="text-base">
-              {step === 'service' && 'Escolha o serviço desejado'}
-              {step === 'barber' && 'Selecione o barbeiro de sua preferência'}
-              {step === 'datetime' && 'Escolha a data e horário'}
-            </CardDescription>
-          </CardHeader>
+    <div className="min-h-screen relative">
+      {/* Background com imagem */}
+      <div 
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: `url(${barbershopBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
+      
+      {/* Overlay escuro */}
+      <div className="fixed inset-0 bg-black/70 z-0" />
+      
+      {/* Animated background effects */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-32 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" 
+          style={{ animationDelay: '1s' }} />
+      </div>
 
-          <CardContent className="space-y-8">
-            {/* Resumo do agendamento */}
-            {(selectedService || selectedBarber || selectedDate) && (
-              <div className="bg-primary/5 rounded-lg p-4 space-y-2 border border-primary/10">
-                <h3 className="font-semibold text-sm text-muted-foreground">Resumo</h3>
-                <div className="space-y-1 text-sm">
-                  {selectedService && (
-                    <p className="flex items-center gap-2">
-                      <Scissors className="w-4 h-4 text-primary" />
-                      <span className="font-medium">{selectedService.nome}</span>
-                      <span className="text-muted-foreground">- R$ {selectedService.preco.toFixed(2)}</span>
-                    </p>
-                  )}
-                  {selectedBarber && (
-                    <p className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-primary" />
-                      <span className="font-medium">{selectedBarber.nome}</span>
-                    </p>
-                  )}
-                  {selectedDate && selectedTime && (
-                    <p className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span className="font-medium">
-                        {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às {selectedTime}
-                      </span>
-                    </p>
-                  )}
-                </div>
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        {/* Header */}
+        <div className="p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="text-sm sm:text-base">Voltar</span>
+            </button>
+
+            <div className="text-center mb-8">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-urbana-gold drop-shadow-lg mb-2">
+                Novo Agendamento
+              </h1>
+              <p className="text-white/80 text-sm sm:text-base">
+                {step === 'service' && 'Escolha o serviço desejado'}
+                {step === 'barber' && 'Escolha seu profissional'}
+                {step === 'datetime' && 'Escolha a data e horário'}
+              </p>
+            </div>
+
+            {/* Progress indicator */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                step === 'service' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white'
+              }`}>
+                {step !== 'service' && selectedService ? <Check className="w-4 h-4" /> : '1'}
               </div>
-            )}
+              <div className={`w-12 h-1 rounded ${step !== 'service' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                step === 'barber' ? 'bg-urbana-gold text-black' : step === 'datetime' ? 'bg-white/20 text-white' : 'bg-white/20 text-white/50'
+              }`}>
+                {step === 'datetime' && selectedBarber ? <Check className="w-4 h-4" /> : '2'}
+              </div>
+              <div className={`w-12 h-1 rounded ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                step === 'datetime' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white/50'
+              }`}>
+                3
+              </div>
+            </div>
+          </div>
+        </div>
 
-            {/* Step 1: Selecionar Serviço */}
+        {/* Main Content */}
+        <div className="flex-1 p-4 sm:p-6 pb-20">
+          <div className="max-w-7xl mx-auto">
+            {/* Step 1: Service Selection */}
             {step === 'service' && (
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Scissors className="w-5 h-5 text-primary" />
-                  Selecione o Serviço
-                </h3>
+              <TotemGrid columns={3} gap={4}>
                 {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <div className="col-span-full text-center text-white py-12">
+                    Carregando serviços...
+                  </div>
+                ) : services.length === 0 ? (
+                  <div className="col-span-full text-center text-white/60 py-12">
+                    Nenhum serviço disponível
                   </div>
                 ) : (
-                  <TotemGrid columns={3} gap={3}>
-                    {services.map((service) => (
-                      <TotemCard
-                        key={service.id}
-                        icon={Scissors}
-                        variant={selectedService?.id === service.id ? 'selected' : 'default'}
-                        onClick={() => handleServiceSelect(service)}
-                        className="cursor-pointer"
-                      >
-                        <TotemCardTitle>{service.nome}</TotemCardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          R$ {service.preco.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {service.duracao} min
-                        </p>
-                      </TotemCard>
-                    ))}
-                  </TotemGrid>
+                  services.map((service, index) => (
+                    <TotemCard
+                      key={service.id}
+                      icon={Scissors}
+                      onClick={() => handleServiceSelect(service)}
+                      variant="default"
+                      animationDelay={`${index * 0.1}s`}
+                    >
+                      <TotemCardTitle>{service.nome}</TotemCardTitle>
+                      <p className="text-2xl sm:text-3xl font-bold text-urbana-gold mt-2">
+                        R$ {service.preco.toFixed(2)}
+                      </p>
+                      <p className="text-sm text-white/60 mt-1">
+                        {service.duracao} minutos
+                      </p>
+                    </TotemCard>
+                  ))
                 )}
-              </div>
+              </TotemGrid>
             )}
 
-            {/* Step 2: Selecionar Barbeiro */}
+            {/* Step 2: Barber Selection */}
             {step === 'barber' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <User className="w-5 h-5 text-primary" />
-                    Selecione o Barbeiro
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setStep('service')}
-                  >
-                    Voltar
-                  </Button>
-                </div>
+              <TotemGrid columns={3} gap={4}>
                 {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <div className="col-span-full text-center text-white py-12">
+                    Carregando profissionais...
+                  </div>
+                ) : barbers.length === 0 ? (
+                  <div className="col-span-full text-center text-white/60 py-12">
+                    Nenhum profissional disponível
                   </div>
                 ) : (
-                  <TotemGrid columns={3} gap={3}>
-                    {barbers.map((barber) => (
-                      <TotemCard
-                        key={barber.id}
-                        icon={User}
-                        variant={selectedBarber?.id === barber.id ? 'selected' : 'default'}
-                        onClick={() => handleBarberSelect(barber)}
-                        className="cursor-pointer"
-                      >
-                        {barber.image_url && (
-                          <div className="w-16 h-16 rounded-full mx-auto mb-2 overflow-hidden bg-primary/10">
-                            <img
-                              src={barber.image_url}
-                              alt={barber.nome}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        )}
-                        <TotemCardTitle>{barber.nome}</TotemCardTitle>
-                      </TotemCard>
-                    ))}
-                  </TotemGrid>
+                  barbers.map((barber, index) => (
+                    <TotemCard
+                      key={barber.id}
+                      icon={User}
+                      onClick={() => handleBarberSelect(barber)}
+                      variant="default"
+                      animationDelay={`${index * 0.1}s`}
+                    >
+                      {barber.image_url && (
+                        <img
+                          src={barber.image_url}
+                          alt={barber.nome}
+                          className="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-2 border-urbana-gold/50"
+                        />
+                      )}
+                      <TotemCardTitle className="text-center">{barber.nome}</TotemCardTitle>
+                    </TotemCard>
+                  ))
                 )}
-              </div>
+              </TotemGrid>
             )}
 
-            {/* Step 3: Selecionar Data e Horário */}
+            {/* Step 3: Date & Time Selection */}
             {step === 'datetime' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    Selecione a Data
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Date Selection */}
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <CalendarIcon className="w-5 h-5 text-urbana-gold" />
+                    Escolha a Data
                   </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setStep('barber')}
-                  >
-                    Voltar
-                  </Button>
-                </div>
-
-                {loading && !availableDates.length ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                  </div>
-                ) : availableDates.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">
-                      Não há horários disponíveis nos próximos dias
-                    </p>
-                  </div>
-                ) : (
-                  <TotemGrid columns={4} gap={3}>
-                    {availableDates.map((date) => (
-                      <TotemCard
-                        key={date.toISOString()}
-                        icon={Calendar}
-                        variant={
-                          selectedDate && 
-                          selectedDate.getDate() === date.getDate() &&
-                          selectedDate.getMonth() === date.getMonth() &&
-                          selectedDate.getFullYear() === date.getFullYear()
-                            ? 'selected'
-                            : 'default'
-                        }
-                        onClick={() => setSelectedDate(date)}
-                        className="cursor-pointer"
-                      >
-                        <TotemCardTitle>
-                          {format(date, "dd 'de' MMMM", { locale: ptBR })}
-                        </TotemCardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {format(date, 'EEEE', { locale: ptBR })}
-                        </p>
-                      </TotemCard>
-                    ))}
-                  </TotemGrid>
-                )}
-
-                {/* Horários */}
-                {selectedDate && (
-                  <div className="space-y-4 pt-4">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
-                      Selecione o Horário
-                    </h3>
-                    
+                  <TotemGrid columns={2} gap={2}>
                     {loading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      <div className="col-span-full text-center text-white py-8">
+                        Carregando datas...
+                      </div>
+                    ) : availableDates.length === 0 ? (
+                      <div className="col-span-full text-center text-white/60 py-8">
+                        Nenhuma data disponível
                       </div>
                     ) : (
-                      <TotemGrid columns={4} gap={3}>
-                        {timeSlots.map((slot) => (
-                          <TotemCard
-                            key={slot.time}
-                            icon={Clock}
-                            variant={
-                              !slot.available
-                                ? 'disabled'
-                                : selectedTime === slot.time
-                                ? 'selected'
-                                : 'default'
-                            }
-                            onClick={() => slot.available && setSelectedTime(slot.time)}
-                            className={slot.available ? 'cursor-pointer' : 'cursor-not-allowed'}
-                          >
-                            <TotemCardTitle>{slot.time}</TotemCardTitle>
-                            {!slot.available && slot.reason && (
-                              <p className="text-xs text-muted-foreground">{slot.reason}</p>
-                            )}
-                          </TotemCard>
-                        ))}
-                      </TotemGrid>
+                      availableDates.map((date, index) => (
+                        <TotemCard
+                          key={date.toISOString()}
+                          onClick={() => handleDateSelect(date)}
+                          variant={selectedDate?.toDateString() === date.toDateString() ? 'selected' : 'default'}
+                          animationDelay={`${index * 0.05}s`}
+                        >
+                          <div className="text-center">
+                            <p className="text-sm text-white/60 capitalize">
+                              {format(date, 'EEEE', { locale: ptBR })}
+                            </p>
+                            <p className="text-2xl font-bold text-white">
+                              {format(date, 'dd')}
+                            </p>
+                            <p className="text-sm text-white/80 capitalize">
+                              {format(date, 'MMM', { locale: ptBR })}
+                            </p>
+                          </div>
+                        </TotemCard>
+                      ))
                     )}
+                  </TotemGrid>
+                </div>
+
+                {/* Time Selection */}
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-urbana-gold" />
+                    Escolha o Horário
+                  </h3>
+                  {!selectedDate ? (
+                    <div className="text-center text-white/60 py-8">
+                      Selecione uma data primeiro
+                    </div>
+                  ) : (
+                    <TotemGrid columns={3} gap={2}>
+                      {loading ? (
+                        <div className="col-span-full text-center text-white py-8">
+                          Carregando horários...
+                        </div>
+                      ) : timeSlots.filter(slot => slot.available).length === 0 ? (
+                        <div className="col-span-full text-center text-white/60 py-8">
+                          Nenhum horário disponível
+                        </div>
+                      ) : (
+                        timeSlots
+                          .filter(slot => slot.available)
+                          .map((slot, index) => (
+                            <TotemCard
+                              key={slot.time}
+                              onClick={() => setSelectedTime(slot.time)}
+                              variant={selectedTime === slot.time ? 'selected' : 'default'}
+                              animationDelay={`${index * 0.02}s`}
+                            >
+                              <div className="text-center">
+                                <p className="text-lg font-bold text-white">
+                                  {slot.time}
+                                </p>
+                              </div>
+                            </TotemCard>
+                          ))
+                      )}
+                    </TotemGrid>
+                  )}
+                </div>
+
+                {/* Summary & Confirm */}
+                {selectedDate && selectedTime && (
+                  <div className="lg:col-span-2 mt-6">
+                    <Card className="bg-white/10 backdrop-blur-md border-2 border-urbana-gold/50">
+                      <CardHeader>
+                        <CardTitle className="text-white">Resumo do Agendamento</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center gap-3 text-white">
+                          <Scissors className="w-5 h-5 text-urbana-gold" />
+                          <div>
+                            <p className="text-sm text-white/60">Serviço</p>
+                            <p className="font-semibold">{selectedService?.nome}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 text-white">
+                          <User className="w-5 h-5 text-urbana-gold" />
+                          <div>
+                            <p className="text-sm text-white/60">Profissional</p>
+                            <p className="font-semibold">{selectedBarber?.nome}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 text-white">
+                          <CalendarIcon className="w-5 h-5 text-urbana-gold" />
+                          <div>
+                            <p className="text-sm text-white/60">Data</p>
+                            <p className="font-semibold">
+                              {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 text-white">
+                          <Clock className="w-5 h-5 text-urbana-gold" />
+                          <div>
+                            <p className="text-sm text-white/60">Horário</p>
+                            <p className="font-semibold">{selectedTime}</p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handleConfirm}
+                          disabled={creating || isValidating}
+                          className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg"
+                        >
+                          {creating || isValidating ? 'Confirmando...' : 'Confirmar Agendamento'}
+                        </Button>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
               </div>
             )}
-
-            {/* Botão de confirmação */}
-            {selectedTime && (
-              <div className="pt-6">
-                <Button
-                  size="lg"
-                  onClick={handleConfirm}
-                  disabled={creating || isValidating}
-                  className="w-full"
-                >
-                  {isValidating ? 'Validando...' : creating ? 'Criando...' : 'Confirmar Agendamento'}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
