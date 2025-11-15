@@ -32,7 +32,7 @@ import AdminSettings from './pages/AdminSettings';
 import PainelClienteLogin from './pages/PainelClienteLogin';
 import PainelClienteRegister from './pages/PainelClienteRegister';
 import PainelClienteDashboard from './pages/PainelClienteDashboard';
-import PainelClienteAgendar from './pages/PainelClienteAgendar';
+import PainelClienteNovoAgendamento from './pages/PainelClienteNovoAgendamento';
 import PainelClienteAgendamentos from './pages/PainelClienteAgendamentos';
 import PainelClienteMeusAgendamentos from './pages/PainelClienteMeusAgendamentos';
 import PainelClientePerfil from './pages/PainelClientePerfil';
@@ -262,7 +262,7 @@ function App() {
                     </PainelClienteRoute>
                   }>
                     <Route path="dashboard" element={<PainelClienteDashboard />} />
-                    <Route path="agendar" element={<PainelClienteAgendar />} />
+                    <Route path="agendar" element={<PainelClienteNovoAgendamento />} />
                     <Route path="agendamentos" element={<PainelClienteMeusAgendamentos />} />
                     <Route path="perfil" element={<PainelClientePerfil />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
