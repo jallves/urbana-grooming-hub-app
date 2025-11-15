@@ -22,6 +22,7 @@ import { PainelClienteContentContainer } from "@/components/painel-cliente/Paine
 import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
+import { cn } from "@/lib/utils";
 
 interface AgendamentoStats {
   total: number;
@@ -159,44 +160,64 @@ export default function PainelClienteDashboard() {
             variant: 'info' as const,
           },
           {
-            label: "Atendimentos Concluídos",
+            label: "Concluídos",
             value: stats.concluidos,
             IconComponent: CheckCircle,
             status: "concluido",
             variant: 'success' as const,
           },
-        ].map((stat, i) => (
-          <PainelClienteCard key={i} variant={stat.variant} icon={stat.IconComponent}>
-            <PainelClienteCardHeader>
-              <div className="flex justify-between items-start">
-                <PainelClienteCardTitle className="text-sm font-medium">
-                  {stat.label}
-                </PainelClienteCardTitle>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    stat.status === 'concluido' 
-                      ? 'bg-green-400/10 text-green-400'
+        ].map((stat, i) => {
+          const IconComp = stat.IconComponent;
+          return (
+            <PainelClienteCard key={i} variant={stat.variant}>
+              <PainelClienteCardHeader className="pb-2">
+                <div className="flex justify-end">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                      stat.status === 'concluido' 
+                        ? 'bg-green-400/10 text-green-400'
+                        : stat.status === 'confirmado'
+                        ? 'bg-blue-400/10 text-blue-400'
+                        : 'bg-urbana-gold/10 text-urbana-gold'
+                    }`}
+                  >
+                    {stat.status === 'concluido' 
+                      ? 'Concluído'
                       : stat.status === 'confirmado'
-                      ? 'bg-blue-400/10 text-blue-400'
-                      : 'bg-urbana-gold/10 text-urbana-gold'
-                  }`}
-                >
-                  {stat.status === 'concluido' 
-                    ? 'Concluído'
-                    : stat.status === 'confirmado'
-                    ? 'Agendado'
-                    : 'Total'
-                  }
-                </span>
-              </div>
-            </PainelClienteCardHeader>
-            <PainelClienteCardContent>
-              <div className="text-3xl font-bold text-urbana-light">
-                {stat.value}
-              </div>
-            </PainelClienteCardContent>
-          </PainelClienteCard>
-        ))}
+                      ? 'Agendado'
+                      : 'Total'
+                    }
+                  </span>
+                </div>
+              </PainelClienteCardHeader>
+              <PainelClienteCardContent>
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    'p-3 rounded-xl shrink-0',
+                    stat.variant === 'success' && 'bg-green-500/20',
+                    stat.variant === 'info' && 'bg-blue-500/20',
+                    stat.variant === 'default' && 'bg-urbana-gold/20'
+                  )}>
+                    <IconComp className={cn(
+                      'h-8 w-8',
+                      stat.variant === 'success' && 'text-green-400',
+                      stat.variant === 'info' && 'text-blue-400',
+                      stat.variant === 'default' && 'text-urbana-gold'
+                    )} />
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="text-4xl font-bold text-urbana-light font-playfair">
+                      {stat.value}
+                    </div>
+                    <PainelClienteCardTitle className="text-sm font-medium text-urbana-light/70 mt-1">
+                      {stat.label}
+                    </PainelClienteCardTitle>
+                  </div>
+                </div>
+              </PainelClienteCardContent>
+            </PainelClienteCard>
+          );
+        })}
       </div>
 
       {/* Próximos Agendamentos */}
