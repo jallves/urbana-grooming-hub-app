@@ -4035,6 +4035,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_unified_slot_availability: {
+        Args: {
+          p_date: string
+          p_duration_minutes: number
+          p_exclude_appointment_id?: string
+          p_staff_id: string
+          p_time: string
+        }
+        Returns: boolean
+      }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
       create_barber_auth_user: {
         Args: {

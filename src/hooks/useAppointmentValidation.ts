@@ -96,10 +96,10 @@ export const useAppointmentValidation = () => {
 
   /**
    * Verifica se há conflito com agendamentos existentes
-   * IMPORTANTE: Considera buffer de 10 minutos entre agendamentos
+   * IMPORTANTE: Usa função unificada que verifica TODOS os sistemas
    */
   const checkAppointmentConflict = useCallback(async (
-    barberId: string,
+    staffId: string,
     date: Date,
     time: string,
     serviceDuration: number = 60,
@@ -107,16 +107,23 @@ export const useAppointmentValidation = () => {
   ): Promise<ValidationResult> => {
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
-      const endTimeWithBuffer = calculateEndTimeWithBuffer(time, serviceDuration);
 
-      console.log('🔍 Verificando conflitos com buffer de 10min:', {
-        barberId,
-        dateStr,
-        startTime: time,
-        serviceDuration,
-        endTimeWithBuffer,
-        buffer: `${BUFFER_MINUTES}min`
+      const { data: isAvailable, error } = await supabase.rpc('check_unified_slot_availability', {
+        p_staff_id: staffId,
+        p_date: dateStr,
+        p_time: time,
+        p_duration_minutes: serviceDuration,
+        p_exclude_appointment_id: excludeAppointmentId || null
       });
+
+      if (error) {
+        console.error('❌ Erro:', error);
+        return { valid: false, error: 'Erro ao verificar disponibilidade' };
+      }
+
+      if (!isAvailable) {
+        return { valid: false, error: `Horário ${time} não está disponível.` };
+      }
 
       // Buscar agendamentos do barbeiro nesta data (exceto cancelados)
       let query = supabase
@@ -254,10 +261,11 @@ export const useAppointmentValidation = () => {
   }, [checkBusinessHours, validateNotPastTime, checkAppointmentConflict]);
 
   /**
-   * Busca horários disponíveis para uma data específica
+   * Busca horários disponíveis para um barbeiro em uma data específica
+   * IMPORTANTE: Usa função unificada do banco que verifica TODOS os sistemas (Totem, Painel Cliente, Painel Admin)
    */
   const getAvailableTimeSlots = useCallback(async (
-    barberId: string,
+    staffId: string,
     date: Date,
     serviceDuration: number = 60
   ): Promise<TimeSlot[]> => {
@@ -273,47 +281,16 @@ export const useAppointmentValidation = () => {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       
-      console.log('🔍 getAvailableTimeSlots:', {
+      console.log('🔍 getAvailableTimeSlots (UNIFICADO):', {
         dateStr,
         today,
         isToday,
         currentTime: `${currentHour}:${currentMinute}`,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        barberId,
-        serviceDuration
+        staffId,
+        serviceDuration,
+        note: 'Usando check_unified_slot_availability - verifica painel_agendamentos + appointments'
       });
-
-      // Buscar agendamentos existentes
-      const { data: appointments, error } = await supabase
-        .from('painel_agendamentos')
-        .select(`
-          hora,
-          servico:painel_servicos(duracao)
-        `)
-        .eq('barbeiro_id', barberId)
-        .eq('data', dateStr)
-        .neq('status', 'cancelado');
-
-      if (error) {
-        console.error('Erro ao buscar agendamentos:', error);
-        return [];
-      }
-
-      // Marcar slots ocupados (INCLUINDO BUFFER DE 10 MINUTOS)
-      const occupiedSlots = new Set<string>();
-      
-      appointments?.forEach((apt) => {
-        const aptDuration = (apt.servico as any)?.duracao || 60;
-        const aptTime = apt.hora;
-        
-        // Usar função que calcula slots ocupados com buffer
-        const slots = getOccupiedSlots(aptTime, aptDuration);
-        slots.forEach(slot => occupiedSlots.add(slot));
-        
-        console.log(`📅 Agendamento ${aptTime} (${aptDuration}min) ocupa slots:`, slots);
-      });
-
-      console.log('🔒 Total de slots ocupados:', Array.from(occupiedSlots));
 
       // Gerar slots (horário de funcionamento configurável)
       const slots: TimeSlot[] = [];
@@ -322,7 +299,7 @@ export const useAppointmentValidation = () => {
         for (let minute = 0; minute < 60; minute += 30) {
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           
-          // Verificar se o serviço cabe antes do fechamento (SEM buffer, apenas o serviço)
+          // Verificar se o serviço cabe antes do fechamento
           if (!isWithinBusinessHours(timeString, serviceDuration)) {
             continue;
           }
@@ -334,12 +311,25 @@ export const useAppointmentValidation = () => {
           if (isToday && isPastTime(date, timeString)) {
             available = false;
             reason = 'Passou há mais de 10min';
-          }
+          } else {
+            // Usar função unificada do banco para verificar disponibilidade
+            const { data: isAvailable, error } = await supabase.rpc('check_unified_slot_availability', {
+              p_staff_id: staffId,
+              p_date: dateStr,
+              p_time: timeString,
+              p_duration_minutes: serviceDuration
+            });
 
-          // Verificar se está ocupado (já considera buffer de 10min)
-          if (available && occupiedSlots.has(timeString)) {
-            available = false;
-            reason = 'Horário ocupado (inclui buffer de 10min)';
+            if (error) {
+              console.error('Erro ao verificar slot:', error);
+              available = false;
+              reason = 'Erro ao verificar';
+            } else {
+              available = isAvailable || false;
+              if (!available) {
+                reason = 'Horário ocupado';
+              }
+            }
           }
 
           slots.push({
