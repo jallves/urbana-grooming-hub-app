@@ -108,7 +108,7 @@ export const useAppointmentValidation = () => {
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
 
-      const { data: isAvailable, error } = await supabase.rpc('check_unified_slot_availability', {
+      const { data: isAvailable, error: rpcError } = await supabase.rpc('check_unified_slot_availability', {
         p_staff_id: staffId,
         p_date: dateStr,
         p_time: time,
@@ -116,8 +116,8 @@ export const useAppointmentValidation = () => {
         p_exclude_appointment_id: excludeAppointmentId || null
       });
 
-      if (error) {
-        console.error('❌ Erro:', error);
+      if (rpcError) {
+        console.error('❌ Erro ao verificar disponibilidade:', rpcError);
         return { valid: false, error: 'Erro ao verificar disponibilidade' };
       }
 
@@ -125,60 +125,7 @@ export const useAppointmentValidation = () => {
         return { valid: false, error: `Horário ${time} não está disponível.` };
       }
 
-      // Buscar agendamentos do barbeiro nesta data (exceto cancelados)
-      let query = supabase
-        .from('painel_agendamentos')
-        .select(`
-          id,
-          hora,
-          servico:painel_servicos(duracao)
-        `)
-        .eq('barbeiro_id', barberId)
-        .eq('data', dateStr)
-        .neq('status', 'cancelado');
-
-      if (excludeAppointmentId) {
-        query = query.neq('id', excludeAppointmentId);
-      }
-
-      const { data: appointments, error } = await query;
-
-      if (error) {
-        console.error('❌ Erro ao buscar agendamentos:', error);
-        return { valid: false, error: 'Erro ao verificar disponibilidade' };
-      }
-
-      if (!appointments || appointments.length === 0) {
-        console.log('✅ Nenhum agendamento encontrado - disponível');
-        return { valid: true };
-      }
-
-      // Verificar cada agendamento para conflitos (com buffer)
-      for (const apt of appointments) {
-        const aptTime = apt.hora;
-        const aptDuration = (apt.servico as any)?.duracao || 60;
-        
-        // Usar função que considera o buffer de 10 minutos
-        if (hasTimeOverlap(time, serviceDuration, aptTime, aptDuration)) {
-          const aptEndWithBuffer = calculateEndTimeWithBuffer(aptTime, aptDuration);
-          
-          console.log('⚠️ Conflito encontrado (com buffer):', {
-            existingStart: aptTime,
-            existingDuration: aptDuration,
-            existingEndWithBuffer: aptEndWithBuffer,
-            requestedStart: time,
-            requestedDuration: serviceDuration,
-            requestedEndWithBuffer: endTimeWithBuffer
-          });
-
-          return {
-            valid: false,
-            error: `Este horário conflita com um agendamento às ${aptTime}. Próximo horário disponível: ${aptEndWithBuffer}.`
-          };
-        }
-      }
-
-      console.log('✅ Nenhum conflito encontrado (buffer validado)');
+      console.log('✅ Horário disponível (validação unificada)');
       return { valid: true };
     } catch (error) {
       console.error('💥 Erro na verificação de conflitos:', error);
