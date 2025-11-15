@@ -86,84 +86,46 @@ const BarberCommissions: React.FC = () => {
 
       setLoading(true);
       try {
-        const { data: barberCommissions, error: bcError } = await supabase
-          .from('barber_commissions')
+        // Use the optimized view with a single query
+        const { data: commissionsData, error: fetchError } = await supabase
+          .from('vw_barber_commissions_complete')
           .select('*')
           .eq('barber_id', staffId)
           .order('created_at', { ascending: false });
 
-        if (bcError) {
-          console.error('Error fetching barber commissions:', bcError);
-          setCommissions([]);
-          return;
-        }
-
-        if (!barberCommissions || barberCommissions.length === 0) {
-          setCommissions([]);
-          return;
-        }
-
-        const transformedCommissions: Commission[] = [];
-
-        for (const commission of barberCommissions) {
-          let appointmentDetails;
-
-          if (commission.appointment_source === 'painel') {
-            const { data: painelData } = await supabase
-              .from('painel_agendamentos')
-              .select(`
-                *,
-                painel_clientes(nome),
-                painel_servicos(nome, preco),
-                painel_barbeiros(nome)
-              `)
-              .eq('id', commission.appointment_id)
-              .maybeSingle();
-
-            if (painelData) {
-              appointmentDetails = {
-                client_name: painelData.painel_clientes?.nome || 'Cliente',
-                service_name: painelData.painel_servicos?.nome || 'Serviço',
-                service_price: painelData.painel_servicos?.preco || 0,
-                appointment_date: painelData.data || '',
-                appointment_time: painelData.hora ? 
-                  format(new Date(`2000-01-01T${painelData.hora}`), 'HH:mm') : '--:--'
-              };
-            }
-          } else {
-            const { data: appointmentData } = await supabase
-              .from('appointments')
-              .select(`
-                *,
-                clients(name),
-                services(name, price)
-              `)
-              .eq('id', commission.appointment_id)
-              .maybeSingle();
-
-            if (appointmentData) {
-              appointmentDetails = {
-                client_name: appointmentData.clients?.name || 'Cliente',
-                service_name: appointmentData.services?.name || 'Serviço',
-                service_price: appointmentData.services?.price || 0,
-                appointment_date: appointmentData.start_time?.split('T')[0] || '',
-                appointment_time: appointmentData.start_time ? 
-                  format(new Date(appointmentData.start_time), 'HH:mm') : '--:--'
-              };
-            }
-          }
-
-          transformedCommissions.push({
-            id: commission.id,
-            amount: commission.amount,
-            status: commission.status,
-            created_at: commission.created_at,
-            payment_date: commission.payment_date,
-            commission_rate: commission.commission_rate,
-            source: commission.appointment_source || 'appointments',
-            appointment_details: appointmentDetails
+        if (fetchError) {
+          console.error('Error fetching commissions:', fetchError);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar as comissões.",
+            variant: "destructive",
           });
+          setCommissions([]);
+          return;
         }
+
+        if (!commissionsData || commissionsData.length === 0) {
+          setCommissions([]);
+          return;
+        }
+
+        // Transform the data from the view
+        const transformedCommissions: Commission[] = commissionsData.map(commission => ({
+          id: commission.id,
+          amount: commission.amount,
+          status: commission.status,
+          created_at: commission.created_at,
+          payment_date: commission.payment_date,
+          commission_rate: commission.commission_rate,
+          source: commission.appointment_source || 'appointments',
+          appointment_details: {
+            client_name: commission.client_name || 'Cliente',
+            service_name: commission.service_name || 'Serviço',
+            service_price: commission.service_price || 0,
+            appointment_date: commission.appointment_date || '',
+            appointment_time: commission.appointment_time || '--:--'
+          }
+        }));
 
         setCommissions(transformedCommissions);
       } catch (error) {
