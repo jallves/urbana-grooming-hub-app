@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Search, Plus, MoreVertical, Package } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, MoreVertical, Package, Image as ImageIcon } from 'lucide-react';
 import ProductForm from './ProductForm';
 import {
   AlertDialog,
@@ -148,7 +148,27 @@ const ProductList: React.FC = () => {
             <div className="p-3 sm:p-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {filteredProducts.map((product) => (
-                  <Card key={product.id} className="hover:shadow-lg transition-all">
+                  <Card key={product.id} className="hover:shadow-lg transition-all overflow-hidden">
+                    {/* Imagem do Produto */}
+                    {product.imagens && product.imagens.length > 0 ? (
+                      <div className="aspect-square bg-muted overflow-hidden">
+                        <img 
+                          src={product.imagens[0]} 
+                          alt={product.nome}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('Erro ao carregar imagem:', product.imagens[0]);
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-12 h-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg></div>';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-square bg-muted flex items-center justify-center">
+                        <Package className="h-12 w-12 text-muted-foreground opacity-30" />
+                      </div>
+                    )}
+                    
                     <div className="p-3 sm:p-4">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-medium text-xs sm:text-base truncate mr-2">
@@ -180,6 +200,13 @@ const ProductList: React.FC = () => {
                       </div>
                       
                       <div className="space-y-2 text-xs sm:text-sm">
+                        {product.imagens && product.imagens.length > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <ImageIcon className="h-3 w-3" />
+                            <span>{product.imagens.length} {product.imagens.length === 1 ? 'imagem' : 'imagens'}</span>
+                          </div>
+                        )}
+                        
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Preço:</span>
                           <span className="text-primary font-semibold">

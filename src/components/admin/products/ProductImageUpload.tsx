@@ -16,6 +16,8 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
 
+  console.log('🖼️ ProductImageUpload - imagens atuais:', images);
+
   const uploadImage = async (file: File) => {
     try {
       setUploading(true);
@@ -39,23 +41,35 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
+      console.log('📤 Fazendo upload da imagem:', filePath);
+
       // Upload para o storage
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('products')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('❌ Erro no upload:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('✅ Upload realizado:', uploadData);
 
       // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('products')
         .getPublicUrl(filePath);
 
+      console.log('🔗 URL pública gerada:', publicUrl);
+
       // Adicionar à lista de imagens
-      onImagesChange([...images, publicUrl]);
+      const newImages = [...images, publicUrl];
+      console.log('📸 Atualizando lista de imagens:', newImages);
+      onImagesChange(newImages);
+      
       toast.success('Imagem enviada com sucesso!');
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
@@ -73,8 +87,38 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
     }
   };
 
-  const removeImage = (index: number) => {
-    onImagesChange(images.filter((_, i) => i !== index));
+  const removeImage = async (index: number) => {
+    const imageUrl = images[index];
+    
+    // Tentar extrair o caminho do arquivo da URL
+    try {
+      const url = new URL(imageUrl);
+      const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/products\/(.+)$/);
+      
+      if (pathMatch) {
+        const filePath = `products/${pathMatch[1]}`;
+        console.log('🗑️ Removendo imagem do storage:', filePath);
+        
+        // Deletar do storage
+        const { error } = await supabase.storage
+          .from('products')
+          .remove([filePath]);
+        
+        if (error) {
+          console.error('Erro ao deletar do storage:', error);
+        } else {
+          console.log('✅ Imagem removida do storage');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao processar URL da imagem:', error);
+    }
+    
+    // Remover da lista de imagens
+    const newImages = images.filter((_, i) => i !== index);
+    console.log('📸 Nova lista de imagens:', newImages);
+    onImagesChange(newImages);
+    toast.success('Imagem removida');
   };
 
   return (

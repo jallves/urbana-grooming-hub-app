@@ -86,20 +86,32 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
+      console.log('📤 Salvando produto com imagens:', values.images);
+      
       if (isEditing) {
-        const { error } = await supabase
+        const updateData = {
+          nome: values.name,
+          descricao: values.description,
+          preco: values.price,
+          estoque: values.stock_quantity || 0,
+          is_active: values.is_active,
+          imagens: values.images,
+        };
+        
+        console.log('📝 Update data:', updateData);
+        
+        const { error, data } = await supabase
           .from('painel_produtos')
-          .update({
-            nome: values.name,
-            descricao: values.description,
-            preco: values.price,
-            estoque: values.stock_quantity || 0,
-            is_active: values.is_active,
-            imagens: values.images,
-          })
-          .eq('id', productId);
+          .update(updateData)
+          .eq('id', productId)
+          .select();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Erro no update:', error);
+          throw error;
+        }
+        
+        console.log('✅ Produto atualizado:', data);
         toast.success('Produto atualizado com sucesso!');
       } else {
         const productData = {
@@ -114,11 +126,19 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           destaque: false,
         };
 
-        const { error } = await supabase
-          .from('painel_produtos')
-          .insert([productData]);
+        console.log('📝 Insert data:', productData);
 
-        if (error) throw error;
+        const { error, data } = await supabase
+          .from('painel_produtos')
+          .insert([productData])
+          .select();
+
+        if (error) {
+          console.error('❌ Erro no insert:', error);
+          throw error;
+        }
+        
+        console.log('✅ Produto criado:', data);
         toast.success('Produto criado com sucesso!');
       }
       
