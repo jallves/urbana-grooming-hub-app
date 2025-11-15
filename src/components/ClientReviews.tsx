@@ -74,7 +74,7 @@ export const ClientReviews: React.FC = () => {
         const oneStarCount = ratings.filter(r => r.rating === 1).length;
 
         const recentReviews = ratings
-          .filter(r => r.comment && r.comment.trim() !== '')
+          .filter(r => r.comment && r.comment.trim() !== '' && !filterProfanity(r.comment))
           .slice(0, 3);
 
         setStats({
@@ -93,6 +93,17 @@ export const ClientReviews: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterProfanity = (text: string): boolean => {
+    const profanityList = [
+      'porra', 'caralho', 'merda', 'puta', 'foda', 'cu', 'cacete', 'buceta',
+      'viado', 'idiota', 'imbecil', 'desgraça', 'fdp', 'arrombado', 'pqp',
+      'fuck', 'shit', 'bitch', 'ass', 'damn', 'bastard', 'cunt'
+    ];
+    
+    const lowerText = text.toLowerCase();
+    return profanityList.some(word => lowerText.includes(word));
   };
 
   const getPercentage = (count: number) => {
@@ -201,24 +212,19 @@ export const ClientReviews: React.FC = () => {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="relative bg-background/40 backdrop-blur-xl border-2 border-border/50 rounded-2xl p-8 hover:border-primary/50 transition-all duration-500 overflow-hidden hover:shadow-[0_20px_60px_hsl(var(--primary)/0.3),0_0_80px_hsl(var(--primary)/0.2)]">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
-                <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity duration-500" style={{
-                  backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary) / 0.8) 1px, transparent 0)',
-                  backgroundSize: '32px 32px'
-                }} />
+              <div className="relative bg-transparent backdrop-blur-xl border-2 border-urbana-gold/30 rounded-2xl p-8 hover:border-urbana-gold/50 transition-all duration-500 overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 via-transparent to-urbana-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="relative z-10">
                   <div className="text-center mb-6">
                     <motion.div
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       transition={{ type: "spring", stiffness: 300 }}
-                      className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary via-primary/80 to-primary rounded-xl shadow-[0_8px_32px_hsl(var(--primary)/0.4),inset_0_2px_8px_rgba(255,255,255,0.2)] mb-4"
+                      className="inline-flex items-center justify-center w-20 h-20 bg-urbana-gold/10 rounded-xl mb-4"
                     >
-                      <Star className="w-10 h-10 text-primary-foreground" />
+                      <Star className="w-10 h-10 text-urbana-gold" />
                     </motion.div>
-                    <div className="text-6xl font-bold font-playfair mb-2 bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+                    <div className="text-6xl font-bold font-playfair mb-2 text-urbana-gold">
                       {stats.averageRating.toFixed(1)}
                     </div>
                     <div className="flex items-center justify-center gap-1 mb-2">
@@ -227,13 +233,13 @@ export const ClientReviews: React.FC = () => {
                           key={star}
                           className={`w-6 h-6 ${
                             star <= Math.round(stats.averageRating)
-                              ? 'text-primary fill-primary'
-                              : 'text-primary/30'
+                              ? 'text-urbana-gold fill-urbana-gold'
+                              : 'text-urbana-gold/30'
                           }`}
                         />
                       ))}
                     </div>
-                    <p className="text-muted-foreground flex items-center justify-center gap-2 font-raleway">
+                    <p className="text-urbana-gold/80 flex items-center justify-center gap-2 font-raleway">
                       <Users className="w-4 h-4" />
                       {stats.totalReviews} avaliações
                     </p>
@@ -251,10 +257,10 @@ export const ClientReviews: React.FC = () => {
                       return (
                         <div key={rating} className="flex items-center gap-3">
                           <div className="flex items-center gap-1 w-20">
-                            <span className="text-urbana-light font-medium font-raleway">{rating}</span>
+                            <span className="text-urbana-gold font-medium font-raleway">{rating}</span>
                             <Star className="w-4 h-4 text-urbana-gold fill-urbana-gold" />
                           </div>
-                          <div className="flex-1 bg-urbana-light/20 rounded-full h-2.5 overflow-hidden">
+                          <div className="flex-1 bg-urbana-gold/20 rounded-full h-2.5 overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
                               whileInView={{ width: `${percentage}%` }}
@@ -263,7 +269,7 @@ export const ClientReviews: React.FC = () => {
                               className="h-full bg-gradient-to-r from-urbana-gold to-urbana-gold/60 rounded-full shadow-[0_0_8px_rgba(255,215,0,0.5)]"
                             />
                           </div>
-                          <span className="text-urbana-light/70 font-raleway text-sm w-12 text-right">
+                          <span className="text-urbana-gold/70 font-raleway text-sm w-12 text-right">
                             {percentage.toFixed(0)}%
                           </span>
                         </div>
@@ -275,20 +281,20 @@ export const ClientReviews: React.FC = () => {
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <TrendingUp className="w-5 h-5 text-urbana-gold" />
-                        <span className="text-2xl font-bold text-urbana-light font-playfair">
+                        <span className="text-2xl font-bold text-urbana-gold font-playfair">
                           {Math.round((stats.fiveStarCount / stats.totalReviews) * 100)}%
                         </span>
                       </div>
-                      <p className="text-urbana-light/70 text-sm font-raleway">Satisfação</p>
+                      <p className="text-urbana-gold/70 text-sm font-raleway">Satisfação</p>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <MessageCircle className="w-5 h-5 text-urbana-gold" />
-                        <span className="text-2xl font-bold text-urbana-light font-playfair">
+                        <span className="text-2xl font-bold text-urbana-gold font-playfair">
                           {stats.recentReviews.length}
                         </span>
                       </div>
-                      <p className="text-urbana-light/70 text-sm font-raleway">Com comentário</p>
+                      <p className="text-urbana-gold/70 text-sm font-raleway">Com comentário</p>
                     </div>
                   </div>
                 </div>
@@ -332,10 +338,10 @@ export const ClientReviews: React.FC = () => {
                           />
                         ))}
                       </div>
-                      <p className="text-foreground font-raleway leading-relaxed mb-3">
+                      <p className="text-urbana-gold font-raleway leading-relaxed mb-3">
                         "{review.comment}"
                       </p>
-                      <p className="text-muted-foreground text-sm font-raleway">
+                      <p className="text-urbana-gold/70 text-sm font-raleway">
                         {new Date(review.created_at).toLocaleDateString('pt-BR', {
                           day: '2-digit',
                           month: 'long',
