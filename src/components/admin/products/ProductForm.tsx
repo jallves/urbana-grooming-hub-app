@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import {
   Form,
   FormControl,
@@ -35,6 +37,8 @@ const productFormSchema = z.object({
   stock_quantity: z.coerce.number().int().nonnegative().nullable().optional(),
   is_active: z.boolean().default(true),
   images: z.array(z.string()).default([]),
+  commission_value: z.coerce.number().nonnegative().nullable().optional(),
+  commission_percentage: z.coerce.number().nonnegative().nullable().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -69,6 +73,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       stock_quantity: 0,
       is_active: true,
       images: [],
+      commission_value: 0,
+      commission_percentage: 0,
     },
     values: productData ? {
       name: productData.nome || '',
@@ -78,8 +84,31 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       stock_quantity: productData.estoque || 0,
       is_active: productData.is_active ?? true,
       images: Array.isArray(productData.imagens) ? productData.imagens.filter((img): img is string => typeof img === 'string') : [],
+      commission_value: productData.commission_value || 0,
+      commission_percentage: productData.commission_percentage || 0,
     } : undefined,
   });
+  
+  // Watch price and commission fields for automatic calculation
+  const price = form.watch('price');
+  const commissionValue = form.watch('commission_value');
+  const commissionPercentage = form.watch('commission_percentage');
+  
+  // Calculate commission percentage when value changes
+  React.useEffect(() => {
+    if (commissionValue !== null && commissionValue !== undefined && price > 0) {
+      const percentage = (commissionValue / price) * 100;
+      form.setValue('commission_percentage', parseFloat(percentage.toFixed(2)), { shouldValidate: false });
+    }
+  }, [commissionValue, price]);
+  
+  // Calculate commission value when percentage changes
+  React.useEffect(() => {
+    if (commissionPercentage !== null && commissionPercentage !== undefined && price > 0) {
+      const value = (price * commissionPercentage) / 100;
+      form.setValue('commission_value', parseFloat(value.toFixed(2)), { shouldValidate: false });
+    }
+  }, [commissionPercentage, price]);
   
   const { formState } = form;
   const { isSubmitting } = formState;
@@ -96,6 +125,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           estoque: values.stock_quantity || 0,
           is_active: values.is_active,
           imagens: values.images,
+          commission_value: values.commission_value || 0,
+          commission_percentage: values.commission_percentage || 0,
         };
         
         console.log('📝 Update data:', updateData);
@@ -124,6 +155,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           imagens: values.images,
           is_active: values.is_active,
           destaque: false,
+          commission_value: values.commission_value || 0,
+          commission_percentage: values.commission_percentage || 0,
         };
 
         console.log('📝 Insert data:', productData);
@@ -157,140 +190,286 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome *</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome do produto" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Descrição do produto" 
-                  {...field} 
-                  value={field.value || ''}
-                  className="min-h-[80px] sm:min-h-[100px]"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Informações Básicas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Informações Básicas</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome do Produto *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Pomada Modeladora" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Descreva o produto, suas características e benefícios" 
+                      {...field} 
+                      value={field.value || ''}
+                      className="min-h-[100px] resize-none"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="images"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <ProductImageUpload
-                  images={field.value}
-                  onImagesChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Preço de Venda *</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00" 
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="cost_price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Preço de Custo</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00" 
-                    {...field}
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+            <FormField
+              control={form.control}
+              name="is_active"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-border/50 p-4 bg-muted/20">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="text-sm font-medium">Produto Ativo</FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Produtos ativos podem ser vendidos no totem
+                    </p>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="stock_quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantidade em Estoque</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number"
-                    min="0"
-                    step="1"
-                    placeholder="0" 
-                    {...field}
-                    value={field.value || ''}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+        {/* Imagens */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Imagens do Produto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FormField
+              control={form.control}
+              name="images"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <ProductImageUpload
+                      images={field.value}
+                      onImagesChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Preços */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Precificação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Venda *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00" 
+                          {...field}
+                          className="pl-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="cost_price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Custo</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                        <Input 
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00" 
+                          {...field}
+                          value={field.value || ''}
+                          className="pl-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Comissão */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Comissão do Barbeiro</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Configure a comissão por valor fixo ou porcentagem sobre o preço de venda
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="commission_value"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor da Comissão</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                        <Input 
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0,00" 
+                          {...field}
+                          value={field.value || ''}
+                          className="pl-10"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Clear the percentage field to trigger recalculation
+                            const val = parseFloat(e.target.value) || 0;
+                            if (val > 0 && price > 0) {
+                              const percentage = (val / price) * 100;
+                              form.setValue('commission_percentage', parseFloat(percentage.toFixed(2)), { shouldValidate: false });
+                            }
+                          }}
+                        />
+                      </div>
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Insira o valor em reais
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="commission_percentage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Porcentagem da Comissão</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="0,00" 
+                          {...field}
+                          value={field.value || ''}
+                          className="pr-8"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Clear the value field to trigger recalculation
+                            const percentage = parseFloat(e.target.value) || 0;
+                            if (percentage > 0 && price > 0) {
+                              const value = (price * percentage) / 100;
+                              form.setValue('commission_value', parseFloat(value.toFixed(2)), { shouldValidate: false });
+                            }
+                          }}
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                      </div>
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Insira a porcentagem sobre o preço
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            {price > 0 && (commissionValue > 0 || commissionPercentage > 0) && (
+              <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Resumo da Comissão:</span> Para um produto de{' '}
+                  <span className="font-semibold text-primary">R$ {price.toFixed(2)}</span>, o barbeiro receberá{' '}
+                  <span className="font-semibold text-primary">R$ {(commissionValue || 0).toFixed(2)}</span>{' '}
+                  ({(commissionPercentage || 0).toFixed(2)}%) por venda
+                </p>
+              </div>
             )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="is_active"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-3 sm:p-4 mt-6">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel className="text-sm sm:text-base">Produto Ativo</FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
-        </div>
+          </CardContent>
+        </Card>
+
+        {/* Estoque */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Controle de Estoque</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FormField
+              control={form.control}
+              name="stock_quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantidade em Estoque</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0" 
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Quantidade disponível para venda
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Separator />
         
-        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-0 sm:space-x-2">
+        {/* Botões de Ação */}
+        <div className="flex flex-col sm:flex-row justify-end gap-3">
           <Button 
             type="button" 
             variant="outline" 
