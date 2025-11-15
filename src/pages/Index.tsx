@@ -45,9 +45,7 @@ const Index = () => {
       
       {/* Services */}
       <section className="w-full py-12 transition-all duration-700">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <Services />
-        </div>
+        <Services />
       </section>
       
       {/* Decorative divider */}
@@ -59,9 +57,7 @@ const Index = () => {
       
       {/* Statistics Section */}
       <section className="w-full transition-all duration-700">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <Statistics />
-        </div>
+        <Statistics />
       </section>
       
       {/* Decorative divider */}
@@ -73,9 +69,7 @@ const Index = () => {
       
       {/* Gallery */}
       <section className="w-full py-12 transition-all duration-700">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <Gallery />
-        </div>
+        <Gallery />
       </section>
       
       {/* Decorative divider */}
@@ -87,9 +81,7 @@ const Index = () => {
       
       {/* Client Reviews */}
       <section className="w-full py-12 transition-all duration-700">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <ClientReviews />
-        </div>
+        <ClientReviews />
       </section>
       
       {/* Decorative divider */}
