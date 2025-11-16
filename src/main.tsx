@@ -7,6 +7,7 @@ import './index.css';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
+      // Registra o PWA service worker
       const { registerSW } = await import('virtual:pwa-register');
       const updateSW = registerSW({
         immediate: true,
@@ -22,8 +23,16 @@ if ('serviceWorker' in navigator) {
           }
         }
       });
+
+      // Registra o service worker customizado para push notifications
+      if ('PushManager' in window) {
+        const swRegistration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/',
+        });
+        console.log('Service Worker de notificações registrado:', swRegistration);
+      }
     } catch (e) {
-      console.log('PWA não disponível');
+      console.log('PWA não disponível', e);
     }
   });
 }

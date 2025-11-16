@@ -20,3 +20,9 @@ schedule = "0 * * * *"
 
 [functions.migrate-old-product-sales]
 verify_jwt = false
+
+[functions.send-appointment-reminders]
+verify_jwt = false
+# Executa a cada hora
+[functions.send-appointment-reminders.cron]
+schedule = "0 * * * *"

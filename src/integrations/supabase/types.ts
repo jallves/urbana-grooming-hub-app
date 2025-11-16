@@ -2022,6 +2022,61 @@ export type Database = {
           },
         ]
       }
+      notification_logs: {
+        Row: {
+          appointment_id: string
+          client_id: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          notification_type: string
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          appointment_id: string
+          client_id: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type: string
+          sent_at?: string
+          status?: string
+        }
+        Update: {
+          appointment_id?: string
+          client_id?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type?: string
+          sent_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_logs_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_agendamentos_sem_financeiro"
+            referencedColumns: ["agendamento_id"]
+          },
+          {
+            foreignKeyName: "notification_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -2687,6 +2742,47 @@ export type Database = {
           weight?: number | null
         }
         Relationships: []
+      }
+      push_notification_tokens: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_used_at: string | null
+          subscription_data: Json
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          subscription_data: Json
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_used_at?: string | null
+          subscription_data?: Json
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_notification_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipes: {
         Row: {
