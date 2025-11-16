@@ -117,41 +117,43 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     setLoading(true);
     try {
       console.log('🔍 Iniciando loadAvailableDates', {
-        selectedBarber: selectedBarber?.id,
-        selectedService: selectedService?.id,
+        selectedBarber: selectedBarber?.nome,
+        staff_id: selectedBarber?.staff_id,
+        selectedService: selectedService?.nome,
         serviceDuration: selectedService?.duracao
       });
 
       const dates: Date[] = [];
       const today = startOfToday();
       
-      // Carregar até 10 dias disponíveis
+      // Carregar até 10 dias disponíveis (buscar em até 30 dias)
       for (let i = 0; dates.length < 10 && i < 30; i++) {
         const date = addDays(today, i);
         
-        console.log(`📅 Verificando data: ${format(date, 'dd/MM/yyyy')}`);
+        console.log(`📅 Verificando data: ${format(date, 'dd/MM/yyyy')} para barbeiro ${selectedBarber!.nome}`);
         
-        // Buscar horários disponíveis para esta data
+        // Buscar horários disponíveis PARA ESTE BARBEIRO ESPECÍFICO
         const slots = await getAvailableTimeSlots(
           selectedBarber!.staff_id,
           date,
           selectedService!.duracao
         );
 
-        console.log(`   → ${slots.length} slots encontrados, ${slots.filter(s => s.available).length} disponíveis`);
+        const availableCount = slots.filter(s => s.available).length;
+        console.log(`   → ${slots.length} slots totais, ${availableCount} disponíveis para ${selectedBarber!.nome}`);
 
         // Se tem pelo menos 1 horário disponível, adicionar a data
-        if (slots.some(slot => slot.available)) {
+        if (availableCount > 0) {
           dates.push(date);
         }
       }
       
-      console.log(`✅ Total de datas disponíveis: ${dates.length}`);
+      console.log(`✅ Total de datas disponíveis para ${selectedBarber!.nome}: ${dates.length}`);
       setAvailableDates(dates);
       
       // Se não há datas disponíveis
       if (dates.length === 0) {
-        toast.warning('Não há horários disponíveis para este barbeiro nos próximos dias');
+        toast.warning(`Não há horários disponíveis para ${selectedBarber!.nome} nos próximos 30 dias`);
       }
     } catch (error) {
       console.error('❌ Erro ao carregar datas disponíveis:', error);
@@ -173,24 +175,40 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
     setLoading(true);
     try {
-      console.log('🕐 Carregando horários:', {
+      console.log('🕐 Carregando horários disponíveis:', {
         barbeiro: selectedBarber.nome,
+        staff_id: selectedBarber.staff_id,
         data: format(selectedDate, 'dd/MM/yyyy'),
         servico: selectedService.nome,
         duracao: selectedService.duracao
       });
 
+      // Buscar slots ESPECÍFICOS para este barbeiro
       const slots = await getAvailableTimeSlots(
         selectedBarber.staff_id,
         selectedDate,
         selectedService.duracao
       );
       
-      console.log('📋 Slots recebidos:', {
+      console.log(`📋 Slots para ${selectedBarber.nome}:`, {
         total: slots.length,
         disponiveis: slots.filter(s => s.available).length,
-        slots: slots.map(s => ({ time: s.time, available: s.available, reason: s.reason }))
+        ocupados: slots.filter(s => !s.available).length,
+        detalhes: slots.map(s => ({ 
+          time: s.time, 
+          available: s.available, 
+          reason: s.reason 
+        }))
       });
+
+      // Mostrar apenas horários disponíveis
+      const availableSlots = slots.filter(s => s.available);
+      
+      if (availableSlots.length === 0) {
+        toast.info(`Nenhum horário disponível para ${selectedBarber.nome} nesta data. Tente outra data.`);
+      } else {
+        console.log(`✅ ${availableSlots.length} horários disponíveis para ${selectedBarber.nome}`);
+      }
 
       setTimeSlots(slots);
     } catch (error) {
@@ -233,9 +251,21 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     }
 
     setCreating(true);
+    let progressToast: string | number | undefined;
 
     try {
-      // Validar disponibilidade final
+      console.log('🚀 Iniciando confirmação de agendamento', {
+        cliente: cliente.nome,
+        barbeiro: selectedBarber.nome,
+        servico: selectedService.nome,
+        data: format(selectedDate, 'dd/MM/yyyy'),
+        hora: selectedTime
+      });
+
+      // Mostrar toast de progresso
+      progressToast = toast.loading('⏳ Validando disponibilidade...');
+
+      // 1. Validar disponibilidade final
       const validation = await validateAppointment(
         selectedBarber.staff_id,
         selectedDate,
@@ -244,12 +274,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       );
 
       if (!validation.valid) {
+        console.error('❌ Validação falhou:', validation.error);
+        if (progressToast) toast.dismiss(progressToast);
         toast.error(validation.error || 'Horário não disponível');
-        await loadTimeSlots();
+        await loadTimeSlots(); // Recarregar horários disponíveis
         return;
       }
 
-      // Calcular end_time
+      console.log('✅ Validação OK, criando agendamento...');
+      
+      // Atualizar progresso
+      if (progressToast) toast.dismiss(progressToast);
+      progressToast = toast.loading('📝 Criando agendamento...');
+
+      // 2. Calcular horários
       const [hours, minutes] = selectedTime.split(':').map(Number);
       const startDateTime = new Date(selectedDate);
       startDateTime.setHours(hours, minutes, 0, 0);
@@ -257,8 +295,13 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(endDateTime.getMinutes() + selectedService.duracao);
 
-      // Criar agendamento
-      const { error: insertError } = await supabase
+      console.log('📅 Horários calculados:', {
+        start: startDateTime.toISOString(),
+        end: endDateTime.toISOString()
+      });
+
+      // 3. Criar agendamento no banco
+      const { data: appointmentData, error: insertError } = await supabase
         .from('appointments')
         .insert({
           client_id: cliente.id,
@@ -267,25 +310,49 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           status: 'confirmed'
-        });
+        })
+        .select()
+        .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('❌ Erro ao inserir agendamento:', insertError);
+        throw insertError;
+      }
 
-      // Mensagem de sucesso detalhada
-      const dateFormatted = selectedDate.toLocaleDateString('pt-BR');
+      console.log('✅ Agendamento criado com sucesso!', appointmentData);
+
+      // Sucesso!
+      if (progressToast) toast.dismiss(progressToast);
+      
+      const dateFormatted = selectedDate.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long'
+      });
+      
       toast.success(
-        `🎉 Agendamento confirmado!\n${selectedService.nome} com ${selectedBarber.nome}\n${dateFormatted} às ${selectedTime}`,
-        { duration: 5000 }
+        `🎉 Agendamento confirmado!\n\n${selectedService.nome} com ${selectedBarber.nome}\n${dateFormatted} às ${selectedTime}`,
+        { duration: 6000 }
       );
 
-      // Aguardar 2 segundos antes de redirecionar para o usuário ver a confirmação
+      // Redirecionar após 2 segundos
       setTimeout(() => {
         navigate('/painel-cliente/agendamentos');
       }, 2000);
+
     } catch (error: any) {
-      console.error('Erro ao criar agendamento:', error);
-      toast.error(error.message || 'Erro ao criar agendamento');
+      console.error('💥 Erro ao criar agendamento:', error);
+      if (progressToast) toast.dismiss(progressToast);
+      
+      const errorMessage = error.message || 'Erro ao criar agendamento. Tente novamente.';
+      toast.error(errorMessage);
+      
+      // Recarregar horários para mostrar estado atualizado
+      await loadTimeSlots();
+    } finally {
+      // CRÍTICO: Sempre resetar o estado de loading
       setCreating(false);
+      console.log('🏁 Processo de agendamento finalizado');
     }
   };
 
