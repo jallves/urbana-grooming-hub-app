@@ -56,23 +56,42 @@ export const useAppointments = () => {
           regularAppointments = data || [];
         }
       } else {
-        // Admin - carregar todos os agendamentos
+      // Admin - carregar todos os agendamentos do painel
         const { data, error } = await supabase
-          .from('appointments')
+          .from('painel_agendamentos')
           .select(`
             *,
-            client:client_id(*),
-            service:service_id(*),
-            staff:staff_id(*)
+            cliente:painel_clientes(*),
+            servico:painel_servicos(*),
+            barbeiro:painel_barbeiros(*)
           `)
-          .order('start_time', { ascending: true });
+          .order('data', { ascending: true });
         
         if (error) {
           console.error('Error fetching all appointments:', error);
           throw error;
         }
         
-        regularAppointments = data || [];
+        // Converter formato
+        regularAppointments = (data || []).map((appt: any) => {
+          const startTime = new Date(`${appt.data}T${appt.hora}`);
+          const endTime = new Date(startTime.getTime() + (appt.servico?.duracao || 60) * 60000);
+          return {
+            id: appt.id,
+            client_id: appt.cliente_id,
+            service_id: appt.servico_id,
+            staff_id: appt.barbeiro?.staff_id || null,
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            status: appt.status,
+            notes: null,
+            created_at: appt.created_at,
+            updated_at: appt.updated_at,
+            client: appt.cliente ? { id: appt.cliente.id, name: appt.cliente.nome, email: appt.cliente.email, phone: appt.cliente.whatsapp, whatsapp: appt.cliente.whatsapp } : undefined,
+            service: appt.servico ? { id: appt.servico.id, name: appt.servico.nome, price: appt.servico.preco, duration: appt.servico.duracao, description: appt.servico.descricao } : undefined,
+            staff: appt.barbeiro ? { id: appt.barbeiro.id, name: appt.barbeiro.nome, email: appt.barbeiro.email, phone: appt.barbeiro.telefone } : undefined
+          };
+        });
       }
 
       // Buscar agendamentos do painel do cliente (apenas para admins)
