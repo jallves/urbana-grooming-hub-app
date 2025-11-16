@@ -46,12 +46,12 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
       if (!appointmentId) return null;
       
       const { data, error } = await supabase
-        .from('appointments')
+        .from('painel_agendamentos')
         .select(`
           *,
-          clients(*),
-          services(*),
-          staff(*)
+          cliente:painel_clientes(*),
+          servico:painel_servicos(*),
+          barbeiro:painel_barbeiros(*)
         `)
         .eq('id', appointmentId)
         .single();
@@ -67,13 +67,13 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     queryKey: ['services'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('services')
+        .from('painel_servicos')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('nome');
       
       if (error) throw new Error(error.message);
-      return data as Service[];
+      return (data || []).map(s => ({ id: s.id, name: s.nome, price: s.preco, duration: s.duracao, description: s.descricao, is_active: s.is_active })) as Service[];
     },
   });
 
@@ -82,12 +82,12 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     queryKey: ['staff'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('staff')
+        .from('painel_barbeiros')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('nome');
       if (error) throw new Error(error.message);
-      return data as StaffMember[];
+      return (data || []).map(b => ({ id: b.id, name: b.nome, email: b.email, phone: b.telefone, image_url: b.image_url, specialties: b.specialties, experience: b.experience, commission_rate: b.commission_rate, is_active: b.is_active, role: b.role })) as StaffMember[];
     },
   });
 
@@ -96,35 +96,34 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     queryKey: ['clients'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('clients')
+        .from('painel_clientes')
         .select('*')
-        .order('name');
+        .order('nome');
       
       if (error) throw new Error(error.message);
-      return data as Client[];
+      return (data || []).map(c => ({ id: c.id, name: c.nome, email: c.email, phone: c.whatsapp, whatsapp: c.whatsapp, birth_date: c.data_nascimento })) as Client[];
     },
   });
 
   // Populate form with existing appointment data
   useEffect(() => {
     if (appointmentData) {
-      const startTime = new Date(appointmentData.start_time);
-      const timeString = startTime.toTimeString().slice(0, 5);
+      const startDate = new Date(`${appointmentData.data}T${appointmentData.hora}`);
       
       form.reset({
-        client_id: appointmentData.client_id,
-        service_id: appointmentData.service_id,
-        staff_id: appointmentData.staff_id || '',
-        date: startTime,
-        time: timeString,
-        notes: appointmentData.notes || '',
-        couponCode: appointmentData.coupon_code || '',
-        discountAmount: appointmentData.discount_amount || 0,
+        client_id: appointmentData.cliente_id,
+        service_id: appointmentData.servico_id,
+        staff_id: appointmentData.barbeiro_id,
+        date: startDate,
+        time: appointmentData.hora,
+        notes: '',
+        couponCode: '',
+        discountAmount: 0,
       });
 
       // Set selected service
-      if (services) {
-        const service = services.find(s => s.id === appointmentData.service_id);
+      if (services && appointmentData.servico) {
+        const service = services.find(s => s.id === appointmentData.servico_id);
         setSelectedService(service || null);
       }
     }
