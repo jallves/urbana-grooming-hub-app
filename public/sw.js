@@ -1,10 +1,25 @@
-const CACHE_NAME = 'totem-v1';
+const CACHE_NAME = 'totem-v2'; // Incrementando versão para forçar cache bust
 const QUEUE_NAME = 'totem-requests-queue';
 
 // Instalar e ativar
 self.addEventListener('install', (event) => {
-  console.log('[SW] Instalando service worker...');
+  console.log('[SW] Instalando service worker v2...');
+  // Força atualização imediata
   self.skipWaiting();
+  
+  // Limpa caches antigos
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME && cacheName !== QUEUE_NAME) {
+            console.log('[SW] Removendo cache antigo:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {
