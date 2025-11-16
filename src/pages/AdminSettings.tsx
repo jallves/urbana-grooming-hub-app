@@ -1,10 +1,11 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Settings2, Bell } from "lucide-react";
+import { CreditCard, Settings2, Bell, RefreshCw } from "lucide-react";
 import TEFHomologacao from '@/components/admin/tef/TEFHomologacao';
 import TEFSettingsForm from '@/components/admin/tef/TEFSettingsForm';
 import VapidKeyGenerator from '@/components/admin/settings/VapidKeyGenerator';
+import CacheManager from '@/components/admin/settings/CacheManager';
 
 const AdminSettings: React.FC = () => {
   return (
@@ -14,8 +15,15 @@ const AdminSettings: React.FC = () => {
       icon="⚙️"
     >
       <div className="w-full h-full p-6">
-        <Tabs defaultValue="push-notifications" className="w-full">
+        <Tabs defaultValue="cache" className="w-full">
           <TabsList className="bg-white border border-gray-200">
+            <TabsTrigger 
+              value="cache"
+              className="data-[state=active]:bg-black data-[state=active]:text-white"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Cache e Atualização
+            </TabsTrigger>
             <TabsTrigger 
               value="push-notifications"
               className="data-[state=active]:bg-black data-[state=active]:text-white"
@@ -38,6 +46,10 @@ const AdminSettings: React.FC = () => {
               Configurações TEF
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="cache" className="mt-6">
+            <CacheManager />
+          </TabsContent>
 
           <TabsContent value="push-notifications" className="mt-6">
             <VapidKeyGenerator />
