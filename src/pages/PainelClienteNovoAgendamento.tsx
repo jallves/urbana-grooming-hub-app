@@ -22,6 +22,7 @@ interface Service {
 
 interface Barber {
   id: string;
+  staff_id: string;
   nome: string;
   image_url?: string;
 }
@@ -91,7 +92,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('painel_barbeiros')
-        .select('*')
+        .select('id, staff_id, nome, image_url')
         .eq('is_active', true)
         .order('nome');
 
@@ -132,7 +133,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         
         // Buscar horários disponíveis para esta data
         const slots = await getAvailableTimeSlots(
-          selectedBarber!.id,
+          selectedBarber!.staff_id,
           date,
           selectedService!.duracao
         );
@@ -180,7 +181,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       });
 
       const slots = await getAvailableTimeSlots(
-        selectedBarber.id,
+        selectedBarber.staff_id,
         selectedDate,
         selectedService.duracao
       );
@@ -299,13 +300,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   return (
     <div className="min-h-screen relative">
       {/* Background com imagem */}
-      <div 
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: `url(${barbershopBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
+      <img 
+        src={barbershopBg}
+        alt="Background"
+        className="fixed inset-0 w-full h-full object-cover z-0"
+        onError={(e) => {
+          e.currentTarget.style.display = 'none';
         }}
       />
       
@@ -537,7 +537,18 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-3 text-white">
-                          <User className="w-5 h-5 text-urbana-gold" />
+                          {selectedBarber?.image_url ? (
+                            <img 
+                              src={selectedBarber.image_url} 
+                              alt={selectedBarber.nome}
+                              className="w-12 h-12 rounded-full object-cover border-2 border-urbana-gold/50"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <User className="w-5 h-5 text-urbana-gold" />
+                          )}
                           <div>
                             <p className="text-sm text-white/60">Profissional</p>
                             <p className="font-semibold">{selectedBarber?.nome}</p>
