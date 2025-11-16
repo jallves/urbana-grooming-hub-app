@@ -36,6 +36,13 @@ interface AgendamentoStats {
   }[];
 }
 
+// ============================================================
+// ⚠️ PAINEL CLIENTE DASHBOARD - IMPORTANTE ⚠️
+// Este componente DEVE usar o layout com background da barbearia
+// O background é gerenciado pelo PainelClienteLayout
+// NUNCA adicione bg-white ou qualquer background aqui
+// ============================================================
+
 export default function PainelClienteDashboard() {
   const { cliente, logout } = usePainelClienteAuth();
   const navigate = useNavigate();
@@ -45,6 +52,11 @@ export default function PainelClienteDashboard() {
     concluidos: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  // Log para debug
+  React.useEffect(() => {
+    console.log('📊 PainelClienteDashboard carregado - background vem do Layout');
+  }, []);
 
   const fetchStats = useCallback(async () => {
     if (!cliente?.id) return;
