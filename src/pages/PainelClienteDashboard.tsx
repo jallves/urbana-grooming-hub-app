@@ -22,6 +22,7 @@ import { PainelClienteContentContainer } from "@/components/painel-cliente/Paine
 import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
+import { PushNotificationPrompt } from "@/components/client/PushNotificationPrompt";
 import { cn } from "@/lib/utils";
 
 interface AgendamentoStats {
@@ -326,6 +327,9 @@ export default function PainelClienteDashboard() {
           </PainelClienteCard>
         ))}
       </div>
+
+      {/* Prompt de notificações push */}
+      <PushNotificationPrompt />
     </PainelClienteContentContainer>
   );
 }
