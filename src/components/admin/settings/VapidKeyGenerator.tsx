@@ -94,6 +94,37 @@ const VapidKeyGenerator: React.FC = () => {
     }
   };
 
+  const handleSendTestNotification = async () => {
+    if (!testClientId) {
+      toast.error("Selecione um cliente para enviar a notificação de teste");
+      return;
+    }
+
+    setIsSendingTest(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-test-notification', {
+        body: { clientId: testClientId }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success(data.message, {
+          description: `Enviadas: ${data.stats.success} | Erros: ${data.stats.errors}`
+        });
+      } else {
+        toast.warning(data.message);
+      }
+    } catch (error: any) {
+      console.error('Erro ao enviar notificação de teste:', error);
+      toast.error("Erro ao enviar notificação de teste", {
+        description: error.message
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
