@@ -309,7 +309,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           staff_id: selectedBarber.staff_id,
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
-          status: 'confirmed'
+          status: 'scheduled'
         })
         .select()
         .single();
@@ -332,7 +332,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       
       toast.success(
         `🎉 Agendamento confirmado!\n\n${selectedService.nome} com ${selectedBarber.nome}\n${dateFormatted} às ${selectedTime}`,
-        { duration: 6000 }
+        { 
+          duration: 6000,
+          style: {
+            background: 'hsl(142, 76%, 36%)',
+            color: 'white',
+            border: '2px solid hsl(142, 76%, 46%)',
+            fontSize: '16px',
+            fontWeight: 'bold',
+          }
+        }
       );
 
       // Redirecionar após 2 segundos
@@ -344,8 +353,23 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       console.error('💥 Erro ao criar agendamento:', error);
       if (progressToast) toast.dismiss(progressToast);
       
-      const errorMessage = error.message || 'Erro ao criar agendamento. Tente novamente.';
-      toast.error(errorMessage);
+      let errorMessage = 'Erro ao criar agendamento. Tente novamente.';
+      
+      // Tratar erros específicos
+      if (error.code === '23514') {
+        errorMessage = 'Erro de validação no agendamento. Tente novamente.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+        style: {
+          background: 'hsl(var(--destructive))',
+          color: 'hsl(var(--destructive-foreground))',
+          border: '1px solid hsl(var(--destructive))',
+        }
+      });
       
       // Recarregar horários para mostrar estado atualizado
       await loadTimeSlots();
@@ -648,9 +672,19 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         <Button
                           onClick={handleConfirm}
                           disabled={creating || isValidating}
-                          className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg"
+                          className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg relative overflow-hidden"
                         >
-                          {creating || isValidating ? 'Confirmando...' : 'Confirmar Agendamento'}
+                          {creating || isValidating ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
+                              Confirmando...
+                            </span>
+                          ) : (
+                            <>
+                              <Check className="w-5 h-5 mr-2 inline" />
+                              Confirmar Agendamento
+                            </>
+                          )}
                         </Button>
                       </CardContent>
                     </Card>
