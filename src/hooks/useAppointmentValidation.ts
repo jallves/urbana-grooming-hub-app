@@ -149,6 +149,13 @@ export const useAppointmentValidation = () => {
 
   /**
    * Validação completa antes de criar/atualizar agendamento
+   * IMPORTANTE: A RPC check_unified_slot_availability já valida:
+   * - Horário de funcionamento (working_hours do banco)
+   * - Conflitos com outros agendamentos
+   * - Disponibilidade do barbeiro
+   * 
+   * Removemos a validação de horário hardcoded do frontend para evitar
+   * conflitos com os horários reais configurados no banco.
    */
   const validateAppointment = useCallback(async (
     barberId: string,
@@ -168,21 +175,19 @@ export const useAppointmentValidation = () => {
         excludeAppointmentId
       });
 
-      // 1. Validar horário de funcionamento (considerando duração do serviço)
-      const businessHoursCheck = checkBusinessHours(time, serviceDuration);
-      if (!businessHoursCheck.valid) {
-        toast.error(businessHoursCheck.error);
-        return businessHoursCheck;
-      }
-
-      // 2. Validar se não é horário passado (para dia atual)
+      // 1. Validar se não é horário passado (para dia atual)
       const pastTimeCheck = validateNotPastTime(date, time);
       if (!pastTimeCheck.valid) {
+        console.error('❌ Horário passado detectado');
         toast.error(pastTimeCheck.error);
         return pastTimeCheck;
       }
 
-      // 3. Verificar conflitos de horário
+      // 2. Verificar disponibilidade usando RPC unificada
+      // Esta RPC JÁ valida:
+      // - Horário de trabalho do barbeiro (working_hours)
+      // - Conflitos com agendamentos existentes
+      // - Se o serviço pode ser concluído no horário de trabalho
       const conflictCheck = await checkAppointmentConflict(
         barberId,
         date,
@@ -190,7 +195,9 @@ export const useAppointmentValidation = () => {
         serviceDuration,
         excludeAppointmentId
       );
+      
       if (!conflictCheck.valid) {
+        console.error('❌ Conflito de horário detectado');
         toast.error(conflictCheck.error);
         return conflictCheck;
       }
@@ -205,7 +212,7 @@ export const useAppointmentValidation = () => {
     } finally {
       setIsValidating(false);
     }
-  }, [checkBusinessHours, validateNotPastTime, checkAppointmentConflict]);
+  }, [validateNotPastTime, checkAppointmentConflict]);
 
   /**
    * Busca horários disponíveis para um barbeiro em uma data específica
