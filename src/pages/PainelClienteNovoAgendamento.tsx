@@ -11,6 +11,7 @@ import { TotemGrid } from '@/components/totem/TotemLayout';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import SuccessConfirmationDialog from '@/components/client/appointment/SuccessConfirmationDialog';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface Service {
@@ -53,6 +54,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // State para loading
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
 
@@ -308,33 +310,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
       console.log('✅ Agendamento criado com sucesso!', appointmentData);
 
-      // Sucesso!
+      // Sucesso! Mostrar modal de confirmação
       if (progressToast) toast.dismiss(progressToast);
-      
-      const dateFormatted = selectedDate.toLocaleDateString('pt-BR', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long'
-      });
-      
-      toast.success(
-        `🎉 Agendamento confirmado!\n\n${selectedService.nome} com ${selectedBarber.nome}\n${dateFormatted} às ${selectedTime}`,
-        { 
-          duration: 6000,
-          style: {
-            background: 'hsl(142, 76%, 36%)',
-            color: 'white',
-            border: '2px solid hsl(142, 76%, 46%)',
-            fontSize: '16px',
-            fontWeight: 'bold',
-          }
-        }
-      );
-
-      // Redirecionar após 2 segundos
-      setTimeout(() => {
-        navigate('/painel-cliente/agendamentos');
-      }, 2000);
+      setShowSuccessDialog(true);
 
     } catch (error: any) {
       console.error('💥 Erro ao criar agendamento:', error);
@@ -689,6 +667,29 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Modal de confirmação de sucesso */}
+      {showSuccessDialog && selectedService && selectedBarber && selectedDate && selectedTime && (
+        <SuccessConfirmationDialog
+          isOpen={showSuccessDialog}
+          onClose={() => {
+            setShowSuccessDialog(false);
+            // Resetar formulário e voltar para o início
+            setStep('service');
+            setSelectedService(null);
+            setSelectedBarber(null);
+            setSelectedDate(null);
+            setSelectedTime(null);
+          }}
+          appointmentDetails={{
+            serviceName: selectedService.nome,
+            barberName: selectedBarber.nome,
+            date: selectedDate,
+            time: selectedTime,
+            price: selectedService.preco
+          }}
+        />
+      )}
     </div>
   );
 };
