@@ -8,8 +8,11 @@ interface PainelClienteContentContainerProps {
 }
 
 /**
- * PainelClienteContentContainer - Container para conteúdo do painel do cliente
- * Similar ao TotemContentContainer, mas para o painel do cliente
+ * ⚠️ CONTAINER DO PAINEL DO CLIENTE - NÃO ADICIONE BACKGROUNDS AQUI ⚠️
+ * 
+ * PainelClienteContentContainer - Container transparente para conteúdo
+ * O background é gerenciado pelo PainelClienteLayout (imagem da barbearia)
+ * NUNCA adicione bg-white, bg-background ou qualquer outro background aqui
  * 
  * @example
  * ```tsx

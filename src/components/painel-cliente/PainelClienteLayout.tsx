@@ -17,6 +17,25 @@ const PainelClienteLayout: React.FC = () => {
   const location = useLocation();
   const { isLoading } = usePageTransition();
 
+  // Log para debug - garante que este layout está sendo usado
+  React.useEffect(() => {
+    console.log('✅ PainelClienteLayout carregado com background da barbearia');
+    
+    // Verificação de segurança - garante que o background está presente
+    const verificarBackground = () => {
+      const bgElement = document.querySelector('img[alt="Barbearia Costa Urbana Background"]');
+      if (!bgElement) {
+        console.error('❌ ERRO CRÍTICO: Background da barbearia não encontrado!');
+        console.error('O layout pode estar incorreto. Verifique PainelClienteLayout.tsx');
+      } else {
+        console.log('✅ Background da barbearia verificado e carregado corretamente');
+      }
+    };
+    
+    // Verifica após um pequeno delay para garantir renderização
+    setTimeout(verificarBackground, 500);
+  }, []);
+
   const handleLogout = async () => {
     await logout();
     navigate('/painel-cliente/login');
@@ -31,14 +50,23 @@ const PainelClienteLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen w-screen overflow-x-hidden relative font-poppins">
-      {/* Background image */}
-      <div className="fixed inset-0 z-0">
+      {/* 
+        ⚠️ ATENÇÃO CRÍTICA - NÃO REMOVER ⚠️
+        Background fixo da barbearia - ESSENCIAL para o design do painel
+        Este fundo DEVE estar sempre presente em todas as páginas do painel do cliente
+        NUNCA altere ou remova esta estrutura sem consulta prévia
+      */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
           src={barbershopBg} 
-          alt="Barbearia" 
+          alt="Barbearia Costa Urbana Background" 
           className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('❌ Erro ao carregar background da barbearia');
+            e.currentTarget.style.display = 'none';
+          }}
         />
-        {/* Dark overlay */}
+        {/* Dark overlay - Garante contraste e legibilidade */}
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
       </div>
 
