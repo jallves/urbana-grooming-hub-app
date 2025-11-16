@@ -237,7 +237,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     try {
       // Validar disponibilidade final
       const validation = await validateAppointment(
-        selectedBarber.id,
+        selectedBarber.staff_id,
         selectedDate,
         selectedTime,
         selectedService.duracao
@@ -263,7 +263,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         .insert({
           client_id: cliente.id,
           service_id: selectedService.id,
-          staff_id: selectedBarber.id,
+          staff_id: selectedBarber.staff_id,
           start_time: startDateTime.toISOString(),
           end_time: endDateTime.toISOString(),
           status: 'confirmed'
@@ -271,12 +271,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
       if (insertError) throw insertError;
 
-      toast.success('Agendamento criado com sucesso!');
-      navigate('/painel-cliente/agendamentos');
+      // Mensagem de sucesso detalhada
+      const dateFormatted = selectedDate.toLocaleDateString('pt-BR');
+      toast.success(
+        `🎉 Agendamento confirmado!\n${selectedService.nome} com ${selectedBarber.nome}\n${dateFormatted} às ${selectedTime}`,
+        { duration: 5000 }
+      );
+
+      // Aguardar 2 segundos antes de redirecionar para o usuário ver a confirmação
+      setTimeout(() => {
+        navigate('/painel-cliente/agendamentos');
+      }, 2000);
     } catch (error: any) {
       console.error('Erro ao criar agendamento:', error);
       toast.error(error.message || 'Erro ao criar agendamento');
-    } finally {
       setCreating(false);
     }
   };
