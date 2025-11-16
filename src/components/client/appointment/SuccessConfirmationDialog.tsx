@@ -124,7 +124,7 @@ const SuccessConfirmationDialog: React.FC<SuccessConfirmationDialogProps> = ({
               <Button 
                 onClick={onClose}
                 variant="outline"
-                className="flex-1 border-urbana-gold/30 text-urbana-light hover:bg-transparent hover:text-urbana-light hover:border-urbana-gold/30"
+                className="flex-1 border-urbana-gold/30 bg-transparent text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-light hover:border-urbana-gold/50"
               >
                 Voltar ao Início
               </Button>
