@@ -1,0 +1,287 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Copy, Key, CheckCircle, Bell, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+interface VapidKeys {
+  publicKey: string;
+  privateKey: string;
+}
+
+const VapidKeyGenerator: React.FC = () => {
+  const [keys, setKeys] = useState<VapidKeys | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const generateKeys = async () => {
+    setIsGenerating(true);
+    try {
+      // Generate ECDSA P-256 key pair for VAPID
+      const keyPair = await crypto.subtle.generateKey(
+        {
+          name: 'ECDSA',
+          namedCurve: 'P-256'
+        },
+        true,
+        ['sign', 'verify']
+      );
+
+      // Export public key
+      const publicKeyBuffer = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+      const publicKeyBase64 = arrayBufferToBase64(publicKeyBuffer);
+
+      // Export private key
+      const privateKeyBuffer = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+      const privateKeyBase64 = arrayBufferToBase64(privateKeyBuffer);
+
+      setKeys({
+        publicKey: urlBase64(publicKeyBase64),
+        privateKey: urlBase64(privateKeyBase64)
+      });
+
+      toast({
+        title: "✅ VAPID Keys Geradas!",
+        description: "As chaves foram geradas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error generating VAPID keys:', error);
+      toast({
+        title: "❌ Erro ao Gerar Keys",
+        description: "Ocorreu um erro ao gerar as VAPID keys.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
+
+  const urlBase64 = (base64: string): string => {
+    return base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  };
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+      toast({
+        title: "📋 Copiado!",
+        description: `${field} copiada para a área de transferência.`,
+      });
+    } catch (error) {
+      toast({
+        title: "❌ Erro ao Copiar",
+        description: "Não foi possível copiar para a área de transferência.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notificações Push - Gerador de VAPID Keys
+          </CardTitle>
+          <CardDescription>
+            Gere as chaves VAPID necessárias para enviar notificações push aos clientes
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Alert>
+            <Key className="h-4 w-4" />
+            <AlertDescription>
+              <strong>O que são VAPID Keys?</strong>
+              <br />
+              São chaves de autenticação necessárias para enviar notificações push do navegador.
+              Você precisa gerar essas chaves apenas uma vez e configurá-las nos secrets do Supabase.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-4">
+            <Button
+              onClick={generateKeys}
+              disabled={isGenerating}
+              className="w-full"
+              size="lg"
+            >
+              {isGenerating ? (
+                <>Gerando...</>
+              ) : (
+                <>
+                  <Key className="mr-2 h-4 w-4" />
+                  Gerar VAPID Keys
+                </>
+              )}
+            </Button>
+
+            {keys && (
+              <div className="space-y-4 animate-in fade-in-50">
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    ✅ Chaves geradas com sucesso! Copie as chaves abaixo.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-base font-semibold">
+                      🔓 VAPID Public Key (Chave Pública)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={keys.publicKey}
+                        readOnly
+                        className="font-mono text-xs"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => copyToClipboard(keys.publicKey, 'Chave Pública')}
+                      >
+                        {copiedField === 'Chave Pública' ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      💡 Use esta chave no arquivo <code>.env</code> como <code>VITE_VAPID_PUBLIC_KEY</code>
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-base font-semibold">
+                      🔐 VAPID Private Key (Chave Privada)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={keys.privateKey}
+                        readOnly
+                        type="password"
+                        className="font-mono text-xs"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => copyToClipboard(keys.privateKey, 'Chave Privada')}
+                      >
+                        {copiedField === 'Chave Privada' ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      🔒 Use esta chave como secret no Supabase: <code>VAPID_PRIVATE_KEY</code>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>📋 Próximos Passos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                1
+              </div>
+              <div>
+                <p className="font-semibold">Criar arquivo .env na raiz do projeto</p>
+                <p className="text-sm text-muted-foreground">
+                  Adicione: <code className="bg-muted px-1 py-0.5 rounded">VITE_VAPID_PUBLIC_KEY=sua_chave_publica</code>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                2
+              </div>
+              <div>
+                <p className="font-semibold">Configurar Secrets no Supabase</p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Adicione 3 secrets no Supabase Edge Functions:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                  <li>• <code className="bg-muted px-1 py-0.5 rounded">VAPID_PUBLIC_KEY</code></li>
+                  <li>• <code className="bg-muted px-1 py-0.5 rounded">VAPID_PRIVATE_KEY</code></li>
+                  <li>• <code className="bg-muted px-1 py-0.5 rounded">VAPID_EMAIL</code> (exemplo: mailto:seu@email.com)</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                3
+              </div>
+              <div>
+                <p className="font-semibold">Testar as Notificações</p>
+                <p className="text-sm text-muted-foreground">
+                  Acesse o painel do cliente e ative as notificações quando solicitado
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open('https://supabase.com/dashboard/project/bqftkknbvmggcbsubicl/settings/functions', '_blank')}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Abrir Secrets do Supabase
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Alert>
+        <Bell className="h-4 w-4" />
+        <AlertDescription>
+          <strong>ℹ️ Como funciona:</strong>
+          <br />
+          Após configurar, o sistema enviará notificações automáticas aos clientes:
+          <ul className="mt-2 ml-4 space-y-1 text-sm">
+            <li>• <strong>24 horas antes</strong> do agendamento</li>
+            <li>• <strong>4 horas antes</strong> do agendamento</li>
+          </ul>
+          <br />
+          As notificações são enviadas pelo próprio navegador/sistema operacional, sem usar email ou WhatsApp.
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+};
+
+export default VapidKeyGenerator;
