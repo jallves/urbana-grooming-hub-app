@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, Key, CheckCircle, Bell, ExternalLink } from 'lucide-react';
+import { Copy, Key, CheckCircle, Bell, ExternalLink, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface VapidKeys {
   publicKey: string;
@@ -16,7 +19,22 @@ const VapidKeyGenerator: React.FC = () => {
   const [keys, setKeys] = useState<VapidKeys | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testClientId, setTestClientId] = useState<string>('');
   const { toast } = useToast();
+
+  const { data: clients } = useQuery({
+    queryKey: ['clients-for-test'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('painel_clientes')
+        .select('id, nome, email')
+        .order('nome');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const generateKeys = async () => {
     setIsGenerating(true);
@@ -96,7 +114,11 @@ const VapidKeyGenerator: React.FC = () => {
 
   const handleSendTestNotification = async () => {
     if (!testClientId) {
-      toast.error("Selecione um cliente para enviar a notificação de teste");
+      toast({
+        title: "❌ Erro",
+        description: "Selecione um cliente para enviar a notificação de teste",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -109,16 +131,22 @@ const VapidKeyGenerator: React.FC = () => {
       if (error) throw error;
 
       if (data.success) {
-        toast.success(data.message, {
+        toast({
+          title: "✅ Notificação Enviada!",
           description: `Enviadas: ${data.stats.success} | Erros: ${data.stats.errors}`
         });
       } else {
-        toast.warning(data.message);
+        toast({
+          title: "⚠️ Aviso",
+          description: data.message
+        });
       }
     } catch (error: any) {
       console.error('Erro ao enviar notificação de teste:', error);
-      toast.error("Erro ao enviar notificação de teste", {
-        description: error.message
+      toast({
+        title: "❌ Erro ao Enviar",
+        description: error.message,
+        variant: "destructive"
       });
     } finally {
       setIsSendingTest(false);
@@ -294,6 +322,50 @@ const VapidKeyGenerator: React.FC = () => {
               Abrir Secrets do Supabase
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Send className="h-5 w-5" />
+            Testar Notificações
+          </CardTitle>
+          <CardDescription>
+            Envie uma notificação de teste para um cliente específico
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Cliente</Label>
+            <Select value={testClientId} onValueChange={setTestClientId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                {clients?.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.nome} - {client.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            onClick={handleSendTestNotification}
+            disabled={isSendingTest || !testClientId}
+            className="w-full"
+          >
+            {isSendingTest ? (
+              <>Enviando...</>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Enviar Notificação de Teste
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
