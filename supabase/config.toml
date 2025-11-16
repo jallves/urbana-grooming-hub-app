@@ -26,3 +26,6 @@ verify_jwt = false
 # Executa a cada hora
 [functions.send-appointment-reminders.cron]
 schedule = "0 * * * *"
+
+[functions.send-test-notification]
+verify_jwt = false
