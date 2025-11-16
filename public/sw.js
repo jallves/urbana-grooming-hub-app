@@ -1,4 +1,4 @@
-const CACHE_NAME = 'totem-v2'; // Incrementando versão para forçar cache bust
+const CACHE_NAME = 'totem-v5-' + new Date().getTime(); // Cache único por deploy
 const QUEUE_NAME = 'totem-requests-queue';
 
 // Instalar e ativar
