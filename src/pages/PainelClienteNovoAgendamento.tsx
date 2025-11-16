@@ -287,29 +287,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       if (progressToast) toast.dismiss(progressToast);
       progressToast = toast.loading('📝 Criando agendamento...');
 
-      // 2. Calcular horários
-      const [hours, minutes] = selectedTime.split(':').map(Number);
-      const startDateTime = new Date(selectedDate);
-      startDateTime.setHours(hours, minutes, 0, 0);
-      
-      const endDateTime = new Date(startDateTime);
-      endDateTime.setMinutes(endDateTime.getMinutes() + selectedService.duracao);
-
-      console.log('📅 Horários calculados:', {
-        start: startDateTime.toISOString(),
-        end: endDateTime.toISOString()
-      });
-
-      // 3. Criar agendamento no banco
+      // 2. Criar agendamento na tabela CORRETA (painel_agendamentos)
       const { data: appointmentData, error: insertError } = await supabase
-        .from('appointments')
+        .from('painel_agendamentos')
         .insert({
-          client_id: cliente.id,
-          service_id: selectedService.id,
-          staff_id: selectedBarber.staff_id,
-          start_time: startDateTime.toISOString(),
-          end_time: endDateTime.toISOString(),
-          status: 'scheduled'
+          cliente_id: cliente.id,
+          barbeiro_id: selectedBarber.id,
+          servico_id: selectedService.id,
+          data: format(selectedDate, 'yyyy-MM-dd'),
+          hora: selectedTime,
+          status: 'confirmado'
         })
         .select()
         .single();
@@ -355,9 +342,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       
       let errorMessage = 'Erro ao criar agendamento. Tente novamente.';
       
-      // Tratar erros específicos
-      if (error.code === '23514') {
-        errorMessage = 'Erro de validação no agendamento. Tente novamente.';
+      // Tratar erros específicos do banco
+      if (error.code === '23505') {
+        errorMessage = 'Já existe um agendamento neste horário.';
+      } else if (error.code === '23503') {
+        errorMessage = 'Erro de referência no banco de dados.';
+        console.error('🔴 Erro de foreign key:', {
+          cliente_id: cliente?.id,
+          barbeiro_id: selectedBarber?.id,
+          servico_id: selectedService?.id
+        });
       } else if (error.message) {
         errorMessage = error.message;
       }
