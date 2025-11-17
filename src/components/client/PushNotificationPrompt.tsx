@@ -24,10 +24,22 @@ export const PushNotificationPrompt: React.FC = () => {
   }, [isSupported, isSubscribed, permission]);
 
   const handleActivate = async () => {
-    const success = await subscribe();
-    if (success) {
-      setIsVisible(false);
-      localStorage.setItem('push-notification-prompt-dismissed', 'true');
+    console.log('🔔 PushNotificationPrompt: Botão clicado, iniciando ativação...');
+    console.log('🔔 Estado atual:', { isSupported, isSubscribed, isLoading, permission });
+    
+    try {
+      const success = await subscribe();
+      console.log('🔔 Resultado da inscrição:', success);
+      
+      if (success) {
+        console.log('✅ Notificações ativadas com sucesso!');
+        setIsVisible(false);
+        localStorage.setItem('push-notification-prompt-dismissed', 'true');
+      } else {
+        console.error('❌ Falha ao ativar notificações');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao tentar ativar notificações:', error);
     }
   };
 
