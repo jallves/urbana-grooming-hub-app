@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
-
 interface PushSubscription {
   endpoint: string;
   keys: {
@@ -17,6 +15,7 @@ export const usePushNotifications = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [vapidPublicKey, setVapidPublicKey] = useState<string>('');
 
   useEffect(() => {
     // Verifica se o navegador suporta notificações
@@ -24,8 +23,27 @@ export const usePushNotifications = () => {
       setIsSupported(true);
       setPermission(Notification.permission);
       checkSubscription();
+      loadVapidPublicKey();
     }
   }, []);
+
+  const loadVapidPublicKey = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-vapid-public-key');
+
+      if (error) {
+        console.error('Erro ao carregar VAPID public key:', error);
+        return;
+      }
+
+      if (data?.publicKey) {
+        setVapidPublicKey(data.publicKey);
+        console.log('✅ VAPID public key carregada');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar VAPID key:', error);
+    }
+  };
 
   const checkSubscription = async () => {
     try {
@@ -58,6 +76,11 @@ export const usePushNotifications = () => {
       return false;
     }
 
+    if (!vapidPublicKey) {
+      toast.error('VAPID key não configurada. Peça ao administrador para gerar as chaves VAPID.');
+      return false;
+    }
+
     setIsLoading(true);
 
     try {
@@ -77,7 +100,7 @@ export const usePushNotifications = () => {
       // Cria subscrição
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
       // Converte para formato JSON
