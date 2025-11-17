@@ -141,7 +141,27 @@ const VapidKeyGenerator: React.FC = () => {
 
       if (error) {
         console.error('❌ Erro da edge function:', error);
-        throw error;
+        
+        let errorTitle = "❌ Erro ao Enviar";
+        let errorDescription = "Ocorreu um erro ao enviar a notificação de teste";
+        
+        if (error.message?.includes('Failed to fetch')) {
+          errorTitle = "❌ Erro de Conexão";
+          errorDescription = "Não foi possível conectar ao servidor. Verifique sua conexão com a internet.";
+        } else if (error.message?.includes('timeout')) {
+          errorTitle = "⏱️ Tempo Esgotado";
+          errorDescription = "A requisição demorou muito tempo. Tente novamente.";
+        } else {
+          errorDescription = error.message || errorDescription;
+        }
+        
+        toast({
+          title: errorTitle,
+          description: errorDescription,
+          variant: "destructive",
+          duration: 7000
+        });
+        return;
       }
 
       if (data?.success) {
@@ -151,19 +171,49 @@ const VapidKeyGenerator: React.FC = () => {
           duration: 7000
         });
       } else {
-        // Cliente sem tokens ativos
+        // Cliente sem tokens ativos ou outros erros
+        let errorTitle = "⚠️ Notificação não enviada";
+        let errorDescription = data?.message || "Cliente não possui notificações ativas";
+        let variant: "default" | "destructive" = "default";
+        
+        // Tratar erros específicos do backend
+        if (data?.errorCode === 'VAPID_NOT_CONFIGURED') {
+          errorTitle = "🔑 VAPID Não Configurado";
+          errorDescription = "As chaves VAPID não estão configuradas. Configure-as primeiro nas variáveis de ambiente.";
+          variant = "destructive";
+        } else if (data?.errorCode === 'INVALID_TOKEN') {
+          errorTitle = "🔄 Token Inválido";
+          errorDescription = "O token de notificação expirou. Peça ao cliente para reativar as notificações.";
+        } else if (data?.errorCode === 'DATABASE_ERROR') {
+          errorTitle = "💾 Erro no Banco";
+          errorDescription = "Erro ao acessar os dados. Verifique as permissões do banco.";
+          variant = "destructive";
+        } else if (!data?.errorCode) {
+          // Sem código de erro = cliente sem tokens (caso comum)
+          errorTitle = "⚠️ Cliente sem notificações ativas";
+          errorDescription = data.message || "Este cliente ainda não ativou as notificações push no painel dele. Peça para ele ativar primeiro!";
+        }
+        
         toast({
-          title: "⚠️ Cliente sem notificações ativas",
-          description: data.message || "Este cliente ainda não ativou as notificações push no painel dele. Peça para ele ativar primeiro!",
-          variant: "default",
+          title: errorTitle,
+          description: errorDescription,
+          variant: variant,
           duration: 10000
         });
       }
     } catch (error: any) {
       console.error('❌ Erro completo:', error);
+      
+      let errorTitle = "❌ Erro ao Enviar";
+      let errorDescription = "Ocorreu um erro inesperado ao enviar a notificação de teste";
+      
+      if (error.message) {
+        errorDescription = error.message;
+      }
+      
       toast({
-        title: "❌ Erro ao Enviar",
-        description: error.message || "Erro desconhecido ao enviar notificação",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
         duration: 7000
       });
