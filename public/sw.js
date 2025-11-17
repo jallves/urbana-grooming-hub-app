@@ -3,7 +3,7 @@ const QUEUE_NAME = 'totem-requests-queue';
 
 // Instalar e ativar
 self.addEventListener('install', (event) => {
-  console.log('[SW] Instalando service worker v2...');
+  console.log('%c[SW] 🚀 Instalando service worker v2...', 'background: #4CAF50; color: white; font-size: 14px; padding: 4px;');
   // Força atualização imediata
   self.skipWaiting();
   
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Ativando service worker...');
+  console.log('%c[SW] ✅ Service Worker ATIVADO e pronto para push notifications!', 'background: #2196F3; color: white; font-size: 14px; padding: 4px;');
   event.waitUntil(self.clients.claim());
 });
 
@@ -188,7 +188,8 @@ self.addEventListener('online', () => {
 
 // Receber notificação push
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification recebida:', event);
+  console.log('%c[SW] 📨 PUSH NOTIFICATION RECEBIDA!', 'background: #FF9800; color: white; font-size: 16px; padding: 8px;');
+  console.log('[SW] Dados do evento:', event);
   
   let notificationData = {
     title: 'Barbearia Costa Urbana',

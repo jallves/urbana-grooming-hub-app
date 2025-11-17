@@ -18,17 +18,21 @@ export const usePushNotifications = () => {
   const [vapidPublicKey, setVapidPublicKey] = useState<string>('');
 
   useEffect(() => {
-    console.log('🔔 usePushNotifications: Hook inicializado');
+    // Log bem visível
+    console.log('%c🔔 PUSH NOTIFICATIONS HOOK INICIADO', 'background: #222; color: #bada55; font-size: 16px; padding: 4px;');
+    
     // Verifica se o navegador suporta notificações
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
-      console.log('✅ Navegador suporta notificações push');
+      console.log('%c✅ Navegador suporta notificações push', 'color: green; font-weight: bold');
       setIsSupported(true);
       setPermission(Notification.permission);
-      console.log('🔔 Permissão atual:', Notification.permission);
+      console.log('%c🔔 Permissão atual: ' + Notification.permission, 'color: blue');
+      
       checkSubscription();
       loadVapidPublicKey();
     } else {
-      console.error('❌ Navegador NÃO suporta notificações push');
+      console.error('%c❌ Navegador NÃO suporta notificações push', 'color: red; font-weight: bold');
+      toast.error('Seu navegador não suporta notificações push');
     }
   }, []);
 
@@ -160,25 +164,34 @@ export const usePushNotifications = () => {
   };
 
   const subscribe = async () => {
-    console.log('🔔 ========== [PUSH] INICIANDO SUBSCRIÇÃO ==========');
-    console.log('🔔 [PUSH] isSupported:', isSupported);
-    console.log('🔔 [PUSH] vapidPublicKey:', vapidPublicKey ? 'Carregada ✅' : 'NÃO carregada ❌');
+    console.log('%c🔔 ========== INICIANDO SUBSCRIÇÃO DE PUSH ==========', 'background: #4CAF50; color: white; font-size: 14px; padding: 8px;');
+    console.log('🔔 isSupported:', isSupported);
+    console.log('🔔 vapidPublicKey:', vapidPublicKey ? 'Carregada ✅' : 'NÃO carregada ❌');
     
     if (!isSupported) {
-      console.error('❌ [PUSH] Notificações não suportadas');
+      console.error('%c❌ Notificações não suportadas', 'color: red; font-weight: bold');
       toast.error('Notificações não são suportadas neste navegador');
       setIsLoading(false);
       return false;
     }
 
     if (!vapidPublicKey) {
-      console.error('❌ [PUSH] VAPID key não configurada');
-      toast.error('VAPID key não configurada. Peça ao administrador para gerar as chaves VAPID.');
-      setIsLoading(false);
-      return false;
+      console.error('%c❌ VAPID key não configurada', 'color: red; font-weight: bold');
+      toast.error('Aguarde... carregando configurações');
+      
+      // Tentar carregar novamente
+      await loadVapidPublicKey();
+      
+      // Verificar novamente após tentar carregar
+      if (!vapidPublicKey) {
+        toast.error('Erro ao carregar configurações. Tente novamente.');
+        setIsLoading(false);
+        return false;
+      }
     }
 
     setIsLoading(true);
+    toast.loading('Ativando notificações...', { id: 'push-subscribe' });
 
     try {
       // PASSO 1: Solicitar permissão
@@ -303,20 +316,31 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      console.log('✅ [PUSH] Token salvo com SUCESSO!', insertData);
-      console.log('🔔 ========== [PUSH] SUBSCRIÇÃO CONCLUÍDA ==========');
+      console.log('%c✅ Token salvo com SUCESSO!', 'background: green; color: white; font-size: 14px; padding: 8px;', insertData);
+      console.log('%c🔔 ========== SUBSCRIÇÃO CONCLUÍDA ==========', 'background: #4CAF50; color: white; font-size: 14px; padding: 8px;');
 
       setIsSubscribed(true);
-      toast.success('✅ Notificações ativadas com sucesso!');
+      toast.success('✅ Notificações ativadas com sucesso!', { id: 'push-subscribe' });
       setIsLoading(false);
       return true;
       
     } catch (error: any) {
-      console.error('❌ [PUSH] ERRO GERAL:', error);
-      console.error('🔴 [PUSH] Tipo:', error.name);
-      console.error('🔴 [PUSH] Mensagem:', error.message);
-      console.error('🔴 [PUSH] Stack:', error.stack);
-      toast.error(`Erro ao ativar notificações: ${error.message}`);
+      console.error('%c❌ ERRO AO ATIVAR NOTIFICAÇÕES', 'background: red; color: white; font-size: 14px; padding: 8px;');
+      console.error('🔴 Tipo:', error.name);
+      console.error('🔴 Mensagem:', error.message);
+      console.error('🔴 Stack:', error.stack);
+      
+      // Mensagem mais amigável para o usuário
+      let errorMessage = 'Erro ao ativar notificações';
+      if (error.message.includes('not found')) {
+        errorMessage = 'Cliente não encontrado. Faça login novamente.';
+      } else if (error.message.includes('permission')) {
+        errorMessage = 'Permissão de notificação negada';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage, { id: 'push-subscribe' });
       setIsLoading(false);
       return false;
     }
