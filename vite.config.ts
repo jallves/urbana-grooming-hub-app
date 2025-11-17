@@ -41,12 +41,18 @@ export default defineConfig(({ mode }) => ({
         scope: '/'
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff,woff2}'],
+        // Não fazer cache de HTML/JS - sempre buscar versão nova
+        globPatterns: ['**/*.{ico,png,svg,jpg,jpeg,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
+          {
+            // HTML/JS/CSS - sempre da rede, sem cache
+            urlPattern: /\.(?:html|js|css)$/,
+            handler: 'NetworkOnly',
+          },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',

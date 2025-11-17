@@ -25,8 +25,9 @@ if ('serviceWorker' in navigator) {
       const updateSW = registerSW({
         immediate: true,
         onNeedRefresh() {
-          console.log('[PWA] Nova versão disponível, atualizando...');
-          updateSW(true);
+          console.log('[PWA] Nova versão disponível, RECARREGANDO AUTOMATICAMENTE...');
+          // Força reload completo sem perguntar
+          window.location.reload();
         },
         onOfflineReady() {
           console.log('[PWA] App pronto para funcionar offline');
@@ -34,10 +35,10 @@ if ('serviceWorker' in navigator) {
         onRegistered(registration) {
           console.log('[PWA] Service Worker registrado');
           if (registration) {
-            // Força checagem de atualização a cada 30 segundos
+            // Força checagem de atualização a cada 10 segundos
             setInterval(() => {
               registration.update();
-            }, 30000);
+            }, 10000);
           }
         },
         onRegisterError(error) {
