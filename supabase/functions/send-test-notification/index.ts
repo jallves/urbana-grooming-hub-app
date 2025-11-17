@@ -21,6 +21,7 @@ serve(async (req) => {
 
   try {
     const { clientId } = await req.json();
+    console.log(`📨 Recebida solicitação de teste de notificação para cliente: ${clientId}`);
 
     if (!clientId) {
       throw new Error('clientId é obrigatório');
@@ -43,12 +44,13 @@ serve(async (req) => {
     }
 
     if (!tokens || tokens.length === 0) {
+      console.log(`⚠️ Nenhum token ativo encontrado para o cliente ${clientId}`);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Nenhum token de notificação ativo encontrado para este cliente' 
+          message: 'Este cliente não possui nenhum token de notificação ativo. O cliente precisa ativar as notificações push no dispositivo primeiro.' 
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -121,7 +123,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Notificação de teste enviada!`,
+        message: `✅ Teste concluído! ${successCount} notificação(ões) enviada(s) com sucesso.`,
         stats: {
           total: tokens.length,
           success: successCount,

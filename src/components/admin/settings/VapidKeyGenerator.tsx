@@ -133,12 +133,14 @@ const VapidKeyGenerator: React.FC = () => {
       if (data.success) {
         toast({
           title: "✅ Notificação Enviada!",
-          description: `Enviadas: ${data.stats.success} | Erros: ${data.stats.errors}`
+          description: data.message || `Enviadas: ${data.stats.success} | Erros: ${data.stats.errors}`,
+          duration: 5000
         });
       } else {
         toast({
-          title: "⚠️ Aviso",
-          description: data.message
+          title: "⚠️ Sem Tokens Ativos",
+          description: data.message || "Este cliente não possui tokens de notificação ativos",
+          variant: "default"
         });
       }
     } catch (error: any) {
