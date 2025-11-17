@@ -135,8 +135,38 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('❌ Erro ao enviar notificação de teste:', error);
+    
+    // Mensagens de erro mais específicas
+    let errorMessage = 'Erro desconhecido ao enviar notificação';
+    let errorCode = 'UNKNOWN_ERROR';
+    
+    if (error.message?.includes('clientId é obrigatório')) {
+      errorMessage = 'ID do cliente não foi fornecido';
+      errorCode = 'MISSING_CLIENT_ID';
+    } else if (error.message?.includes('VAPID keys')) {
+      errorMessage = 'Chaves VAPID não estão configuradas. Configure-as nas variáveis de ambiente.';
+      errorCode = 'VAPID_NOT_CONFIGURED';
+    } else if (error.code === 'PGRST116') {
+      errorMessage = 'Erro ao acessar o banco de dados. Verifique as permissões.';
+      errorCode = 'DATABASE_ERROR';
+    } else if (error.statusCode === 410) {
+      errorMessage = 'Token de notificação expirado ou inválido';
+      errorCode = 'INVALID_TOKEN';
+    } else if (error.statusCode === 401) {
+      errorMessage = 'Erro de autenticação com o serviço de notificações';
+      errorCode = 'AUTH_ERROR';
+    } else {
+      errorMessage = error.message || errorMessage;
+      errorCode = error.code || errorCode;
+    }
+    
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: errorMessage,
+        errorCode: errorCode,
+        details: error.message 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
