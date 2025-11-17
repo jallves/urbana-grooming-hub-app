@@ -86,9 +86,9 @@ export const usePushNotifications = () => {
         return;
       }
 
-      // Buscar cliente_id
+      // Buscar cliente_id usando painel_clientes (mesma tabela das RLS policies)
       const { data: clientData } = await supabase
-        .from('clients')
+        .from('painel_clientes')
         .select('id')
         .eq('email', user.email)
         .single();
@@ -224,10 +224,10 @@ export const usePushNotifications = () => {
       }
       console.log('✅ [PUSH] Usuário autenticado:', user.email);
 
-      // Buscar cliente pelo email na tabela clients (não na view)
+      // Buscar cliente usando painel_clientes (mesma tabela das RLS policies)
       console.log('🔍 [PUSH] Buscando cliente no banco...');
       const { data: cliente, error: clientError } = await supabase
-        .from('clients')
+        .from('painel_clientes')
         .select('id')
         .eq('email', user.email)
         .single();
