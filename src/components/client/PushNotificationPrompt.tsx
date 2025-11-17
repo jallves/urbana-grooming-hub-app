@@ -1,110 +1,135 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, BellOff, X } from 'lucide-react';
+import { Bell, X, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { PainelClienteCard, PainelClienteCardHeader, PainelClienteCardTitle, PainelClienteCardDescription, PainelClienteCardContent } from '@/components/painel-cliente/PainelClienteCard';
+import { toast } from 'sonner';
 
 export const PushNotificationPrompt: React.FC = () => {
   const { isSupported, isSubscribed, isLoading, permission, subscribe } = usePushNotifications();
-  const [isVisible, setIsVisible] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
     // Verifica se já mostrou o prompt antes
     const dismissed = localStorage.getItem('push-notification-prompt-dismissed');
-    
-    if (!dismissed && isSupported && !isSubscribed && permission === 'default') {
-      // Mostra o prompt após 3 segundos
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 3000);
-
-      return () => clearTimeout(timer);
+    if (dismissed) {
+      setIsDismissed(true);
     }
-  }, [isSupported, isSubscribed, permission]);
+  }, []);
 
   const handleActivate = async () => {
-    console.log('🔔 PushNotificationPrompt: Botão clicado, iniciando ativação...');
-    console.log('🔔 Estado atual:', { isSupported, isSubscribed, isLoading, permission });
+    console.log('🔔 [CARD] Botão ATIVAR clicado!');
+    
+    if (!isSupported) {
+      toast.error('Seu navegador não suporta notificações push');
+      return;
+    }
+
+    toast.loading('Ativando notificações...', { id: 'activate-push' });
     
     try {
       const success = await subscribe();
-      console.log('🔔 Resultado da inscrição:', success);
       
       if (success) {
-        console.log('✅ Notificações ativadas com sucesso!');
-        setIsVisible(false);
+        toast.success('✅ Notificações ativadas com sucesso!', { id: 'activate-push', duration: 5000 });
         localStorage.setItem('push-notification-prompt-dismissed', 'true');
+        setIsDismissed(true);
       } else {
-        console.error('❌ Falha ao ativar notificações');
+        toast.error('❌ Não foi possível ativar as notificações', { id: 'activate-push' });
       }
-    } catch (error) {
-      console.error('❌ Erro ao tentar ativar notificações:', error);
+    } catch (error: any) {
+      console.error('❌ Erro:', error);
+      toast.error(`Erro: ${error.message}`, { id: 'activate-push' });
     }
   };
 
   const handleDismiss = () => {
-    setIsVisible(false);
     setIsDismissed(true);
     localStorage.setItem('push-notification-prompt-dismissed', 'true');
   };
 
-  if (!isVisible || isDismissed) {
+  // Não mostra se já foi dismissed, já está inscrito, ou não é suportado
+  if (isDismissed || isSubscribed || !isSupported) {
     return null;
   }
 
-  return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-md animate-in slide-in-from-bottom-5">
-      <PainelClienteCard variant="info" className="relative">
-        <button
-          onClick={handleDismiss}
-          className="absolute top-3 right-3 text-urbana-light/60 hover:text-urbana-light transition-colors"
-          aria-label="Fechar"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
+  // Mostra aviso se permissão foi negada
+  if (permission === 'denied') {
+    return (
+      <PainelClienteCard variant="warning" className="mb-6">
         <PainelClienteCardHeader>
           <div className="flex items-center gap-3">
+            <AlertTriangle className="h-6 w-6 text-amber-400" />
+            <div>
+              <PainelClienteCardTitle className="text-urbana-light">
+                Notificações Bloqueadas
+              </PainelClienteCardTitle>
+              <PainelClienteCardDescription className="text-urbana-light/70">
+                Você bloqueou as notificações. Para ativar, acesse as configurações do navegador.
+              </PainelClienteCardDescription>
+            </div>
+          </div>
+        </PainelClienteCardHeader>
+      </PainelClienteCard>
+    );
+  }
+
+  // Mostra card persistente no topo do dashboard
+  return (
+    <PainelClienteCard variant="info" className="mb-6 border-2 border-blue-500/30">
+      <PainelClienteCardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3 flex-1">
             <div className="bg-blue-500/20 rounded-full p-3">
               <Bell className="h-6 w-6 text-blue-400" />
             </div>
             <div>
               <PainelClienteCardTitle className="text-xl text-urbana-light">
-                Ativar Notificações
+                🔔 Ative as Notificações Push
               </PainelClienteCardTitle>
               <PainelClienteCardDescription className="text-urbana-light/70">
-                Não perca seus agendamentos
+                Não perca seus agendamentos! Receba lembretes automáticos.
               </PainelClienteCardDescription>
             </div>
           </div>
-        </PainelClienteCardHeader>
+          <button
+            onClick={handleDismiss}
+            className="text-urbana-light/60 hover:text-urbana-light transition-colors"
+            aria-label="Dispensar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </PainelClienteCardHeader>
 
-        <PainelClienteCardContent className="space-y-4">
-          <p className="text-sm text-urbana-light/80">
-            Receba lembretes automáticos <strong className="text-urbana-light">24 horas</strong> e{' '}
-            <strong className="text-urbana-light">4 horas</strong> antes dos seus agendamentos.
-          </p>
+      <PainelClienteCardContent className="space-y-4">
+        <div className="bg-urbana-black/30 backdrop-blur-sm rounded-lg p-4 space-y-2">
+          <p className="text-sm font-medium text-urbana-light">📅 Você receberá:</p>
+          <ul className="space-y-1 text-sm text-urbana-light/80">
+            <li className="flex items-center gap-2">
+              <span className="text-urbana-gold">•</span>
+              <span>Lembrete <strong className="text-urbana-light">24 horas antes</strong></span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-urbana-gold">•</span>
+              <span>Lembrete <strong className="text-urbana-light">4 horas antes</strong></span>
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="text-urbana-gold">•</span>
+              <span>Notificações mesmo com o app fechado</span>
+            </li>
+          </ul>
+        </div>
 
-          <div className="flex gap-2">
-            <Button
-              onClick={handleActivate}
-              disabled={isLoading}
-              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
-            >
-              <Bell className="h-4 w-4 mr-2" />
-              {isLoading ? 'Ativando...' : 'Ativar Notificações'}
-            </Button>
-            <Button
-              onClick={handleDismiss}
-              variant="outline"
-              className="border-urbana-gold/30 text-urbana-light hover:bg-transparent hover:text-urbana-light hover:border-urbana-gold/30"
-            >
-              Agora Não
-            </Button>
-          </div>
-        </PainelClienteCardContent>
-      </PainelClienteCard>
-    </div>
+        <Button
+          onClick={handleActivate}
+          disabled={isLoading}
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 text-base"
+        >
+          <Bell className="h-5 w-5 mr-2" />
+          {isLoading ? 'Ativando...' : 'Ativar Notificações Agora'}
+        </Button>
+      </PainelClienteCardContent>
+    </PainelClienteCard>
   );
 };

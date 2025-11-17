@@ -18,12 +18,17 @@ export const usePushNotifications = () => {
   const [vapidPublicKey, setVapidPublicKey] = useState<string>('');
 
   useEffect(() => {
+    console.log('🔔 usePushNotifications: Hook inicializado');
     // Verifica se o navegador suporta notificações
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+      console.log('✅ Navegador suporta notificações push');
       setIsSupported(true);
       setPermission(Notification.permission);
+      console.log('🔔 Permissão atual:', Notification.permission);
       checkSubscription();
       loadVapidPublicKey();
+    } else {
+      console.error('❌ Navegador NÃO suporta notificações push');
     }
   }, []);
 
