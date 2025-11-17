@@ -54,20 +54,31 @@ export const NotificationPermissionGuide = () => {
   return (
     <Alert variant="destructive" className="border-yellow-600 bg-yellow-950/20">
       <AlertTriangle className="h-4 w-4" />
-      <AlertTitle className="text-yellow-500 font-bold">
+      <AlertTitle className="text-yellow-500 font-bold text-lg">
         🚫 Notificações Bloqueadas
       </AlertTitle>
-      <AlertDescription className="space-y-3 text-yellow-100">
-        <p>
-          As notificações foram <strong>bloqueadas</strong> no seu navegador. 
-          Siga os passos abaixo para desbloquear:
-        </p>
+      <AlertDescription className="space-y-4 text-yellow-100">
+        <div className="bg-red-950/30 border-2 border-red-500 p-4 rounded-lg">
+          <p className="text-lg font-bold text-red-400 mb-2">
+            ⚠️ IMPORTANTE: Você JÁ mudou a permissão para "Permitir"?
+          </p>
+          <p className="text-base">
+            Depois de mudar a permissão no navegador, você PRECISA clicar no botão abaixo para <strong className="text-yellow-300">RECARREGAR A PÁGINA</strong>!
+          </p>
+        </div>
+
+        <Button
+          onClick={() => window.location.reload()}
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-6 text-lg"
+        >
+          ↻ RECARREGAR PÁGINA AGORA
+        </Button>
         
-        <div className="bg-black/30 p-3 rounded-lg space-y-2">
-          <p className="font-bold text-yellow-400">📱 Como desbloquear no {browser}:</p>
-          <ol className="space-y-2 text-sm">
+        <div className="bg-black/30 p-4 rounded-lg space-y-2">
+          <p className="font-bold text-yellow-400 text-base">📱 Como desbloquear no {browser}:</p>
+          <ol className="space-y-2">
             {currentInstructions.map((instruction, index) => (
-              <li key={index} className="pl-2">
+              <li key={index} className="pl-2 text-sm">
                 {instruction}
               </li>
             ))}
@@ -82,15 +93,6 @@ export const NotificationPermissionGuide = () => {
             "Notificações" ou "Permissões de sites".
           </div>
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={() => window.location.reload()}
-        >
-          ↻ Recarregar Página
-        </Button>
 
         <div className="text-xs text-gray-400 pt-2 border-t border-gray-700">
           <strong>Ainda com problemas?</strong> Entre em contato com o suporte.
