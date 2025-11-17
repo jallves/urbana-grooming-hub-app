@@ -6,19 +6,31 @@ import { PainelClienteCard, PainelClienteCardHeader, PainelClienteCardTitle, Pai
 import { toast } from 'sonner';
 
 export const PushNotificationPrompt: React.FC = () => {
+  console.log('🔔🔔🔔 [PROMPT] COMPONENTE EXECUTANDO!');
+  
   const { isSupported, isSubscribed, isLoading, permission, subscribe } = usePushNotifications();
   const [isDismissed, setIsDismissed] = useState(false);
 
+  console.log('🔔 [PROMPT] Valores recebidos do hook:', { 
+    isSupported, 
+    isSubscribed, 
+    isLoading, 
+    permission 
+  });
+
   useEffect(() => {
-    console.log('🔔 [PROMPT] Componente montado');
-    console.log('🔔 [PROMPT] Estado:', { isSupported, isSubscribed, isLoading, permission });
+    console.log('🔔 [PROMPT] useEffect montagem executado');
+    console.log('🔔 [PROMPT] Checando localStorage...');
     
     // Verifica se já mostrou o prompt antes
     const dismissed = localStorage.getItem('push-notification-prompt-dismissed');
-    console.log('🔔 [PROMPT] Dismissed no localStorage:', dismissed);
+    console.log('🔔 [PROMPT] Valor no localStorage:', dismissed);
     
     if (dismissed) {
+      console.log('⚠️ [PROMPT] Card foi dismissed anteriormente');
       setIsDismissed(true);
+    } else {
+      console.log('✅ [PROMPT] Card nunca foi dismissed');
     }
   }, []);
 
