@@ -10,25 +10,39 @@ export const PushNotificationPrompt: React.FC = () => {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
+    console.log('🔔 [PROMPT] Componente montado');
+    console.log('🔔 [PROMPT] Estado:', { isSupported, isSubscribed, isLoading, permission });
+    
     // Verifica se já mostrou o prompt antes
     const dismissed = localStorage.getItem('push-notification-prompt-dismissed');
+    console.log('🔔 [PROMPT] Dismissed no localStorage:', dismissed);
+    
     if (dismissed) {
       setIsDismissed(true);
     }
   }, []);
 
+  useEffect(() => {
+    console.log('🔔 [PROMPT] Estado atualizado:', { isSupported, isSubscribed, isLoading, permission, isDismissed });
+  }, [isSupported, isSubscribed, isLoading, permission, isDismissed]);
+
   const handleActivate = async () => {
-    console.log('🔔 [CARD] Botão ATIVAR clicado!');
+    console.log('🔔 [CARD] ========== BOTÃO CLICADO ==========');
+    console.log('🔔 [CARD] Estado atual:', { isSupported, isSubscribed, isLoading, permission });
     
     if (!isSupported) {
+      console.error('❌ [CARD] Navegador não suporta notificações');
       toast.error('Seu navegador não suporta notificações push');
       return;
     }
 
+    console.log('🔔 [CARD] Mostrando toast de loading...');
     toast.loading('Ativando notificações...', { id: 'activate-push' });
     
     try {
+      console.log('🔔 [CARD] Chamando subscribe()...');
       const success = await subscribe();
+      console.log('🔔 [CARD] Resultado do subscribe:', success);
       
       if (success) {
         toast.success('✅ Notificações ativadas com sucesso!', { id: 'activate-push', duration: 5000 });
@@ -38,23 +52,36 @@ export const PushNotificationPrompt: React.FC = () => {
         toast.error('❌ Não foi possível ativar as notificações', { id: 'activate-push' });
       }
     } catch (error: any) {
-      console.error('❌ Erro:', error);
+      console.error('❌ [CARD] Erro capturado:', error);
       toast.error(`Erro: ${error.message}`, { id: 'activate-push' });
     }
   };
 
   const handleDismiss = () => {
+    console.log('🔔 [CARD] Botão X clicado - dispensando card');
     setIsDismissed(true);
     localStorage.setItem('push-notification-prompt-dismissed', 'true');
   };
 
+  console.log('🔔 [PROMPT] Checando condições de exibição...');
+  console.log('🔔 [PROMPT] isDismissed:', isDismissed);
+  console.log('🔔 [PROMPT] isSubscribed:', isSubscribed);
+  console.log('🔔 [PROMPT] isSupported:', isSupported);
+  console.log('🔔 [PROMPT] permission:', permission);
+
   // Não mostra se já foi dismissed, já está inscrito, ou não é suportado
   if (isDismissed || isSubscribed || !isSupported) {
+    console.log('🔔 [PROMPT] ❌ Card NÃO será exibido. Razão:', 
+      isDismissed ? 'dismissed' : isSubscribed ? 'já inscrito' : 'não suportado'
+    );
     return null;
   }
 
+  console.log('🔔 [PROMPT] ✅ Card SERÁ exibido!');
+
   // Mostra aviso se permissão foi negada
   if (permission === 'denied') {
+    console.log('🔔 [PROMPT] Mostrando aviso de permissão negada');
     return (
       <PainelClienteCard variant="warning" className="mb-6">
         <PainelClienteCardHeader>
@@ -75,6 +102,8 @@ export const PushNotificationPrompt: React.FC = () => {
   }
 
   // Mostra card persistente no topo do dashboard
+  console.log('🔔 [PROMPT] Renderizando card de ativação');
+  
   return (
     <PainelClienteCard variant="info" className="mb-6 border-2 border-blue-500/30">
       <PainelClienteCardHeader>
@@ -122,9 +151,13 @@ export const PushNotificationPrompt: React.FC = () => {
         </div>
 
         <Button
-          onClick={handleActivate}
+          onClick={() => {
+            console.log('🔔 [BOTÃO] Evento onClick disparado!');
+            handleActivate();
+          }}
           disabled={isLoading}
           className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 text-base"
+          type="button"
         >
           <Bell className="h-5 w-5 mr-2" />
           {isLoading ? 'Ativando...' : 'Ativar Notificações Agora'}
