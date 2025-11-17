@@ -28,20 +28,23 @@ export const usePushNotifications = () => {
   }, []);
 
   const loadVapidPublicKey = async () => {
+    console.log('🔔 usePushNotifications: Carregando VAPID public key...');
     try {
       const { data, error } = await supabase.functions.invoke('get-vapid-public-key');
 
       if (error) {
-        console.error('Erro ao carregar VAPID public key:', error);
+        console.error('❌ Erro ao carregar VAPID public key:', error);
         return;
       }
 
       if (data?.publicKey) {
         setVapidPublicKey(data.publicKey);
-        console.log('✅ VAPID public key carregada');
+        console.log('✅ VAPID public key carregada com sucesso');
+      } else {
+        console.error('❌ VAPID public key não encontrada na resposta');
       }
     } catch (error) {
-      console.error('Erro ao carregar VAPID key:', error);
+      console.error('❌ Erro ao carregar VAPID key:', error);
     }
   };
 
@@ -71,37 +74,52 @@ export const usePushNotifications = () => {
   };
 
   const subscribe = async () => {
+    console.log('🔔 usePushNotifications: Função subscribe() chamada');
+    console.log('🔔 isSupported:', isSupported);
+    console.log('🔔 vapidPublicKey:', vapidPublicKey ? 'Carregada' : 'NÃO carregada');
+    
     if (!isSupported) {
+      console.error('❌ Notificações não são suportadas neste navegador');
       toast.error('Notificações não são suportadas neste navegador');
       return false;
     }
 
     if (!vapidPublicKey) {
+      console.error('❌ VAPID key não configurada');
       toast.error('VAPID key não configurada. Peça ao administrador para gerar as chaves VAPID.');
       return false;
     }
 
     setIsLoading(true);
+    console.log('🔔 Solicitando permissão ao usuário...');
 
     try {
       // Solicita permissão
       const permissionResult = await Notification.requestPermission();
+      console.log('🔔 Resultado da permissão:', permissionResult);
       setPermission(permissionResult);
 
       if (permissionResult !== 'granted') {
+        console.error('❌ Permissão negada pelo usuário');
         toast.error('Permissão de notificação negada');
         setIsLoading(false);
         return false;
       }
+      
+      console.log('✅ Permissão concedida!');
 
       // Registra service worker
+      console.log('🔔 Aguardando service worker...');
       const registration = await navigator.serviceWorker.ready;
+      console.log('✅ Service worker pronto!');
 
       // Cria subscrição
+      console.log('🔔 Criando subscrição push...');
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
+      console.log('✅ Subscrição criada:', subscription.endpoint);
 
       // Converte para formato JSON
       const subscriptionData: PushSubscription = {
@@ -111,16 +129,21 @@ export const usePushNotifications = () => {
           auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))),
         },
       };
+      console.log('✅ Dados da subscrição preparados');
 
       // Salva no banco de dados
+      console.log('🔔 Buscando usuário autenticado...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.error('❌ Usuário não autenticado');
         toast.error('Usuário não autenticado');
         setIsLoading(false);
         return false;
       }
+      console.log('✅ Usuário encontrado:', user.email);
 
       // Busca o cliente pelo email
+      console.log('🔔 Buscando cliente no banco...');
       const { data: cliente } = await supabase
         .from('painel_clientes')
         .select('id')
@@ -128,11 +151,14 @@ export const usePushNotifications = () => {
         .single();
 
       if (!cliente) {
+        console.error('❌ Cliente não encontrado para o email:', user.email);
         toast.error('Cliente não encontrado');
         setIsLoading(false);
         return false;
       }
+      console.log('✅ Cliente encontrado:', cliente.id);
 
+      console.log('🔔 Salvando token no banco de dados...');
       const { error } = await supabase
         .from('push_notification_tokens')
         .upsert({
@@ -144,13 +170,14 @@ export const usePushNotifications = () => {
         });
 
       if (error) throw error;
+      console.log('✅ Token salvo com sucesso!');
 
       setIsSubscribed(true);
       toast.success('Notificações ativadas com sucesso!');
       setIsLoading(false);
       return true;
     } catch (error) {
-      console.error('Erro ao ativar notificações:', error);
+      console.error('❌ Erro ao ativar notificações:', error);
       toast.error('Erro ao ativar notificações');
       setIsLoading(false);
       return false;
