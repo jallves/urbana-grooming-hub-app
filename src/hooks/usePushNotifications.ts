@@ -17,6 +17,27 @@ export const usePushNotifications = () => {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [vapidPublicKey, setVapidPublicKey] = useState<string>('');
 
+  // Função para revalidar permissões em tempo real
+  const revalidatePermission = () => {
+    if ('Notification' in window) {
+      const currentPermission = Notification.permission;
+      console.log('🔄 [REVALIDATE] Permissão atual:', currentPermission);
+      
+      if (currentPermission !== permission) {
+        console.log('⚡ [REVALIDATE] Permissão mudou!', permission, '->', currentPermission);
+        setPermission(currentPermission);
+        
+        // Se mudou para granted, verificar subscrição
+        if (currentPermission === 'granted') {
+          checkSubscription();
+        }
+      }
+      
+      return currentPermission;
+    }
+    return 'default';
+  };
+
   useEffect(() => {
     // Log bem visível
     console.log('%c🔔 PUSH NOTIFICATIONS HOOK INICIADO', 'background: #222; color: #bada55; font-size: 16px; padding: 4px;');
@@ -30,6 +51,28 @@ export const usePushNotifications = () => {
       
       checkSubscription();
       loadVapidPublicKey();
+
+      // Monitorar mudanças de visibilidade da página para revalidar
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          console.log('👁️ Página ficou visível - revalidando permissões...');
+          revalidatePermission();
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Polling a cada 5 segundos quando a página está ativa (detecta mudanças nas configurações do navegador)
+      const pollInterval = setInterval(() => {
+        if (!document.hidden) {
+          revalidatePermission();
+        }
+      }, 5000);
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        clearInterval(pollInterval);
+      };
     } else {
       console.error('%c❌ Navegador NÃO suporta notificações push', 'color: red; font-weight: bold');
       toast.error('Seu navegador não suporta notificações push');
