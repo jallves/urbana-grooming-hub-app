@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { PainelClienteCard, PainelClienteCardHeader, PainelClienteCardTitle, PainelClienteCardDescription, PainelClienteCardContent } from '@/components/painel-cliente/PainelClienteCard';
 import { toast } from 'sonner';
+import { NotificationPermissionGuide } from './NotificationPermissionGuide';
 
 export const PushNotificationPrompt: React.FC = () => {
   console.log('🔔🔔🔔 [PROMPT] COMPONENTE EXECUTANDO!');
@@ -86,26 +87,10 @@ export const PushNotificationPrompt: React.FC = () => {
 
   console.log('🔔 [PROMPT] ✅ Card SERÁ exibido!');
 
-  // Mostra aviso se permissão foi negada
+  // Mostra guia completo se permissão foi negada
   if (permission === 'denied') {
-    console.log('🔔 [PROMPT] Mostrando aviso de permissão negada');
-    return (
-      <PainelClienteCard variant="warning" className="mb-6">
-        <PainelClienteCardHeader>
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-6 w-6 text-amber-400" />
-            <div>
-              <PainelClienteCardTitle className="text-urbana-light">
-                Notificações Bloqueadas
-              </PainelClienteCardTitle>
-              <PainelClienteCardDescription className="text-urbana-light/70">
-                Você bloqueou as notificações. Para ativar, acesse as configurações do navegador.
-              </PainelClienteCardDescription>
-            </div>
-          </div>
-        </PainelClienteCardHeader>
-      </PainelClienteCard>
-    );
+    console.log('🔔 [PROMPT] Mostrando guia de como desbloquear');
+    return <NotificationPermissionGuide />;
   }
 
   // Mostra card persistente no topo do dashboard
