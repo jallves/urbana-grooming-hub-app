@@ -157,14 +157,36 @@ const VapidKeyGenerator: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Instruções Passo-a-Passo */}
+      <Alert className="bg-blue-50 border-blue-200">
+        <Bell className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-900">
+          <div className="space-y-2">
+            <strong className="block text-base mb-2">📋 Como Configurar Notificações Push (Passo-a-Passo):</strong>
+            <ol className="space-y-1 text-sm list-decimal list-inside">
+              <li><strong>1. Gerar Chaves VAPID</strong> - Clique no botão abaixo para gerar as chaves</li>
+              <li><strong>2. Configurar no Supabase</strong> - Copie as chaves e adicione nos Secrets do projeto:
+                <ul className="ml-6 mt-1 list-disc list-inside text-xs">
+                  <li><code className="bg-blue-100 px-1 rounded">VAPID_PUBLIC_KEY</code> (chave pública)</li>
+                  <li><code className="bg-blue-100 px-1 rounded">VAPID_PRIVATE_KEY</code> (chave privada - secreta!)</li>
+                  <li><code className="bg-blue-100 px-1 rounded">VAPID_EMAIL</code> (seu email, ex: admin@seusite.com)</li>
+                </ul>
+              </li>
+              <li><strong>3. Testar</strong> - Selecione um cliente e envie uma notificação de teste</li>
+              <li><strong>4. Cliente Ativa</strong> - O cliente precisa ativar notificações no painel dele primeiro!</li>
+            </ol>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notificações Push - Gerador de VAPID Keys
+            <Key className="h-5 w-5" />
+            Passo 1: Gerar VAPID Keys
           </CardTitle>
           <CardDescription>
-            Gere as chaves VAPID necessárias para enviar notificações push aos clientes
+            Gere as chaves de autenticação para notificações push
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -331,13 +353,22 @@ const VapidKeyGenerator: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
-            Testar Notificações
+            Passo 3: Testar Notificações
           </CardTitle>
           <CardDescription>
-            Envie uma notificação de teste para um cliente específico
+            Envie uma notificação de teste para verificar se está funcionando
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert className="bg-amber-50 border-amber-200">
+            <Bell className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-900 text-sm">
+              <strong>⚠️ IMPORTANTE:</strong> O cliente precisa ter <strong>ativado as notificações</strong> no painel dele primeiro! 
+              <br className="my-1" />
+              Se o teste falhar com "nenhum token ativo", peça ao cliente para acessar o Painel Cliente e ativar as notificações push.
+            </AlertDescription>
+          </Alert>
+
           <div className="space-y-2">
             <Label>Cliente</Label>
             <Select value={testClientId} onValueChange={setTestClientId}>

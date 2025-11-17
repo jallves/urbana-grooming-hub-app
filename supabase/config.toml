@@ -29,3 +29,7 @@ schedule = "0 * * * *"
 
 [functions.send-test-notification]
 verify_jwt = false
+
+[functions.get-vapid-public-key]
+verify_jwt = false
+
