@@ -2,6 +2,13 @@
 
 Este documento explica como configurar as notificações push para lembretes de agendamento.
 
+## ⚠️ IMPORTANTE - Requisitos
+
+Para que as notificações funcionem, o cliente precisa:
+1. Estar cadastrado na view `painel_clientes` (não apenas na tabela `clients`)
+2. Ter email verificado e autenticado via Supabase Auth
+3. Navegador compatível com Push API
+
 ## 🔑 Gerando VAPID Keys
 
 As VAPID keys são necessárias para autenticar as notificações push. Siga os passos:
