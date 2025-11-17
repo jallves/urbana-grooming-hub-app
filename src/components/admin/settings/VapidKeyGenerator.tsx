@@ -123,32 +123,49 @@ const VapidKeyGenerator: React.FC = () => {
     }
 
     setIsSendingTest(true);
+    
+    // Mostrar toast de loading
+    toast({
+      title: "📤 Enviando notificação...",
+      description: "Aguarde...",
+    });
+
     try {
+      console.log('🧪 Enviando notificação de teste para cliente:', testClientId);
+      
       const { data, error } = await supabase.functions.invoke('send-test-notification', {
         body: { clientId: testClientId }
       });
 
-      if (error) throw error;
+      console.log('📨 Resposta da edge function:', { data, error });
 
-      if (data.success) {
+      if (error) {
+        console.error('❌ Erro da edge function:', error);
+        throw error;
+      }
+
+      if (data?.success) {
         toast({
-          title: "✅ Notificação Enviada!",
-          description: data.message || `Enviadas: ${data.stats.success} | Erros: ${data.stats.errors}`,
-          duration: 5000
+          title: "✅ Sucesso!",
+          description: data.message || `Notificação enviada! (${data.stats?.success || 0} enviadas)`,
+          duration: 7000
         });
       } else {
+        // Cliente sem tokens ativos
         toast({
-          title: "⚠️ Sem Tokens Ativos",
-          description: data.message || "Este cliente não possui tokens de notificação ativos",
-          variant: "default"
+          title: "⚠️ Cliente sem notificações ativas",
+          description: data.message || "Este cliente ainda não ativou as notificações push no painel dele. Peça para ele ativar primeiro!",
+          variant: "default",
+          duration: 10000
         });
       }
     } catch (error: any) {
-      console.error('Erro ao enviar notificação de teste:', error);
+      console.error('❌ Erro completo:', error);
       toast({
         title: "❌ Erro ao Enviar",
-        description: error.message,
-        variant: "destructive"
+        description: error.message || "Erro desconhecido ao enviar notificação",
+        variant: "destructive",
+        duration: 7000
       });
     } finally {
       setIsSendingTest(false);

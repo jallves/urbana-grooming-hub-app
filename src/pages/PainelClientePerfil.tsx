@@ -15,6 +15,7 @@ import {
   PainelClienteCardContent 
 } from "@/components/painel-cliente/PainelClienteCard";
 import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
+import { NotificationSettings } from "@/components/client/NotificationSettings";
 
 export default function PainelClientePerfil() {
   const navigate = useNavigate();
@@ -260,6 +261,11 @@ export default function PainelClientePerfil() {
               </form>
             </PainelClienteCardContent>
           </PainelClienteCard>
+        </motion.div>
+
+        {/* Notification Settings */}
+        <motion.div variants={itemVariants}>
+          <NotificationSettings />
         </motion.div>
 
         {/* Security Notice */}
