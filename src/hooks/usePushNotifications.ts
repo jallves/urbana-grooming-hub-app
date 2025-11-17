@@ -79,31 +79,45 @@ export const usePushNotifications = () => {
       // 3. Verificar se o token existe no banco de dados
       console.log('🔍 [PUSH] Verificando token no banco de dados...');
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log('⚠️ [PUSH] Usuário não autenticado');
-        setIsSubscribed(false);
-        return;
+      // Tentar pegar cliente ID do sistema customizado do painel primeiro
+      const clienteToken = localStorage.getItem('painel_cliente_token');
+      let clientId = null;
+
+      if (clienteToken) {
+        console.log('🔍 [PUSH] Tentando autenticação via painel customizado...');
+        clientId = clienteToken;
+      } else {
+        console.log('🔍 [PUSH] Tentando autenticação via Supabase Auth...');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log('⚠️ [PUSH] Usuário não autenticado em nenhum sistema');
+          setIsSubscribed(false);
+          return;
+        }
+
+        // Buscar cliente_id usando painel_clientes
+        const { data: clientData } = await supabase
+          .from('painel_clientes')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+
+        if (!clientData) {
+          console.log('⚠️ [PUSH] Cliente não encontrado no banco');
+          setIsSubscribed(false);
+          return;
+        }
+
+        clientId = clientData.id;
       }
 
-      // Buscar cliente_id usando painel_clientes (mesma tabela das RLS policies)
-      const { data: clientData } = await supabase
-        .from('painel_clientes')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (!clientData) {
-        console.log('⚠️ [PUSH] Cliente não encontrado no banco');
-        setIsSubscribed(false);
-        return;
-      }
+      console.log('✅ [PUSH] Cliente ID identificado:', clientId);
 
       // Verificar tokens ativos no banco
       const { data: tokens, error: tokenError } = await supabase
         .from('push_notification_tokens')
         .select('*')
-        .eq('client_id', clientData.id)
+        .eq('client_id', clientId)
         .eq('is_active', true);
 
       if (tokenError) {
@@ -214,66 +228,77 @@ export const usePushNotifications = () => {
       // PASSO 5: Salvar no banco de dados
       console.log('🔔 [PUSH] PASSO 5/5: Salvando token no banco...');
       
-      console.log('🔍 [PUSH] Buscando usuário autenticado...');
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error('❌ [PUSH] Usuário NÃO autenticado');
-        toast.error('Usuário não autenticado. Faça login novamente.');
-        setIsLoading(false);
-        return false;
+      // Tentar pegar cliente ID do sistema customizado do painel primeiro
+      const clienteToken = localStorage.getItem('painel_cliente_token');
+      let clienteId = null;
+
+      if (clienteToken) {
+        console.log('🔍 [PUSH] Usando autenticação do painel customizado...');
+        clienteId = clienteToken;
+      } else {
+        console.log('🔍 [PUSH] Buscando usuário via Supabase Auth...');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('❌ [PUSH] Usuário NÃO autenticado em nenhum sistema');
+          toast.error('Usuário não autenticado. Faça login novamente.');
+          setIsLoading(false);
+          return false;
+        }
+        console.log('✅ [PUSH] Usuário autenticado:', user.email);
+
+        // Buscar cliente usando painel_clientes
+        console.log('🔍 [PUSH] Buscando cliente no banco...');
+        const { data: cliente, error: clientError } = await supabase
+          .from('painel_clientes')
+          .select('id')
+          .eq('email', user.email)
+          .single();
+
+        if (clientError) {
+          console.error('❌ [PUSH] Erro ao buscar cliente:', clientError);
+          toast.error('Erro ao encontrar cliente no banco');
+          setIsLoading(false);
+          return false;
+        }
+
+        if (!cliente) {
+          console.error('❌ [PUSH] Cliente não encontrado para email:', user.email);
+          toast.error('Cliente não encontrado no sistema');
+          setIsLoading(false);
+          return false;
+        }
+
+        clienteId = cliente.id;
       }
-      console.log('✅ [PUSH] Usuário autenticado:', user.email);
+      
+      console.log('✅ [PUSH] Cliente ID:', clienteId);
 
-      // Buscar cliente usando painel_clientes (mesma tabela das RLS policies)
-      console.log('🔍 [PUSH] Buscando cliente no banco...');
-      const { data: cliente, error: clientError } = await supabase
-        .from('painel_clientes')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (clientError) {
-        console.error('❌ [PUSH] Erro ao buscar cliente:', clientError);
-        toast.error('Erro ao encontrar cliente no banco');
-        setIsLoading(false);
-        return false;
-      }
-
-      if (!cliente) {
-        console.error('❌ [PUSH] Cliente não encontrado para email:', user.email);
-        toast.error('Cliente não encontrado no sistema');
-        setIsLoading(false);
-        return false;
-      }
-      console.log('✅ [PUSH] Cliente encontrado! ID:', cliente.id);
-
-      console.log('💾 [PUSH] Salvando token no banco de dados...');
+      console.log('💾 [PUSH] Salvando token via edge function...');
       console.log('📤 [PUSH] Dados a serem salvos:', {
-        client_id: cliente.id,
+        client_id: clienteId,
         endpoint: subscriptionData.endpoint.substring(0, 60) + '...',
         has_keys: !!(subscriptionData.keys.p256dh && subscriptionData.keys.auth)
       });
       
-      const { data: insertData, error: saveError } = await supabase
-        .from('push_notification_tokens')
-        .upsert({
-          client_id: cliente.id,
-          subscription_data: subscriptionData as any,
-          user_agent: navigator.userAgent,
-          is_active: true,
-          last_used_at: new Date().toISOString(),
-        }, {
-          onConflict: 'client_id,subscription_data'
-        })
-        .select();
+      const { data: insertData, error: saveError } = await supabase.functions.invoke('register-push-token', {
+        body: {
+          clientId: clienteId,
+          subscriptionData: subscriptionData,
+          userAgent: navigator.userAgent,
+        }
+      });
 
       if (saveError) {
         console.error('❌ [PUSH] ERRO ao salvar token:', saveError);
-        console.error('🔴 [PUSH] Código:', saveError.code);
-        console.error('🔴 [PUSH] Mensagem:', saveError.message);
-        console.error('🔴 [PUSH] Detalhes:', saveError.details);
-        console.error('🔴 [PUSH] Hint:', saveError.hint);
+        console.error('🔴 [PUSH] Código:', saveError.message);
         toast.error(`Erro ao salvar token: ${saveError.message}`);
+        setIsLoading(false);
+        return false;
+      }
+
+      if (insertData?.error) {
+        console.error('❌ [PUSH] ERRO retornado pela função:', insertData);
+        toast.error(`Erro ao salvar token: ${insertData.message || 'Erro desconhecido'}`);
         setIsLoading(false);
         return false;
       }
@@ -308,19 +333,34 @@ export const usePushNotifications = () => {
         await subscription.unsubscribe();
 
         // Remove do banco de dados
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: cliente } = await supabase
-            .from('painel_clientes')
-            .select('id')
-            .eq('email', user.email)
-            .single();
+        // Tentar pegar cliente ID do sistema customizado primeiro
+        const clienteToken = localStorage.getItem('painel_cliente_token');
+        let clienteId = null;
 
-          if (cliente) {
-            await supabase
-              .from('push_notification_tokens')
-              .delete()
-              .eq('client_id', cliente.id);
+        if (clienteToken) {
+          clienteId = clienteToken;
+        } else {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: cliente } = await supabase
+              .from('painel_clientes')
+              .select('id')
+              .eq('email', user.email)
+              .single();
+
+            if (cliente) {
+              clienteId = cliente.id;
+            }
+          }
+        }
+
+        if (clienteId) {
+          const { error: unregisterError } = await supabase.functions.invoke('unregister-push-token', {
+            body: { clientId: clienteId }
+          });
+
+          if (unregisterError) {
+            console.error('❌ [PUSH] Erro ao remover token:', unregisterError);
           }
         }
       }
