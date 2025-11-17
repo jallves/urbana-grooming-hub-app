@@ -9,8 +9,9 @@ import { NotificationPermissionGuide } from './NotificationPermissionGuide';
 export const PushNotificationPrompt: React.FC = () => {
   console.log('🔔🔔🔔 [PROMPT] COMPONENTE EXECUTANDO!');
   
-  const { isSupported, isSubscribed, isLoading, permission, subscribe } = usePushNotifications();
+  const { isSupported, isSubscribed, isLoading, permission, subscribe, revalidatePermission } = usePushNotifications();
   const [isDismissed, setIsDismissed] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
   console.log('🔔 [PROMPT] Valores recebidos do hook:', { 
     isSupported, 
@@ -39,6 +40,25 @@ export const PushNotificationPrompt: React.FC = () => {
     console.log('🔔 [PROMPT] Estado atualizado:', { isSupported, isSubscribed, isLoading, permission, isDismissed });
   }, [isSupported, isSubscribed, isLoading, permission, isDismissed]);
 
+  const handleCheckAgain = () => {
+    console.log('🔄 [PROMPT] Verificando permissões novamente...');
+    setIsChecking(true);
+    
+    setTimeout(() => {
+      const newPermission = revalidatePermission();
+      console.log('🔄 [PROMPT] Nova permissão detectada:', newPermission);
+      setIsChecking(false);
+      
+      if (newPermission === 'granted') {
+        toast.success('Permissão detectada! Clique em "Ativar Notificações" agora.');
+      } else if (newPermission === 'denied') {
+        toast.error('Notificações ainda bloqueadas. Verifique as configurações do navegador.');
+      } else {
+        toast.info('Permissão ainda não foi concedida. Clique em "Ativar Notificações" para solicitar.');
+      }
+    }, 500);
+  };
+
   const handleActivate = async () => {
     console.log('%c🔔 ========== BOTÃO "ATIVAR" CLICADO ==========', 'background: blue; color: white; font-size: 16px; padding: 8px;');
     console.log('Estado atual:', { isSupported, isSubscribed, isLoading, permission });
@@ -58,6 +78,9 @@ export const PushNotificationPrompt: React.FC = () => {
       if (success) {
         localStorage.setItem('push-notification-prompt-dismissed', 'true');
         setIsDismissed(true);
+        toast.success('Notificações ativadas com sucesso! 🎉', {
+          duration: 5000
+        });
       }
     } catch (error: any) {
       console.error('%c❌ Erro capturado no handleActivate:', 'color: red; font-weight: bold', error);
@@ -90,7 +113,7 @@ export const PushNotificationPrompt: React.FC = () => {
   // Mostra guia completo se permissão foi negada
   if (permission === 'denied') {
     console.log('🔔 [PROMPT] Mostrando guia de como desbloquear');
-    return <NotificationPermissionGuide />;
+    return <NotificationPermissionGuide onCheckAgain={handleCheckAgain} isChecking={isChecking} />;
   }
 
   // Mostra card persistente no topo do dashboard

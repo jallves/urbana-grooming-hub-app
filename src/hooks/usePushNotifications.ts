@@ -208,12 +208,28 @@ export const usePushNotifications = () => {
 
   const subscribe = async () => {
     console.log('%c🔔 ========== INICIANDO SUBSCRIÇÃO DE PUSH ==========', 'background: #4CAF50; color: white; font-size: 14px; padding: 8px;');
+    
+    // REVALIDAR PERMISSÕES ANTES DE TENTAR
+    console.log('🔄 [SUBSCRIBE] Revalidando permissões antes de prosseguir...');
+    const currentPermission = revalidatePermission();
+    
     console.log('🔔 isSupported:', isSupported);
+    console.log('🔔 currentPermission:', currentPermission);
     console.log('🔔 vapidPublicKey:', vapidPublicKey ? 'Carregada ✅' : 'NÃO carregada ❌');
     
     if (!isSupported) {
       console.error('%c❌ Notificações não suportadas', 'color: red; font-weight: bold');
       toast.error('Notificações não são suportadas neste navegador');
+      setIsLoading(false);
+      return false;
+    }
+
+    // Verificar se a permissão já está denied ANTES de tentar
+    if (currentPermission === 'denied') {
+      console.error('%c❌ Permissão NEGADA - usuário precisa desbloquear manualmente', 'color: red; font-weight: bold');
+      toast.error('Notificações bloqueadas. Por favor, desbloqueie nas configurações do navegador e clique em "Verificar Novamente".', {
+        duration: 5000
+      });
       setIsLoading(false);
       return false;
     }
@@ -245,7 +261,10 @@ export const usePushNotifications = () => {
 
       if (permissionResult !== 'granted') {
         console.error('❌ [PUSH] Permissão NEGADA');
-        toast.error('Permissão de notificação negada. Desbloqueie nas configurações do navegador.');
+        toast.error('Permissão de notificação negada. Desbloqueie nas configurações do navegador.', {
+          id: 'push-subscribe',
+          duration: 5000
+        });
         setIsLoading(false);
         return false;
       }
@@ -451,5 +470,6 @@ export const usePushNotifications = () => {
     permission,
     subscribe,
     unsubscribe,
+    revalidatePermission,
   };
 };

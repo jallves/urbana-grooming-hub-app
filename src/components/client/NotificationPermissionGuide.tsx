@@ -3,7 +3,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, ExternalLink } from 'lucide-react';
 
-export const NotificationPermissionGuide = () => {
+interface NotificationPermissionGuideProps {
+  onCheckAgain: () => void;
+  isChecking: boolean;
+}
+
+export const NotificationPermissionGuide: React.FC<NotificationPermissionGuideProps> = ({ onCheckAgain, isChecking }) => {
   const getBrowserName = () => {
     const userAgent = navigator.userAgent.toLowerCase();
     if (userAgent.includes('chrome') && !userAgent.includes('edge')) return 'Chrome';
@@ -72,6 +77,19 @@ export const NotificationPermissionGuide = () => {
           className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-6 text-lg"
         >
           ↻ RECARREGAR PÁGINA AGORA
+        </Button>
+
+        <div className="text-center text-sm text-yellow-200 font-medium">
+          OU
+        </div>
+
+        <Button
+          onClick={onCheckAgain}
+          disabled={isChecking}
+          variant="outline"
+          className="w-full border-2 border-yellow-500 text-yellow-100 hover:bg-yellow-500/20 py-4 font-semibold"
+        >
+          {isChecking ? '🔄 Verificando...' : '🔍 Verificar Novamente'}
         </Button>
         
         <div className="bg-black/30 p-4 rounded-lg space-y-2">
