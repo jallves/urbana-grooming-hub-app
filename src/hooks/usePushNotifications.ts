@@ -153,12 +153,14 @@ export const usePushNotifications = () => {
     if (!isSupported) {
       console.error('❌ [PUSH] Notificações não suportadas');
       toast.error('Notificações não são suportadas neste navegador');
+      setIsLoading(false);
       return false;
     }
 
     if (!vapidPublicKey) {
       console.error('❌ [PUSH] VAPID key não configurada');
       toast.error('VAPID key não configurada. Peça ao administrador para gerar as chaves VAPID.');
+      setIsLoading(false);
       return false;
     }
 
