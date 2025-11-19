@@ -1,17 +1,16 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Settings2, Bell, RefreshCw } from "lucide-react";
+import { CreditCard, Settings2, RefreshCw } from "lucide-react";
 import TEFHomologacao from '@/components/admin/tef/TEFHomologacao';
 import TEFSettingsForm from '@/components/admin/tef/TEFSettingsForm';
-import VapidKeyGenerator from '@/components/admin/settings/VapidKeyGenerator';
 import CacheManager from '@/components/admin/settings/CacheManager';
 
 const AdminSettings: React.FC = () => {
   return (
     <AdminLayout 
       title="Configurações do Sistema" 
-      description="Configure o TEF, notificações push e outras integrações"
+      description="Configure o TEF, cache e outras integrações"
       icon="⚙️"
     >
       <div className="w-full h-full p-6">
@@ -23,13 +22,6 @@ const AdminSettings: React.FC = () => {
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Cache e Atualização
-            </TabsTrigger>
-            <TabsTrigger 
-              value="push-notifications"
-              className="data-[state=active]:bg-black data-[state=active]:text-white"
-            >
-              <Bell className="h-4 w-4 mr-2" />
-              Notificações Push
             </TabsTrigger>
             <TabsTrigger 
               value="tef-homologacao"
@@ -49,10 +41,6 @@ const AdminSettings: React.FC = () => {
 
           <TabsContent value="cache" className="mt-6">
             <CacheManager />
-          </TabsContent>
-
-          <TabsContent value="push-notifications" className="mt-6">
-            <VapidKeyGenerator />
           </TabsContent>
 
           <TabsContent value="tef-homologacao" className="mt-6">
