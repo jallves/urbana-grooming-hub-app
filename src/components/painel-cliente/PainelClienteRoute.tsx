@@ -19,7 +19,15 @@ const PainelClienteRoute: React.FC<PainelClienteRouteProps> = ({ children }) => 
   }
 
   if (!cliente) {
-    return <Navigate to="/painel-cliente/login" replace />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">Usuário não cadastrado</h2>
+          <p className="text-muted-foreground">Por favor, faça o cadastro para acessar o painel do cliente.</p>
+          <Navigate to="/painel-cliente/login" replace />
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
