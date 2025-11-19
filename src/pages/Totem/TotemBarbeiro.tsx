@@ -14,6 +14,7 @@ interface Barber {
   especialidade?: string;
   foto_url?: string;
   ativo: boolean;
+  staff_id?: string;
 }
 
 /**
@@ -85,7 +86,8 @@ const TotemBarbeiro: React.FC = () => {
         nome: b.nome,
         especialidade: b.specialties || undefined,
         foto_url: b.image_url || undefined,
-        ativo: b.is_active
+        ativo: b.is_active,
+        staff_id: b.staff_id || undefined
       }));
 
       setBarbers(mappedBarbers);
