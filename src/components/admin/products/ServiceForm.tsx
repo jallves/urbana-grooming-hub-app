@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 
 interface ServiceFormProps {
   serviceId: string | null;
@@ -25,6 +27,13 @@ interface ServiceFormData {
   show_on_home: boolean;
 }
 
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!serviceId);
@@ -36,14 +45,34 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     is_active: true,
     show_on_home: true
   });
+  const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   useEffect(() => {
+    loadStaff();
     if (serviceId) {
       loadServiceData();
     } else {
       resetForm();
     }
   }, [serviceId]);
+
+  const loadStaff = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id, name, email, role')
+        .eq('is_active', true)
+        .eq('role', 'barber')
+        .order('name');
+
+      if (error) throw error;
+      setAllStaff(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar barbeiros:', error);
+      toast.error('Erro ao carregar lista de barbeiros');
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -54,6 +83,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
       is_active: true,
       show_on_home: true
     });
+    setSelectedStaffIds([]);
   };
 
   const loadServiceData = async () => {
@@ -76,6 +106,18 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
           is_active: data.is_active ?? true,
           show_on_home: data.show_on_home ?? true
         });
+
+        // Carregar barbeiros vinculados ao serviço
+        const { data: serviceStaff, error: staffError } = await supabase
+          .from('service_staff')
+          .select('staff_id')
+          .eq('service_id', serviceId);
+
+        if (staffError) {
+          console.error('Erro ao carregar barbeiros do serviço:', staffError);
+        } else {
+          setSelectedStaffIds(serviceStaff?.map(s => s.staff_id) || []);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar serviço:', error);
@@ -106,6 +148,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     try {
       setLoading(true);
 
+      let savedServiceId = serviceId;
+
       if (serviceId) {
         // Atualizar serviço existente
         const { error } = await supabase
@@ -122,13 +166,9 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
           .eq('id', serviceId);
 
         if (error) throw error;
-        
-        toast.success('Serviço atualizado com sucesso!', {
-          description: 'O serviço foi atualizado e sincronizado automaticamente'
-        });
       } else {
         // Criar novo serviço
-        const { error } = await supabase
+        const { data: newService, error } = await supabase
           .from('painel_servicos')
           .insert({
             nome: formData.nome.trim(),
@@ -138,14 +178,43 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             is_active: formData.is_active,
             show_on_home: formData.show_on_home,
             display_order: 0
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
-        
-        toast.success('Serviço criado com sucesso!', {
-          description: 'O serviço foi criado e sincronizado automaticamente'
-        });
+        savedServiceId = newService.id;
       }
+
+      // Atualizar relacionamento com barbeiros
+      if (savedServiceId) {
+        // Remover relacionamentos antigos
+        await supabase
+          .from('service_staff')
+          .delete()
+          .eq('service_id', savedServiceId);
+
+        // Inserir novos relacionamentos
+        if (selectedStaffIds.length > 0) {
+          const serviceStaffData = selectedStaffIds.map(staffId => ({
+            service_id: savedServiceId,
+            staff_id: staffId
+          }));
+
+          const { error: staffError } = await supabase
+            .from('service_staff')
+            .insert(serviceStaffData);
+
+          if (staffError) {
+            console.error('Erro ao vincular barbeiros:', staffError);
+            toast.error('Serviço salvo, mas houve erro ao vincular barbeiros');
+          }
+        }
+      }
+        
+      toast.success(serviceId ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!', {
+        description: 'O serviço foi salvo e os barbeiros foram vinculados'
+      });
 
       onSuccess();
       onClose();
@@ -228,6 +297,54 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                   required
                 />
               </div>
+            </div>
+
+            {/* Seleção de Barbeiros */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <Label>Barbeiros que realizam este serviço</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Selecione os barbeiros que podem realizar este serviço
+              </p>
+              <ScrollArea className="h-48 rounded-md border p-4">
+                <div className="space-y-3">
+                  {allStaff.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhum barbeiro cadastrado
+                    </p>
+                  ) : (
+                    allStaff.map((staff) => (
+                      <div key={staff.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`staff-${staff.id}`}
+                          checked={selectedStaffIds.includes(staff.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedStaffIds([...selectedStaffIds, staff.id]);
+                            } else {
+                              setSelectedStaffIds(selectedStaffIds.filter(id => id !== staff.id));
+                            }
+                          }}
+                        />
+                        <Label
+                          htmlFor={`staff-${staff.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {staff.name}
+                        </Label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+              <p className="text-xs text-muted-foreground">
+                {selectedStaffIds.length === 0 
+                  ? 'Nenhum barbeiro selecionado. Este serviço não aparecerá no agendamento.'
+                  : `${selectedStaffIds.length} barbeiro(s) selecionado(s)`
+                }
+              </p>
             </div>
 
             <div className="space-y-3">

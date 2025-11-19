@@ -112,24 +112,57 @@ const TotemNovoAgendamento: React.FC = () => {
   };
 
   const fetchBarbers = async () => {
-    setIsLoading(true);
+    if (!selectedService) return;
     
+    setIsLoading(true);
+
     const result = await executeWithRetry(
       async () => {
-        const { data, error } = await supabase
-          .from('painel_barbeiros')
-          .select('*')
-          .eq('is_active', true)
-          .order('nome');
+        // 1. Buscar barbeiros vinculados ao serviço
+        const { data: serviceStaff, error: serviceStaffError } = await supabase
+          .from('service_staff')
+          .select('staff_id')
+          .eq('service_id', selectedService.id);
 
-        if (error) throw error;
-        return data || [];
+        if (serviceStaffError) throw serviceStaffError;
+
+        if (!serviceStaff || serviceStaff.length === 0) {
+          return [];
+        }
+
+        const linkedStaffIds = serviceStaff.map(s => s.staff_id);
+
+        // 2. Buscar dados dos barbeiros vinculados (tabela staff)
+        const { data: staffData, error: staffError } = await supabase
+          .from('staff')
+          .select('id, name, email, specialties, image_url, experience')
+          .in('id', linkedStaffIds)
+          .eq('is_active', true)
+          .eq('role', 'barber')
+          .order('name');
+
+        if (staffError) throw staffError;
+
+        // Transformar para o formato esperado pelo componente
+        return (staffData || []).map(s => ({
+          id: s.id,
+          nome: s.name,
+          specialties: s.specialties,
+          image_url: s.image_url,
+          experience: s.experience
+        }));
       },
       'carregar barbeiros'
     );
 
     if (result) {
       setBarbers(result);
+      
+      if (result.length === 0) {
+        toast.info('Nenhum barbeiro disponível', {
+          description: 'Este serviço ainda não tem barbeiros vinculados.'
+        });
+      }
     }
     
     setIsLoading(false);
