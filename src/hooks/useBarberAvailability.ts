@@ -32,11 +32,39 @@ export const useBarberAvailability = () => {
     setIsLoading(true);
     
     try {
-      // Buscar barbeiros da tabela 'staff' 
-      console.log('1. Buscando barbeiros da tabela staff...');
+      // 1. Buscar barbeiros vinculados ao serviço
+      console.log('1. Buscando barbeiros vinculados ao serviço...');
+      const { data: serviceStaff, error: serviceStaffError } = await supabase
+        .from('service_staff')
+        .select('staff_id')
+        .eq('service_id', serviceId);
+
+      if (serviceStaffError) {
+        console.error('Erro ao buscar barbeiros do serviço:', serviceStaffError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os barbeiros para este serviço.",
+          variant: "destructive",
+        });
+        setAvailableBarbers([]);
+        return;
+      }
+
+      if (!serviceStaff || serviceStaff.length === 0) {
+        console.log('Nenhum barbeiro vinculado a este serviço');
+        setAvailableBarbers([]);
+        return;
+      }
+
+      const linkedStaffIds = serviceStaff.map(s => s.staff_id);
+      console.log('Barbeiros vinculados ao serviço:', linkedStaffIds);
+
+      // 2. Buscar dados completos dos barbeiros vinculados
+      console.log('2. Buscando dados dos barbeiros vinculados...');
       const { data: allBarbers, error: barbersError } = await supabase
         .from('staff')
         .select('*')
+        .in('id', linkedStaffIds)
         .eq('is_active', true)
         .eq('role', 'barber')
         .order('name');
@@ -55,14 +83,14 @@ export const useBarberAvailability = () => {
       console.log('Barbeiros encontrados:', allBarbers?.length || 0);
       
       if (!allBarbers || allBarbers.length === 0) {
-        console.log('Nenhum barbeiro ativo encontrado');
+        console.log('Nenhum barbeiro ativo vinculado a este serviço');
         setAvailableBarbers([]);
         return;
       }
 
       // Verificar se é domingo (não trabalha)
       const dayOfWeek = date.getDay();
-      console.log(`2. Verificando dia da semana: ${dayOfWeek} (0=domingo)`);
+      console.log(`3. Verificando dia da semana: ${dayOfWeek} (0=domingo)`);
       
       if (dayOfWeek === 0) {
         console.log('Domingo - barbearia fechada');
@@ -85,7 +113,7 @@ export const useBarberAvailability = () => {
       }
 
       // Verificar conflitos com agendamentos existentes
-      console.log('3. Verificando conflitos de agendamento...');
+      console.log('4. Verificando conflitos de agendamento...');
       const availableBarbersList: AvailableBarber[] = [];
       
       const startDateTime = new Date(date);

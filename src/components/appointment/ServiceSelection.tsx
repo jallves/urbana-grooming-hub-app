@@ -13,50 +13,87 @@ interface ServiceSelectionProps {
 const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSelectChange }) => {
   const [services, setServices] = useState<Service[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
   const { toast } = useToast();
   
   useEffect(() => {
-    // Carregar serviços
-    const fetchServices = async () => {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) {
-        console.error('Erro ao carregar serviços:', error);
-        toast({
-          title: "Erro ao carregar serviços",
-          description: "Não foi possível carregar a lista de serviços. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-      } else {
-        setServices(data || []);
-      }
-    };
-
-    // Carregar profissionais (changed from barbers to staff)
-    const fetchStaff = async () => {
-      const { data, error } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) {
-        console.error('Erro ao carregar profissionais:', error);
-        toast({
-          title: "Erro ao carregar profissionais",
-          description: "Não foi possível carregar a lista de profissionais. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-      } else {
-        setStaff(data || []);
-      }
-    };
-
     fetchServices();
     fetchStaff();
   }, [toast]);
+
+  useEffect(() => {
+    // Filtrar barbeiros quando o serviço for selecionado
+    if (formData.service) {
+      filterStaffByService(formData.service);
+    } else {
+      setFilteredStaff([]);
+    }
+  }, [formData.service]);
+  
+  const fetchServices = async () => {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Erro ao carregar serviços:', error);
+      toast({
+        title: "Erro ao carregar serviços",
+        description: "Não foi possível carregar a lista de serviços. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } else {
+      setServices(data || []);
+    }
+  };
+
+  const fetchStaff = async () => {
+    const { data, error } = await supabase
+      .from('staff')
+      .select('*')
+      .eq('is_active', true)
+      .eq('role', 'barber');
+
+    if (error) {
+      console.error('Erro ao carregar profissionais:', error);
+      toast({
+        title: "Erro ao carregar profissionais",
+        description: "Não foi possível carregar a lista de profissionais. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } else {
+      setStaff(data || []);
+    }
+  };
+
+  const filterStaffByService = async (serviceId: string) => {
+    try {
+      // Buscar barbeiros vinculados ao serviço
+      const { data: serviceStaff, error } = await supabase
+        .from('service_staff')
+        .select('staff_id')
+        .eq('service_id', serviceId);
+
+      if (error) {
+        console.error('Erro ao filtrar barbeiros:', error);
+        setFilteredStaff([]);
+        return;
+      }
+
+      if (!serviceStaff || serviceStaff.length === 0) {
+        setFilteredStaff([]);
+        return;
+      }
+
+      const linkedStaffIds = serviceStaff.map(s => s.staff_id);
+      const filtered = staff.filter(s => linkedStaffIds.includes(s.id));
+      setFilteredStaff(filtered);
+    } catch (error) {
+      console.error('Erro ao filtrar barbeiros:', error);
+      setFilteredStaff([]);
+    }
+  };
   
   return (
     <>
@@ -82,17 +119,32 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
         <label htmlFor="barber" className="block text-sm font-medium mb-2">
           Barbeiro Preferido
         </label>
-        <Select value={formData.barber || "any"} onValueChange={(value) => handleSelectChange(value, 'barber')}>
+        <Select 
+          value={formData.barber || "any"} 
+          onValueChange={(value) => handleSelectChange(value, 'barber')}
+          disabled={!formData.service}
+        >
           <SelectTrigger className="bg-white/20 border-urbana-gold/50">
-            <SelectValue placeholder="Selecione um barbeiro" />
+            <SelectValue placeholder={
+              !formData.service 
+                ? "Selecione um serviço primeiro" 
+                : filteredStaff.length === 0 
+                  ? "Nenhum barbeiro disponível" 
+                  : "Selecione um barbeiro"
+            } />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="any">Qualquer Disponível</SelectItem>
-            {staff.map((member) => (
+            {filteredStaff.map((member) => (
               <SelectItem key={member.id} value={member.id || "no-id"}>{member.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {formData.service && filteredStaff.length === 0 && (
+          <p className="text-xs text-yellow-600 mt-1">
+            Este serviço ainda não tem barbeiros vinculados.
+          </p>
+        )}
       </div>
     </>
   );
