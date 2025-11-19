@@ -59,6 +59,8 @@ export const ContasAPagar: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [recordToPay, setRecordToPay] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { syncToCashFlowAsync, isSyncing } = useCashFlowSync();
 
@@ -273,8 +275,15 @@ export const ContasAPagar: React.FC = () => {
   });
 
   const handleMarkAsPaid = (recordId: string) => {
-    if (window.confirm('Tem certeza que deseja marcar esta comissão como paga?')) {
-      markAsPaidMutation.mutate(recordId);
+    setRecordToPay(recordId);
+    setPaymentDialogOpen(true);
+  };
+
+  const confirmPayment = () => {
+    if (recordToPay) {
+      markAsPaidMutation.mutate(recordToPay);
+      setPaymentDialogOpen(false);
+      setRecordToPay(null);
     }
   };
 
@@ -380,68 +389,71 @@ export const ContasAPagar: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Contas a Pagar</h2>
-          <Button onClick={() => setFormOpen(true)}>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h2 className="text-xl sm:text-2xl font-bold">Contas a Pagar</h2>
+          <Button onClick={() => setFormOpen(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Novo Lançamento
+            <span className="hidden sm:inline">Novo Lançamento</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
           <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-red-700 flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Total a Pagar
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-red-700 flex items-center gap-1 sm:gap-2">
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Total a Pagar</span>
+                <span className="sm:hidden">Total</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-700">
+              <div className="text-base sm:text-2xl font-bold text-red-700">
                 R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
-                <ArrowDownCircle className="h-4 w-4" />
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-yellow-700 flex items-center gap-1 sm:gap-2">
+                <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4" />
                 Pendente
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-700">
+              <div className="text-base sm:text-2xl font-bold text-yellow-700">
                 R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-blue-700 flex items-center gap-2">
-                <ArrowDownCircle className="h-4 w-4" />
-                Comissões
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-blue-700 flex items-center gap-1 sm:gap-2">
+                <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Comissões</span>
+                <span className="sm:hidden">Comis.</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-700">
+              <div className="text-base sm:text-2xl font-bold text-blue-700">
                 R$ {totals.commissions.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-orange-700 flex items-center gap-2">
-                <ArrowDownCircle className="h-4 w-4" />
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-orange-700 flex items-center gap-1 sm:gap-2">
+                <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4" />
                 Despesas
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-700">
+              <div className="text-base sm:text-2xl font-bold text-orange-700">
                 R$ {totals.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
@@ -450,28 +462,29 @@ export const ContasAPagar: React.FC = () => {
 
         {/* Tabela de Contas a Pagar */}
         <Card className="bg-white border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
               Despesas e Comissões Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Data Transação</TableHead>
-                    <TableHead>Data Pagamento</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-center">Fluxo Caixa</TableHead>
-                    <TableHead className="text-center">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
+          <CardContent className="p-0 sm:p-6">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <Table className="text-xs sm:text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Número</TableHead>
+                      <TableHead className="whitespace-nowrap">Tipo</TableHead>
+                      <TableHead className="whitespace-nowrap">Descrição</TableHead>
+                      <TableHead className="whitespace-nowrap hidden md:table-cell">Categoria</TableHead>
+                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Data Trans.</TableHead>
+                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Data Pag.</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Valor</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">Status</TableHead>
+                      <TableHead className="text-center whitespace-nowrap hidden xl:table-cell">Fluxo</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {payables && payables.length > 0 ? (
                     payables.map((record) => (
@@ -578,8 +591,9 @@ export const ContasAPagar: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   )}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -608,6 +622,29 @@ export const ContasAPagar: React.FC = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              Confirmar Pagamento
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja marcar este lançamento como pago? Esta ação será registrada no fluxo de caixa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPayment}
+              className="bg-green-600 text-white hover:bg-green-700"
+            >
+              Confirmar Pagamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
