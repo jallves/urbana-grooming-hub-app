@@ -46,13 +46,35 @@ const TotemBarbeiro: React.FC = () => {
   }, [client, service, navigate]);
 
   const loadBarbers = async () => {
+    if (!service) return;
+    
     setLoading(true);
     try {
+      // Buscar apenas barbeiros vinculados ao serviço selecionado
+      const { data: serviceStaff, error: staffError } = await supabase
+        .from('service_staff')
+        .select('staff_id')
+        .eq('service_id', service.id);
+
+      if (staffError) throw staffError;
+
+      if (!serviceStaff || serviceStaff.length === 0) {
+        setBarbers([]);
+        toast.error('Nenhum barbeiro disponível para este serviço', {
+          description: 'Procure a recepção para mais informações.'
+        });
+        return;
+      }
+
+      const staffIds = serviceStaff.map(s => s.staff_id);
+
+      // Buscar dados dos barbeiros vinculados
       // @ts-ignore - Evitar inferência profunda de tipos do Supabase
       const response = await supabase
         .from('painel_barbeiros')
         .select('id, nome, specialties, image_url, is_active')
         .eq('is_active', true)
+        .in('id', staffIds)
         .order('nome');
 
       if (response.error) throw response.error;

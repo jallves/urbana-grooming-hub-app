@@ -32,13 +32,34 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
 }) => {
   const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>([]);
   const [isChecking, setIsChecking] = useState(false);
+  const selectedServiceId = form.watch('service_id');
 
   const checkStaffAvailability = async () => {
     console.log('🔍 Verificando disponibilidade dos barbeiros da tabela staff...');
     
-    if (!selectedDate || !selectedTime || !staffMembers.length) {
+    // Primeiro, filtrar barbeiros vinculados ao serviço selecionado
+    let filteredStaff = staffMembers;
+
+    if (selectedServiceId) {
+      try {
+        const { data: serviceStaff, error } = await supabase
+          .from('service_staff')
+          .select('staff_id')
+          .eq('service_id', selectedServiceId);
+
+        if (!error && serviceStaff && serviceStaff.length > 0) {
+          const staffIds = serviceStaff.map(s => s.staff_id);
+          filteredStaff = staffMembers.filter(staff => staffIds.includes(staff.id));
+          console.log(`📋 Barbeiros vinculados ao serviço: ${filteredStaff.length}`);
+        }
+      } catch (error) {
+        console.error('Erro ao filtrar barbeiros por serviço:', error);
+      }
+    }
+    
+    if (!selectedDate || !selectedTime || !filteredStaff.length) {
       console.log('⚠️ Parâmetros insuficientes - mostrando todos como disponíveis');
-      setStaffAvailability(staffMembers.map(staff => ({
+      setStaffAvailability(filteredStaff.map(staff => ({
         id: staff.id,
         name: staff.name,
         available: true
@@ -58,7 +79,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
 
       console.log(`📅 Verificando disponibilidade para: ${startTime.toLocaleString()} - ${endTime.toLocaleString()}`);
 
-      const availability = await Promise.all(staffMembers.map(async (staff) => {
+      const availability = await Promise.all(filteredStaff.map(async (staff) => {
         console.log(`👤 Verificando barbeiro: ${staff.name}`);
         
         let query = supabase
@@ -149,7 +170,7 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
 
   useEffect(() => {
     checkStaffAvailability();
-  }, [selectedDate, selectedTime, serviceDuration, staffMembers, appointmentId]);
+  }, [selectedDate, selectedTime, serviceDuration, staffMembers, appointmentId, selectedServiceId]);
 
   const availableStaff = staffAvailability.filter(staff => staff.available);
   const unavailableStaff = staffAvailability.filter(staff => !staff.available);
