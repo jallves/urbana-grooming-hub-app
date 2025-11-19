@@ -304,54 +304,56 @@ export const ContasAReceber: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Contas a Receber</h2>
-          <Button onClick={() => setFormOpen(true)}>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <h2 className="text-xl sm:text-2xl font-bold">Contas a Receber</h2>
+          <Button onClick={() => setFormOpen(true)} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Nova Receita
+            <span className="hidden sm:inline">Nova Receita</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-green-700 flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Total a Receber
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-green-700 flex items-center gap-1 sm:gap-2">
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Total a Receber</span>
+                <span className="sm:hidden">Total</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-700">
+              <div className="text-base sm:text-2xl font-bold text-green-700">
                 R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
-                <ArrowUpCircle className="h-4 w-4" />
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-yellow-700 flex items-center gap-1 sm:gap-2">
+                <ArrowUpCircle className="h-3 w-3 sm:h-4 sm:w-4" />
                 Pendente
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-700">
+              <div className="text-base sm:text-2xl font-bold text-yellow-700">
                 R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-700 flex items-center gap-2">
-                <ArrowUpCircle className="h-4 w-4" />
+          <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium text-emerald-700 flex items-center gap-1 sm:gap-2">
+                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 Recebido
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-emerald-700">
+              <div className="text-base sm:text-2xl font-bold text-emerald-700">
                 R$ {totals.completed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
@@ -360,29 +362,30 @@ export const ContasAReceber: React.FC = () => {
 
         {/* Tabela de Contas a Receber */}
         <Card className="bg-white border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
               Receitas Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Pagamento</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Valor Bruto</TableHead>
-                    <TableHead className="text-right">Desconto</TableHead>
-                    <TableHead className="text-right">Valor Líquido</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-center">Fluxo Caixa</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
+          <CardContent className="p-0 sm:p-6">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle">
+                <Table className="text-xs sm:text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Número</TableHead>
+                      <TableHead className="whitespace-nowrap">Descrição</TableHead>
+                      <TableHead className="whitespace-nowrap hidden md:table-cell">Categoria</TableHead>
+                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Pagamento</TableHead>
+                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Data</TableHead>
+                      <TableHead className="text-right whitespace-nowrap hidden xl:table-cell">Bruto</TableHead>
+                      <TableHead className="text-right whitespace-nowrap hidden xl:table-cell">Desconto</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Líquido</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">Status</TableHead>
+                      <TableHead className="text-center whitespace-nowrap hidden xl:table-cell">Fluxo</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {receivables && receivables.length > 0 ? (
                     receivables.map((record) => (
@@ -485,8 +488,9 @@ export const ContasAReceber: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   )}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </CardContent>
         </Card>
