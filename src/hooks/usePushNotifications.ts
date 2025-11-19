@@ -10,146 +10,151 @@ interface PushSubscription {
   };
 }
 
+// Fallback VAPID key se edge function falhar
+const FALLBACK_VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || null;
+
 export const usePushNotifications = () => {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [permission, setPermission] = useState<NotificationPermission>('default');
-  const [vapidPublicKey, setVapidPublicKey] = useState<string>('');
+  const [vapidPublicKey, setVapidPublicKey] = useState<string | null>(null);
 
   useEffect(() => {
-    // Log bem visível
-    console.log('%c🔔 PUSH NOTIFICATIONS HOOK INICIADO', 'background: #222; color: #bada55; font-size: 16px; padding: 4px;');
-    
-    // Verifica se o navegador suporta notificações
-    if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
-      console.log('%c✅ Navegador suporta notificações push', 'color: green; font-weight: bold');
-      setIsSupported(true);
-      setPermission(Notification.permission);
-      console.log('%c🔔 Permissão atual: ' + Notification.permission, 'color: blue');
+    const initializePushNotifications = async () => {
+      console.log('🔔 [PUSH] ===== INICIALIZANDO SISTEMA DE NOTIFICAÇÕES =====');
       
-      checkSubscription();
-      loadVapidPublicKey();
-    } else {
-      console.error('%c❌ Navegador NÃO suporta notificações push', 'color: red; font-weight: bold');
-      toast.error('Seu navegador não suporta notificações push');
-    }
+      // Verificar suporte do navegador
+      const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      console.log('📱 [PUSH] Suporte:', supported ? '✅ SIM' : '❌ NÃO');
+      setIsSupported(supported);
+      
+      if (supported) {
+        const currentPermission = Notification.permission;
+        setPermission(currentPermission);
+        console.log('🔐 [PUSH] Permissão atual:', currentPermission);
+        
+        await loadVapidPublicKey();
+        await checkSubscription();
+      } else {
+        console.warn('⚠️ [PUSH] Navegador não suporta notificações push');
+      }
+      
+      setIsLoading(false);
+      console.log('🔔 [PUSH] ===== INICIALIZAÇÃO COMPLETA =====');
+    };
+
+    initializePushNotifications();
   }, []);
 
   const loadVapidPublicKey = async () => {
-    console.log('🔔 usePushNotifications: Carregando VAPID public key...');
     try {
+      console.log('🔑 [PUSH] Carregando VAPID public key...');
       const { data, error } = await supabase.functions.invoke('get-vapid-public-key');
-
+      
       if (error) {
-        console.error('❌ Erro ao carregar VAPID public key:', error);
-        return;
+        console.error('❌ [PUSH] Erro ao carregar VAPID key do edge function:', error);
+        
+        if (FALLBACK_VAPID_KEY) {
+          console.log('🔄 [PUSH] Usando VAPID key de fallback');
+          setVapidPublicKey(FALLBACK_VAPID_KEY);
+          return;
+        }
+        
+        throw error;
       }
-
+      
       if (data?.publicKey) {
+        console.log('✅ [PUSH] VAPID key carregada com sucesso');
         setVapidPublicKey(data.publicKey);
-        console.log('✅ VAPID public key carregada com sucesso');
       } else {
-        console.error('❌ VAPID public key não encontrada na resposta');
+        console.error('❌ [PUSH] VAPID key não encontrada na resposta');
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar VAPID key:', error);
+      console.error('❌ [PUSH] Erro ao buscar VAPID key:', error);
+      
+      if (FALLBACK_VAPID_KEY) {
+        console.log('🔄 [PUSH] Usando VAPID key de fallback após erro');
+        setVapidPublicKey(FALLBACK_VAPID_KEY);
+      }
     }
   };
 
   const checkSubscription = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.log('⚠️ [PUSH] Navegador não suporta Service Worker ou PushManager');
-      return;
-    }
-
     try {
-      console.log('🔍 [PUSH] Iniciando verificação de subscrição...');
+      console.log('🔍 [PUSH] Verificando subscription existente...');
       
-      // 1. Verificar Service Worker
+      // Verificar se service worker está pronto
+      if (!navigator.serviceWorker.controller) {
+        console.log('⏳ [PUSH] Service Worker não está controlando a página ainda');
+        return;
+      }
+      
       const registration = await navigator.serviceWorker.ready;
-      console.log('✅ [PUSH] Service Worker pronto');
+      console.log('✅ [PUSH] Service Worker ready');
       
-      // 2. Verificar subscrição local no navegador
       const subscription = await registration.pushManager.getSubscription();
-      console.log('📋 [PUSH] Subscrição local:', subscription ? 'EXISTE' : 'NÃO EXISTE');
       
-      if (!subscription) {
-        console.log('❌ [PUSH] Sem subscrição local no navegador');
-        setIsSubscribed(false);
-        return;
-      }
-      
-      // 3. Verificar se o token existe no banco de dados
-      console.log('🔍 [PUSH] Verificando token no banco de dados...');
-      
-      // Tentar pegar cliente ID do sistema customizado do painel primeiro
-      const clienteToken = localStorage.getItem('painel_cliente_token');
-      let clientId = null;
+      if (subscription) {
+        console.log('✅ [PUSH] Subscription encontrada:', subscription.endpoint.substring(0, 50) + '...');
+        
+        // Verificar se token está ativo no backend
+        const clienteToken = localStorage.getItem('painel_cliente_token');
+        let clientId = null;
 
-      if (clienteToken) {
-        console.log('🔍 [PUSH] Tentando autenticação via painel customizado...');
-        clientId = clienteToken;
-      } else {
-        console.log('🔍 [PUSH] Tentando autenticação via Supabase Auth...');
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.log('⚠️ [PUSH] Usuário não autenticado em nenhum sistema');
-          setIsSubscribed(false);
-          return;
+        if (clienteToken) {
+          clientId = clienteToken;
+        } else {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) {
+            console.log('⚠️ [PUSH] Usuário não autenticado');
+            setIsSubscribed(false);
+            return;
+          }
+
+          const { data: clientData } = await supabase
+            .from('painel_clientes')
+            .select('id')
+            .eq('email', user.email)
+            .single();
+
+          if (clientData) {
+            clientId = clientData.id;
+          }
         }
 
-        // Buscar cliente_id usando painel_clientes
-        const { data: clientData } = await supabase
-          .from('painel_clientes')
-          .select('id')
-          .eq('email', user.email)
-          .single();
-
-        if (!clientData) {
-          console.log('⚠️ [PUSH] Cliente não encontrado no banco');
-          setIsSubscribed(false);
-          return;
+        if (clientId) {
+          const { data: tokens, error } = await supabase
+            .from('push_notification_tokens')
+            .select('*')
+            .eq('client_id', clientId)
+            .eq('is_active', true);
+          
+          if (error) {
+            console.error('❌ [PUSH] Erro ao buscar tokens:', error);
+          }
+          
+          if (tokens && tokens.length > 0) {
+            console.log('✅ [PUSH] Token ativo encontrado no backend');
+            setIsSubscribed(true);
+            return;
+          }
         }
-
-        clientId = clientData.id;
-      }
-
-      console.log('✅ [PUSH] Cliente ID identificado:', clientId);
-
-      // Verificar tokens ativos no banco
-      const { data: tokens, error: tokenError } = await supabase
-        .from('push_notification_tokens')
-        .select('*')
-        .eq('client_id', clientId)
-        .eq('is_active', true);
-
-      if (tokenError) {
-        console.error('❌ [PUSH] Erro ao buscar tokens:', tokenError);
-        setIsSubscribed(false);
-        return;
-      }
-
-      const hasTokenInDb = tokens && tokens.length > 0;
-      console.log('💾 [PUSH] Tokens no banco:', hasTokenInDb ? `${tokens.length} encontrado(s)` : 'NENHUM');
-      
-      // Se tem subscrição local mas não tem no banco, há divergência
-      if (!hasTokenInDb) {
-        console.log('⚠️ [PUSH] DIVERGÊNCIA: Subscrição local existe mas token não está no banco!');
+        
+        console.log('⚠️ [PUSH] Subscription encontrada mas token não está no backend');
         setIsSubscribed(false);
       } else {
-        console.log('✅ [PUSH] Status verificado: ATIVO (token no banco confirmado)');
-        setIsSubscribed(true);
+        console.log('ℹ️ [PUSH] Nenhuma subscription encontrada');
+        setIsSubscribed(false);
       }
-      
     } catch (error) {
-      console.error('❌ [PUSH] Erro ao verificar subscrição:', error);
+      console.error('❌ [PUSH] Erro ao verificar subscription:', error);
       setIsSubscribed(false);
     }
   };
 
-  const urlBase64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
       .replace(/\-/g, '+')
       .replace(/_/g, '/');
@@ -161,243 +166,213 @@ export const usePushNotifications = () => {
       outputArray[i] = rawData.charCodeAt(i);
     }
     return outputArray;
-  };
+  }
 
   const subscribe = async () => {
-    console.log('%c🔔 ========== INICIANDO SUBSCRIÇÃO DE PUSH ==========', 'background: #4CAF50; color: white; font-size: 14px; padding: 8px;');
-    console.log('🔔 isSupported:', isSupported);
-    console.log('🔔 vapidPublicKey:', vapidPublicKey ? 'Carregada ✅' : 'NÃO carregada ❌');
-    
-    if (!isSupported) {
-      console.error('%c❌ Notificações não suportadas', 'color: red; font-weight: bold');
-      toast.error('Notificações não são suportadas neste navegador');
-      setIsLoading(false);
-      return false;
-    }
-
-    if (!vapidPublicKey) {
-      console.error('%c❌ VAPID key não configurada', 'color: red; font-weight: bold');
-      toast.error('Aguarde... carregando configurações');
-      
-      // Tentar carregar novamente
-      await loadVapidPublicKey();
-      
-      // Verificar novamente após tentar carregar
-      if (!vapidPublicKey) {
-        toast.error('Erro ao carregar configurações. Tente novamente.');
-        setIsLoading(false);
-        return false;
-      }
-    }
-
-    setIsLoading(true);
-    toast.loading('Ativando notificações...', { id: 'push-subscribe' });
-
     try {
-      // PASSO 1: Solicitar permissão
-      console.log('🔔 [PUSH] PASSO 1/5: Solicitando permissão...');
+      console.log('🚀 [PUSH] ========== INICIANDO PROCESSO DE SUBSCRIPTION ==========');
+      setIsLoading(true);
+
+      // 1. Verificar suporte
+      if (!isSupported) {
+        throw new Error('Notificações push não são suportadas neste navegador');
+      }
+
+      // 2. Solicitar permissão
+      console.log('📱 [PUSH] Solicitando permissão de notificação...');
       const permissionResult = await Notification.requestPermission();
-      console.log('🔔 [PUSH] Resultado da permissão:', permissionResult);
       setPermission(permissionResult);
+      console.log('🔐 [PUSH] Resultado da permissão:', permissionResult);
 
       if (permissionResult !== 'granted') {
-        console.error('❌ [PUSH] Permissão NEGADA');
-        toast.error('Permissão de notificação negada. Desbloqueie nas configurações do navegador.');
-        setIsLoading(false);
-        return false;
+        console.warn('⚠️ [PUSH] Permissão negada pelo usuário');
+        throw new Error('Permissão de notificação negada');
       }
-      
-      console.log('✅ [PUSH] Permissão CONCEDIDA!');
 
-      // PASSO 2: Registrar e aguardar Service Worker
-      console.log('🔔 [PUSH] PASSO 2/5: Registrando Service Worker...');
-      await navigator.serviceWorker.register('/sw.js');
-      console.log('✅ [PUSH] Service Worker registrado');
-      
-      console.log('⏳ [PUSH] Aguardando Service Worker estar pronto...');
-      const registration = await navigator.serviceWorker.ready;
-      console.log('✅ [PUSH] Service Worker PRONTO!', registration.active?.state);
+      // 3. Verificar VAPID key
+      if (!vapidPublicKey) {
+        console.error('❌ [PUSH] VAPID public key não disponível');
+        throw new Error('VAPID public key não configurada. Peça ao administrador para configurar as notificações push.');
+      }
 
-      // PASSO 3: Criar subscrição push
-      console.log('🔔 [PUSH] PASSO 3/5: Criando subscrição push...');
-      const subscription = await registration.pushManager.subscribe({
+      // 4. Verificar/registrar Service Worker
+      console.log('🔍 [PUSH] Verificando service workers registrados...');
+      const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+      console.log(`📝 [PUSH] ${existingRegistrations.length} service worker(s) encontrado(s)`);
+
+      let registration: ServiceWorkerRegistration;
+
+      if (existingRegistrations.length > 0) {
+        registration = existingRegistrations[0];
+        console.log('♻️ [PUSH] Usando service worker existente:', registration.scope);
+      } else {
+        console.log('📝 [PUSH] Registrando novo service worker...');
+        registration = await navigator.serviceWorker.register('/sw.js', {
+          scope: '/',
+          updateViaCache: 'none'
+        });
+        console.log('✅ [PUSH] Service worker registrado:', registration.scope);
+      }
+
+      // 5. Aguardar service worker estar pronto
+      console.log('⏳ [PUSH] Aguardando service worker ficar pronto...');
+      const readyRegistration = await navigator.serviceWorker.ready;
+      console.log('✅ [PUSH] Service worker pronto e ativo');
+
+      // 6. Limpar subscription antiga se existir
+      const existingSubscription = await readyRegistration.pushManager.getSubscription();
+      if (existingSubscription) {
+        console.log('🔄 [PUSH] Removendo subscription antiga...');
+        await existingSubscription.unsubscribe();
+      }
+
+      // 7. Criar nova push subscription
+      console.log('🔔 [PUSH] Criando nova push subscription...');
+      const subscription = await readyRegistration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as any
       });
-      console.log('✅ [PUSH] Subscrição criada!');
-      console.log('📋 [PUSH] Endpoint:', subscription.endpoint.substring(0, 60) + '...');
 
-      // PASSO 4: Preparar dados da subscrição
-      console.log('🔔 [PUSH] PASSO 4/5: Preparando dados da subscrição...');
-      const subscriptionData: PushSubscription = {
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
-          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))),
-        },
-      };
-      console.log('✅ [PUSH] Dados preparados');
+      console.log('✅ [PUSH] Push subscription criada:', {
+        endpoint: subscription.endpoint.substring(0, 50) + '...',
+        hasKeys: !!subscription.getKey('p256dh')
+      });
 
-      // PASSO 5: Salvar no banco de dados
-      console.log('🔔 [PUSH] PASSO 5/5: Salvando token no banco...');
-      
-      // Tentar pegar cliente ID do sistema customizado do painel primeiro
+      // 8. Obter client ID
       const clienteToken = localStorage.getItem('painel_cliente_token');
-      let clienteId = null;
+      let clientId = null;
 
       if (clienteToken) {
-        console.log('🔍 [PUSH] Usando autenticação do painel customizado...');
-        clienteId = clienteToken;
+        clientId = clienteToken;
       } else {
-        console.log('🔍 [PUSH] Buscando usuário via Supabase Auth...');
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          console.error('❌ [PUSH] Usuário NÃO autenticado em nenhum sistema');
-          toast.error('Usuário não autenticado. Faça login novamente.');
-          setIsLoading(false);
-          return false;
+          throw new Error('Usuário não autenticado. Faça login novamente.');
         }
-        console.log('✅ [PUSH] Usuário autenticado:', user.email);
 
-        // Buscar cliente usando painel_clientes
-        console.log('🔍 [PUSH] Buscando cliente no banco...');
-        const { data: cliente, error: clientError } = await supabase
+        const { data: clientData } = await supabase
           .from('painel_clientes')
           .select('id')
           .eq('email', user.email)
           .single();
 
-        if (clientError) {
-          console.error('❌ [PUSH] Erro ao buscar cliente:', clientError);
-          toast.error('Erro ao encontrar cliente no banco');
-          setIsLoading(false);
-          return false;
+        if (!clientData) {
+          throw new Error('Cliente não encontrado.');
         }
 
-        if (!cliente) {
-          console.error('❌ [PUSH] Cliente não encontrado para email:', user.email);
-          toast.error('Cliente não encontrado no sistema');
-          setIsLoading(false);
-          return false;
-        }
-
-        clienteId = cliente.id;
+        clientId = clientData.id;
       }
-      
-      console.log('✅ [PUSH] Cliente ID:', clienteId);
 
-      console.log('💾 [PUSH] Salvando token via edge function...');
-      console.log('📤 [PUSH] Dados a serem salvos:', {
-        client_id: clienteId,
-        endpoint: subscriptionData.endpoint.substring(0, 60) + '...',
-        has_keys: !!(subscriptionData.keys.p256dh && subscriptionData.keys.auth)
-      });
-      
-      const { data: insertData, error: saveError } = await supabase.functions.invoke('register-push-token', {
+      console.log('👤 [PUSH] Cliente ID:', clientId);
+
+      // 9. Enviar subscription para o backend
+      console.log('💾 [PUSH] Enviando subscription para o backend...');
+      const subscriptionData = {
+        endpoint: subscription.endpoint,
+        keys: {
+          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
+        }
+      };
+
+      const { data, error } = await supabase.functions.invoke('register-push-token', {
         body: {
-          clientId: clienteId,
-          subscriptionData: subscriptionData,
-          userAgent: navigator.userAgent,
+          clientId,
+          subscriptionData,
+          userAgent: navigator.userAgent
         }
       });
 
-      if (saveError) {
-        console.error('❌ [PUSH] ERRO ao salvar token:', saveError);
-        console.error('🔴 [PUSH] Código:', saveError.message);
-        toast.error(`Erro ao salvar token: ${saveError.message}`);
-        setIsLoading(false);
-        return false;
+      if (error) {
+        console.error('❌ [PUSH] Erro ao registrar token no backend:', error);
+        throw error;
       }
 
-      if (insertData?.error) {
-        console.error('❌ [PUSH] ERRO retornado pela função:', insertData);
-        toast.error(`Erro ao salvar token: ${insertData.message || 'Erro desconhecido'}`);
-        setIsLoading(false);
-        return false;
-      }
-
-      console.log('%c✅ Token salvo com SUCESSO!', 'background: green; color: white; font-size: 14px; padding: 8px;', insertData);
-      console.log('%c🔔 ========== SUBSCRIÇÃO CONCLUÍDA ==========', 'background: #4CAF50; color: white; font-size: 14px; padding: 8px;');
-
+      console.log('✅ [PUSH] Token registrado no backend:', data);
+      console.log('🎉 [PUSH] ========== NOTIFICAÇÕES PUSH ATIVADAS COM SUCESSO! ==========');
+      
       setIsSubscribed(true);
-      toast.success('✅ Notificações ativadas com sucesso!', { id: 'push-subscribe' });
-      setIsLoading(false);
+      toast.success('Notificações push ativadas com sucesso! 🎉');
+      
       return true;
-      
     } catch (error: any) {
-      console.error('%c❌ ERRO AO ATIVAR NOTIFICAÇÕES', 'background: red; color: white; font-size: 14px; padding: 8px;');
-      console.error('🔴 Tipo:', error.name);
-      console.error('🔴 Mensagem:', error.message);
-      console.error('🔴 Stack:', error.stack);
+      console.error('❌ [PUSH] ========== ERRO AO ATIVAR NOTIFICAÇÕES ==========');
+      console.error('❌ [PUSH] Erro completo:', error);
+      console.error('❌ [PUSH] Stack trace:', error.stack);
       
-      // Mensagem mais amigável para o usuário
+      // Mensagens de erro mais específicas
       let errorMessage = 'Erro ao ativar notificações';
-      if (error.message.includes('not found')) {
-        errorMessage = 'Cliente não encontrado. Faça login novamente.';
-      } else if (error.message.includes('permission')) {
-        errorMessage = 'Permissão de notificação negada';
+      
+      if (error.message?.includes('Permission') || error.message?.includes('Permissão')) {
+        errorMessage = 'Permissão negada. Verifique as configurações do navegador e recarregue a página.';
+      } else if (error.message?.includes('VAPID')) {
+        errorMessage = 'Configuração de notificações incompleta. Contate o administrador.';
+      } else if (error.message?.includes('Service Worker')) {
+        errorMessage = 'Erro ao registrar service worker. Recarregue a página e tente novamente.';
       } else if (error.message) {
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage, { id: 'push-subscribe' });
+      toast.error(errorMessage);
+      throw error;
+    } finally {
       setIsLoading(false);
-      return false;
     }
   };
 
   const unsubscribe = async () => {
-    setIsLoading(true);
-
     try {
+      console.log('🔕 [PUSH] Iniciando processo de desinscrição...');
+      setIsLoading(true);
+
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
+        console.log('🔕 [PUSH] Cancelando subscription...');
         await subscription.unsubscribe();
+        console.log('✅ [PUSH] Subscription cancelada');
 
-        // Remove do banco de dados
-        // Tentar pegar cliente ID do sistema customizado primeiro
         const clienteToken = localStorage.getItem('painel_cliente_token');
-        let clienteId = null;
+        let clientId = null;
 
         if (clienteToken) {
-          clienteId = clienteToken;
+          clientId = clienteToken;
         } else {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            const { data: cliente } = await supabase
+            const { data: clientData } = await supabase
               .from('painel_clientes')
               .select('id')
               .eq('email', user.email)
               .single();
 
-            if (cliente) {
-              clienteId = cliente.id;
+            if (clientData) {
+              clientId = clientData.id;
             }
           }
         }
 
-        if (clienteId) {
-          const { error: unregisterError } = await supabase.functions.invoke('unregister-push-token', {
-            body: { clientId: clienteId }
-          });
-
-          if (unregisterError) {
-            console.error('❌ [PUSH] Erro ao remover token:', unregisterError);
-          }
+        if (clientId) {
+          await supabase
+            .from('push_notification_tokens')
+            .update({ is_active: false })
+            .eq('client_id', clientId);
+          
+          console.log('✅ [PUSH] Token desativado no backend');
         }
-      }
 
-      setIsSubscribed(false);
-      toast.success('Notificações desativadas');
-      setIsLoading(false);
-      return true;
-    } catch (error) {
-      console.error('Erro ao desativar notificações:', error);
-      toast.error('Erro ao desativar notificações');
-      setIsLoading(false);
+        setIsSubscribed(false);
+        toast.success('Notificações desativadas');
+        return true;
+      }
       return false;
+    } catch (error) {
+      console.error('❌ [PUSH] Erro ao desinscrever:', error);
+      toast.error('Erro ao desativar notificações');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -407,6 +382,6 @@ export const usePushNotifications = () => {
     isLoading,
     permission,
     subscribe,
-    unsubscribe,
+    unsubscribe
   };
 };

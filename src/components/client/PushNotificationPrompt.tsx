@@ -40,28 +40,36 @@ export const PushNotificationPrompt: React.FC = () => {
   }, [isSupported, isSubscribed, isLoading, permission, isDismissed]);
 
   const handleActivate = async () => {
-    console.log('%c🔔 ========== BOTÃO "ATIVAR" CLICADO ==========', 'background: blue; color: white; font-size: 16px; padding: 8px;');
-    console.log('Estado atual:', { isSupported, isSubscribed, isLoading, permission });
+    console.log('🚀 [PROMPT] ========== BOTÃO ATIVAR CLICADO ==========');
+    console.log('🔍 [PROMPT] Estado atual:', { 
+      isSupported, 
+      isSubscribed, 
+      permission, 
+      isLoading 
+    });
     
     if (!isSupported) {
-      console.error('%c❌ Navegador não suporta notificações', 'color: red; font-weight: bold');
+      console.error('❌ [PROMPT] Navegador não suporta notificações');
       toast.error('Seu navegador não suporta notificações push');
       return;
     }
-
-    console.log('🔔 Iniciando processo de ativação...');
     
     try {
+      toast.loading('Ativando notificações...', { id: 'push-subscribe' });
+      
       const success = await subscribe();
-      console.log('🔔 Resultado da ativação:', success ? '✅ SUCESSO' : '❌ FALHA');
       
       if (success) {
-        localStorage.setItem('push-notification-prompt-dismissed', 'true');
+        console.log('✅ [PROMPT] Subscription concluída com sucesso');
         setIsDismissed(true);
+        localStorage.setItem('push-notification-prompt-dismissed', 'true');
+        toast.success('Notificações ativadas com sucesso! 🎉', { id: 'push-subscribe' });
       }
     } catch (error: any) {
-      console.error('%c❌ Erro capturado no handleActivate:', 'color: red; font-weight: bold', error);
-      toast.error(`Erro: ${error.message}`);
+      console.error('❌ [PROMPT] Erro ao ativar notificações:', error);
+      toast.error(error.message || 'Erro ao ativar notificações. Tente novamente.', { 
+        id: 'push-subscribe' 
+      });
     }
   };
 
