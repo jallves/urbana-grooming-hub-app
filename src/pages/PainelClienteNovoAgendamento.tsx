@@ -108,12 +108,32 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   }, [step, selectedService]);
 
   const loadBarbers = async () => {
+    if (!selectedService) return;
+    
     setLoading(true);
     try {
+      // Buscar apenas barbeiros vinculados ao serviço selecionado
+      const { data: serviceStaff, error: staffError } = await supabase
+        .from('service_staff')
+        .select('staff_id')
+        .eq('service_id', selectedService.id);
+
+      if (staffError) throw staffError;
+
+      if (!serviceStaff || serviceStaff.length === 0) {
+        setBarbers([]);
+        toast.error('Nenhum barbeiro disponível para este serviço');
+        return;
+      }
+
+      const staffIds = serviceStaff.map(s => s.staff_id);
+
+      // Buscar dados dos barbeiros vinculados
       const { data, error } = await supabase
         .from('painel_barbeiros')
         .select('id, staff_id, nome, image_url')
         .eq('is_active', true)
+        .in('staff_id', staffIds)
         .order('nome');
 
       if (error) throw error;
