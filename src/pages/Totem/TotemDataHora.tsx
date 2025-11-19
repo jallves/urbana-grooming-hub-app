@@ -167,7 +167,7 @@ const TotemDataHora: React.FC = () => {
     setLoading(true);
     try {
       const slots = await getAvailableTimeSlots(
-        barber.id,
+        barber.staff_id || barber.id,
         selectedDate,
         service.duracao || 60
       );
@@ -220,7 +220,7 @@ const TotemDataHora: React.FC = () => {
       // Validação robusta antes de criar
       console.log('🔐 Iniciando validação...');
       const validation = await validateAppointment(
-        barber.id,
+        barber.staff_id || barber.id,
         selectedDate,
         selectedTime,
         service.duracao || 60
