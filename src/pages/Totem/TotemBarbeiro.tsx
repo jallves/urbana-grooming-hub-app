@@ -72,9 +72,9 @@ const TotemBarbeiro: React.FC = () => {
       // @ts-ignore - Evitar inferência profunda de tipos do Supabase
       const response = await supabase
         .from('painel_barbeiros')
-        .select('id, nome, specialties, image_url, is_active')
+        .select('id, nome, specialties, image_url, is_active, staff_id')
         .eq('is_active', true)
-        .in('id', staffIds)
+        .in('staff_id', staffIds)
         .order('nome');
 
       if (response.error) throw response.error;
