@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('%c[SW] ✅ Service Worker ATIVADO e pronto para push notifications!', 'background: #2196F3; color: white; font-size: 14px; padding: 4px;');
+  console.log('%c[SW] ✅ Service Worker ATIVADO!', 'background: #2196F3; color: white; font-size: 14px; padding: 4px;');
   event.waitUntil(self.clients.claim());
 });
 
@@ -182,79 +182,4 @@ self.addEventListener('message', (event) => {
 self.addEventListener('online', () => {
   console.log('[SW] Conexão restaurada, processando fila...');
   processQueue();
-});
-
-// ========== PUSH NOTIFICATIONS ==========
-
-// Receber notificação push
-self.addEventListener('push', (event) => {
-  console.log('%c[SW] 📨 PUSH NOTIFICATION RECEBIDA!', 'background: #FF9800; color: white; font-size: 16px; padding: 8px;');
-  console.log('[SW] Dados do evento:', event);
-  
-  let notificationData = {
-    title: 'Barbearia Costa Urbana',
-    body: 'Você tem uma nova notificação',
-    icon: '/icon-192x192.png',
-    badge: '/icon-192x192.png',
-    tag: 'default',
-    requireInteraction: false,
-  };
-
-  if (event.data) {
-    try {
-      const data = event.data.json();
-      console.log('[SW] Dados da notificação:', data);
-      
-      notificationData = {
-        title: data.title || notificationData.title,
-        body: data.body || data.message || notificationData.body,
-        icon: data.icon || notificationData.icon,
-        badge: data.badge || notificationData.badge,
-        tag: data.tag || notificationData.tag,
-        data: data.data || {},
-        requireInteraction: data.requireInteraction || false,
-      };
-    } catch (error) {
-      console.error('[SW] Erro ao processar dados da notificação:', error);
-    }
-  }
-
-  const promiseChain = self.registration.showNotification(
-    notificationData.title,
-    {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      tag: notificationData.tag,
-      data: notificationData.data,
-      requireInteraction: notificationData.requireInteraction,
-    }
-  );
-
-  event.waitUntil(promiseChain);
-});
-
-// Clique na notificação
-self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notificação clicada:', event);
-  
-  event.notification.close();
-
-  // Abrir ou focar na janela da aplicação
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Se já existe uma janela aberta, focar nela
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
-        if ('focus' in client) {
-          return client.focus();
-        }
-      }
-      
-      // Se não existe, abrir uma nova janela
-      if (self.clients.openWindow) {
-        return self.clients.openWindow('/painel-cliente');
-      }
-    })
-  );
 });
