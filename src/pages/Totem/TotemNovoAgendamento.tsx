@@ -94,10 +94,25 @@ const TotemNovoAgendamento: React.FC = () => {
   const fetchServices = async () => {
     const result = await executeWithRetry(
       async () => {
+        // Buscar apenas serviços com preço > 0 e que tenham barbeiros vinculados
+        const { data: servicesWithStaff, error: staffError } = await supabase
+          .from('service_staff')
+          .select('service_id');
+
+        if (staffError) throw staffError;
+
+        const serviceIdsWithStaff = [...new Set(servicesWithStaff?.map(s => s.service_id) || [])];
+
+        if (serviceIdsWithStaff.length === 0) {
+          return [];
+        }
+
         const { data, error } = await supabase
           .from('painel_servicos')
           .select('*')
           .eq('is_active', true)
+          .gt('preco', 0)
+          .in('id', serviceIdsWithStaff)
           .order('nome');
 
         if (error) throw error;

@@ -31,20 +31,39 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
   }, [formData.service]);
   
   const fetchServices = async () => {
-    const { data, error } = await supabase
-      .from('services')
-      .select('*')
-      .eq('is_active', true);
+    try {
+      // Buscar apenas serviços com preço > 0 e que tenham barbeiros vinculados
+      const { data: servicesWithStaff, error: staffError } = await supabase
+        .from('service_staff')
+        .select('service_id');
 
-    if (error) {
+      if (staffError) throw staffError;
+
+      const serviceIdsWithStaff = [...new Set(servicesWithStaff?.map(s => s.service_id) || [])];
+
+      if (serviceIdsWithStaff.length === 0) {
+        setServices([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('is_active', true)
+        .gt('price', 0)
+        .in('id', serviceIdsWithStaff)
+        .order('name');
+
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error) {
       console.error('Erro ao carregar serviços:', error);
       toast({
         title: "Erro ao carregar serviços",
         description: "Não foi possível carregar a lista de serviços. Por favor, tente novamente.",
         variant: "destructive",
       });
-    } else {
-      setServices(data || []);
+      setServices([]);
     }
   };
 
