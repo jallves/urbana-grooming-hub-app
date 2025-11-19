@@ -42,12 +42,27 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       const [clientesRes, barbeirosRes, servicosRes] = await Promise.all([
         supabase.from('painel_clientes').select('*').order('nome'),
         supabase.from('painel_barbeiros').select('*').eq('is_active', true).order('nome'),
-        supabase.from('painel_servicos').select('*').order('nome')
+        supabase
+          .from('painel_servicos')
+          .select('*, service_staff!inner(staff_id)')
+          .eq('is_active', true)
+          .gt('preco', 0)
+          .order('nome')
       ]);
 
       if (clientesRes.data) setClientes(clientesRes.data);
       if (barbeirosRes.data) setBarbeiros(barbeirosRes.data);
-      if (servicosRes.data) setServicos(servicosRes.data);
+      
+      // Remove duplicates (serviços com múltiplos barbeiros)
+      if (servicosRes.data) {
+        const uniqueServices = servicosRes.data.reduce((acc: any[], curr: any) => {
+          if (!acc.find(s => s.id === curr.id)) {
+            acc.push(curr);
+          }
+          return acc;
+        }, []);
+        setServicos(uniqueServices);
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast.error('Erro ao carregar dados');

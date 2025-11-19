@@ -62,18 +62,38 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     enabled: !!appointmentId,
   });
 
-  // Fetch services
+  // Fetch services (apenas os vinculados a barbeiros)
   const { data: services, isLoading: isLoadingServices } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('painel_servicos')
-        .select('*')
+        .select(`
+          *,
+          service_staff!inner(staff_id)
+        `)
         .eq('is_active', true)
+        .gt('preco', 0)
         .order('nome');
       
       if (error) throw new Error(error.message);
-      return (data || []).map(s => ({ id: s.id, name: s.nome, price: s.preco, duration: s.duracao, description: s.descricao, is_active: s.is_active })) as Service[];
+      
+      // Remove duplicates (serviços com múltiplos barbeiros)
+      const uniqueServices = (data || []).reduce((acc, curr) => {
+        if (!acc.find(s => s.id === curr.id)) {
+          acc.push({
+            id: curr.id,
+            name: curr.nome,
+            price: curr.preco,
+            duration: curr.duracao,
+            description: curr.descricao,
+            is_active: curr.is_active
+          });
+        }
+        return acc;
+      }, [] as Service[]);
+      
+      return uniqueServices;
     },
   });
 

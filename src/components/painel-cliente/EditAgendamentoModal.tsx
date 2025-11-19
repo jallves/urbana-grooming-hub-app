@@ -82,8 +82,22 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   };
 
   const fetchServicos = async () => {
-    const { data } = await supabase.from('painel_servicos').select('*');
-    if (data) setServicos(data);
+    const { data } = await supabase
+      .from('painel_servicos')
+      .select('*, service_staff!inner(staff_id)')
+      .eq('is_active', true)
+      .gt('preco', 0);
+    
+    if (data) {
+      // Remove duplicates (serviços com múltiplos barbeiros)
+      const uniqueServices = data.reduce((acc: any[], curr: any) => {
+        if (!acc.find(s => s.id === curr.id)) {
+          acc.push(curr);
+        }
+        return acc;
+      }, []);
+      setServicos(uniqueServices);
+    }
   };
 
   // Gerar horários disponíveis com base no horário atual e data selecionada
