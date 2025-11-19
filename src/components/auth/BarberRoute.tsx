@@ -33,7 +33,16 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
 
   if (!hasAccess) {
     console.log('BarberRoute - Access DENIED for:', user.email);
-    return <Navigate to="/barbeiro/login" replace />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">Acesso Negado</h2>
+          <p className="text-muted-foreground">
+            Usuário não tem permissão para acessar o Painel do Barbeiro, entrar em contato com o administrador.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

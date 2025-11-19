@@ -49,7 +49,14 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   }
 
   if (!hasAccess) {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">Sem permissão</h2>
+          <Navigate to="/" replace />
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

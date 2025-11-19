@@ -19,7 +19,15 @@ const ClientRoute: React.FC<ClientRouteProps> = ({ children }) => {
   }
 
   if (!client) {
-    return <Navigate to="/cliente/login" replace />;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold text-foreground">Usuário não cadastrado</h2>
+          <p className="text-muted-foreground">Por favor, faça o cadastro para acessar o sistema.</p>
+          <Navigate to="/cliente/login" replace />
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
