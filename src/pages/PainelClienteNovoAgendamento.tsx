@@ -68,12 +68,30 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('painel_servicos')
-        .select('*')
+        .select(`
+          *,
+          service_staff!inner(staff_id)
+        `)
         .eq('is_active', true)
+        .gt('preco', 0)
         .order('nome');
 
       if (error) throw error;
-      setServices(data || []);
+      
+      // Remove duplicates (serviços com múltiplos barbeiros)
+      const uniqueServices = (data || []).reduce((acc: Service[], curr: any) => {
+        if (!acc.find(s => s.id === curr.id)) {
+          acc.push({
+            id: curr.id,
+            nome: curr.nome,
+            preco: curr.preco,
+            duracao: curr.duracao
+          });
+        }
+        return acc;
+      }, []);
+      
+      setServices(uniqueServices);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
       toast.error('Erro ao carregar serviços');
