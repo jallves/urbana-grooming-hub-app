@@ -45,15 +45,28 @@ const BarberCommissionsComponent: React.FC = () => {
       try {
         setLoading(true);
 
-        // Buscar staff ID do barbeiro usando user_id (auth.uid())
-        const { data: staffData } = await supabase
+        // Buscar staff ID do barbeiro - tenta por user_id, depois por email
+        let staffData = await supabase
           .from('staff')
           .select('id')
           .eq('user_id', user.id)
           .eq('role', 'barber')
           .maybeSingle();
 
-        if (!staffData?.id) {
+        // Fallback: se não encontrar por user_id, busca por email
+        if (!staffData?.data && user.email) {
+          staffData = await supabase
+            .from('staff')
+            .select('id')
+            .eq('email', user.email)
+            .eq('role', 'barber')
+            .maybeSingle();
+        }
+
+        const staffId = staffData?.data?.id;
+
+        if (!staffId) {
+          console.error('Staff ID não encontrado para o usuário:', user.email);
           setLoading(false);
           return;
         }
@@ -62,7 +75,7 @@ const BarberCommissionsComponent: React.FC = () => {
         const { data: commissionsData, error } = await supabase
           .from('barber_commissions')
           .select('*')
-          .eq('barber_id', staffData.id)
+          .eq('barber_id', staffId)
           .order('created_at', { ascending: false });
 
         if (error) throw error;

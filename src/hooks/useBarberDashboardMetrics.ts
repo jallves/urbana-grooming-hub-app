@@ -37,15 +37,28 @@ export const useBarberDashboardMetrics = () => {
       try {
         setLoading(true);
 
-        // Buscar ID do barbeiro usando staff com user_id (auth.uid())
-        const { data: staffData } = await supabase
+        // Buscar ID do barbeiro - tenta por user_id, depois por email
+        let staffData = await supabase
           .from('staff')
           .select('id')
           .eq('user_id', user.id)
           .eq('role', 'barber')
           .maybeSingle();
 
-        if (!staffData?.id) {
+        // Fallback: se não encontrar por user_id, busca por email
+        if (!staffData?.data && user.email) {
+          staffData = await supabase
+            .from('staff')
+            .select('id')
+            .eq('email', user.email)
+            .eq('role', 'barber')
+            .maybeSingle();
+        }
+
+        const staffId = staffData?.data?.id;
+
+        if (!staffId) {
+          console.error('Staff ID não encontrado para o usuário:', user.email);
           setLoading(false);
           return;
         }
@@ -63,7 +76,7 @@ export const useBarberDashboardMetrics = () => {
             *,
             painel_servicos!inner(preco, nome)
           `)
-          .eq('barbeiro_id', staffData.id)
+          .eq('barbeiro_id', staffId)
           .gte('data', firstDayOfMonth)
           .lte('data', lastDayOfMonth);
 
@@ -71,7 +84,7 @@ export const useBarberDashboardMetrics = () => {
         const { data: commissions } = await supabase
           .from('barber_commissions')
           .select('*')
-          .eq('barber_id', staffData.id);
+          .eq('barber_id', staffId);
 
         if (appointments) {
           const totalAppointments = appointments.length;
