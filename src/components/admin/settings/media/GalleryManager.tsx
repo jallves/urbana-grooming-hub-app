@@ -59,28 +59,34 @@ const GalleryManager: React.FC<GalleryFormProps> = ({ galleryImages, setGalleryI
   };
 
   return (
-    <div className="space-y-4">
-      <GalleryTable
-        galleryImages={galleryImages}
-        isLoading={isLoading}
-        onDelete={handleDeleteGalleryImage}
-        onEdit={handleEditGallery}
-        editingImage={editingImage}
-        setEditingImage={setEditingImage}
-        handleUpdateGalleryImage={handleUpdateGalleryImage}
-        updateDisplayOrder={updateDisplayOrder}
-      />
-      
-      <GalleryForm
-        newImage={newImage}
-        setNewImage={setNewImage}
-        galleryUpload={galleryUpload}
-        setGalleryUpload={setGalleryUpload}
-        galleryFileInputRef={galleryFileInputRef}
-        handleGalleryFileChange={handleGalleryFileChange}
-        handleAddGalleryImage={handleAddGalleryImage}
-        uploading={uploading}
-      />
+    <div className="h-full w-full bg-transparent overflow-hidden">
+      <div className="h-full flex flex-col space-y-4 p-4">
+        <div className="flex-1 overflow-hidden">
+          <GalleryTable
+            galleryImages={galleryImages}
+            isLoading={isLoading}
+            onDelete={handleDeleteGalleryImage}
+            onEdit={handleEditGallery}
+            editingImage={editingImage}
+            setEditingImage={setEditingImage}
+            handleUpdateGalleryImage={handleUpdateGalleryImage}
+            updateDisplayOrder={updateDisplayOrder}
+          />
+        </div>
+
+        <div className="flex-shrink-0">
+          <GalleryForm
+            newImage={newImage}
+            setNewImage={setNewImage}
+            galleryUpload={galleryUpload}
+            setGalleryUpload={setGalleryUpload}
+            galleryFileInputRef={galleryFileInputRef}
+            handleGalleryFileChange={handleGalleryFileChange}
+            handleAddGalleryImage={handleAddGalleryImage}
+            uploading={uploading}
+          />
+        </div>
+      </div>
     </div>
   );
 };
