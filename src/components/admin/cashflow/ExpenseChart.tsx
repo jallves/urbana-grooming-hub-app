@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 
 const COLORS = {
@@ -13,21 +13,22 @@ const COLORS = {
   'Despesas Gerais': '#64748b', // slate-500
 };
 
-const ExpenseChart: React.FC = () => {
+interface ExpenseChartProps {
+  startDate: string;
+  endDate: string;
+}
+
+const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
   const { data: chartData, isLoading } = useQuery({
-    queryKey: ['expense-chart'],
+    queryKey: ['expense-chart', startDate, endDate],
     queryFn: async () => {
-      const currentMonth = new Date();
-      const start = startOfMonth(currentMonth);
-      const end = endOfMonth(currentMonth);
-      
       const { data, error } = await supabase
         .from('financial_records')
         .select('*')
         .eq('transaction_type', 'expense')
         .eq('status', 'completed')
-        .gte('transaction_date', format(start, 'yyyy-MM-dd'))
-        .lte('transaction_date', format(end, 'yyyy-MM-dd'));
+        .gte('transaction_date', startDate)
+        .lte('transaction_date', endDate);
 
       if (error) {
         console.error('Erro ao buscar dados de despesas:', error);
@@ -64,7 +65,7 @@ const ExpenseChart: React.FC = () => {
   if (!chartData || chartData.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center">
-        <p className="text-gray-400">Nenhuma despesa encontrada este mês</p>
+        <p className="text-gray-400">Nenhuma despesa encontrada no período</p>
       </div>
     );
   }

@@ -2,7 +2,6 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 const COLORS = {
   'Serviços': '#10b981', // green-500
@@ -10,21 +9,22 @@ const COLORS = {
   'Outros': '#8b5cf6', // violet-500
 };
 
-const RevenuChart: React.FC = () => {
+interface RevenueChartProps {
+  startDate: string;
+  endDate: string;
+}
+
+const RevenueChart: React.FC<RevenueChartProps> = ({ startDate, endDate }) => {
   const { data: chartData, isLoading } = useQuery({
-    queryKey: ['revenue-chart'],
+    queryKey: ['revenue-chart', startDate, endDate],
     queryFn: async () => {
-      const currentMonth = new Date();
-      const start = startOfMonth(currentMonth);
-      const end = endOfMonth(currentMonth);
-      
       const { data, error } = await supabase
         .from('financial_records')
         .select('*')
         .eq('transaction_type', 'revenue')
         .eq('status', 'completed')
-        .gte('transaction_date', format(start, 'yyyy-MM-dd'))
-        .lte('transaction_date', format(end, 'yyyy-MM-dd'));
+        .gte('transaction_date', startDate)
+        .lte('transaction_date', endDate);
 
       if (error) {
         console.error('Erro ao buscar dados de receitas:', error);
@@ -65,7 +65,7 @@ const RevenuChart: React.FC = () => {
   if (!chartData || chartData.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center">
-        <p className="text-gray-400">Nenhuma receita encontrada este mês</p>
+        <p className="text-gray-400">Nenhuma receita encontrada no período</p>
       </div>
     );
   }
@@ -107,4 +107,4 @@ const RevenuChart: React.FC = () => {
   );
 };
 
-export default RevenuChart;
+export default RevenueChart;

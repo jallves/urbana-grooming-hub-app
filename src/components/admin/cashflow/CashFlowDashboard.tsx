@@ -1,19 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
+import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, subMonths, parseISO, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CashFlowChart from './CashFlowChart';
 import RevenueChart from './RevenueChart';
 import ExpenseChart from './ExpenseChart';
 import CommissionChart from './CommissionChart';
 import { getCategoryLabel } from '@/utils/categoryMappings';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CashFlowDashboard: React.FC = () => {
+  const [selectedPeriod, setSelectedPeriod] = useState('current-month');
   const currentMonth = new Date();
   const lastMonth = subMonths(currentMonth, 1);
+
+  // Calcular datas baseadas no período selecionado
+  const getPeriodDates = () => {
+    const now = new Date();
+    switch (selectedPeriod) {
+      case 'current-month':
+        return {
+          start: format(startOfMonth(now), 'yyyy-MM-dd'),
+          end: format(endOfMonth(now), 'yyyy-MM-dd')
+        };
+      case 'last-month':
+        const lastMonth = subMonths(now, 1);
+        return {
+          start: format(startOfMonth(lastMonth), 'yyyy-MM-dd'),
+          end: format(endOfMonth(lastMonth), 'yyyy-MM-dd')
+        };
+      case 'current-year':
+        return {
+          start: format(startOfYear(now), 'yyyy-MM-dd'),
+          end: format(endOfYear(now), 'yyyy-MM-dd')
+        };
+      case 'last-year':
+        const lastYear = new Date(now.getFullYear() - 1, 0, 1);
+        return {
+          start: format(startOfYear(lastYear), 'yyyy-MM-dd'),
+          end: format(endOfYear(lastYear), 'yyyy-MM-dd')
+        };
+      default:
+        return {
+          start: format(startOfMonth(now), 'yyyy-MM-dd'),
+          end: format(endOfMonth(now), 'yyyy-MM-dd')
+        };
+    }
+  };
+
+  const periodDates = getPeriodDates();
 
   const { data: currentMonthData, isLoading } = useQuery({
     queryKey: ['cash-flow-current-month'],
@@ -108,6 +146,26 @@ const CashFlowDashboard: React.FC = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 w-full">
+      {/* Filtro de Período */}
+      <Card className="bg-white border-gray-300">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center gap-3">
+            <Filter className="h-4 w-4 text-gray-600" />
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300">
+                <SelectValue placeholder="Selecione o período" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="current-month">Mês Atual</SelectItem>
+                <SelectItem value="last-month">Mês Anterior</SelectItem>
+                <SelectItem value="current-year">Ano Atual</SelectItem>
+                <SelectItem value="last-year">Ano Anterior</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Métricas principais - Grid responsivo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Card className="bg-white border-gray-300">
@@ -192,7 +250,7 @@ const CashFlowDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
-              <RevenueChart />
+              <RevenueChart startDate={periodDates.start} endDate={periodDates.end} />
             </div>
           </CardContent>
         </Card>
@@ -205,7 +263,7 @@ const CashFlowDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
-              <ExpenseChart />
+              <ExpenseChart startDate={periodDates.start} endDate={periodDates.end} />
             </div>
           </CardContent>
         </Card>
@@ -218,7 +276,7 @@ const CashFlowDashboard: React.FC = () => {
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
-              <CommissionChart />
+              <CommissionChart startDate={periodDates.start} endDate={periodDates.end} />
             </div>
           </CardContent>
         </Card>
