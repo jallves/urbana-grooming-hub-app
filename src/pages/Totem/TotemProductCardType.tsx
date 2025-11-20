@@ -10,15 +10,15 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemProductCardType: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { client, cart } = location.state || {};
+  const { client, cart, barber, sale } = location.state || {};
   
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
-    if (!client || !cart || cart.length === 0) {
-      toast.error('Carrinho vazio ou cliente não identificado');
+    if (!client || !cart || cart.length === 0 || !barber || !sale) {
+      toast.error('Dados incompletos');
       navigate('/totem/home');
       return;
     }
@@ -34,38 +34,11 @@ const TotemProductCardType: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      // Create sale
-      const { data: sale, error: saleError } = await supabase
-        .from('totem_product_sales')
-        .insert({
-          cliente_id: client.id,
-          total: cartTotal,
-          payment_method: cardType === 'debit' ? 'debit_card' : 'credit_card',
-          payment_status: 'pending'
-        })
-        .select()
-        .single();
+      console.log('💳 Selecionando tipo de cartão:', cardType);
 
-      if (saleError) throw saleError;
-
-      // Create sale items
-      const saleItems = cart.map((item: any) => ({
-        sale_id: sale.id,
-        produto_id: item.product.id,
-        quantidade: item.quantity,
-        preco_unitario: item.product.preco,
-        subtotal: item.product.preco * item.quantity
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('totem_product_sale_items')
-        .insert(saleItems);
-
-      if (itemsError) throw itemsError;
-
-      // Navigate to payment screen
+      // Navegar para tela de processamento do cartão
       navigate('/totem/product-payment-card', {
-        state: { sale, client, cart, cardType }
+        state: { sale, client, cart, barber, cardType }
       });
 
     } catch (error) {
