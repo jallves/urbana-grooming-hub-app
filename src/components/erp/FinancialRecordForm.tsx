@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const formSchema = z.object({
-  transaction_type: z.enum(['revenue', 'expense', 'commission']),
+  transaction_type: z.enum(['expense', 'commission']),
   category: z.string().min(1, 'Categoria é obrigatória'),
   subcategory: z.string().optional(),
   gross_amount: z.number().min(0.01, 'Valor deve ser maior que zero'),
@@ -48,15 +48,15 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      transaction_type: 'revenue',
+      transaction_type: 'expense',
       category: '',
       subcategory: '',
-      gross_amount: 0,
+      gross_amount: undefined,
       discount_amount: 0,
       tax_amount: 0,
       description: '',
       transaction_date: new Date(),
-      status: 'completed',
+      status: 'pending',
       payment_method: '',
       notes: '',
     },
@@ -66,30 +66,30 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
   useEffect(() => {
     if (open && initialData) {
       form.reset({
-        transaction_type: initialData.transaction_type || 'revenue',
+        transaction_type: initialData.transaction_type || 'expense',
         category: initialData.category || '',
         subcategory: initialData.subcategory || '',
-        gross_amount: initialData.gross_amount || 0,
+        gross_amount: initialData.gross_amount || undefined,
         discount_amount: initialData.discount_amount || 0,
         tax_amount: initialData.tax_amount || 0,
         description: initialData.description || '',
         transaction_date: initialData.transaction_date || new Date(),
-        status: initialData.status || 'completed',
+        status: initialData.status || 'pending',
         payment_method: initialData.payment_method || '',
         notes: initialData.notes || '',
       });
     } else if (open && !initialData) {
       // Reset para valores padrão quando for novo registro
       form.reset({
-        transaction_type: 'revenue',
+        transaction_type: 'expense',
         category: '',
         subcategory: '',
-        gross_amount: 0,
+        gross_amount: undefined,
         discount_amount: 0,
         tax_amount: 0,
         description: '',
         transaction_date: new Date(),
-        status: 'completed',
+        status: 'pending',
         payment_method: '',
         notes: '',
       });
@@ -106,12 +106,7 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
     await onSubmit(values);
   };
 
-  const categories = {
-    revenue: [
-      { value: 'services', label: 'Serviços' },
-      { value: 'products', label: 'Produtos' },
-      { value: 'other', label: 'Outros' },
-    ],
+  const categories: Record<'expense' | 'commission', Array<{ value: string; label: string }>> = {
     expense: [
       { value: 'supplies', label: 'Insumos' },
       { value: 'rent', label: 'Aluguel' },
@@ -161,7 +156,6 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="revenue">Receita</SelectItem>
                         <SelectItem value="expense">Despesa</SelectItem>
                         <SelectItem value="commission">Comissão</SelectItem>
                       </SelectContent>
@@ -243,10 +237,14 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                     <FormLabel>Valor Bruto</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        type="text"
+                        placeholder="R$ 0,00"
+                        value={field.value ? `R$ ${field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                          const numValue = parseFloat(value);
+                          field.onChange(isNaN(numValue) ? undefined : numValue);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
