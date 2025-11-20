@@ -11,7 +11,7 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemProductCheckout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { client, cart } = location.state || {};
+  const { client, cart, barber } = location.state || {};
   
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -37,11 +37,12 @@ const TotemProductCheckout: React.FC = () => {
     try {
       console.log('🛒 Criando venda de produtos usando tabela vendas (unificada)');
       
-      // 🔒 CORREÇÃO CRÍTICA: Usar tabela 'vendas' ao invés de 'totem_product_sales'
+      // 🔒 CORREÇÃO: Criar venda com barbeiro_id
       const { data: sale, error: saleError } = await supabase
         .from('vendas')
         .insert({
           cliente_id: client.id,
+          barbeiro_id: barber.staff_id, // ✅ Incluir barbeiro
           subtotal: cartTotal,
           total: cartTotal,
           desconto: 0,
@@ -69,15 +70,15 @@ const TotemProductCheckout: React.FC = () => {
 
       if (itemsError) throw itemsError;
 
-      console.log('✅ Venda criada:', sale.id);
+      console.log('✅ Venda criada com barbeiro:', sale.id, barber.staff_id);
 
       if (paymentMethod === 'pix') {
         navigate('/totem/product-payment-pix', {
-          state: { sale, client, cart }
+          state: { sale, client, cart, barber }
         });
       } else {
         navigate('/totem/product-card-type', {
-          state: { sale, client, cart }
+          state: { sale, client, cart, barber }
         });
       }
 

@@ -109,7 +109,8 @@ const TotemProducts: React.FC = () => {
       return;
     }
 
-    navigate('/totem/product-checkout', {
+    // Redirecionar para seleção de barbeiro primeiro
+    navigate('/totem/product-barber-select', {
       state: { client, cart }
     });
   };
