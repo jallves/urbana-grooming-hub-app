@@ -40,7 +40,7 @@ const Index = () => {
       <div className="w-full relative">
         {/* Background Image with Overlay */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
           style={{
             backgroundImage: 'url(/totem-background.jpg)',
             backgroundAttachment: 'fixed',
@@ -48,7 +48,7 @@ const Index = () => {
         />
         
         {/* Gradient Overlay for better readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-urbana-brown/95 via-urbana-brown/90 to-urbana-brown/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-urbana-brown/85 via-urbana-brown/80 to-urbana-brown/85" />
         
         {/* Content */}
         <div className="relative z-10">
