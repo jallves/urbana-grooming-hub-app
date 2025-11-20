@@ -24,7 +24,6 @@ interface ServiceFormData {
   preco: number;
   duracao: number;
   is_active: boolean;
-  show_on_home: boolean;
 }
 
 interface StaffMember {
@@ -42,8 +41,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     descricao: '',
     preco: 0,
     duracao: 30,
-    is_active: true,
-    show_on_home: true
+    is_active: true
   });
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
@@ -80,8 +78,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
       descricao: '',
       preco: 0,
       duracao: 30,
-      is_active: true,
-      show_on_home: true
+      is_active: true
     });
     setSelectedStaffIds([]);
   };
@@ -103,8 +100,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
           descricao: data.descricao || '',
           preco: data.preco || 0,
           duracao: data.duracao || 30,
-          is_active: data.is_active ?? true,
-          show_on_home: data.show_on_home ?? true
+          is_active: data.is_active ?? true
         });
 
         // Carregar barbeiros vinculados ao serviço
@@ -160,7 +156,6 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             preco: formData.preco,
             duracao: formData.duracao,
             is_active: formData.is_active,
-            show_on_home: formData.show_on_home,
             updated_at: new Date().toISOString()
           })
           .eq('id', serviceId);
@@ -176,7 +171,6 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             preco: formData.preco,
             duracao: formData.duracao,
             is_active: formData.is_active,
-            show_on_home: formData.show_on_home,
             display_order: 0
           })
           .select()
@@ -357,14 +351,6 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show_on_home">Exibir na Home</Label>
-                <Switch
-                  id="show_on_home"
-                  checked={formData.show_on_home}
-                  onCheckedChange={(checked) => setFormData({ ...formData, show_on_home: checked })}
-                />
-              </div>
             </div>
 
             <DialogFooter className="gap-2">
