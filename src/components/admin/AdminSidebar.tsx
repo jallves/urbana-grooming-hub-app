@@ -125,12 +125,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
         <div className="p-4 border-t border-gray-200">
           <div className="flex flex-col items-center gap-2">
             <p className="text-sm font-semibold text-urbana-gold">ERP Sistema Inteligente</p>
-            <p className="text-xs text-gray-900">By</p>
-            <img 
-              src={beltecLogo} 
-              alt="Beltec Soluções" 
-              className="w-20 h-auto object-contain"
-            />
+            <div className="flex items-center gap-2 justify-end w-full">
+              <p className="text-xs text-gray-900">By</p>
+              <img 
+                src={beltecLogo} 
+                alt="Beltec Soluções" 
+                className="w-16 h-auto object-contain"
+              />
+            </div>
           </div>
         </div>
       </div>
