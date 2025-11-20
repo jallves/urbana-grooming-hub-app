@@ -30,7 +30,7 @@ const BarberDashboard: React.FC = () => {
       path: '/barbeiro/comissoes',
       color: 'text-urbana-gold',
       bgColor: 'from-yellow-500/10 to-amber-600/5',
-      stats: loading ? '...' : `R$ ${metrics.totalRevenue.toFixed(0)}`
+      stats: loading ? '...' : `R$ ${metrics.totalCommissions.toFixed(0)}`
     },
     {
       title: 'Agenda Completa',
@@ -63,19 +63,19 @@ const BarberDashboard: React.FC = () => {
     {
       title: 'Receita',
       value: loading ? '...' : `R$ ${metrics.totalRevenue.toFixed(0)}`,
-      subtitle: 'Este mês',
+      subtitle: 'Serviços do mês',
       icon: DollarSign,
       color: 'text-urbana-gold',
       bgGradient: 'from-yellow-500/10 to-amber-600/5'
     },
     {
-      title: 'Próximos',
-      value: loading ? '...' : metrics.upcomingAppointments,
-      subtitle: 'Agendados',
+      title: 'Comissões',
+      value: loading ? '...' : `R$ ${metrics.totalCommissions.toFixed(0)}`,
+      subtitle: `Pendentes: R$ ${loading ? '...' : metrics.pendingCommissions.toFixed(0)}`,
       icon: TrendingUp,
-      color: 'text-orange-400',
-      bgGradient: 'from-orange-500/10 to-red-600/5'
-    }
+      color: 'text-green-400',
+      bgGradient: 'from-green-500/10 to-emerald-600/5'
+    },
   ];
 
   return (
