@@ -12,13 +12,14 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemProductPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sale, client } = location.state || {};
+  const { sale, client, barber } = location.state || {};
   const [isProcessing, setIsProcessing] = useState(true);
   const [simulationTimer, setSimulationTimer] = useState(15); // 15 segundos para simulação
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
-    if (!sale || !client) {
+    if (!sale || !client || !barber) {
+      toast.error('Dados incompletos');
       navigate('/totem/home');
       return;
     }
@@ -86,23 +87,25 @@ const TotemProductPaymentPix: React.FC = () => {
         discount: 0
       }))
 
-      console.log('💰 Integrando venda de produtos com ERP Financeiro...', {
+      console.log('💰 Integrando venda de produtos com ERP Financeiro e comissões...', {
         client_id: sale.cliente_id,
+        barber_id: barber.staff_id,
         items_count: erpItems.length,
         payment_method: 'pix',
         total: sale.total
       })
 
-      // 4. Chamar edge function para criar registros financeiros (APENAS produtos, sem comissão)
+      // 4. Chamar edge function para criar registros financeiros (produtos + comissões)
       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
         {
           body: {
             client_id: sale.cliente_id,
+            barber_id: barber.staff_id, // ✅ Incluir barbeiro para comissões
             items: erpItems,
             payment_method: 'pix',
             discount_amount: Number(sale.desconto) || 0,
-            notes: `Venda de Produtos - Totem PIX`
+            notes: `Venda de Produtos - Totem PIX - Barbeiro: ${barber.nome}`
           }
         }
       )

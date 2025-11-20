@@ -414,7 +414,7 @@ Deno.serve(async (req) => {
         throw new Error('Erro ao gerar número de transação')
       }
 
-      // 1. Criar registro financeiro de RECEITA para o produto (APENAS CONTAS A RECEBER)
+      // 1. Criar registro financeiro de RECEITA para o produto
       const { data: productRecord, error: productError } = await supabase
         .from('financial_records')
         .insert({
@@ -433,12 +433,12 @@ Deno.serve(async (req) => {
           completed_at: transactionDateTime,
           appointment_id,
           client_id,
-          barber_id: null, // Produtos não têm comissão, então não vincula barbeiro
+          barber_id, // ✅ INCLUIR barbeiro para produtos também
           metadata: {
             source: appointment_id ? 'appointment' : 'direct_sale',
             product_id: product.id,
             product_name: productName,
-            payment_method: payment_method, // ✅ ADICIONADO: payment_method no metadata
+            payment_method: payment_method,
             payment_time: transactionDateTime
           }
         })
@@ -517,6 +517,95 @@ Deno.serve(async (req) => {
         product: productName,
         quantity: -product.quantity
       })
+
+      // 5. Criar COMISSÃO para produtos (se houver barbeiro)
+      if (barber_id) {
+        // Buscar configuração de comissão de produtos do barbeiro
+        const { data: barberData, error: barberError } = await supabase
+          .from('staff')
+          .select('commission_percentage')
+          .eq('id', barber_id)
+          .single()
+
+        if (barberError) {
+          console.error('❌ Erro ao buscar comissão de produtos do barbeiro:', barberError)
+        } else if (barberData && barberData.commission_percentage) {
+          const commissionRate = barberData.commission_percentage / 100
+          const commissionAmount = productNetAmount * commissionRate
+
+          console.log('💰 Criando comissão de produto:', {
+            barber_id,
+            product: productName,
+            rate: `${barberData.commission_percentage}%`,
+            amount: commissionAmount
+          })
+
+          // Gerar número de transação para comissão
+          const { data: commissionTransactionNumber } = await supabase
+            .rpc('generate_transaction_number')
+
+          if (commissionTransactionNumber) {
+            // Criar registro financeiro de COMISSÃO (Contas a Pagar)
+            const { data: commissionRecord, error: commissionError } = await supabase
+              .from('financial_records')
+              .insert({
+                transaction_number: commissionTransactionNumber,
+                transaction_type: 'commission',
+                category: 'products',
+                subcategory: 'product_commission',
+                gross_amount: commissionAmount,
+                discount_amount: 0,
+                tax_amount: 0,
+                net_amount: commissionAmount,
+                status: 'pending',
+                description: `Comissão produto: ${productName}`,
+                notes: `${barberData.commission_percentage}% sobre produto`,
+                transaction_date: transactionDate,
+                appointment_id,
+                client_id,
+                barber_id,
+                metadata: {
+                  source: appointment_id ? 'appointment' : 'direct_sale',
+                  product_id: product.id,
+                  product_name: productName,
+                  commission_percentage: barberData.commission_percentage,
+                  base_amount: productNetAmount
+                }
+              })
+              .select()
+              .single()
+
+            if (commissionError) {
+              console.error('❌ Erro ao criar registro de comissão:', commissionError)
+            } else {
+              console.log('✅ Comissão de produto registrada:', {
+                id: commissionRecord.id,
+                amount: commissionAmount
+              })
+
+              // Criar registro em barber_commissions
+              const { error: barberCommissionError } = await supabase
+                .from('barber_commissions')
+                .insert({
+                  barber_id,
+                  appointment_id,
+                  amount: commissionAmount,
+                  commission_rate: barberData.commission_percentage,
+                  status: 'pending',
+                  appointment_source: appointment_id ? 'totem_appointment' : 'totem_product'
+                })
+
+              if (barberCommissionError) {
+                console.error('❌ Erro ao criar barber_commission:', barberCommissionError)
+              } else {
+                console.log('✅ Barber commission criada')
+              }
+            }
+          }
+        } else {
+          console.log('ℹ️ Barbeiro não tem comissão configurada para produtos')
+        }
+      }
 
       createdRecords.push({
         type: 'product',

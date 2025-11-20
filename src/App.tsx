@@ -66,6 +66,7 @@ import TotemRating from './pages/Totem/TotemRating';
 import TotemNovoAgendamento from './pages/Totem/TotemNovoAgendamento';
 import TotemAgendamentoSucesso from './pages/Totem/TotemAgendamentoSucesso';
 import TotemProducts from './pages/Totem/TotemProducts';
+import TotemProductBarberSelect from './pages/Totem/TotemProductBarberSelect';
 import TotemProductCheckout from './pages/Totem/TotemProductCheckout';
 import TotemProductCardType from './pages/Totem/TotemProductCardType';
 import TotemProductPaymentPix from './pages/Totem/TotemProductPaymentPix';
@@ -291,6 +292,7 @@ function App() {
                   <Route path="/totem/novo-agendamento" element={<TotemProtectedRoute><TotemNovoAgendamento /></TotemProtectedRoute>} />
                   <Route path="/totem/agendamento-sucesso" element={<TotemProtectedRoute><TotemAgendamentoSucesso /></TotemProtectedRoute>} />
                   <Route path="/totem/products" element={<TotemProtectedRoute><TotemProducts /></TotemProtectedRoute>} />
+                  <Route path="/totem/product-barber-select" element={<TotemProtectedRoute><TotemProductBarberSelect /></TotemProtectedRoute>} />
                   <Route path="/totem/product-checkout" element={<TotemProtectedRoute><TotemProductCheckout /></TotemProtectedRoute>} />
                   <Route path="/totem/product-card-type" element={<TotemProtectedRoute><TotemProductCardType /></TotemProtectedRoute>} />
                   <Route path="/totem/product-payment-pix" element={<TotemProtectedRoute><TotemProductPaymentPix /></TotemProtectedRoute>} />

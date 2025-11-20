@@ -61,7 +61,24 @@ serve(async (req) => {
 
       console.log('📦 Itens da venda encontrados:', itens?.length || 0)
 
-      // 4. Buscar método de pagamento
+      // 4. Buscar informações da venda para pegar barbeiro_id
+      const { data: venda, error: vendaFetchError } = await supabase
+        .from('vendas')
+        .select('barbeiro_id, cliente_id')
+        .eq('id', venda_id)
+        .single()
+
+      if (vendaFetchError) {
+        console.error('❌ Erro ao buscar venda:', vendaFetchError)
+        throw new Error('Erro ao buscar venda')
+      }
+
+      console.log('📋 Venda:', {
+        barbeiro_id: venda.barbeiro_id,
+        cliente_id: venda.cliente_id
+      })
+
+      // 5. Buscar método de pagamento
       const { data: payment, error: paymentFetchError } = await supabase
         .from('totem_payments')
         .select('payment_method')
@@ -73,7 +90,7 @@ serve(async (req) => {
         throw new Error('Erro ao buscar método de pagamento')
       }
 
-      // 5. Preparar itens para a transação financeira
+      // 6. Preparar itens para a transação financeira
       const transactionItems = itens.map((item: any) => ({
         type: 'product',
         id: item.ref_id,
@@ -85,20 +102,23 @@ serve(async (req) => {
 
       console.log('💰 Criando transação financeira no ERP:', {
         items: transactionItems.length,
-        payment_method: payment.payment_method
+        payment_method: payment.payment_method,
+        barber_id: venda.barbeiro_id
       })
 
-      // 6. Chamar edge function para criar registros no ERP financeiro
+      // 7. Chamar edge function para criar registros no ERP financeiro (com comissões se houver barbeiro)
       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
         {
           body: {
-            client_id: null, // Venda direta sem cliente
-            barber_id: null, // Sem barbeiro
+            client_id: venda.cliente_id,
+            barber_id: venda.barbeiro_id, // ✅ INCLUIR barbeiro para comissões
             items: transactionItems,
             payment_method: payment.payment_method,
             discount_amount: 0,
-            notes: `Venda direta de produtos no totem - ID: ${venda_id}`,
+            notes: venda.barbeiro_id 
+              ? `Venda direta de produtos no totem - ID: ${venda_id} - Com barbeiro`
+              : `Venda direta de produtos no totem - ID: ${venda_id}`,
             transaction_date: new Date().toISOString().split('T')[0],
             transaction_datetime: new Date().toISOString()
           }
@@ -112,7 +132,7 @@ serve(async (req) => {
         console.log('✅ Transação financeira criada no ERP:', erpResult)
       }
 
-      // 7. Atualizar estoque dos produtos
+      // 8. Atualizar estoque dos produtos
       if (itens && itens.length > 0) {
         console.log('📦 Atualizando estoque de', itens.length, 'produtos')
         

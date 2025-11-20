@@ -11,13 +11,14 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemProductPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sale, client, cardType } = location.state || {};
+  const { sale, client, cardType, barber } = location.state || {};
   const [isProcessing, setIsProcessing] = useState(true);
   const [simulationTimer, setSimulationTimer] = useState(15); // 15 segundos para simulação
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   useEffect(() => {
-    if (!sale || !client) {
+    if (!sale || !client || !barber) {
+      toast.error('Dados incompletos');
       navigate('/totem/home');
       return;
     }
@@ -88,24 +89,26 @@ const TotemProductPaymentCard: React.FC = () => {
       // Normalizar payment method para valores corretos do ENUM
       const normalizedPaymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card'
 
-      console.log('💰 Integrando venda de produtos com ERP Financeiro...', {
+      console.log('💰 Integrando venda de produtos com ERP Financeiro e comissões...', {
         client_id: sale.cliente_id,
+        barber_id: barber.staff_id,
         items_count: erpItems.length,
         payment_method_original: cardType,
         payment_method_normalized: normalizedPaymentMethod,
         total: sale.total
       })
 
-      // 4. Chamar edge function para criar registros financeiros (APENAS produtos, sem comissão)
+      // 4. Chamar edge function para criar registros financeiros (produtos + comissões)
       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
         {
           body: {
             client_id: sale.cliente_id,
+            barber_id: barber.staff_id, // ✅ Incluir barbeiro para comissões
             items: erpItems,
             payment_method: normalizedPaymentMethod,
             discount_amount: Number(sale.desconto) || 0,
-            notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'}`
+            notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'} - Barbeiro: ${barber.nome}`
           }
         }
       )
