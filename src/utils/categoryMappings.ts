@@ -5,6 +5,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   // Receitas
   'services': 'Serviços',
   'products': 'Produtos',
+  'product': 'Produto',
+  'service': 'Serviço',
   'other': 'Outros',
   
   // Despesas
@@ -18,6 +20,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
   // Comissões
   'staff_payments': 'Pagamento de Funcionários',
   'commission': 'Comissão',
+  
+  // Traduções de descrições específicas
+  'Product': 'Produto',
+  'Service': 'Serviço',
+  'Commission': 'Comissão',
 };
 
 export const TRANSACTION_TYPE_LABELS: Record<string, string> = {

@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 const COLORS = {
-  'Serviços': '#10b981', // green-500
-  'Produtos': '#3b82f6', // blue-500
-  'Outros': '#8b5cf6', // violet-500
+  'Serviços': '#2563eb', // blue-600 - profissional
+  'Produtos': '#059669', // emerald-600 - profissional
+  'Outros': '#7c3aed', // violet-600 - profissional
 };
 
 interface RevenueChartProps {
