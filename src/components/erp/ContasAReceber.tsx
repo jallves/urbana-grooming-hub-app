@@ -10,7 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { ArrowUpCircle, Loader2, DollarSign, Plus, Pencil, Trash2, CreditCard, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCashFlowSync } from '@/hooks/financial/useCashFlowSync';
-import FinancialRecordForm from './FinancialRecordForm';
+import RevenueRecordForm from './RevenueRecordForm';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +59,8 @@ export const ContasAReceber: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [recordToPay, setRecordToPay] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { syncToCashFlowAsync, isSyncing } = useCashFlowSync();
 
@@ -102,6 +104,59 @@ export const ContasAReceber: React.FC = () => {
       return processed as FinancialRecord[];
     },
     refetchInterval: 10000
+  });
+
+  const markAsPaidMutation = useMutation({
+    mutationFn: async (recordId: string) => {
+      // Buscar o registro para sincronizar
+      const { data: record, error: fetchError } = await supabase
+        .from('financial_records')
+        .select('*')
+        .eq('id', recordId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const paymentDate = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('financial_records')
+        .update({ 
+          status: 'completed',
+          completed_at: paymentDate,
+          payment_date: paymentDate,
+          updated_at: paymentDate,
+        })
+        .eq('id', recordId);
+
+      if (error) throw error;
+
+      // 🔄 INTEGRAÇÃO COM FLUXO DE CAIXA
+      const metadata = typeof record.metadata === 'object' && record.metadata !== null 
+        ? record.metadata as Record<string, any>
+        : {};
+
+      await syncToCashFlowAsync({
+        financialRecordId: recordId,
+        transactionType: 'revenue',
+        amount: record.net_amount,
+        description: record.description,
+        category: record.category,
+        paymentMethod: metadata?.payment_method || 'other',
+        transactionDate: record.transaction_date,
+        metadata: metadata
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-receber'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      toast.success('Recebimento registrado e sincronizado!');
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao marcar como recebido', {
+        description: error.message
+      });
+    }
   });
 
   const createMutation = useMutation({
@@ -212,6 +267,19 @@ export const ContasAReceber: React.FC = () => {
       toast.error('Erro ao excluir receita', { description: error.message });
     },
   });
+
+  const handleMarkAsPaid = (recordId: string) => {
+    setRecordToPay(recordId);
+    setPaymentDialogOpen(true);
+  };
+
+  const confirmPayment = () => {
+    if (recordToPay) {
+      markAsPaidMutation.mutate(recordToPay);
+      setPaymentDialogOpen(false);
+      setRecordToPay(null);
+    }
+  };
 
   const handleEdit = (record: FinancialRecord) => {
     setEditingRecord({
@@ -463,6 +531,17 @@ export const ContasAReceber: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            {record.status === 'pending' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMarkAsPaid(record.id)}
+                                className="bg-green-50 text-green-700 hover:bg-green-100 border-green-300"
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-1" />
+                                Marcar como Pago
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -496,13 +575,33 @@ export const ContasAReceber: React.FC = () => {
         </Card>
       </div>
 
-      <FinancialRecordForm
+      <RevenueRecordForm
         open={formOpen}
         onClose={handleCloseForm}
         onSubmit={handleFormSubmit}
         initialData={editingRecord}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
+
+      <AlertDialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Recebimento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja marcar esta receita como recebida? Esta ação será sincronizada com o fluxo de caixa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPayment}
+              className="bg-green-600 text-white hover:bg-green-700"
+            >
+              Confirmar Recebimento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
