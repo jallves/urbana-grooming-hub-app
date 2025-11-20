@@ -45,11 +45,11 @@ const BarberCommissionsComponent: React.FC = () => {
       try {
         setLoading(true);
 
-        // Buscar staff ID do barbeiro
+        // Buscar staff ID do barbeiro usando user_id (auth.uid())
         const { data: staffData } = await supabase
           .from('staff')
           .select('id')
-          .eq('email', user.email)
+          .eq('user_id', user.id)
           .eq('role', 'barber')
           .maybeSingle();
 
