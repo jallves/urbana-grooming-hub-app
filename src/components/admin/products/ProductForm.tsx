@@ -425,9 +425,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
               <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-medium text-foreground">Resumo da Comissão:</span> Para um produto de{' '}
-                  <span className="font-semibold text-primary">R$ {price.toFixed(2)}</span>, o barbeiro receberá{' '}
-                  <span className="font-semibold text-primary">R$ {(commissionValue || 0).toFixed(2)}</span>{' '}
-                  ({(commissionPercentage || 0).toFixed(2)}%) por venda
+                  <span className="font-semibold text-primary">R$ {Number(price).toFixed(2)}</span>, o barbeiro receberá{' '}
+                  <span className="font-semibold text-primary">R$ {Number(commissionValue || 0).toFixed(2)}</span>{' '}
+                  ({Number(commissionPercentage || 0).toFixed(2)}%) por venda
                 </p>
               </div>
             )}

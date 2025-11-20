@@ -46,6 +46,11 @@ const ProductList: React.FC = () => {
       if (error) throw error;
       setProducts((data || []).map(p => ({
         ...p,
+        preco: Number(p.preco) || 0,
+        estoque: Number(p.estoque) || 0,
+        estoque_minimo: Number(p.estoque_minimo) || 5,
+        commission_value: Number(p.commission_value) || 0,
+        commission_percentage: Number(p.commission_percentage) || 0,
         imagens: Array.isArray(p.imagens) ? p.imagens : []
       })) as BarbershopProduct[]);
     } catch (error) {
@@ -210,7 +215,7 @@ const ProductList: React.FC = () => {
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Preço:</span>
                           <span className="text-primary font-semibold">
-                            R$ {product.preco.toFixed(2)}
+                            R$ {Number(product.preco || 0).toFixed(2)}
                           </span>
                         </div>
                         
