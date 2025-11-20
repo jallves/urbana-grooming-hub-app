@@ -17,7 +17,6 @@ interface Commission {
   status: string;
   created_at: string;
   payment_date?: string;
-  paid_at?: string;
   commission_rate?: number;
   appointment_details?: {
     client_name?: string;
@@ -36,7 +35,7 @@ const BarberCommissions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [staffId, setStaffId] = useState<string | null>(null);
 
-  const { totalPending, totalPaid } = useMemo(() => {
+  const { totalPending, totalPaid, totalCommissions } = useMemo(() => {
     const pending = commissions
       .filter(c => c.status === 'pending')
       .reduce((sum, c) => sum + c.amount, 0);
@@ -45,7 +44,9 @@ const BarberCommissions: React.FC = () => {
       .filter(c => c.status === 'paid')
       .reduce((sum, c) => sum + c.amount, 0);
     
-    return { totalPending: pending, totalPaid: paid };
+    const total = commissions.reduce((sum, c) => sum + c.amount, 0);
+    
+    return { totalPending: pending, totalPaid: paid, totalCommissions: total };
   }, [commissions]);
 
   useEffect(() => {
@@ -56,19 +57,21 @@ const BarberCommissions: React.FC = () => {
       }
 
       try {
-        const { data: barberData } = await supabase
-          .from('painel_barbeiros')
-          .select('staff_id')
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('id')
           .eq('email', user.email)
+          .eq('role', 'barber')
+          .eq('is_active', true)
           .maybeSingle();
 
-        if (barberData?.staff_id) {
-          setStaffId(barberData.staff_id);
+        if (staffData?.id) {
+          setStaffId(staffData.id);
         } else {
           setStaffId(null);
         }
       } catch (error) {
-        console.error('Error fetching staff ID:', error);
+        console.error('[BarberCommissions] Erro ao buscar staff ID:', error);
         setStaffId(null);
       }
     };
@@ -86,53 +89,114 @@ const BarberCommissions: React.FC = () => {
 
       setLoading(true);
       try {
-        // Use the optimized view with a single query
         const { data: commissionsData, error: fetchError } = await supabase
-          .from('vw_barber_commissions_complete')
-          .select('*')
+          .from('barber_commissions')
+          .select(`
+            id,
+            amount,
+            status,
+            commission_rate,
+            payment_date,
+            created_at,
+            appointment_source,
+            appointment_id
+          `)
           .eq('barber_id', staffId)
           .order('created_at', { ascending: false });
 
         if (fetchError) {
-          console.error('Error fetching commissions:', fetchError);
+          console.error('[BarberCommissions] Erro ao buscar comissões:', fetchError);
           toast({
-            title: "Erro",
-            description: "Não foi possível carregar as comissões.",
+            title: "Erro ao carregar comissões",
+            description: fetchError.message,
             variant: "destructive",
           });
           setCommissions([]);
+          setLoading(false);
           return;
         }
 
         if (!commissionsData || commissionsData.length === 0) {
           setCommissions([]);
+          setLoading(false);
           return;
         }
 
-        // Transform the data from the view
-        const transformedCommissions: Commission[] = commissionsData.map(commission => ({
-          id: commission.id,
-          amount: commission.amount,
-          status: commission.status,
-          created_at: commission.created_at,
-          payment_date: commission.payment_date,
-          commission_rate: commission.commission_rate,
-          source: commission.appointment_source || 'appointments',
-          appointment_details: {
-            client_name: commission.client_name || 'Cliente',
-            service_name: commission.service_name || 'Serviço',
-            service_price: commission.service_price || 0,
-            appointment_date: commission.appointment_date || '',
-            appointment_time: commission.appointment_time || '--:--'
-          }
-        }));
+        const commissionsWithDetails = await Promise.all(
+          commissionsData.map(async (commission) => {
+            let appointmentDetails = {
+              client_name: 'Cliente',
+              service_name: 'Serviço',
+              service_price: 0,
+              appointment_date: commission.created_at,
+              appointment_time: '--:--'
+            };
 
-        setCommissions(transformedCommissions);
-      } catch (error) {
-        console.error('Error fetching commissions:', error);
+            if (commission.appointment_id) {
+              if (commission.appointment_source === 'painel') {
+                const { data: painelData } = await supabase
+                  .from('painel_agendamentos')
+                  .select(`
+                    data,
+                    hora,
+                    painel_clientes(nome),
+                    painel_servicos(nome, preco)
+                  `)
+                  .eq('id', commission.appointment_id)
+                  .maybeSingle();
+
+                if (painelData) {
+                  appointmentDetails = {
+                    client_name: painelData.painel_clientes?.nome || 'Cliente',
+                    service_name: painelData.painel_servicos?.nome || 'Serviço',
+                    service_price: Number(painelData.painel_servicos?.preco) || 0,
+                    appointment_date: painelData.data,
+                    appointment_time: painelData.hora
+                  };
+                }
+              } else {
+                const { data: appointmentData } = await supabase
+                  .from('appointments')
+                  .select(`
+                    start_time,
+                    clients(name),
+                    services(name, price)
+                  `)
+                  .eq('id', commission.appointment_id)
+                  .maybeSingle();
+
+                if (appointmentData) {
+                  const startTime = new Date(appointmentData.start_time);
+                  appointmentDetails = {
+                    client_name: appointmentData.clients?.name || 'Cliente',
+                    service_name: appointmentData.services?.name || 'Serviço',
+                    service_price: Number(appointmentData.services?.price) || 0,
+                    appointment_date: appointmentData.start_time,
+                    appointment_time: format(startTime, 'HH:mm')
+                  };
+                }
+              }
+            }
+
+            return {
+              id: commission.id,
+              amount: commission.amount,
+              status: commission.status,
+              created_at: commission.created_at,
+              payment_date: commission.payment_date,
+              commission_rate: commission.commission_rate,
+              source: commission.appointment_source || 'appointments',
+              appointment_details: appointmentDetails
+            };
+          })
+        );
+
+        setCommissions(commissionsWithDetails);
+      } catch (error: any) {
+        console.error('[BarberCommissions] Erro:', error);
         toast({
-          title: "Erro",
-          description: "Não foi possível carregar as comissões.",
+          title: "Erro ao carregar comissões",
+          description: error.message,
           variant: "destructive",
         });
       } finally {
@@ -145,83 +209,93 @@ const BarberCommissions: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
-        return <Badge className="border-yellow-500/50 text-yellow-400 bg-yellow-500/10 text-xs">Pendente</Badge>;
       case 'paid':
-        return <Badge className="border-green-500/50 text-green-400 bg-green-500/10 text-xs">Pago</Badge>;
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Paga</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pendente</Badge>;
       default:
-        return <Badge className="border-gray-500/50 text-gray-400 bg-gray-500/10 text-xs">{status}</Badge>;
+        return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">{status}</Badge>;
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full h-full flex justify-center items-center min-h-96">
-        <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  const summaryCards = [
+  const statsCards = [
     {
-      title: 'Pendente',
-      value: `R$ ${totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: Clock,
-      color: 'text-orange-400'
-    },
-    {
-      title: 'Pago',
-      value: `R$ ${totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: CheckCircle,
-      color: 'text-green-400'
-    },
-    {
-      title: 'Total',
-      value: `R$ ${(totalPending + totalPaid).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      title: 'Total de Comissões',
+      value: `R$ ${totalCommissions.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
-      color: 'text-urbana-gold'
+      color: 'text-urbana-gold',
+      bgGradient: 'from-yellow-500/10 to-amber-600/5'
     },
     {
       title: 'Comissões',
       value: commissions.length.toString(),
       icon: TrendingUp,
-      color: 'text-blue-400'
+      color: 'text-blue-400',
+      bgGradient: 'from-blue-500/10 to-blue-600/5'
+    },
+    {
+      title: 'Pendentes',
+      value: `R$ ${totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: Clock,
+      color: 'text-orange-400',
+      bgGradient: 'from-orange-500/10 to-orange-600/5'
+    },
+    {
+      title: 'Pagas',
+      value: `R$ ${totalPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: CheckCircle,
+      color: 'text-green-400',
+      bgGradient: 'from-green-500/10 to-green-600/5'
     }
   ];
 
-  return (
-    <div className="w-full h-full flex flex-col space-y-3 p-2 sm:p-4">
-      {/* Summary Cards - 2x2 Grid on Mobile */}
-      <div className="w-full grid grid-cols-2 gap-2 sm:gap-3">
-        {summaryCards.map((card, index) => (
-          <ResponsiveCard key={index} className="min-h-[80px] sm:min-h-[100px]">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between h-full">
-              <div className="flex-1 min-w-0">
-                <div className="text-xs sm:text-sm font-medium text-gray-300 mb-1 truncate">{card.title}</div>
-                <div className="text-sm sm:text-base lg:text-lg font-bold text-white truncate">
-                  {card.value}
-                </div>
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <ResponsiveCard key={i}>
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-gray-700 rounded w-1/2"></div>
               </div>
-              <card.icon className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${card.color} mt-1 sm:mt-0`} />
+            </ResponsiveCard>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statsCards.map((stat, index) => (
+          <ResponsiveCard key={index}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-300">{stat.title}</p>
+                <p className="text-2xl font-bold text-white">{stat.value}</p>
+              </div>
+              <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
+                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              </div>
             </div>
           </ResponsiveCard>
         ))}
       </div>
 
-      {/* Commissions History */}
       <ResponsiveCard title="Histórico de Comissões" className="flex-1">
         {commissions.length === 0 ? (
-          <div className="w-full text-center py-8 sm:py-12">
-            <DollarSign className="h-12 w-12 sm:h-16 sm:w-16 text-gray-600 mx-auto mb-4" />
+          <div className="text-center py-12">
+            <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Nenhuma comissão encontrada</h3>
             <p className="text-sm sm:text-base text-gray-400">
               As comissões aparecerão aqui conforme você concluir atendimentos
             </p>
           </div>
         ) : (
-          <div className="w-full space-y-3">
-            {/* Mobile View - Cards */}
-            <div className="w-full lg:hidden">
+          <>
+            <div className="block md:hidden space-y-4">
               {commissions.map((commission) => (
                 <MobileCommissionCard
                   key={`${commission.source}-${commission.id}`}
@@ -231,66 +305,59 @@ const BarberCommissions: React.FC = () => {
               ))}
             </div>
 
-            {/* Desktop View - Table */}
-            <div className="w-full hidden lg:block">
-              <div className="w-full overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-700/50">
-                      <TableHead className="text-gray-300">Data</TableHead>
-                      <TableHead className="text-gray-300">Cliente</TableHead>
-                      <TableHead className="text-gray-300">Serviço</TableHead>
-                      <TableHead className="text-gray-300">Valor do Serviço</TableHead>
-                      <TableHead className="text-gray-300">Taxa</TableHead>
-                      <TableHead className="text-gray-300">Comissão</TableHead>
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Pagamento</TableHead>
-                      <TableHead className="text-gray-300">Origem</TableHead>
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-gray-700/50">
+                    <TableHead className="text-gray-300">Data</TableHead>
+                    <TableHead className="text-gray-300">Cliente</TableHead>
+                    <TableHead className="text-gray-300">Serviço</TableHead>
+                    <TableHead className="text-gray-300">Valor Serviço</TableHead>
+                    <TableHead className="text-gray-300">Taxa (%)</TableHead>
+                    <TableHead className="text-gray-300">Comissão</TableHead>
+                    <TableHead className="text-gray-300">Status</TableHead>
+                    <TableHead className="text-gray-300">Pagamento</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {commissions.map((commission) => (
+                    <TableRow key={`${commission.source}-${commission.id}`} className="border-gray-700/50">
+                      <TableCell className="text-gray-300">
+                        {commission.appointment_details?.appointment_date
+                          ? format(parseISO(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
+                          : format(parseISO(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
+                        }
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {commission.appointment_details?.client_name || 'Cliente'}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {commission.appointment_details?.service_name || 'Serviço'}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-green-400 font-semibold">
+                        R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(commission.status)}
+                      </TableCell>
+                      <TableCell className="text-gray-300">
+                        {commission.payment_date
+                          ? format(parseISO(commission.payment_date), 'dd/MM/yyyy', { locale: ptBR })
+                          : '-'
+                        }
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {commissions.map((commission) => (
-                      <TableRow key={`${commission.source}-${commission.id}`} className="border-gray-700/50">
-                        <TableCell className="text-gray-300">
-                          {commission.appointment_details?.appointment_date
-                            ? format(parseISO(commission.appointment_details.appointment_date), 'dd/MM/yyyy', { locale: ptBR })
-                            : format(parseISO(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })
-                          }
-                        </TableCell>
-                        <TableCell className="text-white font-medium">
-                          {commission.appointment_details?.client_name || 'Cliente'}
-                        </TableCell>
-                        <TableCell className="text-gray-300">
-                          {commission.appointment_details?.service_name || 'Serviço'}
-                        </TableCell>
-                        <TableCell className="text-gray-300">
-                          R$ {(commission.appointment_details?.service_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="text-urbana-gold">
-                          {commission.commission_rate ? `${commission.commission_rate}%` : 'N/A'}
-                        </TableCell>
-                        <TableCell className="font-bold text-urbana-gold">
-                          R$ {commission.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(commission.status)}
-                        </TableCell>
-                        <TableCell className="text-gray-300">
-                          {(commission.payment_date || commission.paid_at)
-                            ? format(parseISO(commission.payment_date || commission.paid_at!), 'dd/MM/yyyy', { locale: ptBR })
-                            : '-'
-                          }
-                        </TableCell>
-                        <TableCell className="text-gray-400 text-xs">
-                          {commission.source === 'painel' ? 'Painel' : 'Sistema Novo'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-          </div>
+          </>
         )}
       </ResponsiveCard>
     </div>
