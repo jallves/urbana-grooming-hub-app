@@ -11,6 +11,9 @@ const COLORS = {
   'Utilidades': '#f59e0b', // amber-500
   'Marketing': '#ec4899', // pink-500
   'Despesas Gerais': '#64748b', // slate-500
+  'Pagamento de Funcionários': '#8b5cf6', // violet-500
+  'Comissão': '#06b6d4', // cyan-500
+  'Comissões': '#6366f1', // indigo-500
 };
 
 interface ExpenseChartProps {
@@ -22,10 +25,11 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['expense-chart', startDate, endDate],
     queryFn: async () => {
+      // Buscar tanto despesas quanto comissões
       const { data, error } = await supabase
         .from('financial_records')
         .select('*')
-        .eq('transaction_type', 'expense')
+        .in('transaction_type', ['expense', 'commission'])
         .eq('status', 'completed')
         .gte('transaction_date', startDate)
         .lte('transaction_date', endDate);

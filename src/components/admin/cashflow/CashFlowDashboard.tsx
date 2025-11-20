@@ -3,55 +3,55 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, parseISO, startOfYear, endOfYear } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, parseISO, getDaysInMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CashFlowChart from './CashFlowChart';
 import RevenueChart from './RevenueChart';
 import ExpenseChart from './ExpenseChart';
-import CommissionChart from './CommissionChart';
+import TopBarbersChart from './TopBarbersChart';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CashFlowDashboard: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('current-month');
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState((now.getMonth() + 1).toString());
+  
   const currentMonth = new Date();
   const lastMonth = subMonths(currentMonth, 1);
 
-  // Calcular datas baseadas no período selecionado
+  // Calcular datas baseadas no ano e mês selecionados
   const getPeriodDates = () => {
-    const now = new Date();
-    switch (selectedPeriod) {
-      case 'current-month':
-        return {
-          start: format(startOfMonth(now), 'yyyy-MM-dd'),
-          end: format(endOfMonth(now), 'yyyy-MM-dd')
-        };
-      case 'last-month':
-        const lastMonth = subMonths(now, 1);
-        return {
-          start: format(startOfMonth(lastMonth), 'yyyy-MM-dd'),
-          end: format(endOfMonth(lastMonth), 'yyyy-MM-dd')
-        };
-      case 'current-year':
-        return {
-          start: format(startOfYear(now), 'yyyy-MM-dd'),
-          end: format(endOfYear(now), 'yyyy-MM-dd')
-        };
-      case 'last-year':
-        const lastYear = new Date(now.getFullYear() - 1, 0, 1);
-        return {
-          start: format(startOfYear(lastYear), 'yyyy-MM-dd'),
-          end: format(endOfYear(lastYear), 'yyyy-MM-dd')
-        };
-      default:
-        return {
-          start: format(startOfMonth(now), 'yyyy-MM-dd'),
-          end: format(endOfMonth(now), 'yyyy-MM-dd')
-        };
-    }
+    const year = parseInt(selectedYear);
+    const month = parseInt(selectedMonth) - 1; // 0-indexed
+    const daysInMonth = getDaysInMonth(new Date(year, month));
+    
+    return {
+      start: `${year}-${String(month + 1).padStart(2, '0')}-01`,
+      end: `${year}-${String(month + 1).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`
+    };
   };
 
   const periodDates = getPeriodDates();
+
+  // Gerar lista de anos (2020 até ano atual + 2)
+  const years = Array.from({ length: now.getFullYear() - 2019 + 2 }, (_, i) => (2020 + i).toString());
+  
+  // Meses em português
+  const months = [
+    { value: '1', label: 'Janeiro' },
+    { value: '2', label: 'Fevereiro' },
+    { value: '3', label: 'Março' },
+    { value: '4', label: 'Abril' },
+    { value: '5', label: 'Maio' },
+    { value: '6', label: 'Junho' },
+    { value: '7', label: 'Julho' },
+    { value: '8', label: 'Agosto' },
+    { value: '9', label: 'Setembro' },
+    { value: '10', label: 'Outubro' },
+    { value: '11', label: 'Novembro' },
+    { value: '12', label: 'Dezembro' },
+  ];
 
   const { data: currentMonthData, isLoading } = useQuery({
     queryKey: ['cash-flow-current-month'],
@@ -146,22 +146,34 @@ const CashFlowDashboard: React.FC = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 w-full">
-      {/* Filtro de Período */}
+      {/* Filtro de Período - Ano e Mês */}
       <Card className="bg-white border-gray-300">
         <CardContent className="p-3 sm:p-4">
-          <div className="flex items-center gap-3">
-            <Filter className="h-4 w-4 text-gray-600" />
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-full sm:w-64 bg-white border-gray-300">
-                <SelectValue placeholder="Selecione o período" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="current-month">Mês Atual</SelectItem>
-                <SelectItem value="last-month">Mês Anterior</SelectItem>
-                <SelectItem value="current-year">Ano Atual</SelectItem>
-                <SelectItem value="last-year">Ano Anterior</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Filter className="h-4 w-4 text-gray-600 flex-shrink-0" />
+            <div className="flex gap-2 flex-1 flex-wrap">
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-32 bg-white border-gray-300">
+                  <SelectValue placeholder="Ano" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-gray-300">
+                  {years.map(year => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-40 bg-white border-gray-300">
+                  <SelectValue placeholder="Mês" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-gray-300">
+                  {months.map(month => (
+                    <SelectItem key={month.value} value={month.value}>{month.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -247,6 +259,7 @@ const CashFlowDashboard: React.FC = () => {
             <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
               Receitas por Categoria
             </CardTitle>
+            <p className="text-xs text-gray-600 mt-1">Todas as receitas do Contas a Receber</p>
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
@@ -260,6 +273,7 @@ const CashFlowDashboard: React.FC = () => {
             <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
               Despesas por Categoria
             </CardTitle>
+            <p className="text-xs text-gray-600 mt-1">Todas as despesas do Contas a Pagar (incluindo comissões)</p>
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
@@ -271,23 +285,24 @@ const CashFlowDashboard: React.FC = () => {
         <Card className="bg-white border-gray-300">
           <CardHeader className="p-3 sm:p-4 lg:p-6">
             <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
-              Comissões por Categoria
+              Top 5 Barbeiros - Receita Gerada
             </CardTitle>
+            <p className="text-xs text-gray-600 mt-1">Barbeiros que mais geraram receita no período</p>
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
-              <CommissionChart startDate={periodDates.start} endDate={periodDates.end} />
+              <TopBarbersChart startDate={periodDates.start} endDate={periodDates.end} />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Transações recentes - Otimizado para mobile */}
+      {/* Transações Recentes - Otimizado para mobile */}
       <Card className="bg-white border-gray-300">
         <CardHeader className="p-3 sm:p-4 lg:p-6">
           <CardTitle className="text-sm sm:text-base lg:text-lg text-black flex items-center gap-2">
             <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
-            Transações Recentes
+            Transações Recentes - {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
