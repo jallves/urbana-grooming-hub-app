@@ -49,13 +49,22 @@ const Index = () => {
               <img src={costaUrbanaLogo} alt="Costa Urbana" className="h-10 w-10" />
               <h1 className="text-xl font-bold text-urbana-gold">Costa Urbana</h1>
             </div>
-            <Button 
-              onClick={() => window.location.href = '/painel-cliente/login'}
-              className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 font-semibold"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              Entrar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => window.location.href = '/painel-cliente/login'}
+                variant="outline"
+                className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Cliente
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/admin/login'}
+                className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 font-semibold"
+              >
+                Admin
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -177,13 +186,65 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="py-12 px-4 border-t border-urbana-gold/20">
-          <div className="max-w-7xl mx-auto text-center">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <img src={costaUrbanaLogo} alt="Costa Urbana" className="h-12 w-12" />
-              <h3 className="text-2xl font-bold text-urbana-gold">Costa Urbana</h3>
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <img src={costaUrbanaLogo} alt="Costa Urbana" className="h-12 w-12" />
+                <h3 className="text-2xl font-bold text-urbana-gold">Costa Urbana</h3>
+              </div>
+              <p className="text-urbana-light/60 mb-4">Barbearia Premium</p>
             </div>
-            <p className="text-urbana-light/60 mb-4">Barbearia Premium</p>
-            <p className="text-urbana-light/40 text-sm">© 2024 Costa Urbana. Todos os direitos reservados.</p>
+            
+            {/* Acessos Rápidos */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <Card className="bg-urbana-black/40 backdrop-blur-2xl border-2 border-urbana-gold/30 p-6 hover:border-urbana-gold/60 transition-all cursor-pointer"
+                onClick={() => window.location.href = '/admin/login'}>
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-full bg-urbana-gold/20 flex items-center justify-center mx-auto mb-3">
+                    <Users className="w-6 h-6 text-urbana-gold" />
+                  </div>
+                  <h4 className="text-urbana-light font-semibold mb-1">Painel Admin</h4>
+                  <p className="text-urbana-light/60 text-sm">Gestão completa</p>
+                </div>
+              </Card>
+              
+              <Card className="bg-urbana-black/40 backdrop-blur-2xl border-2 border-urbana-gold/30 p-6 hover:border-urbana-gold/60 transition-all cursor-pointer"
+                onClick={() => window.location.href = '/barber/login'}>
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-full bg-urbana-gold/20 flex items-center justify-center mx-auto mb-3">
+                    <Scissors className="w-6 h-6 text-urbana-gold" />
+                  </div>
+                  <h4 className="text-urbana-light font-semibold mb-1">Painel Barbeiro</h4>
+                  <p className="text-urbana-light/60 text-sm">Seus atendimentos</p>
+                </div>
+              </Card>
+              
+              <Card className="bg-urbana-black/40 backdrop-blur-2xl border-2 border-urbana-gold/30 p-6 hover:border-urbana-gold/60 transition-all cursor-pointer"
+                onClick={() => window.location.href = '/painel-cliente/login'}>
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-full bg-urbana-gold/20 flex items-center justify-center mx-auto mb-3">
+                    <Calendar className="w-6 h-6 text-urbana-gold" />
+                  </div>
+                  <h4 className="text-urbana-light font-semibold mb-1">Painel Cliente</h4>
+                  <p className="text-urbana-light/60 text-sm">Agende online</p>
+                </div>
+              </Card>
+              
+              <Card className="bg-urbana-black/40 backdrop-blur-2xl border-2 border-urbana-gold/30 p-6 hover:border-urbana-gold/60 transition-all cursor-pointer"
+                onClick={() => window.location.href = '/totem'}>
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-full bg-urbana-gold/20 flex items-center justify-center mx-auto mb-3">
+                    <Clock className="w-6 h-6 text-urbana-gold" />
+                  </div>
+                  <h4 className="text-urbana-light font-semibold mb-1">Totem Digital</h4>
+                  <p className="text-urbana-light/60 text-sm">Check-in rápido</p>
+                </div>
+              </Card>
+            </div>
+            
+            <div className="text-center">
+              <p className="text-urbana-light/40 text-sm">© 2024 Costa Urbana. Todos os direitos reservados.</p>
+            </div>
           </div>
         </footer>
       </main>
