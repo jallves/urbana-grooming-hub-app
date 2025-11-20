@@ -10,7 +10,8 @@ const Navbar: React.FC = () => {
   const { shopSettings } = useShopSettings();
   const { 
     user, 
-    scrolled, 
+    scrolled,
+    isDesktop,
     handleSignOut, 
     handlePanelClick 
   } = useNavbar();
@@ -20,7 +21,7 @@ const Navbar: React.FC = () => {
 
   return (
     <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled 
+      scrolled || !isDesktop
         ? 'bg-urbana-black/95 backdrop-blur-xl shadow-2xl border-b border-urbana-gold/30' 
         : 'bg-transparent backdrop-blur-sm'
     }`}>

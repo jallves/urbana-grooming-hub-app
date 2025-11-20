@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -30,9 +31,19 @@ export const useNavbar = () => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
+    
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768); // md breakpoint
+    };
 
+    handleResize(); // Check initial size
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   const handleSignOut = async () => {
@@ -61,6 +72,7 @@ export const useNavbar = () => {
   return {
     user,
     scrolled,
+    isDesktop,
     handleSignOut,
     handlePanelClick
   };
