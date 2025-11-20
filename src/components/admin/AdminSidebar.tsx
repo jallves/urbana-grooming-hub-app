@@ -130,7 +130,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               <img 
                 src={beltecLogo} 
                 alt="Beltec Soluções" 
-                className="h-4 w-auto object-contain"
+                className="h-5 w-auto object-contain"
               />
             </div>
           </div>
