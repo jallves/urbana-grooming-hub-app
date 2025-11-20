@@ -89,69 +89,101 @@ export const FinancialTransactionsList: React.FC = () => {
 
   return (
     <Card className="bg-white border-gray-200">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900">
+      <CardHeader className="p-3 sm:p-4 lg:p-6">
+        <CardTitle className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900">
           Transações Recentes
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Número</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions && transactions.length > 0 ? (
-                transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-mono text-xs">
-                      {transaction.transaction_number}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(transaction.transaction_type)}
-                        <span className="text-sm">{getTypeLabel(transaction.transaction_type)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate text-sm">
-                      {transaction.description}
-                    </TableCell>
-                    <TableCell className="text-sm">
+      <CardContent className="p-3 sm:p-4 lg:p-6">
+        {transactions && transactions.length > 0 ? (
+          <>
+            {/* Layout em Cards para Mobile/Tablet */}
+            <div className="block lg:hidden space-y-3">
+              {transactions.map((transaction) => (
+                <div key={transaction.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {getTypeIcon(transaction.transaction_type)}
+                      <span className="text-sm font-medium">{getTypeLabel(transaction.transaction_type)}</span>
+                    </div>
+                    {getStatusBadge(transaction.status)}
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 mb-1 truncate">
+                    {transaction.description}
+                  </p>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
+                    <span className="text-xs text-gray-600">
                       {format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      <span className={
-                        transaction.transaction_type === 'revenue' 
-                          ? 'text-green-600' 
-                          : transaction.transaction_type === 'expense' || transaction.transaction_type === 'commission'
-                          ? 'text-red-600'
-                          : 'text-gray-900'
-                      }>
-                        R$ {transaction.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {getStatusBadge(transaction.status)}
-                    </TableCell>
+                    </span>
+                    <span className={`text-sm font-bold ${
+                      transaction.transaction_type === 'revenue' 
+                        ? 'text-green-600' 
+                        : 'text-red-600'
+                    }`}>
+                      R$ {transaction.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 font-mono">
+                    #{transaction.transaction_number}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Layout em Tabela para Desktop */}
+            <div className="hidden lg:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Número</TableHead>
+                    <TableHead className="whitespace-nowrap">Tipo</TableHead>
+                    <TableHead className="whitespace-nowrap">Descrição</TableHead>
+                    <TableHead className="whitespace-nowrap">Data</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Valor</TableHead>
+                    <TableHead className="text-center whitespace-nowrap">Status</TableHead>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                    Nenhuma transação encontrada
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="font-mono text-xs">
+                        {transaction.transaction_number}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getTypeIcon(transaction.transaction_type)}
+                          <span className="text-sm">{getTypeLabel(transaction.transaction_type)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate text-sm">
+                        {transaction.description}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        <span className={
+                          transaction.transaction_type === 'revenue' 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }>
+                          R$ {transaction.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {getStatusBadge(transaction.status)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        ) : (
+          <div className="text-center text-gray-500 py-8">
+            Nenhuma transação encontrada
+          </div>
+        )}
       </CardContent>
     </Card>
   );
