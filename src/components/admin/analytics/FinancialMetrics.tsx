@@ -129,32 +129,32 @@ const FinancialMetrics: React.FC = () => {
 
   return (
     <div className="h-full bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-gray-900">Métricas Financeiras</h2>
-        <p className="text-sm text-gray-600">Análise de receita e performance financeira</p>
+      <div className="p-3 sm:p-4 border-b border-gray-200">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">Métricas Financeiras</h2>
+        <p className="text-xs sm:text-sm text-gray-600">Análise de receita e performance financeira</p>
       </div>
 
       <div className="h-full overflow-y-auto">
-        <div className="p-4 space-y-4">
+        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           {/* Métricas Principais */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
             {metrics.map((metric, index) => (
               <Card key={index} className="bg-white border-gray-200 shadow-sm">
-                <CardContent className="p-4">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-gray-600 mb-1">{metric.title}</p>
-                      <p className="text-lg font-bold text-gray-900">{metric.value}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-600 mb-1 truncate">{metric.title}</p>
+                      <p className="text-sm sm:text-base lg:text-lg font-bold text-gray-900 truncate">{metric.value}</p>
                       <div className="flex items-center gap-1 mt-1">
                         {metric.trend === 'up' ? (
-                          <TrendingUp className="h-3 w-3 text-green-600" />
+                          <TrendingUp className="h-3 w-3 text-green-600 flex-shrink-0" />
                         ) : (
-                          <TrendingDown className="h-3 w-3 text-red-600" />
+                          <TrendingDown className="h-3 w-3 text-red-600 flex-shrink-0" />
                         )}
                         <span className="text-xs text-green-600">{metric.change}</span>
                       </div>
                     </div>
-                    <metric.icon className={`h-6 w-6 ${metric.color}`} />
+                    <metric.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${metric.color} flex-shrink-0 ml-2`} />
                   </div>
                 </CardContent>
               </Card>
@@ -163,21 +163,22 @@ const FinancialMetrics: React.FC = () => {
 
           {/* Gráfico de Receita */}
           <Card className="bg-white border-gray-200 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Evolução da Receita</CardTitle>
+            <CardHeader className="p-3 sm:p-4 lg:p-6">
+              <CardTitle className="text-sm sm:text-base lg:text-lg text-gray-900">Evolução da Receita</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-64">
+            <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+              <div className="h-48 sm:h-56 lg:h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={financialData?.monthlyRevenue || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="month" stroke="#6B7280" />
-                    <YAxis stroke="#6B7280" />
+                    <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#FFFFFF', 
                         border: '1px solid #E5E7EB',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        fontSize: '12px'
                       }}
                     />
                     <Line 
@@ -195,21 +196,22 @@ const FinancialMetrics: React.FC = () => {
 
           {/* Gráfico de Barras */}
           <Card className="bg-white border-gray-200 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-gray-900">Receita por Mês</CardTitle>
+            <CardHeader className="p-3 sm:p-4 lg:p-6">
+              <CardTitle className="text-sm sm:text-base lg:text-lg text-gray-900">Receita por Mês</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-64">
+            <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+              <div className="h-48 sm:h-56 lg:h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={financialData?.monthlyRevenue || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="month" stroke="#6B7280" />
-                    <YAxis stroke="#6B7280" />
+                    <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 12 }} />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: '#FFFFFF', 
                         border: '1px solid #E5E7EB',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        fontSize: '12px'
                       }}
                     />
                     <Bar dataKey="revenue" fill="#3B82F6" />

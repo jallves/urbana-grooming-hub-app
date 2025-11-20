@@ -129,29 +129,29 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="text-lg sm:text-xl">
             {initialData?.id ? 'Editar Lançamento' : 'Novo Lançamento'}
           </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="transaction_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo</FormLabel>
+                    <FormLabel className="text-sm">Tipo</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                       disabled={!!initialData?.id}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -170,10 +170,10 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel className="text-sm">Status</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -194,10 +194,10 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Categoria</FormLabel>
+                  <FormLabel className="text-sm">Categoria</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-9 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
@@ -219,26 +219,27 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel className="text-sm">Descrição</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Descrição do lançamento" />
+                    <Input {...field} placeholder="Descrição do lançamento" className="h-9 text-sm" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="gross_amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor Bruto</FormLabel>
+                    <FormLabel className="text-sm">Valor Bruto</FormLabel>
                     <FormControl>
                       <Input
                         type="text"
                         placeholder="R$ 0,00"
+                        className="h-9 text-sm"
                         value={field.value ? `R$ ${field.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
                         onChange={(e) => {
                           const value = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
@@ -257,11 +258,12 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                 name="discount_amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Desconto</FormLabel>
+                    <FormLabel className="text-sm">Desconto</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         step="0.01"
+                        className="h-9 text-sm"
                         {...field}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
@@ -276,11 +278,12 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                 name="tax_amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Impostos</FormLabel>
+                    <FormLabel className="text-sm">Impostos</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         step="0.01"
+                        className="h-9 text-sm"
                         {...field}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
@@ -291,23 +294,23 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
               />
             </div>
 
-            <div className="p-3 bg-muted rounded-md">
-              <p className="text-sm font-medium">
+            <div className="p-2 sm:p-3 bg-muted rounded-md">
+              <p className="text-xs sm:text-sm font-medium">
                 Valor Líquido: R$ {netAmount.toFixed(2)}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <FormField
                 control={form.control}
                 name="transaction_date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Data</FormLabel>
+                    <FormLabel className="text-sm">Data</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant="outline" className="justify-start text-left font-normal">
+                          <Button variant="outline" className="justify-start text-left font-normal h-9 text-sm">
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? format(field.value, 'PPP', { locale: ptBR }) : 'Selecione'}
                           </Button>
@@ -332,10 +335,10 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                 name="payment_method"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Forma de Pagamento</FormLabel>
+                    <FormLabel className="text-sm">Forma de Pagamento</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
@@ -358,20 +361,20 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel className="text-sm">Observações</FormLabel>
                   <FormControl>
-                    <Textarea {...field} rows={3} placeholder="Observações adicionais" />
+                    <Textarea {...field} rows={3} placeholder="Observações adicionais" className="text-sm" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 sm:pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading ? 'Salvando...' : initialData?.id ? 'Atualizar' : 'Criar'}
               </Button>
             </div>

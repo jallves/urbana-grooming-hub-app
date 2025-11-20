@@ -435,23 +435,23 @@ export const ContasAReceber: React.FC = () => {
               Receitas Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 sm:p-6">
+          <CardContent className="p-0 sm:p-3 lg:p-6">
             <div className="overflow-x-auto -mx-4 sm:mx-0">
               <div className="inline-block min-w-full align-middle">
                 <Table className="text-xs sm:text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="whitespace-nowrap">Número</TableHead>
-                      <TableHead className="whitespace-nowrap">Descrição</TableHead>
-                      <TableHead className="whitespace-nowrap hidden md:table-cell">Categoria</TableHead>
-                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Pagamento</TableHead>
-                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Data</TableHead>
-                      <TableHead className="text-right whitespace-nowrap hidden xl:table-cell">Bruto</TableHead>
-                      <TableHead className="text-right whitespace-nowrap hidden xl:table-cell">Desconto</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Líquido</TableHead>
-                      <TableHead className="text-center whitespace-nowrap">Status</TableHead>
-                      <TableHead className="text-center whitespace-nowrap hidden xl:table-cell">Fluxo</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Número</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Descrição</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4 hidden md:table-cell">Categoria</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4 hidden lg:table-cell">Pagamento</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4 hidden lg:table-cell">Data</TableHead>
+                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4 hidden xl:table-cell">Bruto</TableHead>
+                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4 hidden xl:table-cell">Desconto</TableHead>
+                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4">Líquido</TableHead>
+                      <TableHead className="text-center whitespace-nowrap px-2 sm:px-4">Status</TableHead>
+                      <TableHead className="text-center whitespace-nowrap px-2 sm:px-4 hidden xl:table-cell">Fluxo</TableHead>
+                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
