@@ -10,7 +10,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import BannerManager from './media/BannerManager';
-import DatabaseGalleryManager from './media/components/DatabaseGalleryManager';
+import GalleryManager from './media/GalleryManager';
 
 const BannerGallerySettings: React.FC = () => {
   const [bannerImages, setBannerImages] = useState<BannerImage[]>([
@@ -49,6 +49,8 @@ const BannerGallerySettings: React.FC = () => {
     }
   ]);
 
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+
   return (
     <div className="h-full w-full bg-transparent overflow-hidden">
       <div className="h-full flex flex-col">
@@ -80,7 +82,10 @@ const BannerGallerySettings: React.FC = () => {
                 </CardHeader>
                 <CardContent className="p-0 flex-1 overflow-hidden">
                   <div className="h-full overflow-y-auto">
-                    <DatabaseGalleryManager />
+                    <GalleryManager 
+                      galleryImages={galleryImages}
+                      setGalleryImages={setGalleryImages}
+                    />
                   </div>
                 </CardContent>
               </Card>
