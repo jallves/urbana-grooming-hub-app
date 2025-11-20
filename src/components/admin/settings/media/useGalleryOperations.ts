@@ -60,7 +60,8 @@ export const useGalleryOperations = (
       if (galleryUpload) {
         try {
           console.log("Uploading gallery image to Supabase Storage");
-          imageUrl = await uploadFile(galleryUpload.file, 'gallery', 'images');
+          // Use 'gallery' bucket for gallery uploads (same pattern as banners)
+          imageUrl = await uploadFile(galleryUpload.file, 'gallery', 'gallery');
           console.log("Gallery image upload successful, URL:", imageUrl);
         } catch (uploadError) {
           console.error("Gallery upload error:", uploadError);
