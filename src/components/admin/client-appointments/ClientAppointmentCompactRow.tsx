@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { MoreHorizontal, Edit, Trash2, Clock, X } from 'lucide-react';
+import { MoreHorizontal, Edit, Clock, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +79,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   onStatusChange,
   onDelete
 }) => {
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   // LEI PÉTREA: Determinar status didático do agendamento
   const getActualStatus = () => {
@@ -161,51 +161,22 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     );
   };
 
-  // Verificar se pode deletar (Lei Pétrea: apenas sem nenhuma informação)
-  const canDelete = () => {
-    const hasCheckIn = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_in_time);
-    
-    const hasSales = appointment.vendas && appointment.vendas.length > 0;
-    
-    const statusUpper = appointment.status?.toUpperCase() || '';
-    const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
-    const isCancelled = statusUpper === 'CANCELADO';
-
-    return !hasCheckIn && !hasSales && !isFinalized && !isCancelled;
-  };
-
   // Verificar se pode cancelar (Lei Pétrea: apenas 'agendado' e 'check_in_finalizado')
   const canCancel = () => {
     const currentStatus = actualStatus;
     return currentStatus === 'agendado' || currentStatus === 'check_in_finalizado';
   };
 
-  const getDeleteBlockedReason = () => {
-    const hasCheckIn = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_in_time);
-    
-    const hasSales = appointment.vendas && appointment.vendas.length > 0;
-    
-    const statusUpper = appointment.status?.toUpperCase() || '';
-    const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
-    const isCancelled = statusUpper === 'CANCELADO';
-
-    if (hasCheckIn) return 'Este agendamento possui check-in realizado e não pode ser excluído.';
-    if (hasSales) return 'Este agendamento possui vendas associadas e não pode ser excluído.';
-    if (isFinalized) return 'Este agendamento está finalizado/concluído e não pode ser excluído.';
-    if (isCancelled) return 'Agendamentos cancelados devem ser mantidos para auditoria e não podem ser excluídos.';
-    return null;
+  const handleCancelClick = () => {
+    setIsCancelDialogOpen(true);
   };
 
-  const handleDeleteClick = () => {
-    if (!canDelete()) {
-      toast.error('Não é possível excluir', {
-        description: getDeleteBlockedReason()
-      });
-      return;
-    }
-    setIsDeleteDialogOpen(true);
+  const handleConfirmCancel = () => {
+    onStatusChange(appointment.id, 'cancelado');
+    setIsCancelDialogOpen(false);
+    toast.success('Agendamento cancelado', {
+      description: 'O agendamento foi cancelado com sucesso.'
+    });
   };
 
   return (
@@ -286,66 +257,55 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
             {canCancel() && (
               <DropdownMenuItem
                 className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50 text-orange-600 py-2.5"
-                onClick={() => {
-                  if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
-                    onStatusChange(appointment.id, 'cancelado');
-                  }
-                }}
+                onClick={handleCancelClick}
               >
                 <X className="mr-3 h-4 w-4" />
                 <span className="text-sm font-medium">Cancelar Agendamento</span>
               </DropdownMenuItem>
             )}
-
-            <DropdownMenuItem
-              className={`cursor-pointer py-2.5 ${canDelete() ? 'hover:bg-red-50 focus:bg-red-50 text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
-              onClick={handleDeleteClick}
-              disabled={!canDelete()}
-            >
-              <Trash2 className="mr-3 h-4 w-4" />
-              <span className="text-sm font-medium">Excluir Permanentemente</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent>
+        {/* Dialog de Cancelamento */}
+        <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+          <AlertDialogContent className="bg-white border-2 border-gray-200 shadow-xl">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-red-600 font-bold">⚠️ Confirmar Exclusão Permanente</AlertDialogTitle>
-              <AlertDialogDescription className="space-y-3">
-                <p className="font-semibold text-gray-900">
-                  Você está prestes a excluir permanentemente o agendamento de{' '}
-                  <strong className="text-red-600">{appointment.painel_clientes?.nome}</strong>
+              <AlertDialogTitle className="text-orange-600 font-bold text-xl flex items-center gap-2">
+                ⚠️ Confirmar Cancelamento
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-4 pt-2">
+                <p className="text-base text-gray-900">
+                  Você está prestes a cancelar o agendamento de{' '}
+                  <strong className="text-orange-600">{appointment.painel_clientes?.nome}</strong>
                 </p>
                 
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
-                  <p className="text-sm text-yellow-800 font-medium">
-                    <strong>ATENÇÃO:</strong> Esta ação é irreversível e pode:
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r">
+                  <p className="text-sm text-orange-800 font-medium mb-2">
+                    📋 Detalhes do Agendamento:
                   </p>
-                  <ul className="text-xs text-yellow-700 mt-2 ml-4 space-y-1 list-disc">
-                    <li>Comprometer a integridade dos registros administrativos</li>
-                    <li>Dificultar auditorias e relatórios financeiros</li>
-                    <li>Causar inconsistências no histórico de atendimentos</li>
+                  <ul className="text-sm text-orange-700 space-y-1">
+                    <li><strong>Serviço:</strong> {appointment.painel_servicos?.nome}</li>
+                    <li><strong>Data:</strong> {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')} às {appointment.hora}</li>
+                    <li><strong>Barbeiro:</strong> {appointment.painel_barbeiros?.nome}</li>
                   </ul>
                 </div>
 
-                <p className="text-sm text-gray-700 font-medium">
-                  💡 <strong>Recomendação:</strong> Em vez de excluir, considere <strong>cancelar</strong> o agendamento para manter o histórico.
-                </p>
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+                  <p className="text-sm text-blue-800">
+                    ℹ️ <strong>Importante:</strong> O agendamento será marcado como cancelado e mantido no histórico do sistema para fins de auditoria.
+                  </p>
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100">
-                Cancelar (Recomendado)
+              <AlertDialogCancel className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200">
+                Voltar
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
-                  onDelete(appointment.id);
-                  setIsDeleteDialogOpen(false);
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={handleConfirmCancel}
+                className="bg-orange-600 hover:bg-orange-700 text-white font-semibold"
               >
-                Excluir Permanentemente
+                Confirmar Cancelamento
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
