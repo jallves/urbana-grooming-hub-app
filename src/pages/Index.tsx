@@ -36,58 +36,76 @@ const Index = () => {
         <Hero />
       </section>
       
-      {/* Decorative divider */}
-      <div className="w-full bg-gradient-to-b from-urbana-black to-urbana-brown py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GoldenDivider variant="geometric" />
-        </div>
-      </div>
-      
-      {/* Services */}
-      <section className="w-full py-12 transition-all duration-700">
-        <Services />
-      </section>
-      
-      {/* Decorative divider */}
-      <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GoldenDivider variant="ornate" />
-        </div>
-      </div>
-      
-      {/* Statistics Section */}
-      <section className="w-full transition-all duration-700">
-        <Statistics />
-      </section>
-      
-      {/* Decorative divider */}
-      <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GoldenDivider variant="geometric" />
-        </div>
-      </div>
-      
-      {/* Gallery */}
-      <section className="w-full py-12 transition-all duration-700">
-        <Gallery />
-      </section>
-      
-      {/* Decorative divider */}
-      <div className="w-full bg-gradient-to-b from-urbana-black to-urbana-brown py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GoldenDivider variant="geometric" />
-        </div>
-      </div>
-      
-      {/* Client Reviews */}
-      <section className="w-full py-12 transition-all duration-700">
-        <ClientReviews />
-      </section>
-      
-      {/* Decorative divider */}
-      <div className="w-full bg-gradient-to-b from-urbana-brown to-urbana-black py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GoldenDivider variant="ornate" />
+      {/* Modern Section with Totem Background */}
+      <div className="w-full relative">
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
+          style={{
+            backgroundImage: 'url(/totem-background.jpg)',
+            backgroundAttachment: 'fixed',
+          }}
+        />
+        
+        {/* Gradient Overlay for better readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-urbana-brown/95 via-urbana-brown/90 to-urbana-brown/95" />
+        
+        {/* Content */}
+        <div className="relative z-10">
+          {/* Decorative divider */}
+          <div className="w-full py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <GoldenDivider variant="geometric" />
+            </div>
+          </div>
+          
+          {/* Services */}
+          <section className="w-full py-12 transition-all duration-700">
+            <Services />
+          </section>
+          
+          {/* Decorative divider */}
+          <div className="w-full py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <GoldenDivider variant="ornate" />
+            </div>
+          </div>
+          
+          {/* Statistics Section */}
+          <section className="w-full transition-all duration-700">
+            <Statistics />
+          </section>
+          
+          {/* Decorative divider */}
+          <div className="w-full py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <GoldenDivider variant="geometric" />
+            </div>
+          </div>
+          
+          {/* Gallery */}
+          <section className="w-full py-12 transition-all duration-700">
+            <Gallery />
+          </section>
+          
+          {/* Decorative divider */}
+          <div className="w-full py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <GoldenDivider variant="geometric" />
+            </div>
+          </div>
+          
+          {/* Client Reviews */}
+          <section className="w-full py-12 transition-all duration-700">
+            <ClientReviews />
+          </section>
+          
+          {/* Decorative divider */}
+          <div className="w-full py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <GoldenDivider variant="ornate" />
+            </div>
+          </div>
         </div>
       </div>
       
