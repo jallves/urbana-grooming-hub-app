@@ -4,17 +4,13 @@ import { Calendar, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import StandardCard from './layouts/StandardCard';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
-import ActionFeedback from '@/components/ui/feedback/ActionFeedback';
 import { useBarberAppointmentsOptimized } from '@/hooks/barber/useBarberAppointmentsOptimized';
 
 const BarberAppointments: React.FC = () => {
   const {
     appointments,
     loading,
-    stats,
-    updatingId,
-    handleCompleteAppointment,
-    fetchAppointments
+    stats
   } = useBarberAppointmentsOptimized();
 
   const statsCards = [
@@ -87,12 +83,9 @@ const BarberAppointments: React.FC = () => {
 
       {/* Appointments List */}
       <StandardCard>
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h2 className="text-xl font-bold text-white">Meus Agendamentos</h2>
-          <ActionFeedback 
-            status={updatingId ? 'loading' : 'idle'}
-            message="Atualizando agendamento..."
-          />
+          <p className="text-sm text-gray-400 mt-1">Visualização dos seus atendimentos</p>
         </div>
         
         {appointments.length === 0 ? (
@@ -111,10 +104,6 @@ const BarberAppointments: React.FC = () => {
               <AppointmentCardOptimized
                 key={appointment.id}
                 appointment={appointment}
-                updatingId={updatingId}
-                onComplete={handleCompleteAppointment}
-                onCancel={() => {}}
-                onEdit={() => {}}
               />
             ))}
           </div>
