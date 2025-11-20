@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { getCategoryLabel } from '@/utils/categoryMappings';
 
 const CategoryChart: React.FC = () => {
   const { data: chartData, isLoading } = useQuery({
@@ -34,9 +34,10 @@ const CategoryChart: React.FC = () => {
         categoryTotals[category] = (categoryTotals[category] || 0) + Number(transaction.net_amount);
       });
 
-      // Converter para formato do gráfico
+      // Converter para formato do gráfico com labels traduzidos
       const chartData = Object.entries(categoryTotals).map(([category, amount]) => ({
-        name: category,
+        name: getCategoryLabel(category),
+        originalCategory: category,
         value: amount,
       }));
 

@@ -11,6 +11,7 @@ import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pe
 import { toast } from 'sonner';
 import { useCashFlowSync } from '@/hooks/financial/useCashFlowSync';
 import FinancialRecordForm from './FinancialRecordForm';
+import { getCategoryLabel } from '@/utils/categoryMappings';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -521,8 +522,8 @@ export const ContasAPagar: React.FC = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm capitalize">
-                          {record.category === 'staff_payments' ? 'Pagamento Comissão' : record.category.replace('_', ' ')}
+                        <TableCell className="text-sm">
+                          {getCategoryLabel(record.category)}
                         </TableCell>
                         <TableCell className="text-sm">
                           {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}

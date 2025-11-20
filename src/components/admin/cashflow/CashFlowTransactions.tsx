@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Filter, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getCategoryLabel, getStatusLabel } from '@/utils/categoryMappings';
 
 const CashFlowTransactions: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,8 +97,12 @@ const CashFlowTransactions: React.FC = () => {
             <SelectItem value="all">Todas categorias</SelectItem>
             <SelectItem value="services">Serviços</SelectItem>
             <SelectItem value="products">Produtos</SelectItem>
-            <SelectItem value="commissions">Comissões</SelectItem>
-            <SelectItem value="expenses">Despesas Gerais</SelectItem>
+            <SelectItem value="staff_payments">Comissões</SelectItem>
+            <SelectItem value="supplies">Insumos</SelectItem>
+            <SelectItem value="rent">Aluguel</SelectItem>
+            <SelectItem value="utilities">Utilidades</SelectItem>
+            <SelectItem value="marketing">Marketing</SelectItem>
+            <SelectItem value="other">Outros</SelectItem>
           </SelectContent>
         </Select>
 
@@ -144,14 +148,15 @@ const CashFlowTransactions: React.FC = () => {
                           </h3>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
                             <span className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded border border-gray-200">
-                              {transaction.category} • {transaction.subcategory}
+                              {getCategoryLabel(transaction.category)}
+                              {transaction.subcategory && ` • ${getCategoryLabel(transaction.subcategory)}`}
                             </span>
                             <span className={`text-xs px-2 py-1 rounded border ${
                               transaction.status === 'completed' 
                                 ? 'bg-green-50 text-green-700 border-green-200' 
                                 : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                             }`}>
-                              {transaction.status === 'completed' ? '✅ Pago' : '⏳ Pendente'}
+                              {getStatusLabel(transaction.status)}
                             </span>
                           </div>
                         </div>
