@@ -169,7 +169,7 @@ export const ClientReviews: React.FC = () => {
             viewport={{ once: true }}
             className="max-w-4xl mx-auto px-4"
           >
-            <div className="relative bg-transparent backdrop-blur-xl border-2 border-urbana-gold/30 rounded-3xl p-12 hover:border-urbana-gold/50 transition-all duration-500 overflow-hidden group">
+            <div className="relative bg-urbana-black/90 backdrop-blur-xl border-2 border-urbana-gold/50 rounded-3xl p-12 hover:border-urbana-gold transition-all duration-500 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.2)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)] group">
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 via-transparent to-urbana-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
               <div className="relative z-10 text-center">
@@ -212,8 +212,8 @@ export const ClientReviews: React.FC = () => {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="relative bg-transparent backdrop-blur-xl border-2 border-urbana-gold/30 rounded-2xl p-8 hover:border-urbana-gold/50 transition-all duration-500 overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 via-transparent to-urbana-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative bg-urbana-black/90 backdrop-blur-xl border-2 border-urbana-gold/50 rounded-2xl p-8 hover:border-urbana-gold transition-all duration-500 overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.2)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 via-transparent to-urbana-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="relative z-10">
                   <div className="text-center mb-6">
@@ -321,9 +321,9 @@ export const ClientReviews: React.FC = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                     viewport={{ once: true }}
-                    className="relative bg-transparent backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl p-6 hover:border-urbana-gold/50 transition-all duration-300 group overflow-hidden"
+                    className="relative bg-urbana-black/90 backdrop-blur-xl border-2 border-urbana-gold/50 rounded-xl p-6 hover:border-urbana-gold transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.2)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)] group overflow-hidden"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/5 via-transparent to-urbana-gold/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/10 via-transparent to-urbana-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                     
                     <div className="relative z-10">
                       <div className="flex items-center gap-2 mb-3">
