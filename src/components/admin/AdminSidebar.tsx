@@ -72,9 +72,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
             </div>
             <div>
               <h2 className="text-xl font-bold bg-gradient-to-r from-urbana-gold via-yellow-600 to-urbana-gold-dark bg-clip-text text-transparent font-playfair">
-                Painel Admin
+                Gestão Financeira
               </h2>
-              <p className="text-xs text-gray-500 font-raleway">Costa Urbana</p>
             </div>
           </div>
           {onClose && (
@@ -103,7 +102,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
                 active:scale-[0.98] ${
                   isActive
                     ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-md'
-                    : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900 active:bg-gray-200'
+                    : 'hover:bg-gray-50 text-urbana-gold hover:text-urbana-gold-dark active:bg-gray-100'
                 }`
               }
               end={item.href === '/admin'}
@@ -118,9 +117,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200">
-          <div className="text-xs text-gray-500 text-center font-raleway">
-            <p className="font-semibold text-urbana-gold">Costa Urbana</p>
-            <p>Sistema Administrativo</p>
+          <div className="text-xs text-center font-raleway space-y-1">
+            <p className="font-semibold text-urbana-gold">Barbearia Costa Urbana</p>
+            <p className="text-gray-500">Sistema Inteligente</p>
+            <p className="text-gray-400 text-[10px] mt-2">Desenvolvido por Belteq Soluções</p>
           </div>
         </div>
       </div>
