@@ -71,7 +71,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               />
             </div>
             <div>
-              <h2 className="text-xl font-bold bg-gradient-to-r from-urbana-gold via-yellow-600 to-urbana-gold-dark bg-clip-text text-transparent font-playfair">
+              <h2 className="text-xl font-bold text-urbana-gold-dark font-playfair">
                 Gestão Financeira
               </h2>
             </div>
@@ -90,8 +90,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
 
         {/* Navigation com animações */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item, index) => (
-            <NavLink
+          {menuItems.map((item, index) => {
+            const isActiveRoute = location.pathname === item.href || 
+              (item.href !== '/admin' && location.pathname.startsWith(item.href));
+            
+            return (
+              <NavLink
               key={item.href}
               to={item.href}
               onClick={onClose}
@@ -102,23 +106,24 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
                 active:scale-[0.98] ${
                   isActive
                     ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-md'
-                    : 'hover:bg-gray-50 text-urbana-gold hover:text-urbana-gold-dark active:bg-gray-100'
+                    : 'hover:bg-gray-50 active:bg-gray-100'
                 }`
               }
               end={item.href === '/admin'}
             >
               <div className="relative z-10 flex items-center gap-3">
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                <span className="font-medium text-sm font-raleway truncate">{item.title}</span>
+                <item.icon className={`h-5 w-5 flex-shrink-0 ${isActiveRoute ? 'text-white' : 'text-urbana-gold'}`} />
+                <span className={`font-medium text-sm font-raleway truncate ${isActiveRoute ? 'text-white' : 'text-gray-900'}`}>{item.title}</span>
               </div>
             </NavLink>
-          ))}
+            );
+          })}
         </nav>
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200">
           <div className="text-xs text-center font-raleway space-y-1">
-            <p className="font-semibold text-urbana-gold">Barbearia Costa Urbana</p>
+            <p className="font-semibold text-urbana-gold-dark">Barbearia Costa Urbana</p>
             <p className="text-gray-500">Sistema Inteligente</p>
             <p className="text-gray-400 text-[10px] mt-2">Desenvolvido por Belteq Soluções</p>
           </div>
