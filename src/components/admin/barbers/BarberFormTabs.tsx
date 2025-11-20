@@ -19,6 +19,8 @@ interface BarberFormTabsProps {
   barberId: string | null;
   onSubmit: (data: BarberFormValues) => void;
   onCancel: () => void;
+  handleImageUpload: (file: File) => Promise<void>;
+  isUploadingImage: boolean;
 }
 
 const roles = [
@@ -32,10 +34,19 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
   isSubmitting,
   barberId,
   onSubmit,
-  onCancel
+  onCancel,
+  handleImageUpload,
+  isUploadingImage
 }) => {
   const [activeTab, setActiveTab] = useState('personal');
   const barberEmail = form.watch('email');
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleImageUpload(file);
+    }
+  };
 
   return (
     <Form {...form}>
@@ -87,7 +98,8 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
                 <div className="col-span-1">
                   <StaffProfileImage 
                     form={form}
-                    handleFileChange={() => {}} 
+                    handleFileChange={handleFileChange}
+                    isUploading={isUploadingImage}
                   />
                 </div>
                 <div className="col-span-1 md:col-span-2">

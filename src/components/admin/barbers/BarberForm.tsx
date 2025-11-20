@@ -14,6 +14,8 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
     isEditing,
     isSubmitting,
     onSubmit,
+    handleImageUpload,
+    isUploadingImage,
   } = useBarberForm(barberId, onSuccess);
 
   return (
@@ -24,6 +26,8 @@ const BarberForm: React.FC<BarberFormProps> = ({ barberId, onCancel, onSuccess }
       barberId={barberId}
       onSubmit={onSubmit}
       onCancel={onCancel}
+      handleImageUpload={handleImageUpload}
+      isUploadingImage={isUploadingImage}
     />
   );
 };
