@@ -50,19 +50,17 @@ const TotemProductBarberSelect: React.FC = () => {
         .from('painel_barbeiros')
         .select(`
           id,
+          nome,
+          email,
+          telefone,
+          image_url,
+          specialties,
+          commission_rate,
           staff_id,
-          staff!inner (
-            id,
-            name,
-            email,
-            specialties,
-            image_url,
-            commission_rate,
-            is_active
-          )
+          is_active
         `)
-        .eq('staff.is_active', true)
-        .order('staff(name)');
+        .eq('is_active', true)
+        .order('nome');
 
       if (error) {
         console.error('❌ Erro ao carregar barbeiros:', error);
@@ -74,11 +72,11 @@ const TotemProductBarberSelect: React.FC = () => {
       const mappedBarbers = (barbersData || []).map((b: any) => ({
         id: b.id,
         staff_id: b.staff_id,
-        nome: b.staff.name,
-        email: b.staff.email,
-        especialidade: b.staff.specialties,
-        image_url: b.staff.image_url,
-        commission_rate: b.staff.commission_rate
+        nome: b.nome,
+        email: b.email,
+        especialidade: b.specialties,
+        image_url: b.image_url,
+        commission_rate: b.commission_rate
       }));
 
       setBarbers(mappedBarbers);
