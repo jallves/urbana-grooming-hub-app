@@ -241,17 +241,15 @@ const TotemDataHora: React.FC = () => {
       const day = String(selectedDate.getDate()).padStart(2, '0');
       const dataLocal = `${year}-${month}-${day}`;
       
-      console.log('📅 Dados do agendamento:', {
+      console.log('📅 Data sendo salva:', {
         selectedDate,
         dataLocal,
         hora: selectedTime,
-        cliente_id: client.id,
-        barbeiro_id: barber.id,
-        servico_id: service.id,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
       
       // Validação passou, criar agendamento
+      // @ts-ignore - Evitar inferência profunda de tipos do Supabase
       const response = await supabase
         .from('painel_agendamentos')
         .insert({
