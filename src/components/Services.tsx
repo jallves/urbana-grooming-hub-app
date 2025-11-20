@@ -133,7 +133,7 @@ const Services: React.FC = () => {
   return (
     <section
       id="services"
-      className="relative min-h-screen py-8 bg-gradient-to-b from-urbana-black via-urbana-brown to-urbana-black text-urbana-light overflow-hidden"
+      className="relative min-h-screen py-8 text-urbana-light overflow-hidden"
     >
       {/* Modern background elements with enhanced glow */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
