@@ -106,7 +106,7 @@ const FinancialDashboard: React.FC = () => {
   const summaryCards = [
     {
       title: 'Receita Total',
-      value: `R$ ${(metrics?.month.total_revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${(metrics.month.total_revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
@@ -114,7 +114,7 @@ const FinancialDashboard: React.FC = () => {
     },
     {
       title: 'Despesas',
-      value: `R$ ${(metrics?.month.total_expenses || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${(metrics.month.total_expenses || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: TrendingDown,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
@@ -122,7 +122,7 @@ const FinancialDashboard: React.FC = () => {
     },
     {
       title: 'Comissões',
-      value: `R$ ${(metrics?.month.total_commissions || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${(metrics.month.total_commissions || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: Calculator,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -130,11 +130,11 @@ const FinancialDashboard: React.FC = () => {
     },
     {
       title: 'Lucro Líquido',
-      value: `R$ ${(metrics?.month.net_profit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${(metrics.month.net_profit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: TrendingUp,
-      color: metrics?.month.net_profit >= 0 ? 'text-green-600' : 'text-red-600',
-      bgColor: metrics?.month.net_profit >= 0 ? 'bg-green-50' : 'bg-red-50',
-      trend: `${metrics?.month.profit_margin.toFixed(1)}% margem`
+      color: metrics.month.net_profit >= 0 ? 'text-green-600' : 'text-red-600',
+      bgColor: metrics.month.net_profit >= 0 ? 'bg-green-50' : 'bg-red-50',
+      trend: `${metrics.month.profit_margin.toFixed(1)}% margem`
     }
   ];
 
