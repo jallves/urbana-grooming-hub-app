@@ -1,46 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, Package, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { BarbershopProduct } from '@/types/product';
+import ProductForm from '@/components/admin/products/ProductForm';
 
 const AdminProductsManagement: React.FC = () => {
   const [products, setProducts] = useState<BarbershopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<BarbershopProduct | null>(null);
-  
-  const [formData, setFormData] = useState({
-    nome: '',
-    descricao: '',
-    preco: 0,
-    estoque: 0,
-    estoque_minimo: 5,
-    categoria: 'geral',
-    imagens: [] as string[],
-    is_active: true,
-    destaque: false
-  });
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -69,37 +44,15 @@ const AdminProductsManagement: React.FC = () => {
     }
   };
 
-  const handleSave = async () => {
-    try {
-      if (!formData.nome || formData.preco <= 0) {
-        toast.error('Preencha todos os campos obrigatórios');
-        return;
-      }
+  const handleSuccess = () => {
+    setIsDialogOpen(false);
+    setEditingProductId(null);
+    loadProducts();
+  };
 
-      if (editingProduct) {
-        const { error } = await supabase
-          .from('painel_produtos')
-          .update(formData)
-          .eq('id', editingProduct.id);
-
-        if (error) throw error;
-        toast.success('Produto atualizado com sucesso');
-      } else {
-        const { error } = await supabase
-          .from('painel_produtos')
-          .insert([formData]);
-
-        if (error) throw error;
-        toast.success('Produto criado com sucesso');
-      }
-
-      setIsDialogOpen(false);
-      resetForm();
-      loadProducts();
-    } catch (error) {
-      console.error('Erro ao salvar produto:', error);
-      toast.error('Erro ao salvar produto');
-    }
+  const handleCancel = () => {
+    setIsDialogOpen(false);
+    setEditingProductId(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -121,38 +74,12 @@ const AdminProductsManagement: React.FC = () => {
   };
 
   const handleEdit = (product: BarbershopProduct) => {
-    setEditingProduct(product);
-    setFormData({
-      nome: product.nome,
-      descricao: product.descricao || '',
-      preco: product.preco,
-      estoque: product.estoque,
-      estoque_minimo: product.estoque_minimo,
-      categoria: product.categoria,
-      imagens: product.imagens,
-      is_active: product.is_active,
-      destaque: product.destaque
-    });
+    setEditingProductId(product.id);
     setIsDialogOpen(true);
   };
 
-  const resetForm = () => {
-    setEditingProduct(null);
-    setFormData({
-      nome: '',
-      descricao: '',
-      preco: 0,
-      estoque: 0,
-      estoque_minimo: 5,
-      categoria: 'geral',
-      imagens: [],
-      is_active: true,
-      destaque: false
-    });
-  };
-
   const handleNewProduct = () => {
-    resetForm();
+    setEditingProductId(null);
     setIsDialogOpen(true);
   };
 
@@ -248,127 +175,12 @@ const AdminProductsManagement: React.FC = () => {
 
       {/* Product Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl">
-              {editingProduct ? 'Editar Produto' : 'Novo Produto'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="nome" className="text-sm sm:text-base">Nome do Produto *</Label>
-              <Input
-                id="nome"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Ex: Pomada Modeladora"
-                className="text-sm sm:text-base"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="descricao" className="text-sm sm:text-base">Descrição</Label>
-              <Textarea
-                id="descricao"
-                value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                placeholder="Descreva o produto..."
-                rows={3}
-                className="text-sm sm:text-base"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="preco" className="text-sm sm:text-base">Preço *</Label>
-                <Input
-                  id="preco"
-                  type="number"
-                  step="0.01"
-                  value={formData.preco}
-                  onChange={(e) => setFormData({ ...formData, preco: parseFloat(e.target.value) || 0 })}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="categoria" className="text-sm sm:text-base">Categoria</Label>
-                <Select value={formData.categoria} onValueChange={(value) => setFormData({ ...formData, categoria: value })}>
-                  <SelectTrigger className="text-sm sm:text-base">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="geral">Geral</SelectItem>
-                    <SelectItem value="cabelo">Cabelo</SelectItem>
-                    <SelectItem value="barba">Barba</SelectItem>
-                    <SelectItem value="cuidados">Cuidados</SelectItem>
-                    <SelectItem value="acessorios">Acessórios</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="estoque" className="text-sm sm:text-base">Estoque</Label>
-                <Input
-                  id="estoque"
-                  type="number"
-                  value={formData.estoque}
-                  onChange={(e) => setFormData({ ...formData, estoque: parseInt(e.target.value) || 0 })}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="estoque_minimo" className="text-sm sm:text-base">Estoque Mínimo</Label>
-                <Input
-                  id="estoque_minimo"
-                  type="number"
-                  value={formData.estoque_minimo}
-                  onChange={(e) => setFormData({ ...formData, estoque_minimo: parseInt(e.target.value) || 5 })}
-                  className="text-sm sm:text-base"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-sm sm:text-base">Imagens</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                Para adicionar imagens com upload, use o formulário principal de produtos
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="is_active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
-                <Label htmlFor="is_active" className="text-sm sm:text-base">Produto Ativo</Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="destaque"
-                  checked={formData.destaque}
-                  onCheckedChange={(checked) => setFormData({ ...formData, destaque: checked })}
-                />
-                <Label htmlFor="destaque" className="text-sm sm:text-base">Produto em Destaque</Label>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 mt-4">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} className="w-full sm:w-auto">
-              Salvar Produto
-            </Button>
-          </DialogFooter>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <ProductForm 
+            productId={editingProductId}
+            onCancel={handleCancel}
+            onSuccess={handleSuccess}
+          />
         </DialogContent>
       </Dialog>
     </div>
