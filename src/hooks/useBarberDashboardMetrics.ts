@@ -37,11 +37,11 @@ export const useBarberDashboardMetrics = () => {
       try {
         setLoading(true);
 
-        // Buscar ID do barbeiro usando staff
+        // Buscar ID do barbeiro usando staff com user_id (auth.uid())
         const { data: staffData } = await supabase
           .from('staff')
           .select('id')
-          .eq('email', user.email)
+          .eq('user_id', user.id)
           .eq('role', 'barber')
           .maybeSingle();
 
