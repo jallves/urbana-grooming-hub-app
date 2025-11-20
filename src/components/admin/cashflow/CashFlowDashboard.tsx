@@ -9,6 +9,7 @@ import CashFlowChart from './CashFlowChart';
 import RevenueChart from './RevenueChart';
 import ExpenseChart from './ExpenseChart';
 import TopBarbersChart from './TopBarbersChart';
+import DailyCashFlow from './DailyCashFlow';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 import { translateDescription } from '@/utils/translationHelpers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -178,6 +179,9 @@ const CashFlowDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Fluxo de Caixa do Dia - NOVO */}
+      <DailyCashFlow />
 
       {/* Métricas principais - Grid responsivo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">

@@ -6,14 +6,14 @@ import { format } from 'date-fns';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 
 const COLORS = {
-  'Insumos': '#dc2626', // red-600 - profissional
-  'Aluguel': '#ea580c', // orange-600 - profissional
-  'Utilidades': '#d97706', // amber-600 - profissional
-  'Marketing': '#db2777', // pink-600 - profissional
-  'Despesas Gerais': '#475569', // slate-600 - profissional
-  'Pagamento de Funcionários': '#7c3aed', // violet-600 - profissional
-  'Comissão': '#0891b2', // cyan-600 - profissional
-  'Comissões': '#4f46e5', // indigo-600 - profissional
+  'Insumos': '#991b1b', // red-800 - muito profissional
+  'Aluguel': '#9a3412', // orange-800 - muito profissional
+  'Utilidades': '#92400e', // amber-800 - muito profissional
+  'Marketing': '#9f1239', // pink-800 - muito profissional
+  'Despesas Gerais': '#334155', // slate-700 - muito profissional
+  'Pagamento de Funcionários': '#5b21b6', // violet-800 - muito profissional
+  'Comissão': '#155e75', // cyan-800 - muito profissional
+  'Comissões': '#3730a3', // indigo-800 - muito profissional
 };
 
 interface ExpenseChartProps {
