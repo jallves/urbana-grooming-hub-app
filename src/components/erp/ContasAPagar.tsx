@@ -124,8 +124,32 @@ export const ContasAPagar: React.FC = () => {
 
       if (error) throw error;
 
+      // 🔄 SINCRONIZAÇÃO COM BARBER_COMMISSIONS (se for comissão)
+      if (record.transaction_type === 'commission' && record.appointment_id) {
+        console.log('🔄 Sincronizando comissão com barber_commissions...', { 
+          appointment_id: record.appointment_id,
+          barber_id: record.barber_id 
+        });
+
+        // Atualizar status na tabela barber_commissions
+        const { error: commissionError } = await supabase
+          .from('barber_commissions')
+          .update({ 
+            status: 'paid',
+            payment_date: paymentDate,
+            updated_at: paymentDate
+          })
+          .eq('appointment_id', record.appointment_id)
+          .eq('barber_id', record.barber_id);
+
+        if (commissionError) {
+          console.error('⚠️ Erro ao sincronizar com barber_commissions:', commissionError);
+        } else {
+          console.log('✅ Comissão sincronizada com barber_commissions');
+        }
+      }
+
       // 🔄 INTEGRAÇÃO COM FLUXO DE CAIXA
-      // Sincronizar automaticamente com o fluxo de caixa
       const transactionType = (record.transaction_type === 'revenue' || 
                                record.transaction_type === 'expense' || 
                                record.transaction_type === 'commission') 
@@ -150,7 +174,8 @@ export const ContasAPagar: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-      toast.success('Pagamento registrado e sincronizado!');
+      queryClient.invalidateQueries({ queryKey: ['commissions'] }); // Atualizar painel dos barbeiros
+      toast.success('Pagamento registrado e sincronizado com o painel dos barbeiros!');
     },
     onError: (error: any) => {
       toast.error('Erro ao marcar como paga', {
@@ -205,6 +230,13 @@ export const ContasAPagar: React.FC = () => {
       const netAmount = values.gross_amount - (values.discount_amount || 0) - (values.tax_amount || 0);
       const paymentDate = values.status === 'completed' ? new Date().toISOString() : null;
 
+      // Buscar o registro atual antes de atualizar
+      const { data: currentRecord } = await supabase
+        .from('financial_records')
+        .select('*')
+        .eq('id', id)
+        .single();
+
       const { error } = await supabase
         .from('financial_records')
         .update({
@@ -229,6 +261,35 @@ export const ContasAPagar: React.FC = () => {
 
       if (error) throw error;
 
+      // 🔄 SINCRONIZAÇÃO COM BARBER_COMMISSIONS (se for comissão e mudou para 'completed')
+      if (values.transaction_type === 'commission' && 
+          values.status === 'completed' && 
+          currentRecord?.status !== 'completed' &&
+          currentRecord?.appointment_id &&
+          currentRecord?.barber_id) {
+        
+        console.log('🔄 Sincronizando comissão editada com barber_commissions...', { 
+          appointment_id: currentRecord.appointment_id,
+          barber_id: currentRecord.barber_id 
+        });
+
+        const { error: commissionError } = await supabase
+          .from('barber_commissions')
+          .update({ 
+            status: 'paid',
+            payment_date: paymentDate,
+            updated_at: paymentDate
+          })
+          .eq('appointment_id', currentRecord.appointment_id)
+          .eq('barber_id', currentRecord.barber_id);
+
+        if (commissionError) {
+          console.error('⚠️ Erro ao sincronizar com barber_commissions:', commissionError);
+        } else {
+          console.log('✅ Comissão editada sincronizada com barber_commissions');
+        }
+      }
+
       // 🔄 INTEGRAÇÃO COM FLUXO DE CAIXA
       // Se foi marcado como pago, sincronizar automaticamente com o fluxo de caixa
       if (values.status === 'completed') {
@@ -250,7 +311,8 @@ export const ContasAPagar: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-      toast.success('Lançamento atualizado e sincronizado!');
+      queryClient.invalidateQueries({ queryKey: ['commissions'] }); // Atualizar painel dos barbeiros
+      toast.success('Lançamento atualizado e sincronizado com o painel dos barbeiros!');
       setFormOpen(false);
       setEditingRecord(null);
     },
