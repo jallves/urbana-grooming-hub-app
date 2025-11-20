@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, DollarSign, Package, Loader2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
@@ -131,6 +131,42 @@ const TotemProductCheckout: React.FC = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto z-10 space-y-4">
+        {/* Barber Info */}
+        {barber && (
+          <Card className="p-4 sm:p-6 bg-transparent backdrop-blur-md border-2 border-urbana-gold/30">
+            <h2 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 flex items-center gap-2">
+              <User className="w-6 h-6 text-urbana-gold" />
+              Barbeiro Selecionado
+            </h2>
+            
+            <div className="flex items-center gap-4 p-4 bg-urbana-gold/10 backdrop-blur-sm rounded-lg border border-urbana-gold/30">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-urbana-gold">
+                {barber.image_url ? (
+                  <img 
+                    src={barber.image_url} 
+                    alt={barber.nome}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-urbana-gold/20">
+                    <User className="w-8 h-8 text-urbana-gold" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1">
+                <p className="text-xl font-bold text-urbana-light">{barber.nome}</p>
+                {barber.especialidade && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Award className="w-4 h-4 text-urbana-gold" />
+                    <p className="text-sm text-urbana-light/70">{barber.especialidade}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Order Summary */}
         <Card className="p-4 sm:p-6 bg-transparent backdrop-blur-md border-2 border-urbana-gold/30">
           <h2 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 flex items-center gap-2">
