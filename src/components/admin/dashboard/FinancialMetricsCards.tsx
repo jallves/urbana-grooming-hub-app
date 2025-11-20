@@ -98,27 +98,27 @@ const FinancialMetricsCards: React.FC = () => {
   const cards = [
     {
       title: 'Receita do Mês',
-      value: `R$ ${metrics?.revenue.toFixed(2) || '0.00'}`,
+      value: `R$ ${(metrics?.revenue || 0).toFixed(2)}`,
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       trend: metrics?.revenueTrend || 0,
-      subtitle: `${metrics?.pendingReceivables ? `R$ ${metrics.pendingReceivables.toFixed(2)} pendente` : 'Nenhuma pendência'}`,
+      subtitle: `${metrics?.pendingReceivables ? `R$ ${(metrics.pendingReceivables || 0).toFixed(2)} pendente` : 'Nenhuma pendência'}`,
       alert: (metrics?.overdueReceivables || 0) > 0 ? `${metrics?.overdueReceivables} vencida(s)` : null,
     },
     {
       title: 'Despesas do Mês',
-      value: `R$ ${metrics?.expenses.toFixed(2) || '0.00'}`,
+      value: `R$ ${(metrics?.expenses || 0).toFixed(2)}`,
       icon: CreditCard,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       trend: metrics?.expenseTrend || 0,
-      subtitle: `${metrics?.pendingPayables ? `R$ ${metrics.pendingPayables.toFixed(2)} pendente` : 'Nenhuma pendência'}`,
+      subtitle: `${metrics?.pendingPayables ? `R$ ${(metrics.pendingPayables || 0).toFixed(2)} pendente` : 'Nenhuma pendência'}`,
       alert: (metrics?.overduePayables || 0) > 0 ? `${metrics?.overduePayables} vencida(s)` : null,
     },
     {
       title: 'Lucro Líquido',
-      value: `R$ ${metrics?.profit.toFixed(2) || '0.00'}`,
+      value: `R$ ${(metrics?.profit || 0).toFixed(2)}`,
       icon: Wallet,
       color: metrics && metrics.profit >= 0 ? 'text-blue-600' : 'text-orange-600',
       bgColor: metrics && metrics.profit >= 0 ? 'bg-blue-50' : 'bg-orange-50',
@@ -127,11 +127,11 @@ const FinancialMetricsCards: React.FC = () => {
     },
     {
       title: 'Comissões',
-      value: `R$ ${metrics?.commissions.toFixed(2) || '0.00'}`,
+      value: `R$ ${(metrics?.commissions || 0).toFixed(2)}`,
       icon: TrendingUp,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
-      subtitle: `${metrics?.pendingCommissions ? `R$ ${metrics.pendingCommissions.toFixed(2)} pendente` : 'Nenhuma pendência'}`,
+      subtitle: `${metrics?.pendingCommissions ? `R$ ${(metrics.pendingCommissions || 0).toFixed(2)} pendente` : 'Nenhuma pendência'}`,
     },
   ];
 
