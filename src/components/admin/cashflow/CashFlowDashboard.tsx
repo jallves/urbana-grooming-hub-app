@@ -36,8 +36,8 @@ const CashFlowDashboard: React.FC = () => {
 
   const periodDates = getPeriodDates();
 
-  // Gerar lista de anos (2020 até ano atual + 2)
-  const years = Array.from({ length: now.getFullYear() - 2019 + 2 }, (_, i) => (2020 + i).toString());
+  // Gerar lista de anos (2025 até 2035 - 10 anos)
+  const years = Array.from({ length: 11 }, (_, i) => (2025 + i).toString());
   
   // Meses em português
   const months = [
