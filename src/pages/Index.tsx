@@ -10,6 +10,7 @@ import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { GoldenDivider } from '@/components/decorative/GoldenDivider';
 import { ClientReviews } from '@/components/ClientReviews';
+import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const Index = () => {
   return (
@@ -42,7 +43,7 @@ const Index = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
           style={{
-            backgroundImage: 'url(/totem-background.jpg)',
+            backgroundImage: `url(${barbershopBg})`,
             backgroundAttachment: 'fixed',
           }}
         />
