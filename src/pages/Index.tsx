@@ -41,7 +41,7 @@ const Index = () => {
       <div className="w-full relative">
         {/* Background Image with Overlay - Same as Totem */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40"
           style={{
             backgroundImage: `url(${barbershopBg})`,
             backgroundAttachment: 'fixed',
@@ -49,7 +49,7 @@ const Index = () => {
         />
         
         {/* Dark Overlay for better readability - matching totem appearance */}
-        <div className="absolute inset-0 bg-gradient-to-b from-urbana-brown/95 via-urbana-brown/90 to-urbana-brown/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-urbana-brown/70 via-urbana-brown/60 to-urbana-brown/70" />
         
         {/* Content */}
         <div className="relative z-10">

@@ -115,7 +115,7 @@ const Gallery: React.FC = () => {
   }
 
   return (
-    <section className="py-12 md:py-20 bg-gradient-to-b from-gray-900 via-urbana-black to-gray-900 relative overflow-hidden">
+    <section className="py-12 md:py-20 relative overflow-hidden">
       {/* Geometric pattern background */}
       <div className="absolute inset-0 opacity-[0.02]" style={{
         backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.8) 1px, transparent 0)',

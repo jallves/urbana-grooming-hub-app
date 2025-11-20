@@ -108,7 +108,7 @@ const Statistics: React.FC = () => {
   ];
 
   return (
-    <section className="relative py-20 md:py-32 bg-gradient-to-b from-urbana-brown via-urbana-black to-urbana-brown overflow-hidden">
+    <section className="relative py-20 md:py-32 overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-40 left-20 w-96 h-96 bg-gradient-radial from-urbana-gold via-yellow-400 to-transparent rounded-full blur-3xl" />
