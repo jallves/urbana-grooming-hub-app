@@ -239,10 +239,10 @@ const TotemSearch: React.FC = () => {
         return;
       }
 
-      // Para PRODUTOS, apenas precisamos do cliente
+      // Para PRODUTOS, usar o novo fluxo com seleção de barbeiro
       if (action === 'produtos') {
-        console.log('✅ Navegando para venda de produtos');
-        navigate('/totem/product-sale', {
+        console.log('✅ Navegando para loja de produtos (com seleção de barbeiro)');
+        navigate('/totem/products', {
           state: {
             client: cliente
           }
