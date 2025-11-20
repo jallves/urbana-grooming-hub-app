@@ -177,19 +177,19 @@ const TotemProductPaymentCard: React.FC = () => {
           alt="Barbearia" 
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/95 via-urbana-black/90 to-urbana-brown/85" />
       </div>
 
       {/* Premium background effects */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/10 rounded-full blur-3xl opacity-50" />
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl opacity-40" />
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-urbana-gold/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-urbana-gold-vibrant/5 rounded-full blur-3xl" />
       </div>
 
-      <Card className="relative w-full max-w-2xl p-8 space-y-8 bg-card/50 backdrop-blur-sm border-2 border-urbana-gold/30 text-center z-10">
+      <Card className="relative w-full max-w-2xl p-8 space-y-8 bg-urbana-black/60 backdrop-blur-2xl border-2 border-urbana-gold/40 shadow-2xl shadow-urbana-gold/10 text-center z-10">
         
         {/* Indicador de Simulação */}
-        <div className="bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-dark/10 border-2 border-urbana-gold/30 rounded-xl p-4 animate-pulse">
+        <div className="bg-gradient-to-r from-urbana-gold/15 to-urbana-gold-dark/10 border border-urbana-gold/40 rounded-xl p-4 animate-pulse">
           <div className="flex items-center justify-center gap-2 text-urbana-gold">
             <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping" />
             <p className="text-base font-bold">
@@ -199,25 +199,25 @@ const TotemProductPaymentCard: React.FC = () => {
         </div>
 
         <div className="flex justify-center">
-          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center animate-pulse">
-            <CreditCard className="w-16 h-16 text-white" />
+          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-urbana-gold/30 to-urbana-gold-vibrant/30 flex items-center justify-center animate-pulse shadow-lg shadow-urbana-gold/20">
+            <CreditCard className="w-16 h-16 text-urbana-gold" />
           </div>
         </div>
 
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold">
             Processando Pagamento
           </h1>
           
-          <p className="text-xl text-urbana-gold/80 font-semibold">
+          <p className="text-xl text-urbana-gold/90 font-bold">
             {cardType === 'debit' ? 'DÉBITO' : 'CRÉDITO'}
           </p>
           
-          <p className="text-2xl font-black text-urbana-gold">
+          <p className="text-3xl font-black text-urbana-gold">
             R$ {sale.total.toFixed(2)}
           </p>
           
-          <p className="text-lg text-urbana-light/70">
+          <p className="text-lg text-urbana-light/80">
             Aproxime ou insira seu cartão na máquina
           </p>
         </div>
