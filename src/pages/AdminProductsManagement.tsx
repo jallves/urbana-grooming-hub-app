@@ -57,6 +57,9 @@ const AdminProductsManagement: React.FC = () => {
       
       const productsData = (data || []).map(p => ({
         ...p,
+        preco: Number(p.preco) || 0,
+        estoque: Number(p.estoque) || 0,
+        estoque_minimo: Number(p.estoque_minimo) || 5,
         imagens: Array.isArray(p.imagens) ? p.imagens : []
       })) as BarbershopProduct[];
       
