@@ -42,9 +42,13 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
   const barberEmail = form.watch('email');
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[BarberFormTabs] handleFileChange chamado');
     const file = e.target.files?.[0];
+    console.log('[BarberFormTabs] Arquivo selecionado:', file?.name);
     if (file) {
       await handleImageUpload(file);
+    } else {
+      console.log('[BarberFormTabs] Nenhum arquivo selecionado');
     }
   };
 
