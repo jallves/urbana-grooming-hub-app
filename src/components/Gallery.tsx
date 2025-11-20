@@ -8,14 +8,10 @@ import { motion } from 'framer-motion';
 
 interface GalleryPhoto {
   id: string;
-  title: string;
-  alt_text: string;
-  image_url: string;
-  description: string | null;
-  published: boolean;
-  display_order: number;
-  created_at: string;
-  updated_at: string;
+  src: string;
+  alt: string;
+  is_active?: boolean;
+  display_order?: number;
 }
 
 const Gallery: React.FC = () => {
@@ -27,36 +23,24 @@ const Gallery: React.FC = () => {
   const defaultImages: GalleryPhoto[] = [
     {
       id: '1',
-      title: 'Trabalho Profissional',
-      alt_text: 'Barbeiro trabalhando com precisão',
-      image_url: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      description: 'Nosso time de profissionais trabalhando',
+      src: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      alt: 'Barbeiro trabalhando com precisão',
+      is_active: true,
       display_order: 1,
-      published: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     },
     {
       id: '2',
-      title: 'Ambiente Sofisticado',
-      alt_text: 'Interior moderno e elegante da barbearia',
-      image_url: 'https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      description: 'Ambiente confortável e moderno',
+      src: 'https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      alt: 'Interior moderno e elegante da barbearia',
+      is_active: true,
       display_order: 2,
-      published: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     },
     {
       id: '3',
-      title: 'Ferramentas Profissionais',
-      alt_text: 'Equipamentos de alta qualidade para barbearia',
-      image_url: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      description: 'Equipamentos profissionais de última geração',
+      src: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+      alt: 'Equipamentos de alta qualidade para barbearia',
+      is_active: true,
       display_order: 3,
-      published: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     },
   ];
 
@@ -64,22 +48,22 @@ const Gallery: React.FC = () => {
     const fetchImages = async () => {
       try {
         setLoading(true);
-        console.log('🔍 Buscando fotos da galeria...');
+        console.log('🔍 Buscando fotos da galeria da tabela gallery_images...');
         
         const { data, error } = await supabase
-          .from('gallery_photos')
+          .from('gallery_images')
           .select('*')
-          .eq('published', true)
+          .eq('is_active', true)
           .order('display_order', { ascending: true });
 
         if (error) {
           console.error('❌ Erro ao buscar fotos:', error);
           setImages(defaultImages);
         } else if (data && data.length > 0) {
-          console.log(`✅ ${data.length} fotos carregadas com sucesso`);
-          setImages(data as GalleryPhoto[]);
+          console.log(`✅ ${data.length} fotos carregadas com sucesso da galeria`);
+          setImages(data);
         } else {
-          console.log('⚠️ Nenhuma foto publicada, usando imagens padrão');
+          console.log('⚠️ Nenhuma foto ativa, usando imagens padrão');
           setImages(defaultImages);
         }
       } catch (error) {
@@ -94,13 +78,13 @@ const Gallery: React.FC = () => {
 
     // Real-time subscription para atualizações
     const channel = supabase
-      .channel('gallery_photos_changes')
+      .channel('gallery_images_changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'gallery_photos'
+          table: 'gallery_images'
         },
         (payload) => {
           console.log('🔄 Galeria atualizada em tempo real:', payload);
@@ -171,8 +155,8 @@ const Gallery: React.FC = () => {
           {images.map((image, index) => (
             <GalleryImage
               key={image.id}
-              src={image.image_url}
-              alt={image.alt_text}
+              src={image.src}
+              alt={image.alt}
               delay={index * 0.05}
               onClick={() => setSelectedImage(index)}
             />
@@ -185,8 +169,8 @@ const Gallery: React.FC = () => {
           selectedImage={selectedImage}
           images={images.map((img, idx) => ({
             id: idx,
-            src: img.image_url,
-            alt: img.title || img.alt_text
+            src: img.src,
+            alt: img.alt
           }))}
           onClose={closeModal}
           onPrevious={() => showPrevious(images.length)}
