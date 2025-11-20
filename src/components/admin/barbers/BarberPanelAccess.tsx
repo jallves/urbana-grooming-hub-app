@@ -45,24 +45,23 @@ export const BarberPanelAccess: React.FC<BarberPanelAccessProps> = ({
 
     setLoading(true);
     try {
-      // Buscar usuário no auth.users pelo email
-      const { data, error } = await supabase.auth.admin.listUsers({
-        perPage: 1000,
-        page: 1
+      const { data, error } = await supabase.functions.invoke('manage-barber-user', {
+        body: {
+          action: 'check',
+          email: barberEmail
+        }
       });
 
       if (error) throw error;
 
-      const user = data?.users?.find((u: any) => u.email?.toLowerCase() === barberEmail.toLowerCase());
-
-      if (user) {
+      if (data.exists && data.user) {
         setHasAccess(true);
         setUserInfo({
-          id: user.id,
-          email: user.email || '',
-          created_at: user.created_at,
-          last_sign_in_at: user.last_sign_in_at,
-          email_confirmed_at: user.email_confirmed_at
+          id: data.user.id,
+          email: data.user.email || '',
+          created_at: data.user.created_at,
+          last_sign_in_at: data.user.last_sign_in_at,
+          email_confirmed_at: data.user.email_confirmed_at
         });
       } else {
         setHasAccess(false);
@@ -95,17 +94,20 @@ export const BarberPanelAccess: React.FC<BarberPanelAccessProps> = ({
 
     setIsCreatingAccess(true);
     try {
-      const { data, error } = await supabase.auth.admin.createUser({
-        email: barberEmail,
-        password: password,
-        email_confirm: true,
-        user_metadata: {
-          barber_id: barberId,
-          role: 'barber'
+      const { data, error } = await supabase.functions.invoke('manage-barber-user', {
+        body: {
+          action: 'create',
+          email: barberEmail,
+          password: password,
+          barberId: barberId
         }
       });
 
       if (error) throw error;
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       toast.success('Acesso criado com sucesso!', {
         description: 'O barbeiro já pode fazer login no sistema'
@@ -131,18 +133,26 @@ export const BarberPanelAccess: React.FC<BarberPanelAccessProps> = ({
       return;
     }
 
-    if (!userInfo?.id) {
-      toast.error('Usuário não encontrado');
+    if (!barberEmail) {
+      toast.error('Email não encontrado');
       return;
     }
 
     setIsResettingPassword(true);
     try {
-      const { error } = await supabase.auth.admin.updateUserById(userInfo.id, {
-        password: password
+      const { data, error } = await supabase.functions.invoke('manage-barber-user', {
+        body: {
+          action: 'update-password',
+          email: barberEmail,
+          password: password
+        }
       });
 
       if (error) throw error;
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       toast.success('Senha redefinida com sucesso!', {
         description: 'O barbeiro já pode fazer login com a nova senha'
