@@ -99,7 +99,15 @@ const TotemProductBarberSelect: React.FC = () => {
       return;
     }
 
-    console.log('✅ Barbeiro selecionado:', selectedBarber);
+    console.log('✅ Navegando para checkout com:', {
+      client: { id: client.id, nome: client.nome },
+      cart: cart.map(i => ({ produto: i.product.nome, qtd: i.quantity })),
+      barber: {
+        id: selectedBarber.id,
+        staff_id: selectedBarber.staff_id,
+        nome: selectedBarber.nome
+      }
+    });
     
     navigate('/totem/product-checkout', {
       state: { 

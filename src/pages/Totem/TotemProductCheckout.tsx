@@ -18,16 +18,25 @@ const TotemProductCheckout: React.FC = () => {
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
+    console.log('🛒 Checkout de Produto - State recebido:', { client, cart, barber });
+    
     if (!client || !cart || cart.length === 0) {
       toast.error('Carrinho vazio ou cliente não identificado');
       navigate('/totem/home');
       return;
     }
 
+    if (!barber) {
+      console.warn('⚠️ Barbeiro não selecionado, redirecionando...');
+      toast.error('Selecione um barbeiro');
+      navigate('/totem/product-barber-select', { state: { client, cart } });
+      return;
+    }
+
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, cart, navigate]);
+  }, [client, cart, barber, navigate]);
 
   const cartTotal = (cart as CartItem[]).reduce((sum, item) => sum + (item.product.preco * item.quantity), 0);
 

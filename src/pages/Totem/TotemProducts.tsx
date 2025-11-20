@@ -109,6 +109,11 @@ const TotemProducts: React.FC = () => {
       return;
     }
 
+    console.log('🛒 Redirecionando para seleção de barbeiro com:', {
+      client: { id: client.id, nome: client.nome },
+      cart: cart.map(i => ({ produto: i.product.nome, qtd: i.quantity }))
+    });
+
     // Redirecionar para seleção de barbeiro primeiro
     navigate('/totem/product-barber-select', {
       state: { client, cart }
