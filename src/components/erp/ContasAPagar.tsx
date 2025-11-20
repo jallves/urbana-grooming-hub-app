@@ -468,15 +468,15 @@ export const ContasAPagar: React.FC = () => {
               Despesas e Comissões Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 sm:p-6">
+          <CardContent className="p-0 sm:p-3 lg:p-6">
             <div className="overflow-x-auto -mx-4 sm:mx-0">
               <div className="inline-block min-w-full align-middle">
                 <Table className="text-xs sm:text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="whitespace-nowrap">Número</TableHead>
-                      <TableHead className="whitespace-nowrap">Tipo</TableHead>
-                      <TableHead className="whitespace-nowrap">Descrição</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Número</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Tipo</TableHead>
+                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Descrição</TableHead>
                       <TableHead className="whitespace-nowrap hidden md:table-cell">Categoria</TableHead>
                       <TableHead className="whitespace-nowrap hidden lg:table-cell">Data Trans.</TableHead>
                       <TableHead className="whitespace-nowrap hidden lg:table-cell">Data Pag.</TableHead>
