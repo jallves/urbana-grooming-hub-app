@@ -48,6 +48,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   const [isEditing, setIsEditing] = useState(!!barberId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     if (barberId) {
@@ -83,6 +84,64 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
       toast.error('Erro ao salvar barbeiro', { description: error.message });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Função para fazer upload de imagem
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Formato inválido', {
+        description: 'Use apenas JPG, PNG ou WEBP'
+      });
+      return;
+    }
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande', {
+        description: 'O tamanho máximo é 5MB'
+      });
+      return;
+    }
+
+    setIsUploadingImage(true);
+
+    try {
+      // Gerar nome único para o arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload para o bucket
+      const { data, error } = await supabase.storage
+        .from('barber-photos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      // Obter URL pública
+      const { data: urlData } = supabase.storage
+        .from('barber-photos')
+        .getPublicUrl(filePath);
+
+      // Atualizar o formulário com a nova URL
+      form.setValue('image_url', urlData.publicUrl);
+
+      toast.success('Foto carregada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload da foto', {
+        description: error.message
+      });
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -138,6 +197,8 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     isEditing,
     isSubmitting,
     onSubmit,
+    handleImageUpload,
+    isUploadingImage,
     handlePasswordChange,
     isPasswordLoading,
   };
