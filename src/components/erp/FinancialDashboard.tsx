@@ -43,16 +43,16 @@ const FinancialDashboard: React.FC = () => {
         .gte('transaction_date', startOfYear)
         .lte('transaction_date', endOfYear);
 
-      // Despesas do ano (APENAS expense, SEM commission)
+      // Despesas do ano (expense + commission = TUDO)
       const { data: expenses } = await supabase
         .from('financial_records')
         .select('net_amount')
-        .eq('transaction_type', 'expense')
+        .in('transaction_type', ['expense', 'commission'])
         .eq('status', 'completed')
         .gte('transaction_date', startOfYear)
         .lte('transaction_date', endOfYear);
 
-      // Comissões do ano (APENAS commission)
+      // Comissões do ano (APENAS commission - para exibição separada)
       const { data: commissions } = await supabase
         .from('financial_records')
         .select('net_amount')
@@ -64,7 +64,7 @@ const FinancialDashboard: React.FC = () => {
       const total_revenue = revenues?.reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
       const total_expenses = expenses?.reduce((sum, e) => sum + Number(e.net_amount), 0) || 0;
       const total_commissions = commissions?.reduce((sum, c) => sum + Number(c.net_amount), 0) || 0;
-      const net_profit = total_revenue - total_expenses - total_commissions;
+      const net_profit = total_revenue - total_expenses;
 
       return {
         total_revenue,
@@ -260,7 +260,7 @@ const FinancialDashboard: React.FC = () => {
               R$ {(yearlyMetrics?.total_expenses || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              Contas a Pagar (exceto comissões)
+              Contas a Pagar (inclui comissões)
             </p>
           </CardContent>
         </Card>
@@ -298,7 +298,7 @@ const FinancialDashboard: React.FC = () => {
               R$ {(yearlyMetrics?.net_profit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-600 mt-1">
-              Receita - Despesas - Comissões
+              Receita - Despesas Totais
             </p>
           </CardContent>
         </Card>
