@@ -2,29 +2,30 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 
 const COLORS = {
   'Comissões - Serviços': '#8b5cf6', // violet-500
   'Comissões - Produtos': '#06b6d4', // cyan-500
-  'Outras Comissões': '#6366f1', // indigo-500
+  'Pagamentos de Funcionários': '#6366f1', // indigo-500
 };
 
-const CommissionChart: React.FC = () => {
+interface CommissionChartProps {
+  startDate: string;
+  endDate: string;
+}
+
+const CommissionChart: React.FC<CommissionChartProps> = ({ startDate, endDate }) => {
   const { data: chartData, isLoading } = useQuery({
-    queryKey: ['commission-chart'],
+    queryKey: ['commission-chart', startDate, endDate],
     queryFn: async () => {
-      const currentMonth = new Date();
-      const start = startOfMonth(currentMonth);
-      const end = endOfMonth(currentMonth);
-      
       const { data, error } = await supabase
         .from('financial_records')
         .select('*')
         .eq('transaction_type', 'commission')
         .eq('status', 'completed')
-        .gte('transaction_date', format(start, 'yyyy-MM-dd'))
-        .lte('transaction_date', format(end, 'yyyy-MM-dd'));
+        .gte('transaction_date', startDate)
+        .lte('transaction_date', endDate);
 
       if (error) {
         console.error('Erro ao buscar dados de comissões:', error);
@@ -35,10 +36,11 @@ const CommissionChart: React.FC = () => {
       const categoryTotals: Record<string, number> = {};
       data?.forEach(transaction => {
         const category = transaction.category;
-        let categoryLabel = 'Outras Comissões';
+        let categoryLabel = 'Pagamentos de Funcionários';
         
         if (category === 'services' || category === 'commission') categoryLabel = 'Comissões - Serviços';
         else if (category === 'products') categoryLabel = 'Comissões - Produtos';
+        else if (category === 'staff_payments') categoryLabel = 'Pagamentos de Funcionários';
         
         categoryTotals[categoryLabel] = (categoryTotals[categoryLabel] || 0) + Number(transaction.net_amount);
       });
@@ -65,7 +67,7 @@ const CommissionChart: React.FC = () => {
   if (!chartData || chartData.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center">
-        <p className="text-gray-400">Nenhuma comissão encontrada este mês</p>
+        <p className="text-gray-400">Nenhuma comissão encontrada no período</p>
       </div>
     );
   }
