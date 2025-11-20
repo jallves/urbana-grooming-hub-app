@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -8,7 +9,8 @@ import {
   Calculator,
   Activity,
   ArrowUpCircle,
-  ArrowDownCircle
+  ArrowDownCircle,
+  Filter
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +20,63 @@ import { ContasAPagar } from './ContasAPagar';
 import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
 
 const FinancialDashboard: React.FC = () => {
-  const { data: metrics, isLoading, error } = useQuery({
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString());
+  
+  // Gerar lista de anos (2025 até 2035)
+  const years = Array.from({ length: 11 }, (_, i) => (2025 + i).toString());
+  
+  // Query para dados anuais dos cards superiores
+  const { data: yearlyMetrics, isLoading } = useQuery({
+    queryKey: ['financial-yearly-metrics', selectedYear],
+    queryFn: async () => {
+      const year = parseInt(selectedYear);
+      const startOfYear = `${year}-01-01`;
+      const endOfYear = `${year}-12-31`;
+
+      // Receitas do ano
+      const { data: revenues } = await supabase
+        .from('financial_records')
+        .select('net_amount')
+        .eq('transaction_type', 'revenue')
+        .eq('status', 'completed')
+        .gte('transaction_date', startOfYear)
+        .lte('transaction_date', endOfYear);
+
+      // Despesas do ano (APENAS expense, SEM commission)
+      const { data: expenses } = await supabase
+        .from('financial_records')
+        .select('net_amount')
+        .eq('transaction_type', 'expense')
+        .eq('status', 'completed')
+        .gte('transaction_date', startOfYear)
+        .lte('transaction_date', endOfYear);
+
+      // Comissões do ano (APENAS commission)
+      const { data: commissions } = await supabase
+        .from('financial_records')
+        .select('net_amount')
+        .eq('transaction_type', 'commission')
+        .eq('status', 'completed')
+        .gte('transaction_date', startOfYear)
+        .lte('transaction_date', endOfYear);
+
+      const total_revenue = revenues?.reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
+      const total_expenses = expenses?.reduce((sum, e) => sum + Number(e.net_amount), 0) || 0;
+      const total_commissions = commissions?.reduce((sum, c) => sum + Number(c.net_amount), 0) || 0;
+      const net_profit = total_revenue - total_expenses - total_commissions;
+
+      return {
+        total_revenue,
+        total_expenses,
+        total_commissions,
+        net_profit
+      };
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: metrics, error } = useQuery({
     queryKey: ['financial-dashboard-metrics'],
     queryFn: async (): Promise<DashboardMetrics> => {
       const today = new Date();
@@ -147,65 +205,103 @@ const FinancialDashboard: React.FC = () => {
     }
   };
 
-  const summaryCards = [
-    {
-      title: 'Receita Total',
-      value: `R$ ${safeMetrics.month.total_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: DollarSign,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      trend: '+12.5%'
-    },
-    {
-      title: 'Despesas',
-      value: `R$ ${safeMetrics.month.total_expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: TrendingDown,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      trend: '-3.2%'
-    },
-    {
-      title: 'Comissões',
-      value: `R$ ${safeMetrics.month.total_commissions.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: Calculator,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      trend: '+8.1%'
-    },
-    {
-      title: 'Lucro Líquido',
-      value: `R$ ${safeMetrics.month.net_profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: TrendingUp,
-      color: safeMetrics.month.net_profit >= 0 ? 'text-green-600' : 'text-red-600',
-      bgColor: safeMetrics.month.net_profit >= 0 ? 'bg-green-50' : 'bg-red-50',
-      trend: `${safeMetrics.month.profit_margin.toFixed(1)}% margem`
-    }
-  ];
-
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
-      {/* Cards de Resumo */}
+      {/* Filtro de Ano para Cards */}
+      <Card className="bg-white border-gray-300">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center gap-3">
+            <Filter className="h-4 w-4 text-gray-600 flex-shrink-0" />
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-32 bg-white border-gray-300">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                {years.map(year => (
+                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-600">Dados anuais dos cards abaixo</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Cards de Resumo Anual */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {summaryCards.map((card, index) => (
-          <Card key={index} className="bg-white border-gray-200 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-700">
-                {card.title}
-              </CardTitle>
-              <div className={`p-1.5 sm:p-2 rounded-lg ${card.bgColor}`}>
-                <card.icon className={`h-3 w-3 sm:h-4 sm:w-4 ${card.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              <div className={`text-xl sm:text-2xl font-bold ${card.color}`}>
-                {card.value}
-              </div>
-              <p className="text-xs text-gray-600 mt-1">
-                {card.trend}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        {/* Receita Total Anual */}
+        <Card className="bg-white border-gray-300 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-700">
+              Receita Total {selectedYear}
+            </CardTitle>
+            <ArrowUpCircle className="h-4 w-4 text-emerald-700" />
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-xl sm:text-2xl font-bold text-emerald-700">
+              R$ {(yearlyMetrics?.total_revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Contas a Receber
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Despesas Totais Anual (SEM comissões) */}
+        <Card className="bg-white border-gray-300 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-700">
+              Despesas Totais {selectedYear}
+            </CardTitle>
+            <ArrowDownCircle className="h-4 w-4 text-red-700" />
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-xl sm:text-2xl font-bold text-red-700">
+              R$ {(yearlyMetrics?.total_expenses || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Contas a Pagar (exceto comissões)
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Comissões Anual */}
+        <Card className="bg-white border-gray-300 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-700">
+              Comissões {selectedYear}
+            </CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-700" />
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className="text-xl sm:text-2xl font-bold text-red-700">
+              R$ {(yearlyMetrics?.total_commissions || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Contas a Pagar (comissões)
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Lucro Líquido Anual */}
+        <Card className="bg-white border-gray-300 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-gray-700">
+              Lucro Líquido {selectedYear}
+            </CardTitle>
+            <Calculator className="h-4 w-4 text-blue-700" />
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className={`text-xl sm:text-2xl font-bold ${
+              (yearlyMetrics?.net_profit || 0) >= 0 ? 'text-blue-700' : 'text-red-700'
+            }`}>
+              R$ {(yearlyMetrics?.net_profit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-gray-600 mt-1">
+              Receita - Despesas - Comissões
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Tabs Principais: Contas a Receber, Contas a Pagar e Fluxo de Caixa */}
