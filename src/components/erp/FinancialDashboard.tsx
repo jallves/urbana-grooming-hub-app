@@ -18,7 +18,7 @@ import { ContasAPagar } from './ContasAPagar';
 import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
 
 const FinancialDashboard: React.FC = () => {
-  const { data: metrics, isLoading } = useQuery({
+  const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['financial-dashboard-metrics'],
     queryFn: async (): Promise<DashboardMetrics> => {
       const today = new Date();
@@ -29,25 +29,37 @@ const FinancialDashboard: React.FC = () => {
 
       const fetchMetrics = async (startDate: string) => {
         // Receitas
-        const { data: revenues } = await supabase
+        const { data: revenues, error: revenuesError } = await supabase
           .from('financial_records')
           .select('net_amount, status')
           .eq('transaction_type', 'revenue')
           .gte('transaction_date', startDate);
 
+        if (revenuesError) {
+          console.error('Error fetching revenues:', revenuesError);
+        }
+
         // Despesas
-        const { data: expenses } = await supabase
+        const { data: expenses, error: expensesError } = await supabase
           .from('financial_records')
           .select('net_amount, status')
           .eq('transaction_type', 'expense')
           .gte('transaction_date', startDate);
 
+        if (expensesError) {
+          console.error('Error fetching expenses:', expensesError);
+        }
+
         // Comissões
-        const { data: commissions } = await supabase
+        const { data: commissions, error: commissionsError } = await supabase
           .from('financial_records')
           .select('net_amount, status')
           .eq('transaction_type', 'commission')
           .gte('transaction_date', startDate);
+
+        if (commissionsError) {
+          console.error('Error fetching commissions:', commissionsError);
+        }
 
         const total_revenue = revenues
           ?.filter(r => r.status === 'completed')
@@ -85,6 +97,8 @@ const FinancialDashboard: React.FC = () => {
         fetchMetrics(startOfYear)
       ]);
 
+      console.log('📊 Metrics loaded:', { today_metrics, week_metrics, month_metrics, year_metrics });
+
       return {
         today: today_metrics,
         week: week_metrics,
@@ -92,10 +106,17 @@ const FinancialDashboard: React.FC = () => {
         year: year_metrics
       };
     },
-    refetchInterval: 30000 // Atualizar a cada 30 segundos
+    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    retry: 3,
+    retryDelay: 1000
   });
 
-  if (isLoading || !metrics) {
+  if (error) {
+    console.error('❌ Error loading financial metrics:', error);
+  }
+
+  // Garantir que temos dados válidos antes de renderizar
+  if (isLoading || !metrics || !metrics.month) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -103,10 +124,23 @@ const FinancialDashboard: React.FC = () => {
     );
   }
 
+  // Garantir valores padrão para evitar undefined
+  const safeMetrics = {
+    month: {
+      total_revenue: metrics.month?.total_revenue || 0,
+      total_expenses: metrics.month?.total_expenses || 0,
+      total_commissions: metrics.month?.total_commissions || 0,
+      net_profit: metrics.month?.net_profit || 0,
+      profit_margin: metrics.month?.profit_margin || 0,
+      transaction_count: metrics.month?.transaction_count || 0,
+      pending_amount: metrics.month?.pending_amount || 0
+    }
+  };
+
   const summaryCards = [
     {
       title: 'Receita Total',
-      value: `R$ ${(metrics.month.total_revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${safeMetrics.month.total_revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
@@ -114,7 +148,7 @@ const FinancialDashboard: React.FC = () => {
     },
     {
       title: 'Despesas',
-      value: `R$ ${(metrics.month.total_expenses || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${safeMetrics.month.total_expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: TrendingDown,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
@@ -122,7 +156,7 @@ const FinancialDashboard: React.FC = () => {
     },
     {
       title: 'Comissões',
-      value: `R$ ${(metrics.month.total_commissions || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${safeMetrics.month.total_commissions.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: Calculator,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -130,11 +164,11 @@ const FinancialDashboard: React.FC = () => {
     },
     {
       title: 'Lucro Líquido',
-      value: `R$ ${(metrics.month.net_profit || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      value: `R$ ${safeMetrics.month.net_profit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       icon: TrendingUp,
-      color: metrics.month.net_profit >= 0 ? 'text-green-600' : 'text-red-600',
-      bgColor: metrics.month.net_profit >= 0 ? 'bg-green-50' : 'bg-red-50',
-      trend: `${metrics.month.profit_margin.toFixed(1)}% margem`
+      color: safeMetrics.month.net_profit >= 0 ? 'text-green-600' : 'text-red-600',
+      bgColor: safeMetrics.month.net_profit >= 0 ? 'bg-green-50' : 'bg-red-50',
+      trend: `${safeMetrics.month.profit_margin.toFixed(1)}% margem`
     }
   ];
 
