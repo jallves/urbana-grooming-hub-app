@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,19 +48,53 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      transaction_type: initialData?.transaction_type || 'revenue',
-      category: initialData?.category || '',
-      subcategory: initialData?.subcategory || '',
-      gross_amount: initialData?.gross_amount || 0,
-      discount_amount: initialData?.discount_amount || 0,
-      tax_amount: initialData?.tax_amount || 0,
-      description: initialData?.description || '',
-      transaction_date: initialData?.transaction_date || new Date(),
-      status: initialData?.status || 'completed',
-      payment_method: initialData?.payment_method || '',
-      notes: initialData?.notes || '',
+      transaction_type: 'revenue',
+      category: '',
+      subcategory: '',
+      gross_amount: 0,
+      discount_amount: 0,
+      tax_amount: 0,
+      description: '',
+      transaction_date: new Date(),
+      status: 'completed',
+      payment_method: '',
+      notes: '',
     },
   });
+
+  // Reset form quando initialData mudar (edição)
+  useEffect(() => {
+    if (open && initialData) {
+      form.reset({
+        transaction_type: initialData.transaction_type || 'revenue',
+        category: initialData.category || '',
+        subcategory: initialData.subcategory || '',
+        gross_amount: initialData.gross_amount || 0,
+        discount_amount: initialData.discount_amount || 0,
+        tax_amount: initialData.tax_amount || 0,
+        description: initialData.description || '',
+        transaction_date: initialData.transaction_date || new Date(),
+        status: initialData.status || 'completed',
+        payment_method: initialData.payment_method || '',
+        notes: initialData.notes || '',
+      });
+    } else if (open && !initialData) {
+      // Reset para valores padrão quando for novo registro
+      form.reset({
+        transaction_type: 'revenue',
+        category: '',
+        subcategory: '',
+        gross_amount: 0,
+        discount_amount: 0,
+        tax_amount: 0,
+        description: '',
+        transaction_date: new Date(),
+        status: 'completed',
+        payment_method: '',
+        notes: '',
+      });
+    }
+  }, [open, initialData, form]);
 
   const transactionType = form.watch('transaction_type');
   const grossAmount = form.watch('gross_amount') || 0;
@@ -70,7 +104,6 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
 
   const handleSubmit = async (values: FormValues) => {
     await onSubmit(values);
-    form.reset();
   };
 
   const categories = {
