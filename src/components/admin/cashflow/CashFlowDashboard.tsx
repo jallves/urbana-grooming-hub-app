@@ -10,6 +10,7 @@ import RevenueChart from './RevenueChart';
 import ExpenseChart from './ExpenseChart';
 import TopBarbersChart from './TopBarbersChart';
 import { getCategoryLabel } from '@/utils/categoryMappings';
+import { translateDescription } from '@/utils/translationHelpers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const CashFlowDashboard: React.FC = () => {
@@ -319,7 +320,7 @@ const CashFlowDashboard: React.FC = () => {
                         <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${isRevenue ? 'bg-green-600' : 'bg-red-600'}`}></div>
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-black text-xs sm:text-sm truncate">
-                            {transaction.description}
+                            {translateDescription(transaction.description)}
                           </p>
                           <p className="text-xs text-gray-600 truncate">
                             {getCategoryLabel(transaction.category)}

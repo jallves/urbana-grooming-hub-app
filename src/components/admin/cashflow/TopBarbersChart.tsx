@@ -12,14 +12,12 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['top-barbers-chart', startDate, endDate],
     queryFn: async () => {
-      // Buscar receitas por barbeiro
+      // Buscar receitas por barbeiro com join correto
       const { data, error } = await supabase
         .from('financial_records')
         .select(`
-          *,
-          staff:barber_id (
-            nome
-          )
+          net_amount,
+          barber_id
         `)
         .eq('transaction_type', 'revenue')
         .eq('status', 'completed')
@@ -32,12 +30,25 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
         throw error;
       }
 
+      // Buscar nomes dos barbeiros
+      const barberIds = [...new Set(data?.map(t => t.barber_id))];
+      const { data: barbersData } = await supabase
+        .from('staff')
+        .select('id, name')
+        .in('id', barberIds);
+
+      // Criar mapa de IDs para nomes
+      const barberNames: Record<string, string> = {};
+      barbersData?.forEach(barber => {
+        barberNames[barber.id] = barber.name;
+      });
+
       // Agrupar por barbeiro
       const barberTotals: Record<string, { name: string; revenue: number }> = {};
       
       data?.forEach(transaction => {
         const barberId = transaction.barber_id;
-        const barberName = (transaction.staff as any)?.nome || 'Barbeiro Desconhecido';
+        const barberName = barberNames[barberId] || 'Barbeiro Desconhecido';
         
         if (!barberTotals[barberId]) {
           barberTotals[barberId] = { name: barberName, revenue: 0 };
@@ -104,7 +115,7 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
         <Legend 
           wrapperStyle={{ color: '#F3F4F6' }}
         />
-        <Bar dataKey="Receita" fill="#10b981" radius={[8, 8, 0, 0]} />
+        <Bar dataKey="Receita" fill="#2563eb" radius={[8, 8, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
