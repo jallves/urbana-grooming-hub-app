@@ -14,6 +14,7 @@ import {
   Globe,
   AlertCircle,
 } from 'lucide-react';
+import beltecLogo from '@/assets/beltec-logo.png';
 
 interface AdminSidebarProps {
   onClose?: () => void;
@@ -122,10 +123,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200">
-          <div className="text-xs text-center font-raleway space-y-1">
-            <p className="font-semibold text-urbana-gold-dark">Barbearia Costa Urbana</p>
-            <p className="text-gray-500">Sistema Inteligente</p>
-            <p className="text-gray-400 text-[10px] mt-2">Desenvolvido por Belteq Soluções</p>
+          <div className="flex flex-col items-center gap-3">
+            <img 
+              src={beltecLogo} 
+              alt="Beltec Soluções" 
+              className="w-32 h-auto object-contain"
+            />
+            <div className="text-center space-y-1">
+              <p className="text-sm font-semibold text-urbana-gold">ERP Sistema Inteligente</p>
+              <p className="text-xs text-gray-900">By Beltec Soluções</p>
+            </div>
           </div>
         </div>
       </div>
