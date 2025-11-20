@@ -71,67 +71,64 @@ const BarberCommissionsComponent: React.FC = () => {
           return;
         }
 
-        // Buscar comissões do barbeiro
-        const { data: commissionsData, error } = await supabase
-          .from('barber_commissions')
-          .select('*')
-          .eq('barber_id', staffId)
-          .order('created_at', { ascending: false });
+        console.log('🔍 Buscando comissões do ERP Financeiro para staff:', staffId);
 
-        if (error) throw error;
+        // ✅ BUSCAR DO ERP FINANCEIRO (financial_records com transaction_type = 'commission')
+        const { data: commissionsData, error } = await supabase
+          .from('financial_records')
+          .select('*')
+          .eq('transaction_type', 'commission')
+          .eq('barber_id', staffId)
+          .order('transaction_date', { ascending: false });
+
+        if (error) {
+          console.error('❌ Erro ao buscar comissões:', error);
+          throw error;
+        }
+
+        console.log('📊 Comissões encontradas:', commissionsData?.length || 0);
 
         if (commissionsData) {
-          // Buscar nomes de serviços e produtos para cada comissão
-          const commissionsWithNames = await Promise.all(
-            commissionsData.map(async (comm) => {
-              let itemName = null;
-              
-              if (comm.commission_type === 'service' && comm.appointment_id) {
-                const { data: aptData } = await supabase
-                  .from('painel_agendamentos')
-                  .select('painel_servicos(nome)')
-                  .eq('id', comm.appointment_id)
-                  .single();
-                
-                itemName = aptData?.painel_servicos?.nome || 'Serviço';
-              } else if (comm.commission_type === 'product' && comm.product_sale_id) {
-                const { data: saleData } = await supabase
-                  .from('totem_product_sales')
-                  .select('totem_product_sale_items(products(name))')
-                  .eq('id', comm.product_sale_id)
-                  .single();
-                
-                const productNames = saleData?.totem_product_sale_items?.map((item: any) => item.products?.name).filter(Boolean);
-                itemName = productNames?.join(', ') || 'Produto';
-              }
+          // Mapear financial_records para o formato esperado pelo componente
+          const mappedCommissions: Commission[] = commissionsData.map((record) => {
+            // Extrair informações do metadata
+            const metadata = record.metadata as any;
+            const commissionType = record.category === 'Comissões - Serviços' ? 'service' : 'product';
+            
+            return {
+              id: record.id,
+              amount: Number(record.net_amount),
+              status: record.status === 'completed' ? 'paid' : 'pending',
+              created_at: record.transaction_date,
+              commission_type: commissionType,
+              item_name: record.description,
+              appointment_id: record.appointment_id,
+              product_sale_id: metadata?.product_sale_id || null
+            };
+          });
 
-              return {
-                ...comm,
-                item_name: itemName || comm.item_name
-              };
-            })
-          );
-
-          setCommissions(commissionsWithNames);
+          setCommissions(mappedCommissions);
 
           // Calcular estatísticas
-          const total = commissionsWithNames.reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const pending = commissionsWithNames.filter(c => c.status === 'pending').reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const paid = commissionsWithNames.filter(c => c.status === 'paid').reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const serviceCommissions = commissionsWithNames.filter(c => c.commission_type === 'service').reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const productCommissions = commissionsWithNames.filter(c => c.commission_type === 'product').reduce((acc, comm) => acc + Number(comm.amount), 0);
+          const total = mappedCommissions.reduce((acc, comm) => acc + Number(comm.amount), 0);
+          const pending = mappedCommissions.filter(c => c.status === 'pending').reduce((acc, comm) => acc + Number(comm.amount), 0);
+          const paid = mappedCommissions.filter(c => c.status === 'paid').reduce((acc, comm) => acc + Number(comm.amount), 0);
+          const serviceCommissions = mappedCommissions.filter(c => c.commission_type === 'service').reduce((acc, comm) => acc + Number(comm.amount), 0);
+          const productCommissions = mappedCommissions.filter(c => c.commission_type === 'product').reduce((acc, comm) => acc + Number(comm.amount), 0);
 
           setStats({ total, pending, paid, serviceCommissions, productCommissions });
+
+          console.log('📈 Estatísticas calculadas:', { total, pending, paid, serviceCommissions, productCommissions });
         }
       } catch (error) {
-        console.error('Erro ao buscar comissões:', error);
+        console.error('❌ Erro ao buscar comissões:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCommissions();
-  }, [user?.email]);
+  }, [user?.email, user?.id]);
 
   const getStatusBadge = (status: string) => {
     if (status === 'paid') {
