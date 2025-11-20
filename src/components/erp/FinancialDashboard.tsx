@@ -116,7 +116,7 @@ const FinancialDashboard: React.FC = () => {
   }
 
   // Garantir que temos dados válidos antes de renderizar
-  if (isLoading || !metrics || !metrics.month) {
+  if (isLoading || !metrics) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -124,16 +124,26 @@ const FinancialDashboard: React.FC = () => {
     );
   }
 
-  // Garantir valores padrão para evitar undefined
+  // Garantir valores padrão para evitar undefined - usar fallback em todos os níveis
+  const monthMetrics = metrics?.month || {
+    total_revenue: 0,
+    total_expenses: 0,
+    total_commissions: 0,
+    net_profit: 0,
+    profit_margin: 0,
+    transaction_count: 0,
+    pending_amount: 0
+  };
+
   const safeMetrics = {
     month: {
-      total_revenue: metrics.month?.total_revenue || 0,
-      total_expenses: metrics.month?.total_expenses || 0,
-      total_commissions: metrics.month?.total_commissions || 0,
-      net_profit: metrics.month?.net_profit || 0,
-      profit_margin: metrics.month?.profit_margin || 0,
-      transaction_count: metrics.month?.transaction_count || 0,
-      pending_amount: metrics.month?.pending_amount || 0
+      total_revenue: monthMetrics.total_revenue || 0,
+      total_expenses: monthMetrics.total_expenses || 0,
+      total_commissions: monthMetrics.total_commissions || 0,
+      net_profit: monthMetrics.net_profit || 0,
+      profit_margin: monthMetrics.profit_margin || 0,
+      transaction_count: monthMetrics.transaction_count || 0,
+      pending_amount: monthMetrics.pending_amount || 0
     }
   };
 
