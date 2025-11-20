@@ -220,7 +220,7 @@ const TotemProductCheckout: React.FC = () => {
             <button
               onClick={() => handlePayment('pix')}
               disabled={isProcessing}
-              className="group relative h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              className="group relative h-40 bg-urbana-black/30 backdrop-blur-xl active:bg-urbana-black/40 border-2 border-urbana-gold/30 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative h-full flex flex-col items-center justify-center gap-3">
@@ -236,7 +236,7 @@ const TotemProductCheckout: React.FC = () => {
             <button
               onClick={() => handlePayment('card')}
               disabled={isProcessing}
-              className="group relative h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              className="group relative h-40 bg-urbana-black/30 backdrop-blur-xl active:bg-urbana-black/40 border-2 border-urbana-gold/30 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative h-full flex flex-col items-center justify-center gap-3">
