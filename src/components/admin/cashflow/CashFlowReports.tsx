@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Calendar, BarChart3, PieChart } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getCategoryLabel } from '@/utils/categoryMappings';
 
 const CashFlowReports: React.FC = () => {
   const currentDate = new Date();
@@ -247,7 +247,7 @@ const CashFlowReports: React.FC = () => {
           <div className="space-y-2">
             {yearlyData?.categories && Object.entries(yearlyData.categories).map(([category, data]) => (
               <div key={category} className="flex justify-between items-center p-2 bg-gray-50 rounded border border-gray-200">
-                <span className="text-sm text-gray-900 truncate font-medium">{category}</span>
+                <span className="text-sm text-gray-900 truncate font-medium">{getCategoryLabel(category)}</span>
                 <div className="text-right">
                   <div className="text-xs text-green-700 font-semibold">
                     +R$ {data.income.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}

@@ -7,6 +7,7 @@ import { format, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale';
 import CashFlowChart from './CashFlowChart';
 import CategoryChart from './CategoryChart';
+import { getCategoryLabel } from '@/utils/categoryMappings';
 
 const CashFlowDashboard: React.FC = () => {
   const currentMonth = new Date();
@@ -219,7 +220,8 @@ const CashFlowDashboard: React.FC = () => {
                             {transaction.description}
                           </p>
                           <p className="text-xs text-gray-600 truncate">
-                            {transaction.category} • {transaction.subcategory}
+                            {getCategoryLabel(transaction.category)}
+                            {transaction.subcategory && ` • ${getCategoryLabel(transaction.subcategory)}`}
                           </p>
                         </div>
                       </div>
