@@ -10,6 +10,9 @@ interface DashboardMetrics {
   averageServiceValue: number;
   upcomingAppointments: number;
   cancelledAppointments: number;
+  totalCommissions: number;
+  pendingCommissions: number;
+  paidCommissions: number;
 }
 
 export const useBarberDashboardMetrics = () => {
@@ -19,7 +22,10 @@ export const useBarberDashboardMetrics = () => {
     totalRevenue: 0,
     averageServiceValue: 0,
     upcomingAppointments: 0,
-    cancelledAppointments: 0
+    cancelledAppointments: 0,
+    totalCommissions: 0,
+    pendingCommissions: 0,
+    paidCommissions: 0
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
@@ -31,54 +37,68 @@ export const useBarberDashboardMetrics = () => {
       try {
         setLoading(true);
 
-        // Buscar ID do barbeiro
-        const { data: barberData } = await supabase
-          .from('painel_barbeiros')
+        // Buscar ID do barbeiro usando staff
+        const { data: staffData } = await supabase
+          .from('staff')
           .select('id')
           .eq('email', user.email)
+          .eq('role', 'barber')
           .maybeSingle();
 
-        if (!barberData?.id) {
+        if (!staffData?.id) {
           setLoading(false);
           return;
         }
 
-        // Buscar todos os agendamentos do barbeiro
+        // Buscar todos os agendamentos do barbeiro do mês atual
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+
         const { data: appointments } = await supabase
           .from('painel_agendamentos')
           .select(`
             *,
-            painel_servicos!inner(preco)
+            painel_servicos!inner(preco, nome)
           `)
-          .eq('barbeiro_id', barberData.id);
+          .eq('barbeiro_id', staffData.id)
+          .gte('data', firstDayOfMonth)
+          .lte('data', lastDayOfMonth);
+
+        // Buscar comissões do barbeiro (serviços e produtos)
+        const { data: commissions } = await supabase
+          .from('barber_commissions')
+          .select('*')
+          .eq('barber_id', staffData.id);
 
         if (appointments) {
-          const now = new Date();
-          const currentMonth = now.getMonth();
-          const currentYear = now.getFullYear();
-
-          // Filtrar agendamentos do mês atual
-          const monthlyAppointments = appointments.filter(apt => {
-            const aptDate = new Date(apt.data);
-            return aptDate.getMonth() === currentMonth && aptDate.getFullYear() === currentYear;
-          });
-
-          const totalAppointments = monthlyAppointments.length;
-          const completedAppointments = monthlyAppointments.filter(apt => apt.status === 'concluido').length;
-          const cancelledAppointments = monthlyAppointments.filter(apt => apt.status === 'cancelado').length;
+          const totalAppointments = appointments.length;
+          const completedAppointments = appointments.filter(apt => apt.status === 'concluido').length;
+          const cancelledAppointments = appointments.filter(apt => apt.status === 'cancelado').length;
           
           // Agendamentos futuros
-          const upcomingAppointments = monthlyAppointments.filter(apt => {
+          const upcomingAppointments = appointments.filter(apt => {
             const aptDateTime = new Date(`${apt.data}T${apt.hora}`);
             return aptDateTime > now && apt.status !== 'cancelado' && apt.status !== 'concluido';
           }).length;
 
           // Calcular receita total dos agendamentos concluídos
-          const totalRevenue = monthlyAppointments
+          const totalRevenue = appointments
             .filter(apt => apt.status === 'concluido')
             .reduce((acc, apt) => acc + (apt.painel_servicos?.preco || 0), 0);
 
           const averageServiceValue = completedAppointments > 0 ? totalRevenue / completedAppointments : 0;
+
+          // Calcular comissões
+          const totalCommissions = commissions?.reduce((acc, comm) => acc + Number(comm.amount), 0) || 0;
+          const pendingCommissions = commissions
+            ?.filter(comm => comm.status === 'pending')
+            .reduce((acc, comm) => acc + Number(comm.amount), 0) || 0;
+          const paidCommissions = commissions
+            ?.filter(comm => comm.status === 'paid')
+            .reduce((acc, comm) => acc + Number(comm.amount), 0) || 0;
 
           setMetrics({
             totalAppointments,
@@ -86,7 +106,10 @@ export const useBarberDashboardMetrics = () => {
             totalRevenue,
             averageServiceValue,
             upcomingAppointments,
-            cancelledAppointments
+            cancelledAppointments,
+            totalCommissions,
+            pendingCommissions,
+            paidCommissions
           });
         }
       } catch (error) {

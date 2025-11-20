@@ -535,9 +535,12 @@ export type Database = {
           appointment_source: string | null
           barber_id: string
           commission_rate: number
+          commission_type: string | null
           created_at: string
           id: string
+          item_name: string | null
           payment_date: string | null
+          product_sale_id: string | null
           status: string
           updated_at: string
         }
@@ -547,9 +550,12 @@ export type Database = {
           appointment_source?: string | null
           barber_id: string
           commission_rate: number
+          commission_type?: string | null
           created_at?: string
           id?: string
+          item_name?: string | null
           payment_date?: string | null
+          product_sale_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -559,9 +565,12 @@ export type Database = {
           appointment_source?: string | null
           barber_id?: string
           commission_rate?: number
+          commission_type?: string | null
           created_at?: string
           id?: string
+          item_name?: string | null
           payment_date?: string | null
+          product_sale_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -571,6 +580,13 @@ export type Database = {
             columns: ["barber_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_commissions_product_sale_id_fkey"
+            columns: ["product_sale_id"]
+            isOneToOne: false
+            referencedRelation: "totem_product_sales"
             referencedColumns: ["id"]
           },
         ]
