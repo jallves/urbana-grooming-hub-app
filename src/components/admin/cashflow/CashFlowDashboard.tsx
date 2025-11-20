@@ -6,7 +6,9 @@ import { TrendingUp, TrendingDown, DollarSign, Calendar } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CashFlowChart from './CashFlowChart';
-import CategoryChart from './CategoryChart';
+import RevenueChart from './RevenueChart';
+import ExpenseChart from './ExpenseChart';
+import CommissionChart from './CommissionChart';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 
 const CashFlowDashboard: React.FC = () => {
@@ -166,17 +168,31 @@ const CashFlowDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Gráficos - Stack em mobile, side-by-side em desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
+      {/* Gráfico de Fluxo 6 Meses - Full Width */}
+      <Card className="bg-white border-gray-300">
+        <CardHeader className="p-3 sm:p-4 lg:p-6">
+          <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
+            Fluxo de Caixa - Últimos 6 Meses
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+          <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+            <CashFlowChart />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Gráficos de Categoria - Grid responsivo */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Card className="bg-white border-gray-300">
           <CardHeader className="p-3 sm:p-4 lg:p-6">
             <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
-              Fluxo - 6 Meses
+              Receitas por Categoria
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
-              <CashFlowChart />
+              <RevenueChart />
             </div>
           </CardContent>
         </Card>
@@ -184,12 +200,25 @@ const CashFlowDashboard: React.FC = () => {
         <Card className="bg-white border-gray-300">
           <CardHeader className="p-3 sm:p-4 lg:p-6">
             <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
-              Categorias
+              Despesas por Categoria
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
             <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
-              <CategoryChart />
+              <ExpenseChart />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-gray-300">
+          <CardHeader className="p-3 sm:p-4 lg:p-6">
+            <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
+              Comissões por Categoria
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+              <CommissionChart />
             </div>
           </CardContent>
         </Card>
