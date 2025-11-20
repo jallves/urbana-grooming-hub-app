@@ -64,7 +64,7 @@ const ServiceList: React.FC = () => {
         id: ps.id,
         name: ps.nome,
         description: ps.descricao || '',
-        price: ps.preco,
+        price: Number(ps.preco) || 0,
         duration: ps.duracao,
         is_active: ps.is_active ?? true,
         created_at: ps.created_at
@@ -205,7 +205,7 @@ const ServiceList: React.FC = () => {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Preço:</span>
                         <span className="text-primary font-semibold">
-                          R$ {service.price.toFixed(2)}
+                          R$ {Number(service.price || 0).toFixed(2)}
                         </span>
                       </div>
                       
