@@ -115,7 +115,7 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
         <Legend 
           wrapperStyle={{ color: '#F3F4F6' }}
         />
-        <Bar dataKey="Receita" fill="#2563eb" radius={[8, 8, 0, 0]} />
+        <Bar dataKey="Receita" fill="#1e40af" radius={[8, 8, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
