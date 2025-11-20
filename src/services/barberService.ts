@@ -35,10 +35,6 @@ export async function createBarber(barberData: any): Promise<string> {
 }
 
 export async function updateBarber(barberId: string, barberData: any): Promise<void> {
-  console.log('[barberService] updateBarber chamado');
-  console.log('[barberService] ID do barbeiro:', barberId);
-  console.log('[barberService] Dados para atualização:', barberData);
-  
   // Atualizar os dados na tabela staff
   const { error: barberError } = await supabase
     .from("staff")
@@ -53,10 +49,5 @@ export async function updateBarber(barberId: string, barberData: any): Promise<v
     })
     .eq("id", barberId);
 
-  if (barberError) {
-    console.error('[barberService] Erro ao atualizar barbeiro:', barberError);
-    throw barberError;
-  }
-  
-  console.log('[barberService] Barbeiro atualizado com sucesso');
+  if (barberError) throw barberError;
 }

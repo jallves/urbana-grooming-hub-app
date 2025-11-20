@@ -67,26 +67,20 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
   }, [barberId]);
 
   const onSubmit = async (data: BarberFormValues) => {
-    console.log('[useBarberForm] onSubmit chamado');
-    console.log('[useBarberForm] Dados do formulário:', data);
     setIsSubmitting(true);
 
     try {
       const payload = cleanPayload(data);
-      console.log('[useBarberForm] Payload limpo:', payload);
 
       if (barberId) {
-        console.log('[useBarberForm] Atualizando barbeiro:', barberId);
         await updateBarber(barberId, payload);
       } else {
-        console.log('[useBarberForm] Criando novo barbeiro');
         await createBarber(payload);
       }
 
       toast.success('Barbeiro salvo com sucesso!');
       onSuccess();
     } catch (error: any) {
-      console.error('[useBarberForm] Erro ao salvar:', error);
       toast.error('Erro ao salvar barbeiro', { description: error.message });
     } finally {
       setIsSubmitting(false);
@@ -95,17 +89,11 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
   // Função para fazer upload de imagem
   const handleImageUpload = async (file: File) => {
-    console.log('[handleImageUpload] Iniciando upload de imagem:', file.name);
-    
-    if (!file) {
-      console.log('[handleImageUpload] Nenhum arquivo fornecido');
-      return;
-    }
+    if (!file) return;
 
     // Validar tipo de arquivo
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      console.error('[handleImageUpload] Tipo de arquivo inválido:', file.type);
       toast.error('Formato inválido', {
         description: 'Use apenas JPG, PNG ou WEBP'
       });
@@ -114,7 +102,6 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
     // Validar tamanho (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      console.error('[handleImageUpload] Arquivo muito grande:', file.size);
       toast.error('Arquivo muito grande', {
         description: 'O tamanho máximo é 5MB'
       });
@@ -122,15 +109,12 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     }
 
     setIsUploadingImage(true);
-    console.log('[handleImageUpload] Iniciando upload para o storage...');
 
     try {
       // Gerar nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${fileName}`;
-
-      console.log('[handleImageUpload] Nome do arquivo:', filePath);
 
       // Upload para o bucket
       const { data, error } = await supabase.storage
@@ -140,34 +124,24 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
           upsert: false
         });
 
-      if (error) {
-        console.error('[handleImageUpload] Erro no upload:', error);
-        throw error;
-      }
-
-      console.log('[handleImageUpload] Upload concluído:', data);
+      if (error) throw error;
 
       // Obter URL pública
       const { data: urlData } = supabase.storage
         .from('barber-photos')
         .getPublicUrl(filePath);
 
-      console.log('[handleImageUpload] URL pública gerada:', urlData.publicUrl);
-
       // Atualizar o formulário com a nova URL
       form.setValue('image_url', urlData.publicUrl);
-      
-      console.log('[handleImageUpload] URL salva no formulário');
 
       toast.success('Foto carregada com sucesso!');
     } catch (error: any) {
-      console.error('[handleImageUpload] Erro ao fazer upload:', error);
+      console.error('Erro ao fazer upload:', error);
       toast.error('Erro ao fazer upload da foto', {
         description: error.message
       });
     } finally {
       setIsUploadingImage(false);
-      console.log('[handleImageUpload] Upload finalizado');
     }
   };
 
