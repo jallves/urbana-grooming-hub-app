@@ -34,7 +34,7 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
       }}
       className="group"
     >
-      <Card className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.1)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)] transition-all duration-500 h-full flex flex-col p-6 hover:border-urbana-gold overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-urbana-gold/5 before:via-transparent before:to-urbana-gold/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
+      <Card className="relative bg-urbana-black/90 backdrop-blur-xl border-2 border-urbana-gold/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,215,0,0.2)] hover:shadow-[0_20px_60px_rgba(255,215,0,0.3),0_0_80px_rgba(255,215,0,0.2)] transition-all duration-500 h-full flex flex-col p-6 hover:border-urbana-gold overflow-hidden before:absolute before:inset-0 before:bg-gradient-to-br before:from-urbana-gold/10 before:via-transparent before:to-urbana-gold/10 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
         {/* Art Deco corners */}
         <ArtDecoCorner position="top-left" />
         <ArtDecoCorner position="bottom-right" />
