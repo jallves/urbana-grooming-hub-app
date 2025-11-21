@@ -2,11 +2,14 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, DollarSign, AlertCircle, CreditCard, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, AlertCircle, CreditCard, Wallet, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const FinancialMetricsCards: React.FC = () => {
-  const { data: metrics, isLoading } = useQuery({
+  const { toast } = useToast();
+  const { data: metrics, isLoading, refetch } = useQuery({
     queryKey: ['financial-dashboard-metrics'],
     queryFn: async () => {
       const now = new Date();
@@ -20,18 +23,28 @@ const FinancialMetricsCards: React.FC = () => {
       const lastDayOfLastMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59).toISOString();
 
       // Current month data
-      const { data: currentData } = await supabase
+      const { data: currentData, error: currentError } = await supabase
         .from('financial_records')
         .select('transaction_type, status, net_amount, due_date')
-        .gte('transaction_date', firstDayOfMonth)
-        .lte('transaction_date', lastDayOfMonth);
+        .gte('transaction_date', firstDayOfMonth.split('T')[0])
+        .lte('transaction_date', lastDayOfMonth.split('T')[0]);
+
+      if (currentError) {
+        console.error('Error fetching current data:', currentError);
+        throw currentError;
+      }
 
       // Previous month data
-      const { data: previousData } = await supabase
+      const { data: previousData, error: previousError } = await supabase
         .from('financial_records')
         .select('transaction_type, status, net_amount')
-        .gte('transaction_date', firstDayOfLastMonth)
-        .lte('transaction_date', lastDayOfLastMonth);
+        .gte('transaction_date', firstDayOfLastMonth.split('T')[0])
+        .lte('transaction_date', lastDayOfLastMonth.split('T')[0]);
+
+      if (previousError) {
+        console.error('Error fetching previous data:', previousError);
+        throw previousError;
+      }
 
       // Calculate current month metrics
       const currentRevenue = currentData?.filter(r => r.transaction_type === 'revenue' && r.status === 'completed').reduce((sum, r) => sum + r.net_amount, 0) || 0;
@@ -135,9 +148,34 @@ const FinancialMetricsCards: React.FC = () => {
     },
   ];
 
+  const handleRefresh = async () => {
+    toast({
+      title: "Atualizando...",
+      description: "Buscando dados atualizados",
+    });
+    await refetch();
+    toast({
+      title: "Atualizado!",
+      description: "Dados financeiros atualizados com sucesso",
+    });
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-      {cards.map((card, index) => {
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {cards.map((card, index) => {
         const Icon = card.icon;
         const isPositiveTrend = (card.trend || 0) > 0;
         const TrendIcon = isPositiveTrend ? TrendingUp : TrendingDown;
@@ -176,6 +214,7 @@ const FinancialMetricsCards: React.FC = () => {
           </Card>
         );
       })}
+      </div>
     </div>
   );
 };
