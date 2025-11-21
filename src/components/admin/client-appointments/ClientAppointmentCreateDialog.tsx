@@ -58,6 +58,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   onClose,
   onCreate
 }) => {
+  console.log('🔵 [CreateDialog] Renderizando com isOpen:', isOpen);
+  
   // Step control
   const [step, setStep] = useState<'client' | 'service' | 'barber' | 'datetime'>('client');
   
@@ -108,6 +110,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
   const loadClients = async () => {
     console.log('🔍 Iniciando carregamento de clientes...');
+    console.log('🔵 [CreateDialog] Modal isOpen:', isOpen, 'Step:', step);
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -440,9 +443,11 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     c.email?.toLowerCase().includes(clientSearch.toLowerCase())
   );
 
+  console.log('🎨 [CreateDialog] Renderizando Dialog. isOpen:', isOpen, 'loading:', loading, 'step:', step, 'clients:', clients.length);
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-white border-gray-200">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-white border-gray-200 z-[100]">
         <VisuallyHidden>
           <DialogTitle>Novo Agendamento</DialogTitle>
           <DialogDescription>
