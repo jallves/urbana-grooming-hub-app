@@ -8,9 +8,7 @@ const BarberCommissionsPage: React.FC = () => {
   return (
     <BarberLayout title="Minhas Comissões">
       <StandardBarberLayout>
-        <div className="w-full h-full">
-          <BarberCommissionsComponent />
-        </div>
+        <BarberCommissionsComponent />
       </StandardBarberLayout>
     </BarberLayout>
   );

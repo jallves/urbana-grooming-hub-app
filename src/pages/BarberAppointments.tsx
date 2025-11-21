@@ -8,9 +8,7 @@ const BarberAppointmentsPage: React.FC = () => {
   return (
     <BarberLayout title="Agendamentos">
       <StandardBarberLayout>
-        <div className="w-full h-full">
-          <BarberAppointments />
-        </div>
+        <BarberAppointments />
       </StandardBarberLayout>
     </BarberLayout>
   );
