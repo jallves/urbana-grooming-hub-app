@@ -189,7 +189,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </nav>
 
       {/* Main Content */}
-      <main className="relative z-10 w-full pb-safe">
+      <main className="relative z-10 w-full pb-20 sm:pb-24 md:pb-8">
         {children}
       </main>
     </div>
