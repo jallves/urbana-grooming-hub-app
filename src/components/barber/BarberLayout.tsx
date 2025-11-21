@@ -49,12 +49,12 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative flex flex-col">
+    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
       {/* Background image - Same as PainelClienteLayout */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
           src={barbershopBg} 
-          alt="Barbearia" 
+          alt="Barbearia Costa Urbana Background" 
           className="w-full h-full object-cover"
         />
         {/* Dark overlay */}
@@ -189,7 +189,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </nav>
 
       {/* Main Content */}
-      <main className="relative z-10 w-full flex-1 flex flex-col px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 pb-20 overflow-auto">
+      <main className="relative z-10 w-full pb-safe">
         {children}
       </main>
     </div>

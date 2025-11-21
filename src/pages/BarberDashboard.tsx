@@ -81,9 +81,9 @@ const BarberDashboard: React.FC = () => {
   return (
     <BarberLayout title="Dashboard">
       <StandardBarberLayout>
-        <div className="w-full flex-1 flex flex-col space-y-4 sm:space-y-6 pb-4">
+        <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
           {/* Welcome Section */}
-          <div className="w-full text-center flex-shrink-0">
+          <div className="w-full text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
               Bem-vindo, {user?.email?.split('@')[0]}
             </h2>
@@ -97,7 +97,7 @@ const BarberDashboard: React.FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 flex-shrink-0">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {statsCards.map((stat, index) => (
               <StandardCard key={index}>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -119,7 +119,7 @@ const BarberDashboard: React.FC = () => {
           </div>
 
           {/* Quick Access Cards */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 flex-shrink-0 pb-4">
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {quickAccessItems.map((item, index) => (
               <StandardCard 
                 key={index}
