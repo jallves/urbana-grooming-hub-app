@@ -1,6 +1,6 @@
 
 // Define type for valid roles to match the app_role enum in the database
-export type AppRole = 'admin' | 'barber' | 'user';
+export type AppRole = 'master' | 'admin' | 'manager' | 'barber' | 'user';
 
 export interface UserWithRole {
   id: string;

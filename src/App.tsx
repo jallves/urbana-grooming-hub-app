@@ -145,7 +145,7 @@ function App() {
                     </AdminRoute>
                   } />
                   <Route path="/admin/erp-financeiro" element={
-                    <AdminRoute>
+                    <AdminRoute requiredModule="erp">
                       <AdminERPFinancial />
                     </AdminRoute>
                   } />
@@ -180,7 +180,7 @@ function App() {
                     </AdminRoute>
                   } />
                   <Route path="/admin/erp-financeiro" element={
-                    <AdminRoute>
+                    <AdminRoute requiredModule="financeiro">
                       <AdminERPFinancial />
                     </AdminRoute>
                   } />
@@ -195,7 +195,7 @@ function App() {
                     </AdminRoute>
                   } />
                   <Route path="/admin/configuracoes" element={
-                    <AdminRoute>
+                    <AdminRoute requiredModule="configuracoes">
                       <AdminSettings />
                     </AdminRoute>
                   } />
