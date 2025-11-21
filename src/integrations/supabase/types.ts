@@ -1432,6 +1432,7 @@ export type Database = {
           name: string
           phone: string
           photo_url: string | null
+          requires_password_change: boolean | null
           role: string
           status: string
           updated_at: string
@@ -1446,6 +1447,7 @@ export type Database = {
           name: string
           phone: string
           photo_url?: string | null
+          requires_password_change?: boolean | null
           role: string
           status?: string
           updated_at?: string
@@ -1460,6 +1462,7 @@ export type Database = {
           name?: string
           phone?: string
           photo_url?: string | null
+          requires_password_change?: boolean | null
           role?: string
           status?: string
           updated_at?: string
@@ -4194,15 +4197,17 @@ export type Database = {
         Returns: boolean
       }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
-      create_admin_manager_user: {
-        Args: {
-          p_email: string
-          p_employee_id: string
-          p_password: string
-          p_role: string
-        }
-        Returns: Json
-      }
+      create_admin_manager_user:
+        | {
+            Args: {
+              p_email: string
+              p_employee_id: string
+              p_password: string
+              p_role: string
+            }
+            Returns: Json
+          }
+        | { Args: { p_employee_id: string; p_password: string }; Returns: Json }
       create_barber_auth_user: {
         Args: {
           p_email: string
@@ -4559,6 +4564,10 @@ export type Database = {
       update_staff_module_access: {
         Args: { module_ids_param: string[]; staff_id_param: string }
         Returns: undefined
+      }
+      update_user_password_first_login: {
+        Args: { p_new_password: string; p_user_id: string }
+        Returns: Json
       }
       validate_appointment_booking: {
         Args: {

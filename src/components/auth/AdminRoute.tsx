@@ -18,7 +18,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   allowBarber = false,
   requiredModule,
 }) => {
-  const { user, isAdmin, isBarber, loading } = useAuth();
+  const { user, isAdmin, isBarber, loading, requiresPasswordChange } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
   const { checkModuleAccess, loading: permissionsLoading } = usePermissions();
@@ -50,6 +50,11 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
 
   if (!user) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Redirecionar para troca de senha se necessário (exceto se já estiver na página de troca)
+  if (requiresPasswordChange && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
   }
 
   if (!hasAccess || (requiredModule && !hasModuleAccess)) {
