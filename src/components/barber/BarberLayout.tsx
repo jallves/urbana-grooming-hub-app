@@ -49,7 +49,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   };
 
   return (
-    <div className="min-h-screen w-screen overflow-x-hidden relative">
+    <div className="min-h-screen w-full overflow-x-hidden relative">
       {/* Background image - Same as PainelClienteLayout */}
       <div className="fixed inset-0 z-0">
         <img 
@@ -68,8 +68,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-2xl">
-        <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3 md:py-4">
+      <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-2xl">
+        <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="relative">
@@ -106,7 +106,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </header>
 
       {/* Desktop Navigation */}
-      <nav className="hidden lg:block sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
+      <nav className="hidden lg:block sticky top-[68px] z-40 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
         <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide py-2">
             {navigationItems.map((item) => (
@@ -128,7 +128,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </nav>
 
       {/* Mobile/Tablet Navigation */}
-      <nav className="lg:hidden sticky top-[60px] sm:top-[70px] md:top-[86px] z-40 w-screen backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
+      <nav className="lg:hidden sticky top-[68px] z-40 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
         <div className="w-full px-2 sm:px-3 md:px-4">
           <div className="grid grid-cols-3 gap-1 py-2 sm:py-3">
             {navigationItems.map((item, index) => {
@@ -189,7 +189,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </nav>
 
       {/* Main Content */}
-      <main className="relative z-10 w-screen px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      <main className="relative z-10 w-full px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 pb-safe">
         {children}
       </main>
     </div>
