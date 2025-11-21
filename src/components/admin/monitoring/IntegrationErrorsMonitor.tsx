@@ -54,37 +54,86 @@ export default function IntegrationErrorsMonitor() {
 
     setReprocessing(error.id);
     try {
-      // Chamar função de reprocessamento
+      console.log('🔄 Iniciando reprocessamento:', {
+        error_id: error.id,
+        appointment_id: error.appointment_id,
+        retry_count: error.retry_count
+      });
+
+      // Chamar função RPC para preparar dados
+      console.log('📞 Chamando RPC reprocess_failed_appointment...');
       const { data: reprocessData, error: reprocessError } = await supabase
         .rpc('reprocess_failed_appointment', {
           p_agendamento_id: error.appointment_id
         });
 
-      if (reprocessError) throw reprocessError;
+      if (reprocessError) {
+        console.error('❌ Erro na RPC:', reprocessError);
+        throw reprocessError;
+      }
+
+      console.log('📦 Resposta da RPC:', reprocessData);
 
       const resultData = reprocessData as any;
       if (!resultData.success) {
-        throw new Error(resultData.error || 'Erro ao reprocessar');
+        const errorMsg = resultData.error || 'Erro ao preparar dados';
+        console.error('❌ RPC retornou erro:', errorMsg);
+        throw new Error(errorMsg);
       }
 
-      // Chamar edge function
+      console.log('✅ Dados preparados:', {
+        appointment_id: resultData.data.appointment_id,
+        items: resultData.data.items?.length,
+        payment_method: resultData.data.payment_method
+      });
+
+      // Chamar edge function create-financial-transaction
+      console.log('🚀 Chamando edge function...');
       const { data: result, error: funcError } = await supabase.functions.invoke(
         'create-financial-transaction',
         { body: resultData.data }
       );
 
-      if (funcError) throw funcError;
+      if (funcError) {
+        console.error('❌ Erro na edge function:', funcError);
+        throw funcError;
+      }
+
+      console.log('📊 Resposta da edge function:', result);
 
       const funcResult = result as any;
       if (funcResult?.success) {
-        toast.success('Transação reprocessada com sucesso!');
-        fetchErrors(); // Atualizar lista
+        console.log('✅ Transação criada:', {
+          records: funcResult.data?.records?.length,
+          revenue: funcResult.data?.summary?.total_revenue
+        });
+
+        toast.success('Transação reprocessada com sucesso!', {
+          description: `${funcResult.data?.records?.length || 0} registros criados`
+        });
+
+        // Incrementar contador de retry
+        await supabase.rpc('increment_retry_count', { p_error_log_id: error.id });
+
+        fetchErrors();
       } else {
         throw new Error(funcResult?.error || 'Falha ao criar transação');
       }
     } catch (error: any) {
-      console.error('Erro ao reprocessar:', error);
-      toast.error(error.message || 'Erro ao reprocessar transação');
+      console.error('❌ Erro ao reprocessar:', error);
+
+      // Incrementar contador mesmo em caso de erro
+      try {
+        await supabase.rpc('increment_retry_count', { p_error_log_id: error.id });
+      } catch (retryError) {
+        console.error('❌ Erro ao incrementar retry:', retryError);
+      }
+
+      toast.error('Erro ao reprocessar transação', {
+        description: error.message || 'Erro desconhecido'
+      });
+
+      fetchErrors();
     } finally {
       setReprocessing(null);
     }
@@ -93,18 +142,45 @@ export default function IntegrationErrorsMonitor() {
   const runMonitoring = async () => {
     setLoading(true);
     try {
+      console.log('🔍 Executando monitoramento...');
+
       const { data, error } = await supabase.functions.invoke('monitor-failed-transactions');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao chamar edge function:', error);
+        throw error;
+      }
+
+      console.log('📊 Resultado do monitoramento:', data);
 
       const monitorResult = data as any;
-      if (monitorResult?.success) {
-        toast.success(`Monitoramento concluído: ${monitorResult.data.reprocessed} reprocessados, ${monitorResult.data.failed} falharam`);
-        fetchErrors();
+      if (!monitorResult?.success) {
+        throw new Error(monitorResult?.error || 'Monitoramento falhou');
       }
+
+      const result = monitorResult.data;
+      console.log('✅ Monitoramento concluído:', {
+        total: result.total_found,
+        reprocessed: result.reprocessed,
+        failed: result.failed
+      });
+
+      if (result.total_found === 0) {
+        toast.info('Nenhuma transação falhada encontrada', {
+          description: 'Todas as transações estão sincronizadas!'
+        });
+      } else {
+        toast.success('Monitoramento executado com sucesso!', {
+          description: `Encontrados: ${result.total_found} | Reprocessados: ${result.reprocessed} | Falhas: ${result.failed}`
+        });
+      }
+
+      fetchErrors();
     } catch (error: any) {
-      console.error('Erro ao executar monitoramento:', error);
-      toast.error('Erro ao executar monitoramento');
+      console.error('❌ Erro ao executar monitoramento:', error);
+      toast.error('Erro ao executar monitoramento', {
+        description: error.message || 'Erro desconhecido'
+      });
     } finally {
       setLoading(false);
     }
@@ -112,18 +188,50 @@ export default function IntegrationErrorsMonitor() {
 
   const clearResolvedErrors = async () => {
     try {
-      const { error } = await supabase
+      setLoading(true);
+      console.log('🧹 Iniciando limpeza de erros resolvidos...');
+
+      // Primeiro, contar quantos erros resolvidos existem
+      const { data: resolvedErrors, error: countError } = await supabase
+        .from('integration_error_logs')
+        .select('id', { count: 'exact', head: false })
+        .eq('status', 'resolved');
+
+      if (countError) {
+        console.error('❌ Erro ao contar erros resolvidos:', countError);
+        throw countError;
+      }
+
+      const resolvedCount = resolvedErrors?.length || 0;
+      console.log(`📊 Encontrados ${resolvedCount} erros resolvidos`);
+
+      if (resolvedCount === 0) {
+        toast.info('Não há erros resolvidos para limpar');
+        return;
+      }
+
+      // Deletar os erros resolvidos
+      const { error: deleteError } = await supabase
         .from('integration_error_logs')
         .delete()
         .eq('status', 'resolved');
 
-      if (error) throw error;
+      if (deleteError) {
+        console.error('❌ Erro ao deletar erros:', deleteError);
+        throw deleteError;
+      }
 
-      toast.success('Erros resolvidos limpos com sucesso');
+      console.log(`✅ ${resolvedCount} erros limpos com sucesso`);
+      toast.success(`${resolvedCount} erro(s) resolvido(s) limpo(s)!`);
+
       fetchErrors();
     } catch (error: any) {
-      console.error('Erro ao limpar erros:', error);
-      toast.error('Erro ao limpar erros resolvidos');
+      console.error('❌ Erro ao limpar erros:', error);
+      toast.error('Erro ao limpar erros resolvidos', {
+        description: error.message || 'Erro desconhecido'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
