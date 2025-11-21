@@ -347,8 +347,20 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   };
 
   const handleConfirm = async () => {
+    console.log('🎯 BOTÃO CONFIRMAR CLICADO!');
+    console.log('📋 Dados selecionados:', {
+      cliente: selectedClient?.nome,
+      servico: selectedService?.nome,
+      barbeiro: selectedBarber?.nome,
+      data: selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'não selecionada',
+      hora: selectedTime
+    });
+
     if (!selectedClient || !selectedService || !selectedBarber || !selectedDate || !selectedTime) {
-      toast.error('Selecione todos os campos');
+      console.error('❌ Dados incompletos!');
+      toast.error('Selecione todos os campos', {
+        description: 'Cliente, serviço, barbeiro, data e horário são obrigatórios'
+      });
       return;
     }
 
@@ -356,6 +368,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     let progressToast: string | number | undefined;
 
     try {
+      console.log('1️⃣ Validando dados com Zod...');
+
       // Validar dados com zod
       const validationResult = appointmentSchema.safeParse({
         cliente_id: selectedClient.id,
@@ -367,11 +381,16 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
       if (!validationResult.success) {
         const errors = validationResult.error.errors.map(e => e.message).join(', ');
-        toast.error(errors);
+        console.error('❌ Validação Zod falhou:', errors);
+        toast.error('Dados inválidos', { description: errors });
         return;
       }
 
-      progressToast = toast.loading('⏳ Validando disponibilidade...');
+      console.log('✅ Validação Zod OK');
+
+      progressToast = toast.loading('⏳ Validando disponibilidade do horário...');
+
+      console.log('2️⃣ Validando disponibilidade...');
 
       // Validar disponibilidade
       const validation = await validateAppointment(
@@ -381,15 +400,24 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         selectedService.duracao
       );
 
+      console.log('📊 Resultado da validação:', validation);
+
       if (!validation.valid) {
         if (progressToast) toast.dismiss(progressToast);
-        toast.error(validation.error || 'Horário não disponível');
+        console.error('❌ Horário não disponível:', validation.error);
+        toast.error('Horário indisponível', {
+          description: validation.error || 'Este horário não está mais disponível'
+        });
         await loadTimeSlots();
         return;
       }
 
+      console.log('✅ Horário validado com sucesso');
+
       if (progressToast) toast.dismiss(progressToast);
-      progressToast = toast.loading('📝 Criando agendamento...');
+      progressToast = toast.loading('📝 Criando agendamento no banco de dados...');
+
+      console.log('3️⃣ Inserindo no banco de dados...');
 
       // Criar agendamento
       const { data: appointmentData, error: insertError } = await supabase
@@ -406,19 +434,31 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         .single();
 
       if (insertError) {
-        console.error('Erro ao inserir agendamento:', insertError);
+        console.error('❌ Erro ao inserir agendamento:', insertError);
         throw insertError;
       }
 
+      console.log('✅ Agendamento criado:', appointmentData);
+
       if (progressToast) toast.dismiss(progressToast);
-      toast.success('Agendamento criado com sucesso!');
       
+      // Toast de sucesso grande e visível
+      toast.success('🎉 Agendamento Confirmado!', {
+        description: `${selectedClient.nome} agendado com ${selectedBarber.nome} em ${format(selectedDate, "dd 'de' MMMM 'às' ", { locale: ptBR })}${selectedTime}`,
+        duration: 5000
+      });
+
+      console.log('4️⃣ Chamando onCreate e fechando dialog...');
+      
+      // Atualizar lista e fechar
       onCreate();
       resetForm();
       onClose();
 
+      console.log('✅ PROCESSO COMPLETO!');
+
     } catch (error: any) {
-      console.error('Erro ao criar agendamento:', error);
+      console.error('💥 ERRO NO PROCESSO:', error);
       if (progressToast) toast.dismiss(progressToast);
       
       let errorMessage = 'Erro ao criar agendamento';
@@ -431,10 +471,15 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         errorMessage = error.message;
       }
       
-      toast.error(errorMessage);
+      toast.error('❌ Falha ao criar agendamento', {
+        description: errorMessage,
+        duration: 5000
+      });
+      
       await loadTimeSlots();
     } finally {
       setCreating(false);
+      console.log('🏁 Finalizando handleConfirm');
     }
   };
 
@@ -749,27 +794,30 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
                 {/* Summary & Confirm - Sempre visível quando data e hora selecionados */}
                 {selectedDate && selectedTime && (
-                  <Card className="border-2 border-urbana-gold bg-white shadow-xl mt-4">
-                    <CardHeader className="p-4">
-                      <CardTitle className="text-xl text-gray-900">Resumo do Agendamento</CardTitle>
+                  <Card className="border-2 border-urbana-gold bg-gradient-to-br from-white to-yellow-50 shadow-xl mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <CardHeader className="p-4 bg-gradient-to-r from-urbana-gold/10 to-yellow-100/10">
+                      <CardTitle className="text-xl text-gray-900 flex items-center gap-2">
+                        <Check className="w-6 h-6 text-urbana-gold" />
+                        Resumo do Agendamento
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 p-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                           <User className="w-5 h-5 text-urbana-gold flex-shrink-0" />
                           <div>
-                            <p className="text-xs text-gray-600">Cliente</p>
-                            <p className="font-semibold text-gray-900">{selectedClient?.nome}</p>
+                            <p className="text-xs text-gray-600 font-semibold">Cliente</p>
+                            <p className="font-bold text-gray-900">{selectedClient?.nome}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                           <Scissors className="w-5 h-5 text-urbana-gold flex-shrink-0" />
                           <div>
-                            <p className="text-xs text-gray-600">Serviço</p>
-                            <p className="font-semibold text-gray-900">{selectedService?.nome}</p>
+                            <p className="text-xs text-gray-600 font-semibold">Serviço</p>
+                            <p className="font-bold text-gray-900">{selectedService?.nome}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                           {selectedBarber?.image_url ? (
                             <img 
                               src={selectedBarber.image_url} 
@@ -780,44 +828,65 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                             <User className="w-5 h-5 text-urbana-gold flex-shrink-0" />
                           )}
                           <div>
-                            <p className="text-xs text-gray-600">Profissional</p>
-                            <p className="font-semibold text-gray-900">{selectedBarber?.nome}</p>
+                            <p className="text-xs text-gray-600 font-semibold">Profissional</p>
+                            <p className="font-bold text-gray-900">{selectedBarber?.nome}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
                           <CalendarIcon className="w-5 h-5 text-urbana-gold flex-shrink-0" />
                           <div>
-                            <p className="text-xs text-gray-600">Data</p>
-                            <p className="font-semibold text-gray-900">
+                            <p className="text-xs text-gray-600 font-semibold">Data</p>
+                            <p className="font-bold text-gray-900">
                               {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 md:col-span-2">
+                        <div className="flex items-center gap-3 md:col-span-2 p-3 bg-white rounded-lg border border-gray-200">
                           <Clock className="w-5 h-5 text-urbana-gold flex-shrink-0" />
                           <div>
-                            <p className="text-xs text-gray-600">Horário</p>
-                            <p className="font-semibold text-gray-900">{selectedTime}</p>
+                            <p className="text-xs text-gray-600 font-semibold">Horário</p>
+                            <p className="font-bold text-gray-900">{selectedTime}</p>
                           </div>
                         </div>
                       </div>
-                      <Button
-                        onClick={handleConfirm}
-                        disabled={creating}
-                        className="w-full bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white font-bold py-4 text-lg shadow-lg"
-                      >
-                        {creating ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                            Confirmando...
-                          </span>
-                        ) : (
-                          <>
-                            <Check className="w-5 h-5 mr-2" />
-                            Confirmar Agendamento
-                          </>
-                        )}
-                      </Button>
+                      
+                      {/* Botão de Confirmação - GRANDE E VISÍVEL */}
+                      <div className="pt-4 border-t-2 border-gray-200">
+                        <Button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔘 Botão CONFIRMAR clicado (evento capturado)');
+                            console.log('📊 Estado atual:', {
+                              creating,
+                              hasClient: !!selectedClient,
+                              hasService: !!selectedService,
+                              hasBarber: !!selectedBarber,
+                              hasDate: !!selectedDate,
+                              hasTime: !!selectedTime
+                            });
+                            handleConfirm();
+                          }}
+                          disabled={creating}
+                          type="button"
+                          className="w-full bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white font-bold py-5 text-xl shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] transition-all active:scale-[0.98] border-2 border-yellow-700"
+                        >
+                          {creating ? (
+                            <span className="flex items-center justify-center gap-3">
+                              <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Confirmando Agendamento...</span>
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center gap-3">
+                              <Check className="w-6 h-6" />
+                              <span>CONFIRMAR AGENDAMENTO</span>
+                            </span>
+                          )}
+                        </Button>
+                        <p className="text-center text-xs text-gray-600 mt-2">
+                          Clique para confirmar o agendamento
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
