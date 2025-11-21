@@ -106,6 +106,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   }, [isOpen, step]);
 
   const loadClients = async () => {
+    console.log('🔍 Iniciando carregamento de clientes...');
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -113,12 +114,25 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         .select('id, nome, email')
         .order('nome');
 
-      if (error) throw error;
+      console.log('📊 Resposta da query de clientes:', { data, error });
+
+      if (error) {
+        console.error('❌ Erro na query:', error);
+        throw error;
+      }
+      
+      console.log(`✅ ${data?.length || 0} clientes carregados`);
       setClients(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
-      toast.error('Erro ao carregar clientes');
+      
+      if (!data || data.length === 0) {
+        toast.info('Nenhum cliente cadastrado ainda');
+      }
+    } catch (error: any) {
+      console.error('❌ Erro ao carregar clientes:', error);
+      toast.error(error?.message || 'Erro ao carregar clientes');
+      setClients([]); // Define lista vazia em caso de erro
     } finally {
+      console.log('✅ Finalizando carregamento de clientes');
       setLoading(false);
     }
   };
