@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import beltecLogo from '@/assets/beltec-logo.png';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminSidebarProps {
   onClose?: () => void;
@@ -22,7 +24,11 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
-  const menuItems = [
+  const { user } = useAuth();
+  const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+
+  const allMenuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, href: '/admin', color: 'from-blue-500 to-cyan-500' },
     { title: 'Agendamentos Clientes', icon: UserCheck, href: '/admin/agendamentos-clientes', color: 'from-purple-500 to-violet-500' },
     { title: 'Checkouts Pendentes', icon: AlertCircle, href: '/admin/checkouts-pendentes', color: 'from-orange-500 to-yellow-500' },
@@ -30,11 +36,51 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
     { title: 'Funcionários', icon: UserCheck, href: '/admin/funcionarios', color: 'from-pink-500 to-rose-500' },
     { title: 'Barbeiros', icon: Scissors, href: '/admin/barbeiros', color: 'from-indigo-500 to-blue-500' },
     { title: 'Produtos', icon: ShoppingCart, href: '/admin/produtos', color: 'from-teal-500 to-cyan-500' },
-    { title: 'ERP Financeiro', icon: Star, href: '/admin/erp-financeiro', color: 'from-urbana-gold to-yellow-600' },
+    { title: 'ERP Financeiro', icon: Star, href: '/admin/erp-financeiro', color: 'from-urbana-gold to-yellow-600', requiredModule: 'financeiro' },
     { title: 'Gestão do Site', icon: Globe, href: '/admin/site', color: 'from-blue-500 to-indigo-500' },
     { title: 'Aniversários', icon: Cake, href: '/admin/aniversarios', color: 'from-purple-500 to-indigo-500' },
-    { title: 'Configurações', icon: Settings, href: '/admin/configuracoes', color: 'from-gray-500 to-gray-600' },
+    { title: 'Configurações', icon: Settings, href: '/admin/configuracoes', color: 'from-gray-500 to-gray-600', requiredModule: 'configuracoes' },
   ];
+
+  useEffect(() => {
+    const checkModuleAccess = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const modulesToCheck = ['financeiro', 'configuracoes'];
+        const accessResults: Record<string, boolean> = {};
+
+        for (const module of modulesToCheck) {
+          const { data, error } = await supabase.rpc('has_module_access', {
+            _user_id: user.id,
+            _module_name: module,
+          });
+
+          if (!error) {
+            accessResults[module] = data ?? true;
+          } else {
+            accessResults[module] = true; // Default allow on error
+          }
+        }
+
+        setModuleAccess(accessResults);
+      } catch (error) {
+        console.error('Erro ao verificar acesso aos módulos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkModuleAccess();
+  }, [user]);
+
+  const menuItems = allMenuItems.filter(item => {
+    if (!item.requiredModule) return true;
+    return moduleAccess[item.requiredModule] !== false;
+  });
 
   return (
     <>
@@ -91,7 +137,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
 
         {/* Navigation com animações */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuItems.map((item, index) => {
+          {loading ? (
+            <div className="text-center py-4 text-gray-500">Carregando...</div>
+          ) : (
+            menuItems.map((item, index) => {
             const isActiveRoute = location.pathname === item.href || 
               (item.href !== '/admin' && location.pathname.startsWith(item.href));
             
@@ -118,7 +167,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               </div>
             </NavLink>
             );
-          })}
+          })
+          )}
         </nav>
 
         {/* Footer */}
