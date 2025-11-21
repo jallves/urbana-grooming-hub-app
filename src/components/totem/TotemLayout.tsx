@@ -55,7 +55,7 @@ export const TotemLayout: React.FC<TotemLayoutProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
+    <div className="min-h-screen w-full flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-x-hidden">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -118,7 +118,7 @@ export const TotemLayout: React.FC<TotemLayoutProps> = ({
 
       {/* Content */}
       <div className={cn(
-        'relative z-10 flex-1 overflow-y-auto',
+        'relative z-10 flex-1 overflow-y-auto pb-4 sm:pb-6',
         className
       )}>
         {children}
