@@ -65,84 +65,8 @@ export const ContasAPagar: React.FC = () => {
   const queryClient = useQueryClient();
   const { syncToCashFlowAsync, isSyncing } = useCashFlowSync();
 
-  // 🔄 SINCRONIZAÇÃO AUTOMÁTICA de comissões pendentes do barber_commissions para financial_records
-  React.useEffect(() => {
-    const syncPendingCommissions = async () => {
-      try {
-        console.log('🔄 Verificando comissões pendentes para sincronizar...');
-        
-        // Buscar comissões pendentes que não estão no financial_records
-        const { data: pendingCommissions, error: fetchError } = await supabase
-          .from('barber_commissions')
-          .select('*')
-          .eq('status', 'pending');
-
-        if (fetchError) {
-          console.error('❌ Erro ao buscar comissões pendentes:', fetchError);
-          return;
-        }
-
-        if (!pendingCommissions || pendingCommissions.length === 0) {
-          console.log('✅ Nenhuma comissão pendente para sincronizar');
-          return;
-        }
-
-        console.log(`📊 Encontradas ${pendingCommissions.length} comissões pendentes`);
-
-        // Para cada comissão pendente, verificar se já existe no financial_records
-        for (const commission of pendingCommissions) {
-          // Verificar se já existe
-          const { data: existing } = await supabase
-            .from('financial_records')
-            .select('id')
-            .eq('transaction_type', 'commission')
-            .eq('barber_id', commission.barber_id)
-            .eq('appointment_id', commission.appointment_id)
-            .maybeSingle();
-
-          if (existing) {
-            console.log(`⏭️ Comissão ${commission.id} já existe no financial_records`);
-            continue;
-          }
-
-          // Criar no financial_records
-          const transactionNumber = `COM-MIG-${format(new Date(commission.created_at), 'yyyyMMdd')}-${commission.id.substring(0, 6)}`;
-          
-          const { error: insertError } = await supabase
-            .from('financial_records')
-            .insert({
-              transaction_number: transactionNumber,
-              transaction_type: 'commission',
-              category: 'staff_payments',
-              description: `Comissão ${commission.commission_type || 'de serviço'}`,
-              gross_amount: commission.amount,
-              net_amount: commission.amount,
-              status: 'pending',
-              transaction_date: new Date(commission.created_at).toISOString().split('T')[0],
-              barber_id: commission.barber_id,
-              appointment_id: commission.appointment_id,
-              created_at: commission.created_at,
-            });
-
-          if (insertError) {
-            console.error(`❌ Erro ao inserir comissão ${commission.id}:`, insertError);
-          } else {
-            console.log(`✅ Comissão ${commission.id} sincronizada com sucesso`);
-          }
-        }
-
-        // Atualizar as queries para mostrar os novos dados
-        queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-        queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-        
-        console.log('✅ Sincronização de comissões concluída');
-      } catch (error) {
-        console.error('❌ Erro na sincronização de comissões:', error);
-      }
-    };
-
-    syncPendingCommissions();
-  }, [queryClient]);
+  // Sincronização removida - causava erros de query e duplicação de registros
+  // A sincronização agora deve ser feita manualmente quando necessário
 
   const { data: payables, isLoading } = useQuery({
     queryKey: ['contas-pagar'],
