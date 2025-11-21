@@ -803,10 +803,10 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                       </div>
                       <Button
                         onClick={handleConfirm}
-                        disabled={creating || isValidating}
+                        disabled={creating}
                         className="w-full bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white font-bold py-4 text-lg shadow-lg"
                       >
-                        {creating || isValidating ? (
+                        {creating ? (
                           <span className="flex items-center justify-center gap-2">
                             <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                             Confirmando...
