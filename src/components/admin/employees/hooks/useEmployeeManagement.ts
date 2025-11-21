@@ -19,6 +19,7 @@ export const useEmployeeManagement = () => {
       let query = supabase
         .from('employees')
         .select('*')
+        .neq('role', 'master') // Excluir usuários master
         .order('name');
 
       // Aplicar filtros no banco
