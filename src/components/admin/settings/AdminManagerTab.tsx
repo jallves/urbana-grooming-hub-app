@@ -71,10 +71,10 @@ const AdminManagerTab: React.FC = () => {
       return;
     }
 
-    if (!password || password.length < 8) {
+    if (!password || password.length < 6) {
       toast({
         title: 'Erro',
-        description: 'A senha deve ter pelo menos 8 caracteres',
+        description: 'A senha deve ter pelo menos 6 caracteres',
         variant: 'destructive',
       });
       return;
@@ -88,17 +88,21 @@ const AdminManagerTab: React.FC = () => {
         throw new Error('Funcionário não encontrado');
       }
 
-      // Usar função RPC que cria o usuário de forma segura no servidor
-      const { data: rpcData, error: rpcError } = await supabase.rpc('create_admin_manager_user', {
-        p_employee_id: selectedEmployeeId,
-        p_password: password
+      // Usar edge function para criar o usuário de forma segura
+      const { data, error } = await supabase.functions.invoke('manage-admin-user', {
+        body: {
+          action: 'create',
+          email: selectedEmployee.email,
+          password: password,
+          employeeId: selectedEmployeeId
+        }
       });
 
-      if (rpcError) {
-        throw rpcError;
+      if (error) {
+        throw error;
       }
 
-      const result = rpcData as { success: boolean; error?: string; user_id?: string };
+      const result = data as { success: boolean; error?: string; user_id?: string };
       
       if (!result.success) {
         throw new Error(result.error || 'Erro ao criar usuário');
@@ -161,9 +165,12 @@ const AdminManagerTab: React.FC = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      // Usar função RPC segura que deleta o usuário e limpa dados
-      const { data, error } = await supabase.rpc('revoke_admin_manager_access', {
-        p_employee_id: employeeId
+      // Usar edge function para revogar acesso de forma segura
+      const { data, error } = await supabase.functions.invoke('manage-admin-user', {
+        body: {
+          action: 'revoke',
+          employeeId: employeeId
+        }
       });
 
       if (error) throw error;
