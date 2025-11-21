@@ -133,16 +133,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 🔍 Buscando role para:', user.id, user.email);
       
-      // Usar a nova função simplificada que retorna apenas UM role
-      const { data: roleData, error: roleError } = await supabase
-        .rpc('get_user_role', { p_user_id: user.id });
+      // Timeout de 3 segundos (mais rápido que antes)
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout verificando roles')), 3000)
+      );
+      
+      const checkRolePromise = async () => {
+        const { data: roleData, error: roleError } = await supabase
+          .rpc('get_user_role', { p_user_id: user.id });
 
-      if (roleError) {
-        console.error('[AuthContext] ❌ Erro ao buscar role:', roleError);
-        throw roleError;
-      }
+        if (roleError) {
+          console.error('[AuthContext] ❌ Erro na RPC get_user_role:', roleError);
+          throw roleError;
+        }
 
-      const role = roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
+        console.log('[AuthContext] 📦 Role recebido do banco:', roleData);
+        return roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
+      };
+
+      const role = await Promise.race([checkRolePromise(), timeoutPromise]) as 'master' | 'admin' | 'manager' | 'barber' | null;
       
       console.log('[AuthContext] ✅ Role obtido:', role);
       
@@ -170,6 +179,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] ✅ Verificação completa - Master:', role === 'master', 'Admin:', role === 'admin' || role === 'master', 'Manager:', role === 'manager', 'Barber:', role === 'barber');
     } catch (error) {
       console.error('[AuthContext] ❌ Error checking user roles:', error);
+      // Em caso de erro/timeout, não bloquear completamente - permitir algum acesso baseado em fallback
+      console.warn('[AuthContext] ⚠️ Usando fallback - permitindo acesso limitado');
       setIsAdmin(false);
       setIsBarber(false);
       setIsMaster(false);
@@ -209,20 +220,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Função simplificada para verificar acesso a módulos
   const canAccessModule = (moduleName: string): boolean => {
-    if (!userRole) return false;
+    console.log('[AuthContext] 🔍 Verificando acesso ao módulo:', moduleName, 'Role atual:', userRole);
+    
+    if (!userRole) {
+      console.warn('[AuthContext] ⚠️ Role não definido, negando acesso ao módulo:', moduleName);
+      return false;
+    }
     
     // Master tem acesso total
-    if (userRole === 'master') return true;
+    if (userRole === 'master') {
+      console.log('[AuthContext] ✅ Master tem acesso total');
+      return true;
+    }
     
     // Admin tem acesso a tudo exceto configurações
-    if (userRole === 'admin') return moduleName !== 'configuracoes';
+    if (userRole === 'admin') {
+      const hasAccess = moduleName !== 'configuracoes';
+      console.log('[AuthContext] 🔐 Admin - Módulo:', moduleName, 'Acesso:', hasAccess);
+      return hasAccess;
+    }
     
     // Manager tem restrições em financeiro e configurações
     if (userRole === 'manager') {
-      return moduleName !== 'financeiro' && moduleName !== 'configuracoes';
+      const hasAccess = moduleName !== 'financeiro' && moduleName !== 'configuracoes';
+      console.log('[AuthContext] 🔐 Manager - Módulo:', moduleName, 'Acesso:', hasAccess);
+      return hasAccess;
     }
     
     // Barber não tem acesso aos módulos administrativos
+    console.log('[AuthContext] ❌ Barber não tem acesso ao módulo:', moduleName);
     return false;
   };
 
