@@ -130,7 +130,7 @@ export const PainelClienteCardTitle: React.FC<{
 }> = ({ children, className }) => {
   return (
     <CardTitle className={cn(
-      'text-xl sm:text-2xl font-bold text-urbana-light drop-shadow-lg',
+      'text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg',
       className
     )}>
       {children}
@@ -163,7 +163,7 @@ export const PainelClienteCardHeader: React.FC<{
   className?: string;
 }> = ({ children, className }) => {
   return (
-    <CardHeader className={cn('pb-3', className)}>
+    <CardHeader className={cn('p-4 sm:p-6 pb-3', className)}>
       {children}
     </CardHeader>
   );
@@ -177,7 +177,7 @@ export const PainelClienteCardContent: React.FC<{
   className?: string;
 }> = ({ children, className }) => {
   return (
-    <CardContent className={cn('space-y-2', className)}>
+    <CardContent className={cn('p-4 sm:p-6 space-y-2', className)}>
       {children}
     </CardContent>
   );
@@ -191,7 +191,7 @@ export const PainelClienteCardFooter: React.FC<{
   className?: string;
 }> = ({ children, className }) => {
   return (
-    <CardFooter className={cn('pt-4', className)}>
+    <CardFooter className={cn('p-4 sm:p-6 pt-4', className)}>
       {children}
     </CardFooter>
   );

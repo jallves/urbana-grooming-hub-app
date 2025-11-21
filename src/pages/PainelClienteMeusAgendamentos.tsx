@@ -180,35 +180,35 @@ export default function PainelClienteMeusAgendamentos() {
 
   return (
     <div className="w-full h-full bg-transparent">
-      <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="w-full space-y-6"
+          className="w-full space-y-4 sm:space-y-6"
         >
           {/* Header */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-urbana-gold drop-shadow-lg">
+              <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold drop-shadow-lg">
                 Meus Agendamentos
               </h1>
-              <p className="text-urbana-light/70 text-base sm:text-lg mt-2 drop-shadow-md">Acompanhe todos os seus agendamentos</p>
+              <p className="text-urbana-light/70 text-sm sm:text-base mt-1 sm:mt-2 drop-shadow-md">Acompanhe todos os seus agendamentos</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Button
                 onClick={() => navigate('/painel-cliente/agendar')}
-                className="bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+                className="bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base rounded-xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-1 sm:mr-2" />
                 Novo Agendamento
               </Button>
               <Button
                 variant="outline"
                 onClick={() => navigate('/painel-cliente/dashboard')}
-                className="text-urbana-light border border-urbana-gold/30 bg-transparent rounded-xl px-6 py-3 text-sm font-medium hover:bg-urbana-gold/10 hover:border-urbana-gold/50 transition-all duration-300"
+                className="text-urbana-light border border-urbana-gold/30 bg-transparent rounded-xl px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium hover:bg-urbana-gold/10 hover:border-urbana-gold/50 transition-all duration-300"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
                 Voltar
               </Button>
             </div>

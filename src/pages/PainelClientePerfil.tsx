@@ -105,21 +105,21 @@ export default function PainelClientePerfil() {
         className="space-y-8"
       >
         {/* Header */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <Button
             onClick={() => navigate('/painel-cliente/dashboard')}
             variant="ghost"
             size="sm"
-            className="text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-gold rounded-2xl px-6 py-3 transition-all duration-300"
+            className="text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-gold rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
             Voltar
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl sm:text-4xl font-bold text-urbana-gold drop-shadow-lg">
+            <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold drop-shadow-lg">
               Editar Perfil
             </h1>
-            <p className="text-urbana-light/70 text-lg mt-2 drop-shadow-md">Mantenha suas informações sempre atualizadas</p>
+            <p className="text-urbana-light/70 text-sm sm:text-base mt-1 sm:mt-2 drop-shadow-md">Mantenha suas informações sempre atualizadas</p>
           </div>
         </motion.div>
 
