@@ -81,6 +81,14 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    clientName: string;
+    barberName: string;
+    date: string;
+    time: string;
+    serviceName: string;
+  } | null>(null);
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
 
@@ -99,6 +107,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     setSelectedDate(null);
     setSelectedTime(null);
     setClientSearch('');
+    setShowSuccessDialog(false);
+    setSuccessData(null);
   };
 
   // Load clients
@@ -447,18 +457,22 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
       if (progressToast) toast.dismiss(progressToast);
       
-      // Toast de sucesso grande e visível
-      toast.success('✅ Agendamento Confirmado com Sucesso!', {
-        description: `${selectedClient.nome} foi agendado com ${selectedBarber.nome} para ${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}`,
-        duration: 6000,
+      // Preparar dados do sucesso
+      setSuccessData({
+        clientName: selectedClient.nome,
+        barberName: selectedBarber.nome,
+        date: format(selectedDate, "dd/MM/yyyy", { locale: ptBR }),
+        time: selectedTime,
+        serviceName: selectedService.nome
       });
-
-      console.log('4️⃣ Chamando onCreate e fechando dialog...');
       
-      // Atualizar lista e fechar
+      // Mostrar dialog de sucesso
+      setShowSuccessDialog(true);
+
+      console.log('4️⃣ Chamando onCreate...');
+      
+      // Atualizar lista
       onCreate();
-      resetForm();
-      onClose();
 
       console.log('✅ PROCESSO COMPLETO!');
 
@@ -499,6 +513,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   console.log('🎨 [CreateDialog] Renderizando Dialog. isOpen:', isOpen, 'loading:', loading, 'step:', step, 'clients:', clients.length);
   
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
         className="max-w-6xl w-[95vw] h-[95vh] p-0 bg-white border-2 border-gray-300 shadow-2xl flex flex-col"
@@ -904,6 +919,95 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         </div>
       </DialogContent>
     </Dialog>
+    
+    {/* Dialog de Sucesso */}
+    <Dialog open={showSuccessDialog} onOpenChange={(open) => {
+      if (!open) {
+        setShowSuccessDialog(false);
+        resetForm();
+        onClose();
+      }
+    }}>
+      <DialogContent className="max-w-md">
+        <VisuallyHidden>
+          <DialogTitle>Agendamento Confirmado</DialogTitle>
+          <DialogDescription>
+            Seu agendamento foi criado com sucesso
+          </DialogDescription>
+        </VisuallyHidden>
+        
+        <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
+          {/* Ícone de sucesso grande e animado */}
+          <div className="mb-6 relative">
+            <div className="absolute inset-0 bg-green-100 rounded-full animate-ping"></div>
+            <div className="relative bg-green-500 text-white rounded-full p-6">
+              <Check className="w-16 h-16" />
+            </div>
+          </div>
+          
+          {/* Título */}
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            ✅ Agendamento Confirmado!
+          </h3>
+          
+          <p className="text-gray-600 mb-6">
+            O agendamento foi criado com sucesso
+          </p>
+          
+          {/* Detalhes do agendamento */}
+          {successData && (
+            <div className="w-full bg-gray-50 rounded-lg p-4 mb-6 text-left space-y-2">
+              <div className="flex items-start gap-2">
+                <User className="w-5 h-5 text-gray-600 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-500">Cliente</p>
+                  <p className="font-semibold text-gray-900">{successData.clientName}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <Scissors className="w-5 h-5 text-gray-600 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-500">Serviço</p>
+                  <p className="font-semibold text-gray-900">{successData.serviceName}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <User className="w-5 h-5 text-gray-600 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-500">Barbeiro</p>
+                  <p className="font-semibold text-gray-900">{successData.barberName}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-2">
+                <CalendarIcon className="w-5 h-5 text-gray-600 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-500">Data e Horário</p>
+                  <p className="font-semibold text-gray-900">
+                    {successData.date} às {successData.time}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Botão de fechar */}
+          <Button 
+            onClick={() => {
+              setShowSuccessDialog(false);
+              resetForm();
+              onClose();
+            }}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3"
+          >
+            OK, ENTENDI
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
