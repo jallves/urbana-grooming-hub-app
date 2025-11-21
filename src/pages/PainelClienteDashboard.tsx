@@ -145,17 +145,17 @@ export default function PainelClienteDashboard() {
   return (
     <PainelClienteContentContainer>
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
+          <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
             Olá, {cliente?.nome}!
           </h1>
-          <p className="text-urbana-light/70 drop-shadow-md">Bem-vindo à Urbana Barbearia</p>
+          <p className="text-urbana-light/70 text-sm sm:text-base drop-shadow-md">Bem-vindo à Urbana Barbearia</p>
         </div>
       </div>
 
       {/* Estatísticas em Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[
           {
             label: "Total de Agendamentos",
@@ -234,11 +234,11 @@ export default function PainelClienteDashboard() {
 
       {/* Próximos Agendamentos */}
       {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-urbana-gold mb-4 drop-shadow-lg">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-urbana-gold mb-3 sm:mb-4 drop-shadow-lg">
             Próximos Agendamentos
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {stats.agendamentosFuturos.map((ag, index) => (
               <PainelClienteCard key={index} variant="info">
                 <PainelClienteCardHeader className="pb-2">
@@ -285,7 +285,7 @@ export default function PainelClienteDashboard() {
       )}
 
       {/* Ações Rápidas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {[
           {
             label: "Novo Agendamento",
