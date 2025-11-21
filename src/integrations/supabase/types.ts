@@ -4430,6 +4430,10 @@ export type Database = {
         Args: { staff_id_param: string }
         Returns: string[]
       }
+      has_module_access: {
+        Args: { _module_name: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: { role: Database["public"]["Enums"]["app_role"]; user_id: string }
         Returns: boolean
@@ -4453,6 +4457,7 @@ export type Database = {
         | { Args: { user_id: string }; Returns: boolean }
         | { Args: never; Returns: boolean }
       is_barber: { Args: { user_id?: string }; Returns: boolean }
+      is_master: { Args: { _user_id: string }; Returns: boolean }
       is_staff_member: { Args: { user_email: string }; Returns: boolean }
       is_user_admin: { Args: { user_id: string }; Returns: boolean }
       is_user_staff: { Args: { user_id: string }; Returns: boolean }
@@ -4542,7 +4547,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user" | "barber" | "customer" | "manager"
+      app_role: "admin" | "user" | "barber" | "customer" | "manager" | "master"
       payment_method:
         | "cash"
         | "credit_card"
@@ -4702,7 +4707,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "barber", "customer", "manager"],
+      app_role: ["admin", "user", "barber", "customer", "manager", "master"],
       payment_method: [
         "cash",
         "credit_card",

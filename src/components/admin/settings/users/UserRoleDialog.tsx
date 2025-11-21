@@ -33,7 +33,7 @@ import { Loader2, ShieldCheck } from 'lucide-react';
 import { UserWithRole, AppRole } from './types';
 
 const roleSchema = z.object({
-  role: z.enum(['admin', 'barber', 'user'] as const, { required_error: 'Selecione um cargo' }),
+  role: z.enum(['master', 'admin', 'manager', 'barber', 'user'] as const, { required_error: 'Selecione um cargo' }),
 });
 
 type RoleFormData = z.infer<typeof roleSchema>;
