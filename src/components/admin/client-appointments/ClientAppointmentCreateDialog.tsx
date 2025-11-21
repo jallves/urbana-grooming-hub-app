@@ -442,7 +442,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-transparent border-none">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-urbana-black border-urbana-gold/30">
         <VisuallyHidden>
           <DialogTitle>Novo Agendamento</DialogTitle>
           <DialogDescription>
@@ -455,10 +455,10 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           <img 
             src={barbershopBg} 
             alt="Barbearia Costa Urbana Background" 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover opacity-20"
           />
           {/* Dark overlay - Garante contraste e legibilidade */}
-          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-black/85 to-urbana-brown/80" />
+          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/95 via-urbana-black/90 to-urbana-black/85" />
         </div>
 
         {/* Animated background effects */}
