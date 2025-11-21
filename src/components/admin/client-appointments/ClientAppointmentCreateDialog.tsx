@@ -358,8 +358,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
     if (!selectedClient || !selectedService || !selectedBarber || !selectedDate || !selectedTime) {
       console.error('❌ Dados incompletos!');
-      toast.error('Selecione todos os campos', {
-        description: 'Cliente, serviço, barbeiro, data e horário são obrigatórios'
+      toast.error('⚠️ Dados Incompletos', {
+        description: 'Por favor, selecione cliente, serviço, barbeiro, data e horário antes de confirmar.',
+        duration: 4000,
       });
       return;
     }
@@ -382,7 +383,10 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       if (!validationResult.success) {
         const errors = validationResult.error.errors.map(e => e.message).join(', ');
         console.error('❌ Validação Zod falhou:', errors);
-        toast.error('Dados inválidos', { description: errors });
+        toast.error('❌ Dados Inválidos', {
+          description: errors,
+          duration: 5000,
+        });
         return;
       }
 
@@ -405,8 +409,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       if (!validation.valid) {
         if (progressToast) toast.dismiss(progressToast);
         console.error('❌ Horário não disponível:', validation.error);
-        toast.error('Horário indisponível', {
-          description: validation.error || 'Este horário não está mais disponível'
+        toast.error('⚠️ Horário Indisponível', {
+          description: validation.error || 'Este horário não está mais disponível. Por favor, escolha outro horário.',
+          duration: 5000,
         });
         await loadTimeSlots();
         return;
@@ -443,9 +448,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       if (progressToast) toast.dismiss(progressToast);
       
       // Toast de sucesso grande e visível
-      toast.success('🎉 Agendamento Confirmado!', {
-        description: `${selectedClient.nome} agendado com ${selectedBarber.nome} em ${format(selectedDate, "dd 'de' MMMM 'às' ", { locale: ptBR })}${selectedTime}`,
-        duration: 5000
+      toast.success('✅ Agendamento Confirmado com Sucesso!', {
+        description: `${selectedClient.nome} foi agendado com ${selectedBarber.nome} para ${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}`,
+        duration: 6000,
       });
 
       console.log('4️⃣ Chamando onCreate e fechando dialog...');
@@ -461,19 +466,22 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       console.error('💥 ERRO NO PROCESSO:', error);
       if (progressToast) toast.dismiss(progressToast);
       
-      let errorMessage = 'Erro ao criar agendamento';
+      let errorTitle = '❌ Erro ao Criar Agendamento';
+      let errorMessage = 'Não foi possível criar o agendamento. Tente novamente.';
       
       if (error.code === '23505') {
-        errorMessage = 'Já existe um agendamento neste horário';
+        errorTitle = '⚠️ Conflito de Horário';
+        errorMessage = 'Já existe um agendamento neste horário. Por favor, escolha outro horário disponível.';
       } else if (error.code === '23503') {
-        errorMessage = 'Erro de referência no banco de dados';
+        errorTitle = '⚠️ Erro de Referência';
+        errorMessage = 'Dados inválidos detectados. Verifique se cliente, barbeiro e serviço estão corretos.';
       } else if (error.message) {
         errorMessage = error.message;
       }
       
-      toast.error('❌ Falha ao criar agendamento', {
+      toast.error(errorTitle, {
         description: errorMessage,
-        duration: 5000
+        duration: 6000,
       });
       
       await loadTimeSlots();
