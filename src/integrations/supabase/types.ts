@@ -4145,10 +4145,6 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      can_access_module: {
-        Args: { p_module_name: string; p_user_id: string }
-        Returns: boolean
-      }
       check_appointment_conflict: {
         Args: {
           p_end_time: string

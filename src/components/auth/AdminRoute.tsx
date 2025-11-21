@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -16,7 +17,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   allowBarber = false,
   requiredModule,
 }) => {
-  const { user, isAdmin, isBarber, isMaster, canAccessModule, loading, requiresPasswordChange } = useAuth();
+  const { user, isAdmin, isBarber, isMaster, canAccessModule, loading, requiresPasswordChange, signOut } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
 
@@ -59,13 +60,23 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   if (!hasAccess || (requiredModule && !hasModuleAccess)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 max-w-md">
           <h2 className="text-2xl font-bold text-foreground">Sem permissão</h2>
           <p className="text-muted-foreground">
             {requiredModule && !hasModuleAccess
               ? 'Você não tem permissão para acessar este módulo.'
               : 'Você não tem permissão para acessar esta área.'}
           </p>
+          <Button 
+            onClick={async () => {
+              await signOut();
+              window.location.href = '/auth';
+            }}
+            variant="outline"
+            className="mt-4"
+          >
+            Sair do Sistema
+          </Button>
         </div>
       </div>
     );
