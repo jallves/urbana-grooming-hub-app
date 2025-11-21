@@ -366,63 +366,45 @@ const TotemPaymentPix: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center overflow-y-auto py-2 z-10">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20 text-center">
-          {/* Indicador de Simulação - DESTAQUE */}
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] text-center rounded-3xl">
+          {/* Indicador de Simulação */}
           {isSimulationActive && (
-            <div className="bg-gradient-to-r from-emerald-500/30 via-green-500/20 to-emerald-500/30 border-4 border-emerald-500/60 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-emerald-500/40">
-              <div className="flex flex-col items-center justify-center gap-4">
-                <div className="relative flex items-center gap-4">
-                  {/* Animação pulsante */}
-                  <div className="relative">
-                    <div className="w-6 h-6 bg-emerald-400 rounded-full animate-ping absolute opacity-75" />
-                    <div className="w-6 h-6 bg-emerald-400 rounded-full relative z-10" />
-                  </div>
-                  
-                  <p className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-400 drop-shadow-lg">
-                    🤖 MODO TESTE ATIVO
-                  </p>
-                  
-                  <div className="relative">
-                    <div className="w-6 h-6 bg-emerald-400 rounded-full animate-ping absolute opacity-75" />
-                    <div className="w-6 h-6 bg-emerald-400 rounded-full relative z-10" />
-                  </div>
+            <div className="bg-gradient-to-r from-emerald-500/20 via-green-500/15 to-emerald-500/20 border-2 border-emerald-500/40 rounded-xl p-3 sm:p-4">
+              <div className="flex items-center justify-center gap-2 sm:gap-3">
+                <div className="relative">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping absolute opacity-75" />
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full relative z-10" />
                 </div>
-                
-                {/* Contador grande e visível */}
-                <div className="bg-urbana-black/50 backdrop-blur-sm rounded-xl p-6 border-2 border-emerald-500/50">
-                  <p className="text-urbana-light/70 text-lg mb-2">Aprovação automática em:</p>
-                  <p className="text-7xl sm:text-8xl md:text-9xl font-black text-emerald-400 tabular-nums">
-                    {simulationTimer}
-                  </p>
-                  <p className="text-urbana-light/70 text-xl mt-2">segundos</p>
-                </div>
+                <p className="text-sm sm:text-base md:text-lg font-bold text-emerald-400">
+                  🤖 MODO TESTE: Aprovação em {simulationTimer}s
+                </p>
               </div>
             </div>
           )}
 
           {/* Timer */}
-          <div className="flex items-center justify-center gap-3 sm:gap-4 p-4 bg-urbana-black/30 rounded-2xl border border-urbana-gold/20">
-            <Clock className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold animate-pulse" />
+          <div className="flex items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold animate-pulse" />
             <div className="text-left">
-              <p className="text-sm sm:text-base text-urbana-light/60">Tempo restante</p>
-              <p className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-gold">
+              <p className="text-xs sm:text-sm text-urbana-light/60">Tempo restante</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-gold">
                 {formatTime(timeLeft)}
               </p>
             </div>
           </div>
 
           {/* QR Code */}
-          <div className="flex justify-center py-6 sm:py-8">
+          <div className="flex justify-center py-4 sm:py-6">
             <div className="relative">
-              <div className="absolute -inset-4 bg-urbana-gold/20 rounded-3xl blur-2xl" />
-              <div className="relative bg-white p-4 sm:p-5 md:p-6 lg:p-8 rounded-2xl shadow-2xl">
+              <div className="absolute -inset-3 bg-urbana-gold/20 rounded-2xl blur-xl" />
+              <div className="relative bg-white p-3 sm:p-4 md:p-5 rounded-xl shadow-xl">
                 {pixCode ? (
-                  <QRCodeSVG value={pixCode} size={window.innerWidth < 640 ? 220 : window.innerWidth < 768 ? 260 : 320} />
+                  <QRCodeSVG value={pixCode} size={window.innerWidth < 640 ? 180 : window.innerWidth < 768 ? 200 : 220} />
                 ) : (
-                  <div className="w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] md:w-[320px] md:h-[320px] flex items-center justify-center">
-                    <div className="text-center space-y-3">
-                      <div className="w-12 h-12 border-4 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
-                      <p className="text-base sm:text-lg text-gray-500 font-medium">Gerando QR Code...</p>
+                  <div className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] md:w-[220px] md:h-[220px] flex items-center justify-center">
+                    <div className="text-center space-y-2">
+                      <div className="w-8 h-8 border-3 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
+                      <p className="text-sm sm:text-base text-gray-500 font-medium">Gerando QR Code...</p>
                     </div>
                   </div>
                 )}
@@ -431,9 +413,9 @@ const TotemPaymentPix: React.FC = () => {
           </div>
 
           {/* Amount */}
-          <div className="space-y-3 p-6 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold-vibrant/10 to-urbana-gold/10 rounded-2xl border-2 border-urbana-gold/30">
-            <p className="text-lg sm:text-xl md:text-2xl text-urbana-light/70 font-medium">Valor total</p>
-            <p className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold animate-pulse">
+          <div className="space-y-2 sm:space-y-3 p-4 sm:p-5 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold-vibrant/10 to-urbana-gold/10 rounded-xl border-2 border-urbana-gold/30">
+            <p className="text-base sm:text-lg md:text-xl text-urbana-light/70 font-medium">Valor total</p>
+            <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
               R$ {total?.toFixed(2)}
             </p>
           </div>

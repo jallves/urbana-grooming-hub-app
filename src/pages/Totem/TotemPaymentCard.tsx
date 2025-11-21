@@ -191,12 +191,12 @@ const TotemPaymentCard: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
-        <Card className="w-full max-w-3xl p-5 sm:p-6 md:p-8 lg:p-10 space-y-5 sm:space-y-6 md:space-y-8 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/20">
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] rounded-3xl">
           
           {/* Amount Display */}
-          <div className="text-center space-y-3 sm:space-y-4 p-5 sm:p-6 md:p-8 bg-gradient-to-r from-urbana-gold/15 via-urbana-gold-vibrant/10 to-urbana-gold/15 rounded-2xl border-2 border-urbana-gold/40 shadow-lg shadow-urbana-gold/20">
-            <p className="text-lg sm:text-xl md:text-2xl text-urbana-light/70 font-medium">Valor total</p>
-            <p className="text-5xl sm:text-6xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+          <div className="text-center space-y-2 sm:space-y-3 p-4 sm:p-5 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold-vibrant/10 to-urbana-gold/10 rounded-xl border-2 border-urbana-gold/30">
+            <p className="text-base sm:text-lg md:text-xl text-urbana-light/70 font-medium">Valor total</p>
+            <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
               R$ {total?.toFixed(2)}
             </p>
           </div>
@@ -254,49 +254,49 @@ const TotemPaymentCard: React.FC = () => {
           ) : (
             <>
               {/* Processing State */}
-              <div className="flex flex-col items-center justify-center py-8 sm:py-12 space-y-6 sm:space-y-8">
+              <div className="flex flex-col items-center justify-center py-6 sm:py-8 space-y-4 sm:space-y-6">
                 {/* Indicador de Simulação */}
-                <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-2xl p-4 sm:p-5 animate-pulse w-full max-w-md shadow-lg shadow-urbana-gold/20">
-                  <div className="flex items-center justify-center gap-2 sm:gap-3">
+                <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-xl p-3 sm:p-4 w-full">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="relative">
-                      <div className="w-3 h-3 bg-urbana-gold rounded-full animate-ping absolute" />
-                      <div className="w-3 h-3 bg-urbana-gold rounded-full" />
+                      <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping absolute" />
+                      <div className="w-2 h-2 bg-urbana-gold rounded-full" />
                     </div>
-                    <p className="text-base sm:text-lg md:text-xl font-black text-urbana-gold">
+                    <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold">
                       🤖 MODO TESTE: Aprovação em {simulationTimer}s
                     </p>
                   </div>
                 </div>
 
                 <div className="relative">
-                  <Loader2 className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 text-urbana-gold animate-spin" />
-                  <div className="absolute inset-0 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-urbana-gold/20 rounded-full blur-xl animate-pulse" />
+                  <Loader2 className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold animate-spin" />
+                  <div className="absolute inset-0 w-16 h-16 sm:w-20 sm:h-20 bg-urbana-gold/20 rounded-full blur-xl animate-pulse" />
                 </div>
                 
-                <div className="text-center space-y-3 sm:space-y-4">
-                  <p className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-light">
+                <div className="text-center space-y-2 sm:space-y-3">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light">
                     Processando pagamento...
                   </p>
-                  <div className="inline-block px-6 py-3 bg-urbana-gold/10 rounded-xl border border-urbana-gold/30">
-                    <p className="text-xl sm:text-2xl md:text-3xl text-urbana-gold font-bold">
+                  <div className="inline-block px-4 py-2 bg-urbana-gold/10 rounded-lg border border-urbana-gold/30">
+                    <p className="text-base sm:text-lg md:text-xl text-urbana-gold font-bold">
                       {paymentType === 'credit' ? 'Cartão de Crédito' : 'Cartão de Débito'}
                     </p>
                   </div>
-                  <p className="text-lg sm:text-xl md:text-2xl text-urbana-gray-light animate-pulse mt-4">
+                  <p className="text-sm sm:text-base md:text-lg text-urbana-gray-light animate-pulse mt-2">
                     Siga as instruções na maquininha
                   </p>
                 </div>
 
                 {/* Progress Steps */}
-                <div className="flex items-center gap-3 sm:gap-4 mt-8">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold" />
-                    <span className="text-sm sm:text-base text-urbana-light">Conectado</span>
+                <div className="flex items-center gap-2 sm:gap-3 mt-4">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
+                    <span className="text-xs sm:text-sm text-urbana-light">Conectado</span>
                   </div>
-                  <div className="w-8 sm:w-12 h-0.5 bg-urbana-gold/30" />
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-urbana-gold rounded-full animate-pulse" />
-                    <span className="text-sm sm:text-base text-urbana-light">Aguardando</span>
+                  <div className="w-6 sm:w-8 h-0.5 bg-urbana-gold/30" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-urbana-gold rounded-full animate-pulse" />
+                    <span className="text-xs sm:text-sm text-urbana-light">Aguardando</span>
                   </div>
                 </div>
               </div>
