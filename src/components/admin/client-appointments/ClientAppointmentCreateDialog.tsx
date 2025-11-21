@@ -448,7 +448,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="max-w-6xl max-h-[90vh] p-0 overflow-hidden bg-white border-2 border-gray-300 shadow-2xl"
+        className="max-w-6xl w-[95vw] h-[95vh] p-0 bg-white border-2 border-gray-300 shadow-2xl flex flex-col"
         style={{ zIndex: 9999 }}
       >
         <div className="absolute top-2 right-2 z-50">
@@ -469,9 +469,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           </DialogDescription>
         </VisuallyHidden>
 
-        <div className="flex flex-col h-full bg-white">
-          {/* Header */}
-          <div className="p-4 sm:p-6 border-b-2 border-gray-300 bg-gradient-to-r from-gray-50 to-white">
+        <div className="flex flex-col h-full bg-white overflow-hidden">
+          {/* Header - Fixo */}
+          <div className="flex-shrink-0 p-4 sm:p-6 border-b-2 border-gray-300 bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center justify-between mb-4">
               <Button
                 variant="outline"
@@ -497,7 +497,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
             </div>
 
             {/* Progress Indicator */}
-            <div className="flex items-center justify-center gap-2 mt-4">
+            <div className="flex items-center justify-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                 step === 'client' 
                   ? 'bg-urbana-gold text-white border-urbana-gold' 
@@ -536,8 +536,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
             </div>
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-gray-50">
+          {/* Content - Scrollável */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50">
             {/* Step 1: Client Selection */}
             {step === 'client' && (
               <div className="space-y-3 sm:space-y-4">
@@ -656,170 +656,170 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
             {/* Step 4: Date & Time Selection */}
             {step === 'datetime' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {/* Date Selection */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 text-gray-900">
-                    <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
-                    Escolha a Data
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {loading ? (
-                      <div className="col-span-full text-center py-6 sm:py-8 text-gray-600">
-                        Carregando datas...
-                      </div>
-                    ) : availableDates.length === 0 ? (
-                      <div className="col-span-full text-center py-6 sm:py-8 text-gray-500">
-                        Nenhuma data disponível
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Date Selection */}
+                  <div>
+                    <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-gray-900">
+                      <CalendarIcon className="w-5 h-5 text-urbana-gold" />
+                      Escolha a Data
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2">
+                      {loading ? (
+                        <div className="col-span-full text-center py-8 text-gray-600">
+                          Carregando datas...
+                        </div>
+                      ) : availableDates.length === 0 ? (
+                        <div className="col-span-full text-center py-8 text-gray-500">
+                          Nenhuma data disponível
+                        </div>
+                      ) : (
+                        availableDates.map((date) => (
+                          <Card
+                            key={date.toISOString()}
+                            onClick={() => handleDateSelect(date)}
+                            className={`cursor-pointer transition-all bg-white ${
+                              selectedDate?.toDateString() === date.toDateString()
+                                ? 'border-2 border-urbana-gold shadow-lg'
+                                : 'border border-gray-200 hover:border-urbana-gold'
+                            }`}
+                          >
+                            <CardContent className="p-3 text-center">
+                              <p className="text-xs text-gray-600 capitalize">
+                                {format(date, 'EEEE', { locale: ptBR })}
+                              </p>
+                              <p className="text-2xl font-bold text-gray-900">
+                                {format(date, 'dd')}
+                              </p>
+                              <p className="text-sm text-gray-700 capitalize">
+                                {format(date, 'MMM', { locale: ptBR })}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Time Selection */}
+                  <div>
+                    <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-gray-900">
+                      <Clock className="w-5 h-5 text-urbana-gold" />
+                      Escolha o Horário
+                    </h3>
+                    {!selectedDate ? (
+                      <div className="text-center text-gray-500 py-8">
+                        Selecione uma data primeiro
                       </div>
                     ) : (
-                      availableDates.map((date) => (
-                        <Card
-                          key={date.toISOString()}
-                          onClick={() => handleDateSelect(date)}
-                          className={`cursor-pointer transition-all bg-white ${
-                            selectedDate?.toDateString() === date.toDateString()
-                              ? 'border-2 border-urbana-gold shadow-lg'
-                              : 'border border-gray-200 hover:border-urbana-gold'
-                          }`}
-                        >
-                          <CardContent className="p-3 sm:p-4 text-center">
-                            <p className="text-xs text-gray-600 capitalize">
-                              {format(date, 'EEEE', { locale: ptBR })}
-                            </p>
-                            <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                              {format(date, 'dd')}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-700 capitalize">
-                              {format(date, 'MMM', { locale: ptBR })}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))
+                      <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2">
+                        {loading ? (
+                          <div className="col-span-full text-center py-8 text-gray-600">
+                            Carregando horários...
+                          </div>
+                        ) : timeSlots.filter(slot => slot.available).length === 0 ? (
+                          <div className="col-span-full text-center py-8 text-gray-500">
+                            Nenhum horário disponível
+                          </div>
+                        ) : (
+                          timeSlots
+                            .filter(slot => slot.available)
+                            .map((slot) => (
+                              <Card
+                                key={slot.time}
+                                onClick={() => setSelectedTime(slot.time)}
+                                className={`cursor-pointer transition-all bg-white ${
+                                  selectedTime === slot.time
+                                    ? 'border-2 border-urbana-gold shadow-lg'
+                                    : 'border border-gray-200 hover:border-urbana-gold'
+                                }`}
+                              >
+                                <CardContent className="p-3 text-center">
+                                  <p className="text-sm font-bold text-gray-900">
+                                    {slot.time}
+                                  </p>
+                                </CardContent>
+                              </Card>
+                            ))
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Time Selection */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 text-gray-900">
-                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
-                    Escolha o Horário
-                  </h3>
-                  {!selectedDate ? (
-                    <div className="text-center text-gray-500 py-6 sm:py-8">
-                      Selecione uma data primeiro
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-2">
-                      {loading ? (
-                        <div className="col-span-full text-center py-6 sm:py-8 text-gray-600">
-                          Carregando horários...
-                        </div>
-                      ) : timeSlots.filter(slot => slot.available).length === 0 ? (
-                        <div className="col-span-full text-center py-6 sm:py-8 text-gray-500">
-                          Nenhum horário disponível
-                        </div>
-                      ) : (
-                        timeSlots
-                          .filter(slot => slot.available)
-                          .map((slot) => (
-                            <Card
-                              key={slot.time}
-                              onClick={() => setSelectedTime(slot.time)}
-                              className={`cursor-pointer transition-all bg-white ${
-                                selectedTime === slot.time
-                                  ? 'border-2 border-urbana-gold shadow-lg'
-                                  : 'border border-gray-200 hover:border-urbana-gold'
-                              }`}
-                            >
-                              <CardContent className="p-2 sm:p-3 text-center">
-                                <p className="text-xs sm:text-sm font-bold text-gray-900">
-                                  {slot.time}
-                                </p>
-                              </CardContent>
-                            </Card>
-                          ))
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Summary & Confirm */}
+                {/* Summary & Confirm - Sempre visível quando data e hora selecionados */}
                 {selectedDate && selectedTime && (
-                  <div className="lg:col-span-2 mt-4 sm:mt-6">
-                    <Card className="border-2 border-urbana-gold bg-white shadow-xl">
-                      <CardHeader className="p-3 sm:p-4 md:p-6">
-                        <CardTitle className="text-lg sm:text-xl text-gray-900">Resumo do Agendamento</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
-                            <div>
-                              <p className="text-xs text-gray-600">Cliente</p>
-                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedClient?.nome}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
-                            <div>
-                              <p className="text-xs text-gray-600">Serviço</p>
-                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedService?.nome}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            {selectedBarber?.image_url ? (
-                              <img 
-                                src={selectedBarber.image_url} 
-                                alt={selectedBarber.nome}
-                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-urbana-gold"
-                              />
-                            ) : (
-                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
-                            )}
-                            <div>
-                              <p className="text-xs text-gray-600">Profissional</p>
-                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedBarber?.nome}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 sm:gap-3">
-                            <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
-                            <div>
-                              <p className="text-xs text-gray-600">Data</p>
-                              <p className="font-semibold text-sm sm:text-base text-gray-900">
-                                {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 sm:gap-3 md:col-span-2">
-                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
-                            <div>
-                              <p className="text-xs text-gray-600">Horário</p>
-                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedTime}</p>
-                            </div>
+                  <Card className="border-2 border-urbana-gold bg-white shadow-xl mt-4">
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-xl text-gray-900">Resumo do Agendamento</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3">
+                          <User className="w-5 h-5 text-urbana-gold flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-gray-600">Cliente</p>
+                            <p className="font-semibold text-gray-900">{selectedClient?.nome}</p>
                           </div>
                         </div>
-                        <Button
-                          onClick={handleConfirm}
-                          disabled={creating || isValidating}
-                          className="w-full bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white font-bold py-4 sm:py-6 text-base sm:text-lg shadow-lg"
-                        >
-                          {creating || isValidating ? (
-                            <span className="flex items-center justify-center gap-2">
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                              <span className="text-sm sm:text-base">Confirmando...</span>
-                            </span>
+                        <div className="flex items-center gap-3">
+                          <Scissors className="w-5 h-5 text-urbana-gold flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-gray-600">Serviço</p>
+                            <p className="font-semibold text-gray-900">{selectedService?.nome}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {selectedBarber?.image_url ? (
+                            <img 
+                              src={selectedBarber.image_url} 
+                              alt={selectedBarber.nome}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-urbana-gold"
+                            />
                           ) : (
-                            <>
-                              <Check className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                              <span className="text-sm sm:text-base">Confirmar Agendamento</span>
-                            </>
+                            <User className="w-5 h-5 text-urbana-gold flex-shrink-0" />
                           )}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
+                          <div>
+                            <p className="text-xs text-gray-600">Profissional</p>
+                            <p className="font-semibold text-gray-900">{selectedBarber?.nome}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <CalendarIcon className="w-5 h-5 text-urbana-gold flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-gray-600">Data</p>
+                            <p className="font-semibold text-gray-900">
+                              {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 md:col-span-2">
+                          <Clock className="w-5 h-5 text-urbana-gold flex-shrink-0" />
+                          <div>
+                            <p className="text-xs text-gray-600">Horário</p>
+                            <p className="font-semibold text-gray-900">{selectedTime}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleConfirm}
+                        disabled={creating || isValidating}
+                        className="w-full bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white font-bold py-4 text-lg shadow-lg"
+                      >
+                        {creating || isValidating ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                            Confirmando...
+                          </span>
+                        ) : (
+                          <>
+                            <Check className="w-5 h-5 mr-2" />
+                            Confirmar Agendamento
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             )}
