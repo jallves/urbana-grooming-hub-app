@@ -4145,6 +4145,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      can_access_module: {
+        Args: { p_module_name: string; p_user_id: string }
+        Returns: boolean
+      }
       check_appointment_conflict: {
         Args: {
           p_end_time: string
@@ -4458,6 +4462,7 @@ export type Database = {
         Args: { staff_id_param: string }
         Returns: string[]
       }
+      get_user_role: { Args: { p_user_id: string }; Returns: string }
       has_module_access: {
         Args: { _module_name: string; _user_id: string }
         Returns: boolean

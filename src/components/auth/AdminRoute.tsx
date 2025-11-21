@@ -1,10 +1,8 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { usePermissions } from '@/contexts/PermissionsContext';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -18,13 +16,14 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   allowBarber = false,
   requiredModule,
 }) => {
-  const { user, isAdmin, isBarber, loading, requiresPasswordChange } = useAuth();
+  const { user, isAdmin, isBarber, isMaster, canAccessModule, loading, requiresPasswordChange } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
-  const { checkModuleAccess, loading: permissionsLoading } = usePermissions();
 
   const hasAccess = user ? (isAdmin || (allowBarber && isBarber)) : false;
-  const hasModuleAccess = requiredModule ? checkModuleAccess(requiredModule) : true;
+  
+  // Validação simplificada de módulo usando a função do AuthContext
+  const hasModuleAccess = requiredModule ? canAccessModule(requiredModule) : true;
 
   // Always call useEffect, but only show toast when conditions are met
   useEffect(() => {
@@ -37,7 +36,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     }
   }, [user, loading, hasAccess, toast]);
 
-  if (loading || permissionsLoading) {
+  if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-gray-50">
         <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-gray-700 mb-4" />
