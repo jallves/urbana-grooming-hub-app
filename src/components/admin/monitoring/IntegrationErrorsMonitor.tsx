@@ -28,19 +28,28 @@ export default function IntegrationErrorsMonitor() {
   const [migrationResult, setMigrationResult] = useState<any>(null);
 
   const fetchErrors = async () => {
-    setLoading(true);
     try {
+      console.log('🔄 Buscando erros de integração...');
+      setLoading(true);
+
       const { data, error } = await supabase
         .from('integration_error_logs')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar logs:', error);
+        throw error;
+      }
+
+      console.log(`✅ ${data?.length || 0} erros carregados`);
       setErrors((data || []) as IntegrationError[]);
     } catch (error: any) {
-      console.error('Erro ao buscar logs:', error);
-      toast.error('Erro ao carregar logs de integração');
+      console.error('❌ Erro ao buscar logs:', error);
+      toast.error('Erro ao carregar logs de integração', {
+        description: error.message || 'Erro desconhecido'
+      });
     } finally {
       setLoading(false);
     }
@@ -142,12 +151,27 @@ export default function IntegrationErrorsMonitor() {
   const runMonitoring = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Executando monitoramento...');
+      console.log('🔍 Executando monitoramento de transações...');
+      
+      toast.info('Iniciando monitoramento...', {
+        description: 'Verificando transações falhadas'
+      });
 
       const { data, error } = await supabase.functions.invoke('monitor-failed-transactions');
 
       if (error) {
         console.error('❌ Erro ao chamar edge function:', error);
+        
+        // Se for erro de rede, tentar buscar direto do banco
+        if (error.message?.includes('Failed to fetch')) {
+          console.log('⚠️ Falha de rede na edge function, tentando buscar dados diretamente...');
+          toast.warning('Falha ao executar monitoramento automático', {
+            description: 'Atualizando lista de erros manualmente'
+          });
+          await fetchErrors();
+          return;
+        }
+        
         throw error;
       }
 
@@ -166,7 +190,7 @@ export default function IntegrationErrorsMonitor() {
       });
 
       if (result.total_found === 0) {
-        toast.info('Nenhuma transação falhada encontrada', {
+        toast.success('Nenhuma transação falhada encontrada', {
           description: 'Todas as transações estão sincronizadas!'
         });
       } else {
@@ -175,20 +199,24 @@ export default function IntegrationErrorsMonitor() {
         });
       }
 
-      fetchErrors();
+      // Sempre atualizar a lista no final
+      await fetchErrors();
     } catch (error: any) {
       console.error('❌ Erro ao executar monitoramento:', error);
       toast.error('Erro ao executar monitoramento', {
         description: error.message || 'Erro desconhecido'
       });
+      
+      // Mesmo com erro, atualizar a lista
+      await fetchErrors();
     } finally {
       setLoading(false);
     }
   };
 
   const clearResolvedErrors = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       console.log('🧹 Iniciando limpeza de erros resolvidos...');
 
       // Primeiro, contar quantos erros resolvidos existem
@@ -206,7 +234,10 @@ export default function IntegrationErrorsMonitor() {
       console.log(`📊 Encontrados ${resolvedCount} erros resolvidos`);
 
       if (resolvedCount === 0) {
-        toast.info('Não há erros resolvidos para limpar');
+        toast.info('Não há erros resolvidos para limpar', {
+          description: 'Todos os erros ainda estão pendentes ou falharam'
+        });
+        setLoading(false);
         return;
       }
 
@@ -222,9 +253,12 @@ export default function IntegrationErrorsMonitor() {
       }
 
       console.log(`✅ ${resolvedCount} erros limpos com sucesso`);
-      toast.success(`${resolvedCount} erro(s) resolvido(s) limpo(s)!`);
+      toast.success(`${resolvedCount} erro(s) resolvido(s) limpo(s)!`, {
+        description: 'A lista foi atualizada'
+      });
 
-      fetchErrors();
+      // Recarregar a lista
+      await fetchErrors();
     } catch (error: any) {
       console.error('❌ Erro ao limpar erros:', error);
       toast.error('Erro ao limpar erros resolvidos', {
@@ -324,8 +358,12 @@ export default function IntegrationErrorsMonitor() {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchErrors}
+              onClick={() => {
+                console.log('🔄 Botão Atualizar clicado');
+                fetchErrors();
+              }}
               disabled={loading}
+              className="border-gray-300 hover:bg-gray-50"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
@@ -333,7 +371,10 @@ export default function IntegrationErrorsMonitor() {
             <Button
               variant="default"
               size="sm"
-              onClick={runMonitoring}
+              onClick={() => {
+                console.log('🔄 Botão Executar Novamente clicado');
+                runMonitoring();
+              }}
               disabled={loading}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
@@ -343,7 +384,10 @@ export default function IntegrationErrorsMonitor() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={clearResolvedErrors}
+              onClick={() => {
+                console.log('🗑️ Botão Limpar Resolvidos clicado');
+                clearResolvedErrors();
+              }}
               disabled={loading}
             >
               <XCircle className="h-4 w-4 mr-2" />
@@ -499,8 +543,12 @@ export default function IntegrationErrorsMonitor() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleReprocess(error)}
+                      onClick={() => {
+                        console.log('🔄 Reprocessando erro individual:', error.id);
+                        handleReprocess(error);
+                      }}
                       disabled={reprocessing === error.id}
+                      className="border-blue-500 text-blue-600 hover:bg-blue-50"
                     >
                       {reprocessing === error.id ? (
                         <RefreshCw className="h-4 w-4 animate-spin" />
