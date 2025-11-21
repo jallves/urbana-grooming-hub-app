@@ -63,11 +63,12 @@ const TotemWaiting: React.FC = () => {
     if (!appointment) return;
 
     try {
-      // Contar check-ins válidos sem checkout (em atendimento ou aguardando)
+      // Contar check-ins válidos SEM checkout concluído (em atendimento ou aguardando)
       const { data: sessionsAhead, error } = await supabase
         .from('totem_sessions')
-        .select('id, check_in_time, appointment_id(servico_id(duracao))')
+        .select('id, check_in_time, check_out_time, appointment_id(servico_id(duracao))')
         .in('status', ['check_in', 'in_service'])
+        .is('check_out_time', null) // Garantir que não tem checkout
         .lt('check_in_time', session?.check_in_time || new Date().toISOString())
         .order('check_in_time', { ascending: true });
 
