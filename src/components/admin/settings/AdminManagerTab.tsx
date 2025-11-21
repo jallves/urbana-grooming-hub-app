@@ -4,102 +4,54 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, UserPlus, Trash2, Shield, Users, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Trash2, Shield, Users, Loader2, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 
-interface AdminUser {
-  id: string;
-  email: string;
-  role: 'master' | 'admin' | 'manager';
-  created_at: string;
-}
-
-interface StaffMember {
+interface Employee {
   id: string;
   name: string;
   email: string;
+  role: string;
   user_id: string | null;
+  status: string;
 }
 
 const AdminManagerTab: React.FC = () => {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingStaff, setLoadingStaff] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
-  const [newUserRole, setNewUserRole] = useState<'admin' | 'manager'>('admin');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'manager'>('all');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [adding, setAdding] = useState(false);
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    fetchAdminUsers();
-    fetchStaffMembers();
+    fetchEmployees();
   }, []);
 
-  const fetchStaffMembers = async () => {
+  const fetchEmployees = async () => {
     try {
-      setLoadingStaff(true);
+      setLoading(true);
+      
+      // Buscar funcionários com cargo admin ou manager
       const { data, error } = await supabase
-        .from('staff')
-        .select('id, name, email, user_id')
-        .eq('is_active', true)
+        .from('employees')
+        .select('id, name, email, role, user_id, status')
+        .in('role', ['admin', 'manager'])
         .order('name');
 
       if (error) throw error;
-      setStaffMembers(data || []);
+
+      setEmployees(data || []);
     } catch (error: any) {
       console.error('Erro ao buscar funcionários:', error);
-    } finally {
-      setLoadingStaff(false);
-    }
-  };
-
-  const fetchAdminUsers = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select(`
-          id,
-          role,
-          user_id,
-          created_at
-        `)
-        .in('role', ['master', 'admin', 'manager']);
-
-      if (error) throw error;
-
-      // Buscar emails dos usuários
-      const { data: authUsersData } = await supabase.auth.admin.listUsers();
-      
-      const usersMap = new Map<string, string>();
-      if (authUsersData && 'users' in authUsersData) {
-        const users = authUsersData.users as Array<{ id: string; email?: string }>;
-        users.forEach((u) => {
-          if (u.id && u.email) {
-            usersMap.set(u.id, u.email);
-          }
-        });
-      }
-
-      const adminUsers: AdminUser[] = (data || []).map(d => ({
-        id: d.user_id,
-        email: usersMap.get(d.user_id) || 'Desconhecido',
-        role: d.role as 'master' | 'admin' | 'manager',
-        created_at: d.created_at,
-      }));
-
-      setUsers(adminUsers);
-    } catch (error: any) {
-      console.error('Erro ao buscar usuários admin:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os usuários',
+        description: 'Não foi possível carregar os funcionários',
         variant: 'destructive',
       });
     } finally {
@@ -107,8 +59,8 @@ const AdminManagerTab: React.FC = () => {
     }
   };
 
-  const handleAddUser = async () => {
-    if (!selectedStaffId) {
+  const handleGiveAccess = async () => {
+    if (!selectedEmployeeId) {
       toast({
         title: 'Erro',
         description: 'Selecione um funcionário',
@@ -121,8 +73,8 @@ const AdminManagerTab: React.FC = () => {
       setAdding(true);
 
       // Buscar funcionário selecionado
-      const selectedStaff = staffMembers.find(s => s.id === selectedStaffId);
-      if (!selectedStaff) {
+      const selectedEmployee = employees.find(e => e.id === selectedEmployeeId);
+      if (!selectedEmployee) {
         toast({
           title: 'Erro',
           description: 'Funcionário não encontrado',
@@ -131,56 +83,77 @@ const AdminManagerTab: React.FC = () => {
         return;
       }
 
-      // Verificar se o funcionário tem user_id (está vinculado a um usuário)
-      if (!selectedStaff.user_id) {
-        toast({
-          title: 'Erro',
-          description: 'Este funcionário não possui conta de usuário vinculada',
-          variant: 'destructive',
+      // Se já tem user_id, apenas adicionar role
+      if (selectedEmployee.user_id) {
+        // Verificar se já tem role
+        const { data: existingRole } = await supabase
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', selectedEmployee.user_id)
+          .in('role', ['master', 'admin', 'manager'])
+          .maybeSingle();
+
+        if (existingRole) {
+          toast({
+            title: 'Aviso',
+            description: 'Este funcionário já possui acesso ao sistema',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Adicionar role
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: selectedEmployee.user_id,
+            role: selectedEmployee.role as 'admin' | 'manager',
+          });
+
+        if (roleError) throw roleError;
+      } else {
+        // Criar usuário no auth e vincular
+        const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
+        
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: selectedEmployee.email,
+          password: tempPassword,
+          email_confirm: true,
         });
-        return;
+
+        if (authError) throw authError;
+
+        // Atualizar employee com user_id
+        const { error: updateError } = await supabase
+          .from('employees')
+          .update({ user_id: authData.user.id })
+          .eq('id', selectedEmployee.id);
+
+        if (updateError) throw updateError;
+
+        // Adicionar role
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authData.user.id,
+            role: selectedEmployee.role as 'admin' | 'manager',
+          });
+
+        if (roleError) throw roleError;
       }
-
-      // Verificar se já tem role
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', selectedStaff.user_id)
-        .in('role', ['master', 'admin', 'manager'])
-        .maybeSingle();
-
-      if (existingRole) {
-        toast({
-          title: 'Erro',
-          description: 'Este funcionário já possui uma role administrativa',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Adicionar role
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: selectedStaff.user_id,
-          role: newUserRole,
-        });
-
-      if (error) throw error;
 
       toast({
         title: 'Sucesso',
-        description: `${selectedStaff.name} foi adicionado como ${newUserRole === 'admin' ? 'Administrador' : 'Gerente'}`,
+        description: `${selectedEmployee.name} agora tem acesso ao sistema como ${selectedEmployee.role === 'admin' ? 'Administrador' : 'Gerente'}`,
       });
 
-      setSelectedStaffId('');
-      setNewUserRole('admin');
-      fetchAdminUsers();
+      setSelectedEmployeeId('');
+      fetchEmployees();
     } catch (error: any) {
-      console.error('Erro ao adicionar usuário:', error);
+      console.error('Erro ao dar acesso:', error);
       toast({
         title: 'Erro',
-        description: error.message || 'Não foi possível adicionar o usuário',
+        description: error.message || 'Não foi possível dar acesso ao funcionário',
         variant: 'destructive',
       });
     } finally {
@@ -188,39 +161,43 @@ const AdminManagerTab: React.FC = () => {
     }
   };
 
-  const handleRemoveUser = async (userId: string, userEmail: string) => {
+  const handleRevokeAccess = async (employeeId: string, employeeName: string, userEmail: string) => {
     if (userEmail === 'joao.colimoides@gmail.com') {
       toast({
         title: 'Ação não permitida',
-        description: 'O usuário master não pode ser removido',
+        description: 'O acesso do usuário master não pode ser removido',
         variant: 'destructive',
       });
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja remover este usuário?`)) {
+    if (!confirm(`Tem certeza que deseja revogar o acesso de ${employeeName}?`)) {
       return;
     }
 
     try {
+      const employee = employees.find(e => e.id === employeeId);
+      if (!employee?.user_id) return;
+
+      // Remover role
       const { error } = await supabase
         .from('user_roles')
         .delete()
-        .eq('user_id', userId);
+        .eq('user_id', employee.user_id);
 
       if (error) throw error;
 
       toast({
         title: 'Sucesso',
-        description: 'Usuário removido com sucesso',
+        description: 'Acesso revogado com sucesso',
       });
 
-      fetchAdminUsers();
+      fetchEmployees();
     } catch (error: any) {
-      console.error('Erro ao remover usuário:', error);
+      console.error('Erro ao revogar acesso:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível remover o usuário',
+        description: 'Não foi possível revogar o acesso',
         variant: 'destructive',
       });
     }
@@ -252,121 +229,150 @@ const AdminManagerTab: React.FC = () => {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEmployees = employees.filter(employee => {
+    const matchesSearch = employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         employee.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === 'all' || employee.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const availableEmployees = employees.filter(e => !e.user_id);
+  const employeesWithAccess = employees.filter(e => e.user_id);
 
   return (
     <div className="space-y-6">
-      {/* Card de Adição */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <UserPlus className="h-5 w-5 text-urbana-gold" />
-          Adicionar Administrador/Gerente
-        </h3>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Select 
-            value={selectedStaffId} 
-            onValueChange={setSelectedStaffId}
-            disabled={loadingStaff}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder={loadingStaff ? "Carregando..." : "Selecione um funcionário"} />
-            </SelectTrigger>
-            <SelectContent>
-              {staffMembers
-                .filter(staff => staff.user_id) // Apenas funcionários com conta
-                .map((staff) => (
-                  <SelectItem key={staff.id} value={staff.id}>
-                    {staff.name} ({staff.email})
+      {/* Card de Dar Acesso */}
+      {availableEmployees.length > 0 && (
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-urbana-gold" />
+            Dar Acesso ao Sistema
+          </h3>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Select 
+              value={selectedEmployeeId} 
+              onValueChange={setSelectedEmployeeId}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Selecione um funcionário" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableEmployees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.name} - {employee.role === 'admin' ? 'Administrador' : 'Gerente'} ({employee.email})
                   </SelectItem>
                 ))}
-            </SelectContent>
-          </Select>
-          <Select value={newUserRole} onValueChange={(value: 'admin' | 'manager') => setNewUserRole(value)}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Selecione o cargo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="admin">Administrador</SelectItem>
-              <SelectItem value="manager">Gerente</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={handleAddUser}
-            disabled={adding || !selectedStaffId}
-            className="bg-gradient-to-r from-urbana-gold to-yellow-500 hover:from-urbana-gold-dark hover:to-yellow-600"
-          >
-            {adding ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adicionando...
-              </>
-            ) : (
-              'Adicionar'
-            )}
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground mt-3">
-          Selecione um funcionário cadastrado no sistema que já possua conta de usuário
-        </p>
-      </Card>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleGiveAccess}
+              disabled={adding || !selectedEmployeeId}
+              className="bg-gradient-to-r from-urbana-gold to-yellow-500 hover:from-urbana-gold-dark hover:to-yellow-600"
+            >
+              {adding ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                'Dar Acesso'
+              )}
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            Selecione um funcionário com cargo de Administrador ou Gerente para dar acesso ao sistema
+          </p>
+        </Card>
+      )}
 
-      {/* Lista de Usuários */}
+      {/* Lista de Funcionários com Acesso */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Shield className="h-5 w-5 text-urbana-gold" />
-            Usuários Administrativos
+            Administradores e Gerentes com Acesso
           </h3>
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por e-mail..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={roleFilter} onValueChange={(value: 'all' | 'admin' | 'manager') => setRoleFilter(value)}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Filtrar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Todos
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="manager">Gerente</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">Nenhum usuário encontrado</div>
+        ) : employeesWithAccess.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum funcionário com acesso encontrado
+          </div>
+        ) : filteredEmployees.filter(e => e.user_id).length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum resultado encontrado
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Nome</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Cargo</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Permissões</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.email}</TableCell>
-                    <TableCell>{getRoleBadge(user.role)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {getRolePermissions(user.role)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {user.email !== 'joao.colimoides@gmail.com' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveUser(user.id, user.email)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredEmployees
+                  .filter(e => e.user_id)
+                  .map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell className="font-medium">{employee.name}</TableCell>
+                      <TableCell>{employee.email}</TableCell>
+                      <TableCell>{getRoleBadge(employee.role)}</TableCell>
+                      <TableCell>
+                        <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
+                          {employee.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {getRolePermissions(employee.role)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {employee.email !== 'joao.colimoides@gmail.com' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRevokeAccess(employee.id, employee.name, employee.email)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </div>
