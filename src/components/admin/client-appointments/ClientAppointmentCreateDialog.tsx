@@ -442,41 +442,24 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-urbana-black border-urbana-gold/30">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-white border-gray-200">
         <VisuallyHidden>
           <DialogTitle>Novo Agendamento</DialogTitle>
           <DialogDescription>
             Crie um novo agendamento selecionando cliente, serviço, barbeiro e horário
           </DialogDescription>
         </VisuallyHidden>
-        
-        {/* Background da barbearia - igual ao painel do cliente */}
-        <div className="absolute inset-0 z-0 pointer-events-none rounded-lg overflow-hidden">
-          <img 
-            src={barbershopBg} 
-            alt="Barbearia Costa Urbana Background" 
-            className="w-full h-full object-cover opacity-20"
-          />
-          {/* Dark overlay - Garante contraste e legibilidade */}
-          <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/95 via-urbana-black/90 to-urbana-black/85" />
-        </div>
 
-        {/* Animated background effects */}
-        <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-          <div className="absolute top-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-          <div className="absolute bottom-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
-        </div>
-
-        <div className="flex flex-col h-full relative z-10">
+        <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="p-3 sm:p-4 md:p-6 border-b border-urbana-gold/20 bg-urbana-black/60 backdrop-blur-xl">
+          <div className="p-3 sm:p-4 md:p-6 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="flex items-center gap-2 sm:gap-3">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={handleBack}
-                  className="hover:bg-urbana-gold/10 text-urbana-light hover:text-urbana-gold border border-urbana-gold/20 px-2 sm:px-3 py-1.5 sm:py-2"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2"
                 >
                   <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   <span className="text-xs sm:text-sm">Voltar</span>
@@ -486,17 +469,17 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="hover:bg-red-500/10 text-urbana-light hover:text-red-400 border border-red-500/20 p-1.5 sm:p-2"
+                className="hover:bg-red-50 text-gray-700 hover:text-red-600 p-1.5 sm:p-2"
               >
                 <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
 
             <div className="text-center">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light drop-shadow-lg">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                 Novo Agendamento
               </h2>
-              <p className="text-xs sm:text-sm text-urbana-light/70 mt-1">
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
                 {step === 'client' && 'Selecione o cliente'}
                 {step === 'service' && 'Escolha o serviço'}
                 {step === 'barber' && 'Escolha o profissional'}
@@ -508,36 +491,36 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
             <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4">
               <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
                 step === 'client' 
-                  ? 'bg-urbana-gold text-urbana-black border-urbana-gold shadow-lg shadow-urbana-gold/30' 
-                  : 'bg-urbana-black/50 text-urbana-light border-urbana-gold/30'
+                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  : 'bg-gray-100 text-gray-900 border-gray-300'
               }`}>
                 {step !== 'client' && selectedClient ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : '1'}
               </div>
-              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step !== 'client' ? 'bg-urbana-gold' : 'bg-urbana-gold/20'}`} />
+              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step !== 'client' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
               <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
                 step === 'service' 
-                  ? 'bg-urbana-gold text-urbana-black border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
                   : step === 'barber' || step === 'datetime' 
-                    ? 'bg-urbana-black/50 text-urbana-light border-urbana-gold/30' 
-                    : 'bg-urbana-black/30 text-urbana-light/50 border-urbana-gold/20'
+                    ? 'bg-gray-100 text-gray-900 border-gray-300' 
+                    : 'bg-white text-gray-400 border-gray-200'
               }`}>
                 {step === 'barber' || step === 'datetime' ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : '2'}
               </div>
-              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step === 'barber' || step === 'datetime' ? 'bg-urbana-gold' : 'bg-urbana-gold/20'}`} />
+              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step === 'barber' || step === 'datetime' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
               <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
                 step === 'barber' 
-                  ? 'bg-urbana-gold text-urbana-black border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
                   : step === 'datetime' 
-                    ? 'bg-urbana-black/50 text-urbana-light border-urbana-gold/30' 
-                    : 'bg-urbana-black/30 text-urbana-light/50 border-urbana-gold/20'
+                    ? 'bg-gray-100 text-gray-900 border-gray-300' 
+                    : 'bg-white text-gray-400 border-gray-200'
               }`}>
                 {step === 'datetime' ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : '3'}
               </div>
-              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-urbana-gold/20'}`} />
+              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
               <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
                 step === 'datetime' 
-                  ? 'bg-urbana-gold text-urbana-black border-urbana-gold shadow-lg shadow-urbana-gold/30' 
-                  : 'bg-urbana-black/30 text-urbana-light/50 border-urbana-gold/20'
+                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  : 'bg-white text-gray-400 border-gray-200'
               }`}>
                 4
               </div>
@@ -545,7 +528,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-gray-50">
             {/* Step 1: Client Selection */}
             {step === 'client' && (
               <div className="space-y-3 sm:space-y-4">
@@ -554,15 +537,15 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                   placeholder="Buscar cliente por nome, telefone ou email..."
                   value={clientSearch}
                   onChange={(e) => setClientSearch(e.target.value)}
-                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-urbana-gold/30 rounded-lg focus:ring-2 focus:ring-urbana-gold bg-urbana-black/50 backdrop-blur-sm text-urbana-light placeholder:text-urbana-light/50 text-sm sm:text-base"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-urbana-gold bg-white text-gray-900 placeholder:text-gray-500 text-sm sm:text-base"
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {loading ? (
-                    <div className="col-span-full text-center py-8 sm:py-12 text-urbana-light/70">
+                    <div className="col-span-full text-center py-8 sm:py-12 text-gray-600">
                       Carregando clientes...
                     </div>
                   ) : filteredClients.length === 0 ? (
-                    <div className="col-span-full text-center py-8 sm:py-12 text-urbana-light/50">
+                    <div className="col-span-full text-center py-8 sm:py-12 text-gray-500">
                       Nenhum cliente encontrado
                     </div>
                   ) : (
@@ -570,7 +553,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                       <Card
                         key={client.id}
                         onClick={() => handleClientSelect(client)}
-                        className="cursor-pointer hover:shadow-lg hover:shadow-urbana-gold/20 hover:border-urbana-gold/50 transition-all bg-urbana-black/60 backdrop-blur-sm border-urbana-gold/20"
+                        className="cursor-pointer hover:shadow-lg hover:border-urbana-gold transition-all bg-white border-gray-200"
                       >
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex items-center gap-2 sm:gap-3">
@@ -578,9 +561,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                               <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-urbana-light truncate text-sm sm:text-base">{client.nome}</p>
+                              <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">{client.nome}</p>
                               {client.email && (
-                                <p className="text-xs text-urbana-light/70">{client.email}</p>
+                                <p className="text-xs text-gray-600">{client.email}</p>
                               )}
                             </div>
                           </div>
@@ -596,11 +579,11 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
             {step === 'service' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {loading ? (
-                  <div className="col-span-full text-center py-8 sm:py-12 text-urbana-light/70">
+                  <div className="col-span-full text-center py-8 sm:py-12 text-gray-600">
                     Carregando serviços...
                   </div>
                 ) : services.length === 0 ? (
-                  <div className="col-span-full text-center py-8 sm:py-12 text-urbana-light/50">
+                  <div className="col-span-full text-center py-8 sm:py-12 text-gray-500">
                     Nenhum serviço disponível
                   </div>
                 ) : (
@@ -608,15 +591,15 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                     <Card
                       key={service.id}
                       onClick={() => handleServiceSelect(service)}
-                      className="cursor-pointer hover:shadow-lg hover:shadow-urbana-gold/20 hover:border-urbana-gold/50 transition-all bg-urbana-black/60 backdrop-blur-sm border-urbana-gold/20"
+                      className="cursor-pointer hover:shadow-lg hover:border-urbana-gold transition-all bg-white border-gray-200"
                     >
                       <CardContent className="p-4 sm:p-6 text-center">
                         <Scissors className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-urbana-gold" />
-                        <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2 text-urbana-light">{service.nome}</h3>
+                        <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2 text-gray-900">{service.nome}</h3>
                         <p className="text-xl sm:text-2xl font-bold text-urbana-gold">
                           R$ {service.preco.toFixed(2)}
                         </p>
-                        <p className="text-xs sm:text-sm text-urbana-light/70 mt-1">
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">
                           {service.duracao} minutos
                         </p>
                       </CardContent>
@@ -630,11 +613,11 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
             {step === 'barber' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {loading ? (
-                  <div className="col-span-full text-center py-8 sm:py-12 text-urbana-light/70">
+                  <div className="col-span-full text-center py-8 sm:py-12 text-gray-600">
                     Carregando profissionais...
                   </div>
                 ) : barbers.length === 0 ? (
-                  <div className="col-span-full text-center py-8 sm:py-12 text-urbana-light/50">
+                  <div className="col-span-full text-center py-8 sm:py-12 text-gray-500">
                     Nenhum profissional disponível
                   </div>
                 ) : (
@@ -642,19 +625,19 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                     <Card
                       key={barber.id}
                       onClick={() => handleBarberSelect(barber)}
-                      className="cursor-pointer hover:shadow-lg hover:shadow-urbana-gold/20 hover:border-urbana-gold/50 transition-all bg-urbana-black/60 backdrop-blur-sm border-urbana-gold/20"
+                      className="cursor-pointer hover:shadow-lg hover:border-urbana-gold transition-all bg-white border-gray-200"
                     >
                       <CardContent className="p-4 sm:p-6 text-center">
                         {barber.image_url ? (
                           <img
                             src={barber.image_url}
                             alt={barber.nome}
-                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 sm:mb-3 object-cover border-2 border-urbana-gold/50"
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 sm:mb-3 object-cover border-2 border-urbana-gold"
                           />
                         ) : (
                           <User className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 text-urbana-gold" />
                         )}
-                        <h3 className="font-bold text-base sm:text-lg text-urbana-light">{barber.nome}</h3>
+                        <h3 className="font-bold text-base sm:text-lg text-gray-900">{barber.nome}</h3>
                       </CardContent>
                     </Card>
                   ))
@@ -667,17 +650,17 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {/* Date Selection */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 text-urbana-light">
+                  <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 text-gray-900">
                     <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
                     Escolha a Data
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {loading ? (
-                      <div className="col-span-full text-center py-6 sm:py-8 text-urbana-light/70">
+                      <div className="col-span-full text-center py-6 sm:py-8 text-gray-600">
                         Carregando datas...
                       </div>
                     ) : availableDates.length === 0 ? (
-                      <div className="col-span-full text-center py-6 sm:py-8 text-urbana-light/50">
+                      <div className="col-span-full text-center py-6 sm:py-8 text-gray-500">
                         Nenhuma data disponível
                       </div>
                     ) : (
@@ -685,20 +668,20 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                         <Card
                           key={date.toISOString()}
                           onClick={() => handleDateSelect(date)}
-                          className={`cursor-pointer transition-all bg-urbana-black/60 backdrop-blur-sm ${
+                          className={`cursor-pointer transition-all bg-white ${
                             selectedDate?.toDateString() === date.toDateString()
-                              ? 'border-2 border-urbana-gold bg-urbana-gold/20 shadow-lg shadow-urbana-gold/30'
-                              : 'border border-urbana-gold/20 hover:border-urbana-gold/50'
+                              ? 'border-2 border-urbana-gold shadow-lg'
+                              : 'border border-gray-200 hover:border-urbana-gold'
                           }`}
                         >
                           <CardContent className="p-3 sm:p-4 text-center">
-                            <p className="text-xs text-urbana-light/70 capitalize">
+                            <p className="text-xs text-gray-600 capitalize">
                               {format(date, 'EEEE', { locale: ptBR })}
                             </p>
-                            <p className="text-xl sm:text-2xl font-bold text-urbana-light">
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900">
                               {format(date, 'dd')}
                             </p>
-                            <p className="text-xs sm:text-sm text-urbana-light/80 capitalize">
+                            <p className="text-xs sm:text-sm text-gray-700 capitalize">
                               {format(date, 'MMM', { locale: ptBR })}
                             </p>
                           </CardContent>
@@ -710,22 +693,22 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
                 {/* Time Selection */}
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 text-urbana-light">
+                  <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4 flex items-center gap-2 text-gray-900">
                     <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
                     Escolha o Horário
                   </h3>
                   {!selectedDate ? (
-                    <div className="text-center text-urbana-light/50 py-6 sm:py-8">
+                    <div className="text-center text-gray-500 py-6 sm:py-8">
                       Selecione uma data primeiro
                     </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-2">
                       {loading ? (
-                        <div className="col-span-full text-center py-6 sm:py-8 text-urbana-light/70">
+                        <div className="col-span-full text-center py-6 sm:py-8 text-gray-600">
                           Carregando horários...
                         </div>
                       ) : timeSlots.filter(slot => slot.available).length === 0 ? (
-                        <div className="col-span-full text-center py-6 sm:py-8 text-urbana-light/50">
+                        <div className="col-span-full text-center py-6 sm:py-8 text-gray-500">
                           Nenhum horário disponível
                         </div>
                       ) : (
@@ -735,14 +718,14 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                             <Card
                               key={slot.time}
                               onClick={() => setSelectedTime(slot.time)}
-                              className={`cursor-pointer transition-all bg-urbana-black/60 backdrop-blur-sm ${
+                              className={`cursor-pointer transition-all bg-white ${
                                 selectedTime === slot.time
-                                  ? 'border-2 border-urbana-gold bg-urbana-gold/20 shadow-lg shadow-urbana-gold/30'
-                                  : 'border border-urbana-gold/20 hover:border-urbana-gold/50'
+                                  ? 'border-2 border-urbana-gold shadow-lg'
+                                  : 'border border-gray-200 hover:border-urbana-gold'
                               }`}
                             >
                               <CardContent className="p-2 sm:p-3 text-center">
-                                <p className="text-xs sm:text-sm font-bold text-urbana-light">
+                                <p className="text-xs sm:text-sm font-bold text-gray-900">
                                   {slot.time}
                                 </p>
                               </CardContent>
@@ -756,24 +739,24 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                 {/* Summary & Confirm */}
                 {selectedDate && selectedTime && (
                   <div className="lg:col-span-2 mt-4 sm:mt-6">
-                    <Card className="border-2 border-urbana-gold/50 bg-urbana-black/70 backdrop-blur-sm shadow-xl shadow-urbana-gold/20">
+                    <Card className="border-2 border-urbana-gold bg-white shadow-xl">
                       <CardHeader className="p-3 sm:p-4 md:p-6">
-                        <CardTitle className="text-lg sm:text-xl text-urbana-light">Resumo do Agendamento</CardTitle>
+                        <CardTitle className="text-lg sm:text-xl text-gray-900">Resumo do Agendamento</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                           <div className="flex items-center gap-2 sm:gap-3">
                             <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
                             <div>
-                              <p className="text-xs text-urbana-light/70">Cliente</p>
-                              <p className="font-semibold text-sm sm:text-base text-urbana-light">{selectedClient?.nome}</p>
+                              <p className="text-xs text-gray-600">Cliente</p>
+                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedClient?.nome}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 sm:gap-3">
                             <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
                             <div>
-                              <p className="text-xs text-urbana-light/70">Serviço</p>
-                              <p className="font-semibold text-sm sm:text-base text-urbana-light">{selectedService?.nome}</p>
+                              <p className="text-xs text-gray-600">Serviço</p>
+                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedService?.nome}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 sm:gap-3">
@@ -781,21 +764,21 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                               <img 
                                 src={selectedBarber.image_url} 
                                 alt={selectedBarber.nome}
-                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-urbana-gold/50"
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-urbana-gold"
                               />
                             ) : (
                               <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
                             )}
                             <div>
-                              <p className="text-xs text-urbana-light/70">Profissional</p>
-                              <p className="font-semibold text-sm sm:text-base text-urbana-light">{selectedBarber?.nome}</p>
+                              <p className="text-xs text-gray-600">Profissional</p>
+                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedBarber?.nome}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 sm:gap-3">
                             <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
                             <div>
-                              <p className="text-xs text-urbana-light/70">Data</p>
-                              <p className="font-semibold text-sm sm:text-base text-urbana-light">
+                              <p className="text-xs text-gray-600">Data</p>
+                              <p className="font-semibold text-sm sm:text-base text-gray-900">
                                 {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
                               </p>
                             </div>
@@ -803,19 +786,19 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                           <div className="flex items-center gap-2 sm:gap-3 md:col-span-2">
                             <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold flex-shrink-0" />
                             <div>
-                              <p className="text-xs text-urbana-light/70">Horário</p>
-                              <p className="font-semibold text-sm sm:text-base text-urbana-light">{selectedTime}</p>
+                              <p className="text-xs text-gray-600">Horário</p>
+                              <p className="font-semibold text-sm sm:text-base text-gray-900">{selectedTime}</p>
                             </div>
                           </div>
                         </div>
                         <Button
                           onClick={handleConfirm}
                           disabled={creating || isValidating}
-                          className="w-full bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-urbana-black font-bold py-4 sm:py-6 text-base sm:text-lg shadow-lg shadow-urbana-gold/30 border border-urbana-gold/50"
+                          className="w-full bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white font-bold py-4 sm:py-6 text-base sm:text-lg shadow-lg"
                         >
                           {creating || isValidating ? (
                             <span className="flex items-center justify-center gap-2">
-                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                               <span className="text-sm sm:text-base">Confirmando...</span>
                             </span>
                           ) : (
