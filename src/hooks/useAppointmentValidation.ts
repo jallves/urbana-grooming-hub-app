@@ -266,10 +266,14 @@ export const useAppointmentValidation = () => {
 
         // Se for hoje, verificar se passou há mais de 10 minutos
         if (isToday && isPastTime(date, timeString)) {
+          console.log(`🕐 Horário ${timeString} marcado como passado (> 10min)`);
           available = false;
           reason = 'Passou há mais de 10min';
         } else if (!available) {
+          console.log(`❌ Horário ${timeString} ocupado (RPC retornou indisponível)`);
           reason = 'Horário ocupado';
+        } else {
+          console.log(`✅ Horário ${timeString} disponível`);
         }
 
         return {
