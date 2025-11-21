@@ -4194,6 +4194,15 @@ export type Database = {
         Returns: boolean
       }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
+      create_admin_manager_user: {
+        Args: {
+          p_email: string
+          p_employee_id: string
+          p_password: string
+          p_role: string
+        }
+        Returns: Json
+      }
       create_barber_auth_user: {
         Args: {
           p_email: string
@@ -4291,6 +4300,20 @@ export type Database = {
         Returns: string
       }
       generate_transaction_number: { Args: never; Returns: string }
+      get_admin_manager_details: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          employee_id: string
+          has_access: boolean
+          last_login: string
+          name: string
+          role: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_agendamentos_barbeiro_data: {
         Args: { barbeiro_id: string; data_agendamento: string }
         Returns: {
@@ -4467,6 +4490,10 @@ export type Database = {
       }
       reprocess_failed_appointment: {
         Args: { p_agendamento_id: string }
+        Returns: Json
+      }
+      revoke_admin_manager_access: {
+        Args: { p_employee_id: string }
         Returns: Json
       }
       update_agendamento_status_totem: {
