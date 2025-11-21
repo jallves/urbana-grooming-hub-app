@@ -158,7 +158,7 @@ function App() {
                     </AdminRoute>
                   } />
                   <Route path="/admin/erp-financeiro" element={
-                    <AdminRoute requiredModule="erp">
+                    <AdminRoute requiredModule="financeiro">
                       <AdminERPFinancial />
                     </AdminRoute>
                   } />
@@ -190,11 +190,6 @@ function App() {
                   <Route path="/admin/fluxo-caixa" element={
                     <AdminRoute>
                       <AdminCashFlow />
-                    </AdminRoute>
-                  } />
-                  <Route path="/admin/erp-financeiro" element={
-                    <AdminRoute requiredModule="financeiro">
-                      <AdminERPFinancial />
                     </AdminRoute>
                   } />
                   <Route path="/admin/site" element={
