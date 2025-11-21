@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Search, UserPlus, Trash2, Shield, Users, Loader2, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +26,7 @@ const AdminManagerTab: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'manager'>('all');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [adding, setAdding] = useState(false);
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -64,6 +66,15 @@ const AdminManagerTab: React.FC = () => {
       toast({
         title: 'Erro',
         description: 'Selecione um funcionário',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      toast({
+        title: 'Erro',
+        description: 'A senha deve ter pelo menos 8 caracteres',
         variant: 'destructive',
       });
       return;
@@ -113,11 +124,9 @@ const AdminManagerTab: React.FC = () => {
         if (roleError) throw roleError;
       } else {
         // Criar usuário no auth e vincular
-        const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
-        
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
           email: selectedEmployee.email,
-          password: tempPassword,
+          password: password,
           email_confirm: true,
         });
 
@@ -148,6 +157,7 @@ const AdminManagerTab: React.FC = () => {
       });
 
       setSelectedEmployeeId('');
+      setPassword('');
       fetchEmployees();
     } catch (error: any) {
       console.error('Erro ao dar acesso:', error);
@@ -248,12 +258,12 @@ const AdminManagerTab: React.FC = () => {
             <UserPlus className="h-5 w-5 text-urbana-gold" />
             Dar Acesso ao Sistema
           </h3>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="space-y-3">
             <Select 
               value={selectedEmployeeId} 
               onValueChange={setSelectedEmployeeId}
             >
-              <SelectTrigger className="flex-1">
+              <SelectTrigger>
                 <SelectValue placeholder="Selecione um funcionário" />
               </SelectTrigger>
               <SelectContent>
@@ -264,10 +274,28 @@ const AdminManagerTab: React.FC = () => {
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Senha de Acesso
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Mínimo 8 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={adding}
+              />
+              <p className="text-xs text-muted-foreground">
+                A senha será usada pelo funcionário para acessar o sistema
+              </p>
+            </div>
+
             <Button
               onClick={handleGiveAccess}
-              disabled={adding || !selectedEmployeeId}
-              className="bg-gradient-to-r from-urbana-gold to-yellow-500 hover:from-urbana-gold-dark hover:to-yellow-600"
+              disabled={adding || !selectedEmployeeId || !password}
+              className="w-full bg-gradient-to-r from-urbana-gold to-yellow-500 hover:from-urbana-gold-dark hover:to-yellow-600"
             >
               {adding ? (
                 <>
