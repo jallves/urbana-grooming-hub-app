@@ -83,6 +83,7 @@ import PWAInstallPromptContext from './components/PWAInstallPromptContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
+import ChangePassword from './pages/ChangePassword';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +112,7 @@ function App() {
                   
                   {/* Admin Routes */}
                   <Route path="/auth" element={<AdminLogin />} />
+                  <Route path="/change-password" element={<ChangePassword />} />
                   <Route path="/admin" element={
                     <AdminRoute>
                       <AdminDashboard />

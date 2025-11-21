@@ -9,6 +9,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isBarber: boolean;
   rolesChecked: boolean;
+  requiresPasswordChange: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -32,6 +33,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBarber, setIsBarber] = useState(false);
   const [rolesChecked, setRolesChecked] = useState(false);
+  const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -111,6 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsAdmin(false);
       setIsBarber(false);
       setRolesChecked(true);
+      setRequiresPasswordChange(false);
       return;
     }
     
@@ -137,24 +140,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (adminError) throw adminError;
         if (barberError) throw barberError;
 
+        // Verificar se precisa trocar senha
+        const { data: employeeData } = await supabase
+          .from('employees')
+          .select('requires_password_change')
+          .eq('user_id', user.id)
+          .single();
+
         return {
           isAdmin: isAdminData === true,
-          isBarber: isBarberData === true
+          isBarber: isBarberData === true,
+          requiresPasswordChange: employeeData?.requires_password_change === true
         };
       };
 
-      const roles = await Promise.race([checkRolesPromise(), timeoutPromise]) as { isAdmin: boolean; isBarber: boolean };
+      const roles = await Promise.race([checkRolesPromise(), timeoutPromise]) as { 
+        isAdmin: boolean; 
+        isBarber: boolean;
+        requiresPasswordChange: boolean;
+      };
       
-      console.log('[AuthContext] ✅ Roles definidas - isAdmin:', roles.isAdmin, 'isBarber:', roles.isBarber);
+      console.log('[AuthContext] ✅ Roles definidas - isAdmin:', roles.isAdmin, 'isBarber:', roles.isBarber, 'requiresPasswordChange:', roles.requiresPasswordChange);
       
       setIsAdmin(roles.isAdmin);
       setIsBarber(roles.isBarber);
+      setRequiresPasswordChange(roles.requiresPasswordChange);
       setRolesChecked(true);
     } catch (error) {
       console.error('[AuthContext] ❌ Error checking user roles:', error);
       // Em caso de erro, assumir que não é admin nem barber
       setIsAdmin(false);
       setIsBarber(false);
+      setRequiresPasswordChange(false);
       setRolesChecked(true);
     }
   };
@@ -189,6 +206,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAdmin,
     isBarber,
     rolesChecked,
+    requiresPasswordChange,
     signOut,
   };
 
