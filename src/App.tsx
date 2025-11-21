@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
 import { TotemAuthProvider } from './contexts/TotemAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
+import { PermissionsProvider } from './contexts/PermissionsContext';
 import AdminRoute from './components/auth/AdminRoute';
 import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
@@ -98,11 +99,12 @@ function App() {
     <SidebarProvider>
       <BrowserRouter>
         <AuthProvider>
-          <PainelClienteAuthProvider>
-            <TotemAuthProvider>
-              <QueryClientProvider client={queryClient}>
-                <RealtimeProvider>
-                  <div className="min-h-screen bg-background">
+          <PermissionsProvider>
+            <PainelClienteAuthProvider>
+              <TotemAuthProvider>
+                <QueryClientProvider client={queryClient}>
+                  <RealtimeProvider>
+                    <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/pwa-install" element={<PWAInstall />} />
@@ -310,11 +312,12 @@ function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 <PWAInstallPromptContext />
-              </div>
-            </RealtimeProvider>
-          </QueryClientProvider>
-          </TotemAuthProvider>
-          </PainelClienteAuthProvider>
+                  </div>
+                  </RealtimeProvider>
+                </QueryClientProvider>
+              </TotemAuthProvider>
+            </PainelClienteAuthProvider>
+          </PermissionsProvider>
         </AuthProvider>
       </BrowserRouter>
     </SidebarProvider>
