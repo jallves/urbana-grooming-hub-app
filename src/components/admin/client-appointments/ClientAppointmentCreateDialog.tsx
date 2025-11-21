@@ -457,22 +457,25 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
       if (progressToast) toast.dismiss(progressToast);
       
-      // Preparar dados do sucesso
-      setSuccessData({
-        clientName: selectedClient.nome,
-        barberName: selectedBarber.nome,
-        date: format(selectedDate, "dd/MM/yyyy", { locale: ptBR }),
-        time: selectedTime,
-        serviceName: selectedService.nome
-      });
-      
-      // Mostrar dialog de sucesso
-      setShowSuccessDialog(true);
-
-      console.log('4️⃣ Chamando onCreate...');
+      // Fechar dialog principal primeiro
+      onClose();
       
       // Atualizar lista
       onCreate();
+      
+      // Aguardar um momento e então mostrar dialog de sucesso
+      setTimeout(() => {
+        setSuccessData({
+          clientName: selectedClient.nome,
+          barberName: selectedBarber.nome,
+          date: format(selectedDate, "dd/MM/yyyy", { locale: ptBR }),
+          time: selectedTime,
+          serviceName: selectedService.nome
+        });
+        setShowSuccessDialog(true);
+      }, 300);
+
+      console.log('4️⃣ Processo completo!');
 
       console.log('✅ PROCESSO COMPLETO!');
 
@@ -920,15 +923,14 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       </DialogContent>
     </Dialog>
     
-    {/* Dialog de Sucesso */}
+    {/* Dialog de Sucesso - Independente */}
     <Dialog open={showSuccessDialog} onOpenChange={(open) => {
       if (!open) {
         setShowSuccessDialog(false);
-        resetForm();
-        onClose();
+        setSuccessData(null);
       }
     }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" style={{ zIndex: 10000 }}>
         <VisuallyHidden>
           <DialogTitle>Agendamento Confirmado</DialogTitle>
           <DialogDescription>
@@ -938,54 +940,62 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         
         <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
           {/* Ícone de sucesso grande e animado */}
-          <div className="mb-6 relative">
-            <div className="absolute inset-0 bg-green-100 rounded-full animate-ping"></div>
-            <div className="relative bg-green-500 text-white rounded-full p-6">
-              <Check className="w-16 h-16" />
+          <div className="mb-6 relative animate-scale-in">
+            <div className="absolute inset-0 bg-green-100 rounded-full opacity-50 animate-ping"></div>
+            <div className="relative bg-gradient-to-br from-green-400 to-green-600 text-white rounded-full p-8 shadow-2xl">
+              <Check className="w-20 h-20 animate-bounce" />
             </div>
           </div>
           
           {/* Título */}
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          <h3 className="text-3xl font-bold text-gray-900 mb-3 animate-fade-in">
             ✅ Agendamento Confirmado!
           </h3>
           
-          <p className="text-gray-600 mb-6">
+          <p className="text-lg text-gray-600 mb-8 animate-fade-in">
             O agendamento foi criado com sucesso
           </p>
           
           {/* Detalhes do agendamento */}
           {successData && (
-            <div className="w-full bg-gray-50 rounded-lg p-4 mb-6 text-left space-y-2">
-              <div className="flex items-start gap-2">
-                <User className="w-5 h-5 text-gray-600 mt-0.5" />
+            <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 mb-8 text-left space-y-4 shadow-inner animate-fade-in">
+              <div className="flex items-start gap-3">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <User className="w-5 h-5 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-xs text-gray-500">Cliente</p>
-                  <p className="font-semibold text-gray-900">{successData.clientName}</p>
+                  <p className="text-xs text-gray-500 font-medium">Cliente</p>
+                  <p className="font-bold text-gray-900 text-lg">{successData.clientName}</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-2">
-                <Scissors className="w-5 h-5 text-gray-600 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <Scissors className="w-5 h-5 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-xs text-gray-500">Serviço</p>
-                  <p className="font-semibold text-gray-900">{successData.serviceName}</p>
+                  <p className="text-xs text-gray-500 font-medium">Serviço</p>
+                  <p className="font-bold text-gray-900 text-lg">{successData.serviceName}</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-2">
-                <User className="w-5 h-5 text-gray-600 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <User className="w-5 h-5 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-xs text-gray-500">Barbeiro</p>
-                  <p className="font-semibold text-gray-900">{successData.barberName}</p>
+                  <p className="text-xs text-gray-500 font-medium">Barbeiro</p>
+                  <p className="font-bold text-gray-900 text-lg">{successData.barberName}</p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-2">
-                <CalendarIcon className="w-5 h-5 text-gray-600 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <div className="bg-white p-2 rounded-lg shadow-sm">
+                  <CalendarIcon className="w-5 h-5 text-urbana-gold" />
+                </div>
                 <div>
-                  <p className="text-xs text-gray-500">Data e Horário</p>
-                  <p className="font-semibold text-gray-900">
+                  <p className="text-xs text-gray-500 font-medium">Data e Horário</p>
+                  <p className="font-bold text-gray-900 text-lg">
                     {successData.date} às {successData.time}
                   </p>
                 </div>
@@ -997,11 +1007,11 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           <Button 
             onClick={() => {
               setShowSuccessDialog(false);
-              resetForm();
-              onClose();
+              setSuccessData(null);
             }}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3"
+            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 text-lg shadow-lg hover:shadow-xl transition-all"
           >
+            <Check className="w-5 h-5 mr-2" />
             OK, ENTENDI
           </Button>
         </div>
