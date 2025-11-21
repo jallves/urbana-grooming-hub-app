@@ -72,7 +72,8 @@ const TotemWaiting: React.FC = () => {
         .order('check_in_time', { ascending: true });
 
       if (!error && sessionsAhead) {
-        setQueuePosition(sessionsAhead.length);
+        // Posição na fila = número de pessoas à frente + 1
+        setQueuePosition(sessionsAhead.length + 1);
         
         // Calcular tempo real baseado na duração de cada serviço na fila
         let totalWaitTime = 0;
@@ -142,13 +143,13 @@ const TotemWaiting: React.FC = () => {
               <div>
                 <p className="text-urbana-gold/80 text-sm sm:text-base md:text-lg mb-1 sm:mb-2 font-medium">Posição na fila</p>
                 <p className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-urbana-gold drop-shadow-lg">
-                  {queuePosition === 0 ? 'Próximo' : queuePosition}
+                  {queuePosition === 1 ? 'Próximo' : queuePosition}
                 </p>
               </div>
 
-              {queuePosition > 0 && (
+              {queuePosition > 1 && (
                 <p className="text-urbana-gold/70 text-base sm:text-lg md:text-xl font-light">
-                  {queuePosition === 1 ? '1 pessoa' : `${queuePosition} pessoas`} à sua frente
+                  {queuePosition === 2 ? '1 pessoa' : `${queuePosition - 1} pessoas`} à sua frente
                 </p>
               )}
             </div>
