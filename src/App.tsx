@@ -7,6 +7,7 @@ import { TotemAuthProvider } from './contexts/TotemAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import AdminRoute from './components/auth/AdminRoute';
+import AdminRedirectGuard from './components/auth/AdminRedirectGuard';
 import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
 import BarberRoute from './components/auth/BarberRoute';
@@ -107,8 +108,16 @@ function App() {
                   <RealtimeProvider>
                     <div className="min-h-screen bg-background">
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/pwa-install" element={<PWAInstall />} />
+                  <Route path="/" element={
+                    <AdminRedirectGuard>
+                      <Index />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/pwa-install" element={
+                    <AdminRedirectGuard>
+                      <PWAInstall />
+                    </AdminRedirectGuard>
+                  } />
                   
                   {/* Admin Routes */}
                   <Route path="/auth" element={<AdminLogin />} />
@@ -220,51 +229,79 @@ function App() {
                   } />
                   
                   {/* Barber Routes */}
-                  <Route path="/barbeiro/login" element={<BarberAuth />} />
+                  <Route path="/barbeiro/login" element={
+                    <AdminRedirectGuard>
+                      <BarberAuth />
+                    </AdminRedirectGuard>
+                  } />
                   <Route path="/barbeiro" element={
-                    <BarberRoute allowBarber={true}>
-                      <BarberDashboard />
-                    </BarberRoute>
+                    <AdminRedirectGuard>
+                      <BarberRoute allowBarber={true}>
+                        <BarberDashboard />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
                   } />
                   <Route path="/barbeiro/dashboard" element={
-                    <BarberRoute allowBarber={true}>
-                      <BarberDashboard />
-                    </BarberRoute>
+                    <AdminRedirectGuard>
+                      <BarberRoute allowBarber={true}>
+                        <BarberDashboard />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
                   } />
                   <Route path="/barbeiro/agendamentos" element={
-                    <BarberRoute allowBarber={true}>
-                      <BarberAppointments />
-                    </BarberRoute>
+                    <AdminRedirectGuard>
+                      <BarberRoute allowBarber={true}>
+                        <BarberAppointments />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
                   } />
                   <Route path="/barbeiro/comissoes" element={
-                    <BarberRoute allowBarber={true}>
-                      <BarberCommissions />
-                    </BarberRoute>
+                    <AdminRedirectGuard>
+                      <BarberRoute allowBarber={true}>
+                        <BarberCommissions />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
                   } />
                   <Route path="/barbeiro/agenda" element={
-                    <BarberRoute allowBarber={true}>
-                      <BarberSchedule />
-                    </BarberRoute>
+                    <AdminRedirectGuard>
+                      <BarberRoute allowBarber={true}>
+                        <BarberSchedule />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
                   } />
                   <Route path="/barbeiro/perfil" element={
-                    <BarberRoute allowBarber={true}>
-                      <BarberProfile />
-                    </BarberRoute>
+                    <AdminRedirectGuard>
+                      <BarberRoute allowBarber={true}>
+                        <BarberProfile />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
                   } />
                   <Route path="/barbeiro/admin" element={
-                    <BarberRoute>
-                      <BarberAdminDashboard />
-                    </BarberRoute>
+                    <AdminRedirectGuard>
+                      <BarberRoute>
+                        <BarberAdminDashboard />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
                   } />
 
                   {/* Painel Cliente Routes - Nested routing */}
-                  <Route path="/painel-cliente/login" element={<PainelClienteLogin />} />
-                  <Route path="/painel-cliente/register" element={<PainelClienteRegister />} />
+                  <Route path="/painel-cliente/login" element={
+                    <AdminRedirectGuard>
+                      <PainelClienteLogin />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/painel-cliente/register" element={
+                    <AdminRedirectGuard>
+                      <PainelClienteRegister />
+                    </AdminRedirectGuard>
+                  } />
                   
                   <Route path="/painel-cliente" element={
-                    <PainelClienteRoute>
-                      <PainelClienteLayout />
-                    </PainelClienteRoute>
+                    <AdminRedirectGuard>
+                      <PainelClienteRoute>
+                        <PainelClienteLayout />
+                      </PainelClienteRoute>
+                    </AdminRedirectGuard>
                   }>
                     <Route path="dashboard" element={<PainelClienteDashboard />} />
                     <Route path="agendar" element={<PainelClienteNovoAgendamento />} />
@@ -274,41 +311,173 @@ function App() {
                   </Route>
 
                   {/* Totem Routes */}
-                  <Route path="/totem/login" element={<TotemLogin />} />
-                  <Route path="/totem/welcome" element={<TotemWelcome />} />
-                  <Route path="/totem" element={<TotemProtectedRoute><TotemHome /></TotemProtectedRoute>} />
-                  <Route path="/totem/home" element={<TotemProtectedRoute><TotemHome /></TotemProtectedRoute>} />
-                  <Route path="/totem/search" element={<TotemProtectedRoute><TotemSearch /></TotemProtectedRoute>} />
-                  <Route path="/totem/cadastro" element={<TotemProtectedRoute><TotemCadastro /></TotemProtectedRoute>} />
-                  <Route path="/totem/servico" element={<TotemProtectedRoute><TotemServico /></TotemProtectedRoute>} />
-                  <Route path="/totem/barbeiro" element={<TotemProtectedRoute><TotemBarbeiro /></TotemProtectedRoute>} />
-                  <Route path="/totem/data-hora" element={<TotemProtectedRoute><TotemDataHora /></TotemProtectedRoute>} />
-                  <Route path="/totem/checkout-search" element={<TotemProtectedRoute><TotemCheckoutSearch /></TotemProtectedRoute>} />
-                  <Route path="/totem/appointments-list" element={<TotemProtectedRoute><TotemAppointmentsList /></TotemProtectedRoute>} />
-                  <Route path="/totem/confirmation" element={<TotemProtectedRoute><TotemConfirmation /></TotemProtectedRoute>} />
-                  <Route path="/totem/check-in-success" element={<TotemProtectedRoute><TotemCheckInSuccess /></TotemProtectedRoute>} />
-                  <Route path="/totem/checkout" element={<TotemProtectedRoute><TotemCheckout /></TotemProtectedRoute>} />
-                  <Route path="/totem/payment-pix" element={<TotemProtectedRoute><TotemPaymentPix /></TotemProtectedRoute>} />
-                  <Route path="/totem/payment-card" element={<TotemProtectedRoute><TotemPaymentCard /></TotemProtectedRoute>} />
-                  <Route path="/totem/payment-success" element={<TotemProtectedRoute><TotemPaymentSuccess /></TotemProtectedRoute>} />
-                  <Route path="/totem/waiting" element={<TotemProtectedRoute><TotemWaiting /></TotemProtectedRoute>} />
-                  <Route path="/totem/rating" element={<TotemProtectedRoute><TotemRating /></TotemProtectedRoute>} />
-                  <Route path="/totem/novo-agendamento" element={<TotemProtectedRoute><TotemNovoAgendamento /></TotemProtectedRoute>} />
-                  <Route path="/totem/agendamento-sucesso" element={<TotemProtectedRoute><TotemAgendamentoSucesso /></TotemProtectedRoute>} />
-                  <Route path="/totem/products" element={<TotemProtectedRoute><TotemProducts /></TotemProtectedRoute>} />
-                  <Route path="/totem/product-barber-select" element={<TotemProtectedRoute><TotemProductBarberSelect /></TotemProtectedRoute>} />
-                  <Route path="/totem/product-checkout" element={<TotemProtectedRoute><TotemProductCheckout /></TotemProtectedRoute>} />
-                  <Route path="/totem/product-card-type" element={<TotemProtectedRoute><TotemProductCardType /></TotemProtectedRoute>} />
-                  <Route path="/totem/product-payment-pix" element={<TotemProtectedRoute><TotemProductPaymentPix /></TotemProtectedRoute>} />
-                  <Route path="/totem/product-payment-card" element={<TotemProtectedRoute><TotemProductPaymentCard /></TotemProtectedRoute>} />
-                  <Route path="/totem/product-payment-success" element={<TotemProtectedRoute><TotemProductPaymentSuccess /></TotemProtectedRoute>} />
-                  <Route path="/totem/product-sale" element={<TotemProtectedRoute><TotemProductSale /></TotemProtectedRoute>} />
-                  <Route path="/totem/pending-checkouts" element={<TotemProtectedRoute><TotemPendingCheckouts /></TotemProtectedRoute>} />
-                  <Route path="/totem/error" element={<TotemProtectedRoute><TotemError /></TotemProtectedRoute>} />
+                  <Route path="/totem/login" element={
+                    <AdminRedirectGuard>
+                      <TotemLogin />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/welcome" element={
+                    <AdminRedirectGuard>
+                      <TotemWelcome />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemHome /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/home" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemHome /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/search" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemSearch /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/cadastro" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemCadastro /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/servico" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemServico /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/barbeiro" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemBarbeiro /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/data-hora" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemDataHora /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/checkout-search" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemCheckoutSearch /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/appointments-list" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemAppointmentsList /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/confirmation" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemConfirmation /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/check-in-success" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemCheckInSuccess /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/checkout" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemCheckout /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/payment-pix" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemPaymentPix /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/payment-card" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemPaymentCard /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/payment-success" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemPaymentSuccess /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/waiting" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemWaiting /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/rating" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemRating /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/novo-agendamento" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemNovoAgendamento /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/agendamento-sucesso" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemAgendamentoSucesso /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/products" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProducts /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/product-barber-select" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProductBarberSelect /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/product-checkout" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProductCheckout /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/product-card-type" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProductCardType /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/product-payment-pix" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProductPaymentPix /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/product-payment-card" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProductPaymentCard /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/product-payment-success" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProductPaymentSuccess /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/product-sale" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemProductSale /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/pending-checkouts" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemPendingCheckouts /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/error" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemError /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
 
                   {/* PWA Install Pages */}
-                  <Route path="/install" element={<Install />} />
-                  <Route path="/install/:context" element={<InstallContext />} />
+                  <Route path="/install" element={
+                    <AdminRedirectGuard>
+                      <Install />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/install/:context" element={
+                    <AdminRedirectGuard>
+                      <InstallContext />
+                    </AdminRedirectGuard>
+                  } />
 
                   {/* Catch all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />
