@@ -152,8 +152,16 @@ const AdminManagerTab: React.FC = () => {
       }
 
       toast({
-        title: 'Sucesso',
-        description: `${selectedEmployee.name} agora tem acesso ao sistema como ${selectedEmployee.role === 'admin' ? 'Administrador' : 'Gerente'}`,
+        title: '✅ Acesso concedido com sucesso!',
+        description: (
+          <div className="space-y-1">
+            <p className="font-semibold">{selectedEmployee.name}</p>
+            <p>Cargo: {selectedEmployee.role === 'admin' ? 'Administrador' : 'Gerente'}</p>
+            <p>E-mail: {selectedEmployee.email}</p>
+            <p className="text-green-600 font-medium mt-2">✓ Senha cadastrada com sucesso</p>
+          </div>
+        ),
+        duration: 6000,
       });
 
       setSelectedEmployeeId('');
