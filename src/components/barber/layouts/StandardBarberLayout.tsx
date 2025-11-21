@@ -7,8 +7,8 @@ interface StandardBarberLayoutProps {
 
 const StandardBarberLayout: React.FC<StandardBarberLayoutProps> = ({ children }) => {
   return (
-    <div className="w-full h-full min-h-[calc(100vh-64px)]">
-      <div className="w-full h-full">
+    <div className="w-full h-full flex-1 flex flex-col">
+      <div className="w-full h-full flex-1 flex flex-col">
         {children}
       </div>
     </div>

@@ -19,7 +19,7 @@ const StandardCard: React.FC<StandardCardProps> = ({ title, children, className 
           <CardTitle className="text-base sm:text-lg lg:text-xl font-bold text-urbana-light">{title}</CardTitle>
         </CardHeader>
       )}
-      <CardContent className="p-3 sm:p-4 lg:p-6">
+      <CardContent className="p-3 sm:p-4 lg:p-6 flex flex-col h-full">
         {children}
       </CardContent>
     </Card>
