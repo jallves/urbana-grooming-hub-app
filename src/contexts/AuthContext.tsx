@@ -8,8 +8,12 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isBarber: boolean;
+  isMaster: boolean;
+  isManager: boolean;
+  userRole: 'master' | 'admin' | 'manager' | 'barber' | null;
   rolesChecked: boolean;
   requiresPasswordChange: boolean;
+  canAccessModule: (moduleName: string) => boolean;
   signOut: () => Promise<void>;
 }
 
@@ -32,6 +36,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBarber, setIsBarber] = useState(false);
+  const [isMaster, setIsMaster] = useState(false);
+  const [isManager, setIsManager] = useState(false);
+  const [userRole, setUserRole] = useState<'master' | 'admin' | 'manager' | 'barber' | null>(null);
   const [rolesChecked, setRolesChecked] = useState(false);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
 
@@ -112,65 +119,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) {
       setIsAdmin(false);
       setIsBarber(false);
+      setIsMaster(false);
+      setIsManager(false);
+      setUserRole(null);
       setRolesChecked(true);
       setRequiresPasswordChange(false);
       return;
     }
     
-    // CRÍTICO: Resetar rolesChecked ao iniciar verificação
-    console.log('[AuthContext] 🔄 Resetando rolesChecked e iniciando verificação...');
+    console.log('[AuthContext] 🔄 Verificando role único do usuário...');
     setRolesChecked(false);
     
     try {
-      console.log('[AuthContext] 🔍 Verificando roles para usuário:', user.id, user.email);
+      console.log('[AuthContext] 🔍 Buscando role para:', user.id, user.email);
       
-      // Timeout de 5 segundos para evitar loops infinitos
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout verificando roles')), 5000)
-      );
+      // Usar a nova função simplificada que retorna apenas UM role
+      const { data: roleData, error: roleError } = await supabase
+        .rpc('get_user_role', { p_user_id: user.id });
+
+      if (roleError) {
+        console.error('[AuthContext] ❌ Erro ao buscar role:', roleError);
+        throw roleError;
+      }
+
+      const role = roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
       
-      const checkRolesPromise = async () => {
-        // Usar funções SECURITY DEFINER do banco para evitar problemas de RLS
-        const { data: isAdminData, error: adminError } = await supabase
-          .rpc('is_admin' as any, { user_id: user.id });
+      console.log('[AuthContext] ✅ Role obtido:', role);
+      
+      // Definir flags baseadas no role
+      setUserRole(role);
+      setIsMaster(role === 'master');
+      setIsAdmin(role === 'admin' || role === 'master');
+      setIsManager(role === 'manager');
+      setIsBarber(role === 'barber');
 
-        const { data: isBarberData, error: barberError } = await supabase
-          .rpc('is_barber' as any, { user_id: user.id });
-
-        if (adminError) throw adminError;
-        if (barberError) throw barberError;
-
-        // Verificar se precisa trocar senha
+      // Verificar se precisa trocar senha (apenas se não for master)
+      if (role !== 'master') {
         const { data: employeeData } = await supabase
           .from('employees')
           .select('requires_password_change')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        return {
-          isAdmin: isAdminData === true,
-          isBarber: isBarberData === true,
-          requiresPasswordChange: employeeData?.requires_password_change === true
-        };
-      };
-
-      const roles = await Promise.race([checkRolesPromise(), timeoutPromise]) as { 
-        isAdmin: boolean; 
-        isBarber: boolean;
-        requiresPasswordChange: boolean;
-      };
+        setRequiresPasswordChange(employeeData?.requires_password_change === true);
+      } else {
+        setRequiresPasswordChange(false);
+      }
       
-      console.log('[AuthContext] ✅ Roles definidas - isAdmin:', roles.isAdmin, 'isBarber:', roles.isBarber, 'requiresPasswordChange:', roles.requiresPasswordChange);
-      
-      setIsAdmin(roles.isAdmin);
-      setIsBarber(roles.isBarber);
-      setRequiresPasswordChange(roles.requiresPasswordChange);
       setRolesChecked(true);
+      console.log('[AuthContext] ✅ Verificação completa - Master:', role === 'master', 'Admin:', role === 'admin' || role === 'master', 'Manager:', role === 'manager', 'Barber:', role === 'barber');
     } catch (error) {
       console.error('[AuthContext] ❌ Error checking user roles:', error);
-      // Em caso de erro, assumir que não é admin nem barber
       setIsAdmin(false);
       setIsBarber(false);
+      setIsMaster(false);
+      setIsManager(false);
+      setUserRole(null);
       setRequiresPasswordChange(false);
       setRolesChecked(true);
     }
@@ -183,6 +187,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Limpar estados ANTES do signOut para evitar race conditions
       setIsAdmin(false);
       setIsBarber(false);
+      setIsMaster(false);
+      setIsManager(false);
+      setUserRole(null);
       setUser(null);
       
       // Fazer logout no Supabase
@@ -200,13 +207,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Função simplificada para verificar acesso a módulos
+  const canAccessModule = (moduleName: string): boolean => {
+    if (!userRole) return false;
+    
+    // Master tem acesso total
+    if (userRole === 'master') return true;
+    
+    // Admin tem acesso a tudo exceto configurações
+    if (userRole === 'admin') return moduleName !== 'configuracoes';
+    
+    // Manager tem restrições em financeiro e configurações
+    if (userRole === 'manager') {
+      return moduleName !== 'financeiro' && moduleName !== 'configuracoes';
+    }
+    
+    // Barber não tem acesso aos módulos administrativos
+    return false;
+  };
+
   const value = {
     user,
     loading,
     isAdmin,
     isBarber,
+    isMaster,
+    isManager,
+    userRole,
     rolesChecked,
     requiresPasswordChange,
+    canAccessModule,
     signOut,
   };
 

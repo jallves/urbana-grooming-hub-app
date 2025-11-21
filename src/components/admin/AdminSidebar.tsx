@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import beltecLogo from '@/assets/beltec-logo.png';
-import { usePermissions } from '@/contexts/PermissionsContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminSidebarProps {
   onClose?: () => void;
@@ -23,7 +23,7 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
-  const { checkModuleAccess, loading } = usePermissions();
+  const { canAccessModule, loading } = useAuth();
 
   const allMenuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, href: '/admin', color: 'from-blue-500 to-cyan-500' },
@@ -39,9 +39,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
     { title: 'Configurações', icon: Settings, href: '/admin/configuracoes', color: 'from-gray-500 to-gray-600', requiredModule: 'configuracoes' },
   ];
 
+  // Filtrar itens do menu baseado em permissões do AuthContext
   const menuItems = allMenuItems.filter(item => {
     if (!item.requiredModule) return true;
-    return checkModuleAccess(item.requiredModule);
+    return canAccessModule(item.requiredModule);
   });
 
   return (
