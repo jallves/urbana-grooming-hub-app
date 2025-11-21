@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,8 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import beltecLogo from '@/assets/beltec-logo.png';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { usePermissions } from '@/contexts/PermissionsContext';
 
 interface AdminSidebarProps {
   onClose?: () => void;
@@ -24,9 +23,7 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
-  const { user } = useAuth();
-  const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  const { checkModuleAccess, loading } = usePermissions();
 
   const allMenuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, href: '/admin', color: 'from-blue-500 to-cyan-500' },
@@ -42,44 +39,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
     { title: 'Configurações', icon: Settings, href: '/admin/configuracoes', color: 'from-gray-500 to-gray-600', requiredModule: 'configuracoes' },
   ];
 
-  useEffect(() => {
-    const checkModuleAccess = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const modulesToCheck = ['financeiro', 'configuracoes'];
-        const accessResults: Record<string, boolean> = {};
-
-        for (const module of modulesToCheck) {
-          const { data, error } = await supabase.rpc('has_module_access', {
-            _user_id: user.id,
-            _module_name: module,
-          });
-
-          if (!error) {
-            accessResults[module] = data ?? true;
-          } else {
-            accessResults[module] = true; // Default allow on error
-          }
-        }
-
-        setModuleAccess(accessResults);
-      } catch (error) {
-        console.error('Erro ao verificar acesso aos módulos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkModuleAccess();
-  }, [user]);
-
   const menuItems = allMenuItems.filter(item => {
     if (!item.requiredModule) return true;
-    return moduleAccess[item.requiredModule] !== false;
+    return checkModuleAccess(item.requiredModule);
   });
 
   return (

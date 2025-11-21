@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UserWithRole, AppRole } from '../types';
@@ -12,16 +12,11 @@ export const useUserManagement = () => {
   const [syncLoading, setSyncLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Fetch users from admin_users view with more detailed logging
       console.log("Fetching users from admin_users table...");
       const { data: authUsers, error: authError } = await supabase
         .from('admin_users')
@@ -35,7 +30,6 @@ export const useUserManagement = () => {
       
       console.log("Fetched users data:", authUsers);
       
-      // Map the data to include roles
       const usersWithRoles = authUsers.map(user => ({
         id: user.id || user.user_id,
         email: user.email,
@@ -55,9 +49,13 @@ export const useUserManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleDeleteUser = async (userId: string) => {
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleDeleteUser = useCallback(async (userId: string) => {
     if (window.confirm('Tem certeza que deseja remover este usuário?')) {
       try {
         setError(null);
@@ -80,14 +78,13 @@ export const useUserManagement = () => {
         });
       }
     }
-  };
+  }, [fetchUsers]);
 
-  const handleSyncStaff = async () => {
+  const handleSyncStaff = useCallback(async () => {
     try {
       setSyncLoading(true);
       setError(null);
       
-      // Fetch all active staff members (changed from barbers to staff)
       const { data: staffMembers, error: staffError } = await supabase
         .from('staff')
         .select('*')
@@ -104,10 +101,8 @@ export const useUserManagement = () => {
         return;
       }
       
-      // Log fetched staff
       console.log('Fetched active staff members:', staffMembers);
 
-      // Fetch existing users to avoid duplicates
       const { data: existingUsers, error: usersError } = await supabase
         .from('admin_users')
         .select('email');
@@ -122,7 +117,6 @@ export const useUserManagement = () => {
       
       console.log('Existing emails:', Array.from(existingEmails));
       
-      // Filter staff members who don't already exist as users
       const newStaff = staffMembers.filter(staff => 
         staff.email && !existingEmails.has(staff.email.toLowerCase())
       );
@@ -138,9 +132,7 @@ export const useUserManagement = () => {
       let addedCount = 0;
       let errors = 0;
       
-      // Use the RPC function to add staff - REMOVED AUTOMATIC ADMIN ROLE ASSIGNMENT
       for (const staff of newStaff) {
-        // Sanitize inputs before sending to database
         const staffEmail = sanitizeInput(staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`);
         const staffName = sanitizeInput(staff.name);
         console.log(`Adding staff: ${staffName} with email: ${staffEmail}`);
@@ -151,7 +143,7 @@ export const useUserManagement = () => {
             {
               p_email: staffEmail,
               p_name: staffName,
-              p_role: 'barber' // Default to barber role, not admin
+              p_role: 'barber'
             }
           );
 
@@ -169,7 +161,7 @@ export const useUserManagement = () => {
       
       if (addedCount > 0) {
         toast.success(`${addedCount} profissionais foram adicionados como usuários`);
-        fetchUsers(); // Refresh the list after adding new users
+        fetchUsers();
         setError(null);
       } else if (errors > 0) {
         toast.error(`Não foi possível adicionar os profissionais. Verifique os logs para mais detalhes.`);
@@ -182,7 +174,7 @@ export const useUserManagement = () => {
     } finally {
       setSyncLoading(false);
     }
-  };
+  }, [fetchUsers]);
 
   const filteredUsers = users.filter(
     (user) => user.email?.toLowerCase().includes(searchQuery.toLowerCase())

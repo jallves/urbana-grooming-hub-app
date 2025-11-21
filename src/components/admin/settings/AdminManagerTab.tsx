@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, UserPlus, Trash2, Shield, Users } from 'lucide-react';
+import { Search, UserPlus, Trash2, Shield, Users, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { Input } from '@/components/ui/input';
 
 interface AdminUser {
   id: string;
@@ -17,11 +17,20 @@ interface AdminUser {
   created_at: string;
 }
 
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  user_id: string | null;
+}
+
 const AdminManagerTab: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingStaff, setLoadingStaff] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'manager'>('admin');
   const [adding, setAdding] = useState(false);
   const { toast } = useToast();
@@ -29,7 +38,26 @@ const AdminManagerTab: React.FC = () => {
 
   useEffect(() => {
     fetchAdminUsers();
+    fetchStaffMembers();
   }, []);
+
+  const fetchStaffMembers = async () => {
+    try {
+      setLoadingStaff(true);
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id, name, email, user_id')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setStaffMembers(data || []);
+    } catch (error: any) {
+      console.error('Erro ao buscar funcionários:', error);
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
 
   const fetchAdminUsers = async () => {
     try {
@@ -80,10 +108,10 @@ const AdminManagerTab: React.FC = () => {
   };
 
   const handleAddUser = async () => {
-    if (!newUserEmail.trim()) {
+    if (!selectedStaffId) {
       toast({
         title: 'Erro',
-        description: 'Digite um e-mail válido',
+        description: 'Selecione um funcionário',
         variant: 'destructive',
       });
       return;
@@ -92,18 +120,39 @@ const AdminManagerTab: React.FC = () => {
     try {
       setAdding(true);
 
-      // Buscar usuário pelo email
-      const { data: authListData } = await supabase.auth.admin.listUsers();
-      let targetUser = null;
-      if (authListData && 'users' in authListData) {
-        const users = authListData.users as Array<{ id: string; email?: string }>;
-        targetUser = users.find((u) => u.email === newUserEmail.trim());
-      }
-
-      if (!targetUser) {
+      // Buscar funcionário selecionado
+      const selectedStaff = staffMembers.find(s => s.id === selectedStaffId);
+      if (!selectedStaff) {
         toast({
           title: 'Erro',
-          description: 'Usuário não encontrado no sistema',
+          description: 'Funcionário não encontrado',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Verificar se o funcionário tem user_id (está vinculado a um usuário)
+      if (!selectedStaff.user_id) {
+        toast({
+          title: 'Erro',
+          description: 'Este funcionário não possui conta de usuário vinculada',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Verificar se já tem role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', selectedStaff.user_id)
+        .in('role', ['master', 'admin', 'manager'])
+        .maybeSingle();
+
+      if (existingRole) {
+        toast({
+          title: 'Erro',
+          description: 'Este funcionário já possui uma role administrativa',
           variant: 'destructive',
         });
         return;
@@ -113,7 +162,7 @@ const AdminManagerTab: React.FC = () => {
       const { error } = await supabase
         .from('user_roles')
         .insert({
-          user_id: targetUser.id,
+          user_id: selectedStaff.user_id,
           role: newUserRole,
         });
 
@@ -121,10 +170,10 @@ const AdminManagerTab: React.FC = () => {
 
       toast({
         title: 'Sucesso',
-        description: `${newUserRole === 'admin' ? 'Administrador' : 'Gerente'} adicionado com sucesso`,
+        description: `${selectedStaff.name} foi adicionado como ${newUserRole === 'admin' ? 'Administrador' : 'Gerente'}`,
       });
 
-      setNewUserEmail('');
+      setSelectedStaffId('');
       setNewUserRole('admin');
       fetchAdminUsers();
     } catch (error: any) {
@@ -216,13 +265,24 @@ const AdminManagerTab: React.FC = () => {
           Adicionar Administrador/Gerente
         </h3>
         <div className="flex flex-col sm:flex-row gap-3">
-          <Input
-            type="email"
-            placeholder="E-mail do usuário"
-            value={newUserEmail}
-            onChange={(e) => setNewUserEmail(e.target.value)}
-            className="flex-1"
-          />
+          <Select 
+            value={selectedStaffId} 
+            onValueChange={setSelectedStaffId}
+            disabled={loadingStaff}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder={loadingStaff ? "Carregando..." : "Selecione um funcionário"} />
+            </SelectTrigger>
+            <SelectContent>
+              {staffMembers
+                .filter(staff => staff.user_id) // Apenas funcionários com conta
+                .map((staff) => (
+                  <SelectItem key={staff.id} value={staff.id}>
+                    {staff.name} ({staff.email})
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
           <Select value={newUserRole} onValueChange={(value: 'admin' | 'manager') => setNewUserRole(value)}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Selecione o cargo" />
@@ -234,14 +294,21 @@ const AdminManagerTab: React.FC = () => {
           </Select>
           <Button
             onClick={handleAddUser}
-            disabled={adding}
+            disabled={adding || !selectedStaffId}
             className="bg-gradient-to-r from-urbana-gold to-yellow-500 hover:from-urbana-gold-dark hover:to-yellow-600"
           >
-            {adding ? 'Adicionando...' : 'Adicionar'}
+            {adding ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adicionando...
+              </>
+            ) : (
+              'Adicionar'
+            )}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground mt-3">
-          O usuário deve estar previamente cadastrado no sistema
+          Selecione um funcionário cadastrado no sistema que já possua conta de usuário
         </p>
       </Card>
 

@@ -29,15 +29,12 @@ const UserRolesList: React.FC<UserRolesListProps> = ({ onError }) => {
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
 
-  // Effect to periodically refresh user list
+  // Effect to periodically refresh user list (AUMENTADO PARA 5 MINUTOS)
   useEffect(() => {
-    // Initial fetch
-    fetchUsers();
-    // Set up an interval to refresh users every minute
     const intervalId = setInterval(() => {
       console.log('Refreshing user list...');
       fetchUsers();
-    }, 60000); // every minute
+    }, 300000); // 5 minutos ao invés de 1 minuto
     return () => clearInterval(intervalId);
   }, [fetchUsers]);
 
