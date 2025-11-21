@@ -447,7 +447,21 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-white border-gray-200 z-[100]">
+      <DialogContent 
+        className="max-w-6xl max-h-[90vh] p-0 overflow-hidden bg-white border-2 border-gray-300 shadow-2xl"
+        style={{ zIndex: 9999 }}
+      >
+        <div className="absolute top-2 right-2 z-50">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="hover:bg-red-50 text-gray-700 hover:text-red-600 p-2"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+        
         <VisuallyHidden>
           <DialogTitle>Novo Agendamento</DialogTitle>
           <DialogDescription>
@@ -455,36 +469,26 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           </DialogDescription>
         </VisuallyHidden>
 
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full bg-white">
           {/* Header */}
-          <div className="p-3 sm:p-4 md:p-6 border-b border-gray-200 bg-white">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBack}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2"
-                >
-                  <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                  <span className="text-xs sm:text-sm">Voltar</span>
-                </Button>
-              </div>
+          <div className="p-4 sm:p-6 border-b-2 border-gray-300 bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center justify-between mb-4">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={onClose}
-                className="hover:bg-red-50 text-gray-700 hover:text-red-600 p-1.5 sm:p-2"
+                onClick={handleBack}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar
               </Button>
             </div>
 
-            <div className="text-center">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+            <div className="text-center mb-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                 Novo Agendamento
               </h2>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600">
                 {step === 'client' && 'Selecione o cliente'}
                 {step === 'service' && 'Escolha o serviço'}
                 {step === 'barber' && 'Escolha o profissional'}
@@ -493,38 +497,38 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
             </div>
 
             {/* Progress Indicator */}
-            <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-3 sm:mt-4">
-              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                 step === 'client' 
-                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  ? 'bg-urbana-gold text-white border-urbana-gold' 
                   : 'bg-gray-100 text-gray-900 border-gray-300'
               }`}>
-                {step !== 'client' && selectedClient ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : '1'}
+                {step !== 'client' && selectedClient ? <Check className="w-4 h-4" /> : '1'}
               </div>
-              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step !== 'client' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
-              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
+              <div className={`w-12 h-1 rounded ${step !== 'client' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                 step === 'service' 
-                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  ? 'bg-urbana-gold text-white border-urbana-gold' 
                   : step === 'barber' || step === 'datetime' 
                     ? 'bg-gray-100 text-gray-900 border-gray-300' 
                     : 'bg-white text-gray-400 border-gray-200'
               }`}>
-                {step === 'barber' || step === 'datetime' ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : '2'}
+                {step === 'barber' || step === 'datetime' ? <Check className="w-4 h-4" /> : '2'}
               </div>
-              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step === 'barber' || step === 'datetime' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
-              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
+              <div className={`w-12 h-1 rounded ${step === 'barber' || step === 'datetime' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                 step === 'barber' 
-                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  ? 'bg-urbana-gold text-white border-urbana-gold' 
                   : step === 'datetime' 
                     ? 'bg-gray-100 text-gray-900 border-gray-300' 
                     : 'bg-white text-gray-400 border-gray-200'
               }`}>
-                {step === 'datetime' ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : '3'}
+                {step === 'datetime' ? <Check className="w-4 h-4" /> : '3'}
               </div>
-              <div className={`w-8 sm:w-12 h-0.5 sm:h-1 rounded transition-all ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
-              <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border-2 ${
+              <div className={`w-12 h-1 rounded ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-gray-200'}`} />
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                 step === 'datetime' 
-                  ? 'bg-urbana-gold text-white border-urbana-gold shadow-lg shadow-urbana-gold/30' 
+                  ? 'bg-urbana-gold text-white border-urbana-gold' 
                   : 'bg-white text-gray-400 border-gray-200'
               }`}>
                 4
