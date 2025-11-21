@@ -5,23 +5,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Search, UserPlus, Trash2, Shield, Users, Loader2, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Search, UserPlus, Trash2, Shield, Users, Loader2, Filter, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@/components/ui/input';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-interface Employee {
-  id: string;
+interface EmployeeDetail {
+  employee_id: string;
   name: string;
   email: string;
   role: string;
-  user_id: string | null;
   status: string;
+  user_id: string | null;
+  has_access: boolean;
+  created_at: string;
+  last_login: string | null;
 }
 
 const AdminManagerTab: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<EmployeeDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'manager'>('all');
@@ -29,7 +33,6 @@ const AdminManagerTab: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [adding, setAdding] = useState(false);
   const { toast } = useToast();
-  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     fetchEmployees();
@@ -39,12 +42,9 @@ const AdminManagerTab: React.FC = () => {
     try {
       setLoading(true);
       
-      // Buscar funcionários com cargo admin ou manager
+      // Usar função RPC segura
       const { data, error } = await supabase
-        .from('employees')
-        .select('id, name, email, role, user_id, status')
-        .in('role', ['admin', 'manager'])
-        .order('name');
+        .rpc('get_admin_manager_details');
 
       if (error) throw error;
 
@@ -53,7 +53,7 @@ const AdminManagerTab: React.FC = () => {
       console.error('Erro ao buscar funcionários:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar os funcionários',
+        description: error.message || 'Não foi possível carregar os funcionários',
         variant: 'destructive',
       });
     } finally {
@@ -83,82 +83,43 @@ const AdminManagerTab: React.FC = () => {
     try {
       setAdding(true);
 
-      // Buscar funcionário selecionado
-      const selectedEmployee = employees.find(e => e.id === selectedEmployeeId);
+      const selectedEmployee = employees.find(e => e.employee_id === selectedEmployeeId);
       if (!selectedEmployee) {
-        toast({
-          title: 'Erro',
-          description: 'Funcionário não encontrado',
-          variant: 'destructive',
-        });
-        return;
+        throw new Error('Funcionário não encontrado');
       }
 
-      // Se já tem user_id, apenas adicionar role
-      if (selectedEmployee.user_id) {
-        // Verificar se já tem role
-        const { data: existingRole } = await supabase
-          .from('user_roles')
-          .select('id')
-          .eq('user_id', selectedEmployee.user_id)
-          .in('role', ['master', 'admin', 'manager'])
-          .maybeSingle();
+      // Usar função RPC segura para criar usuário
+      const { data, error } = await supabase.rpc('create_admin_manager_user', {
+        p_employee_id: selectedEmployeeId,
+        p_email: selectedEmployee.email,
+        p_password: password,
+        p_role: selectedEmployee.role
+      });
 
-        if (existingRole) {
-          toast({
-            title: 'Aviso',
-            description: 'Este funcionário já possui acesso ao sistema',
-            variant: 'destructive',
-          });
-          return;
-        }
+      if (error) throw error;
 
-        // Adicionar role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: selectedEmployee.user_id,
-            role: selectedEmployee.role as 'admin' | 'manager',
-          });
-
-        if (roleError) throw roleError;
-      } else {
-        // Criar usuário no auth e vincular
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: selectedEmployee.email,
-          password: password,
-          email_confirm: true,
-        });
-
-        if (authError) throw authError;
-
-        // Atualizar employee com user_id
-        const { error: updateError } = await supabase
-          .from('employees')
-          .update({ user_id: authData.user.id })
-          .eq('id', selectedEmployee.id);
-
-        if (updateError) throw updateError;
-
-        // Adicionar role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: selectedEmployee.role as 'admin' | 'manager',
-          });
-
-        if (roleError) throw roleError;
+      const result = data as { success: boolean; error?: string };
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao criar usuário');
       }
 
       toast({
         title: '✅ Acesso concedido com sucesso!',
         description: (
-          <div className="space-y-1">
-            <p className="font-semibold">{selectedEmployee.name}</p>
-            <p>Cargo: {selectedEmployee.role === 'admin' ? 'Administrador' : 'Gerente'}</p>
-            <p>E-mail: {selectedEmployee.email}</p>
-            <p className="text-green-600 font-medium mt-2">✓ Senha cadastrada com sucesso</p>
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <p className="font-semibold">{selectedEmployee.name}</p>
+            </div>
+            <div className="space-y-1 text-sm">
+              <p><span className="font-medium">Cargo:</span> {selectedEmployee.role === 'admin' ? 'Administrador' : 'Gerente'}</p>
+              <p><span className="font-medium">E-mail:</span> {selectedEmployee.email}</p>
+              <p className="text-green-600 font-medium flex items-center gap-1 mt-2">
+                <CheckCircle2 className="h-3 w-3" />
+                Senha cadastrada e acesso liberado
+              </p>
+            </div>
           </div>
         ),
         duration: 6000,
@@ -194,16 +155,18 @@ const AdminManagerTab: React.FC = () => {
     }
 
     try {
-      const employee = employees.find(e => e.id === employeeId);
-      if (!employee?.user_id) return;
-
-      // Remover role
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', employee.user_id);
+      // Usar função RPC segura para revogar acesso
+      const { data, error } = await supabase.rpc('revoke_admin_manager_access', {
+        p_employee_id: employeeId
+      });
 
       if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao revogar acesso');
+      }
 
       toast({
         title: 'Sucesso',
@@ -215,7 +178,7 @@ const AdminManagerTab: React.FC = () => {
       console.error('Erro ao revogar acesso:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível revogar o acesso',
+        description: error.message || 'Não foi possível revogar o acesso',
         variant: 'destructive',
       });
     }
@@ -247,6 +210,15 @@ const AdminManagerTab: React.FC = () => {
     }
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+    } catch {
+      return '-';
+    }
+  };
+
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          employee.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -254,8 +226,8 @@ const AdminManagerTab: React.FC = () => {
     return matchesSearch && matchesRole;
   });
 
-  const availableEmployees = employees.filter(e => !e.user_id);
-  const employeesWithAccess = employees.filter(e => e.user_id);
+  const availableEmployees = employees.filter(e => !e.has_access && e.status === 'active');
+  const employeesWithAccess = filteredEmployees.filter(e => e.has_access);
 
   return (
     <div className="space-y-6">
@@ -267,21 +239,24 @@ const AdminManagerTab: React.FC = () => {
             Dar Acesso ao Sistema
           </h3>
           <div className="space-y-3">
-            <Select 
-              value={selectedEmployeeId} 
-              onValueChange={setSelectedEmployeeId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um funcionário" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableEmployees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.name} - {employee.role === 'admin' ? 'Administrador' : 'Gerente'} ({employee.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label htmlFor="employee">Funcionário</Label>
+              <Select 
+                value={selectedEmployeeId} 
+                onValueChange={setSelectedEmployeeId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um funcionário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableEmployees.map((employee) => (
+                    <SelectItem key={employee.employee_id} value={employee.employee_id}>
+                      {employee.name} - {employee.role === 'admin' ? 'Administrador' : 'Gerente'} ({employee.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">
@@ -311,7 +286,10 @@ const AdminManagerTab: React.FC = () => {
                   Processando...
                 </>
               ) : (
-                'Dar Acesso'
+                <>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Dar Acesso
+                </>
               )}
             </Button>
           </div>
@@ -357,14 +335,13 @@ const AdminManagerTab: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          <div className="text-center py-8 text-muted-foreground flex items-center justify-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Carregando...
+          </div>
         ) : employeesWithAccess.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             Nenhum funcionário com acesso encontrado
-          </div>
-        ) : filteredEmployees.filter(e => e.user_id).length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhum resultado encontrado
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -375,40 +352,46 @@ const AdminManagerTab: React.FC = () => {
                   <TableHead>E-mail</TableHead>
                   <TableHead>Cargo</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Acesso Criado</TableHead>
+                  <TableHead>Último Login</TableHead>
                   <TableHead>Permissões</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees
-                  .filter(e => e.user_id)
-                  .map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell className="font-medium">{employee.name}</TableCell>
-                      <TableCell>{employee.email}</TableCell>
-                      <TableCell>{getRoleBadge(employee.role)}</TableCell>
-                      <TableCell>
-                        <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
-                          {employee.status === 'active' ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {getRolePermissions(employee.role)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {employee.email !== 'joao.colimoides@gmail.com' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRevokeAccess(employee.id, employee.name, employee.email)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                {employeesWithAccess.map((employee) => (
+                  <TableRow key={employee.employee_id}>
+                    <TableCell className="font-medium">{employee.name}</TableCell>
+                    <TableCell>{employee.email}</TableCell>
+                    <TableCell>{getRoleBadge(employee.role)}</TableCell>
+                    <TableCell>
+                      <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
+                        {employee.status === 'active' ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(employee.created_at)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(employee.last_login)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs">
+                      {getRolePermissions(employee.role)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {employee.email !== 'joao.colimoides@gmail.com' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRevokeAccess(employee.employee_id, employee.name, employee.email)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
