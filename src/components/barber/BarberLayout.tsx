@@ -49,7 +49,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative">
+    <div className="min-h-screen h-screen w-full overflow-x-hidden overflow-y-auto relative flex flex-col">
       {/* Background image - Same as PainelClienteLayout */}
       <div className="fixed inset-0 z-0">
         <img 
@@ -189,7 +189,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </nav>
 
       {/* Main Content */}
-      <main className="relative z-10 w-full px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 pb-safe">
+      <main className="relative z-10 w-full flex-1 flex flex-col px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 pb-safe overflow-y-auto">
         {children}
       </main>
     </div>

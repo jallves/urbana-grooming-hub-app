@@ -46,7 +46,7 @@ const BarberAppointments: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="w-full h-full flex-1 flex flex-col space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <StandardCard key={i}>
@@ -63,7 +63,7 @@ const BarberAppointments: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full h-full flex-1 flex flex-col space-y-4 sm:space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statsCards.map((stat, index) => (
@@ -82,14 +82,14 @@ const BarberAppointments: React.FC = () => {
       </div>
 
       {/* Appointments List */}
-      <StandardCard>
+      <StandardCard className="flex-1 flex flex-col">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white">Meus Agendamentos</h2>
           <p className="text-sm text-gray-400 mt-1">Visualização dos seus atendimentos</p>
         </div>
         
         {appointments.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="text-center py-12 flex-1 flex flex-col items-center justify-center">
             <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-300 mb-2">
               Nenhum agendamento encontrado
@@ -99,7 +99,7 @@ const BarberAppointments: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 overflow-y-auto">
             {appointments.map((appointment) => (
               <AppointmentCardOptimized
                 key={appointment.id}
