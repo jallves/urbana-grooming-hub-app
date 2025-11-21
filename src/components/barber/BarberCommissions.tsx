@@ -142,9 +142,9 @@ const BarberCommissionsComponent: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full flex-1 flex flex-col space-y-4 sm:space-y-6">
+    <div className="w-full flex-1 flex flex-col space-y-4 sm:space-y-6 pb-4 min-h-0">
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 flex-shrink-0">
         <Card className="bg-gray-900 border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-300">Total</CardTitle>
@@ -202,11 +202,11 @@ const BarberCommissionsComponent: React.FC = () => {
       </div>
 
       {/* Lista de Comissões */}
-      <Card className="bg-gray-900 border-gray-700 flex-1 flex flex-col">
-        <CardHeader>
+      <Card className="bg-gray-900 border-gray-700 flex-1 flex flex-col min-h-0">
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="text-white">Histórico de Comissões</CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto">
+        <CardContent className="flex-1 overflow-y-auto min-h-0 pr-2">
           {commissions.length === 0 ? (
             <div className="text-center py-12 flex items-center justify-center h-full">
               <div>

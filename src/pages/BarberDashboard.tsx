@@ -81,17 +81,23 @@ const BarberDashboard: React.FC = () => {
   return (
     <BarberLayout title="Dashboard">
       <StandardBarberLayout>
-        <div className="w-full h-full flex-1 flex flex-col space-y-4 sm:space-y-6">
+        <div className="w-full flex-1 flex flex-col space-y-4 sm:space-y-6 pb-4">
           {/* Welcome Section */}
-          <div className="w-full text-center">
+          <div className="w-full text-center flex-shrink-0">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
               Bem-vindo, {user?.email?.split('@')[0]}
             </h2>
             <p className="text-sm sm:text-base text-gray-400">Gerencie seu trabalho com excelência profissional</p>
+            <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <Calendar className="h-4 w-4 text-blue-400" />
+              <span className="text-xs sm:text-sm text-blue-300">
+                Dados do mês atual: {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+            </div>
           </div>
 
           {/* Stats Cards */}
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 flex-shrink-0">
             {statsCards.map((stat, index) => (
               <StandardCard key={index}>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -113,7 +119,7 @@ const BarberDashboard: React.FC = () => {
           </div>
 
           {/* Quick Access Cards */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 flex-shrink-0 pb-4">
             {quickAccessItems.map((item, index) => (
               <StandardCard 
                 key={index}
