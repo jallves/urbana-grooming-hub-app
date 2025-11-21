@@ -88,20 +88,40 @@ const AdminManagerTab: React.FC = () => {
         throw new Error('Funcionário não encontrado');
       }
 
-      // Usar função RPC segura para criar usuário
-      const { data, error } = await supabase.rpc('create_admin_manager_user', {
+      // Criar usuário no auth.users usando a API admin
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: selectedEmployee.email,
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          name: selectedEmployee.name,
+          role: selectedEmployee.role
+        }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Falha ao criar usuário');
+
+      // Usar função RPC para vincular usuário ao employee e criar role
+      const { data: rpcData, error: rpcError } = await supabase.rpc('create_admin_manager_user', {
         p_employee_id: selectedEmployeeId,
         p_email: selectedEmployee.email,
         p_password: password,
         p_role: selectedEmployee.role
       });
 
-      if (error) throw error;
+      if (rpcError) {
+        // Se falhar, tentar deletar o usuário criado
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        throw rpcError;
+      }
 
-      const result = data as { success: boolean; error?: string };
+      const result = rpcData as { success: boolean; error?: string };
       
       if (!result.success) {
-        throw new Error(result.error || 'Erro ao criar usuário');
+        // Se falhar, deletar o usuário criado
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        throw new Error(result.error || 'Erro ao vincular usuário');
       }
 
       toast({
@@ -155,7 +175,17 @@ const AdminManagerTab: React.FC = () => {
     }
 
     try {
-      // Usar função RPC segura para revogar acesso
+      // Buscar o user_id do employee
+      const employee = employees.find(e => e.employee_id === employeeId);
+      if (!employee || !employee.user_id) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // Deletar usuário do auth.users usando API admin
+      const { error: deleteError } = await supabase.auth.admin.deleteUser(employee.user_id);
+      if (deleteError) throw deleteError;
+
+      // Usar função RPC segura para limpar dados
       const { data, error } = await supabase.rpc('revoke_admin_manager_access', {
         p_employee_id: employeeId
       });
