@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { z } from 'zod';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface ClientAppointmentCreateDialogProps {
   isOpen: boolean;
@@ -441,9 +442,16 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden relative bg-transparent border-none">
+        <VisuallyHidden>
+          <DialogTitle>Novo Agendamento</DialogTitle>
+          <DialogDescription>
+            Crie um novo agendamento selecionando cliente, serviço, barbeiro e horário
+          </DialogDescription>
+        </VisuallyHidden>
+        
         {/* Background da barbearia - igual ao painel do cliente */}
-        <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 z-0 pointer-events-none rounded-lg overflow-hidden">
           <img 
             src={barbershopBg} 
             alt="Barbearia Costa Urbana Background" 

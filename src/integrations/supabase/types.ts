@@ -4449,7 +4449,9 @@ export type Database = {
         }
         Returns: string
       }
-      is_admin: { Args: { user_id: string }; Returns: boolean }
+      is_admin:
+        | { Args: { user_id: string }; Returns: boolean }
+        | { Args: never; Returns: boolean }
       is_barber: { Args: { user_id: string }; Returns: boolean }
       is_staff_member: { Args: { user_email: string }; Returns: boolean }
       is_user_admin: { Args: { user_id: string }; Returns: boolean }
