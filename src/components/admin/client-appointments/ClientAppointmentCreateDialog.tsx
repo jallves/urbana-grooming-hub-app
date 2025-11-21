@@ -50,7 +50,7 @@ const appointmentSchema = z.object({
   servico_id: z.string().min(1, 'Serviço é obrigatório'),
   barbeiro_id: z.string().min(1, 'Barbeiro é obrigatório'),
   data: z.string().min(1, 'Data é obrigatória'),
-  hora: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Horário inválido')
+  hora: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, 'Horário inválido')
 });
 
 const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps> = ({
