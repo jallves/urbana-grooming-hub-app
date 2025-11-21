@@ -17,25 +17,25 @@ export const useUserManagement = () => {
       setLoading(true);
       setError(null);
       
-      console.log("Fetching users from admin_users table...");
-      const { data: authUsers, error: authError } = await supabase
-        .from('admin_users')
-        .select('*');
+      console.log("Fetching users via RPC get_admin_manager_details...");
+      const { data: employeeData, error: rpcError } = await supabase
+        .rpc('get_admin_manager_details');
 
-      if (authError) {
-        console.error("Error fetching from admin_users:", authError);
-        setError(authError.message || 'Erro ao buscar usuários');
-        throw authError;
+      if (rpcError) {
+        console.error("Error fetching via RPC:", rpcError);
+        setError(rpcError.message || 'Erro ao buscar usuários');
+        throw rpcError;
       }
       
-      console.log("Fetched users data:", authUsers);
+      console.log("Fetched employee data:", employeeData);
       
-      const usersWithRoles = authUsers.map(user => ({
-        id: user.id || user.user_id,
-        email: user.email,
-        created_at: user.created_at,
-        last_sign_in_at: user.last_login,
-        role: user.role || 'user'
+      // Mapear dados de employees para UserWithRole
+      const usersWithRoles = (employeeData || []).map((emp: any) => ({
+        id: emp.user_id || emp.employee_id,
+        email: emp.email,
+        created_at: emp.created_at,
+        last_sign_in_at: emp.last_login,
+        role: emp.role || 'user'
       }));
 
       console.log("Processed users with roles:", usersWithRoles);
@@ -59,14 +59,29 @@ export const useUserManagement = () => {
     if (window.confirm('Tem certeza que deseja remover este usuário?')) {
       try {
         setError(null);
-        const { error } = await supabase
-          .from('admin_users')
-          .delete()
-          .eq('id', userId);
+        
+        // Buscar employee_id pelo user_id
+        const { data: employeeData } = await supabase
+          .rpc('get_admin_manager_details');
+        
+        const employee = (employeeData || []).find((emp: any) => emp.user_id === userId);
+        
+        if (!employee) {
+          throw new Error('Usuário não encontrado');
+        }
+        
+        // Usar RPC para revogar acesso
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('revoke_admin_manager_access', { p_employee_id: employee.employee_id });
 
-        if (error) {
-          setError(error.message || 'Erro ao remover usuário');
-          throw error;
+        if (rpcError) {
+          setError(rpcError.message || 'Erro ao remover usuário');
+          throw rpcError;
+        }
+
+        const result = rpcData as { success: boolean; error?: string };
+        if (!result.success) {
+          throw new Error(result.error || 'Erro ao remover usuário');
         }
 
         toast.success('Usuário removido com sucesso');
@@ -104,15 +119,14 @@ export const useUserManagement = () => {
       console.log('Fetched active staff members:', staffMembers);
 
       const { data: existingUsers, error: usersError } = await supabase
-        .from('admin_users')
-        .select('email');
+        .rpc('get_admin_manager_details');
         
       if (usersError) {
         setError(usersError.message || 'Erro ao buscar usuários existentes');
         throw usersError;
       }
       
-      const existingEmails = new Set((existingUsers || []).map(user => 
+      const existingEmails = new Set((existingUsers || []).map((user: any) => 
         user.email?.toLowerCase()).filter(Boolean));
       
       console.log('Existing emails:', Array.from(existingEmails));
