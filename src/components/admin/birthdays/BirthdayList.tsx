@@ -119,31 +119,98 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
 
   return (
     <div className="bg-gray-800 border-gray-700 rounded-lg">
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex justify-between items-center">
+      <div className="p-3 sm:p-4 border-b border-gray-700">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center space-x-2">
-            <Cake className="h-5 w-5 text-blue-500" />
-            <span className="text-lg font-semibold text-white">
+            <Cake className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+            <span className="text-base sm:text-lg font-semibold text-white">
               Aniversariantes {filterLabels[filter]} ({clients.length})
             </span>
           </div>
-          <Button onClick={exportToExcel} variant="outline" size="sm" className="bg-gray-700 border-gray-600 text-white hover:bg-gray-600">
+          <Button onClick={exportToExcel} variant="outline" size="sm" className="w-full sm:w-auto bg-gray-700 border-gray-600 text-white hover:bg-gray-600">
             <Download className="h-4 w-4 mr-2" />
-            Exportar Excel
+            <span className="hidden sm:inline">Exportar Excel</span>
+            <span className="sm:hidden">Exportar</span>
           </Button>
         </div>
       </div>
       
-      <div className="p-4 overflow-x-auto">
+      {/* Layout em Cards para Mobile/Tablet */}
+      <div className="block lg:hidden p-3 space-y-3">
+        {clients.map((client) => {
+          const whatsappNumber = client.whatsapp || client.phone;
+          
+          return (
+            <div key={client.id} className="bg-gray-700 border border-gray-600 rounded-lg p-3 space-y-3">
+              {/* Header do Card */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-white text-sm truncate">{client.name}</h3>
+                  <Badge variant="outline" className="border-gray-600 text-white mt-1">
+                    {client.age} anos
+                  </Badge>
+                </div>
+                <Badge className="bg-green-900 text-green-300 border-green-700 flex-shrink-0">
+                  <MessageCircle className="h-3 w-3 mr-1" />
+                  WhatsApp
+                </Badge>
+              </div>
+
+              {/* Informações de Contato */}
+              <div className="space-y-2 pt-2 border-t border-gray-600">
+                {client.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-xs text-white truncate">{client.email}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-xs text-white">{client.phone}</span>
+                </div>
+                {whatsappNumber && whatsappNumber !== client.phone && (
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
+                    <span className="text-xs text-white">{whatsappNumber}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Data de Nascimento */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-600">
+                <div className="flex items-center gap-2">
+                  <Cake className="h-3.5 w-3.5 text-blue-400" />
+                  <span className="text-xs text-white">
+                    {client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botão de Ação */}
+              <Button
+                onClick={() => handleWhatsAppClick(client)}
+                size="sm"
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Enviar Felicitação
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Layout em Tabela para Desktop */}
+      <div className="hidden lg:block p-4 overflow-x-auto">
         <Table className="min-w-full">
           <TableHeader>
             <TableRow className="border-gray-700">
               <TableHead className="text-gray-300 whitespace-nowrap">Nome</TableHead>
-              <TableHead className="text-gray-300 whitespace-nowrap hidden sm:table-cell">E-mail</TableHead>
-              <TableHead className="text-gray-300 whitespace-nowrap hidden sm:table-cell">Telefone</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap">E-mail</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap">Telefone</TableHead>
               <TableHead className="text-gray-300 whitespace-nowrap">WhatsApp</TableHead>
-              <TableHead className="text-gray-300 whitespace-nowrap hidden md:table-cell">Data de Nascimento</TableHead>
-              <TableHead className="text-gray-300 whitespace-nowrap hidden md:table-cell">Idade</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap">Data de Nascimento</TableHead>
+              <TableHead className="text-gray-300 whitespace-nowrap">Idade</TableHead>
               <TableHead className="text-right text-gray-300 whitespace-nowrap">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -154,7 +221,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
               return (
                 <TableRow key={client.id} className="border-gray-700 hover:bg-gray-700">
                   <TableCell className="font-medium text-white whitespace-nowrap">{client.name}</TableCell>
-                  <TableCell className="hidden sm:table-cell whitespace-nowrap">
+                  <TableCell className="whitespace-nowrap">
                     {client.email ? (
                       <div className="flex items-center space-x-1">
                         <Mail className="h-3.5 w-3.5 text-gray-400" />
@@ -164,7 +231,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
                       <span className="text-gray-400">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell whitespace-nowrap">
+                  <TableCell className="whitespace-nowrap">
                     <div className="flex items-center space-x-1">
                       <Phone className="h-3.5 w-3.5 text-gray-400" />
                       <span className="text-sm text-white">{client.phone}</span>
@@ -175,7 +242,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
                       {whatsappNumber}
                     </Badge>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell whitespace-nowrap">
+                  <TableCell className="whitespace-nowrap">
                     {client.birth_date ? (
                       <span className="text-sm text-white">
                         {format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
@@ -184,7 +251,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
                       <span className="text-gray-400 text-sm">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="hidden md:table-cell whitespace-nowrap">
+                  <TableCell className="whitespace-nowrap">
                     <Badge variant="outline" className="border-gray-600 text-white">
                       {client.age} anos
                     </Badge>
