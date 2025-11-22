@@ -60,8 +60,14 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   });
 
   const onSubmit = async (data: EmployeeFormData) => {
+    // Prevenir submissões múltiplas
+    if (loading) {
+      console.warn('⚠️ Submissão já em andamento, ignorando...');
+      return;
+    }
+    
     setLoading(true);
-    console.log('Submitting employee data:', data);
+    console.log('📝 Submitting employee data:', data);
     
     try {
       if (isEditing) {
@@ -74,21 +80,42 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         title: 'Sucesso',
         description: `Funcionário ${isEditing ? 'atualizado' : 'criado'} com sucesso!`,
       });
-      onClose();
+      
+      // Aguardar um pouco antes de fechar para garantir que o toast seja visível
+      setTimeout(() => {
+        onClose();
+      }, 500);
     } catch (error: any) {
-      console.error('Error saving employee:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao salvar funcionário',
-        variant: 'destructive',
-      });
+      console.error('❌ Error saving employee:', error);
+      
+      // Tratamento específico de erros RLS
+      if (error.message?.includes('policy') || error.message?.includes('permission')) {
+        toast({
+          title: 'Erro de Permissão',
+          description: 'Você não tem permissão para realizar esta operação. Verifique com o administrador master.',
+          variant: 'destructive',
+        });
+      } else if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        toast({
+          title: 'Erro',
+          description: 'Já existe um funcionário com este email.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Erro',
+          description: error.message || 'Erro ao salvar funcionário. Tente novamente.',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const createEmployee = async (data: EmployeeFormData) => {
-    console.log('Creating new employee...');
+    console.log('🔄 Creating new employee...');
+    console.log('📋 Employee role:', data.role);
     
     // 🔒 CORREÇÃO: SEMPRE criar em employees primeiro
     const employeeData = {
@@ -101,16 +128,20 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       commission_rate: data.commission_rate || 40,
     };
 
-    console.log('Employee data to insert:', employeeData);
+    console.log('📤 Employee data to insert:', employeeData);
 
-    const { error: employeeError } = await supabase
+    const { data: insertedEmployee, error: employeeError } = await supabase
       .from('employees')
-      .insert([employeeData]);
+      .insert([employeeData])
+      .select()
+      .single();
 
     if (employeeError) {
-      console.error('Error inserting employee:', employeeError);
-      throw new Error(employeeError.message);
+      console.error('❌ Error inserting employee:', employeeError);
+      throw new Error(`Erro ao criar funcionário: ${employeeError.message}`);
     }
+
+    console.log('✅ Employee created successfully:', insertedEmployee);
 
     // 🔒 CORREÇÃO: Se for barbeiro, criar TAMBÉM na tabela staff (migração automática)
     if (data.role === 'barber') {
@@ -138,7 +169,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       }
     }
 
-    console.log('✅ Employee created successfully');
+    console.log('✅ Employee creation process completed');
   };
 
   const updateEmployee = async (data: EmployeeFormData) => {
