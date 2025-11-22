@@ -75,17 +75,18 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <Pie
           data={chartData}
           cx="50%"
-          cy="50%"
+          cy="45%"
           labelLine={false}
-          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-          outerRadius={80}
+          label={false}
+          outerRadius="60%"
           fill="#8884d8"
           dataKey="value"
+          paddingAngle={2}
         >
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || '#9ca3af'} />
@@ -93,18 +94,24 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
         </Pie>
         <Tooltip
           contentStyle={{
-            backgroundColor: '#1F2937',
-            border: '1px solid #374151',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
             borderRadius: '8px',
-            color: '#F3F4F6'
+            fontSize: '12px'
           }}
-          formatter={(value: number) => [
+          formatter={(value: number, name: string) => [
             `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-            'Valor'
+            name
           ]}
         />
         <Legend 
-          wrapperStyle={{ color: '#F3F4F6' }}
+          verticalAlign="bottom"
+          height={36}
+          wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+          formatter={(value, entry: any) => {
+            const percent = ((entry.payload.value / chartData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(0);
+            return `${value} (${percent}%)`;
+          }}
         />
       </PieChart>
     </ResponsiveContainer>
