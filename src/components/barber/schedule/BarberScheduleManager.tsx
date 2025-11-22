@@ -31,15 +31,15 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
-  // Horário padrão: Segunda a Sábado 09:00-20:00, Domingo fechado
+  // Horário padrão: Segunda a Sábado 08:00-20:00, Domingo 09:00-13:00
   const [schedule, setSchedule] = useState<WeekSchedule>({
-    sunday: { start: '09:00', end: '20:00', active: false },
-    monday: { start: '09:00', end: '20:00', active: true },
-    tuesday: { start: '09:00', end: '20:00', active: true },
-    wednesday: { start: '09:00', end: '20:00', active: true },
-    thursday: { start: '09:00', end: '20:00', active: true },
-    friday: { start: '09:00', end: '20:00', active: true },
-    saturday: { start: '09:00', end: '20:00', active: true }
+    sunday: { start: '09:00', end: '13:00', active: true },
+    monday: { start: '08:00', end: '20:00', active: true },
+    tuesday: { start: '08:00', end: '20:00', active: true },
+    wednesday: { start: '08:00', end: '20:00', active: true },
+    thursday: { start: '08:00', end: '20:00', active: true },
+    friday: { start: '08:00', end: '20:00', active: true },
+    saturday: { start: '08:00', end: '20:00', active: true }
   });
 
   const dayNames = {
@@ -196,13 +196,13 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
 
   const resetToDefault = () => {
     setSchedule({
-      sunday: { start: '09:00', end: '20:00', active: false },
-      monday: { start: '09:00', end: '20:00', active: true },
-      tuesday: { start: '09:00', end: '20:00', active: true },
-      wednesday: { start: '09:00', end: '20:00', active: true },
-      thursday: { start: '09:00', end: '20:00', active: true },
-      friday: { start: '09:00', end: '20:00', active: true },
-      saturday: { start: '09:00', end: '20:00', active: true }
+      sunday: { start: '09:00', end: '13:00', active: true },
+      monday: { start: '08:00', end: '20:00', active: true },
+      tuesday: { start: '08:00', end: '20:00', active: true },
+      wednesday: { start: '08:00', end: '20:00', active: true },
+      thursday: { start: '08:00', end: '20:00', active: true },
+      friday: { start: '08:00', end: '20:00', active: true },
+      saturday: { start: '08:00', end: '20:00', active: true }
     });
   };
 
@@ -237,7 +237,7 @@ const BarberScheduleManager: React.FC<BarberScheduleManagerProps> = ({
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">Horário Padrão Configurado</p>
               <p>
-                Segunda a Sábado: 09:00 às 20:00 | Domingo: Fechado
+                Segunda a Sábado: 08:00 às 20:00 | Domingo: 09:00 às 13:00
               </p>
               <p className="mt-1 text-xs">
                 Você pode ajustar os horários conforme necessário para cada barbeiro.

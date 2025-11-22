@@ -89,17 +89,14 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({
     const today = getMinimumDate();
     const maxDate = addDays(today, 30); // Limite de 30 dias
     
-    // Desabilitar domingos (0 = domingo)
-    const dayOfWeek = date.getDay();
-    const isSunday = dayOfWeek === 0;
-    
     // Desabilitar datas anteriores ao mínimo permitido
     const isPastDate = isBefore(date, today);
     
     // Desabilitar datas muito distantes
     const isTooFarAhead = isAfter(date, maxDate);
     
-    return isPastDate || isSunday || isTooFarAhead;
+    // Domingo agora funciona (09:00-13:00)
+    return isPastDate || isTooFarAhead;
   };
 
   return (

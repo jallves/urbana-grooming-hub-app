@@ -331,8 +331,7 @@ const BarbershopBookingForm: React.FC = () => {
     // Não permitir datas passadas
     if (date < today) return true;
     
-    // Não permitir domingos (0 = domingo)
-    if (date.getDay() === 0) return true;
+    // Domingo agora funciona (09:00-13:00)
     
     return false;
   };

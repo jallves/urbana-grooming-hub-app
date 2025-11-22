@@ -18,9 +18,9 @@ const formSchema = z.object({
     return date >= today;
   }, 'Data não pode ser no passado')
   .refine((date) => {
-    const dayOfWeek = date.getDay();
-    return dayOfWeek !== 0;
-  }, 'Não atendemos aos domingos'),
+    // Domingo agora funciona (09:00-13:00)
+    return true;
+  }, 'Data inválida'),
   time: z.string().min(1, 'Horário é obrigatório')
     .refine((time) => {
       const [hours] = time.split(':').map(Number);
