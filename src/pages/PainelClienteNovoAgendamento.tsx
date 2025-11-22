@@ -133,6 +133,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         .from('painel_barbeiros')
         .select('id, staff_id, nome, image_url')
         .eq('is_active', true)
+        .eq('available_for_booking', true)
         .in('staff_id', staffIds)
         .order('nome');
 

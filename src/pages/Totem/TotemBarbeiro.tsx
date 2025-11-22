@@ -75,6 +75,7 @@ const TotemBarbeiro: React.FC = () => {
         .from('painel_barbeiros')
         .select('id, nome, specialties, image_url, is_active, staff_id')
         .eq('is_active', true)
+        .eq('available_for_booking', true)
         .in('staff_id', staffIds)
         .order('nome');
 

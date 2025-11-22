@@ -23,7 +23,7 @@ const BookingAvailabilityToggle: React.FC = () => {
           .from('painel_barbeiros')
           .select('available_for_booking')
           .eq('id', barberData.id)
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 

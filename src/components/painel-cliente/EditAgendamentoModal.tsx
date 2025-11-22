@@ -77,7 +77,11 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   }, [isOpen]);
 
   const fetchBarbeiros = async () => {
-    const { data } = await supabase.from('painel_barbeiros').select('*');
+    const { data } = await supabase
+      .from('painel_barbeiros')
+      .select('*')
+      .eq('is_active', true)
+      .eq('available_for_booking', true);
     if (data) setBarbeiros(data);
   };
 
