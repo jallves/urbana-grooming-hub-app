@@ -17,11 +17,12 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   allowBarber = false,
   requiredModule,
 }) => {
-  const { user, isAdmin, isBarber, isMaster, canAccessModule, loading, requiresPasswordChange, signOut } = useAuth();
+  const { user, isAdmin, isBarber, isManager, isMaster, canAccessModule, loading, requiresPasswordChange, signOut } = useAuth();
   const location = useLocation();
   const { toast } = useToast();
 
-  const hasAccess = user ? (isAdmin || (allowBarber && isBarber)) : false;
+  // Usuário tem acesso se for admin, manager, master ou (barber quando permitido)
+  const hasAccess = user ? (isAdmin || isManager || isMaster || (allowBarber && isBarber)) : false;
   
   // Validação simplificada de módulo usando a função do AuthContext
   const hasModuleAccess = requiredModule ? canAccessModule(requiredModule) : true;

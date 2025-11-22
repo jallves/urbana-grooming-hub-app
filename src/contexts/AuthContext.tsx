@@ -171,6 +171,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkUserRoles = async (user: User) => {
     if (!user) {
+      console.log('[AuthContext] ❌ Sem usuário, resetando roles');
       setIsAdmin(false);
       setIsBarber(false);
       setIsMaster(false);
@@ -181,7 +182,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
     
-    console.log('[AuthContext] 🔍 Verificando role para:', user.email);
+    console.log('[AuthContext] 🔍 Verificando role para:', user.email, 'User ID:', user.id);
     
     // PRIMEIRO: Tentar carregar do cache para acesso imediato
     const cachedRole = getRoleFromCache(user.id);
@@ -189,6 +190,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] ⚡ Usando role do cache:', cachedRole);
       applyRole(cachedRole);
       // Continuar verificação em background para atualizar cache
+    } else {
+      console.log('[AuthContext] 📦 Nenhum cache encontrado, buscando do banco...');
     }
     
     try {
@@ -226,10 +229,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           if (userRoleData?.role) {
             role = userRoleData.role as 'master' | 'admin' | 'manager' | 'barber';
-            console.log('[AuthContext] ✅ Role obtido do banco:', role);
+            console.log('[AuthContext] ✅ Role obtido do banco:', role, 'User ID:', user.id);
             break;
           } else {
-            console.log('[AuthContext] ⚠️ Nenhuma role encontrada no banco');
+            console.log('[AuthContext] ⚠️ Nenhuma role encontrada no banco para user_id:', user.id);
             break;
           }
         } catch (attemptError) {
@@ -241,6 +244,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       // Aplicar role obtido
+      console.log('[AuthContext] 🎯 Aplicando role obtido do banco:', role);
       applyRole(role);
       
       // Salvar em cache para próxima vez
@@ -284,13 +288,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | null) => {
+    console.log('[AuthContext] 🎭 === APLICANDO ROLE ===');
+    console.log('[AuthContext] 🎭 Role recebido:', role);
+    
     setUserRole(role);
     setIsMaster(role === 'master');
     setIsAdmin(role === 'admin' || role === 'master');
     setIsManager(role === 'manager');
     setIsBarber(role === 'barber');
     setRolesChecked(true); // CRÍTICO: Marcar como verificado imediatamente após aplicar
-    console.log('[AuthContext] 🎭 Roles aplicados - Master:', role === 'master', 'Admin:', role === 'admin' || role === 'master', 'Manager:', role === 'manager', 'Barber:', role === 'barber');
+    
+    console.log('[AuthContext] 🎭 Roles aplicados:');
+    console.log('[AuthContext] 🎭   - Master:', role === 'master');
+    console.log('[AuthContext] 🎭   - Admin:', role === 'admin' || role === 'master');
+    console.log('[AuthContext] 🎭   - Manager:', role === 'manager');
+    console.log('[AuthContext] 🎭   - Barber:', role === 'barber');
+    console.log('[AuthContext] 🎭   - RolesChecked: true');
+    console.log('[AuthContext] 🎭 === FIM APLICAÇÃO ===');
   };
 
   const signOut = async () => {
@@ -325,33 +339,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const canAccessModule = (moduleName: string): boolean => {
     if (!rolesChecked) {
-      console.log('[AuthContext] ⏳ Roles ainda não verificados, aguardando...');
+      console.log('[AuthContext] ⏳ canAccessModule - Roles ainda não verificados, aguardando...');
       return false;
     }
     
-    console.log('[AuthContext] 🔍 Verificando acesso ao módulo:', moduleName, 'Role:', userRole);
+    console.log('[AuthContext] 🔍 canAccessModule - Verificando acesso ao módulo:', moduleName, 'Role atual:', userRole);
     
     if (!userRole) {
-      console.warn('[AuthContext] ⚠️ Role não definido, negando acesso');
+      console.warn('[AuthContext] ⚠️ canAccessModule - Role não definido, negando acesso');
       return false;
     }
     
     // Master tem acesso total
     if (userRole === 'master') {
+      console.log('[AuthContext] ✅ canAccessModule - Master tem acesso total');
       return true;
     }
     
     // Admin tem acesso a tudo exceto configurações
     if (userRole === 'admin') {
-      return moduleName !== 'configuracoes';
+      const hasAccess = moduleName !== 'configuracoes';
+      console.log('[AuthContext] 🔐 canAccessModule - Admin:', hasAccess ? 'acesso permitido' : 'acesso negado (configurações)');
+      return hasAccess;
     }
     
     // Manager tem restrições em financeiro e configurações
     if (userRole === 'manager') {
-      return moduleName !== 'financeiro' && moduleName !== 'configuracoes';
+      const hasAccess = moduleName !== 'financeiro' && moduleName !== 'configuracoes';
+      console.log('[AuthContext] 🔐 canAccessModule - Manager:', hasAccess ? 'acesso permitido' : `acesso negado (${moduleName})`);
+      return hasAccess;
     }
     
     // Barber não tem acesso aos módulos administrativos
+    console.log('[AuthContext] ❌ canAccessModule - Barber não tem acesso a módulos admin');
     return false;
   };
 

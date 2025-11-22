@@ -11,10 +11,14 @@ interface PermissionsContextType {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { canAccessModule, loading: authLoading, rolesChecked } = useAuth();
+  const { canAccessModule, loading: authLoading, rolesChecked, userRole } = useAuth();
 
   // Simplificado: apenas usa a função do AuthContext
   const checkModuleAccess = (moduleName: string): boolean => {
+    if (!rolesChecked) {
+      console.log('[PermissionsContext] ⏳ Roles não verificados ainda');
+      return false;
+    }
     return canAccessModule(moduleName);
   };
 
@@ -24,15 +28,24 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   // Construir moduleAccess apenas quando roles estiverem verificados
-  const moduleAccess: Record<string, boolean> = rolesChecked ? {
-    financeiro: canAccessModule('financeiro'),
-    configuracoes: canAccessModule('configuracoes'),
-    erp: canAccessModule('erp'),
-  } : {
-    financeiro: false,
-    configuracoes: false,
-    erp: false,
-  };
+  // IMPORTANTE: Não chamar canAccessModule durante renderização inicial
+  const moduleAccess: Record<string, boolean> = React.useMemo(() => {
+    if (!rolesChecked) {
+      console.log('[PermissionsContext] 🔄 Aguardando verificação de roles...');
+      return {
+        financeiro: false,
+        configuracoes: false,
+        erp: false,
+      };
+    }
+    
+    console.log('[PermissionsContext] ✅ Calculando permissões para role:', userRole);
+    return {
+      financeiro: canAccessModule('financeiro'),
+      configuracoes: canAccessModule('configuracoes'),
+      erp: canAccessModule('erp'),
+    };
+  }, [rolesChecked, userRole, canAccessModule]);
 
   return (
     <PermissionsContext.Provider
