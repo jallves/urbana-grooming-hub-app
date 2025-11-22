@@ -81,7 +81,7 @@ const BarberDashboard: React.FC = () => {
   return (
     <BarberLayout title="Dashboard">
       <StandardBarberLayout>
-        <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        <div className="w-full space-y-4 sm:space-y-6">
           {/* Welcome Section */}
           <div className="w-full text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
