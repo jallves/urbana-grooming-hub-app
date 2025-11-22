@@ -149,13 +149,11 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     for (let i = startDay; i <= 30; i++) {
       const data = addDays(new Date(), i);
       
-      // Não incluir domingos (0 = domingo)
-      if (data.getDay() !== 0) {
-        datas.push({
-          value: format(data, 'yyyy-MM-dd'),
-          label: format(data, "EEEE, dd 'de' MMMM", { locale: ptBR })
-        });
-      }
+      // Domingo agora funciona (09:00-13:00)
+      datas.push({
+        value: format(data, 'yyyy-MM-dd'),
+        label: format(data, "EEEE, dd 'de' MMMM", { locale: ptBR })
+      });
     }
     
     return datas;

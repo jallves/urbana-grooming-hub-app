@@ -20,9 +20,8 @@ const Footer: React.FC = () => {
     {
       title: "Horário de Funcionamento",
       items: [
-        { icon: Clock, label: "Segunda - Sexta", value: "9:00 - 20:00" },
-        { icon: Clock, label: "Sábado", value: "9:00 - 18:00" },
-        { icon: Clock, label: "Domingo", value: "Fechado" }
+        { icon: Clock, label: "Segunda - Sábado", value: "8:00 - 20:00" },
+        { icon: Clock, label: "Domingo", value: "9:00 - 13:00" }
       ]
     },
     {
@@ -113,16 +112,12 @@ const Footer: React.FC = () => {
             </h3>
             <div className="space-y-2 text-sm font-raleway">
               <div className="flex justify-between text-urbana-light/80">
-                <span>Segunda - Sexta</span>
-                <span className="text-urbana-gold">9:00 - 20:00</span>
-              </div>
-              <div className="flex justify-between text-urbana-light/80">
-                <span>Sábado</span>
-                <span className="text-urbana-gold">9:00 - 18:00</span>
+                <span>Segunda - Sábado</span>
+                <span className="text-urbana-gold">8:00 - 20:00</span>
               </div>
               <div className="flex justify-between text-urbana-light/80">
                 <span>Domingo</span>
-                <span className="text-red-400">Fechado</span>
+                <span className="text-urbana-gold">9:00 - 13:00</span>
               </div>
             </div>
           </motion.div>

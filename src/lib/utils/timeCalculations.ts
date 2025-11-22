@@ -3,14 +3,18 @@
  * 
  * REGRAS DO SISTEMA:
  * - Buffer de 10 minutos entre agendamentos
- * - Horário de funcionamento: 09:00 às 20:00
+ * - Horário de funcionamento: 
+ *   Segunda a Sábado: 08:00 às 20:00
+ *   Domingo: 09:00 às 13:00
  * - Slots de 30 minutos
  */
 
 export const BUFFER_MINUTES = 10;
 export const SLOT_INTERVAL_MINUTES = 30;
-export const BUSINESS_START_HOUR = 9;
-export const BUSINESS_END_HOUR = 20;
+export const BUSINESS_START_HOUR = 8; // Segunda a Sábado inicia às 08:00
+export const BUSINESS_END_HOUR = 20; // Segunda a Sábado termina às 20:00
+export const SUNDAY_START_HOUR = 9; // Domingo inicia às 09:00
+export const SUNDAY_END_HOUR = 13; // Domingo termina às 13:00
 
 /**
  * Converte string de hora para minutos totais desde meia-noite

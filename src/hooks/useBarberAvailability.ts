@@ -88,25 +88,25 @@ export const useBarberAvailability = () => {
         return;
       }
 
-      // Verificar se é domingo (não trabalha)
+      // Verificar horário de expediente
+      // Segunda a Sábado: 08:00-20:00 (480-1200 min)
+      // Domingo: 09:00-13:00 (540-780 min)
       const dayOfWeek = date.getDay();
       console.log(`3. Verificando dia da semana: ${dayOfWeek} (0=domingo)`);
       
-      if (dayOfWeek === 0) {
-        console.log('Domingo - barbearia fechada');
-        setAvailableBarbers([]);
-        return;
-      }
-
-      // Verificar horário de expediente (09:00-20:00)
+      const isSunday = dayOfWeek === 0;
       const [hours, minutes] = time.split(':').map(Number);
       const requestedTime = hours * 60 + minutes;
       const endTimeWithDuration = requestedTime + duration;
 
-      console.log(`Horário solicitado: ${time} (${requestedTime} min)`);
-      console.log(`Expediente: 09:00-20:00 (540-1200 min)`);
+      // Validar horário de expediente baseado no dia da semana
+      const minTime = isSunday ? 540 : 480; // Domingo 09:00, outros dias 08:00
+      const maxTime = isSunday ? 780 : 1200; // Domingo 13:00, outros dias 20:00
 
-      if (requestedTime < 540 || endTimeWithDuration > 1200) {
+      console.log(`Horário solicitado: ${time} (${requestedTime} min)`);
+      console.log(`Expediente ${isSunday ? 'Domingo' : 'Segunda-Sábado'}: ${minTime}-${maxTime} min`);
+
+      if (requestedTime < minTime || endTimeWithDuration > maxTime) {
         console.log('Horário fora do expediente');
         setAvailableBarbers([]);
         return;

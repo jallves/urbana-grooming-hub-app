@@ -61,7 +61,7 @@ export const useAppointmentValidation = () => {
     
     // Erros de horário de funcionamento
     if (message.includes('Horário fora do expediente')) {
-      return 'Nosso horário de funcionamento é das 08:00 às 20:00.';
+      return 'Horário de funcionamento: Segunda a Sábado 08:00-20:00, Domingo 09:00-13:00.';
     }
     
     if (message.includes('intervalos de 30 minutos')) {
