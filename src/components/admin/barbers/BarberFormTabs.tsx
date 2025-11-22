@@ -11,7 +11,7 @@ import StaffProfessionalInfo from '../staff/components/StaffProfessionalInfo';
 import StaffActiveStatus from '../staff/components/StaffActiveStatus';
 import { BarberPanelAccess } from './BarberPanelAccess';
 import { Label } from '@/components/ui/label';
-import BarberScheduleManager from '@/components/barber/schedule/BarberScheduleManager';
+import AdminBarberScheduleManager from './AdminBarberScheduleManager';
 
 interface BarberFormTabsProps {
   form: UseFormReturn<BarberFormValues>;
@@ -191,7 +191,7 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
           {/* Aba: Horários de Trabalho */}
           {isEditing && barberId && (
             <TabsContent value="schedule" className="space-y-6">
-              <BarberScheduleManager 
+              <AdminBarberScheduleManager 
                 barberId={barberId}
                 barberName={form.watch('name')}
               />

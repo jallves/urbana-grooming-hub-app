@@ -7,7 +7,8 @@ import {
   BarChart3, 
   Settings,
   LogOut,
-  Home
+  Home,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import RealtimeNotifications from '@/components/ui/notifications/RealtimeNotifications';
@@ -36,6 +37,11 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       name: 'Agendamentos', 
       path: '/barbeiro/agendamentos', 
       icon: Calendar 
+    },
+    { 
+      name: 'Meus Horários', 
+      path: '/barbeiro/horarios', 
+      icon: Clock 
     },
     { 
       name: 'Comissões', 
