@@ -201,7 +201,7 @@ const CashFlowReports: React.FC = () => {
         </Card>
       </div>
 
-      {/* Monthly Performance - Horizontal Scroll on Mobile */}
+      {/* Monthly Performance - Grid Layout (No Scroll) */}
       <Card className="bg-white border-gray-200">
         <CardHeader className="p-3">
           <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
@@ -210,27 +210,23 @@ const CashFlowReports: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 pt-0">
-          <div className="overflow-x-auto">
-            <div className="flex gap-2 min-w-max pb-2">
-              {monthlyData?.map((month, index) => (
-                <div key={index} className="flex-shrink-0 w-24 text-center">
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 space-y-1">
-                    <div className="text-xs font-semibold text-gray-900">{month.month}</div>
-                    <div className="space-y-1">
-                      <div className="text-xs text-green-700">
-                        +{(month.income / 1000).toFixed(0)}k
-                      </div>
-                      <div className="text-xs text-red-700">
-                        -{(month.expense / 1000).toFixed(0)}k
-                      </div>
-                      <div className={`text-xs font-bold ${month.net >= 0 ? 'text-yellow-700' : 'text-red-700'}`}>
-                        {month.net >= 0 ? '+' : ''}{(month.net / 1000).toFixed(0)}k
-                      </div>
-                    </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {monthlyData?.map((month, index) => (
+              <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-2 space-y-1">
+                <div className="text-xs font-semibold text-gray-900 text-center">{month.month}</div>
+                <div className="space-y-0.5">
+                  <div className="text-[10px] text-green-700 text-center">
+                    +{(month.income / 1000).toFixed(0)}k
+                  </div>
+                  <div className="text-[10px] text-red-700 text-center">
+                    -{(month.expense / 1000).toFixed(0)}k
+                  </div>
+                  <div className={`text-[10px] font-bold text-center ${month.net >= 0 ? 'text-yellow-700' : 'text-red-700'}`}>
+                    {month.net >= 0 ? '+' : ''}{(month.net / 1000).toFixed(0)}k
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
