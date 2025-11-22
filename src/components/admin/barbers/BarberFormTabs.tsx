@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Briefcase, ShieldCheck, KeyRound } from 'lucide-react';
+import { User, Briefcase, ShieldCheck, KeyRound, Clock } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { BarberFormValues } from './hooks/useBarberForm';
 import StaffProfileImage from '../staff/components/StaffProfileImage';
@@ -11,6 +11,7 @@ import StaffProfessionalInfo from '../staff/components/StaffProfessionalInfo';
 import StaffActiveStatus from '../staff/components/StaffActiveStatus';
 import { BarberPanelAccess } from './BarberPanelAccess';
 import { Label } from '@/components/ui/label';
+import BarberScheduleManager from '@/components/barber/schedule/BarberScheduleManager';
 
 interface BarberFormTabsProps {
   form: UseFormReturn<BarberFormValues>;
@@ -52,7 +53,7 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-gray-100 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-5 mb-6 bg-gray-100 h-auto p-1">
             <TabsTrigger 
               value="personal" 
               className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -88,6 +89,17 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
               <span className="hidden sm:inline">Acesso ao Sistema</span>
               <span className="sm:hidden">Acesso</span>
             </TabsTrigger>
+
+            {isEditing && barberId && (
+              <TabsTrigger 
+                value="schedule" 
+                className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              >
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Horários de Trabalho</span>
+                <span className="sm:hidden">Horários</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Aba: Informações Pessoais */}
@@ -175,6 +187,16 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
               barberId={barberId || ''}
             />
           </TabsContent>
+
+          {/* Aba: Horários de Trabalho */}
+          {isEditing && barberId && (
+            <TabsContent value="schedule" className="space-y-6">
+              <BarberScheduleManager 
+                barberId={barberId}
+                barberName={form.watch('name')}
+              />
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Botões de Ação */}
