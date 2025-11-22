@@ -27,7 +27,6 @@ import AdminSiteSettings from './pages/AdminSiteSettings';
 import AdminMarketing from './pages/AdminMarketing';
 import AdminBirthdays from './pages/AdminBirthdays';
 import AdminSupport from './pages/AdminSupport';
-import AdminSchedules from './pages/AdminBarberSchedules';
 import AdminCashFlow from './pages/AdminCashFlow';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminSettings from './pages/AdminSettings';
@@ -181,11 +180,6 @@ function App() {
                   <Route path="/admin/suporte" element={
                     <AdminRoute>
                       <AdminSupport />
-                    </AdminRoute>
-                  } />
-                  <Route path="/admin/escalas" element={
-                    <AdminRoute>
-                      <AdminSchedules />
                     </AdminRoute>
                   } />
                   <Route path="/admin/fluxo-caixa" element={
