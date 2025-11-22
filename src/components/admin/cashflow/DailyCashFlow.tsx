@@ -1,12 +1,19 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 const DailyCashFlow: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
   const today = format(new Date(), 'yyyy-MM-dd');
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['daily-cash-flow'] });
+  }, [refreshFinancials, queryClient]);
 
   const { data: dailyData, isLoading } = useQuery({
     queryKey: ['daily-cash-flow', today],
@@ -40,8 +47,7 @@ const DailyCashFlow: React.FC = () => {
         expense: dailyExpense,
         balance: dailyBalance,
       };
-    },
-    refetchInterval: 10000, // Atualizar a cada 10 segundos
+    }
   });
 
   if (isLoading) {

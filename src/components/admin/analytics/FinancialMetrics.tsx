@@ -1,15 +1,30 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
 import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
 import { parseISO, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 const FinancialMetrics: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
   const queryKey = useMemo(() => ['financial-metrics'], []);
+
+  useEffect(() => {
+    const invalidateQueries = () => {
+      queryClient.invalidateQueries({ queryKey });
+    };
+    
+    return () => {};
+  }, [queryClient, queryKey]);
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [refreshFinancials, queryClient, queryKey]);
 
   const { data: financialData, isLoading } = useQuery({
     queryKey,

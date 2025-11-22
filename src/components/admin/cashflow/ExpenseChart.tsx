@@ -1,9 +1,10 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
 import { getCategoryLabel } from '@/utils/categoryMappings';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 const COLORS = {
   'Insumos': '#991b1b', // red-800 - muito profissional
@@ -22,6 +23,13 @@ interface ExpenseChartProps {
 }
 
 const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['expense-chart'] });
+  }, [refreshFinancials, queryClient]);
+
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['expense-chart', startDate, endDate],
     queryFn: async () => {
@@ -54,8 +62,7 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
       }));
 
       return chartData.sort((a, b) => b.value - a.value);
-    },
-    refetchInterval: 10000,
+    }
   });
 
   if (isLoading) {

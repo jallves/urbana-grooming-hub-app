@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter } from 'lucide-react';
@@ -13,14 +13,22 @@ import DailyCashFlow from './DailyCashFlow';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 import { translateDescription } from '@/utils/translationHelpers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 const CashFlowDashboard: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((now.getMonth() + 1).toString());
   
   const currentMonth = new Date();
   const lastMonth = subMonths(currentMonth, 1);
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['financial-data'] });
+    queryClient.invalidateQueries({ queryKey: ['last-month-data'] });
+  }, [refreshFinancials, queryClient]);
 
   // Calcular datas baseadas no ano e mês selecionados
   const getPeriodDates = () => {
