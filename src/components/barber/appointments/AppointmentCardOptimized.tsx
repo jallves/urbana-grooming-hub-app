@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { format, parseISO, isFuture, isPast } from 'date-fns';
+import { format, parseISO, isFuture, isPast, addMinutes, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,10 +30,20 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
   } = useBarberAppointmentsOptimized();
 
   const appointmentDateTime = parseISO(appointment.start_time);
+  const now = new Date();
+  const fortyMinutesAfter = addMinutes(appointmentDateTime, 40);
+  
   const isUpcoming = isFuture(appointmentDateTime);
   const isPastAppointment = isPast(appointmentDateTime);
-  const canEdit = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming;
-  const canMarkAbsent = isPastAppointment && appointment.status === 'scheduled';
+  const isWithin40Minutes = !isAfter(now, fortyMinutesAfter); // Ainda dentro dos 40 minutos
+  const isAfter40Minutes = isAfter(now, fortyMinutesAfter); // Passou dos 40 minutos
+  
+  // Para status "agendado": 
+  // - Até 40 min depois: mostra "Editar" e "Ausente"
+  // - Depois de 40 min: mostra APENAS "Ausente"
+  const canEdit = appointment.status === 'scheduled' && (isUpcoming || isWithin40Minutes);
+  const canMarkAbsent = appointment.status === 'scheduled' && isPastAppointment;
+  const canCancel = appointment.status === 'scheduled' && (isUpcoming || isWithin40Minutes);
 
   const getStatusBadge = () => {
     const badges = {
@@ -84,7 +94,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
           {/* Actions */}
           {(canEdit || canMarkAbsent) && (
             <div className="flex flex-wrap gap-2 pt-2">
-              {/* Editar (apenas agendamentos futuros agendados/confirmados) */}
+              {/* Editar (até 40 minutos após o horário) */}
               {canEdit && (
                 <Button
                   size="sm"
@@ -98,7 +108,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
                 </Button>
               )}
 
-              {/* Marcar como Ausente (somente status 'scheduled' e passados) */}
+              {/* Marcar como Ausente (sempre disponível para agendados passados) */}
               {canMarkAbsent && (
                 <Button
                   size="sm"
@@ -112,8 +122,8 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
                 </Button>
               )}
 
-              {/* Cancelar (apenas futuros) */}
-              {canEdit && (
+              {/* Cancelar (até 40 minutos após o horário) */}
+              {canCancel && (
                 <Button
                   size="sm"
                   variant="outline"
