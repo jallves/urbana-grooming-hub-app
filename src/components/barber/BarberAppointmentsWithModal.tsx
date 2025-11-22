@@ -15,7 +15,8 @@ const BarberAppointmentsWithModal: React.FC = () => {
     isEditModalOpen,
     selectedAppointmentId,
     closeEditModal,
-    fetchAppointments
+    fetchAppointments,
+    handleEditAppointment
   } = useBarberAppointmentsOptimized();
   
   const { barberData } = useBarberData();
@@ -114,6 +115,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
                 <AppointmentCardOptimized
                   key={appointment.id}
                   appointment={appointment}
+                  onEdit={handleEditAppointment}
                 />
               ))}
             </div>

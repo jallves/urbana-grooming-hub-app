@@ -18,15 +18,15 @@ import {
 
 interface AppointmentCardProps {
   appointment: any;
+  onEdit?: (appointmentId: string, startTime: string) => void;
 }
 
-const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment }) => {
+const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment, onEdit }) => {
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const {
     handleCancelAppointment,
     handleMarkAsAbsent,
-    handleEditAppointment,
     updatingId
   } = useBarberAppointmentsOptimized();
 
@@ -96,11 +96,11 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
           {(canEdit || canMarkAbsent) && (
             <div className="flex flex-wrap gap-2 pt-2">
               {/* Editar (até 40 minutos após o horário) - Abre modal direto */}
-              {canEdit && (
+              {canEdit && onEdit && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleEditAppointment(appointment.id, appointment.start_time)}
+                  onClick={() => onEdit(appointment.id, appointment.start_time)}
                   disabled={isUpdating}
                   className="flex-1 min-w-[120px] border-blue-600 text-blue-400 hover:bg-blue-600/10"
                 >
