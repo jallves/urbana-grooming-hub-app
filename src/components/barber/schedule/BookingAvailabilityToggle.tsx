@@ -9,76 +9,113 @@ import { toast } from 'sonner';
 
 const BookingAvailabilityToggle: React.FC = () => {
   const { barberData, isLoading: isLoadingBarber } = useBarberData();
-  const [isAvailable, setIsAvailable] = useState(true);
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Carregar estado atual
   useEffect(() => {
     const loadAvailability = async () => {
-      if (!barberData?.id) return;
+      if (!barberData?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('🔍 Carregando disponibilidade para barbeiro:', barberData.id);
 
       try {
         const { data, error } = await supabase
           .from('painel_barbeiros')
           .select('available_for_booking')
           .eq('id', barberData.id)
-          .maybeSingle();
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Erro ao carregar disponibilidade:', error);
+          throw error;
+        }
 
-        setIsAvailable(data?.available_for_booking ?? true);
+        console.log('✅ Disponibilidade carregada:', data?.available_for_booking);
+        
+        // CRÍTICO: Se o campo não existir, usar true como padrão APENAS na primeira vez
+        // Mas sempre usar o valor do banco se existir
+        const availabilityValue = data?.available_for_booking !== undefined 
+          ? data.available_for_booking 
+          : true;
+        
+        setIsAvailable(availabilityValue);
       } catch (error) {
-        console.error('Erro ao carregar disponibilidade:', error);
+        console.error('❌ Erro ao carregar disponibilidade:', error);
         toast.error('Erro ao carregar configuração de disponibilidade');
+        // Em caso de erro, manter o estado atual (não mudar para true)
+        setIsAvailable(prev => prev !== null ? prev : true);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadAvailability();
+    // Resetar loading quando barberData mudar
+    if (barberData?.id) {
+      setIsLoading(true);
+      loadAvailability();
+    }
   }, [barberData?.id]);
 
   const handleToggle = async () => {
-    if (!barberData?.id) return;
+    if (!barberData?.id || isAvailable === null) return;
+
+    const newValue = !isAvailable;
+    console.log('🔄 Alterando disponibilidade de', isAvailable, 'para', newValue);
 
     setIsSaving(true);
     try {
-      const newValue = !isAvailable;
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('painel_barbeiros')
         .update({ available_for_booking: newValue })
-        .eq('id', barberData.id);
+        .eq('id', barberData.id)
+        .select('available_for_booking')
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao atualizar disponibilidade:', error);
+        throw error;
+      }
 
-      setIsAvailable(newValue);
+      console.log('✅ Disponibilidade atualizada no banco:', data?.available_for_booking);
+      
+      // Usar o valor retornado do banco para garantir sincronização
+      setIsAvailable(data?.available_for_booking ?? newValue);
       
       toast.success(
         newValue 
-          ? 'Você está disponível para novos agendamentos' 
-          : 'Você está indisponível para novos agendamentos',
+          ? '✅ Você está disponível para novos agendamentos' 
+          : '🔒 Você está indisponível para novos agendamentos',
         {
           description: newValue 
             ? 'Clientes poderão agendar horários com você'
-            : 'Seus horários livres não aparecerão para novos agendamentos'
+            : 'Seus horários livres não aparecerão para novos agendamentos',
+          duration: 5000
         }
       );
-    } catch (error) {
-      console.error('Erro ao atualizar disponibilidade:', error);
-      toast.error('Erro ao atualizar disponibilidade');
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar disponibilidade:', error);
+      toast.error('Erro ao atualizar disponibilidade', {
+        description: error.message || 'Não foi possível salvar a alteração. Tente novamente.',
+        duration: 5000
+      });
+      // Não mudar o estado local em caso de erro
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoadingBarber || isLoading) {
+  if (isLoadingBarber || isLoading || isAvailable === null) {
     return (
       <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
         <div className="animate-pulse space-y-3">
           <div className="h-6 bg-gray-700 rounded w-3/4"></div>
           <div className="h-4 bg-gray-700 rounded w-full"></div>
+          <div className="h-10 bg-gray-700 rounded w-1/3"></div>
         </div>
       </div>
     );
