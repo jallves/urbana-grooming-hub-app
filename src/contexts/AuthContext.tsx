@@ -31,6 +31,59 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Cache de roles em localStorage para recuperação rápida
+const ROLE_CACHE_KEY = 'user_role_cache';
+const ROLE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+interface RoleCache {
+  userId: string;
+  role: 'master' | 'admin' | 'manager' | 'barber' | null;
+  timestamp: number;
+}
+
+const getRoleFromCache = (userId: string): 'master' | 'admin' | 'manager' | 'barber' | null => {
+  try {
+    const cached = localStorage.getItem(ROLE_CACHE_KEY);
+    if (!cached) return null;
+    
+    const cacheData: RoleCache = JSON.parse(cached);
+    
+    // Verificar se o cache é do mesmo usuário e ainda válido
+    if (cacheData.userId === userId && Date.now() - cacheData.timestamp < ROLE_CACHE_DURATION) {
+      console.log('[AuthContext] 🎯 Role recuperado do cache:', cacheData.role);
+      return cacheData.role;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[AuthContext] ❌ Erro ao ler cache:', error);
+    return null;
+  }
+};
+
+const saveRoleToCache = (userId: string, role: 'master' | 'admin' | 'manager' | 'barber' | null) => {
+  try {
+    const cacheData: RoleCache = {
+      userId,
+      role,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify(cacheData));
+    console.log('[AuthContext] 💾 Role salvo em cache:', role);
+  } catch (error) {
+    console.error('[AuthContext] ❌ Erro ao salvar cache:', error);
+  }
+};
+
+const clearRoleCache = () => {
+  try {
+    localStorage.removeItem(ROLE_CACHE_KEY);
+    console.log('[AuthContext] 🗑️ Cache de role limpo');
+  } catch (error) {
+    console.error('[AuthContext] ❌ Erro ao limpar cache:', error);
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,45 +97,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
-    let initTimeout: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       try {
-        console.log('[AuthContext] 🔄 Inicializando autenticação...');
+        console.log('[AuthContext] 🚀 Inicializando autenticação...');
         
-        // Timeout de segurança: se demorar mais de 10 segundos, desistir
-        initTimeout = setTimeout(() => {
-          if (mounted) {
-            console.warn('[AuthContext] ⚠️ Timeout na inicialização, definindo loading=false');
-            setLoading(false);
-          }
-        }, 10000);
-
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('[AuthContext] ❌ Erro ao obter sessão:', sessionError);
+          throw sessionError;
+        }
         
         if (!mounted) return;
 
-        setUser(session?.user || null);
-        
         if (session?.user) {
-          console.log('[AuthContext] 👤 Usuário encontrado, verificando roles...');
+          console.log('[AuthContext] 👤 Usuário encontrado:', session.user.email);
+          setUser(session.user);
           await checkUserRoles(session.user);
         } else {
-          console.log('[AuthContext] 👤 Nenhum usuário encontrado');
+          console.log('[AuthContext] 👤 Nenhuma sessão ativa');
+          setUser(null);
           setIsAdmin(false);
           setIsBarber(false);
+          setIsMaster(false);
+          setIsManager(false);
+          setUserRole(null);
           setRolesChecked(true);
         }
         
-        clearTimeout(initTimeout);
         setLoading(false);
         console.log('[AuthContext] ✅ Inicialização completa');
       } catch (error) {
-        console.error('[AuthContext] ❌ Error initializing auth:', error);
+        console.error('[AuthContext] ❌ Erro na inicialização:', error);
         if (mounted) {
-          setIsAdmin(false);
-          setIsBarber(false);
           setLoading(false);
+          setRolesChecked(true);
         }
       }
     };
@@ -95,14 +145,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('[AuthContext] 🔄 Auth state changed:', event);
       
-      setUser(session?.user || null);
-      
       if (session?.user) {
-        await checkUserRoles(session.user);
+        setUser(session.user);
+        // Não aguardar verificação de roles para não bloquear navegação
+        checkUserRoles(session.user);
       } else {
+        setUser(null);
         setIsAdmin(false);
         setIsBarber(false);
+        setIsMaster(false);
+        setIsManager(false);
+        setUserRole(null);
         setRolesChecked(true);
+        clearRoleCache();
       }
       
       setLoading(false);
@@ -110,7 +165,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => {
       mounted = false;
-      if (initTimeout) clearTimeout(initTimeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -127,107 +181,128 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
     
-    console.log('[AuthContext] 🔄 Verificando role único do usuário...');
-    setRolesChecked(false);
+    console.log('[AuthContext] 🔍 Verificando role para:', user.email);
+    
+    // PRIMEIRO: Tentar carregar do cache para acesso imediato
+    const cachedRole = getRoleFromCache(user.id);
+    if (cachedRole) {
+      console.log('[AuthContext] ⚡ Usando role do cache:', cachedRole);
+      applyRole(cachedRole);
+      setRolesChecked(true);
+      // Continuar verificação em background para atualizar cache
+    }
     
     try {
-      console.log('[AuthContext] 🔍 Buscando role para:', user.id, user.email);
-      
-      // CRÍTICO: Garantir que temos uma sessão válida antes de buscar roles
-      const { data: sessionCheck } = await supabase.auth.getSession();
-      if (!sessionCheck?.session) {
-        console.error('[AuthContext] ❌ Sem sessão ativa, aguardando...');
-        // Tentar novamente após 1 segundo
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const { data: retrySession } = await supabase.auth.getSession();
-        if (!retrySession?.session) {
-          throw new Error('Sessão não estabelecida');
-        }
-        console.log('[AuthContext] ✅ Sessão estabelecida após retry');
-      }
-      
-      console.log('[AuthContext] 📡 Sessão ativa confirmada, buscando role...');
-      
-      // Tentar obter role diretamente da tabela user_roles primeiro
-      const { data: userRoleData, error: userRoleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .order('role', { ascending: true }) // master < admin < manager < barber alfabeticamente
-        .limit(1)
-        .maybeSingle();
-
+      // Buscar role diretamente da tabela com retry
       let role: 'master' | 'admin' | 'manager' | 'barber' | null = null;
-
-      if (userRoleData && !userRoleError) {
-        role = userRoleData.role as 'master' | 'admin' | 'manager' | 'barber';
-        console.log('[AuthContext] ✅ Role obtido diretamente da tabela user_roles:', role);
-      } else {
-        if (userRoleError) {
-          console.error('[AuthContext] ⚠️ Erro ao buscar role em user_roles:', userRoleError);
-        } else {
-          console.log('[AuthContext] ⚠️ Nenhuma role encontrada em user_roles para user_id:', user.id);
-        }
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts && !role) {
+        attempts++;
+        console.log(`[AuthContext] 📡 Tentativa ${attempts}/${maxAttempts} de buscar role...`);
         
-        console.log('[AuthContext] ⚠️ Tentando RPC como fallback...');
-        
-        // Fallback: tentar RPC
-        const { data: roleData, error: roleError } = await supabase
-          .rpc('get_user_role', { p_user_id: user.id });
+        try {
+          const { data: userRoleData, error: userRoleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .order('role', { ascending: true })
+            .limit(1)
+            .maybeSingle();
 
-        if (roleError) {
-          console.error('[AuthContext] ❌ Erro na RPC get_user_role:', roleError);
-          throw roleError;
+          if (userRoleError) {
+            console.error(`[AuthContext] ⚠️ Erro na tentativa ${attempts}:`, userRoleError);
+            
+            if (attempts < maxAttempts) {
+              // Aguardar antes de tentar novamente (backoff exponencial)
+              const delay = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+              console.log(`[AuthContext] ⏳ Aguardando ${delay}ms antes de retry...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            } else {
+              throw userRoleError;
+            }
+          }
+
+          if (userRoleData?.role) {
+            role = userRoleData.role as 'master' | 'admin' | 'manager' | 'barber';
+            console.log('[AuthContext] ✅ Role obtido do banco:', role);
+            break;
+          } else {
+            console.log('[AuthContext] ⚠️ Nenhuma role encontrada no banco');
+            break;
+          }
+        } catch (attemptError) {
+          console.error(`[AuthContext] ❌ Erro na tentativa ${attempts}:`, attemptError);
+          if (attempts >= maxAttempts) {
+            throw attemptError;
+          }
         }
-
-        role = roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
-        console.log('[AuthContext] 📦 Role recebido do RPC:', role);
       }
       
-      console.log('[AuthContext] ✅ Role final obtido:', role);
+      // Aplicar role obtido
+      applyRole(role);
       
-      // Definir flags baseadas no role
-      setUserRole(role);
-      setIsMaster(role === 'master');
-      setIsAdmin(role === 'admin' || role === 'master');
-      setIsManager(role === 'manager');
-      setIsBarber(role === 'barber');
+      // Salvar em cache para próxima vez
+      if (role) {
+        saveRoleToCache(user.id, role);
+      }
 
-      // Verificar se precisa trocar senha (apenas se não for master)
-      if (role !== 'master') {
-        const { data: employeeData } = await supabase
-          .from('employees')
-          .select('requires_password_change')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      // Verificar se precisa trocar senha
+      if (role && role !== 'master') {
+        try {
+          const { data: employeeData } = await supabase
+            .from('employees')
+            .select('requires_password_change')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        setRequiresPasswordChange(employeeData?.requires_password_change === true);
+          setRequiresPasswordChange(employeeData?.requires_password_change === true);
+        } catch (error) {
+          console.error('[AuthContext] ⚠️ Erro ao verificar troca de senha:', error);
+          setRequiresPasswordChange(false);
+        }
       } else {
         setRequiresPasswordChange(false);
       }
       
       setRolesChecked(true);
-      console.log('[AuthContext] ✅ Verificação completa - Master:', role === 'master', 'Admin:', role === 'admin' || role === 'master', 'Manager:', role === 'manager', 'Barber:', role === 'barber');
+      console.log('[AuthContext] ✅ Verificação completa - Role:', role);
     } catch (error) {
-      console.error('[AuthContext] ❌ Error checking user roles:', error);
+      console.error('[AuthContext] ❌ Erro ao verificar roles:', error);
       
-      // FALLBACK FINAL: Se tudo falhar, negar acesso
-      console.error('[AuthContext] 🚫 Falha total ao verificar roles, negando acesso');
-      setUserRole(null);
-      setIsMaster(false);
-      setIsAdmin(false);
-      setIsManager(false);
-      setIsBarber(false);
-      setRequiresPasswordChange(false);
+      // CRÍTICO: Manter role do cache se houver erro
+      if (cachedRole) {
+        console.warn('[AuthContext] ⚠️ Mantendo role do cache devido a erro:', cachedRole);
+        applyRole(cachedRole);
+      } else {
+        console.error('[AuthContext] 🚫 Sem cache disponível, negando acesso temporariamente');
+        applyRole(null);
+      }
+      
       setRolesChecked(true);
+      setRequiresPasswordChange(false);
     }
+  };
+
+  const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | null) => {
+    setUserRole(role);
+    setIsMaster(role === 'master');
+    setIsAdmin(role === 'admin' || role === 'master');
+    setIsManager(role === 'manager');
+    setIsBarber(role === 'barber');
+    console.log('[AuthContext] 🎭 Roles aplicados - Master:', role === 'master', 'Admin:', role === 'admin' || role === 'master', 'Manager:', role === 'manager', 'Barber:', role === 'barber');
   };
 
   const signOut = async () => {
     try {
       console.log('[AuthContext] 🚪 Iniciando logout...');
       
-      // Limpar estados ANTES do signOut para evitar race conditions
+      // Limpar cache
+      clearRoleCache();
+      
+      // Limpar estados
       setIsAdmin(false);
       setIsBarber(false);
       setIsMaster(false);
@@ -250,37 +325,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // Função simplificada para verificar acesso a módulos
   const canAccessModule = (moduleName: string): boolean => {
-    console.log('[AuthContext] 🔍 Verificando acesso ao módulo:', moduleName, 'Role atual:', userRole);
+    if (!rolesChecked) {
+      console.log('[AuthContext] ⏳ Roles ainda não verificados, aguardando...');
+      return false;
+    }
+    
+    console.log('[AuthContext] 🔍 Verificando acesso ao módulo:', moduleName, 'Role:', userRole);
     
     if (!userRole) {
-      console.warn('[AuthContext] ⚠️ Role não definido, negando acesso ao módulo:', moduleName);
+      console.warn('[AuthContext] ⚠️ Role não definido, negando acesso');
       return false;
     }
     
     // Master tem acesso total
     if (userRole === 'master') {
-      console.log('[AuthContext] ✅ Master tem acesso total');
       return true;
     }
     
     // Admin tem acesso a tudo exceto configurações
     if (userRole === 'admin') {
-      const hasAccess = moduleName !== 'configuracoes';
-      console.log('[AuthContext] 🔐 Admin - Módulo:', moduleName, 'Acesso:', hasAccess);
-      return hasAccess;
+      return moduleName !== 'configuracoes';
     }
     
     // Manager tem restrições em financeiro e configurações
     if (userRole === 'manager') {
-      const hasAccess = moduleName !== 'financeiro' && moduleName !== 'configuracoes';
-      console.log('[AuthContext] 🔐 Manager - Módulo:', moduleName, 'Acesso:', hasAccess);
-      return hasAccess;
+      return moduleName !== 'financeiro' && moduleName !== 'configuracoes';
     }
     
     // Barber não tem acesso aos módulos administrativos
-    console.log('[AuthContext] ❌ Barber não tem acesso ao módulo:', moduleName);
     return false;
   };
 
@@ -301,5 +374,4 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Export both named and default
 export { AuthProvider as default };
