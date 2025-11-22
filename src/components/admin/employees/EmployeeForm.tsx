@@ -42,6 +42,7 @@ interface EmployeeFormProps {
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false); // Proteção adicional
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(employee?.photo_url);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -60,33 +61,52 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   });
 
   const onSubmit = async (data: EmployeeFormData) => {
-    // Prevenir submissões múltiplas
-    if (loading) {
-      console.warn('⚠️ Submissão já em andamento, ignorando...');
+    console.log('🚀 onSubmit INICIADO');
+    console.log('🔒 Loading atual:', loading, 'Submitted:', submitted);
+    
+    // Dupla proteção contra submissões múltiplas
+    if (loading || submitted) {
+      console.warn('⚠️ Submissão já em andamento ou já submetido, ignorando...');
       return;
     }
     
     setLoading(true);
+    setSubmitted(true); // Marcar como submetido
     console.log('📝 Submitting employee data:', data);
+    console.log('✅ setLoading(true) + setSubmitted(true) executado');
     
     try {
+      console.log('🔄 Iniciando criação/atualização...');
+      
       if (isEditing) {
+        console.log('📝 Modo: EDITAR');
         await updateEmployee(data);
       } else {
+        console.log('🆕 Modo: CRIAR NOVO');
         await createEmployee(data);
       }
+      
+      console.log('✅ Operação concluída com sucesso!');
       
       toast({
         title: 'Sucesso',
         description: `Funcionário ${isEditing ? 'atualizado' : 'criado'} com sucesso!`,
       });
       
-      // Aguardar um pouco antes de fechar para garantir que o toast seja visível
+      // Aguardar para garantir que o banco processe
       setTimeout(() => {
-        onClose();
-      }, 500);
+        console.log('🔄 Fechando dialog e recarregando...');
+        onClose(); // Fechar o dialog primeiro
+        setTimeout(() => {
+          window.location.reload(); // Depois recarregar
+        }, 100);
+      }, 800);
     } catch (error: any) {
       console.error('❌ Error saving employee:', error);
+      console.error('❌ Stack trace:', error.stack);
+      
+      // Resetar estado em caso de erro para permitir nova tentativa
+      setSubmitted(false);
       
       // Tratamento específico de erros RLS
       if (error.message?.includes('policy') || error.message?.includes('permission')) {
@@ -109,7 +129,9 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         });
       }
     } finally {
+      console.log('🏁 onSubmit FINALIZADO');
       setLoading(false);
+      console.log('✅ setLoading(false) executado');
     }
   };
 
@@ -119,57 +141,65 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     
     // 🔒 CORREÇÃO: SEMPRE criar em employees primeiro
     const employeeData = {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
+      name: data.name.trim(),
+      email: data.email.trim().toLowerCase(),
+      phone: data.phone.trim(),
       role: data.role,
       status: data.status,
-      photo_url: photoUrl,
+      photo_url: photoUrl || null, // FIX: garantir null em vez de undefined
       commission_rate: data.commission_rate || 40,
     };
 
     console.log('📤 Employee data to insert:', employeeData);
+    console.log('🔌 Tentando inserir no Supabase...');
 
-    const { data: insertedEmployee, error: employeeError } = await supabase
-      .from('employees')
-      .insert([employeeData])
-      .select()
-      .single();
+    try {
+      const { data: insertedEmployee, error: employeeError } = await supabase
+        .from('employees')
+        .insert([employeeData])
+        .select()
+        .single();
 
-    if (employeeError) {
-      console.error('❌ Error inserting employee:', employeeError);
-      throw new Error(`Erro ao criar funcionário: ${employeeError.message}`);
-    }
+      console.log('📡 Resposta do Supabase:', { insertedEmployee, employeeError });
 
-    console.log('✅ Employee created successfully:', insertedEmployee);
-
-    // 🔒 CORREÇÃO: Se for barbeiro, criar TAMBÉM na tabela staff (migração automática)
-    if (data.role === 'barber') {
-      const staffData = {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        role: 'barber',
-        is_active: data.status === 'active',
-        image_url: photoUrl,
-        commission_rate: data.commission_rate || 40,
-      };
-
-      console.log('🔄 Migrando barbeiro para tabela staff:', staffData);
-
-      const { error: staffError } = await supabase
-        .from('staff')
-        .insert([staffData]);
-
-      if (staffError) {
-        console.error('⚠️ Aviso: Erro ao migrar para staff (não crítico):', staffError);
-        // Não bloquear criação se falhar migração para staff
-      } else {
-        console.log('✅ Barbeiro migrado automaticamente para staff');
+      if (employeeError) {
+        console.error('❌ Error inserting employee:', employeeError);
+        throw new Error(`Erro ao criar funcionário: ${employeeError.message}`);
       }
-    }
 
-    console.log('✅ Employee creation process completed');
+      console.log('✅ Employee created successfully:', insertedEmployee);
+
+      // 🔒 CORREÇÃO: Se for barbeiro, criar TAMBÉM na tabela staff (migração automática)
+      if (data.role === 'barber') {
+        const staffData = {
+          name: data.name.trim(),
+          email: data.email.trim().toLowerCase(),
+          phone: data.phone.trim(),
+          role: 'barber',
+          is_active: data.status === 'active',
+          image_url: photoUrl || null,
+          commission_rate: data.commission_rate || 40,
+        };
+
+        console.log('🔄 Migrando barbeiro para tabela staff:', staffData);
+
+        const { error: staffError } = await supabase
+          .from('staff')
+          .insert([staffData]);
+
+        if (staffError) {
+          console.error('⚠️ Aviso: Erro ao migrar para staff (não crítico):', staffError);
+          // Não bloquear criação se falhar migração para staff
+        } else {
+          console.log('✅ Barbeiro migrado automaticamente para staff');
+        }
+      }
+
+      console.log('✅ Employee creation process completed');
+    } catch (error) {
+      console.error('💥 Exception during employee creation:', error);
+      throw error;
+    }
   };
 
   const updateEmployee = async (data: EmployeeFormData) => {
