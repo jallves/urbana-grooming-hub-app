@@ -99,6 +99,40 @@ serve(async (req) => {
 
         console.log('[manage-barber-user] Usuário criado com sucesso:', data.user.id);
 
+        // Vincular user_id na tabela employees
+        const { error: employeesError } = await supabaseAdmin
+          .from('employees')
+          .update({ user_id: data.user.id })
+          .eq('email', email.toLowerCase());
+
+        if (employeesError) {
+          console.error('[manage-barber-user] Erro ao vincular employees:', employeesError);
+        }
+
+        // Vincular user_id na tabela staff
+        const { error: staffError } = await supabaseAdmin
+          .from('staff')
+          .update({ user_id: data.user.id })
+          .eq('email', email.toLowerCase());
+
+        if (staffError) {
+          console.error('[manage-barber-user] Erro ao vincular staff:', staffError);
+        }
+
+        // Criar role do usuário
+        const { error: roleError } = await supabaseAdmin
+          .from('user_roles')
+          .insert({
+            user_id: data.user.id,
+            role: 'barber'
+          });
+
+        if (roleError && !roleError.message.includes('duplicate')) {
+          console.error('[manage-barber-user] Erro ao criar role:', roleError);
+        }
+
+        console.log('[manage-barber-user] Vinculações concluídas com sucesso');
+
         return new Response(
           JSON.stringify({ 
             success: true,
