@@ -55,7 +55,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-center"
         />
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />

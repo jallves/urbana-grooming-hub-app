@@ -46,7 +46,7 @@ const BarberAppointments: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
+      <div className="w-full px-4 space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <StandardCard key={i}>
