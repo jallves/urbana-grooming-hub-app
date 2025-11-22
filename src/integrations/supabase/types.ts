@@ -2266,6 +2266,7 @@ export type Database = {
       }
       painel_barbeiros: {
         Row: {
+          available_for_booking: boolean | null
           commission_rate: number | null
           created_at: string
           email: string | null
@@ -2281,6 +2282,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          available_for_booking?: boolean | null
           commission_rate?: number | null
           created_at?: string
           email?: string | null
@@ -2296,6 +2298,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          available_for_booking?: boolean | null
           commission_rate?: number | null
           created_at?: string
           email?: string | null
@@ -4158,10 +4161,10 @@ export type Database = {
       check_barber_slot_availability: {
         Args: {
           p_barbeiro_id: string
-          p_data: string
-          p_duracao: number
+          p_date: string
+          p_duration: number
           p_exclude_appointment_id?: string
-          p_hora: string
+          p_time: string
         }
         Returns: boolean
       }
@@ -4200,8 +4203,7 @@ export type Database = {
         | {
             Args: {
               p_date: string
-              p_duration_minutes: number
-              p_exclude_appointment_id?: string
+              p_duration: number
               p_staff_id: string
               p_time: string
             }
@@ -4210,7 +4212,8 @@ export type Database = {
         | {
             Args: {
               p_date: string
-              p_duration: number
+              p_duration_minutes: number
+              p_exclude_appointment_id?: string
               p_staff_id: string
               p_time: string
             }
@@ -4412,6 +4415,7 @@ export type Database = {
       get_painel_barbeiros: {
         Args: never
         Returns: {
+          available_for_booking: boolean | null
           commission_rate: number | null
           created_at: string
           email: string | null

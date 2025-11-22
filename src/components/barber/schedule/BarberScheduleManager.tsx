@@ -3,13 +3,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StandardCard from '../layouts/StandardCard';
 import WorkingHoursManager from './WorkingHoursManager';
 import TimeOffManager from './TimeOffManager';
-import { Calendar, Clock } from 'lucide-react';
+import BookingAvailabilityToggle from './BookingAvailabilityToggle';
+import { Calendar, Clock, UserCheck } from 'lucide-react';
 
 const BarberScheduleManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('working-hours');
 
   return (
     <div className="w-full px-4 space-y-6">
+      {/* Toggle de Disponibilidade para Agendamentos */}
+      <BookingAvailabilityToggle />
+
       <StandardCard>
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-white mb-2">Gerenciar Meus Horários</h2>

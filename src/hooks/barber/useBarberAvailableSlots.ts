@@ -36,9 +36,9 @@ export const useBarberAvailableSlots = () => {
           const { data, error } = await supabase
             .rpc('check_barber_slot_availability', {
               p_barbeiro_id: barberId,
-              p_data: formattedDate,
-              p_hora: slot.time,
-              p_duracao: serviceDuration,
+              p_date: formattedDate,
+              p_time: slot.time,
+              p_duration: serviceDuration,
               p_exclude_appointment_id: excludeAppointmentId || null
             });
 
