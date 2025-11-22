@@ -84,6 +84,7 @@ import PWAInstallPromptContext from './components/PWAInstallPromptContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
+import { Toaster } from './components/ui/toaster';
 import ChangePassword from './pages/ChangePassword';
 
 const queryClient = new QueryClient({
@@ -478,6 +479,7 @@ function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 <PWAInstallPromptContext />
+                <Toaster />
                   </div>
                   </RealtimeProvider>
                 </QueryClientProvider>
