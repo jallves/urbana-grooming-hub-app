@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -11,39 +11,32 @@ interface EmployeeProfile {
 
 export const useEmployeeProfile = () => {
   const { user } = useAuth();
-  const [employee, setEmployee] = useState<EmployeeProfile | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchEmployeeProfile = async () => {
-      if (!user?.email) {
-        setLoading(false);
-        return;
-      }
+  const { data: employee, isLoading: loading } = useQuery({
+    queryKey: ['employee-profile', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return null;
 
-      try {
-        const { data, error } = await supabase
-          .from('employees')
-          .select('name, email, role, photo_url')
-          .eq('email', user.email)
-          .single();
+      const { data, error } = await supabase
+        .from('employees')
+        .select('name, email, role, photo_url')
+        .eq('email', user.email)
+        .single();
 
-        if (error) {
-          console.error('Error fetching employee profile:', error);
-          setEmployee(null);
-        } else {
-          setEmployee(data);
-        }
-      } catch (error) {
+      if (error) {
         console.error('Error fetching employee profile:', error);
-        setEmployee(null);
-      } finally {
-        setLoading(false);
+        return null;
       }
-    };
 
-    fetchEmployeeProfile();
-  }, [user?.email]);
+      return data as EmployeeProfile;
+    },
+    enabled: !!user?.email,
+    staleTime: Infinity, // Dados nunca ficam "stale" - permanecem em cache
+    gcTime: Infinity, // Dados nunca são removidos do cache
+    refetchOnMount: false, // Não refetch ao montar o componente
+    refetchOnWindowFocus: false, // Não refetch ao focar na janela
+    refetchOnReconnect: false, // Não refetch ao reconectar
+  });
 
   // Pega os dois primeiros nomes
   const getFirstTwoNames = () => {

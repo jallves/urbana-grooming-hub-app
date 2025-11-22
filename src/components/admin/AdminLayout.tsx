@@ -85,8 +85,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
             </div>
 
             <div className="flex items-center gap-1 sm:gap-3">
-              {/* Saudação do usuário */}
-              <span className="hidden sm:block text-sm font-medium text-gray-700">
+              {/* Saudação do usuário - com cache para não piscar */}
+              <span className="hidden sm:block text-sm font-medium text-gray-700 transition-opacity duration-0">
                 Bem-vindo, {displayName}
               </span>
               
