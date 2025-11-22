@@ -60,6 +60,7 @@ const TotemProductBarberSelect: React.FC = () => {
           is_active
         `)
         .eq('is_active', true)
+        .eq('available_for_booking', true)
         .order('nome');
 
       if (error) {

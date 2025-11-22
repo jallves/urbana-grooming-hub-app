@@ -147,11 +147,27 @@ const TotemNovoAgendamento: React.FC = () => {
 
         const linkedStaffIds = serviceStaff.map(s => s.staff_id);
 
-        // 2. Buscar dados dos barbeiros vinculados (tabela staff)
+        // 2. Buscar IDs dos barbeiros disponíveis (available_for_booking = true)
+        const { data: availableBarbers, error: barbersError } = await supabase
+          .from('painel_barbeiros')
+          .select('staff_id')
+          .eq('is_active', true)
+          .eq('available_for_booking', true)
+          .in('staff_id', linkedStaffIds);
+
+        if (barbersError) throw barbersError;
+
+        if (!availableBarbers || availableBarbers.length === 0) {
+          return [];
+        }
+
+        const availableStaffIds = availableBarbers.map(b => b.staff_id);
+
+        // 3. Buscar dados dos barbeiros da tabela staff
         const { data: staffData, error: staffError } = await supabase
           .from('staff')
           .select('id, name, email, specialties, image_url, experience')
-          .in('id', linkedStaffIds)
+          .in('id', availableStaffIds)
           .eq('is_active', true)
           .eq('role', 'barber')
           .order('name');
