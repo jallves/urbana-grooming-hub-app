@@ -3,7 +3,7 @@ import { format, parseISO, isFuture, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, X, Clock, Edit, UserX } from 'lucide-react';
+import { X, Edit, UserX } from 'lucide-react';
 import { useBarberAppointmentsOptimized } from '@/hooks/barber/useBarberAppointmentsOptimized';
 import {
   AlertDialog,
@@ -23,7 +23,6 @@ interface AppointmentCardProps {
 const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment }) => {
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const {
-    handleCompleteAppointment,
     handleCancelAppointment,
     handleMarkAsAbsent,
     handleEditAppointment,
@@ -33,8 +32,8 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
   const appointmentDateTime = parseISO(appointment.start_time);
   const isUpcoming = isFuture(appointmentDateTime);
   const isPastAppointment = isPast(appointmentDateTime);
-  const canEdit = appointment.status === 'scheduled' || appointment.status === 'confirmed';
-  const canMarkAbsent = isPastAppointment && (appointment.status === 'scheduled' || appointment.status === 'confirmed');
+  const canEdit = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming;
+  const canMarkAbsent = isPastAppointment && appointment.status === 'scheduled';
 
   const getStatusBadge = () => {
     const badges = {
@@ -86,7 +85,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
           {(canEdit || canMarkAbsent) && (
             <div className="flex flex-wrap gap-2 pt-2">
               {/* Editar (apenas agendamentos futuros agendados/confirmados) */}
-              {canEdit && isUpcoming && (
+              {canEdit && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -99,25 +98,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
                 </Button>
               )}
 
-              {/* Concluir (agendamentos passados ou do dia) */}
-              {canEdit && isPastAppointment && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleCompleteAppointment(appointment.id)}
-                  disabled={isUpdating}
-                  className="flex-1 min-w-[120px] border-green-600 text-green-400 hover:bg-green-600/10"
-                >
-                  {isUpdating ? (
-                    <Clock className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Check className="h-4 w-4 mr-2" />
-                  )}
-                  Concluir
-                </Button>
-              )}
-
-              {/* Marcar como Ausente */}
+              {/* Marcar como Ausente (somente status 'scheduled' e passados) */}
               {canMarkAbsent && (
                 <Button
                   size="sm"
@@ -132,7 +113,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
               )}
 
               {/* Cancelar (apenas futuros) */}
-              {canEdit && isUpcoming && (
+              {canEdit && (
                 <Button
                   size="sm"
                   variant="outline"

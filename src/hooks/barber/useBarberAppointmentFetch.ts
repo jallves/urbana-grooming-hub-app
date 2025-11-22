@@ -60,8 +60,8 @@ export const useBarberAppointmentFetch = (barberId: string | null) => {
           painel_servicos!inner(nome, preco, duracao)
         `)
         .eq('barbeiro_id', barberId)
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true });
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false });
 
       if (error) throw error;
 
