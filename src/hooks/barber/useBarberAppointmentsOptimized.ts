@@ -5,6 +5,8 @@ import { useBarberAppointmentFetch } from './useBarberAppointmentFetch';
 import { useBarberAppointmentActions } from './useBarberAppointmentActions';
 import { useBarberAppointmentStats } from './useBarberAppointmentStats';
 import { useBarberAppointmentModal } from './useBarberAppointmentModal';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const useBarberAppointmentsOptimized = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -89,6 +91,54 @@ export const useBarberAppointmentsOptimized = () => {
     setUpdatingId(null);
   }, [appointments, handleCancelAppointment, setAppointments]);
 
+  const handleMarkAsAbsent = useCallback(async (appointmentId: string) => {
+    const appointment = appointments.find(a => a.id === appointmentId);
+    if (!appointment) return;
+
+    setUpdatingId(appointmentId);
+    
+    // Atualização otimista
+    setAppointments(prev => 
+      prev.map(apt => 
+        apt.id === appointmentId 
+          ? { ...apt, status: 'absent' }
+          : apt
+      )
+    );
+
+    try {
+      const { error } = await supabase
+        .from('painel_agendamentos')
+        .update({ 
+          status: 'ausente',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast.warning('Cliente marcado como ausente', {
+        description: 'Este agendamento não gerará receita ou comissão'
+      });
+      
+      fetchAppointments();
+    } catch (error) {
+      console.error('Erro ao marcar como ausente:', error);
+      toast.error('Erro ao marcar como ausente');
+      
+      // Reverter se falhou
+      setAppointments(prev => 
+        prev.map(apt => 
+          apt.id === appointmentId 
+            ? { ...apt, status: appointment.status }
+            : apt
+        )
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  }, [appointments, fetchAppointments, setAppointments]);
+
   return {
     appointments,
     loading: loading || isLoadingBarber,
@@ -97,6 +147,7 @@ export const useBarberAppointmentsOptimized = () => {
     fetchAppointments,
     handleCompleteAppointment: optimizedCompleteAppointment,
     handleCancelAppointment: optimizedCancelAppointment,
+    handleMarkAsAbsent,
     ...modalHandlers
   };
 };

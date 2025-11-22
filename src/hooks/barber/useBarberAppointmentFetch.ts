@@ -80,7 +80,8 @@ export const useBarberAppointmentFetch = (barberId: string | null) => {
             status: appointment.status === 'cancelado' ? 'cancelled' : 
                     appointment.status === 'confirmado' ? 'confirmed' : 
                     appointment.status === 'concluido' ? 'completed' :
-                    appointment.status === 'FINALIZADO' ? 'completed' : 'scheduled',
+                    appointment.status === 'FINALIZADO' ? 'completed' :
+                    appointment.status === 'ausente' ? 'absent' : 'scheduled',
             client_name: appointment.painel_clientes.nome,
             service_name: appointment.painel_servicos.nome,
             service: {

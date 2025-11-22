@@ -1,94 +1,184 @@
-
-import React, { memo } from 'react';
-import { Clock, User } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { format, parseISO } from 'date-fns';
+import React, { useState } from 'react';
+import { format, parseISO, isFuture, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Check, X, Clock, Edit, UserX } from 'lucide-react';
+import { useBarberAppointmentsOptimized } from '@/hooks/barber/useBarberAppointmentsOptimized';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-interface AppointmentCardOptimizedProps {
-  appointment: {
-    id: string;
-    start_time: string;
-    client_name: string;
-    service_name: string;
-    status: string;
-    service?: {
-      price?: number;
-    };
-  };
+interface AppointmentCardProps {
+  appointment: any;
 }
 
-const AppointmentCardOptimized = memo(({ 
-  appointment
-}: AppointmentCardOptimizedProps) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': 
-      case 'concluido':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'cancelled': 
-      case 'cancelado':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      case 'confirmed': 
-      case 'confirmado':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      default: 
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-    }
+const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment }) => {
+  const [showAbsentDialog, setShowAbsentDialog] = useState(false);
+  const {
+    handleCompleteAppointment,
+    handleCancelAppointment,
+    handleMarkAsAbsent,
+    handleEditAppointment,
+    updatingId
+  } = useBarberAppointmentsOptimized();
+
+  const appointmentDateTime = parseISO(appointment.start_time);
+  const isUpcoming = isFuture(appointmentDateTime);
+  const isPastAppointment = isPast(appointmentDateTime);
+  const canEdit = appointment.status === 'scheduled' || appointment.status === 'confirmed';
+  const canMarkAbsent = isPastAppointment && (appointment.status === 'scheduled' || appointment.status === 'confirmed');
+
+  const getStatusBadge = () => {
+    const badges = {
+      completed: { class: 'bg-green-500/20 text-green-400 border-green-500/30', text: 'Concluído' },
+      cancelled: { class: 'bg-red-500/20 text-red-400 border-red-500/30', text: 'Cancelado' },
+      confirmed: { class: 'bg-blue-500/20 text-blue-400 border-blue-500/30', text: 'Confirmado' },
+      absent: { class: 'bg-orange-500/20 text-orange-400 border-orange-500/30', text: 'Ausente' },
+      scheduled: { class: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', text: 'Agendado' }
+    };
+    
+    const badge = badges[appointment.status as keyof typeof badges] || badges.scheduled;
+    
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${badge.class}`}>
+        {badge.text}
+      </span>
+    );
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'completed': 
-      case 'concluido':
-        return 'Concluído';
-      case 'cancelled': 
-      case 'cancelado':
-        return 'Cancelado';
-      case 'confirmed': 
-      case 'confirmado':
-        return 'Confirmado';
-      default: 
-        return 'Agendado';
-    }
-  };
-
-  const appointmentDate = parseISO(appointment.start_time);
+  const isUpdating = updatingId === appointment.id;
 
   return (
-    <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg p-4 transition-all duration-200">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-full flex items-center justify-center">
-            <User className="h-5 w-5 text-blue-400" />
+    <>
+      <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all">
+        <div className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <h3 className="font-semibold text-white text-lg">{appointment.client_name}</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                {format(appointmentDateTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+              </p>
+              <p className="text-sm text-urbana-gold font-medium">
+                {format(appointmentDateTime, "HH:mm", { locale: ptBR })}
+              </p>
+            </div>
+            {getStatusBadge()}
           </div>
-          <div>
-            <h3 className="font-semibold text-white">{appointment.client_name}</h3>
-            <p className="text-sm text-gray-400">{appointment.service_name}</p>
-          </div>
-        </div>
-        <Badge className={`${getStatusColor(appointment.status)} font-medium`}>
-          {getStatusLabel(appointment.status)}
-        </Badge>
-      </div>
 
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2 text-gray-300">
-          <Clock className="h-4 w-4" />
-          <span className="text-sm">
-            {format(appointmentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-          </span>
-        </div>
-        {appointment.service?.price && (
-          <div className="text-sm font-medium text-green-400">
-            R$ {appointment.service.price.toFixed(2)}
+          {/* Service Info */}
+          <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
+            <span className="text-gray-300">{appointment.service_name}</span>
+            <span className="text-urbana-gold font-semibold">
+              R$ {appointment.service?.price?.toFixed(2) || '0.00'}
+            </span>
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Actions */}
+          {(canEdit || canMarkAbsent) && (
+            <div className="flex flex-wrap gap-2 pt-2">
+              {/* Editar (apenas agendamentos futuros agendados/confirmados) */}
+              {canEdit && isUpcoming && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleEditAppointment(appointment.id, appointment.start_time)}
+                  disabled={isUpdating}
+                  className="flex-1 min-w-[120px] border-blue-600 text-blue-400 hover:bg-blue-600/10"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              )}
+
+              {/* Concluir (agendamentos passados ou do dia) */}
+              {canEdit && isPastAppointment && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCompleteAppointment(appointment.id)}
+                  disabled={isUpdating}
+                  className="flex-1 min-w-[120px] border-green-600 text-green-400 hover:bg-green-600/10"
+                >
+                  {isUpdating ? (
+                    <Clock className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
+                  Concluir
+                </Button>
+              )}
+
+              {/* Marcar como Ausente */}
+              {canMarkAbsent && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAbsentDialog(true)}
+                  disabled={isUpdating}
+                  className="flex-1 min-w-[120px] border-orange-600 text-orange-400 hover:bg-orange-600/10"
+                >
+                  <UserX className="h-4 w-4 mr-2" />
+                  Ausente
+                </Button>
+              )}
+
+              {/* Cancelar (apenas futuros) */}
+              {canEdit && isUpcoming && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleCancelAppointment(appointment.id)}
+                  disabled={isUpdating}
+                  className="flex-1 min-w-[120px] border-red-600 text-red-400 hover:bg-red-600/10"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Dialog de confirmação para marcar como ausente */}
+      <AlertDialog open={showAbsentDialog} onOpenChange={setShowAbsentDialog}>
+        <AlertDialogContent className="bg-gray-800 border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Marcar cliente como ausente?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Esta ação marcará que o cliente não compareceu ao agendamento. 
+              <strong className="text-orange-400 block mt-2">
+                Não será gerada receita nem comissão para este agendamento.
+              </strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                handleMarkAsAbsent(appointment.id);
+                setShowAbsentDialog(false);
+              }}
+              className="bg-orange-600 text-white hover:bg-orange-700"
+            >
+              Confirmar Ausência
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
-});
-
-AppointmentCardOptimized.displayName = 'AppointmentCardOptimized';
+};
 
 export default AppointmentCardOptimized;
