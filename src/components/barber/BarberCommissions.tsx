@@ -142,7 +142,7 @@ const BarberCommissionsComponent: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 md:px-6 space-y-4 sm:space-y-6">
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-gray-900 border-gray-700">
