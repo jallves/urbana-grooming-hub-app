@@ -64,7 +64,7 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
 }) => {
   const [value, setValue] = useState<string>('');
   const maxLength = mode === 'pin' ? pinLength : phoneLength;
-  const minLength = mode === 'phone' ? 10 : maxLength;
+  const minLength = maxLength;
 
   const handleKeyPress = (num: number) => {
     if (value.length < maxLength) {
