@@ -22,32 +22,29 @@ const CashFlowManagement: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 p-3 sm:p-4">
+      <div className="flex-1 min-h-0 p-2 sm:p-3 lg:p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-300 h-auto mb-3">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-300 h-auto mb-2 sm:mb-3 p-0.5">
             <TabsTrigger 
               value="dashboard" 
-              className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm bg-blue-500 text-white data-[state=active]:bg-blue-600 data-[state=active]:shadow-md"
+              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-1.5 sm:py-2 px-1 sm:px-3 text-[10px] sm:text-sm bg-blue-500 text-white data-[state=active]:bg-blue-600 data-[state=active]:shadow-md"
             >
-              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-              <span className="sm:hidden">Dash</span>
+              <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Dashboard</span>
             </TabsTrigger>
             <TabsTrigger 
               value="transactions" 
-              className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm bg-cyan-500 text-white data-[state=active]:bg-cyan-600 data-[state=active]:shadow-md"
+              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-1.5 sm:py-2 px-1 sm:px-3 text-[10px] sm:text-sm bg-cyan-500 text-white data-[state=active]:bg-cyan-600 data-[state=active]:shadow-md"
             >
-              <List className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Transações</span>
-              <span className="sm:hidden">Trans</span>
+              <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Transações</span>
             </TabsTrigger>
             <TabsTrigger 
               value="reports" 
-              className="flex items-center gap-1 sm:gap-2 py-2 text-xs sm:text-sm bg-teal-500 text-white data-[state=active]:bg-teal-600 data-[state=active]:shadow-md"
+              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-1.5 sm:py-2 px-1 sm:px-3 text-[10px] sm:text-sm bg-teal-500 text-white data-[state=active]:bg-teal-600 data-[state=active]:shadow-md"
             >
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Relatórios</span>
-              <span className="sm:hidden">Rel</span>
+              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Relatórios</span>
             </TabsTrigger>
           </TabsList>
           

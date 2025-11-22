@@ -245,13 +245,13 @@ const CashFlowDashboard: React.FC = () => {
 
       {/* Gráfico de Fluxo 6 Meses - Full Width */}
       <Card className="bg-white border-gray-300">
-        <CardHeader className="p-3 sm:p-4 lg:p-6">
-          <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
+        <CardHeader className="p-2 sm:p-4 lg:p-6">
+          <CardTitle className="text-xs sm:text-base lg:text-lg text-black">
             Fluxo de Caixa - Últimos 6 Meses
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-          <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+        <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+          <div className="h-[180px] sm:h-[250px] lg:h-[300px] -mx-2 sm:mx-0">
             <CashFlowChart />
           </div>
         </CardContent>
@@ -260,42 +260,42 @@ const CashFlowDashboard: React.FC = () => {
       {/* Gráficos de Categoria - Grid responsivo */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Card className="bg-white border-gray-300">
-          <CardHeader className="p-3 sm:p-4 lg:p-6">
-            <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
+          <CardHeader className="p-2 sm:p-4 lg:p-6">
+            <CardTitle className="text-xs sm:text-base lg:text-lg text-black">
               Receitas por Categoria
             </CardTitle>
-            <p className="text-xs text-gray-600 mt-1">Todas as receitas do Contas a Receber</p>
+            <p className="text-[10px] sm:text-xs text-gray-600 mt-1">Todas as receitas do Contas a Receber</p>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+          <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+            <div className="h-[180px] sm:h-[250px] lg:h-[300px] -mx-2 sm:mx-0">
               <RevenueChart startDate={periodDates.start} endDate={periodDates.end} />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white border-gray-300">
-          <CardHeader className="p-3 sm:p-4 lg:p-6">
-            <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
+          <CardHeader className="p-2 sm:p-4 lg:p-6">
+            <CardTitle className="text-xs sm:text-base lg:text-lg text-black">
               Despesas por Categoria
             </CardTitle>
-            <p className="text-xs text-gray-600 mt-1">Todas as despesas do Contas a Pagar (incluindo comissões)</p>
+            <p className="text-[10px] sm:text-xs text-gray-600 mt-1">Despesas do Contas a Pagar</p>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+          <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+            <div className="h-[180px] sm:h-[250px] lg:h-[300px] -mx-2 sm:mx-0">
               <ExpenseChart startDate={periodDates.start} endDate={periodDates.end} />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white border-gray-300">
-          <CardHeader className="p-3 sm:p-4 lg:p-6">
-            <CardTitle className="text-sm sm:text-base lg:text-lg text-black">
-              Top 5 Barbeiros - Receita Gerada
+          <CardHeader className="p-2 sm:p-4 lg:p-6">
+            <CardTitle className="text-xs sm:text-base lg:text-lg text-black">
+              Top 5 Barbeiros
             </CardTitle>
-            <p className="text-xs text-gray-600 mt-1">Barbeiros que mais geraram receita no período</p>
+            <p className="text-[10px] sm:text-xs text-gray-600 mt-1">Receita gerada no período</p>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-            <div className="h-[200px] sm:h-[250px] lg:h-[300px]">
+          <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+            <div className="h-[180px] sm:h-[250px] lg:h-[300px] -mx-2 sm:mx-0">
               <TopBarbersChart startDate={periodDates.start} endDate={periodDates.end} />
             </div>
           </CardContent>

@@ -63,58 +63,61 @@ const CashFlowChart: React.FC = () => {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <LineChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis 
           dataKey="month" 
-          stroke="#9CA3AF"
-          fontSize={12}
+          stroke="#6b7280"
+          fontSize={10}
+          tick={{ fontSize: 10 }}
         />
         <YAxis 
-          stroke="#9CA3AF"
-          fontSize={12}
-          tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+          stroke="#6b7280"
+          fontSize={10}
+          tick={{ fontSize: 10 }}
+          width={50}
+          tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#1F2937',
-            border: '1px solid #374151',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
             borderRadius: '8px',
-            color: '#F3F4F6'
+            fontSize: '11px'
           }}
           formatter={(value: number, name: string) => [
             `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
             name === 'receitas' ? 'Receitas' : name === 'despesas' ? 'Despesas' : 'Líquido'
           ]}
-          labelStyle={{ color: '#F3F4F6' }}
         />
         <Legend 
-          wrapperStyle={{ color: '#F3F4F6' }}
+          wrapperStyle={{ fontSize: '11px' }}
+          iconSize={10}
         />
         <Line 
           type="monotone" 
           dataKey="receitas" 
           stroke="#10B981" 
-          strokeWidth={3}
+          strokeWidth={2}
           name="Receitas"
-          dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+          dot={{ fill: '#10B981', strokeWidth: 1, r: 3 }}
         />
         <Line 
           type="monotone" 
           dataKey="despesas" 
           stroke="#EF4444" 
-          strokeWidth={3}
+          strokeWidth={2}
           name="Despesas"
-          dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+          dot={{ fill: '#EF4444', strokeWidth: 1, r: 3 }}
         />
         <Line 
           type="monotone" 
           dataKey="liquido" 
-          stroke="#FFD700" 
-          strokeWidth={3}
+          stroke="#F59E0B" 
+          strokeWidth={2}
           name="Líquido"
-          dot={{ fill: '#FFD700', strokeWidth: 2, r: 4 }}
+          dot={{ fill: '#F59E0B', strokeWidth: 1, r: 3 }}
         />
       </LineChart>
     </ResponsiveContainer>
