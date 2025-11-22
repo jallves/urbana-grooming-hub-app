@@ -133,12 +133,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 🔍 Buscando role para:', user.id, user.email);
       
-      // Timeout aumentado para 15 segundos para evitar falsos negativos
-      const timeoutPromise = new Promise<null>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout verificando roles')), 15000)
-      );
-      
-      const checkRolePromise = async () => {
+      // Tentar obter role diretamente da tabela user_roles primeiro
+      const { data: userRoleData, error: userRoleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .order('role', { ascending: true }) // master < admin < manager < barber alfabeticamente
+        .limit(1)
+        .maybeSingle();
+
+      let role: 'master' | 'admin' | 'manager' | 'barber' | null = null;
+
+      if (userRoleData && !userRoleError) {
+        role = userRoleData.role as 'master' | 'admin' | 'manager' | 'barber';
+        console.log('[AuthContext] ✅ Role obtido diretamente da tabela user_roles:', role);
+      } else {
+        console.log('[AuthContext] ⚠️ Não encontrou role em user_roles, tentando RPC...');
+        
+        // Fallback: tentar RPC sem timeout
         const { data: roleData, error: roleError } = await supabase
           .rpc('get_user_role', { p_user_id: user.id });
 
@@ -147,13 +159,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           throw roleError;
         }
 
-        console.log('[AuthContext] 📦 Role recebido do banco:', roleData);
-        return roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
-      };
-
-      const role = await Promise.race([checkRolePromise(), timeoutPromise]) as 'master' | 'admin' | 'manager' | 'barber' | null;
+        role = roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
+        console.log('[AuthContext] 📦 Role recebido do RPC:', role);
+      }
       
-      console.log('[AuthContext] ✅ Role obtido:', role);
+      console.log('[AuthContext] ✅ Role final obtido:', role);
       
       // Definir flags baseadas no role
       setUserRole(role);
@@ -180,38 +190,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('[AuthContext] ❌ Error checking user roles:', error);
       
-      // CRÍTICO: Em caso de erro, fazer nova tentativa antes de negar acesso
-      console.warn('[AuthContext] ⚠️ Erro ao verificar role, tentando novamente...');
-      
-      try {
-        // Segunda tentativa sem timeout
-        const { data: roleData, error: roleError } = await supabase
-          .rpc('get_user_role', { p_user_id: user.id });
-
-        if (!roleError && roleData) {
-          console.log('[AuthContext] ✅ Role obtido na segunda tentativa:', roleData);
-          const role = roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
-          
-          setUserRole(role);
-          setIsMaster(role === 'master');
-          setIsAdmin(role === 'admin' || role === 'master');
-          setIsManager(role === 'manager');
-          setIsBarber(role === 'barber');
-          setRequiresPasswordChange(false);
-          setRolesChecked(true);
-          return;
-        }
-      } catch (retryError) {
-        console.error('[AuthContext] ❌ Falha na segunda tentativa:', retryError);
-      }
-      
-      // Apenas em último caso, negar acesso
-      console.error('[AuthContext] 🚨 CRÍTICO: Não foi possível verificar permissões após 2 tentativas');
-      setIsAdmin(false);
-      setIsBarber(false);
-      setIsMaster(false);
-      setIsManager(false);
+      // FALLBACK FINAL: Se tudo falhar, negar acesso
+      console.error('[AuthContext] 🚫 Falha total ao verificar roles, negando acesso');
       setUserRole(null);
+      setIsMaster(false);
+      setIsAdmin(false);
+      setIsManager(false);
+      setIsBarber(false);
       setRequiresPasswordChange(false);
       setRolesChecked(true);
     }
