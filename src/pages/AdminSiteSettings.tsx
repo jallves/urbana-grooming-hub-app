@@ -22,38 +22,34 @@ const AdminSiteSettings: React.FC = () => {
         {/* Tabs */}
         <div className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
           <Tabs defaultValue="banners" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 mb-6 bg-gray-100 border border-gray-200 p-1 gap-1">
+            <TabsList className="grid w-full grid-cols-4 mb-4 sm:mb-6 bg-gray-100 border border-gray-200 p-0.5 sm:p-1 gap-0.5 sm:gap-1">
               <TabsTrigger 
                 value="banners" 
-                className="bg-gradient-to-r from-pink-600 to-rose-600 text-white font-raleway font-semibold py-2 sm:py-3 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
+                className="bg-gradient-to-r from-pink-600 to-rose-600 text-white font-raleway font-semibold py-1.5 sm:py-2 lg:py-3 px-1 sm:px-2 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
               >
-                <Image className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">🎨 Banners</span>
-                <span className="sm:hidden">Ban</span>
+                <Image className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Banner</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="gallery"
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-raleway font-semibold py-2 sm:py-3 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-raleway font-semibold py-1.5 sm:py-2 lg:py-3 px-1 sm:px-2 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
               >
-                <Image className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">📸 Galeria</span>
-                <span className="sm:hidden">Gal</span>
+                <Image className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Galeria</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="services"
-                className="bg-gradient-to-r from-amber-600 to-orange-600 text-white font-raleway font-semibold py-2 sm:py-3 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
+                className="bg-gradient-to-r from-amber-600 to-orange-600 text-white font-raleway font-semibold py-1.5 sm:py-2 lg:py-3 px-1 sm:px-2 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
               >
-                <Star className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">⭐ Destaque</span>
-                <span className="sm:hidden">Dest</span>
+                <Star className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Destaque</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="general"
-                className="bg-gradient-to-r from-slate-600 to-gray-600 text-white font-raleway font-semibold py-2 sm:py-3 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
+                className="bg-gradient-to-r from-slate-600 to-gray-600 text-white font-raleway font-semibold py-1.5 sm:py-2 lg:py-3 px-1 sm:px-2 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
               >
-                <Settings className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">⚙️ Config</span>
-                <span className="sm:hidden">Conf</span>
+                <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Config</span>
               </TabsTrigger>
             </TabsList>
 
