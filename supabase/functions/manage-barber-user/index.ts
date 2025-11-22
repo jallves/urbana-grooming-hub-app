@@ -36,11 +36,22 @@ serve(async (req) => {
       throw new Error('Não autorizado');
     }
 
-    // Verificar se é admin
-    const { data: isAdmin, error: adminError } = await supabaseAdmin
-      .rpc('is_admin', { user_id: user.id });
+    // Verificar se o usuário tem role de admin, master ou manager
+    const { data: userRoles, error: rolesError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
 
-    if (adminError || !isAdmin) {
+    if (rolesError) {
+      console.error('[manage-barber-user] Erro ao verificar roles:', rolesError);
+      throw new Error('Erro ao verificar permissões');
+    }
+
+    const hasAdminRole = userRoles?.some(r => 
+      r.role === 'master' || r.role === 'admin' || r.role === 'manager'
+    );
+
+    if (!hasAdminRole) {
       throw new Error('Apenas administradores podem gerenciar usuários');
     }
 
