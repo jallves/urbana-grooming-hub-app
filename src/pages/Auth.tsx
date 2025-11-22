@@ -14,14 +14,20 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, isAdmin, loading: authLoading, rolesChecked } = useAuth();
+  const { user, isAdmin, isManager, isMaster, loading: authLoading, rolesChecked } = useAuth();
 
-  // Redireciona admin para o painel (SEM redirecionar para home)
+  // Verifica se o usuário tem acesso administrativo (admin, manager ou master)
+  const hasAdminAccess = isAdmin || isManager || isMaster;
+
+  // Redireciona usuários com acesso administrativo para o painel
   useEffect(() => {
     console.log('[Auth.tsx] Estado atual:', { 
       authLoading, 
       user: user?.email, 
       isAdmin,
+      isManager,
+      isMaster,
+      hasAdminAccess,
       hasUser: !!user,
       rolesChecked,
       redirectAttempted 
@@ -37,14 +43,14 @@ const Auth: React.FC = () => {
     // 1. authLoading é false (verificação completa)
     // 2. rolesChecked é true (roles foram verificadas)
     // 3. user existe
-    // 4. É admin
+    // 4. Tem acesso administrativo (admin, manager ou master)
     // 5. Ainda não tentou redirecionar
-    if (!authLoading && rolesChecked && user && user.email && isAdmin) {
-      console.log('[Auth.tsx] ✅ Admin detectado, redirecionando para /admin');
+    if (!authLoading && rolesChecked && user && user.email && hasAdminAccess) {
+      console.log('[Auth.tsx] ✅ Acesso administrativo detectado, redirecionando para /admin');
       setRedirectAttempted(true);
       navigate('/admin', { replace: true });
     }
-  }, [user, isAdmin, authLoading, rolesChecked, redirectAttempted]);
+  }, [user, hasAdminAccess, authLoading, rolesChecked, redirectAttempted, isAdmin, isManager, isMaster]);
 
   // Reset redirectAttempted quando o usuário muda
   useEffect(() => {
@@ -69,8 +75,8 @@ const Auth: React.FC = () => {
     navigate('/');
   };
 
-  // Show access denied if user is logged in but not admin
-  if (!authLoading && user && rolesChecked && !isAdmin) {
+  // Show access denied if user is logged in but has no admin access
+  if (!authLoading && user && rolesChecked && !hasAdminAccess) {
     return (
       <AuthContainer 
         title="Costa Urbana"
