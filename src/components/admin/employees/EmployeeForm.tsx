@@ -152,13 +152,35 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
     console.log('📤 Employee data to insert:', employeeData);
     console.log('🔌 Tentando inserir no Supabase...');
+    console.log('🔍 Supabase client disponível?', !!supabase);
+    console.log('🔍 Verificando sessão do usuário...');
+    
+    // Verificar sessão atual
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    console.log('🔐 Sessão atual:', { 
+      hasSession: !!sessionData?.session, 
+      userId: sessionData?.session?.user?.id,
+      error: sessionError 
+    });
 
     try {
-      const { data: insertedEmployee, error: employeeError } = await supabase
+      console.log('🚀 Iniciando insert no Supabase...');
+      
+      // Adicionar timeout de 10 segundos
+      const insertPromise = supabase
         .from('employees')
         .insert([employeeData])
         .select()
         .single();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout ao inserir funcionário (10s)')), 10000)
+      );
+      
+      const { data: insertedEmployee, error: employeeError } = await Promise.race([
+        insertPromise,
+        timeoutPromise
+      ]) as any;
 
       console.log('📡 Resposta do Supabase:', { insertedEmployee, employeeError });
 
