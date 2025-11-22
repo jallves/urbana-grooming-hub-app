@@ -41,6 +41,8 @@ export default defineConfig(({ mode }) => ({
         scope: '/'
       },
       workbox: {
+        navigateFallback: null,
+        navigateFallbackDenylist: [/^\/.*/],
         // Não fazer cache de HTML/JS - sempre buscar versão nova
         globPatterns: ['**/*.{ico,png,svg,jpg,jpeg,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
