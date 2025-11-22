@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
 interface TimeSlot {
   time: string;
@@ -20,11 +20,26 @@ export const useBarberAvailableSlots = () => {
     setLoading(true);
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const isCurrentDay = isToday(date);
       
       // Buscar todos os horários possíveis (9h às 20h, intervalos de 30min)
       const allSlots: TimeSlot[] = [];
       for (let hour = 9; hour < 20; hour++) {
         for (let minute of [0, 30]) {
+          // Se for hoje, só incluir horários futuros (pelo menos 30min à frente)
+          if (isCurrentDay) {
+            const slotTotalMinutes = hour * 60 + minute;
+            const currentTotalMinutes = currentHour * 60 + currentMinute;
+            
+            // Pular se o horário já passou ou está muito próximo (menos de 30min)
+            if (slotTotalMinutes <= currentTotalMinutes + 30) {
+              continue;
+            }
+          }
+          
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           allSlots.push({ time: timeString, available: false });
         }
