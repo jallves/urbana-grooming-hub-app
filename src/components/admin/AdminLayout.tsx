@@ -34,6 +34,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   };
 
   const userInitials = user?.email?.charAt(0).toUpperCase() || 'A';
+  const fullName = user?.user_metadata?.full_name || user?.email || 'Usuário';
+  const firstName = fullName.split(' ')[0];
 
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-gray-50">
@@ -82,9 +84,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* Theme Toggle */}
-              <ThemeToggle />
+            <div className="flex items-center gap-1 sm:gap-3">
+              {/* Saudação do usuário */}
+              <span className="hidden sm:block text-sm font-medium text-gray-700">
+                Bem-vindo, {firstName}
+              </span>
               
               {/* Notificações com touch otimizado */}
               <Button
@@ -119,13 +123,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                     className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 cursor-pointer"
                     onClick={() => navigate('/admin/configuracoes')}
                   >
-                    <User className="mr-2 h-4 w-4" /> Perfil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => navigate('/')}
-                  >
-                    <Settings className="mr-2 h-4 w-4" /> Ver Site
+                    <User className="mr-2 h-4 w-4" /> Minha Conta
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200" />
                   <DropdownMenuItem
