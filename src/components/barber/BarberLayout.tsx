@@ -107,7 +107,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
 
       {/* Desktop Navigation */}
       <nav className="hidden lg:block sticky top-[68px] z-40 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
-        <div className="w-full px-2 md:px-6 lg:px-8">
+        <div className="w-full md:px-6 lg:px-8">
           <div className="flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide py-2">
             {navigationItems.map((item) => (
               <Link
@@ -129,7 +129,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
 
       {/* Mobile/Tablet Navigation */}
       <nav className="lg:hidden sticky top-[68px] z-40 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
-        <div className="w-full px-1 md:px-4">
+        <div className="w-full px-2 md:px-4">
           <div className="grid grid-cols-3 gap-1 py-2 sm:py-3">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
