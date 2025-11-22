@@ -19,6 +19,13 @@ interface BarberListProps {
   onDelete: (id: string) => void;
 }
 
+// Função para exibir apenas primeiro e segundo nome
+const getShortName = (fullName: string): string => {
+  const names = fullName.trim().split(' ');
+  if (names.length === 1) return names[0];
+  return `${names[0]} ${names[1]}`;
+};
+
 const BarberList: React.FC<BarberListProps> = ({
   barbers,
   isLoading,
@@ -60,7 +67,9 @@ const BarberList: React.FC<BarberListProps> = ({
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <span className="font-raleway font-medium text-sm block truncate">{barber.name}</span>
+                  <span className="font-raleway font-medium text-sm block truncate" title={barber.name}>
+                    {getShortName(barber.name)}
+                  </span>
                   <Badge 
                     variant={barber.is_active ? 'default' : 'outline'}
                     className="text-xs mt-1"
@@ -130,7 +139,9 @@ const BarberList: React.FC<BarberListProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-raleway font-medium text-sm truncate">{barber.name}</h3>
+                    <h3 className="font-raleway font-medium text-sm truncate" title={barber.name}>
+                      {getShortName(barber.name)}
+                    </h3>
                     <p className="text-muted-foreground font-raleway text-xs truncate">{barber.email}</p>
                     <Badge 
                       variant={barber.is_active ? 'default' : 'outline'}
