@@ -23,7 +23,6 @@ interface AppointmentCardProps {
 const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment }) => {
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
   const {
     handleCancelAppointment,
     handleMarkAsAbsent,
@@ -96,12 +95,12 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
           {/* Actions */}
           {(canEdit || canMarkAbsent) && (
             <div className="flex flex-wrap gap-2 pt-2">
-              {/* Editar (até 40 minutos após o horário) */}
+              {/* Editar (até 40 minutos após o horário) - Abre modal direto */}
               {canEdit && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setShowEditDialog(true)}
+                  onClick={() => handleEditAppointment(appointment.id, appointment.start_time)}
                   disabled={isUpdating}
                   className="flex-1 min-w-[120px] border-blue-600 text-blue-400 hover:bg-blue-600/10"
                 >
@@ -141,35 +140,6 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment 
           )}
         </div>
       </Card>
-
-      {/* Dialog de confirmação para EDITAR */}
-      <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Editar agendamento?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              Você poderá alterar a data, horário e serviço deste agendamento.
-              <strong className="text-blue-400 block mt-2">
-                Tem certeza que deseja editar?
-              </strong>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">
-              Não, voltar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                handleEditAppointment(appointment.id, appointment.start_time);
-                setShowEditDialog(false);
-              }}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              Sim, editar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Dialog de confirmação para CANCELAR */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
