@@ -435,142 +435,276 @@ export const ContasAReceber: React.FC = () => {
               Receitas Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 sm:p-3 lg:p-6">
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full align-middle">
-                <Table className="text-xs sm:text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Número</TableHead>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Descrição</TableHead>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4 hidden md:table-cell">Categoria</TableHead>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4 hidden lg:table-cell">Pagamento</TableHead>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4 hidden lg:table-cell">Data</TableHead>
-                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4 hidden xl:table-cell">Bruto</TableHead>
-                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4 hidden xl:table-cell">Desconto</TableHead>
-                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4">Líquido</TableHead>
-                      <TableHead className="text-center whitespace-nowrap px-2 sm:px-4">Status</TableHead>
-                      <TableHead className="text-center whitespace-nowrap px-2 sm:px-4 hidden xl:table-cell">Fluxo</TableHead>
-                      <TableHead className="text-right whitespace-nowrap px-2 sm:px-4">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                <TableBody>
-                  {receivables && receivables.length > 0 ? (
-                    receivables.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell className="font-mono text-xs">
-                          {record.transaction_number}
-                        </TableCell>
-                        <TableCell className="max-w-xs text-sm">
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium">{record.description}</span>
-                            {record.metadata?.service_name && (
-                              <span className="text-xs text-muted-foreground">
-                                🔧 {record.metadata.service_name}
-                              </span>
-                            )}
-                            {record.metadata?.product_name && (
-                              <span className="text-xs text-muted-foreground">
-                                📦 {record.metadata.product_name}
-                              </span>
-                            )}
-                            {record.metadata?.payment_time && (
-                              <span className="text-xs text-muted-foreground">
-                                ⏰ {format(new Date(record.metadata.payment_time), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          <Badge variant="outline" className={
+          <CardContent className="p-3 sm:p-4 lg:p-6">
+            {receivables && receivables.length > 0 ? (
+              <>
+                {/* Layout em Cards para Mobile/Tablet */}
+                <div className="block lg:hidden space-y-3">
+                  {receivables.map((record) => (
+                    <div key={record.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+                      {/* Header do Card */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm text-gray-900 truncate">
+                            {record.description}
+                          </p>
+                          <p className="text-xs text-gray-600 font-mono mt-1">
+                            #{record.transaction_number}
+                          </p>
+                        </div>
+                        {getStatusBadge(record.status)}
+                      </div>
+
+                      {/* Metadados */}
+                      <div className="space-y-1.5">
+                        {record.metadata?.service_name && (
+                          <p className="text-xs text-gray-600">
+                            🔧 {record.metadata.service_name}
+                          </p>
+                        )}
+                        {record.metadata?.product_name && (
+                          <p className="text-xs text-gray-600">
+                            📦 {record.metadata.product_name}
+                          </p>
+                        )}
+                        {record.metadata?.payment_time && (
+                          <p className="text-xs text-gray-600">
+                            ⏰ {format(new Date(record.metadata.payment_time), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Informações Financeiras */}
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-600">Categoria</p>
+                          <Badge variant="outline" className={`mt-1 ${
                             record.category === 'services' 
                               ? 'bg-blue-50 text-blue-700 border-blue-200' 
                               : 'bg-green-50 text-green-700 border-green-200'
-                          }>
+                          }`}>
                             {record.category === 'services' ? '🔧 Serviço' : '📦 Produto'}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Pagamento</p>
                           {record.payment_records && record.payment_records.length > 0 ? (
-                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 mt-1">
                               <CreditCard className="h-3 w-3 mr-1" />
                               {getPaymentMethodLabel(record.payment_records[0].payment_method)}
                             </Badge>
                           ) : (
                             <span className="text-gray-400 text-xs">-</span>
                           )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-gray-600">
-                          R$ {record.gross_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-red-600">
-                          {record.discount_amount > 0 ? (
-                            `- R$ ${record.discount_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                          ) : (
-                            '-'
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-green-600">
-                          R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {getStatusBadge(record.status)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {record.status === 'completed' ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Registrado
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-400 text-xs">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {record.status === 'pending' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleMarkAsPaid(record.id)}
-                                className="bg-green-50 text-green-700 hover:bg-green-100 border-green-300"
-                              >
-                                <CheckCircle2 className="h-4 w-4 mr-1" />
-                                Marcar como Pago
-                              </Button>
+                        </div>
+                      </div>
+
+                      {/* Valores */}
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-600">Bruto</p>
+                          <p className="text-sm font-medium text-gray-700">
+                            R$ {record.gross_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Desconto</p>
+                          <p className="text-sm font-medium text-red-600">
+                            {record.discount_amount > 0 ? (
+                              `- R$ ${record.discount_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            ) : (
+                              '-'
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(record)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(record.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Líquido</p>
+                          <p className="text-sm font-bold text-green-600">
+                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Data e Status do Fluxo */}
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-600">Data</p>
+                          <p className="text-sm font-medium text-gray-700">
+                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                          </p>
+                        </div>
+                        {record.status === 'completed' ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Fluxo OK
+                          </Badge>
+                        ) : null}
+                      </div>
+
+                      {/* Ações */}
+                      <div className="flex gap-2 pt-2 border-t border-gray-200">
+                        {record.status === 'pending' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkAsPaid(record.id)}
+                            className="flex-1 bg-green-50 text-green-700 hover:bg-green-100 border-green-300"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Marcar Pago
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(record)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(record.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Layout em Tabela para Desktop */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <Table className="text-xs sm:text-sm">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Número</TableHead>
+                        <TableHead className="whitespace-nowrap">Descrição</TableHead>
+                        <TableHead className="whitespace-nowrap">Categoria</TableHead>
+                        <TableHead className="whitespace-nowrap">Pagamento</TableHead>
+                        <TableHead className="whitespace-nowrap">Data</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Bruto</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Desconto</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Líquido</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">Status</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">Fluxo</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={11} className="text-center text-gray-500 py-8">
-                        Nenhuma receita encontrada
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {receivables.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell className="font-mono text-xs">
+                            {record.transaction_number}
+                          </TableCell>
+                          <TableCell className="max-w-xs text-sm">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium">{record.description}</span>
+                              {record.metadata?.service_name && (
+                                <span className="text-xs text-muted-foreground">
+                                  🔧 {record.metadata.service_name}
+                                </span>
+                              )}
+                              {record.metadata?.product_name && (
+                                <span className="text-xs text-muted-foreground">
+                                  📦 {record.metadata.product_name}
+                                </span>
+                              )}
+                              {record.metadata?.payment_time && (
+                                <span className="text-xs text-muted-foreground">
+                                  ⏰ {format(new Date(record.metadata.payment_time), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <Badge variant="outline" className={
+                              record.category === 'services' 
+                                ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                : 'bg-green-50 text-green-700 border-green-200'
+                            }>
+                              {record.category === 'services' ? '🔧 Serviço' : '📦 Produto'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {record.payment_records && record.payment_records.length > 0 ? (
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                                <CreditCard className="h-3 w-3 mr-1" />
+                                {getPaymentMethodLabel(record.payment_records[0].payment_method)}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-gray-600">
+                            R$ {record.gross_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-red-600">
+                            {record.discount_amount > 0 ? (
+                              `- R$ ${record.discount_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                            ) : (
+                              '-'
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-green-600">
+                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {getStatusBadge(record.status)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {record.status === 'completed' ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Registrado
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {record.status === 'pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleMarkAsPaid(record.id)}
+                                  className="bg-green-50 text-green-700 hover:bg-green-100 border-green-300"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Marcar como Pago
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(record)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(record.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                Nenhuma receita encontrada
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
