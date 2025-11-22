@@ -123,9 +123,23 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     };
 
     try {
+      // 1. Verificar se já existe um user_id para este email
+      const { data: authUsers } = await supabase
+        .from('employees')
+        .select('user_id')
+        .eq('email', employeeData.email)
+        .limit(1)
+        .maybeSingle();
+
+      const existingUserId = authUsers?.user_id;
+
+      // 2. Inserir na tabela employees
       const { data: insertedEmployee, error: employeeError } = await supabase
         .from('employees')
-        .insert([employeeData])
+        .insert([{
+          ...employeeData,
+          user_id: existingUserId || null,
+        }])
         .select()
         .single();
 
@@ -134,7 +148,31 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         throw new Error(`Erro ao criar funcionário: ${employeeError.message}`);
       }
 
-      // Se for barbeiro, criar também na tabela staff
+      // 3. Se tiver user_id, criar/atualizar registro em user_roles
+      if (existingUserId) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .upsert([{
+            user_id: existingUserId,
+            role: data.role,
+          }], {
+            onConflict: 'user_id,role',
+            ignoreDuplicates: false,
+          });
+
+        if (roleError) {
+          console.error('Warning: Failed to create user role:', roleError);
+        }
+      } else {
+        console.warn('⚠️ Funcionário criado sem user_id. Role não foi adicionado em user_roles.');
+        toast({
+          title: 'Atenção',
+          description: 'Funcionário criado, mas sem acesso ao sistema. Configure as credenciais posteriormente.',
+          variant: 'default',
+        });
+      }
+
+      // 4. Se for barbeiro, criar também na tabela staff
       if (data.role === 'barber') {
         const staffData = {
           name: data.name.trim(),
@@ -144,6 +182,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           is_active: data.status === 'active',
           image_url: photoUrl || null,
           commission_rate: data.commission_rate || 40,
+          user_id: existingUserId || null,
         };
 
         const { error: staffError } = await supabase

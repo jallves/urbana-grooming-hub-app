@@ -69,31 +69,41 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
-        <div className="text-center space-y-4 max-w-md">
-          <h2 className="text-2xl font-bold text-foreground">Sem permissão</h2>
-          <p className="text-muted-foreground">
-            {requiredModule && !hasModuleAccess
-              ? 'Você não tem permissão para acessar este módulo.'
-              : 'Você não tem permissão para acessar esta área.'}
-          </p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Usuário: {user?.email}
-          </p>
-          <div className="flex gap-2 justify-center mt-4">
-            <Button 
-              onClick={() => window.location.href = '/admin'}
-              variant="outline"
-            >
-              Voltar ao Dashboard
-            </Button>
+        <div className="text-center space-y-6 max-w-lg bg-card p-8 rounded-lg shadow-lg border border-border">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-foreground font-playfair">🔒 Acesso Restrito</h2>
+            <p className="text-muted-foreground font-raleway">
+              {requiredModule && !hasModuleAccess
+                ? 'Você não tem permissão para acessar este módulo.'
+                : 'Você não tem permissão para acessar esta área.'}
+            </p>
+          </div>
+          
+          <div className="bg-muted/50 p-4 rounded-md text-left space-y-2">
+            <p className="text-sm text-muted-foreground font-raleway">
+              <strong className="text-foreground">Usuário:</strong> {user?.email}
+            </p>
+            <p className="text-xs text-muted-foreground font-raleway mt-4 italic">
+              💡 Se suas permissões foram atualizadas recentemente, faça logout e login novamente para que as mudanças tenham efeito.
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
             <Button 
               onClick={async () => {
                 await signOut();
                 window.location.href = '/auth';
               }}
-              variant="destructive"
+              className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 font-raleway font-medium"
             >
-              Sair do Sistema
+              Fazer Logout
+            </Button>
+            <Button 
+              onClick={() => window.location.href = '/admin'}
+              variant="outline"
+              className="border-border font-raleway"
+            >
+              Voltar ao Dashboard
             </Button>
           </div>
         </div>
