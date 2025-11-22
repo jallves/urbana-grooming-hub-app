@@ -87,25 +87,29 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
   }
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis 
           dataKey="name" 
-          stroke="#9CA3AF"
-          tick={{ fill: '#9CA3AF', fontSize: 12 }}
+          stroke="#6b7280"
+          tick={{ fill: '#6b7280', fontSize: 10 }}
+          angle={-15}
+          textAnchor="end"
+          height={60}
         />
         <YAxis 
-          stroke="#9CA3AF"
-          tick={{ fill: '#9CA3AF', fontSize: 12 }}
-          tickFormatter={(value) => `R$ ${(value / 1000).toFixed(1)}k`}
+          stroke="#6b7280"
+          tick={{ fill: '#6b7280', fontSize: 10 }}
+          width={50}
+          tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#1F2937',
-            border: '1px solid #374151',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e5e7eb',
             borderRadius: '8px',
-            color: '#F3F4F6'
+            fontSize: '12px'
           }}
           formatter={(value: number) => [
             `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
@@ -113,9 +117,10 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
           ]}
         />
         <Legend 
-          wrapperStyle={{ color: '#F3F4F6' }}
+          wrapperStyle={{ fontSize: '11px' }}
+          iconSize={10}
         />
-        <Bar dataKey="Receita" fill="#1e40af" radius={[8, 8, 0, 0]} />
+        <Bar dataKey="Receita" fill="#1e40af" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
