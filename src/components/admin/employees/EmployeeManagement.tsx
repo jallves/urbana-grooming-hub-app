@@ -50,9 +50,11 @@ const EmployeeManagement: React.FC = () => {
   };
 
   const handleFormClose = () => {
+    console.log('🚪 handleFormClose chamado');
     setIsFormOpen(false);
     setEditingEmployee(null);
-    fetchEmployees();
+    // REMOVIDO: fetchEmployees() - não é necessário pois o form já recarrega a página
+    console.log('✅ Dialog fechado');
   };
 
   return (
