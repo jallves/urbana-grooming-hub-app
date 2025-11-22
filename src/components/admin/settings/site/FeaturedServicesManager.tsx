@@ -98,23 +98,23 @@ const FeaturedServicesManager: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {services?.map((service, index) => (
-          <Card key={service.id} className="p-4 bg-white border-gray-200">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 flex-1">
-                <div className={`p-2 rounded-lg ${service.show_on_home ? 'bg-urbana-gold/20' : 'bg-gray-100'}`}>
-                  <Star className={`h-5 w-5 ${service.show_on_home ? 'text-urbana-gold fill-urbana-gold' : 'text-gray-400'}`} />
+          <Card key={service.id} className="p-3 sm:p-4 bg-white border-gray-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
+                <div className={`p-2 rounded-lg flex-shrink-0 ${service.show_on_home ? 'bg-urbana-gold/20' : 'bg-gray-100'}`}>
+                  <Star className={`h-4 w-4 sm:h-5 sm:w-5 ${service.show_on_home ? 'text-urbana-gold fill-urbana-gold' : 'text-gray-400'}`} />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-playfair font-bold text-lg text-gray-900">{service.nome}</h3>
-                  <p className="text-sm text-gray-600 font-raleway">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-playfair font-bold text-base sm:text-lg text-gray-900 truncate">{service.nome}</h3>
+                  <p className="text-xs sm:text-sm text-gray-600 font-raleway">
                     R$ {service.preco.toFixed(2)} • {service.duracao} min
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 {service.show_on_home && (
                   <div className="flex gap-1">
                     <Button
@@ -122,23 +122,27 @@ const FeaturedServicesManager: React.FC = () => {
                       variant="outline"
                       onClick={() => handleReorder(service.id, 'up')}
                       disabled={index === 0}
+                      className="flex-1 sm:flex-none"
                     >
                       <ArrowUp className="h-4 w-4" />
+                      <span className="ml-1 sm:hidden">Subir</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleReorder(service.id, 'down')}
                       disabled={index === services.length - 1}
+                      className="flex-1 sm:flex-none"
                     >
                       <ArrowDown className="h-4 w-4" />
+                      <span className="ml-1 sm:hidden">Descer</span>
                     </Button>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 font-raleway">
-                    {service.show_on_home ? 'Visível' : 'Oculto'}
+                <div className="flex items-center justify-between sm:justify-start gap-2 px-2 py-1 sm:p-0 bg-gray-50 sm:bg-transparent rounded">
+                  <span className="text-xs sm:text-sm text-gray-600 font-raleway">
+                    {service.show_on_home ? 'Visível na home' : 'Oculto da home'}
                   </span>
                   <Switch
                     checked={service.show_on_home}
