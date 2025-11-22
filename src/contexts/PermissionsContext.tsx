@@ -11,7 +11,7 @@ interface PermissionsContextType {
 const PermissionsContext = createContext<PermissionsContextType | undefined>(undefined);
 
 export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { canAccessModule, loading: authLoading } = useAuth();
+  const { canAccessModule, loading: authLoading, rolesChecked } = useAuth();
 
   // Simplificado: apenas usa a função do AuthContext
   const checkModuleAccess = (moduleName: string): boolean => {
@@ -23,11 +23,15 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     console.log('[PermissionsContext] Refresh não necessário - validação única no AuthContext');
   };
 
-  // Construir moduleAccess baseado nas regras conhecidas
-  const moduleAccess: Record<string, boolean> = {
+  // Construir moduleAccess apenas quando roles estiverem verificados
+  const moduleAccess: Record<string, boolean> = rolesChecked ? {
     financeiro: canAccessModule('financeiro'),
     configuracoes: canAccessModule('configuracoes'),
     erp: canAccessModule('erp'),
+  } : {
+    financeiro: false,
+    configuracoes: false,
+    erp: false,
   };
 
   return (

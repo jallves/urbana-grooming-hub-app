@@ -188,7 +188,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (cachedRole) {
       console.log('[AuthContext] ⚡ Usando role do cache:', cachedRole);
       applyRole(cachedRole);
-      setRolesChecked(true);
       // Continuar verificação em background para atualizar cache
     }
     
@@ -267,7 +266,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setRequiresPasswordChange(false);
       }
       
-      setRolesChecked(true);
       console.log('[AuthContext] ✅ Verificação completa - Role:', role);
     } catch (error) {
       console.error('[AuthContext] ❌ Erro ao verificar roles:', error);
@@ -281,7 +279,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         applyRole(null);
       }
       
-      setRolesChecked(true);
       setRequiresPasswordChange(false);
     }
   };
@@ -292,6 +289,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAdmin(role === 'admin' || role === 'master');
     setIsManager(role === 'manager');
     setIsBarber(role === 'barber');
+    setRolesChecked(true); // CRÍTICO: Marcar como verificado imediatamente após aplicar
     console.log('[AuthContext] 🎭 Roles aplicados - Master:', role === 'master', 'Admin:', role === 'admin' || role === 'master', 'Manager:', role === 'manager', 'Barber:', role === 'barber');
   };
 
