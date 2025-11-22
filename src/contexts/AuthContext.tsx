@@ -133,6 +133,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 🔍 Buscando role para:', user.id, user.email);
       
+      // CRÍTICO: Garantir que temos uma sessão válida antes de buscar roles
+      const { data: sessionCheck } = await supabase.auth.getSession();
+      if (!sessionCheck?.session) {
+        console.error('[AuthContext] ❌ Sem sessão ativa, aguardando...');
+        // Tentar novamente após 1 segundo
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: retrySession } = await supabase.auth.getSession();
+        if (!retrySession?.session) {
+          throw new Error('Sessão não estabelecida');
+        }
+        console.log('[AuthContext] ✅ Sessão estabelecida após retry');
+      }
+      
+      console.log('[AuthContext] 📡 Sessão ativa confirmada, buscando role...');
+      
       // Tentar obter role diretamente da tabela user_roles primeiro
       const { data: userRoleData, error: userRoleError } = await supabase
         .from('user_roles')
@@ -148,9 +163,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role = userRoleData.role as 'master' | 'admin' | 'manager' | 'barber';
         console.log('[AuthContext] ✅ Role obtido diretamente da tabela user_roles:', role);
       } else {
-        console.log('[AuthContext] ⚠️ Não encontrou role em user_roles, tentando RPC...');
+        if (userRoleError) {
+          console.error('[AuthContext] ⚠️ Erro ao buscar role em user_roles:', userRoleError);
+        } else {
+          console.log('[AuthContext] ⚠️ Nenhuma role encontrada em user_roles para user_id:', user.id);
+        }
         
-        // Fallback: tentar RPC sem timeout
+        console.log('[AuthContext] ⚠️ Tentando RPC como fallback...');
+        
+        // Fallback: tentar RPC
         const { data: roleData, error: roleError } = await supabase
           .rpc('get_user_role', { p_user_id: user.id });
 
