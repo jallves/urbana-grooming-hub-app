@@ -533,134 +533,257 @@ export const ContasAPagar: React.FC = () => {
               Despesas e Comissões Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 sm:p-3 lg:p-6">
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <div className="inline-block min-w-full align-middle">
-                <Table className="text-xs sm:text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Número</TableHead>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Tipo</TableHead>
-                      <TableHead className="whitespace-nowrap px-2 sm:px-4">Descrição</TableHead>
-                      <TableHead className="whitespace-nowrap hidden md:table-cell">Categoria</TableHead>
-                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Data Trans.</TableHead>
-                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Data Pag.</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Valor</TableHead>
-                      <TableHead className="text-center whitespace-nowrap">Status</TableHead>
-                      <TableHead className="text-center whitespace-nowrap hidden xl:table-cell">Fluxo</TableHead>
-                      <TableHead className="text-center whitespace-nowrap">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                <TableBody>
-                  {payables && payables.length > 0 ? (
-                    payables.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell className="font-mono text-xs">
-                          {record.transaction_number}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          <Badge variant="outline" className={
+          <CardContent className="p-3 sm:p-4 lg:p-6">
+            {payables && payables.length > 0 ? (
+              <>
+                {/* Layout em Cards para Mobile/Tablet */}
+                <div className="block lg:hidden space-y-3">
+                  {payables.map((record) => (
+                    <div key={record.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+                      {/* Header do Card */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <Badge variant="outline" className={`mb-2 ${
                             record.transaction_type === 'commission' 
                               ? 'bg-blue-100 text-blue-700' 
                               : 'bg-orange-100 text-orange-700'
-                          }>
+                          }`}>
                             {getTypeLabel(record.transaction_type)}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-xs text-sm">
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium">{record.description}</span>
-                            {record.metadata?.service_name && (
-                              <span className="text-xs text-muted-foreground">
-                                🔧 Serviço: {record.metadata.service_name}
-                              </span>
-                            )}
-                            {record.metadata?.commission_rate && (
-                              <span className="text-xs text-muted-foreground">
-                                💰 Taxa: {record.metadata.commission_rate}%
-                              </span>
-                            )}
-                            {record.metadata?.service_amount && (
-                              <span className="text-xs text-muted-foreground">
-                                💵 Valor base: R$ {Number(record.metadata.service_amount).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {getCategoryLabel(record.category)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="text-sm">
+                          <p className="font-medium text-sm text-gray-900 truncate">
+                            {record.description}
+                          </p>
+                          <p className="text-xs text-gray-600 font-mono mt-1">
+                            #{record.transaction_number}
+                          </p>
+                        </div>
+                        {getStatusBadge(record.status)}
+                      </div>
+
+                      {/* Metadados */}
+                      {(record.metadata?.service_name || record.metadata?.commission_rate || record.metadata?.service_amount) && (
+                        <div className="space-y-1.5">
+                          {record.metadata?.service_name && (
+                            <p className="text-xs text-gray-600">
+                              🔧 Serviço: {record.metadata.service_name}
+                            </p>
+                          )}
+                          {record.metadata?.commission_rate && (
+                            <p className="text-xs text-gray-600">
+                              💰 Taxa: {record.metadata.commission_rate}%
+                            </p>
+                          )}
+                          {record.metadata?.service_amount && (
+                            <p className="text-xs text-gray-600">
+                              💵 Valor base: R$ {Number(record.metadata.service_amount).toFixed(2)}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Informações */}
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-600">Categoria</p>
+                          <p className="text-sm font-medium text-gray-700 mt-0.5">
+                            {getCategoryLabel(record.category)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Valor</p>
+                          <p className="text-sm font-bold text-red-600 mt-0.5">
+                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Datas */}
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-600">Data Trans.</p>
+                          <p className="text-sm font-medium text-gray-700">
+                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600">Data Pag.</p>
                           {record.payment_date ? (
-                            <span className="text-green-700 font-medium">
-                              {format(new Date(record.payment_date), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                            </span>
+                            <p className="text-sm font-medium text-green-700">
+                              {format(new Date(record.payment_date), 'dd/MM/yy HH:mm', { locale: ptBR })}
+                            </p>
                           ) : (
                             <span className="text-gray-400 text-xs">Pendente</span>
                           )}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-red-600">
-                          R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {getStatusBadge(record.status)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {record.status === 'completed' ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Registrado
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-400 text-xs">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            {record.transaction_type === 'commission' && record.status === 'pending' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                                onClick={() => handleMarkAsPaid(record.id)}
-                                disabled={markAsPaidMutation.isPending}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Marcar como Pago
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(record)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(record.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                        </div>
+                      </div>
+
+                      {/* Status do Fluxo */}
+                      {record.status === 'completed' && (
+                        <div className="pt-2 border-t border-gray-200">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Fluxo Registrado
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Ações */}
+                      <div className="flex gap-2 pt-2 border-t border-gray-200">
+                        {record.transaction_type === 'commission' && record.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                            onClick={() => handleMarkAsPaid(record.id)}
+                            disabled={markAsPaidMutation.isPending}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Marcar Pago
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(record)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(record.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Layout em Tabela para Desktop */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <Table className="text-xs sm:text-sm">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Número</TableHead>
+                        <TableHead className="whitespace-nowrap">Tipo</TableHead>
+                        <TableHead className="whitespace-nowrap">Descrição</TableHead>
+                        <TableHead className="whitespace-nowrap">Categoria</TableHead>
+                        <TableHead className="whitespace-nowrap">Data Trans.</TableHead>
+                        <TableHead className="whitespace-nowrap">Data Pag.</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Valor</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">Status</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">Fluxo</TableHead>
+                        <TableHead className="text-center whitespace-nowrap">Ações</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={10} className="text-center text-gray-500 py-8">
-                        Nenhuma despesa ou comissão encontrada
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {payables.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell className="font-mono text-xs">
+                            {record.transaction_number}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <Badge variant="outline" className={
+                              record.transaction_type === 'commission' 
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-orange-100 text-orange-700'
+                            }>
+                              {getTypeLabel(record.transaction_type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-xs text-sm">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium">{record.description}</span>
+                              {record.metadata?.service_name && (
+                                <span className="text-xs text-muted-foreground">
+                                  🔧 Serviço: {record.metadata.service_name}
+                                </span>
+                              )}
+                              {record.metadata?.commission_rate && (
+                                <span className="text-xs text-muted-foreground">
+                                  💰 Taxa: {record.metadata.commission_rate}%
+                                </span>
+                              )}
+                              {record.metadata?.service_amount && (
+                                <span className="text-xs text-muted-foreground">
+                                  💵 Valor base: R$ {Number(record.metadata.service_amount).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {getCategoryLabel(record.category)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {record.payment_date ? (
+                              <span className="text-green-700 font-medium">
+                                {format(new Date(record.payment_date), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 text-xs">Pendente</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-red-600">
+                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {getStatusBadge(record.status)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {record.status === 'completed' ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Registrado
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex justify-center gap-2">
+                              {record.transaction_type === 'commission' && record.status === 'pending' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                                  onClick={() => handleMarkAsPaid(record.id)}
+                                  disabled={markAsPaidMutation.isPending}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Marcar como Pago
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(record)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(record.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                Nenhuma despesa ou comissão encontrada
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
