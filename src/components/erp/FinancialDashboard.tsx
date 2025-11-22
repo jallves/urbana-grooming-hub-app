@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,19 +12,27 @@ import {
   ArrowDownCircle,
   Filter
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { DashboardMetrics } from '@/types/erp';
 import { ContasAReceber } from './ContasAReceber';
 import { ContasAPagar } from './ContasAPagar';
 import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 const FinancialDashboard: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString());
   
   // Gerar lista de anos (2025 até 2035)
   const years = Array.from({ length: 11 }, (_, i) => (2025 + i).toString());
+  
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['financial-yearly-metrics'] });
+    queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+  }, [refreshFinancials, queryClient]);
   
   // Query para dados anuais dos cards superiores
   const { data: yearlyMetrics, isLoading } = useQuery({

@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DollarSign, TrendingUp, TrendingDown, Calculator } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -12,6 +12,7 @@ import TransacoesTab from './TransacoesTab';
 import ComissoesTab from './ComissoesTab';
 import RelatoriosTab from './RelatoriosTab';
 import FiltrosFinanceiros from './FiltrosFinanceiros';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 interface FinancialSummary {
   receitaTotal: number;
@@ -23,6 +24,8 @@ interface FinancialSummary {
 }
 
 const FinanceManagement: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
   const [activeTab, setActiveTab] = useState('caixa');
   const [filters, setFilters] = useState({
     mes: new Date().getMonth() + 1,
@@ -30,6 +33,10 @@ const FinanceManagement: React.FC = () => {
     tipo: 'todos',
     barbeiro: 'todos'
   });
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+  }, [refreshFinancials, queryClient]);
 
   const { data: summary, isLoading } = useQuery({
     queryKey: ['financial-summary', filters],

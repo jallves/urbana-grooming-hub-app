@@ -1,12 +1,20 @@
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 const CashFlowChart: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['cash-flow-chart'] });
+  }, [refreshFinancials, queryClient]);
+
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['cash-flow-chart'],
     queryFn: async () => {
@@ -50,8 +58,7 @@ const CashFlowChart: React.FC = () => {
       }
 
       return months;
-    },
-    refetchInterval: 10000, // Atualizar a cada 10 segundos
+    }
   });
 
   if (isLoading) {

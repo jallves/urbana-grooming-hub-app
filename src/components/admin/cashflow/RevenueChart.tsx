@@ -1,7 +1,8 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 const COLORS = {
   'Serviços': '#1e40af', // blue-800 - muito profissional
@@ -15,6 +16,13 @@ interface RevenueChartProps {
 }
 
 const RevenueChart: React.FC<RevenueChartProps> = ({ startDate, endDate }) => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['revenue-chart'] });
+  }, [refreshFinancials, queryClient]);
+
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['revenue-chart', startDate, endDate],
     queryFn: async () => {
@@ -50,8 +58,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ startDate, endDate }) => {
       }));
 
       return chartData.sort((a, b) => b.value - a.value);
-    },
-    refetchInterval: 10000,
+    }
   });
 
   if (isLoading) {

@@ -1,7 +1,8 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useRealtime } from '@/contexts/RealtimeContext';
 
 interface TopBarbersChartProps {
   startDate: string;
@@ -9,6 +10,13 @@ interface TopBarbersChartProps {
 }
 
 const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate }) => {
+  const queryClient = useQueryClient();
+  const { refreshFinancials } = useRealtime();
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['top-barbers-chart'] });
+  }, [refreshFinancials, queryClient]);
+
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['top-barbers-chart', startDate, endDate],
     queryFn: async () => {
@@ -66,8 +74,7 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
         }));
 
       return chartData;
-    },
-    refetchInterval: 10000,
+    }
   });
 
   if (isLoading) {
