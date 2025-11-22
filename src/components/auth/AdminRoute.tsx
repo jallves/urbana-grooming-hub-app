@@ -58,6 +58,15 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   }
 
   if (!hasAccess || (requiredModule && !hasModuleAccess)) {
+    console.error('[AdminRoute] 🚫 Acesso negado:', {
+      hasAccess,
+      hasModuleAccess,
+      requiredModule,
+      isAdmin,
+      isMaster,
+      userEmail: user?.email
+    });
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
         <div className="text-center space-y-4 max-w-md">
@@ -67,16 +76,26 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
               ? 'Você não tem permissão para acessar este módulo.'
               : 'Você não tem permissão para acessar esta área.'}
           </p>
-          <Button 
-            onClick={async () => {
-              await signOut();
-              window.location.href = '/auth';
-            }}
-            variant="outline"
-            className="mt-4"
-          >
-            Sair do Sistema
-          </Button>
+          <p className="text-sm text-muted-foreground mt-2">
+            Usuário: {user?.email}
+          </p>
+          <div className="flex gap-2 justify-center mt-4">
+            <Button 
+              onClick={() => window.location.href = '/admin'}
+              variant="outline"
+            >
+              Voltar ao Dashboard
+            </Button>
+            <Button 
+              onClick={async () => {
+                await signOut();
+                window.location.href = '/auth';
+              }}
+              variant="destructive"
+            >
+              Sair do Sistema
+            </Button>
+          </div>
         </div>
       </div>
     );
