@@ -45,6 +45,7 @@ import BarberCommissions from './pages/BarberCommissions';
 import BarberSchedule from './pages/BarberSchedule';
 import BarberProfile from './pages/BarberProfile';
 import BarberAdminDashboard from './pages/BarberAdminDashboard';
+import BarberScheduleManagement from './pages/BarberScheduleManagement';
 import TotemLogin from './pages/Totem/TotemLogin';
 import TotemWelcome from './pages/Totem/TotemWelcome';
 import TotemHome from './pages/Totem/TotemHome';
@@ -249,6 +250,13 @@ function App() {
                     <AdminRedirectGuard>
                       <BarberRoute allowBarber={true}>
                         <BarberCommissions />
+                      </BarberRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/barbeiro/horarios" element={
+                    <AdminRedirectGuard>
+                      <BarberRoute allowBarber={true}>
+                        <BarberScheduleManagement />
                       </BarberRoute>
                     </AdminRedirectGuard>
                   } />
