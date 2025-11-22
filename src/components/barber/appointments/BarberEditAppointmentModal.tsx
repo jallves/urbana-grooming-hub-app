@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,6 +47,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   const [services, setServices] = useState<PainelServico[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedService, setSelectedService] = useState<PainelServico | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
@@ -145,6 +156,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       });
       onSuccess();
       onClose();
+      setShowConfirmDialog(false);
     } catch (error: any) {
       console.error('Erro ao atualizar agendamento:', error);
       toast.error('Erro ao atualizar agendamento', {
@@ -153,6 +165,23 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveClick = () => {
+    if (!selectedDate || !selectedTime || !selectedService) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+
+    // Validar que a data/hora é futura
+    const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
+    if (isBefore(appointmentDateTime, new Date())) {
+      toast.error('Não é possível agendar para horário passado');
+      return;
+    }
+
+    // Abrir dialog de confirmação
+    setShowConfirmDialog(true);
   };
 
   const availableSlots = slots.filter(slot => slot.available);
@@ -268,23 +297,64 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 Cancelar
               </Button>
               <Button
-                onClick={handleSave}
+                onClick={handleSaveClick}
                 disabled={saving || !selectedDate || !selectedTime || !selectedService}
                 className="flex-1 bg-urbana-gold text-black hover:bg-urbana-gold/90"
               >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Salvando...
-                  </>
-                ) : (
-                  'Salvar Alterações'
-                )}
+                Salvar Alterações
               </Button>
             </div>
           </div>
         )}
       </DialogContent>
+
+      {/* Dialog de confirmação para salvar */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="bg-gray-800 border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Confirmar alterações?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Você está prestes a alterar este agendamento para:
+              <div className="mt-3 p-3 bg-gray-700/50 rounded-lg border border-gray-600">
+                <p className="text-white font-medium">
+                  📅 {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                </p>
+                <p className="text-white font-medium">
+                  🕐 {selectedTime}
+                </p>
+                <p className="text-white font-medium">
+                  ✂️ {selectedService?.nome}
+                </p>
+              </div>
+              <strong className="text-blue-400 block mt-3">
+                Tem certeza que deseja salvar estas alterações?
+              </strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="bg-gray-700 text-white hover:bg-gray-600"
+              disabled={saving}
+            >
+              Não, voltar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                'Sim, salvar'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
