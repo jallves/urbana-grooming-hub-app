@@ -1,8 +1,11 @@
 
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { LogOut } from 'lucide-react';
 
 interface BarberRouteProps {
   children: React.ReactNode;
@@ -17,6 +20,12 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
 }) => {
   const { user, loading, isAdmin, isBarber } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/barbeiro/login', { replace: true });
+  };
 
   // Show loading screen while checking authentication
   if (loading) {
@@ -35,11 +44,19 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
     console.log('BarberRoute - Access DENIED for:', user.email);
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-6 max-w-md">
           <h2 className="text-2xl font-bold text-foreground">Acesso Negado</h2>
           <p className="text-muted-foreground">
             Usuário não tem permissão para acessar o Painel do Barbeiro, entrar em contato com o administrador.
           </p>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="w-full sm:w-auto"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </Button>
         </div>
       </div>
     );
