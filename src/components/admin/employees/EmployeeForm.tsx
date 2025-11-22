@@ -76,16 +76,13 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       }
       
       toast({
-        title: 'Sucesso',
+        title: '✅ Sucesso!',
         description: `Funcionário ${isEditing ? 'atualizado' : 'criado'} com sucesso!`,
       });
       
       setTimeout(() => {
         onClose();
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-      }, 800);
+      }, 1500);
     } catch (error: any) {
       console.error('Error saving employee:', error);
       setSubmitted(false);
