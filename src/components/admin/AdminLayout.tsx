@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { LogOut, Bell, Settings, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,7 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Administrativo", description, icon }) => {
   const { user, signOut } = useAuth();
+  const { displayName } = useEmployeeProfile();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -33,9 +35,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
     navigate('/auth');
   };
 
-  const userInitials = user?.email?.charAt(0).toUpperCase() || 'A';
-  const fullName = user?.user_metadata?.full_name || user?.email || 'Usuário';
-  const firstName = fullName.split(' ')[0];
+  const userInitials = displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'A';
 
   return (
     <div className="flex w-screen h-screen overflow-hidden bg-gray-50">
@@ -87,7 +87,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
             <div className="flex items-center gap-1 sm:gap-3">
               {/* Saudação do usuário */}
               <span className="hidden sm:block text-sm font-medium text-gray-700">
-                Bem-vindo, {firstName}
+                Bem-vindo, {displayName}
               </span>
               
               {/* Notificações com touch otimizado */}
