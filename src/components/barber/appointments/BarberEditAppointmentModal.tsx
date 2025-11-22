@@ -85,9 +85,15 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
           painel_servicos(id, nome, preco, duracao)
         `)
         .eq('id', appointmentId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        toast.error('Agendamento não encontrado');
+        onClose();
+        return;
+      }
 
       setAppointment(data);
       setSelectedDate(parseISO(data.data));
