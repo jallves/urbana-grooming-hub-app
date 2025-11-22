@@ -133,9 +133,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 🔍 Buscando role para:', user.id, user.email);
       
-      // Timeout de 3 segundos (mais rápido que antes)
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout verificando roles')), 3000)
+      // Timeout aumentado para 15 segundos para evitar falsos negativos
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout verificando roles')), 15000)
       );
       
       const checkRolePromise = async () => {
@@ -179,8 +179,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] ✅ Verificação completa - Master:', role === 'master', 'Admin:', role === 'admin' || role === 'master', 'Manager:', role === 'manager', 'Barber:', role === 'barber');
     } catch (error) {
       console.error('[AuthContext] ❌ Error checking user roles:', error);
-      // Em caso de erro/timeout, não bloquear completamente - permitir algum acesso baseado em fallback
-      console.warn('[AuthContext] ⚠️ Usando fallback - permitindo acesso limitado');
+      
+      // CRÍTICO: Em caso de erro, fazer nova tentativa antes de negar acesso
+      console.warn('[AuthContext] ⚠️ Erro ao verificar role, tentando novamente...');
+      
+      try {
+        // Segunda tentativa sem timeout
+        const { data: roleData, error: roleError } = await supabase
+          .rpc('get_user_role', { p_user_id: user.id });
+
+        if (!roleError && roleData) {
+          console.log('[AuthContext] ✅ Role obtido na segunda tentativa:', roleData);
+          const role = roleData as 'master' | 'admin' | 'manager' | 'barber' | null;
+          
+          setUserRole(role);
+          setIsMaster(role === 'master');
+          setIsAdmin(role === 'admin' || role === 'master');
+          setIsManager(role === 'manager');
+          setIsBarber(role === 'barber');
+          setRequiresPasswordChange(false);
+          setRolesChecked(true);
+          return;
+        }
+      } catch (retryError) {
+        console.error('[AuthContext] ❌ Falha na segunda tentativa:', retryError);
+      }
+      
+      // Apenas em último caso, negar acesso
+      console.error('[AuthContext] 🚨 CRÍTICO: Não foi possível verificar permissões após 2 tentativas');
       setIsAdmin(false);
       setIsBarber(false);
       setIsMaster(false);
