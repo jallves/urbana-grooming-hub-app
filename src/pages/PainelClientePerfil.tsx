@@ -133,8 +133,8 @@ export default function PainelClientePerfil() {
               <p className="text-sm text-urbana-light/70">Dados pessoais e contato</p>
             </PainelClienteCardHeader>
 
-            <PainelClienteCardContent className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-8">
+                            <PainelClienteCardContent className="p-8 sm:p-10">
+                              <form onSubmit={handleSubmit} className="space-y-10">
                 {erro && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -145,27 +145,27 @@ export default function PainelClientePerfil() {
                   </motion.div>
                 )}
 
-                <div className="space-y-8">
+                <div className="space-y-10">
                   {/* Nome */}
                   <motion.div 
                     variants={itemVariants}
                     className="space-y-3"
                   >
-                    <Label htmlFor="nome" className="text-urbana-light text-base font-semibold flex items-center gap-3">
-                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
-                        <User className="h-4 w-4 text-urbana-gold" />
-                      </div>
-                      Nome Completo
-                    </Label>
-                    <Input
-                      id="nome"
-                      type="text"
-                      value={formData.nome}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
-                      placeholder="Seu nome completo"
-                      required
-                    />
+                                      <Label htmlFor="nome" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
+                                        <div className="p-3 bg-urbana-gold/20 rounded-xl">
+                                          <User className="h-5 w-5 text-urbana-gold" />
+                                        </div>
+                                        Nome Completo
+                                      </Label>
+                                      <Input
+                                        id="nome"
+                                        type="text"
+                                        value={formData.nome}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                                        className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                                        placeholder="Seu nome completo"
+                                        required
+                                      />
                   </motion.div>
 
                   {/* Email */}
@@ -173,9 +173,9 @@ export default function PainelClientePerfil() {
                     variants={itemVariants}
                     className="space-y-3"
                   >
-                    <Label htmlFor="email" className="text-urbana-light text-base font-semibold flex items-center gap-3">
-                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
-                        <Mail className="h-4 w-4 text-urbana-gold" />
+                    <Label htmlFor="email" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
+                      <div className="p-3 bg-urbana-gold/20 rounded-xl">
+                        <Mail className="h-5 w-5 text-urbana-gold" />
                       </div>
                       E-mail
                     </Label>
@@ -184,7 +184,7 @@ export default function PainelClientePerfil() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
                       placeholder="seu.email@exemplo.com"
                       required
                     />
@@ -195,9 +195,9 @@ export default function PainelClientePerfil() {
                     variants={itemVariants}
                     className="space-y-3"
                   >
-                    <Label htmlFor="whatsapp" className="text-urbana-light text-base font-semibold flex items-center gap-3">
-                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
-                        <Phone className="h-4 w-4 text-urbana-gold" />
+                    <Label htmlFor="whatsapp" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
+                      <div className="p-3 bg-urbana-gold/20 rounded-xl">
+                        <Phone className="h-5 w-5 text-urbana-gold" />
                       </div>
                       WhatsApp
                     </Label>
@@ -206,7 +206,7 @@ export default function PainelClientePerfil() {
                       type="tel"
                       value={formData.whatsapp}
                       onChange={handleWhatsAppChange}
-                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
                       placeholder="(11) 99999-9999"
                       maxLength={15}
                       required
@@ -218,9 +218,9 @@ export default function PainelClientePerfil() {
                     variants={itemVariants}
                     className="space-y-3"
                   >
-                    <Label htmlFor="data_nascimento" className="text-urbana-light text-base font-semibold flex items-center gap-3">
-                      <div className="p-2 bg-urbana-gold/20 rounded-xl">
-                        <Calendar className="h-4 w-4 text-urbana-gold" />
+                    <Label htmlFor="data_nascimento" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
+                      <div className="p-3 bg-urbana-gold/20 rounded-xl">
+                        <Calendar className="h-5 w-5 text-urbana-gold" />
                       </div>
                       Data de Nascimento
                     </Label>
@@ -229,7 +229,7 @@ export default function PainelClientePerfil() {
                       type="date"
                       value={formData.data_nascimento}
                       onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
-                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-14 text-base rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
+                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
                       required
                     />
                   </motion.div>

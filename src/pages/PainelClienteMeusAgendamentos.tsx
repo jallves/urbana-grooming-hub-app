@@ -298,42 +298,42 @@ export default function PainelClienteMeusAgendamentos() {
                       className="group"
                     >
                       <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl hover:border-slate-600/70 transition-all duration-300 shadow-xl hover:shadow-2xl">
-                        <CardHeader className="pb-4">
-                          <div className="flex justify-between items-start gap-3">
-                            <CardTitle className="text-white text-lg font-semibold group-hover:text-urbana-gold transition-colors truncate pr-2 flex-1">
+                        <CardHeader className="pb-6">
+                          <div className="flex justify-between items-start gap-4">
+                            <CardTitle className="text-white text-xl sm:text-2xl font-semibold group-hover:text-urbana-gold transition-colors truncate pr-2 flex-1">
                               {agendamento.painel_servicos.nome}
                             </CardTitle>
                             {getStatusBadge(agendamento.status)}
                           </div>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                          <div className="space-y-3">
+                        <CardContent className="space-y-5 p-6">
+                          <div className="space-y-4">
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
-                              <Calendar className="h-4 w-4 mr-3 text-urbana-gold flex-shrink-0" />
-                              <span className="text-sm font-medium">
+                              <Calendar className="h-5 w-5 mr-3 text-urbana-gold flex-shrink-0" />
+                              <span className="text-base font-medium">
                                 {format(parseISO(agendamento.data), 'EEEE, dd \'de\' MMMM', { locale: ptBR })}
                               </span>
                             </div>
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
-                              <Clock className="h-4 w-4 mr-3 text-urbana-gold flex-shrink-0" />
-                              <span className="text-sm font-medium">{agendamento.hora}</span>
+                              <Clock className="h-5 w-5 mr-3 text-urbana-gold flex-shrink-0" />
+                              <span className="text-base font-medium">{agendamento.hora}</span>
                             </div>
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
-                              <User className="h-4 w-4 mr-3 text-urbana-gold flex-shrink-0" />
-                              <span className="text-sm font-medium">{agendamento.painel_barbeiros.nome}</span>
+                              <User className="h-5 w-5 mr-3 text-urbana-gold flex-shrink-0" />
+                              <span className="text-base font-medium">{agendamento.painel_barbeiros.nome}</span>
                             </div>
                           </div>
                           
-                          <div className="pt-4 border-t border-slate-700/50">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-xs text-gray-400">Valor</span>
-                              <span className="text-urbana-gold font-bold text-lg">
+                          <div className="pt-5 border-t border-slate-700/50">
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="text-sm text-gray-400">Valor</span>
+                              <span className="text-urbana-gold font-bold text-2xl">
                                 R$ {agendamento.painel_servicos.preco.toFixed(2)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-400 text-sm">Duração:</span>
-                              <span className="text-gray-300 text-sm font-medium">
+                              <span className="text-gray-400 text-base">Duração:</span>
+                              <span className="text-gray-300 text-base font-medium">
                                 {agendamento.painel_servicos.duracao} min
                               </span>
                             </div>
