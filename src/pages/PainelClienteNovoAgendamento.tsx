@@ -432,8 +432,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <div className="px-0 py-4 sm:p-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="px-2 py-4 sm:p-6">
+          <div className="max-w-7xl mx-auto px-0 sm:px-6">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6"
@@ -477,8 +477,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 px-0 py-4 sm:p-6 pb-20">
-          <div className="max-w-7xl mx-auto px-2 sm:px-6">
+        <div className="flex-1 px-2 py-4 sm:p-6 pb-20">
+          <div className="max-w-7xl mx-auto px-0 sm:px-6">
             {/* Step 1: Service Selection */}
             {step === 'service' && (
               <TotemGrid columns={3} gap={4}>
