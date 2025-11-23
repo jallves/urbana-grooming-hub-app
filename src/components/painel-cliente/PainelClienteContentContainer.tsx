@@ -5,6 +5,7 @@ interface PainelClienteContentContainerProps {
   children: React.ReactNode;
   className?: string;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | '7xl';
+  noPadding?: boolean;
 }
 
 /**
@@ -25,6 +26,7 @@ export const PainelClienteContentContainer: React.FC<PainelClienteContentContain
   children,
   className,
   maxWidth = '7xl',
+  noPadding = false,
 }) => {
   const getMaxWidthClass = () => {
     switch (maxWidth) {
@@ -44,7 +46,8 @@ export const PainelClienteContentContainer: React.FC<PainelClienteContentContain
 
   return (
     <div className={cn(
-      'mx-auto w-full px-0 md:px-6 lg:px-8 py-4 sm:py-6',
+      'mx-auto w-full py-4 sm:py-6',
+      noPadding ? 'px-0' : 'px-0 md:px-6 lg:px-8',
       getMaxWidthClass(),
       className
     )}>
