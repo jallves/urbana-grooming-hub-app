@@ -80,7 +80,7 @@ const PainelClienteLayout: React.FC = () => {
       
       {/* Modern Header */}
       <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-2xl">
-        <div className="w-full px-2 md:px-6 lg:px-8 py-3 sm:py-4">
+        <div className="w-full px-2 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
           <div className="flex items-center justify-between">
             <motion.div 
               className="flex items-center gap-2 sm:gap-3 md:gap-4"
