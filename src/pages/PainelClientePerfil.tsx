@@ -97,7 +97,7 @@ export default function PainelClientePerfil() {
   };
 
   return (
-    <PainelClienteContentContainer maxWidth="2xl">
+    <PainelClienteContentContainer>
       <motion.div
         variants={containerVariants}
         initial="hidden"
