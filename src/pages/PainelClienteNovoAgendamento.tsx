@@ -432,8 +432,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <div className="px-2 md:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="max-w-7xl mx-auto">
+        <div className="px-0 md:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="max-w-7xl mx-auto px-2">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6"
@@ -477,17 +477,17 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 px-2 md:px-6 lg:px-8 py-4 pb-20">
-          <div className="max-w-7xl mx-auto">
+        <div className="flex-1 px-0 md:px-6 lg:px-8 py-4 pb-20">
+          <div className="max-w-7xl mx-auto px-0">
             {/* Step 1: Service Selection */}
             {step === 'service' && (
-              <TotemGrid columns={3} gap={4}>
+              <TotemGrid columns={3} gap={2}>
                 {loading ? (
-                  <div className="col-span-full text-center text-white py-12">
+                  <div className="col-span-full text-center text-white py-12 px-2">
                     Carregando serviços...
                   </div>
                 ) : services.length === 0 ? (
-                  <div className="col-span-full text-center text-white/60 py-12">
+                  <div className="col-span-full text-center text-white/60 py-12 px-2">
                     Nenhum serviço disponível
                   </div>
                 ) : (
@@ -514,13 +514,13 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
             {/* Step 2: Barber Selection */}
             {step === 'barber' && (
-              <TotemGrid columns={3} gap={4}>
+              <TotemGrid columns={3} gap={2}>
                 {loading ? (
-                  <div className="col-span-full text-center text-white py-12">
+                  <div className="col-span-full text-center text-white py-12 px-2">
                     Carregando profissionais...
                   </div>
                 ) : barbers.length === 0 ? (
-                  <div className="col-span-full text-center text-white/60 py-12">
+                  <div className="col-span-full text-center text-white/60 py-12 px-2">
                     Nenhum profissional disponível
                   </div>
                 ) : (

@@ -44,7 +44,7 @@ export const PainelClienteContentContainer: React.FC<PainelClienteContentContain
 
   return (
     <div className={cn(
-      'mx-auto w-full px-2 md:px-6 lg:px-8 py-4 sm:py-6',
+      'mx-auto w-full px-0 md:px-6 lg:px-8 py-4 sm:py-6',
       getMaxWidthClass(),
       className
     )}>
