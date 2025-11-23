@@ -11,6 +11,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
+import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
 
 interface Agendamento {
   id: string;
@@ -179,13 +180,12 @@ export default function PainelClienteMeusAgendamentos() {
   };
 
   return (
-    <div className="w-full h-full bg-transparent">
-      <div className="mx-auto w-full max-w-7xl px-2 md:px-6 lg:px-8 py-4 sm:py-6">
+    <PainelClienteContentContainer noPadding>
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="w-full space-y-4 sm:space-y-6"
+          className="w-full space-y-4 sm:space-y-6 px-2 md:px-6 lg:px-8"
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
@@ -369,7 +369,6 @@ export default function PainelClienteMeusAgendamentos() {
             )}
           </motion.div>
         </motion.div>
-      </div>
 
       {/* Edit Modal */}
       <EditAgendamentoModal
@@ -381,6 +380,6 @@ export default function PainelClienteMeusAgendamentos() {
         agendamento={selectedAgendamento}
         onUpdate={fetchAgendamentos}
       />
-    </div>
+    </PainelClienteContentContainer>
   );
 }
