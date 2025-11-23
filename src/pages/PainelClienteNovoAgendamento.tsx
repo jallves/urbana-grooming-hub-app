@@ -500,10 +500,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       animationDelay={`${index * 0.1}s`}
                     >
                       <TotemCardTitle>{service.nome}</TotemCardTitle>
-                      <p className="text-2xl sm:text-3xl font-bold text-urbana-gold mt-2">
+                      <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-gold mt-3">
                         R$ {service.preco.toFixed(2)}
                       </p>
-                      <p className="text-sm text-white/60 mt-1">
+                      <p className="text-base sm:text-lg text-white/60 mt-2">
                         {service.duracao} minutos
                       </p>
                     </TotemCard>
@@ -536,7 +536,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         <img
                           src={barber.image_url}
                           alt={barber.nome}
-                          className="w-20 h-20 rounded-full mx-auto mb-3 object-cover border-2 border-urbana-gold/50"
+                          className="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 object-cover border-2 border-urbana-gold/50"
                         />
                       )}
                       <TotemCardTitle className="text-center">{barber.nome}</TotemCardTitle>

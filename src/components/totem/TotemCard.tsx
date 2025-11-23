@@ -99,34 +99,34 @@ export const TotemCard: React.FC<TotemCardProps> = ({
       onClick={handleClick}
       className={cn(
         getVariantStyles(),
-        'p-4 sm:p-6 md:p-8 animate-scale-in',
+        'p-6 sm:p-8 md:p-10 min-h-[140px] sm:min-h-[160px] animate-scale-in',
         className
       )}
       style={{ animationDelay }}
     >
-      {/* Header com ícones (se fornecidos) */}
-      {(Icon || InfoIcon) && (
-        <div className="flex items-center justify-between mb-4">
-          {/* Ícone Principal */}
-          {Icon && (
-            <div className={cn(
-              'w-10 h-10 sm:w-12 sm:h-12 rounded-full backdrop-blur-sm border-2 flex items-center justify-center shadow-lg',
-              variant === 'success' 
-                ? 'bg-green-500/20 border-green-500/50 shadow-green-500/20'
-                : variant === 'error'
-                ? 'bg-red-500/20 border-red-500/50 shadow-red-500/20'
-                : 'bg-urbana-gold/20 border-urbana-gold/50 shadow-urbana-gold/20'
-            )}>
-              <Icon className={cn(
-                'w-5 h-5 sm:w-6 sm:h-6 drop-shadow-lg',
-                variant === 'success' 
-                  ? 'text-green-400'
-                  : variant === 'error'
-                  ? 'text-red-400'
-                  : 'text-urbana-gold'
-              )} />
-            </div>
-          )}
+          {/* Header com ícones (se fornecidos) */}
+          {(Icon || InfoIcon) && (
+            <div className="flex items-center justify-between mb-6">
+              {/* Ícone Principal */}
+              {Icon && (
+                <div className={cn(
+                  'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full backdrop-blur-sm border-2 flex items-center justify-center shadow-lg',
+                  variant === 'success' 
+                    ? 'bg-green-500/20 border-green-500/50 shadow-green-500/20'
+                    : variant === 'error'
+                    ? 'bg-red-500/20 border-red-500/50 shadow-red-500/20'
+                    : 'bg-urbana-gold/20 border-urbana-gold/50 shadow-urbana-gold/20'
+                )}>
+                  <Icon className={cn(
+                    'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 drop-shadow-lg',
+                    variant === 'success' 
+                      ? 'text-green-400'
+                      : variant === 'error'
+                      ? 'text-red-400'
+                      : 'text-urbana-gold'
+                  )} />
+                </div>
+              )}
 
           {/* Ícone de Informação */}
           {InfoIcon && (
@@ -154,7 +154,7 @@ export const TotemCardTitle: React.FC<{
   className?: string;
 }> = ({ children, className }) => (
   <h3 className={cn(
-    'text-lg sm:text-xl font-bold text-white drop-shadow-lg',
+    'text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg',
     className
   )}>
     {children}
@@ -169,7 +169,7 @@ export const TotemCardPrice: React.FC<{
   className?: string;
 }> = ({ value, className }) => (
   <p className={cn(
-    'text-2xl sm:text-3xl font-bold text-urbana-gold drop-shadow-lg',
+    'text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-gold drop-shadow-lg mt-3',
     className
   )}>
     R$ {value.toFixed(2)}
