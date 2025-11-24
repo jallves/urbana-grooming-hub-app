@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -6,7 +6,9 @@ import {
   LogOut,
   Home,
   Clock,
-  Bell
+  Bell,
+  Menu,
+  X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -17,6 +19,7 @@ const BarberLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigationItems = [
     { 
@@ -83,7 +86,7 @@ const BarberLayout: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2 sm:gap-3">
-              <div>
+              <div className="hidden md:block">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -101,7 +104,7 @@ const BarberLayout: React.FC = () => {
                 </span>
               </div>
               
-              <div>
+              <div className="hidden md:block">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -111,68 +114,108 @@ const BarberLayout: React.FC = () => {
                   <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
+
+              {/* Mobile Menu Button */}
+              <div className="md:hidden">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
+                >
+                  <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Enhanced Mobile Navigation - FIXO */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
-        <div className="w-full px-1 md:px-4">
-          {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
-            {navigationItems.map((item, index) => {
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-[60] bg-black/80 md:hidden backdrop-blur-sm" 
+          onClick={() => setIsMobileMenuOpen(false)} 
+        />
+      )}
+
+      {/* Mobile Sidebar */}
+      <div className={`fixed inset-y-0 right-0 z-[70] w-[280px] bg-urbana-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 shadow-2xl ${
+        isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex items-center justify-between p-4 border-b border-urbana-gold/30">
+          <h2 className="text-lg font-semibold text-urbana-gold">Menu</h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="text-urbana-gold hover:bg-urbana-gold/20 hover:text-urbana-gold"
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
+
+        <div className="flex flex-col p-4 h-full overflow-y-auto">
+          <div className="flex flex-col space-y-2 flex-1">
+            {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               
               return (
-                <div
+                <button
                   key={item.path}
-                  className="relative"
+                  onClick={() => {
+                    navigate(item.path);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`
+                    flex items-center space-x-3 py-3 px-4 rounded-xl transition-all duration-300
+                    ${isActive 
+                      ? 'bg-urbana-gold/20 text-urbana-gold border border-urbana-gold/30' 
+                      : 'text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10'
+                    }
+                  `}
                 >
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate(item.path)}
-                    className={`
-                      w-full h-auto flex flex-col items-center justify-center 
-                      p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
-                      relative overflow-hidden min-h-[60px] sm:min-h-[70px]
-                      ${isActive 
-                        ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
-                        : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
-                      }
-                    `}
-                  >
-                    {/* Active background glow */}
-                    {isActive && (
-                      <div
-                        className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl"
-                      />
-                    )}
-                    
-                    <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
-                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                      <span className="text-xs sm:text-sm font-medium leading-tight text-center">
-                        {item.name}
-                      </span>
-                    </div>
-                    
-                    {/* Active indicator dot */}
-                    {isActive && (
-                      <div
-                        className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
-                      />
-                    )}
-                  </Button>
-                </div>
+                  <Icon className="h-5 w-5" />
+                  <span className="text-base font-medium">{item.name}</span>
+                </button>
               );
             })}
           </div>
-        </div>
-      </nav>
 
-      {/* Main Content - Com espaçamento para header e footer fixos */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[100px] lg:pb-8">
+          <div className="border-t border-urbana-gold/30 pt-4 mt-4 space-y-3">
+            <div className="flex items-center gap-3 px-4 py-2 bg-urbana-black/50 rounded-xl border border-urbana-gold/20">
+              <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
+              <span className="text-sm text-urbana-light font-medium">
+                {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
+              </span>
+            </div>
+
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 py-3 h-auto"
+            >
+              <Bell className="h-5 w-5 mr-3" />
+              <span className="text-base font-medium">Notificações</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => {
+                signOut();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500 transition-all py-3 h-auto"
+            >
+              <LogOut className="h-5 w-5 mr-3" />
+              <span className="text-base font-medium">Sair</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Com espaçamento apenas para header fixo */}
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-8">
         <Outlet />
       </main>
     </div>
