@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import DashboardContainer from '@/components/ui/containers/DashboardContainer';
+import { ClientPageContainer } from '@/components/painel-cliente/ClientPageContainer';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
 import { supabase } from '@/integrations/supabase/client';
@@ -114,21 +114,20 @@ export default function PainelClienteAgendamentos() {
 
   if (loading) {
     return (
-      <DashboardContainer>
+      <ClientPageContainer>
         <div className="flex justify-center items-center h-64">
           <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
         </div>
-      </DashboardContainer>
+      </ClientPageContainer>
     );
   }
 
   return (
-    <DashboardContainer>
+    <ClientPageContainer>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
@@ -246,6 +245,6 @@ export default function PainelClienteAgendamentos() {
           </div>
         )}
       </motion.div>
-    </DashboardContainer>
+    </ClientPageContainer>
   );
 }

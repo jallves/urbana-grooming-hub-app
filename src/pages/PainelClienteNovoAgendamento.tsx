@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SuccessConfirmationDialog from '@/components/client/appointment/SuccessConfirmationDialog';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
+import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 import { ClientGreetingHeader } from "@/components/painel-cliente/ClientGreetingHeader";
 
 interface Service {
@@ -410,7 +410,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   };
 
   return (
-    <PainelClienteContentContainer>
+    <ClientPageContainer>
       {/* Botão Voltar */}
       <div className="mb-4">
         <Button
@@ -707,7 +707,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           }}
         />
       )}
-    </PainelClienteContentContainer>
+    </ClientPageContainer>
   );
 };
 
