@@ -56,7 +56,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
       {/* Conteúdo principal com transição */}
       <main className="flex-1 h-full overflow-y-auto bg-gray-50 lg:ml-64 transition-all duration-300">
         {/* Header fixo com blur backdrop */}
-        <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+        <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center">
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Botão menu mobile com toque otimizado */}
