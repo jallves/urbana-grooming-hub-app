@@ -147,7 +147,7 @@ const BarberLayout: React.FC = () => {
 
       {/* Mobile Sidebar - Lado Esquerdo - ALTURA FIXA */}
       <div className={`
-        fixed top-0 left-0 h-screen w-[75vw] max-w-[300px] 
+        fixed top-0 left-0 z-[70] h-screen w-[75vw] max-w-[300px] 
         bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-black/95
         transform transition-all duration-300 ease-out md:hidden 
         border-r border-urbana-gold/30 shadow-2xl flex flex-col
