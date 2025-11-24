@@ -75,7 +75,7 @@ export const useClientAppointmentSubmit = ({
         servico_id: data.service_id,
         data: dataLocal,
         hora: format(startDate, 'HH:mm'),
-        status: appointmentId ? 'confirmado' : 'confirmado'
+        status: 'agendado'
       };
       
       console.log('Saving client appointment to painel_agendamentos:', painelData);
