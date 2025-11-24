@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AppointmentWithDetails {
   id: string;
@@ -18,6 +19,8 @@ interface UseBarberAppointmentActionsProps {
 }
 
 export const useBarberAppointmentActions = ({ barberId, onUpdate }: UseBarberAppointmentActionsProps) => {
+  const queryClient = useQueryClient();
+
   const handleCompleteAppointment = useCallback(async (appointmentId: string, appointment: AppointmentWithDetails) => {
     if (!barberId) {
       toast.error('Dados do barbeiro não encontrados');
@@ -40,6 +43,8 @@ export const useBarberAppointmentActions = ({ barberId, onUpdate }: UseBarberApp
         duration: 4000,
       });
 
+      // Invalidar cache para atualizar lista
+      queryClient.invalidateQueries({ queryKey: ['barber-appointments', barberId] });
       onUpdate();
       return true;
     } catch (error) {
@@ -47,7 +52,7 @@ export const useBarberAppointmentActions = ({ barberId, onUpdate }: UseBarberApp
       toast.error('Erro ao concluir agendamento');
       return false;
     }
-  }, [barberId, onUpdate]);
+  }, [barberId, onUpdate, queryClient]);
 
   const handleCancelAppointment = useCallback(async (appointmentId: string, appointment: AppointmentWithDetails) => {
     try {
@@ -64,6 +69,8 @@ export const useBarberAppointmentActions = ({ barberId, onUpdate }: UseBarberApp
         duration: 4000,
       });
 
+      // Invalidar cache para atualizar lista
+      queryClient.invalidateQueries({ queryKey: ['barber-appointments'] });
       onUpdate();
       return true;
     } catch (error) {
@@ -71,7 +78,7 @@ export const useBarberAppointmentActions = ({ barberId, onUpdate }: UseBarberApp
       toast.error('Erro ao cancelar agendamento');
       return false;
     }
-  }, [onUpdate]);
+  }, [onUpdate, queryClient]);
 
   return {
     handleCompleteAppointment,

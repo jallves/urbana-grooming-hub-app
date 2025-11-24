@@ -4,7 +4,8 @@ import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X, Edit, UserX } from 'lucide-react';
-import { useBarberAppointmentsOptimized } from '@/hooks/barber/useBarberAppointmentsOptimized';
+import { useBarberAppointmentActionsOptimized } from '@/hooks/barber/useBarberAppointmentActionsOptimized';
+import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +25,12 @@ interface AppointmentCardProps {
 const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment, onEdit }) => {
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const {
-    handleCancelAppointment,
-    handleMarkAsAbsent,
-    updatingId
-  } = useBarberAppointmentsOptimized();
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  const { data: barberData } = useBarberDataQuery();
+  const { handleCancelAppointment, handleMarkAsAbsent } = useBarberAppointmentActionsOptimized({ 
+    barberId: barberData?.id || null 
+  });
 
   const appointmentDateTime = parseISO(appointment.start_time);
   const now = new Date();
@@ -63,8 +65,6 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
       </span>
     );
   };
-
-  const isUpdating = updatingId === appointment.id;
 
   return (
     <>
@@ -158,8 +158,10 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
               Não, voltar
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                handleCancelAppointment(appointment.id);
+              onClick={async () => {
+                setIsUpdating(true);
+                await handleCancelAppointment(appointment.id);
+                setIsUpdating(false);
                 setShowCancelDialog(false);
               }}
               className="bg-red-600 text-white hover:bg-red-700"
@@ -187,8 +189,10 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
               Não, voltar
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                handleMarkAsAbsent(appointment.id);
+              onClick={async () => {
+                setIsUpdating(true);
+                await handleMarkAsAbsent(appointment.id);
+                setIsUpdating(false);
                 setShowAbsentDialog(false);
               }}
               className="bg-orange-600 text-white hover:bg-orange-700"
