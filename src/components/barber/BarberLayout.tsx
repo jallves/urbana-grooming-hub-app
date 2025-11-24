@@ -29,42 +29,6 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   // Carregar dados do barbeiro logo no layout
   const { data: barberData } = useBarberDataQuery();
 
-  // Prefetch estratégico baseado na rota atual
-  useEffect(() => {
-    if (!barberData?.id) return;
-
-    const currentPath = location.pathname;
-
-    // Prefetch de dados com base na navegação provável
-    if (currentPath.includes('dashboard')) {
-      // No dashboard, prefetch agendamentos e comissões
-      queryClient.prefetchQuery({
-        queryKey: ['barber-appointments', barberData.id],
-      });
-      queryClient.prefetchQuery({
-        queryKey: ['barber-commissions', user?.id],
-      });
-    } else if (currentPath.includes('agendamentos')) {
-      // Nos agendamentos, prefetch comissões
-      queryClient.prefetchQuery({
-        queryKey: ['barber-commissions', user?.id],
-      });
-    } else if (currentPath.includes('comissoes')) {
-      // Nas comissões, prefetch agendamentos
-      queryClient.prefetchQuery({
-        queryKey: ['barber-appointments', barberData.id],
-      });
-    } else if (currentPath.includes('horarios')) {
-      // Nos horários, prefetch working hours e time off
-      queryClient.prefetchQuery({
-        queryKey: ['working-hours', barberData.staff_id],
-      });
-      queryClient.prefetchQuery({
-        queryKey: ['time-off', barberData.staff_id],
-      });
-    }
-  }, [location.pathname, barberData?.id, barberData?.staff_id, user?.id, queryClient]);
-
   const navigationItems = [
     { 
       name: 'Início', 
