@@ -4,10 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, User, Save, Mail, Phone, Edit3, Shield, Calendar } from 'lucide-react';
+import { User, Save, Mail, Phone, Edit3, Shield, Calendar } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
 import { 
   PainelClienteCard, 
   PainelClienteCardTitle, 
@@ -74,52 +73,10 @@ export default function PainelClientePerfil() {
     return null;
   }
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100
-      }
-    }
-  };
-
   return (
-    <>
-      {/* Content - Com Container Limitado */}
-      <ClientPageContainer>
-        {/* Botão Voltar */}
-        <div className="mb-4">
-          <Button
-            onClick={() => navigate('/painel-cliente/dashboard')}
-            variant="ghost"
-            size="sm"
-            className="text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-gold rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-            Voltar
-          </Button>
-        </div>
-
-        {/* Subtítulo */}
-        <p className="text-urbana-light/70 text-sm sm:text-base mb-4 sm:mb-6 drop-shadow-md">
-          Mantenha suas informações sempre atualizadas
-        </p>
-
+    <ClientPageContainer>
       {/* Profile Card */}
-      <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto">
           <PainelClienteCard variant="highlight" icon={Edit3}>
             <PainelClienteCardHeader className="pb-6">
               <PainelClienteCardTitle>
@@ -128,24 +85,17 @@ export default function PainelClientePerfil() {
               <p className="text-sm text-urbana-light/70">Dados pessoais e contato</p>
             </PainelClienteCardHeader>
 
-                            <PainelClienteCardContent className="p-8 sm:p-10">
-                              <form onSubmit={handleSubmit} className="space-y-10">
+            <PainelClienteCardContent className="p-8 sm:p-10">
+              <form onSubmit={handleSubmit} className="space-y-10">
                 {erro && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-sm"
-                  >
+                  <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-sm">
                     <p className="text-red-400 text-sm font-medium">{erro}</p>
-                  </motion.div>
+                  </div>
                 )}
 
                 <div className="space-y-10">
                   {/* Nome */}
-                  <motion.div 
-                    variants={itemVariants}
-                    className="space-y-3"
-                  >
+                  <div className="space-y-3">
                                       <Label htmlFor="nome" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
                                         <div className="p-3 bg-urbana-gold/20 rounded-xl">
                                           <User className="h-5 w-5 text-urbana-gold" />
@@ -160,14 +110,11 @@ export default function PainelClientePerfil() {
                                         className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
                                         placeholder="Seu nome completo"
                                         required
-                                      />
-                  </motion.div>
+                    />
+                  </div>
 
                   {/* Email */}
-                  <motion.div 
-                    variants={itemVariants}
-                    className="space-y-3"
-                  >
+                  <div className="space-y-3">
                     <Label htmlFor="email" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
                       <div className="p-3 bg-urbana-gold/20 rounded-xl">
                         <Mail className="h-5 w-5 text-urbana-gold" />
@@ -183,13 +130,10 @@ export default function PainelClientePerfil() {
                       placeholder="seu.email@exemplo.com"
                       required
                     />
-                  </motion.div>
+                  </div>
 
                   {/* WhatsApp */}
-                  <motion.div 
-                    variants={itemVariants}
-                    className="space-y-3"
-                  >
+                  <div className="space-y-3">
                     <Label htmlFor="whatsapp" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
                       <div className="p-3 bg-urbana-gold/20 rounded-xl">
                         <Phone className="h-5 w-5 text-urbana-gold" />
@@ -206,13 +150,10 @@ export default function PainelClientePerfil() {
                       maxLength={15}
                       required
                     />
-                  </motion.div>
+                  </div>
 
                   {/* Data de Nascimento */}
-                  <motion.div 
-                    variants={itemVariants}
-                    className="space-y-3"
-                  >
+                  <div className="space-y-3">
                     <Label htmlFor="data_nascimento" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
                       <div className="p-3 bg-urbana-gold/20 rounded-xl">
                         <Calendar className="h-5 w-5 text-urbana-gold" />
@@ -227,38 +168,31 @@ export default function PainelClientePerfil() {
                       className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
                       required
                     />
-                  </motion.div>
+                  </div>
                 </div>
 
                 {/* Submit Button */}
-                <motion.div 
-                  variants={itemVariants}
-                  className="pt-6"
-                >
+                <div className="pt-6">
                   <Button
                     type="submit"
                     className="w-full bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold h-16 text-lg rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
                     disabled={loading}
                   >
                     {loading ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-6 h-6 border-2 border-urbana-black border-t-transparent rounded-full mr-3"
-                      />
+                      <div className="w-6 h-6 border-2 border-urbana-black border-t-transparent rounded-full mr-3 animate-spin" />
                     ) : (
                       <Save className="h-5 w-5 mr-3" />
                     )}
                     {loading ? 'Salvando...' : 'Salvar Alterações'}
                   </Button>
-                </motion.div>
+                </div>
               </form>
             </PainelClienteCardContent>
           </PainelClienteCard>
-        </div>
+      </div>
 
-        {/* Security Notice */}
-        <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">
+      {/* Security Notice */}
+      <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">
           <PainelClienteCard variant="info" icon={Shield}>
             <PainelClienteCardContent className="p-6">
               <div className="flex items-center gap-3">
@@ -268,9 +202,8 @@ export default function PainelClientePerfil() {
                 </div>
               </div>
             </PainelClienteCardContent>
-          </PainelClienteCard>
-        </div>
-      </ClientPageContainer>
-    </>
+        </PainelClienteCard>
+      </div>
+    </ClientPageContainer>
   );
 }
