@@ -112,7 +112,21 @@ export const useClientAppointments = () => {
           table: 'painel_agendamentos'
         },
         (payload) => {
-          console.log('🔔 [Admin Realtime] Agendamento atualizado:', payload);
+          console.log('🔔 [ADMIN REALTIME] Agendamento atualizado:', payload);
+          console.log('📝 [ADMIN REALTIME] Novo status:', payload.new);
+          console.log('📝 [ADMIN REALTIME] Status anterior:', payload.old);
+          
+          // Mostrar notificação apenas para mudanças de status importantes
+          const oldStatus = (payload.old as any)?.status;
+          const newStatus = (payload.new as any)?.status;
+          
+          if (oldStatus !== newStatus) {
+            console.log(`🔄 [ADMIN REALTIME] Status mudou de "${oldStatus}" para "${newStatus}"`);
+            toast.info('Agendamento atualizado!', {
+              description: `Status alterado para: ${newStatus}`
+            });
+          }
+          
           fetchAppointments();
         }
       )
