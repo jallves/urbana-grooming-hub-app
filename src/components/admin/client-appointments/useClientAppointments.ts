@@ -113,31 +113,39 @@ export const useClientAppointments = () => {
         },
         (payload) => {
           console.log('🔔 [ADMIN REALTIME] Agendamento atualizado:', payload);
-          console.log('📝 [ADMIN REALTIME] Novo status:', payload.new);
-          console.log('📝 [ADMIN REALTIME] Status anterior:', payload.old);
+          console.log('📝 [ADMIN REALTIME] ID:', (payload.new as any).id);
+          console.log('📝 [ADMIN REALTIME] Novo status:', (payload.new as any)?.status);
+          console.log('📝 [ADMIN REALTIME] Status anterior:', (payload.old as any)?.status);
           
-          // Mostrar notificação apenas para mudanças de status importantes
           const oldStatus = (payload.old as any)?.status;
           const newStatus = (payload.new as any)?.status;
+          const appointmentId = (payload.new as any)?.id;
           
           if (oldStatus !== newStatus) {
             console.log(`🔄 [ADMIN REALTIME] Status mudou de "${oldStatus}" para "${newStatus}"`);
             
-            // Atualizar imediatamente o estado local
-            setAppointments(prev => 
-              prev.map(a => 
-                a.id === (payload.new as any).id 
+            // Atualizar estado local imediatamente (se o appointment estiver na lista)
+            setAppointments(prev => {
+              const updated = prev.map(a => 
+                a.id === appointmentId 
                   ? { ...a, status: newStatus, updated_at: (payload.new as any).updated_at }
                   : a
-              )
-            );
+              );
+              
+              // Log se encontrou ou não o appointment
+              const found = prev.some(a => a.id === appointmentId);
+              console.log(`📋 [ADMIN REALTIME] Appointment ${found ? 'ENCONTRADO' : 'NÃO ENCONTRADO'} na lista atual`);
+              
+              return updated;
+            });
             
             toast.info('Agendamento atualizado!', {
               description: `Status alterado para: ${newStatus}`
             });
           }
           
-          // Fazer refetch completo para garantir sincronização
+          // Fazer refetch completo para garantir sincronização total
+          console.log('🔄 [ADMIN REALTIME] Fazendo refetch completo...');
           fetchAppointments();
         }
       )
