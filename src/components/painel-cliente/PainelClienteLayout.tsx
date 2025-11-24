@@ -82,11 +82,8 @@ const PainelClienteLayout: React.FC = () => {
       <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-2 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
           <div className="flex items-center justify-between">
-            <motion.div 
+            <div 
               className="flex items-center gap-2 sm:gap-3 md:gap-4"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
             >
               <div className="relative">
                 <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
@@ -103,10 +100,10 @@ const PainelClienteLayout: React.FC = () => {
                 </h1>
                 <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Cliente</p>
               </div>
-            </motion.div>
+            </div>
             
             <div className="flex items-center gap-2 sm:gap-3">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -115,7 +112,7 @@ const PainelClienteLayout: React.FC = () => {
                   <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-urbana-gold rounded-full animate-pulse" />
                 </Button>
-              </motion.div>
+              </div>
               
               <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
                 <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
@@ -124,7 +121,7 @@ const PainelClienteLayout: React.FC = () => {
                 </span>
               </div>
               
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <div>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -133,7 +130,7 @@ const PainelClienteLayout: React.FC = () => {
                 >
                   <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
-              </motion.div>
+              </div>
             </div>
           </div>
         </div>
@@ -149,11 +146,8 @@ const PainelClienteLayout: React.FC = () => {
               const isActive = location.pathname === item.path;
               
               return (
-                <motion.div
+                <div
                   key={item.path}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
                   className="relative"
                 >
                   <Button
@@ -196,7 +190,7 @@ const PainelClienteLayout: React.FC = () => {
                       />
                     )}
                   </Button>
-                </motion.div>
+                </div>
               );
             })}
           </div>
