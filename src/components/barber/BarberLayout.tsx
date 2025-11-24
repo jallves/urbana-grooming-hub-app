@@ -8,10 +8,10 @@ import {
   Settings,
   LogOut,
   Home,
-  Clock
+  Clock,
+  Bell
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import RealtimeNotifications from '@/components/ui/notifications/RealtimeNotifications';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import { motion } from 'framer-motion';
@@ -25,7 +25,7 @@ interface BarberLayoutProps {
 const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
 
   const navigationItems = [
     { 
@@ -73,70 +73,65 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-2xl">
+      {/* Modern Header - FIXO */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-2 md:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl blur-sm opacity-75" />
-                <div className="relative p-2 sm:p-2.5 bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant rounded-xl sm:rounded-2xl shadow-lg">
+                <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana Logo" 
-                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 object-contain drop-shadow-lg"
+                    className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
               <div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
-                  {title || 'Painel do Barbeiro'}
+                  Barbearia Costa Urbana
                 </h1>
-                <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Área do Profissional</p>
+                <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Barbeiro</p>
               </div>
             </div>
             
             <div className="flex items-center gap-2 sm:gap-3">
-              <RealtimeNotifications />
+              <div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
+                >
+                  <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-urbana-gold rounded-full animate-pulse" />
+                </Button>
+              </div>
+
+              <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
+                <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
+                <span className="text-xs sm:text-sm text-urbana-light font-medium">
+                  {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
+                </span>
+              </div>
               
-              <button
-                onClick={signOut}
-                className="flex items-center space-x-2 px-3 py-2 rounded-xl sm:rounded-2xl text-urbana-light/70 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 border border-transparent hover:border-red-500/20"
-              >
-                <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-xs sm:text-sm hidden sm:inline">Sair</span>
-              </button>
+              <div>
+                <button
+                  onClick={signOut}
+                  className="flex items-center text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
+                >
+                  <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Desktop Navigation */}
-      <nav className="hidden lg:block sticky top-[68px] z-40 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
-        <div className="w-full md:px-6 lg:px-8">
-          <div className="flex space-x-4 sm:space-x-8 overflow-x-auto scrollbar-hide py-2">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center space-x-2 px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-all duration-300 whitespace-nowrap rounded-t-lg ${
-                  isActiveRoute(item.path)
-                    ? 'text-urbana-gold border-urbana-gold bg-urbana-gold/10'
-                    : 'text-urbana-light/70 border-transparent hover:text-urbana-light hover:bg-urbana-gold/5'
-                }`}
-              >
-                <item.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span>{item.name}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile/Tablet Navigation */}
-      <nav className="lg:hidden sticky top-[68px] z-40 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
-        <div className="w-full px-2 md:px-4">
-          <div className="grid grid-cols-3 gap-1 py-2 sm:py-3">
+      {/* Enhanced Mobile/Tablet Navigation - FIXO NA PARTE INFERIOR */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
+        <div className="w-full px-1 md:px-4">
+          {/* Mobile Tab Navigation */}
+          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = isActiveRoute(item.path);
@@ -162,6 +157,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                       }
                     `}
                   >
+                    {/* Active background glow */}
                     {isActive && (
                       <motion.div
                         layoutId="mobileActiveTabBarber"
@@ -178,6 +174,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                       </span>
                     </div>
                     
+                    {/* Active indicator dot */}
                     {isActive && (
                       <motion.div
                         className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
@@ -194,8 +191,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="relative z-10 w-full pb-20 sm:pb-24 md:pb-8">
+      {/* Main Content - Com espaçamento para header fixo no topo e navegação fixa no rodapé */}
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[100px] lg:pb-8">
         {children}
       </main>
     </div>
