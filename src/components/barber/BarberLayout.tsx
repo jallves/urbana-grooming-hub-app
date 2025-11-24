@@ -2,10 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
-  DollarSign, 
-  Users, 
-  BarChart3, 
-  Settings,
+  DollarSign,
   LogOut,
   Home,
   Clock,
@@ -16,7 +13,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 interface BarberLayoutProps {
@@ -169,21 +165,18 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         </div>
       </header>
 
-      {/* Enhanced Mobile/Tablet Navigation - FIXO NA PARTE INFERIOR */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-[60] w-full backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl pb-safe">
-        <div className="w-full px-2 sm:px-3">
+      {/* Enhanced Mobile Navigation - FIXO */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
+        <div className="w-full px-1 md:px-4">
           {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
+          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = isActiveRoute(item.path);
               
               return (
-                <motion.div
+                <div
                   key={item.path}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
                   className="relative"
                 >
                   <Button
@@ -191,8 +184,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                     onClick={() => navigate(item.path)}
                     className={`
                       w-full h-auto flex flex-col items-center justify-center 
-                      px-1 py-2 sm:px-2 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 
-                      relative overflow-hidden
+                      p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
+                      relative overflow-hidden min-h-[60px] sm:min-h-[70px]
                       ${isActive 
                         ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
                         : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
@@ -201,40 +194,34 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                   >
                     {/* Active background glow */}
                     {isActive && (
-                      <motion.div
-                        layoutId="mobileActiveTabBarber"
-                        className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-lg sm:rounded-xl"
-                        initial={false}
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      <div
+                        className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl"
                       />
                     )}
                     
-                    <div className="relative z-10 flex flex-col items-center gap-0.5 sm:gap-1">
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                      <span className="text-[10px] sm:text-xs font-medium leading-tight text-center whitespace-nowrap px-1">
+                    <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-xs sm:text-sm font-medium leading-tight text-center">
                         {item.name}
                       </span>
                     </div>
                     
                     {/* Active indicator dot */}
                     {isActive && (
-                      <motion.div
-                        className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.2 }}
+                      <div
+                        className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
                       />
                     )}
                   </Button>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         </div>
       </nav>
 
-      {/* Main Content - Com espaçamento para header fixo no topo e navegação fixa no rodapé */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[80px] sm:pb-[90px] lg:pb-8">
+      {/* Main Content - Com espaçamento para header e footer fixos */}
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[100px] lg:pb-8">
         <Outlet />
       </main>
     </div>
