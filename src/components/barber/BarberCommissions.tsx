@@ -1,134 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, TrendingUp, Clock, Package, Scissors } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-interface Commission {
-  id: string;
-  amount: number;
-  status: string;
-  created_at: string;
-  commission_type: string;
-  item_name: string | null;
-  appointment_id: string | null;
-  product_sale_id: string | null;
-}
-
-interface CommissionStats {
-  total: number;
-  pending: number;
-  paid: number;
-  serviceCommissions: number;
-  productCommissions: number;
-}
+import { useBarberCommissionsQuery } from '@/hooks/barber/queries/useBarberCommissionsQuery';
+import BarberCommissionsSkeleton from '@/components/ui/loading/BarberCommissionsSkeleton';
 
 const BarberCommissionsComponent: React.FC = () => {
-  const { user } = useAuth();
-  const [commissions, setCommissions] = useState<Commission[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<CommissionStats>({
+  const { data, isLoading } = useBarberCommissionsQuery();
+  
+  const commissions = data?.commissions || [];
+  const stats = data?.stats || {
     total: 0,
     pending: 0,
     paid: 0,
     serviceCommissions: 0,
     productCommissions: 0
-  });
-
-  useEffect(() => {
-    const fetchCommissions = async () => {
-      if (!user?.email) return;
-
-      try {
-        setLoading(true);
-
-        // Buscar staff ID do barbeiro - tenta por user_id, depois por email
-        let staffData = await supabase
-          .from('staff')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('role', 'barber')
-          .maybeSingle();
-
-        // Fallback: se não encontrar por user_id, busca por email
-        if (!staffData?.data && user.email) {
-          staffData = await supabase
-            .from('staff')
-            .select('id')
-            .eq('email', user.email)
-            .eq('role', 'barber')
-            .maybeSingle();
-        }
-
-        const staffId = staffData?.data?.id;
-
-        if (!staffId) {
-          console.error('Staff ID não encontrado para o usuário:', user.email);
-          setLoading(false);
-          return;
-        }
-
-        console.log('🔍 Buscando comissões do ERP Financeiro para staff:', staffId);
-
-        // ✅ BUSCAR DO ERP FINANCEIRO (financial_records com transaction_type = 'commission')
-        const { data: commissionsData, error } = await supabase
-          .from('financial_records')
-          .select('*')
-          .eq('transaction_type', 'commission')
-          .eq('barber_id', staffId)
-          .order('transaction_date', { ascending: false });
-
-        if (error) {
-          console.error('❌ Erro ao buscar comissões:', error);
-          throw error;
-        }
-
-        console.log('📊 Comissões encontradas:', commissionsData?.length || 0);
-
-        if (commissionsData) {
-          // Mapear financial_records para o formato esperado pelo componente
-          const mappedCommissions: Commission[] = commissionsData.map((record) => {
-            // Extrair informações do metadata
-            const metadata = record.metadata as any;
-            const commissionType = record.category === 'Comissões - Serviços' ? 'service' : 'product';
-            
-            return {
-              id: record.id,
-              amount: Number(record.net_amount),
-              status: record.status === 'completed' ? 'paid' : 'pending',
-              created_at: record.transaction_date,
-              commission_type: commissionType,
-              item_name: record.description,
-              appointment_id: record.appointment_id,
-              product_sale_id: metadata?.product_sale_id || null
-            };
-          });
-
-          setCommissions(mappedCommissions);
-
-          // Calcular estatísticas
-          const total = mappedCommissions.reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const pending = mappedCommissions.filter(c => c.status === 'pending').reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const paid = mappedCommissions.filter(c => c.status === 'paid').reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const serviceCommissions = mappedCommissions.filter(c => c.commission_type === 'service').reduce((acc, comm) => acc + Number(comm.amount), 0);
-          const productCommissions = mappedCommissions.filter(c => c.commission_type === 'product').reduce((acc, comm) => acc + Number(comm.amount), 0);
-
-          setStats({ total, pending, paid, serviceCommissions, productCommissions });
-
-          console.log('📈 Estatísticas calculadas:', { total, pending, paid, serviceCommissions, productCommissions });
-        }
-      } catch (error) {
-        console.error('❌ Erro ao buscar comissões:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCommissions();
-  }, [user?.email, user?.id]);
+  };
 
   const getStatusBadge = (status: string) => {
     if (status === 'paid') {
@@ -137,8 +26,8 @@ const BarberCommissionsComponent: React.FC = () => {
     return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pendente</Badge>;
   };
 
-  if (loading) {
-    return <div className="text-white text-center py-8">Carregando comissões...</div>;
+  if (isLoading) {
+    return <BarberCommissionsSkeleton />;
   }
 
   return (
