@@ -122,11 +122,22 @@ export const useClientAppointments = () => {
           
           if (oldStatus !== newStatus) {
             console.log(`🔄 [ADMIN REALTIME] Status mudou de "${oldStatus}" para "${newStatus}"`);
+            
+            // Atualizar imediatamente o estado local
+            setAppointments(prev => 
+              prev.map(a => 
+                a.id === (payload.new as any).id 
+                  ? { ...a, status: newStatus, updated_at: (payload.new as any).updated_at }
+                  : a
+              )
+            );
+            
             toast.info('Agendamento atualizado!', {
               description: `Status alterado para: ${newStatus}`
             });
           }
           
+          // Fazer refetch completo para garantir sincronização
           fetchAppointments();
         }
       )

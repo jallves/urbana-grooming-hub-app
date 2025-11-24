@@ -12,7 +12,11 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
 
   const handleCancelAppointment = useCallback(async (appointmentId: string) => {
     try {
-      console.log('🔄 Cancelando agendamento:', appointmentId);
+      // Verificar autenticação
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('🔄 [BARBEIRO] Cancelando agendamento:', appointmentId);
+      console.log('👤 [BARBEIRO] Usuário autenticado:', user?.id, user?.email);
+      console.log('🆔 [BARBEIRO] Barbeiro ID:', barberId);
       
       const { data, error } = await supabase
         .from('painel_agendamentos')
@@ -23,28 +27,48 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
         .eq('id', appointmentId)
         .select();
 
-      console.log('📊 Resposta do cancelamento:', { data, error });
+      console.log('📊 [BARBEIRO] Resposta do cancelamento:', { data, error });
 
       if (error) {
-        console.error('❌ Erro RLS no cancelamento:', error);
+        console.error('❌ [BARBEIRO] Erro RLS no cancelamento:', error);
+        console.error('❌ [BARBEIRO] Detalhes do erro:', JSON.stringify(error, null, 2));
+        toast.error('Erro ao cancelar agendamento', {
+          description: error.message || 'Verifique suas permissões'
+        });
         throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('⚠️ [BARBEIRO] Update executado mas nenhum dado retornado - possível problema de RLS');
+        toast.error('Erro de permissão', {
+          description: 'Você não tem permissão para alterar este agendamento'
+        });
+        return false;
       }
 
       toast.success('Agendamento cancelado com sucesso');
       
-      // Invalidar cache para atualizar lista
-      queryClient.invalidateQueries({ queryKey: ['barber-appointments', barberId] });
+      // Invalidar todos os caches relacionados a agendamentos
+      queryClient.invalidateQueries({ queryKey: ['barber-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-appointments'] });
+      
       return true;
-    } catch (error) {
-      console.error('❌ Erro ao cancelar agendamento:', error);
-      toast.error('Erro ao cancelar agendamento');
+    } catch (error: any) {
+      console.error('❌ [BARBEIRO] Erro ao cancelar agendamento:', error);
+      toast.error('Erro ao cancelar agendamento', {
+        description: error?.message || 'Tente novamente'
+      });
       return false;
     }
   }, [barberId, queryClient]);
 
   const handleMarkAsAbsent = useCallback(async (appointmentId: string) => {
     try {
+      // Verificar autenticação
+      const { data: { user } } = await supabase.auth.getUser();
       console.log('🔄 [BARBEIRO] Marcando como ausente:', appointmentId);
+      console.log('👤 [BARBEIRO] Usuário autenticado:', user?.id, user?.email);
+      console.log('🆔 [BARBEIRO] Barbeiro ID:', barberId);
       
       const { data, error } = await supabase
         .from('painel_agendamentos')
@@ -59,7 +83,19 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
 
       if (error) {
         console.error('❌ [BARBEIRO] Erro RLS:', error);
+        console.error('❌ [BARBEIRO] Detalhes do erro:', JSON.stringify(error, null, 2));
+        toast.error('Erro ao marcar como ausente', {
+          description: error.message || 'Verifique suas permissões'
+        });
         throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('⚠️ [BARBEIRO] Update executado mas nenhum dado retornado - possível problema de RLS');
+        toast.error('Erro de permissão', {
+          description: 'Você não tem permissão para alterar este agendamento'
+        });
+        return false;
       }
 
       console.log('✅ [BARBEIRO] Status alterado para ausente com sucesso');
@@ -74,9 +110,11 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
       queryClient.invalidateQueries({ queryKey: ['admin-appointments'] });
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [BARBEIRO] Erro ao marcar como ausente:', error);
-      toast.error('Erro ao marcar como ausente');
+      toast.error('Erro ao marcar como ausente', {
+        description: error?.message || 'Tente novamente'
+      });
       return false;
     }
   }, [barberId, queryClient]);
