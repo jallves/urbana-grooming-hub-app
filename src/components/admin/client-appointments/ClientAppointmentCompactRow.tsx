@@ -84,12 +84,18 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
 
   // LEI PÉTREA: Determinar status didático do agendamento
   const getActualStatus = () => {
-    // Verificar se foi cancelado manualmente
-    const statusUpper = appointment.status?.toUpperCase() || '';
-    if (statusUpper === 'CANCELADO') {
+    const statusLower = appointment.status?.toLowerCase() || '';
+    
+    // PRIORIDADE 1: Status manual do banco (ausente, cancelado)
+    if (statusLower === 'ausente') {
+      return 'ausente';
+    }
+    
+    if (statusLower === 'cancelado') {
       return 'cancelado';
     }
 
+    // PRIORIDADE 2: Status baseado em check-in/check-out
     const hasCheckIn = appointment.totem_sessions && 
       appointment.totem_sessions.some((s: any) => s.check_in_time);
     
