@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SuccessConfirmationDialog from '@/components/client/appointment/SuccessConfirmationDialog';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
+import { ClientGreetingHeader } from "@/components/painel-cliente/ClientGreetingHeader";
 
 interface Service {
   id: string;
@@ -410,8 +411,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   return (
     <PainelClienteContentContainer>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+      {/* Botão Voltar */}
+      <div className="mb-4">
         <Button
           onClick={handleBack}
           variant="ghost"
@@ -421,17 +422,19 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
           Voltar
         </Button>
-        <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold drop-shadow-lg">
-            Novo Agendamento
-          </h1>
-          <p className="text-urbana-light/70 text-sm sm:text-base mt-1 sm:mt-2 drop-shadow-md">
-            {step === 'service' && 'Escolha o serviço desejado'}
-            {step === 'barber' && 'Escolha seu profissional'}
-            {step === 'datetime' && 'Escolha a data e horário'}
-          </p>
-        </div>
       </div>
+
+      {/* Header Padronizado */}
+      <div className="mb-4 sm:mb-6">
+        <ClientGreetingHeader cliente={cliente} />
+      </div>
+
+      {/* Subtítulo do Passo */}
+      <p className="text-urbana-light/70 text-sm sm:text-base mb-4 drop-shadow-md">
+        {step === 'service' && 'Escolha o serviço desejado'}
+        {step === 'barber' && 'Escolha seu profissional'}
+        {step === 'datetime' && 'Escolha a data e horário'}
+      </p>
 
       {/* Progress indicator */}
       <div className="flex items-center justify-center gap-2 mb-6">
