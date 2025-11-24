@@ -2,13 +2,13 @@
 import React from 'react';
 import StandardBarberLayout from '../components/barber/layouts/StandardBarberLayout';
 import StandardCard from '../components/barber/layouts/StandardCard';
-import { useAuth } from '@/contexts/AuthContext';
 import { Calendar, DollarSign, Users, Clock, CheckCircle, TrendingUp, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBarberDashboardMetrics } from '@/hooks/useBarberDashboardMetrics';
+import { useBarberAuth } from '@/hooks/useBarberAuth';
 
 const BarberDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { displayName } = useBarberAuth();
   const navigate = useNavigate();
   const { metrics, loading } = useBarberDashboardMetrics();
 
@@ -83,7 +83,7 @@ const BarberDashboard: React.FC = () => {
           {/* Welcome Section */}
           <div className="w-full text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-              Bem-vindo, {user?.email?.split('@')[0]}
+              Bem-vindo, {displayName}
             </h2>
             <p className="text-sm sm:text-base text-gray-400">Gerencie seu trabalho com excelência profissional</p>
             <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
