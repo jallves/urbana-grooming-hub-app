@@ -145,6 +145,68 @@ const BarberLayout: React.FC = () => {
         onClick={() => setIsMobileMenuOpen(false)} 
       />
 
+      {/* Desktop/Tablet Sidebar - Sempre Visível */}
+      <aside className="hidden md:flex fixed left-0 top-[80px] bottom-0 z-40 w-64 flex-col bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-black/95 border-r border-urbana-gold/30 shadow-2xl">
+        {/* Navegação Principal - COM SCROLL */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`
+                  group flex items-center space-x-3 py-3.5 px-4 rounded-xl 
+                  transition-all duration-200 relative overflow-hidden w-full
+                  ${isActive 
+                    ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/10' 
+                    : 'text-urbana-light/80 hover:text-urbana-gold hover:bg-urbana-gold/10 active:scale-95'
+                  }
+                `}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-urbana-gold rounded-r-full" />
+                )}
+                <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
+                <span className="text-sm font-semibold">{item.name}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Footer - FIXO NO FUNDO */}
+        <div className="flex-shrink-0 border-t border-urbana-gold/20 p-4 space-y-3 bg-gradient-to-t from-urbana-black/80 to-transparent">
+          {/* User Info */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-urbana-gold/5 rounded-xl border border-urbana-gold/20">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-urbana-gold/20 border-2 border-urbana-gold/40 flex items-center justify-center">
+                <span className="text-urbana-gold font-bold text-sm">
+                  {(user?.user_metadata?.name?.charAt(0) || 'B').toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-urbana-light truncate">
+                {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
+              </p>
+              <p className="text-xs text-urbana-light/50">Online</p>
+            </div>
+          </div>
+
+          {/* Botão Sair */}
+          <Button
+            variant="outline"
+            onClick={signOut}
+            className="w-full border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500 transition-all py-3 h-auto group"
+          >
+            <LogOut className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-semibold">Sair</span>
+          </Button>
+        </div>
+      </aside>
+
       {/* Mobile Sidebar - Lado Esquerdo - ALTURA FIXA */}
       <div className={`
         fixed top-0 left-0 z-[70] h-screen w-[75vw] max-w-[300px] 
@@ -232,8 +294,8 @@ const BarberLayout: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content - Com espaçamento apenas para header fixo */}
-      <main className="relative z-10 w-full max-w-full overflow-x-hidden pt-[72px] sm:pt-[80px] pb-8">
+      {/* Main Content - Com espaçamento para header e sidebar em desktop/tablet */}
+      <main className="relative z-10 w-full max-w-full overflow-x-hidden pt-[72px] sm:pt-[80px] md:pl-64 pb-8">
         <Outlet />
       </main>
     </div>
