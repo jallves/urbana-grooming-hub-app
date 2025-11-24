@@ -124,11 +124,7 @@ export default function PainelClienteAgendamentos() {
 
   return (
     <ClientPageContainer>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+      <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-urbana-gold font-playfair">
@@ -179,11 +175,8 @@ export default function PainelClienteAgendamentos() {
               const StatusIcon = getStatusIcon(agendamento.status);
 
               return (
-                <motion.div
+                <div
                   key={agendamento.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
                   <Card className="bg-gray-900 border border-gray-700 hover:border-gray-500 transition-colors">
                     <CardHeader className="pb-3">
@@ -226,25 +219,23 @@ export default function PainelClienteAgendamentos() {
                           <span className="text-green-400 text-sm font-medium">
                             ✨ Atendimento finalizado!
                           </span>
-                        ) : agendamento.status === 'confirmado' ? (
-                          <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            whileHover={{ scale: 1.02 }}
+                         ) : agendamento.status === 'confirmado' ? (
+                          <button
                             onClick={() => handleConcluirAgendamento(agendamento.id)}
                             className="text-sm text-green-400 border border-green-400 px-3 py-1 rounded-md hover:bg-green-400/10 transition font-medium"
                           >
                             Marcar como Concluído
-                          </motion.button>
-                        ) : null}
+                          </button>
+                         ) : null}
                       </div>
                     </CardContent>
                   </Card>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         )}
-      </motion.div>
+      </div>
     </ClientPageContainer>
   );
 }
