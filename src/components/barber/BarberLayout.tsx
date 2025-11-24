@@ -93,7 +93,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
+    <div className="min-h-screen w-full overflow-x-hidden font-poppins">
       {/* Background image - Same as PainelClienteLayout */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
@@ -166,7 +166,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
       </header>
 
       {/* Enhanced Mobile Navigation - SEMPRE FIXO NA PARTE INFERIOR */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] w-full backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl" style={{ position: 'fixed' }}>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] w-full backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl" style={{ position: 'fixed', bottom: 0 }}>
         <div className="w-full px-2 sm:px-3">
           {/* Mobile Tab Navigation */}
           <div className="grid grid-cols-4 gap-1.5 sm:gap-2 py-2 sm:py-3 pb-safe">
