@@ -12,6 +12,7 @@ import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
 import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
 import BarberRoute from './components/auth/BarberRoute';
 import PainelClienteLayout from './components/painel-cliente/PainelClienteLayout';
+import BarberLayout from './components/barber/BarberLayout';
 import Index from './pages/Index';
 import PWAInstall from './pages/PWAInstall';
 import AdminDashboard from './pages/Admin';
@@ -219,68 +220,29 @@ function App() {
                     </AdminRoute>
                   } />
                   
-                  {/* Barber Routes */}
+                  {/* Barber Routes - Nested routing igual ao Painel Cliente */}
                   <Route path="/barbeiro/login" element={
                     <AdminRedirectGuard>
                       <BarberAuth />
                     </AdminRedirectGuard>
                   } />
+                  
                   <Route path="/barbeiro" element={
                     <AdminRedirectGuard>
                       <BarberRoute allowBarber={true}>
-                        <BarberDashboard />
+                        <BarberLayout />
                       </BarberRoute>
                     </AdminRedirectGuard>
-                  } />
-                  <Route path="/barbeiro/dashboard" element={
-                    <AdminRedirectGuard>
-                      <BarberRoute allowBarber={true}>
-                        <BarberDashboard />
-                      </BarberRoute>
-                    </AdminRedirectGuard>
-                  } />
-                  <Route path="/barbeiro/agendamentos" element={
-                    <AdminRedirectGuard>
-                      <BarberRoute allowBarber={true}>
-                        <BarberAppointments />
-                      </BarberRoute>
-                    </AdminRedirectGuard>
-                  } />
-                  <Route path="/barbeiro/comissoes" element={
-                    <AdminRedirectGuard>
-                      <BarberRoute allowBarber={true}>
-                        <BarberCommissions />
-                      </BarberRoute>
-                    </AdminRedirectGuard>
-                  } />
-                  <Route path="/barbeiro/horarios" element={
-                    <AdminRedirectGuard>
-                      <BarberRoute allowBarber={true}>
-                        <BarberScheduleManagement />
-                      </BarberRoute>
-                    </AdminRedirectGuard>
-                  } />
-                  <Route path="/barbeiro/agenda" element={
-                    <AdminRedirectGuard>
-                      <BarberRoute allowBarber={true}>
-                        <BarberSchedule />
-                      </BarberRoute>
-                    </AdminRedirectGuard>
-                  } />
-                  <Route path="/barbeiro/perfil" element={
-                    <AdminRedirectGuard>
-                      <BarberRoute allowBarber={true}>
-                        <BarberProfile />
-                      </BarberRoute>
-                    </AdminRedirectGuard>
-                  } />
-                  <Route path="/barbeiro/admin" element={
-                    <AdminRedirectGuard>
-                      <BarberRoute>
-                        <BarberAdminDashboard />
-                      </BarberRoute>
-                    </AdminRedirectGuard>
-                  } />
+                  }>
+                    <Route path="dashboard" element={<BarberDashboard />} />
+                    <Route path="agendamentos" element={<BarberAppointments />} />
+                    <Route path="comissoes" element={<BarberCommissions />} />
+                    <Route path="horarios" element={<BarberScheduleManagement />} />
+                    <Route path="agenda" element={<BarberSchedule />} />
+                    <Route path="perfil" element={<BarberProfile />} />
+                    <Route path="admin" element={<BarberAdminDashboard />} />
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                  </Route>
 
                   {/* Painel Cliente Routes - Nested routing */}
                   <Route path="/painel-cliente/login" element={
