@@ -58,29 +58,31 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className="h-full bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 flex flex-col">
+    <div className="h-screen w-64 bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 flex flex-col">
       {/* Header */}
-      <div className="px-3 py-2 border-b border-gray-700/50 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
-            <Scissors className="h-4 w-4 text-black" />
+      <div className="p-6 border-b border-gray-700/50 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
+            <Scissors className="h-5 w-5 text-black" />
           </div>
-          <h2 className="text-sm font-bold text-white">Barbeiro</h2>
+          <div>
+            <h2 className="text-xl font-bold text-white">Barbeiro</h2>
+          </div>
         </div>
         {onClose && (
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="text-gray-400 h-8 w-8"
+            className="text-gray-400 hover:text-white hover:bg-gray-800"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         )}
       </div>
       
-      {/* Navigation + Logout - SEM SCROLL */}
-      <nav className="flex-1 px-2 py-3 space-y-1 flex flex-col">
+      {/* Navigation com scroll */}
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
@@ -88,7 +90,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             onClick={onClose}
             end={item.exact}
             className={({ isActive }) =>
-              `group flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+              `group flex items-center gap-3 p-3 rounded-lg transition-all duration-200 min-h-[44px] ${
                 isActive
                   ? 'bg-urbana-gold text-black shadow-lg font-medium'
                   : 'text-gray-300 hover:bg-gray-800'
@@ -99,17 +101,19 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             <span className="text-sm font-medium">{item.name}</span>
           </NavLink>
         ))}
-        
-        {/* Logout Button logo após os itens */}
+      </nav>
+
+      {/* Footer com botão Sair */}
+      <div className="p-4 border-t border-gray-700/50">
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start gap-2 text-gray-300 hover:text-white hover:bg-red-500/20 px-3 py-2 rounded-lg"
+          className="w-full justify-start gap-3 text-gray-300 hover:text-white hover:bg-red-500/20 p-3 rounded-lg"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-5 w-5" />
           <span className="text-sm font-medium">Sair</span>
         </Button>
-      </nav>
+      </div>
     </div>
   );
 };
