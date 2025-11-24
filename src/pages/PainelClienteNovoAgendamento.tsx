@@ -506,7 +506,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   <h2 className="text-2xl font-bold text-white mb-2">Escolha o Serviço</h2>
                   <p className="text-white/60">Selecione o serviço que deseja realizar</p>
                 </div>
-                <TotemGrid columns={3} gap={2}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {loading ? (
                     <div className="col-span-full text-center text-white py-12 px-2">
                       <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
@@ -535,7 +535,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       </TotemCard>
                     ))
                   )}
-                </TotemGrid>
+                </div>
               </div>
             )}
 
@@ -546,7 +546,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   <h2 className="text-2xl font-bold text-white mb-2">Escolha o Profissional</h2>
                   <p className="text-white/60">Selecione o profissional de sua preferência</p>
                 </div>
-                <TotemGrid columns={3} gap={2}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {loading ? (
                     <div className="col-span-full text-center text-white py-12 px-2">
                       <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
@@ -576,7 +576,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       </TotemCard>
                     ))
                   )}
-                </TotemGrid>
+                </div>
               </div>
             )}
 
@@ -594,7 +594,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                     <CalendarIcon className="w-5 h-5 text-urbana-gold" />
                     Data
                   </h3>
-                  <TotemGrid columns={3} gap={2}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                     {loading ? (
                       <div className="col-span-full text-center text-white py-8">
                         <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
@@ -626,8 +626,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         </TotemCard>
                       ))
                     )}
-                  </TotemGrid>
-                </div>
+                    </div>
+                  </div>
 
                 {/* Time Selection */}
                 {selectedDate && (
@@ -636,7 +636,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       <Clock className="w-5 h-5 text-urbana-gold" />
                       Horário
                     </h3>
-                    <TotemGrid columns={3} gap={2}>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                       {loading ? (
                         <div className="col-span-full text-center text-white py-8">
                           <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
@@ -664,9 +664,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                             </TotemCard>
                           ))
                       )}
-                    </TotemGrid>
-                  </div>
-                )}
+                      </div>
+                    </div>
+                  )}
 
                 {/* Summary & Confirm */}
                 {selectedDate && selectedTime && (
