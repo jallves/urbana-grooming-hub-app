@@ -411,50 +411,51 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   return (
     <PainelClienteContentContainer>
       {/* Header */}
-      <div className="mb-4 sm:mb-6">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm sm:text-base">Voltar</span>
-          </button>
-
-          <div className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-urbana-gold drop-shadow-lg mb-2">
-              Novo Agendamento
-            </h1>
-            <p className="text-white/80 text-sm sm:text-base">
-              {step === 'service' && 'Escolha o serviço desejado'}
-              {step === 'barber' && 'Escolha seu profissional'}
-              {step === 'datetime' && 'Escolha a data e horário'}
-            </p>
-          </div>
-
-          {/* Progress indicator */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-              step === 'service' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white'
-            }`}>
-              {step !== 'service' && selectedService ? <Check className="w-4 h-4" /> : '1'}
-            </div>
-            <div className={`w-12 h-1 rounded ${step !== 'service' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-              step === 'barber' ? 'bg-urbana-gold text-black' : step === 'datetime' ? 'bg-white/20 text-white' : 'bg-white/20 text-white/50'
-            }`}>
-              {step === 'datetime' && selectedBarber ? <Check className="w-4 h-4" /> : '2'}
-            </div>
-            <div className={`w-12 h-1 rounded ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-              step === 'datetime' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white/50'
-            }`}>
-              3
-            </div>
-          </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <Button
+          onClick={handleBack}
+          variant="ghost"
+          size="sm"
+          className="text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-gold rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+          Voltar
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold drop-shadow-lg">
+            Novo Agendamento
+          </h1>
+          <p className="text-urbana-light/70 text-sm sm:text-base mt-1 sm:mt-2 drop-shadow-md">
+            {step === 'service' && 'Escolha o serviço desejado'}
+            {step === 'barber' && 'Escolha seu profissional'}
+            {step === 'datetime' && 'Escolha a data e horário'}
+          </p>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex-1 py-4 pb-20">
+      {/* Progress indicator */}
+      <div className="flex items-center justify-center gap-2 mb-6">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+          step === 'service' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white'
+        }`}>
+          {step !== 'service' && selectedService ? <Check className="w-4 h-4" /> : '1'}
+        </div>
+        <div className={`w-12 h-1 rounded ${step !== 'service' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+          step === 'barber' ? 'bg-urbana-gold text-black' : step === 'datetime' ? 'bg-white/20 text-white' : 'bg-white/20 text-white/50'
+        }`}>
+          {step === 'datetime' && selectedBarber ? <Check className="w-4 h-4" /> : '2'}
+        </div>
+        <div className={`w-12 h-1 rounded ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+          step === 'datetime' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white/50'
+        }`}>
+          3
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div>
             {/* Step 1: Service Selection */}
             {step === 'service' && (
               <TotemGrid columns={3} gap={2}>
@@ -679,7 +680,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                 )}
               </div>
             )}
-        </div>
+      </div>
 
       {/* Modal de confirmação de sucesso */}
       {showSuccessDialog && selectedService && selectedBarber && selectedDate && selectedTime && (
