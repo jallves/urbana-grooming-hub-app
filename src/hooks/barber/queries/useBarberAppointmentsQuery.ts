@@ -37,8 +37,8 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
         `)
         .eq('barbeiro_id', barberId)
         .gte('data', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true })
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false })
         .limit(200);
 
       if (!data) return [];

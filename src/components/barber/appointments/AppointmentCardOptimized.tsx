@@ -34,19 +34,18 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
 
   const appointmentDateTime = parseISO(appointment.start_time);
   const now = new Date();
-  const fortyMinutesAfter = addMinutes(appointmentDateTime, 40);
+  const oneHourAfter = addMinutes(appointmentDateTime, 60);
   
   const isUpcoming = isFuture(appointmentDateTime);
   const isPastAppointment = isPast(appointmentDateTime);
-  const isWithin40Minutes = !isAfter(now, fortyMinutesAfter); // Ainda dentro dos 40 minutos
-  const isAfter40Minutes = isAfter(now, fortyMinutesAfter); // Passou dos 40 minutos
+  const isAfter1Hour = isAfter(now, oneHourAfter); // Passou 1 hora do horário
   
   // Para status "agendado": 
-  // - Até 40 min depois: mostra "Editar" e "Ausente"
-  // - Depois de 40 min: mostra APENAS "Ausente"
-  const canEdit = appointment.status === 'scheduled' && (isUpcoming || isWithin40Minutes);
-  const canMarkAbsent = appointment.status === 'scheduled' && isPastAppointment;
-  const canCancel = appointment.status === 'scheduled' && (isUpcoming || isWithin40Minutes);
+  // - Antes do horário ou até 1h depois: pode editar e cancelar
+  // - Depois de 1h do horário: mostra APENAS botão "Ausente"
+  const canEdit = appointment.status === 'scheduled' && isUpcoming;
+  const canMarkAbsent = appointment.status === 'scheduled' && isAfter1Hour;
+  const canCancel = appointment.status === 'scheduled' && !isAfter1Hour;
 
   const getStatusBadge = () => {
     const badges = {
