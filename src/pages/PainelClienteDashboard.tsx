@@ -19,6 +19,7 @@ import {
   PainelClienteCardContent 
 } from "@/components/painel-cliente/PainelClienteCard";
 import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
+import { ClientGreetingHeader } from "@/components/painel-cliente/ClientGreetingHeader";
 import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
@@ -145,13 +146,8 @@ export default function PainelClienteDashboard() {
   return (
     <PainelClienteContentContainer>
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
-            Olá, {cliente?.nome}!
-          </h1>
-          <p className="text-urbana-light/70 text-sm sm:text-base drop-shadow-md">Bem-vindo à Urbana Barbearia</p>
-        </div>
+      <div className="mb-4 sm:mb-6">
+        <ClientGreetingHeader cliente={cliente} />
       </div>
 
       {/* Estatísticas em Cards */}
