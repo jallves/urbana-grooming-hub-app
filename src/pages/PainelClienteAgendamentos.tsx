@@ -126,7 +126,7 @@ export default function PainelClienteAgendamentos() {
   }
 
   return (
-    <ClientPageContainer>
+    <ClientPageContainer key="agendamentos-2024-v2">
       {/* Filtros e Conteúdo */}
       <div className="space-y-6">
         {/* Botão Novo Agendamento */}
