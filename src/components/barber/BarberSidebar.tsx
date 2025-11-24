@@ -1,14 +1,38 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Calendar, DollarSign, Settings, BarChart2, Scissors, X } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Calendar, DollarSign, Settings, BarChart2, Scissors, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface BarberSidebarProps {
   onClose?: () => void;
 }
 
 const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso",
+      });
+      navigate('/barbeiro/login');
+      if (onClose) onClose();
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast({
+        title: "Erro ao sair",
+        description: "Ocorreu um erro ao tentar fazer logout",
+        variant: "destructive",
+      });
+    }
+  };
+
   const navItems = [
     { 
       name: 'Dashboard', 
@@ -85,7 +109,16 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-700/50">
+      <div className="p-4 border-t border-gray-700/50 space-y-3">
+        <Button
+          onClick={handleLogout}
+          variant="ghost"
+          className="w-full justify-start gap-3 text-gray-300 hover:text-white hover:bg-red-500/20"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="font-medium">Sair</span>
+        </Button>
+        
         <div className="text-xs text-gray-500 text-center">
           <p className="font-medium text-gray-400">Costa Urbana Barbearia</p>
           <p>Sistema Profissional</p>
