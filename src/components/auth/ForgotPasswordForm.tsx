@@ -38,24 +38,14 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, redirec
     try {
       console.log('Enviando solicitação de reset para:', data.email);
       
-      // Usar nossa função edge personalizada
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('send-password-reset', {
-        body: {
-          email: data.email,
-          redirectTo: redirectTo || `${window.location.origin}/reset-password`,
-        }
+      // Usar sistema nativo do Supabase
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: redirectTo || `${window.location.origin}/reset-password`,
       });
 
-      console.log('Resposta da função:', functionData, 'Erro:', functionError);
-
-      if (functionError) {
-        console.error('Erro da função edge:', functionError);
-        throw functionError;
-      }
-
-      if (!functionData?.success) {
-        console.error('Função retornou erro:', functionData?.error);
-        throw new Error(functionData?.error || 'Erro ao enviar email de recuperação');
+      if (error) {
+        console.error('Erro ao enviar email de recuperação:', error);
+        throw error;
       }
 
       setEmailSent(true);
@@ -66,20 +56,9 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack, redirec
     } catch (error: any) {
       console.error('Erro ao enviar email de recuperação:', error);
       
-      let errorMessage = "Não foi possível enviar o email de recuperação. Tente novamente.";
-      
-      // Tratar diferentes tipos de erro
-      if (error.message?.includes('RESEND_API_KEY')) {
-        errorMessage = "Serviço de email não configurado. Entre em contato com o suporte.";
-      } else if (error.message?.includes('validation_error')) {
-        errorMessage = "Email inválido ou serviço de email temporariamente indisponível.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
       toast({
         title: "Erro ao enviar email",
-        description: errorMessage,
+        description: error.message || "Não foi possível enviar o email. Tente novamente.",
         variant: "destructive",
       });
     } finally {
