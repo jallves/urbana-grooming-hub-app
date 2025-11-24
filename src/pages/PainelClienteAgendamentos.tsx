@@ -112,6 +112,9 @@ export default function PainelClienteAgendamentos() {
     }
   };
 
+  // Debug: verificar se o header está sendo renderizado
+  console.log('✅ PainelClienteAgendamentos - ClientPageContainer com header automático');
+
   if (loading) {
     return (
       <ClientPageContainer>
