@@ -411,251 +411,348 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   return (
     <ClientPageContainer>
-      {/* Botão Voltar */}
-      <div className="mb-4">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-          step === 'service' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white'
-        }`}>
-          {step !== 'service' && selectedService ? <Check className="w-4 h-4" /> : '1'}
-        </div>
-        <div className={`w-12 h-1 rounded ${step !== 'service' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-          step === 'barber' ? 'bg-urbana-gold text-black' : step === 'datetime' ? 'bg-white/20 text-white' : 'bg-white/20 text-white/50'
-        }`}>
-          {step === 'datetime' && selectedBarber ? <Check className="w-4 h-4" /> : '2'}
-        </div>
-        <div className={`w-12 h-1 rounded ${step === 'datetime' ? 'bg-urbana-gold' : 'bg-white/20'}`} />
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-          step === 'datetime' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white/50'
-        }`}>
-          3
+      {/* Indicador de Progresso */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
+          {/* Passo 1 */}
+          <div className="flex flex-col items-center flex-1">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all mb-2 ${
+              step === 'service' ? 'bg-urbana-gold text-black scale-110' : selectedService ? 'bg-urbana-gold/30 text-white' : 'bg-white/20 text-white/50'
+            }`}>
+              {selectedService ? <Check className="w-5 h-5" /> : '1'}
+            </div>
+            <p className={`text-xs text-center font-medium ${step === 'service' ? 'text-urbana-gold' : 'text-white/60'}`}>
+              Serviço
+            </p>
+          </div>
+
+          {/* Linha 1-2 */}
+          <div className={`h-1 flex-1 mx-2 rounded transition-all ${selectedService ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+
+          {/* Passo 2 */}
+          <div className="flex flex-col items-center flex-1">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all mb-2 ${
+              step === 'barber' ? 'bg-urbana-gold text-black scale-110' : selectedBarber ? 'bg-urbana-gold/30 text-white' : 'bg-white/20 text-white/50'
+            }`}>
+              {selectedBarber ? <Check className="w-5 h-5" /> : '2'}
+            </div>
+            <p className={`text-xs text-center font-medium ${step === 'barber' ? 'text-urbana-gold' : 'text-white/60'}`}>
+              Profissional
+            </p>
+          </div>
+
+          {/* Linha 2-3 */}
+          <div className={`h-1 flex-1 mx-2 rounded transition-all ${selectedBarber ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+
+          {/* Passo 3 */}
+          <div className="flex flex-col items-center flex-1">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all mb-2 ${
+              step === 'datetime' ? 'bg-urbana-gold text-black scale-110' : (selectedDate && selectedTime) ? 'bg-urbana-gold/30 text-white' : 'bg-white/20 text-white/50'
+            }`}>
+              {(selectedDate && selectedTime) ? <Check className="w-5 h-5" /> : '3'}
+            </div>
+            <p className={`text-xs text-center font-medium ${step === 'datetime' ? 'text-urbana-gold' : 'text-white/60'}`}>
+              Data e Hora
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* Resumo das Seleções */}
+      {(selectedService || selectedBarber || (selectedDate && selectedTime)) && (
+        <Card className="mb-6 bg-white/5 backdrop-blur-sm border border-urbana-gold/20">
+          <CardContent className="p-4">
+            <div className="flex flex-wrap gap-4">
+              {selectedService && (
+                <div className="flex items-center gap-2 bg-urbana-gold/10 px-3 py-2 rounded-lg">
+                  <Scissors className="w-4 h-4 text-urbana-gold" />
+                  <span className="text-sm font-medium text-white">{selectedService.nome}</span>
+                </div>
+              )}
+              {selectedBarber && (
+                <div className="flex items-center gap-2 bg-urbana-gold/10 px-3 py-2 rounded-lg">
+                  <User className="w-4 h-4 text-urbana-gold" />
+                  <span className="text-sm font-medium text-white">{selectedBarber.nome}</span>
+                </div>
+              )}
+              {selectedDate && selectedTime && (
+                <div className="flex items-center gap-2 bg-urbana-gold/10 px-3 py-2 rounded-lg">
+                  <Clock className="w-4 h-4 text-urbana-gold" />
+                  <span className="text-sm font-medium text-white">
+                    {format(selectedDate, "dd/MM", { locale: ptBR })} às {selectedTime}
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Botão Voltar */}
+      <Button
+        onClick={handleBack}
+        variant="ghost"
+        className="mb-4 text-white hover:text-urbana-gold hover:bg-white/10"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Voltar
+      </Button>
 
       {/* Main Content */}
       <div>
             {/* Step 1: Service Selection */}
             {step === 'service' && (
-              <TotemGrid columns={3} gap={2}>
-                {loading ? (
-                  <div className="col-span-full text-center text-white py-12 px-2">
-                    Carregando serviços...
-                  </div>
-                ) : services.length === 0 ? (
-                  <div className="col-span-full text-center text-white/60 py-12 px-2">
-                    Nenhum serviço disponível
-                  </div>
-                ) : (
-                  services.map((service, index) => (
-                    <TotemCard
-                      key={service.id}
-                      icon={Scissors}
-                      onClick={() => handleServiceSelect(service)}
-                      variant="default"
-                      animationDelay={`${index * 0.1}s`}
-                    >
-                      <TotemCardTitle>{service.nome}</TotemCardTitle>
-                      <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-gold mt-3">
-                        R$ {service.preco.toFixed(2)}
-                      </p>
-                      <p className="text-base sm:text-lg text-white/60 mt-2">
-                        {service.duracao} minutos
-                      </p>
-                    </TotemCard>
-                  ))
-                )}
-              </TotemGrid>
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Escolha o Serviço</h2>
+                  <p className="text-white/60">Selecione o serviço que deseja realizar</p>
+                </div>
+                <TotemGrid columns={3} gap={2}>
+                  {loading ? (
+                    <div className="col-span-full text-center text-white py-12 px-2">
+                      <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
+                      Carregando serviços...
+                    </div>
+                  ) : services.length === 0 ? (
+                    <div className="col-span-full text-center text-white/60 py-12 px-2">
+                      Nenhum serviço disponível
+                    </div>
+                  ) : (
+                    services.map((service, index) => (
+                      <TotemCard
+                        key={service.id}
+                        icon={Scissors}
+                        onClick={() => handleServiceSelect(service)}
+                        variant="default"
+                        animationDelay={`${index * 0.1}s`}
+                      >
+                        <TotemCardTitle>{service.nome}</TotemCardTitle>
+                        <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-gold mt-3">
+                          R$ {service.preco.toFixed(2)}
+                        </p>
+                        <p className="text-base sm:text-lg text-white/60 mt-2">
+                          {service.duracao} minutos
+                        </p>
+                      </TotemCard>
+                    ))
+                  )}
+                </TotemGrid>
+              </div>
             )}
 
             {/* Step 2: Barber Selection */}
             {step === 'barber' && (
-              <TotemGrid columns={3} gap={2}>
-                {loading ? (
-                  <div className="col-span-full text-center text-white py-12 px-2">
-                    Carregando profissionais...
-                  </div>
-                ) : barbers.length === 0 ? (
-                  <div className="col-span-full text-center text-white/60 py-12 px-2">
-                    Nenhum profissional disponível
-                  </div>
-                ) : (
-                  barbers.map((barber, index) => (
-                    <TotemCard
-                      key={barber.id}
-                      icon={User}
-                      onClick={() => handleBarberSelect(barber)}
-                      variant="default"
-                      animationDelay={`${index * 0.1}s`}
-                    >
-                      {barber.image_url && (
-                        <img
-                          src={barber.image_url}
-                          alt={barber.nome}
-                          className="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 object-cover border-2 border-urbana-gold/50"
-                        />
-                      )}
-                      <TotemCardTitle className="text-center">{barber.nome}</TotemCardTitle>
-                    </TotemCard>
-                  ))
-                )}
-              </TotemGrid>
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Escolha o Profissional</h2>
+                  <p className="text-white/60">Selecione o profissional de sua preferência</p>
+                </div>
+                <TotemGrid columns={3} gap={2}>
+                  {loading ? (
+                    <div className="col-span-full text-center text-white py-12 px-2">
+                      <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
+                      Carregando profissionais...
+                    </div>
+                  ) : barbers.length === 0 ? (
+                    <div className="col-span-full text-center text-white/60 py-12 px-2">
+                      Nenhum profissional disponível
+                    </div>
+                  ) : (
+                    barbers.map((barber, index) => (
+                      <TotemCard
+                        key={barber.id}
+                        icon={User}
+                        onClick={() => handleBarberSelect(barber)}
+                        variant="default"
+                        animationDelay={`${index * 0.1}s`}
+                      >
+                        {barber.image_url && (
+                          <img
+                            src={barber.image_url}
+                            alt={barber.nome}
+                            className="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-4 object-cover border-2 border-urbana-gold/50"
+                          />
+                        )}
+                        <TotemCardTitle className="text-center">{barber.nome}</TotemCardTitle>
+                      </TotemCard>
+                    ))
+                  )}
+                </TotemGrid>
+              </div>
             )}
 
             {/* Step 3: Date & Time Selection */}
             {step === 'datetime' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Date Selection */}
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-urbana-gold" />
-                    Escolha a Data
-                  </h3>
-                  <TotemGrid columns={2} gap={2}>
-                    {loading ? (
-                      <div className="col-span-full text-center text-white py-8">
-                        Carregando datas...
-                      </div>
-                    ) : availableDates.length === 0 ? (
-                      <div className="col-span-full text-center text-white/60 py-8">
-                        Nenhuma data disponível
-                      </div>
-                    ) : (
-                      availableDates.map((date, index) => (
-                        <TotemCard
-                          key={date.toISOString()}
-                          onClick={() => handleDateSelect(date)}
-                          variant={selectedDate?.toDateString() === date.toDateString() ? 'selected' : 'default'}
-                          animationDelay={`${index * 0.05}s`}
-                        >
-                          <div className="text-center">
-                            <p className="text-sm text-white/60 capitalize">
-                              {format(date, 'EEEE', { locale: ptBR })}
-                            </p>
-                            <p className="text-2xl font-bold text-white">
-                              {format(date, 'dd')}
-                            </p>
-                            <p className="text-sm text-white/80 capitalize">
-                              {format(date, 'MMM', { locale: ptBR })}
-                            </p>
-                          </div>
-                        </TotemCard>
-                      ))
-                    )}
-                  </TotemGrid>
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Escolha Data e Horário</h2>
+                  <p className="text-white/60">Selecione a melhor data e horário para você</p>
                 </div>
 
-                {/* Time Selection */}
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-urbana-gold" />
-                    Escolha o Horário
-                  </h3>
-                  {!selectedDate ? (
-                    <div className="text-center text-white/60 py-8">
-                      Selecione uma data primeiro
-                    </div>
-                  ) : (
-                    <TotemGrid columns={3} gap={2}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Date Selection */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-urbana-gold" />
+                      Data
+                    </h3>
+                    <TotemGrid columns={2} gap={2}>
                       {loading ? (
                         <div className="col-span-full text-center text-white py-8">
-                          Carregando horários...
+                          <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
+                          Carregando datas...
                         </div>
-                      ) : timeSlots.filter(slot => slot.available).length === 0 ? (
+                      ) : availableDates.length === 0 ? (
                         <div className="col-span-full text-center text-white/60 py-8">
-                          Nenhum horário disponível
+                          Nenhuma data disponível
                         </div>
                       ) : (
-                        timeSlots
-                          .filter(slot => slot.available)
-                          .map((slot, index) => (
-                            <TotemCard
-                              key={slot.time}
-                              onClick={() => setSelectedTime(slot.time)}
-                              variant={selectedTime === slot.time ? 'selected' : 'default'}
-                              animationDelay={`${index * 0.02}s`}
-                            >
-                              <div className="text-center">
-                                <p className="text-lg font-bold text-white">
-                                  {slot.time}
-                                </p>
-                              </div>
-                            </TotemCard>
-                          ))
+                        availableDates.map((date, index) => (
+                          <TotemCard
+                            key={date.toISOString()}
+                            onClick={() => handleDateSelect(date)}
+                            variant={selectedDate?.toDateString() === date.toDateString() ? 'selected' : 'default'}
+                            animationDelay={`${index * 0.05}s`}
+                          >
+                            <div className="text-center">
+                              <p className="text-sm text-white/60 capitalize">
+                                {format(date, 'EEEE', { locale: ptBR })}
+                              </p>
+                              <p className="text-2xl font-bold text-white">
+                                {format(date, 'dd')}
+                              </p>
+                              <p className="text-sm text-white/80 capitalize">
+                                {format(date, 'MMM', { locale: ptBR })}
+                              </p>
+                            </div>
+                          </TotemCard>
+                        ))
                       )}
                     </TotemGrid>
+                  </div>
+
+                  {/* Time Selection */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-urbana-gold" />
+                      Horário
+                    </h3>
+                    {!selectedDate ? (
+                      <div className="text-center text-white/60 py-8 bg-white/5 rounded-lg border border-white/10">
+                        <Clock className="w-12 h-12 text-white/30 mx-auto mb-2" />
+                        <p>Selecione uma data primeiro</p>
+                      </div>
+                    ) : (
+                      <TotemGrid columns={3} gap={2}>
+                        {loading ? (
+                          <div className="col-span-full text-center text-white py-8">
+                            <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
+                            Carregando horários...
+                          </div>
+                        ) : timeSlots.filter(slot => slot.available).length === 0 ? (
+                          <div className="col-span-full text-center text-white/60 py-8">
+                            Nenhum horário disponível
+                          </div>
+                        ) : (
+                          timeSlots
+                            .filter(slot => slot.available)
+                            .map((slot, index) => (
+                              <TotemCard
+                                key={slot.time}
+                                onClick={() => setSelectedTime(slot.time)}
+                                variant={selectedTime === slot.time ? 'selected' : 'default'}
+                                animationDelay={`${index * 0.02}s`}
+                              >
+                                <div className="text-center">
+                                  <p className="text-lg font-bold text-white">
+                                    {slot.time}
+                                  </p>
+                                </div>
+                              </TotemCard>
+                            ))
+                        )}
+                      </TotemGrid>
+                    )}
+                  </div>
+
+                  {/* Summary & Confirm */}
+                  {selectedDate && selectedTime && (
+                    <div className="lg:col-span-2 mt-6">
+                      <Card className="bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/5 backdrop-blur-md border-2 border-urbana-gold/50 overflow-hidden">
+                        <CardHeader className="bg-urbana-gold/10 border-b border-urbana-gold/20">
+                          <CardTitle className="text-white text-xl flex items-center gap-2">
+                            <Check className="w-5 h-5" />
+                            Confirme seu Agendamento
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pt-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
+                              <Scissors className="w-5 h-5 text-urbana-gold mt-0.5" />
+                              <div>
+                                <p className="text-xs text-white/60 mb-1">Serviço</p>
+                                <p className="font-semibold">{selectedService?.nome}</p>
+                                <p className="text-sm text-urbana-gold">R$ {selectedService?.preco.toFixed(2)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
+                              {selectedBarber?.image_url ? (
+                                <img 
+                                  src={selectedBarber.image_url} 
+                                  alt={selectedBarber.nome}
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-urbana-gold/50"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <User className="w-5 h-5 text-urbana-gold mt-0.5" />
+                              )}
+                              <div>
+                                <p className="text-xs text-white/60 mb-1">Profissional</p>
+                                <p className="font-semibold">{selectedBarber?.nome}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
+                              <CalendarIcon className="w-5 h-5 text-urbana-gold mt-0.5" />
+                              <div>
+                                <p className="text-xs text-white/60 mb-1">Data</p>
+                                <p className="font-semibold capitalize">
+                                  {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
+                              <Clock className="w-5 h-5 text-urbana-gold mt-0.5" />
+                              <div>
+                                <p className="text-xs text-white/60 mb-1">Horário</p>
+                                <p className="font-semibold text-lg">{selectedTime}</p>
+                                <p className="text-xs text-white/60">{selectedService?.duracao} minutos</p>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={handleConfirm}
+                            disabled={creating || isValidating}
+                            className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg relative overflow-hidden"
+                          >
+                            {creating || isValidating ? (
+                              <span className="flex items-center justify-center gap-2">
+                                <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
+                                Confirmando...
+                              </span>
+                            ) : (
+                              <>
+                                <Check className="w-5 h-5 mr-2 inline" />
+                                Confirmar Agendamento
+                              </>
+                            )}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
                   )}
                 </div>
-
-                {/* Summary & Confirm */}
-                {selectedDate && selectedTime && (
-                  <div className="lg:col-span-2 mt-6">
-                    <Card className="bg-white/10 backdrop-blur-md border-2 border-urbana-gold/50">
-                      <CardHeader>
-                        <CardTitle className="text-white">Resumo do Agendamento</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex items-center gap-3 text-white">
-                          <Scissors className="w-5 h-5 text-urbana-gold" />
-                          <div>
-                            <p className="text-sm text-white/60">Serviço</p>
-                            <p className="font-semibold">{selectedService?.nome}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 text-white">
-                          {selectedBarber?.image_url ? (
-                            <img 
-                              src={selectedBarber.image_url} 
-                              alt={selectedBarber.nome}
-                              className="w-12 h-12 rounded-full object-cover border-2 border-urbana-gold/50"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <User className="w-5 h-5 text-urbana-gold" />
-                          )}
-                          <div>
-                            <p className="text-sm text-white/60">Profissional</p>
-                            <p className="font-semibold">{selectedBarber?.nome}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 text-white">
-                          <CalendarIcon className="w-5 h-5 text-urbana-gold" />
-                          <div>
-                            <p className="text-sm text-white/60">Data</p>
-                            <p className="font-semibold">
-                              {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 text-white">
-                          <Clock className="w-5 h-5 text-urbana-gold" />
-                          <div>
-                            <p className="text-sm text-white/60">Horário</p>
-                            <p className="font-semibold">{selectedTime}</p>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={handleConfirm}
-                          disabled={creating || isValidating}
-                          className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg relative overflow-hidden"
-                        >
-                          {creating || isValidating ? (
-                            <span className="flex items-center justify-center gap-2">
-                              <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
-                              Confirmando...
-                            </span>
-                          ) : (
-                            <>
-                              <Check className="w-5 h-5 mr-2 inline" />
-                              Confirmar Agendamento
-                            </>
-                          )}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
               </div>
             )}
       </div>
