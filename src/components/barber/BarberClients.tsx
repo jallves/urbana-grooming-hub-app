@@ -187,7 +187,7 @@ const BarberClients: React.FC = () => {
             </div>
           </StandardCard>
         ) : (
-          <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
             {filteredClients.map((client) => {
               const history = appointmentHistory[client.id] || [];
               const totalAppointments = history.length;
