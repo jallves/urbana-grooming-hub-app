@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
   DollarSign, 
@@ -18,7 +18,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 interface BarberLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   title?: string;
 }
 
@@ -193,7 +193,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
 
       {/* Main Content - Com espaçamento para header fixo no topo e navegação fixa no rodapé */}
       <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[100px] lg:pb-8">
-        {children}
+        <Outlet />
       </main>
     </div>
   );

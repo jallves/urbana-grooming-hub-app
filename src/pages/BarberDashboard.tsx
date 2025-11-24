@@ -1,6 +1,5 @@
 
 import React from 'react';
-import BarberLayout from '../components/barber/BarberLayout';
 import StandardBarberLayout from '../components/barber/layouts/StandardBarberLayout';
 import StandardCard from '../components/barber/layouts/StandardCard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -79,9 +78,8 @@ const BarberDashboard: React.FC = () => {
   ];
 
   return (
-    <BarberLayout title="Dashboard">
-      <StandardBarberLayout>
-        <div className="w-full min-h-[calc(100vh-200px)] px-4 space-y-4 sm:space-y-6">
+    <StandardBarberLayout>
+      <div className="w-full min-h-[calc(100vh-200px)] px-4 space-y-4 sm:space-y-6">
           {/* Welcome Section */}
           <div className="w-full text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
@@ -146,7 +144,6 @@ const BarberDashboard: React.FC = () => {
           </div>
         </div>
       </StandardBarberLayout>
-    </BarberLayout>
   );
 };
 
