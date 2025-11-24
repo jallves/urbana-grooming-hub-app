@@ -98,14 +98,8 @@ export default function PainelClientePerfil() {
 
   return (
     <PainelClienteContentContainer>
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-8"
-      >
-        {/* Header */}
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Button
             onClick={() => navigate('/painel-cliente/dashboard')}
             variant="ghost"
@@ -120,11 +114,11 @@ export default function PainelClientePerfil() {
               Editar Perfil
             </h1>
             <p className="text-urbana-light/70 text-sm sm:text-base mt-1 sm:mt-2 drop-shadow-md">Mantenha suas informações sempre atualizadas</p>
-          </div>
-        </motion.div>
+        </div>
+      </div>
 
-        {/* Profile Card */}
-        <motion.div variants={itemVariants}>
+      {/* Profile Card */}
+      <div className="mt-4 sm:mt-6">
           <PainelClienteCard variant="highlight" icon={Edit3}>
             <PainelClienteCardHeader className="pb-6">
               <PainelClienteCardTitle>
@@ -260,10 +254,10 @@ export default function PainelClientePerfil() {
               </form>
             </PainelClienteCardContent>
           </PainelClienteCard>
-        </motion.div>
+        </div>
 
         {/* Security Notice */}
-        <motion.div variants={itemVariants}>
+        <div className="mt-4 sm:mt-6">
           <PainelClienteCard variant="info" icon={Shield}>
             <PainelClienteCardContent className="p-6">
               <div className="flex items-center gap-3">
@@ -274,8 +268,7 @@ export default function PainelClientePerfil() {
               </div>
             </PainelClienteCardContent>
           </PainelClienteCard>
-        </motion.div>
-      </motion.div>
+        </div>
     </PainelClienteContentContainer>
   );
 }
