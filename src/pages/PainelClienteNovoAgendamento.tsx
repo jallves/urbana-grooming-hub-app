@@ -413,31 +413,6 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     <ClientPageContainer>
       {/* Botão Voltar */}
       <div className="mb-4">
-        <Button
-          onClick={handleBack}
-          variant="ghost"
-          size="sm"
-          className="text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-gold rounded-2xl px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-          Voltar
-        </Button>
-      </div>
-
-      {/* Header Padronizado */}
-      <div className="mb-4 sm:mb-6">
-        <ClientGreetingHeader cliente={cliente} />
-      </div>
-
-      {/* Subtítulo do Passo */}
-      <p className="text-urbana-light/70 text-sm sm:text-base mb-4 drop-shadow-md">
-        {step === 'service' && 'Escolha o serviço desejado'}
-        {step === 'barber' && 'Escolha seu profissional'}
-        {step === 'datetime' && 'Escolha a data e horário'}
-      </p>
-
-      {/* Progress indicator */}
-      <div className="flex items-center justify-center gap-2 mb-6">
         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
           step === 'service' ? 'bg-urbana-gold text-black' : 'bg-white/20 text-white'
         }`}>

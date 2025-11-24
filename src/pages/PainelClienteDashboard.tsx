@@ -145,11 +145,6 @@ export default function PainelClienteDashboard() {
 
   return (
     <ClientPageContainer>
-      {/* Cabeçalho */}
-      <div className="mb-4 sm:mb-6">
-        <ClientGreetingHeader cliente={cliente} />
-      </div>
-
       {/* Estatísticas em Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[
