@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { format, parseISO, isPast, parse } from 'date-fns';
+import { format, parseISO, parse } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { MoreHorizontal, Edit, Clock, X, UserX } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -21,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
+import { isPastInBrazil, formatBrazilDate } from '@/lib/brazilTimezone';
 
 interface PainelAgendamento {
   id: string;
@@ -189,14 +191,10 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
       return false;
     }
 
-    // Verificar se o horário já passou
+    // Verificar se o horário já passou (usando timezone do Brasil)
     try {
-      const appointmentDateTime = parse(
-        `${appointment.data} ${appointment.hora}`,
-        'yyyy-MM-dd HH:mm:ss',
-        new Date()
-      );
-      return isPast(appointmentDateTime);
+      const appointmentDateTime = `${appointment.data}T${appointment.hora}`;
+      return isPastInBrazil(appointmentDateTime);
     } catch (error) {
       console.error('Erro ao validar horário para ausente:', error);
       return false;
@@ -246,7 +244,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
       <TableCell className="py-4 hidden sm:table-cell">
         <div className="flex flex-col gap-1">
           <div className="text-sm font-medium text-gray-900">
-            {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')}
+            {formatBrazilDate(appointment.data)}
           </div>
           <div className="text-xs text-gray-500 flex items-center gap-1">
             <Clock className="h-3 w-3" />
