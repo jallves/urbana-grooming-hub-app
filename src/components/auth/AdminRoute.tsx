@@ -17,9 +17,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   allowBarber = false,
   requiredModule,
 }) => {
-  const { user, isAdmin, isBarber, isManager, isMaster, canAccessModule, loading, requiresPasswordChange, signOut } = useAuth();
+  const { user, isAdmin, isBarber, isManager, isMaster, canAccessModule, loading, requiresPasswordChange, signOut, rolesChecked } = useAuth();
   const location = useLocation();
-  const { toast } = useToast();
 
   // Usuário tem acesso se for admin, manager, master ou (barber quando permitido)
   const hasAccess = user ? (isAdmin || isManager || isMaster || (allowBarber && isBarber)) : false;
@@ -27,29 +26,9 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   // Validação simplificada de módulo usando a função do AuthContext
   const hasModuleAccess = requiredModule ? canAccessModule(requiredModule) : true;
 
-  // Só mostrar toast após verificação completa de permissões
-  // E somente se o usuário realmente não tiver acesso
-  useEffect(() => {
-    // Aguardar que:
-    // 1. Loading tenha terminado
-    // 2. Usuário esteja logado
-    // 3. Não tenha acesso
-    // 4. Esperar um pouco para garantir que não é apenas transição de estado
-    if (!loading && user && !hasAccess) {
-      const timeoutId = setTimeout(() => {
-        toast({
-          title: 'Acesso Restrito',
-          description: 'Você não tem permissão para acessar esta área',
-          variant: 'destructive',
-        });
-      }, 300); // Pequeno delay para evitar flash durante transições
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [user, loading, hasAccess, toast]);
-
-  // Durante loading, mostrar spinner SEM mensagem para evitar "flash"
-  if (loading) {
+  // Durante loading OU enquanto roles não foram verificados, mostrar spinner
+  // Isso garante que nunca mostramos conteúdo antes da validação completa
+  if (loading || !rolesChecked) {
     return (
       <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-background">
         <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary mb-4" />
