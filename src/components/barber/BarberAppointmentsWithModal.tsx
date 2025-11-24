@@ -1,25 +1,37 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Calendar, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import StandardCard from './layouts/StandardCard';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import BarberEditAppointmentModal from './appointments/BarberEditAppointmentModal';
 import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
-import { useBarberAppointmentsOptimized } from '@/hooks/barber/useBarberAppointmentsOptimized';
-import { useBarberData } from '@/hooks/barber/useBarberData';
+import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
+import { useBarberAppointmentsQuery } from '@/hooks/barber/queries/useBarberAppointmentsQuery';
+import { useBarberAppointmentModal } from '@/hooks/barber/useBarberAppointmentModal';
 
 const BarberAppointmentsWithModal: React.FC = () => {
-  const {
-    appointments,
-    loading,
-    stats,
-    isEditModalOpen,
-    selectedAppointmentId,
-    closeEditModal,
-    fetchAppointments,
-    handleEditAppointment
-  } = useBarberAppointmentsOptimized();
-  
-  const { barberData } = useBarberData();
+  const { data: barberData } = useBarberDataQuery();
+  const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(barberData?.id || null);
+  const modalHandlers = useBarberAppointmentModal();
+
+  // Calcular stats localmente com useMemo
+  const stats = useMemo(() => {
+    const total = appointments.length;
+    const completed = appointments.filter(a => a.status === 'completed').length;
+    const upcoming = appointments.filter(a => 
+      a.status !== 'completed' && 
+      a.status !== 'cancelled' && 
+      new Date(a.start_time) > new Date()
+    ).length;
+    
+    const revenue = appointments
+      .filter(a => a.status === 'completed')
+      .reduce((acc, appointment) => {
+        const servicePrice = appointment.service?.price || 0;
+        return acc + Number(servicePrice);
+      }, 0);
+
+    return { total, completed, upcoming, revenue };
+  }, [appointments]);
 
   const statsCards = [
     {
@@ -52,7 +64,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
     }
   ];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="w-full px-4 space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -115,7 +127,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
                 <AppointmentCardOptimized
                   key={appointment.id}
                   appointment={appointment}
-                  onEdit={handleEditAppointment}
+                  onEdit={modalHandlers.handleEditAppointment}
                 />
               ))}
             </div>
@@ -126,11 +138,11 @@ const BarberAppointmentsWithModal: React.FC = () => {
       {/* Modal de Edição */}
       {barberData && (
         <BarberEditAppointmentModal
-          isOpen={isEditModalOpen}
-          onClose={closeEditModal}
-          appointmentId={selectedAppointmentId}
+          isOpen={modalHandlers.isEditModalOpen}
+          onClose={modalHandlers.closeEditModal}
+          appointmentId={modalHandlers.selectedAppointmentId}
           barberId={barberData.id}
-          onSuccess={fetchAppointments}
+          onSuccess={() => refetch()}
         />
       )}
     </>

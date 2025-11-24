@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -12,6 +12,8 @@ import {
   Bell
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import { motion } from 'framer-motion';
@@ -26,6 +28,46 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Carregar dados do barbeiro logo no layout
+  const { data: barberData } = useBarberDataQuery();
+
+  // Prefetch estratégico baseado na rota atual
+  useEffect(() => {
+    if (!barberData?.id) return;
+
+    const currentPath = location.pathname;
+
+    // Prefetch de dados com base na navegação provável
+    if (currentPath.includes('dashboard')) {
+      // No dashboard, prefetch agendamentos e comissões
+      queryClient.prefetchQuery({
+        queryKey: ['barber-appointments', barberData.id],
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['barber-commissions', user?.id],
+      });
+    } else if (currentPath.includes('agendamentos')) {
+      // Nos agendamentos, prefetch comissões
+      queryClient.prefetchQuery({
+        queryKey: ['barber-commissions', user?.id],
+      });
+    } else if (currentPath.includes('comissoes')) {
+      // Nas comissões, prefetch agendamentos
+      queryClient.prefetchQuery({
+        queryKey: ['barber-appointments', barberData.id],
+      });
+    } else if (currentPath.includes('horarios')) {
+      // Nos horários, prefetch working hours e time off
+      queryClient.prefetchQuery({
+        queryKey: ['working-hours', barberData.staff_id],
+      });
+      queryClient.prefetchQuery({
+        queryKey: ['time-off', barberData.staff_id],
+      });
+    }
+  }, [location.pathname, barberData?.id, barberData?.staff_id, user?.id, queryClient]);
 
   const navigationItems = [
     { 
