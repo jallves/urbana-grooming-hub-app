@@ -74,121 +74,123 @@ export default function PainelClientePerfil() {
   }
 
   return (
-    <ClientPageContainer className="min-h-[calc(100vh-140px)]">
-      {/* Profile Card */}
-      <div className="w-full">
-          <PainelClienteCard variant="highlight" icon={Edit3} className="w-full">
-            <PainelClienteCardHeader className="pb-6">
-              <PainelClienteCardTitle>
-                Suas Informações
-              </PainelClienteCardTitle>
-              <p className="text-sm text-urbana-light/70">Dados pessoais e contato</p>
-            </PainelClienteCardHeader>
+    <ClientPageContainer>
+      {/* Profile Card - Totalmente Responsivo */}
+      <div className="w-full max-w-2xl mx-auto">
+        <PainelClienteCard variant="highlight" className="w-full">
+          <PainelClienteCardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-urbana-gold/20 rounded-lg">
+                <User className="h-5 w-5 text-urbana-gold" />
+              </div>
+              <div>
+                <PainelClienteCardTitle className="text-lg sm:text-xl">
+                  Meu Perfil
+                </PainelClienteCardTitle>
+                <p className="text-xs sm:text-sm text-urbana-light/70">Suas informações pessoais</p>
+              </div>
+            </div>
+          </PainelClienteCardHeader>
 
-            <PainelClienteCardContent className="p-8 sm:p-10">
-              <form onSubmit={handleSubmit} className="space-y-10">
-                {erro && (
-                  <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-sm">
-                    <p className="text-red-400 text-sm font-medium">{erro}</p>
-                  </div>
-                )}
-
-                <div className="space-y-10">
-                  {/* Nome */}
-                  <div className="space-y-3">
-                                      <Label htmlFor="nome" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
-                                        <div className="p-3 bg-urbana-gold/20 rounded-xl">
-                                          <User className="h-5 w-5 text-urbana-gold" />
-                                        </div>
-                                        Nome Completo
-                                      </Label>
-                                      <Input
-                                        id="nome"
-                                        type="text"
-                                        value={formData.nome}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                                        className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
-                                        placeholder="Seu nome completo"
-                                        required
-                    />
-                  </div>
-
-                  {/* Email */}
-                  <div className="space-y-3">
-                    <Label htmlFor="email" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
-                      <div className="p-3 bg-urbana-gold/20 rounded-xl">
-                        <Mail className="h-5 w-5 text-urbana-gold" />
-                      </div>
-                      E-mail
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
-                      placeholder="seu.email@exemplo.com"
-                      required
-                    />
-                  </div>
-
-                  {/* WhatsApp */}
-                  <div className="space-y-3">
-                    <Label htmlFor="whatsapp" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
-                      <div className="p-3 bg-urbana-gold/20 rounded-xl">
-                        <Phone className="h-5 w-5 text-urbana-gold" />
-                      </div>
-                      WhatsApp
-                    </Label>
-                    <Input
-                      id="whatsapp"
-                      type="tel"
-                      value={formData.whatsapp}
-                      onChange={handleWhatsAppChange}
-                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
-                      placeholder="(11) 99999-9999"
-                      maxLength={15}
-                      required
-                    />
-                  </div>
-
-                  {/* Data de Nascimento */}
-                  <div className="space-y-3">
-                    <Label htmlFor="data_nascimento" className="text-urbana-light text-lg font-semibold flex items-center gap-3">
-                      <div className="p-3 bg-urbana-gold/20 rounded-xl">
-                        <Calendar className="h-5 w-5 text-urbana-gold" />
-                      </div>
-                      Data de Nascimento
-                    </Label>
-                    <Input
-                      id="data_nascimento"
-                      type="date"
-                      value={formData.data_nascimento}
-                      onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
-                      className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-16 text-lg rounded-2xl backdrop-blur-sm hover:border-urbana-gold/50 transition-all duration-300 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20"
-                      required
-                    />
-                  </div>
+          <PainelClienteCardContent className="p-4 sm:p-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {erro && (
+                <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
+                  <p className="text-red-400 text-sm">{erro}</p>
                 </div>
+              )}
 
-                {/* Submit Button */}
-                <div className="pt-6">
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold h-16 text-lg rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <div className="w-6 h-6 border-2 border-urbana-black border-t-transparent rounded-full mr-3 animate-spin" />
-                    ) : (
-                      <Save className="h-5 w-5 mr-3" />
-                    )}
-                    {loading ? 'Salvando...' : 'Salvar Alterações'}
-                  </Button>
-                </div>
-              </form>
-            </PainelClienteCardContent>
-          </PainelClienteCard>
+              {/* Nome */}
+              <div className="space-y-2">
+                <Label htmlFor="nome" className="text-urbana-light text-sm font-medium flex items-center gap-2">
+                  <User className="h-4 w-4 text-urbana-gold" />
+                  Nome Completo
+                </Label>
+                <Input
+                  id="nome"
+                  type="text"
+                  value={formData.nome}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  placeholder="Seu nome completo"
+                  required
+                />
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-urbana-light text-sm font-medium flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-urbana-gold" />
+                  E-mail
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  placeholder="seu.email@exemplo.com"
+                  required
+                />
+              </div>
+
+              {/* WhatsApp */}
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp" className="text-urbana-light text-sm font-medium flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-urbana-gold" />
+                  WhatsApp
+                </Label>
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  value={formData.whatsapp}
+                  onChange={handleWhatsAppChange}
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  placeholder="(11) 99999-9999"
+                  maxLength={15}
+                  required
+                />
+              </div>
+
+              {/* Data de Nascimento */}
+              <div className="space-y-2">
+                <Label htmlFor="data_nascimento" className="text-urbana-light text-sm font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-urbana-gold" />
+                  Data de Nascimento
+                </Label>
+                <Input
+                  id="data_nascimento"
+                  type="date"
+                  value={formData.data_nascimento}
+                  onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  required
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold h-12 rounded-lg shadow-lg transition-all duration-300"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin mr-2" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Salvar Alterações
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </PainelClienteCardContent>
+        </PainelClienteCard>
       </div>
     </ClientPageContainer>
   );
