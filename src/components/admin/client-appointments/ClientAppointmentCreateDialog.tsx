@@ -443,7 +443,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           servico_id: selectedService.id,
           data: format(selectedDate, 'yyyy-MM-dd'),
           hora: selectedTime,
-          status: 'confirmado'
+          status: 'agendado'
         })
         .select()
         .single();

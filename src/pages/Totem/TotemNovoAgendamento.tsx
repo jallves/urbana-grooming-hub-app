@@ -305,7 +305,7 @@ const TotemNovoAgendamento: React.FC = () => {
               servico_id: selectedService.id,
               data: dataLocal,
               hora: selectedTime,
-              status: 'confirmado'
+              status: 'agendado'
             })
             .select()
             .single();
