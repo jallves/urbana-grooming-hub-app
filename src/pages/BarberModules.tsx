@@ -51,17 +51,14 @@ const BarberModules: React.FC = () => {
 
   if (loading) {
     return (
-      <BarberLayout title="Permissões">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-white rounded-full"></div>
-        </div>
-      </BarberLayout>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-white rounded-full"></div>
+      </div>
     );
   }
   
   return (
-    <BarberLayout title="Permissões de Acesso">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold mb-2">Suas Permissões</h2>
           <p className="text-zinc-400">
@@ -120,7 +117,6 @@ const BarberModules: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </BarberLayout>
   );
 };
 

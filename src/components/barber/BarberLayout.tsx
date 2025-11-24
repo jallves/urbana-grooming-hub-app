@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -9,25 +9,14 @@ import {
   Bell
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQueryClient } from '@tanstack/react-query';
-import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import { Button } from '@/components/ui/button';
 
-interface BarberLayoutProps {
-  children?: React.ReactNode;
-  title?: string;
-}
-
-const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
+const BarberLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const queryClient = useQueryClient();
-  
-  // Carregar dados do barbeiro logo no layout
-  const { data: barberData } = useBarberDataQuery();
 
   const navigationItems = [
     { 
@@ -54,12 +43,12 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
-      {/* Background image - Same as PainelClienteLayout */}
+      {/* Background fixo da barbearia */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover"
         />
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
@@ -70,7 +59,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
-
+      
       {/* Modern Header - FIXO */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-2 md:px-6 lg:px-8 py-3 sm:py-4">
@@ -80,7 +69,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                 <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
                   <img 
                     src={costaUrbanaLogo} 
-                    alt="Costa Urbana Logo" 
+                    alt="Costa Urbana" 
                     className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
                   />
                 </div>
@@ -104,7 +93,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                   <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-urbana-gold rounded-full animate-pulse" />
                 </Button>
               </div>
-
+              
               <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
                 <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
                 <span className="text-xs sm:text-sm text-urbana-light font-medium">

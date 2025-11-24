@@ -52,17 +52,14 @@ const BarberModuleAccess: React.FC = () => {
 
   if (loading) {
     return (
-      <BarberLayout title="Permissões">
-        <div className="w-full h-full min-h-screen bg-gray-900 flex justify-center items-center p-6">
-          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-white rounded-full"></div>
-        </div>
-      </BarberLayout>
+      <div className="w-full h-full min-h-screen bg-gray-900 flex justify-center items-center p-6">
+        <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-white rounded-full"></div>
+      </div>
     );
   }
 
   return (
-    <BarberLayout title="Permissões de Acesso">
-      <div className="w-full h-full min-h-screen bg-gray-900">
+    <div className="w-full h-full min-h-screen bg-gray-900">
         <div className="w-full space-y-6 p-6">
           <div>
             <h2 className="text-2xl font-bold mb-2 text-white">Suas Permissões</h2>
@@ -152,7 +149,6 @@ const BarberModuleAccess: React.FC = () => {
           </motion.div>
         </div>
       </div>
-    </BarberLayout>
   );
 };
 
