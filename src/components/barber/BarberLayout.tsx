@@ -165,11 +165,11 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
         </div>
       </header>
 
-      {/* Enhanced Mobile Navigation - FIXO */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl safe-area-inset-bottom">
+      {/* Enhanced Mobile Navigation - SEMPRE FIXO NA PARTE INFERIOR */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] w-full backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl" style={{ position: 'fixed' }}>
         <div className="w-full px-2 sm:px-3">
           {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 py-2 sm:py-3">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 py-2 sm:py-3 pb-safe">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = isActiveRoute(item.path);
