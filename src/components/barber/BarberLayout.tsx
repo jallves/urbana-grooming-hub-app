@@ -145,16 +145,16 @@ const BarberLayout: React.FC = () => {
         onClick={() => setIsMobileMenuOpen(false)} 
       />
 
-      {/* Mobile Sidebar - Lado Esquerdo */}
+      {/* Mobile Sidebar - Lado Esquerdo - ALTURA FIXA */}
       <div className={`
-        fixed inset-y-0 left-0 z-[70] w-[75vw] max-w-[300px] 
+        fixed top-0 left-0 h-screen w-[75vw] max-w-[300px] 
         bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-black/95
         transform transition-all duration-300 ease-out md:hidden 
-        border-r border-urbana-gold/30 shadow-2xl
+        border-r border-urbana-gold/30 shadow-2xl flex flex-col
         ${isMobileMenuOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}
       `}>
         {/* Header do Menu */}
-        <div className="flex items-center justify-between p-5 border-b border-urbana-gold/30 bg-urbana-black/50 backdrop-blur-xl">
+        <div className="flex-shrink-0 p-5 border-b border-urbana-gold/30 bg-urbana-black/50 backdrop-blur-xl">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-urbana-gold/10 rounded-lg border border-urbana-gold/20">
               <Menu className="h-5 w-5 text-urbana-gold" />
@@ -166,72 +166,69 @@ const BarberLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* Conteúdo do Menu */}
-        <div className="flex flex-col h-[calc(100%-73px)] overflow-y-auto">
-          {/* Navegação Principal */}
-          <div className="flex flex-col p-4 space-y-1 flex-1">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`
-                    group flex items-center space-x-3 py-3.5 px-4 rounded-xl 
-                    transition-all duration-200 relative overflow-hidden
-                    ${isActive 
-                      ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/10' 
-                      : 'text-urbana-light/80 hover:text-urbana-gold hover:bg-urbana-gold/10 active:scale-95'
-                    }
-                  `}
-                >
-                  {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-urbana-gold rounded-r-full" />
-                  )}
-                  <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
-                  <span className="text-sm font-semibold">{item.name}</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Navegação Principal - COM SCROLL */}
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            
+            return (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`
+                  group flex items-center space-x-3 py-3.5 px-4 rounded-xl 
+                  transition-all duration-200 relative overflow-hidden w-full
+                  ${isActive 
+                    ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/10' 
+                    : 'text-urbana-light/80 hover:text-urbana-gold hover:bg-urbana-gold/10 active:scale-95'
+                  }
+                `}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-urbana-gold rounded-r-full" />
+                )}
+                <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
+                <span className="text-sm font-semibold">{item.name}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-          {/* Footer do Menu */}
-          <div className="border-t border-urbana-gold/20 p-4 space-y-3 bg-gradient-to-t from-urbana-black/80 to-transparent">
-            {/* User Info */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-urbana-gold/5 rounded-xl border border-urbana-gold/20">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-urbana-gold/20 border-2 border-urbana-gold/40 flex items-center justify-center">
-                  <span className="text-urbana-gold font-bold text-sm">
-                    {(user?.user_metadata?.name?.charAt(0) || 'B').toUpperCase()}
-                  </span>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-urbana-light truncate">
-                  {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
-                </p>
-                <p className="text-xs text-urbana-light/50">Online</p>
+        {/* Footer do Menu - FIXO NO FUNDO */}
+        <div className="flex-shrink-0 border-t border-urbana-gold/20 p-4 space-y-3 bg-gradient-to-t from-urbana-black/80 to-transparent">
+          {/* User Info */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-urbana-gold/5 rounded-xl border border-urbana-gold/20">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-urbana-gold/20 border-2 border-urbana-gold/40 flex items-center justify-center">
+                <span className="text-urbana-gold font-bold text-sm">
+                  {(user?.user_metadata?.name?.charAt(0) || 'B').toUpperCase()}
+                </span>
               </div>
             </div>
-
-            {/* Botão Sair */}
-            <Button
-              variant="outline"
-              onClick={() => {
-                signOut();
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500 transition-all py-3 h-auto group"
-            >
-              <LogOut className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-semibold">Sair</span>
-            </Button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-urbana-light truncate">
+                {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
+              </p>
+              <p className="text-xs text-urbana-light/50">Online</p>
+            </div>
           </div>
+
+          {/* Botão Sair */}
+          <Button
+            variant="outline"
+            onClick={() => {
+              signOut();
+              setIsMobileMenuOpen(false);
+            }}
+            className="w-full border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500 transition-all py-3 h-auto group"
+          >
+            <LogOut className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+            <span className="text-sm font-semibold">Sair</span>
+          </Button>
         </div>
       </div>
 
