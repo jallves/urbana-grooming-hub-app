@@ -63,7 +63,8 @@ export const useBarberCommissionsQuery = () => {
       // Mapear dados
       const commissions: Commission[] = commissionsData.map((record) => {
         const metadata = record.metadata as any;
-        const commissionType = record.category === 'Comissões - Serviços' ? 'service' : 'product';
+        // Corrigir mapeamento: staff_payments = serviço, products = produto
+        const commissionType = record.category === 'staff_payments' ? 'service' : 'product';
         
         return {
           id: record.id,
