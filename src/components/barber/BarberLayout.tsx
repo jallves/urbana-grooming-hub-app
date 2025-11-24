@@ -45,9 +45,9 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden relative font-poppins">
       {/* Background fixo da barbearia */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-0 pointer-events-none w-full max-w-[100vw]">
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
@@ -58,14 +58,14 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Animated background effects */}
-      <div className="fixed inset-0 overflow-hidden z-0">
+      <div className="fixed inset-0 overflow-hidden z-0 w-full max-w-[100vw]">
         <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
       {/* Modern Header - FIXO */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl">
-        <div className="w-full px-2 md:px-6 lg:px-8 py-3 sm:py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full max-w-[100vw] backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl">
+        <div className="w-full max-w-full px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="relative">
@@ -236,7 +236,7 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Main Content - Com espaçamento apenas para header fixo */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-8">
+      <main className="relative z-10 w-full max-w-full overflow-x-hidden pt-[72px] sm:pt-[80px] pb-8">
         <Outlet />
       </main>
     </div>
