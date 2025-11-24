@@ -73,6 +73,9 @@ export default function PainelClientePerfil() {
     return null;
   }
 
+  // Debug: verificar se o componente está renderizando a versão correta
+  console.log('✅ PainelClientePerfil - Versão atualizada (sem max-w-2xl)');
+
   return (
     <ClientPageContainer>
       {/* Profile Card - Largura igual à Home */}
