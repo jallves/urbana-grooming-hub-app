@@ -67,7 +67,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
   if (isLoading) {
     return (
       <div className="w-full px-4 space-y-4 sm:space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <StandardCard key={i}>
               <div className="animate-pulse">
@@ -86,7 +86,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
     <>
       <div className="w-full px-4 space-y-4 sm:space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {statsCards.map((stat, index) => (
             <StandardCard key={index}>
               <div className="flex items-center justify-between">

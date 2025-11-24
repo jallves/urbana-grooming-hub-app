@@ -95,7 +95,7 @@ const BarberDashboard: React.FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {statsCards.map((stat, index) => (
               <StandardCard key={index}>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -117,7 +117,7 @@ const BarberDashboard: React.FC = () => {
           </div>
 
           {/* Quick Access Cards */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {quickAccessItems.map((item, index) => (
               <StandardCard 
                 key={index}
