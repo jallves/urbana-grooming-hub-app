@@ -93,7 +93,7 @@ export default function PainelClientePerfil() {
           </PainelClienteCardHeader>
 
           <PainelClienteCardContent className="p-4 sm:p-6">
-            <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {erro && (
                 <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
                   <p className="text-red-400 text-sm">{erro}</p>
