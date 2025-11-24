@@ -71,9 +71,9 @@ const PainelClienteLayout: React.FC = () => {
       <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Modern Header */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/80 border-b border-urbana-gold/20 shadow-2xl">
-        <div className="w-full px-2 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      {/* Modern Header - FIXO */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl">
+        <div className="w-full px-2 md:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div 
               className="flex items-center gap-2 sm:gap-3 md:gap-4"
@@ -129,11 +129,11 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Enhanced Mobile Navigation - Fixed */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 w-full backdrop-blur-2xl bg-urbana-black/80 border-t border-urbana-gold/20 shadow-2xl">
+      {/* Enhanced Mobile Navigation - FIXO */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-1 md:px-4">
           {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1 py-3 sm:py-4 pb-safe">
+          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -184,8 +184,8 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="relative z-10 w-full pb-24 lg:pb-4">
+      {/* Main Content - Com espaçamento para header e footer fixos */}
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[100px] lg:pb-8">
         <Outlet />
       </main>
     </div>
