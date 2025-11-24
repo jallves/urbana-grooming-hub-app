@@ -64,9 +64,21 @@ export const useBarberAuth = () => {
     }
   };
 
+  // Pega os dois primeiros nomes
+  const getFirstTwoNames = () => {
+    if (!barber?.nome) return 'Barbeiro';
+    
+    const nameParts = barber.nome.trim().split(' ');
+    if (nameParts.length >= 2) {
+      return `${nameParts[0]} ${nameParts[1]}`;
+    }
+    return nameParts[0] || 'Barbeiro';
+  };
+
   return {
     barber,
     loading,
-    checkBarberAuth
+    checkBarberAuth,
+    displayName: getFirstTwoNames()
   };
 };
