@@ -20,15 +20,18 @@ const ClientAppointmentList: React.FC = () => {
     handleUpdateAppointment
   } = useClientAppointments();
   
-  // LEI PÉTREA: Filtrar agendamentos baseado nos 4 estados (3 automáticos + 1 manual)
+  // LEI PÉTREA: Filtrar agendamentos baseado nos estados (incluindo ausente e cancelado do banco)
   const filteredAppointments = appointments.filter((appointment: PainelAgendamento) => {
-    // Verificar se foi cancelado manualmente
-    const statusUpper = appointment.status?.toUpperCase() || '';
+    const statusFromDB = appointment.status?.toLowerCase() || '';
     let currentStatus: string;
     
-    if (statusUpper === 'CANCELADO') {
+    // PRIORIDADE 1: Status manual do banco (ausente, cancelado)
+    if (statusFromDB === 'ausente') {
+      currentStatus = 'ausente';
+    } else if (statusFromDB === 'cancelado') {
       currentStatus = 'cancelado';
     } else {
+      // PRIORIDADE 2: Status baseado em check-in/check-out
       const hasCheckIn = appointment.totem_sessions && 
         appointment.totem_sessions.length > 0 && 
         appointment.totem_sessions.some(s => s.check_in_time);
@@ -36,7 +39,7 @@ const ClientAppointmentList: React.FC = () => {
       const hasCheckOut = appointment.totem_sessions && 
         appointment.totem_sessions.some(s => s.check_out_time);
 
-      // Determinar status atual (Lei Pétrea)
+      // Determinar status automático
       if (!hasCheckIn) {
         currentStatus = 'agendado'; // Check-in Pendente
       } else if (hasCheckIn && !hasCheckOut) {
