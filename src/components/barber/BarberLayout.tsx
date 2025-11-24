@@ -117,7 +117,7 @@ const BarberLayout: React.FC = () => {
       </header>
 
       {/* Enhanced Mobile Navigation - FIXO */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl" style={{ position: 'fixed' }}>
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-1 md:px-4">
           {/* Mobile Tab Navigation */}
           <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
