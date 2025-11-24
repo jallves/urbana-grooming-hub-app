@@ -49,6 +49,7 @@ const AppointmentFilters: React.FC<AppointmentFiltersProps> = ({
           <SelectItem value="completed">Finalizado</SelectItem>
           <SelectItem value="cancelled">Cancelado</SelectItem>
           <SelectItem value="no_show">Não Compareceu</SelectItem>
+          <SelectItem value="ausente">Ausente</SelectItem>
         </SelectContent>
       </Select>
     </div>
