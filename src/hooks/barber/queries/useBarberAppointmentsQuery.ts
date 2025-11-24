@@ -37,15 +37,24 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
         `)
         .eq('barbeiro_id', barberId)
         .gte('data', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false })
-        .limit(100);
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true })
+        .limit(200);
 
       if (!data) return [];
 
+      // Mapear status do banco para o formato esperado pelo frontend
+      const statusMap: Record<string, string> = {
+        'agendado': 'scheduled',
+        'confirmado': 'confirmed',
+        'concluido': 'completed',
+        'cancelado': 'cancelled',
+        'ausente': 'absent'
+      };
+
       return data.map((apt: any) => ({
         id: apt.id,
-        status: apt.status,
+        status: statusMap[apt.status] || apt.status, // Mapear status
         start_time: `${apt.data}T${apt.hora}`,
         end_time: `${apt.data}T${apt.hora}`,
         client_name: apt.painel_clientes?.nome || 'Cliente',
