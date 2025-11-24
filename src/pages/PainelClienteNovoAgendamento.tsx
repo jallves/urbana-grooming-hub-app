@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SuccessConfirmationDialog from '@/components/client/appointment/SuccessConfirmationDialog';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
-import { ClientGreetingHeader } from "@/components/painel-cliente/ClientGreetingHeader";
 
 interface Service {
   id: string;
