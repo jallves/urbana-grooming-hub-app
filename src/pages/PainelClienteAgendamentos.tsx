@@ -124,25 +124,24 @@ export default function PainelClienteAgendamentos() {
 
   return (
     <ClientPageContainer>
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-urbana-gold font-playfair">
-              Meus Agendamentos
-            </h1>
-            <p className="text-gray-400">Acompanhe todos os seus agendamentos</p>
-          </div>
-          <button
-            onClick={() => navigate('/painel-cliente/agendar')}
-            className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium px-4 py-2 rounded-md hover:brightness-110 transition"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Agendamento
-          </button>
-        </div>
+      {/* Subtítulo da página */}
+      <p className="text-urbana-light/70 text-sm sm:text-base mb-4 drop-shadow-md">
+        Acompanhe todos os seus agendamentos
+      </p>
 
-        {/* Filtros */}
-        <div className="flex flex-wrap gap-3 mb-6">
+      {/* Botão Novo Agendamento */}
+      <div className="mb-6">
+        <button
+          onClick={() => navigate('/painel-cliente/agendar')}
+          className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium px-4 py-2 rounded-md hover:brightness-110 transition"
+        >
+          <Plus className="w-4 h-4" />
+          Novo Agendamento
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-3 mb-6">
           {Object.entries(statusLabels).map(([key, label]) => (
             <button
               key={key}
@@ -235,7 +234,6 @@ export default function PainelClienteAgendamentos() {
             })}
           </div>
         )}
-      </div>
     </ClientPageContainer>
   );
 }

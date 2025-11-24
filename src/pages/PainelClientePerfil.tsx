@@ -98,9 +98,10 @@ export default function PainelClientePerfil() {
 
   return (
     <>
-      {/* Header - Largura Total */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 mb-4 sm:mb-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+      {/* Content - Com Container Limitado */}
+      <ClientPageContainer>
+        {/* Botão Voltar */}
+        <div className="mb-4">
           <Button
             onClick={() => navigate('/painel-cliente/dashboard')}
             variant="ghost"
@@ -110,17 +111,12 @@ export default function PainelClientePerfil() {
             <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
             Voltar
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold drop-shadow-lg">
-              Editar Perfil
-            </h1>
-            <p className="text-urbana-light/70 text-sm sm:text-base mt-1 sm:mt-2 drop-shadow-md">Mantenha suas informações sempre atualizadas</p>
-          </div>
         </div>
-      </div>
 
-      {/* Content - Com Container Limitado */}
-      <ClientPageContainer>
+        {/* Subtítulo */}
+        <p className="text-urbana-light/70 text-sm sm:text-base mb-4 sm:mb-6 drop-shadow-md">
+          Mantenha suas informações sempre atualizadas
+        </p>
 
       {/* Profile Card */}
       <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">

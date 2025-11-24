@@ -4,12 +4,13 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Calendar, Home, Bell, Clock } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import PageTransition from '@/components/transitions/PageTransition';
 import LoadingBar from '@/components/ui/loading/LoadingBar';
 import { usePageTransition } from '@/hooks/usePageTransition';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
+import { ClientGreetingHeader } from '@/components/painel-cliente/ClientGreetingHeader';
 
 const PainelClienteLayout: React.FC = () => {
   const { cliente, logout } = usePainelClienteAuth();
@@ -165,11 +166,8 @@ const PainelClienteLayout: React.FC = () => {
                   >
                     {/* Active background glow */}
                     {isActive && (
-                      <motion.div
-                        layoutId="mobileActiveTab"
+                      <div
                         className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl"
-                        initial={false}
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                       />
                     )}
                     
@@ -182,11 +180,8 @@ const PainelClienteLayout: React.FC = () => {
                     
                     {/* Active indicator dot */}
                     {isActive && (
-                      <motion.div
+                      <div
                         className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.2 }}
                       />
                     )}
                   </Button>
@@ -206,6 +201,13 @@ const PainelClienteLayout: React.FC = () => {
           </div>
         </div>
       </nav>
+
+      {/* Cabeçalho Fixo Unificado - Sempre visível em todas as páginas */}
+      <div className="sticky top-[68px] lg:top-[72px] z-30 w-full backdrop-blur-xl bg-urbana-black/40 border-b border-urbana-gold/10 py-4 sm:py-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+          <ClientGreetingHeader cliente={cliente} />
+        </div>
+      </div>
 
       {/* Main Content */}
       <main className="relative z-10 w-full pb-safe">
