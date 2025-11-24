@@ -6,13 +6,11 @@ import BarberClientsComponent from '@/components/barber/BarberClients';
 
 const BarberClientsPage: React.FC = () => {
   return (
-    <BarberLayout title="Meus Clientes">
-      <StandardBarberLayout>
+    <StandardBarberLayout>
         <div className="w-full h-full">
           <BarberClientsComponent />
         </div>
       </StandardBarberLayout>
-    </BarberLayout>
   );
 };
 
