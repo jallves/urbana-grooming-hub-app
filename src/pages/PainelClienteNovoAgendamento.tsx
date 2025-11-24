@@ -588,170 +588,163 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   <p className="text-white/60">Selecione a melhor data e horário para você</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Date Selection */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                      <CalendarIcon className="w-5 h-5 text-urbana-gold" />
-                      Data
-                    </h3>
-                    <TotemGrid columns={2} gap={2}>
-                      {loading ? (
-                        <div className="col-span-full text-center text-white py-8">
-                          <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                          Carregando datas...
-                        </div>
-                      ) : availableDates.length === 0 ? (
-                        <div className="col-span-full text-center text-white/60 py-8">
-                          Nenhuma data disponível
-                        </div>
-                      ) : (
-                        availableDates.map((date, index) => (
-                          <TotemCard
-                            key={date.toISOString()}
-                            onClick={() => handleDateSelect(date)}
-                            variant={selectedDate?.toDateString() === date.toDateString() ? 'selected' : 'default'}
-                            animationDelay={`${index * 0.05}s`}
-                          >
-                            <div className="text-center">
-                              <p className="text-sm text-white/60 capitalize">
-                                {format(date, 'EEEE', { locale: ptBR })}
-                              </p>
-                              <p className="text-2xl font-bold text-white">
-                                {format(date, 'dd')}
-                              </p>
-                              <p className="text-sm text-white/80 capitalize">
-                                {format(date, 'MMM', { locale: ptBR })}
-                              </p>
-                            </div>
-                          </TotemCard>
-                        ))
-                      )}
-                    </TotemGrid>
-                  </div>
+                {/* Date Selection */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <CalendarIcon className="w-5 h-5 text-urbana-gold" />
+                    Data
+                  </h3>
+                  <TotemGrid columns={3} gap={2}>
+                    {loading ? (
+                      <div className="col-span-full text-center text-white py-8">
+                        <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
+                        Carregando datas...
+                      </div>
+                    ) : availableDates.length === 0 ? (
+                      <div className="col-span-full text-center text-white/60 py-8">
+                        Nenhuma data disponível
+                      </div>
+                    ) : (
+                      availableDates.map((date, index) => (
+                        <TotemCard
+                          key={date.toISOString()}
+                          onClick={() => handleDateSelect(date)}
+                          variant={selectedDate?.toDateString() === date.toDateString() ? 'selected' : 'default'}
+                          animationDelay={`${index * 0.05}s`}
+                        >
+                          <div className="text-center">
+                            <p className="text-sm text-white/60 capitalize">
+                              {format(date, 'EEEE', { locale: ptBR })}
+                            </p>
+                            <p className="text-2xl font-bold text-white">
+                              {format(date, 'dd')}
+                            </p>
+                            <p className="text-sm text-white/80 capitalize">
+                              {format(date, 'MMM', { locale: ptBR })}
+                            </p>
+                          </div>
+                        </TotemCard>
+                      ))
+                    )}
+                  </TotemGrid>
+                </div>
 
-                  {/* Time Selection */}
-                  <div>
+                {/* Time Selection */}
+                {selectedDate && (
+                  <div className="mb-8">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                       <Clock className="w-5 h-5 text-urbana-gold" />
                       Horário
                     </h3>
-                    {!selectedDate ? (
-                      <div className="text-center text-white/60 py-8 bg-white/5 rounded-lg border border-white/10">
-                        <Clock className="w-12 h-12 text-white/30 mx-auto mb-2" />
-                        <p>Selecione uma data primeiro</p>
-                      </div>
-                    ) : (
-                      <TotemGrid columns={3} gap={2}>
-                        {loading ? (
-                          <div className="col-span-full text-center text-white py-8">
-                            <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                            Carregando horários...
-                          </div>
-                        ) : timeSlots.filter(slot => slot.available).length === 0 ? (
-                          <div className="col-span-full text-center text-white/60 py-8">
-                            Nenhum horário disponível
-                          </div>
-                        ) : (
-                          timeSlots
-                            .filter(slot => slot.available)
-                            .map((slot, index) => (
-                              <TotemCard
-                                key={slot.time}
-                                onClick={() => setSelectedTime(slot.time)}
-                                variant={selectedTime === slot.time ? 'selected' : 'default'}
-                                animationDelay={`${index * 0.02}s`}
-                              >
-                                <div className="text-center">
-                                  <p className="text-lg font-bold text-white">
-                                    {slot.time}
-                                  </p>
-                                </div>
-                              </TotemCard>
-                            ))
-                        )}
-                      </TotemGrid>
-                    )}
-                  </div>
-
-                  {/* Summary & Confirm */}
-                  {selectedDate && selectedTime && (
-                    <div className="lg:col-span-2 mt-6">
-                      <Card className="bg-gradient-to-br from-urbana-gold/20 to-urbana-gold/5 backdrop-blur-md border-2 border-urbana-gold/50 overflow-hidden">
-                        <CardHeader className="bg-urbana-gold/10 border-b border-urbana-gold/20">
-                          <CardTitle className="text-white text-xl flex items-center gap-2">
-                            <Check className="w-5 h-5" />
-                            Confirme seu Agendamento
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pt-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
-                              <Scissors className="w-5 h-5 text-urbana-gold mt-0.5" />
-                              <div>
-                                <p className="text-xs text-white/60 mb-1">Serviço</p>
-                                <p className="font-semibold">{selectedService?.nome}</p>
-                                <p className="text-sm text-urbana-gold">R$ {selectedService?.preco.toFixed(2)}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
-                              {selectedBarber?.image_url ? (
-                                <img 
-                                  src={selectedBarber.image_url} 
-                                  alt={selectedBarber.nome}
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-urbana-gold/50"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                              ) : (
-                                <User className="w-5 h-5 text-urbana-gold mt-0.5" />
-                              )}
-                              <div>
-                                <p className="text-xs text-white/60 mb-1">Profissional</p>
-                                <p className="font-semibold">{selectedBarber?.nome}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
-                              <CalendarIcon className="w-5 h-5 text-urbana-gold mt-0.5" />
-                              <div>
-                                <p className="text-xs text-white/60 mb-1">Data</p>
-                                <p className="font-semibold capitalize">
-                                  {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                    <TotemGrid columns={3} gap={2}>
+                      {loading ? (
+                        <div className="col-span-full text-center text-white py-8">
+                          <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
+                          Carregando horários...
+                        </div>
+                      ) : timeSlots.filter(slot => slot.available).length === 0 ? (
+                        <div className="col-span-full text-center text-white/60 py-8">
+                          Nenhum horário disponível
+                        </div>
+                      ) : (
+                        timeSlots
+                          .filter(slot => slot.available)
+                          .map((slot, index) => (
+                            <TotemCard
+                              key={slot.time}
+                              onClick={() => setSelectedTime(slot.time)}
+                              variant={selectedTime === slot.time ? 'selected' : 'default'}
+                              animationDelay={`${index * 0.02}s`}
+                            >
+                              <div className="text-center">
+                                <p className="text-lg font-bold text-white">
+                                  {slot.time}
                                 </p>
                               </div>
-                            </div>
-                            <div className="flex items-start gap-3 text-white bg-white/5 p-3 rounded-lg">
-                              <Clock className="w-5 h-5 text-urbana-gold mt-0.5" />
-                              <div>
-                                <p className="text-xs text-white/60 mb-1">Horário</p>
-                                <p className="font-semibold text-lg">{selectedTime}</p>
-                                <p className="text-xs text-white/60">{selectedService?.duracao} minutos</p>
-                              </div>
+                            </TotemCard>
+                          ))
+                      )}
+                    </TotemGrid>
+                  </div>
+                )}
+
+                {/* Summary & Confirm */}
+                {selectedDate && selectedTime && (
+                  <div className="mt-8">
+                    <Card className="bg-urbana-black/40 border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20">
+                      <CardHeader className="bg-urbana-gold/20 border-b border-urbana-gold/30">
+                        <CardTitle className="text-white text-xl flex items-center gap-2">
+                          <Check className="w-5 h-5" />
+                          Confirme seu Agendamento
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4 pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
+                            <Scissors className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-xs text-white/60 mb-1">Serviço</p>
+                              <p className="font-semibold">{selectedService?.nome}</p>
+                              <p className="text-sm text-urbana-gold mt-1">R$ {selectedService?.preco.toFixed(2)}</p>
                             </div>
                           </div>
-                          <Button
-                            onClick={handleConfirm}
-                            disabled={creating || isValidating}
-                            className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg relative overflow-hidden"
-                          >
-                            {creating || isValidating ? (
-                              <span className="flex items-center justify-center gap-2">
-                                <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
-                                Confirmando...
-                              </span>
+                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
+                            {selectedBarber?.image_url ? (
+                              <img 
+                                src={selectedBarber.image_url} 
+                                alt={selectedBarber.nome}
+                                className="w-12 h-12 rounded-full object-cover border-2 border-urbana-gold/50 shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
                             ) : (
-                              <>
-                                <Check className="w-5 h-5 mr-2 inline" />
-                                Confirmar Agendamento
-                              </>
+                              <User className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
                             )}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  )}
-                </div>
+                            <div>
+                              <p className="text-xs text-white/60 mb-1">Profissional</p>
+                              <p className="font-semibold">{selectedBarber?.nome}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
+                            <CalendarIcon className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-xs text-white/60 mb-1">Data</p>
+                              <p className="font-semibold capitalize">
+                                {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
+                            <Clock className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-xs text-white/60 mb-1">Horário</p>
+                              <p className="font-semibold text-lg">{selectedTime}</p>
+                              <p className="text-xs text-white/60 mt-1">{selectedService?.duracao} minutos</p>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handleConfirm}
+                          disabled={creating || isValidating}
+                          className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg shadow-lg shadow-urbana-gold/30 transition-all duration-300"
+                        >
+                          {creating || isValidating ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
+                              Confirmando...
+                            </span>
+                          ) : (
+                            <>
+                              <Check className="w-5 h-5 mr-2 inline" />
+                              Confirmar Agendamento
+                            </>
+                          )}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </div>
             )}
       </div>
