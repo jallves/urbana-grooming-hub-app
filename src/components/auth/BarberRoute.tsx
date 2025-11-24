@@ -27,9 +27,9 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
     navigate('/barbeiro/login', { replace: true });
   };
 
-  // Show loading screen while checking authentication
+  // Show loading screen while checking authentication - sem mensagens para evitar flash
   if (loading) {
-    return <AuthLoadingScreen message="Verificando acesso..." />;
+    return <AuthLoadingScreen message="Carregando..." />;
   }
 
   // Redirect to login if not authenticated
@@ -62,7 +62,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
     );
   }
 
-  return <>{children}</>;
+  // Renderizar conteúdo com transição suave para evitar flash
+  return <div className="animate-fade-in">{children}</div>;
 };
-
 export default BarberRoute;
