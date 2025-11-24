@@ -40,7 +40,7 @@ export const ClientPageContainer: React.FC<ClientPageContainerProps> = ({
       // Padding vertical
       'py-4 sm:py-6',
       // Padding horizontal (zero no mobile, aumenta no desktop)
-      'px-0 md:px-6 lg:px-8',
+      'px-4 md:px-6 lg:px-8',
       className
     )}>
       {children}

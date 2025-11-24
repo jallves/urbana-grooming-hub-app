@@ -74,10 +74,10 @@ export default function PainelClientePerfil() {
   }
 
   return (
-    <ClientPageContainer>
+    <ClientPageContainer className="min-h-[calc(100vh-140px)]">
       {/* Profile Card */}
-      <div className="max-w-5xl mx-auto">
-          <PainelClienteCard variant="highlight" icon={Edit3}>
+      <div className="w-full">
+          <PainelClienteCard variant="highlight" icon={Edit3} className="w-full">
             <PainelClienteCardHeader className="pb-6">
               <PainelClienteCardTitle>
                 Suas Informações
@@ -189,20 +189,6 @@ export default function PainelClientePerfil() {
               </form>
             </PainelClienteCardContent>
           </PainelClienteCard>
-      </div>
-
-      {/* Security Notice */}
-      <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">
-          <PainelClienteCard variant="info" icon={Shield}>
-            <PainelClienteCardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h3 className="text-urbana-light font-semibold">Informações Seguras</h3>
-                  <p className="text-urbana-light/70 text-sm">Seus dados são protegidos e criptografados.</p>
-                </div>
-              </div>
-            </PainelClienteCardContent>
-        </PainelClienteCard>
       </div>
     </ClientPageContainer>
   );
