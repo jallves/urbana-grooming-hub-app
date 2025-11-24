@@ -409,31 +409,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen relative">
-      {/* Background com imagem */}
-      <img 
-        src={barbershopBg}
-        alt="Background"
-        className="fixed inset-0 w-full h-full object-cover z-0"
-        onError={(e) => {
-          e.currentTarget.style.display = 'none';
-        }}
-      />
-      
-      {/* Overlay escuro */}
-      <div className="fixed inset-0 bg-black/70 z-0" />
-      
-      {/* Animated background effects */}
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" 
-          style={{ animationDelay: '1s' }} />
-      </div>
-
-      {/* Content */}
-      <PainelClienteContentContainer>
-        {/* Header */}
-        <div className="mb-4 sm:mb-6">
+    <PainelClienteContentContainer>
+      {/* Header */}
+      <div className="mb-4 sm:mb-6">
           <button
             onClick={handleBack}
             className="flex items-center gap-2 text-white/80 hover:text-white transition-colors mb-6"
@@ -702,8 +680,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
               </div>
             )}
         </div>
-      </PainelClienteContentContainer>
-      
+
       {/* Modal de confirmação de sucesso */}
       {showSuccessDialog && selectedService && selectedBarber && selectedDate && selectedTime && (
         <SuccessConfirmationDialog
@@ -726,7 +703,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           }}
         />
       )}
-    </div>
+    </PainelClienteContentContainer>
   );
 };
 
