@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Shield, Scissors, Menu, Home, X, User, Monitor } from "lucide-react";
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MobileNavigationProps {
   user: any;
@@ -17,7 +16,6 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   handleSignOut 
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   const closeMenu = () => setIsMobileMenuOpen(false);
@@ -46,8 +44,6 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
     closeMenu();
     navigate('/totem/login');
   };
-
-  if (!isMobile) return null;
 
   return (
     <>
