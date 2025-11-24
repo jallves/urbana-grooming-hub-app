@@ -72,7 +72,7 @@ const PainelClienteLayout: React.FC = () => {
       </div>
       
       {/* Modern Header - FIXO */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="w-full px-2 md:px-6 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div 
