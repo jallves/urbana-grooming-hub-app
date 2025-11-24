@@ -88,12 +88,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
     },
   ];
 
-  const isActiveRoute = (path: string) => {
-    return location.pathname === path;
-  };
-
   return (
-    <div className="min-h-screen w-full overflow-x-hidden font-poppins">
+    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
       {/* Background image - Same as PainelClienteLayout */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
@@ -153,26 +149,28 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
               </div>
               
               <div>
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={signOut}
-                  className="flex items-center text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
+                  className="text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
                 >
                   <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Enhanced Mobile Navigation - SEMPRE FIXO NA PARTE INFERIOR */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[100] w-full backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl" style={{ position: 'fixed', bottom: 0 }}>
-        <div className="w-full px-2 sm:px-3">
+      {/* Enhanced Mobile Navigation - FIXO */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
+        <div className="w-full px-1 md:px-4">
           {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 py-2 sm:py-3 pb-safe">
+          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
-              const isActive = isActiveRoute(item.path);
+              const isActive = location.pathname === item.path;
               
               return (
                 <div
@@ -184,8 +182,8 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                     onClick={() => navigate(item.path)}
                     className={`
                       w-full h-auto flex flex-col items-center justify-center 
-                      px-1.5 py-2.5 sm:px-3 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-300 
-                      relative overflow-hidden
+                      p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
+                      relative overflow-hidden min-h-[60px] sm:min-h-[70px]
                       ${isActive 
                         ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
                         : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
@@ -195,13 +193,13 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                     {/* Active background glow */}
                     {isActive && (
                       <div
-                        className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-lg sm:rounded-xl"
+                        className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl"
                       />
                     )}
                     
-                    <div className="relative z-10 flex flex-col items-center gap-0.5 sm:gap-1">
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-                      <span className="text-[10px] sm:text-xs font-medium leading-tight text-center max-w-full truncate px-0.5">
+                    <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="text-xs sm:text-sm font-medium leading-tight text-center">
                         {item.name}
                       </span>
                     </div>
@@ -209,7 +207,7 @@ const BarberLayout: React.FC<BarberLayoutProps> = ({ children, title }) => {
                     {/* Active indicator dot */}
                     {isActive && (
                       <div
-                        className="absolute top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
+                        className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full"
                       />
                     )}
                   </Button>
