@@ -13,6 +13,7 @@ const statusColors: Record<string, string> = {
   completed: 'bg-purple-100 text-purple-800',
   cancelled: 'bg-red-100 text-red-800',
   no_show: 'bg-gray-100 text-gray-800',
+  ausente: 'bg-gray-100 text-gray-800',
 };
 
 const statusLabels: Record<string, string> = {
@@ -21,6 +22,7 @@ const statusLabels: Record<string, string> = {
   completed: 'Finalizado',
   cancelled: 'Cancelado',
   no_show: 'Não Compareceu',
+  ausente: 'Ausente',
 };
 
 const AppointmentStatusBadge: React.FC<AppointmentStatusBadgeProps> = ({ status }) => {

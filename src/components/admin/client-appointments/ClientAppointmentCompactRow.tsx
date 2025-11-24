@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { format, parseISO } from 'date-fns';
-import { MoreHorizontal, Edit, Clock, X } from 'lucide-react';
+import { format, parseISO, isPast, parse } from 'date-fns';
+import { MoreHorizontal, Edit, Clock, X, UserX } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -80,6 +80,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   onDelete
 }) => {
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isAbsentDialogOpen, setIsAbsentDialogOpen] = useState(false);
 
   // LEI PÉTREA: Determinar status didático do agendamento
   const getActualStatus = () => {
@@ -143,6 +144,12 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
         className: 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200',
         icon: '❌'
       },
+      'ausente': {
+        label: 'Ausente',
+        sublabel: 'Não Compareceu',
+        className: 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200',
+        icon: '👻'
+      },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.agendado;
@@ -167,6 +174,29 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     return currentStatus === 'agendado' || currentStatus === 'check_in_finalizado';
   };
 
+  // Verificar se pode marcar como ausente (apenas após horário ter passado e status agendado/check_in)
+  const canMarkAsAbsent = () => {
+    const currentStatus = actualStatus;
+    
+    // Só pode marcar como ausente se status for agendado ou check_in_finalizado
+    if (currentStatus !== 'agendado' && currentStatus !== 'check_in_finalizado') {
+      return false;
+    }
+
+    // Verificar se o horário já passou
+    try {
+      const appointmentDateTime = parse(
+        `${appointment.data} ${appointment.hora}`,
+        'yyyy-MM-dd HH:mm:ss',
+        new Date()
+      );
+      return isPast(appointmentDateTime);
+    } catch (error) {
+      console.error('Erro ao validar horário para ausente:', error);
+      return false;
+    }
+  };
+
   const handleCancelClick = () => {
     setIsCancelDialogOpen(true);
   };
@@ -176,6 +206,18 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
     setIsCancelDialogOpen(false);
     toast.success('Agendamento cancelado', {
       description: 'O agendamento foi cancelado com sucesso.'
+    });
+  };
+
+  const handleAbsentClick = () => {
+    setIsAbsentDialogOpen(true);
+  };
+
+  const handleConfirmAbsent = () => {
+    onStatusChange(appointment.id, 'ausente');
+    setIsAbsentDialogOpen(false);
+    toast.warning('Cliente marcado como ausente', {
+      description: 'Este agendamento não gerará receita ou comissão.'
     });
   };
 
@@ -263,6 +305,16 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
                 <span className="text-sm font-medium">Cancelar Agendamento</span>
               </DropdownMenuItem>
             )}
+
+            {canMarkAsAbsent() && (
+              <DropdownMenuItem
+                className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 text-gray-700 py-2.5"
+                onClick={handleAbsentClick}
+              >
+                <UserX className="mr-3 h-4 w-4" />
+                <span className="text-sm font-medium">Marcar como Ausente</span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -306,6 +358,59 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
                 className="bg-orange-600 hover:bg-orange-700 text-white font-semibold"
               >
                 Confirmar Cancelamento
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Dialog de Marcar como Ausente */}
+        <AlertDialog open={isAbsentDialogOpen} onOpenChange={setIsAbsentDialogOpen}>
+          <AlertDialogContent className="bg-white border-2 border-gray-200 shadow-xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-gray-700 font-bold text-xl flex items-center gap-2">
+                👻 Marcar Cliente como Ausente
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-4 pt-2">
+                <p className="text-base text-gray-900">
+                  Você está marcando{' '}
+                  <strong className="text-gray-700">{appointment.painel_clientes?.nome}</strong>
+                  {' '}como ausente.
+                </p>
+                
+                <div className="bg-gray-50 border-l-4 border-gray-400 p-4 rounded-r">
+                  <p className="text-sm text-gray-800 font-medium mb-2">
+                    📋 Detalhes do Agendamento:
+                  </p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li><strong>Serviço:</strong> {appointment.painel_servicos?.nome}</li>
+                    <li><strong>Data:</strong> {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')} às {appointment.hora}</li>
+                    <li><strong>Barbeiro:</strong> {appointment.painel_barbeiros?.nome}</li>
+                    <li><strong>Valor:</strong> R$ {appointment.painel_servicos?.preco?.toFixed(2)}</li>
+                  </ul>
+                </div>
+
+                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r">
+                  <p className="text-sm text-red-800">
+                    ⚠️ <strong>Atenção:</strong> O cliente não compareceu. Este agendamento <strong>NÃO gerará receita nem comissão</strong> para o barbeiro.
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+                  <p className="text-sm text-blue-800">
+                    ℹ️ <strong>Importante:</strong> O agendamento será mantido no histórico para controle e estatísticas de não comparecimento.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200">
+                Voltar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmAbsent}
+                className="bg-gray-600 hover:bg-gray-700 text-white font-semibold"
+              >
+                Confirmar Ausência
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
