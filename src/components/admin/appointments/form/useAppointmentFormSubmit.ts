@@ -203,7 +203,7 @@ export const useAppointmentFormSubmit = ({
             servico_id: data.service_id,
             data: dataLocal,
             hora: format(startDate, 'HH:mm'),
-            status: 'confirmado'
+            status: 'agendado'
           };
 
           await supabase
