@@ -72,47 +72,59 @@ const PainelClienteLayout: React.FC = () => {
       <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Modern Header - Padronizado igual ao menu rodapé */}
+      {/* Modern Header */}
       <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/80 border-b border-urbana-gold/20 shadow-2xl">
-        <div className="w-full px-1 md:px-4">
-          <div className="flex items-center justify-between py-3 sm:py-4">
-            {/* Logo Esquerda */}
-            <div className="flex items-center">
-              <div className="p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl border border-urbana-gold/20">
-                <img 
-                  src={costaUrbanaLogo} 
-                  alt="Costa Urbana" 
-                  className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
-                />
+        <div className="w-full px-2 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="flex items-center justify-between">
+            <div 
+              className="flex items-center gap-2 sm:gap-3 md:gap-4"
+            >
+              <div className="relative">
+                <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
+                  <img 
+                    src={costaUrbanaLogo} 
+                    alt="Costa Urbana" 
+                    className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
+                  />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
+                  Barbearia Costa Urbana
+                </h1>
+                <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Cliente</p>
               </div>
             </div>
             
-            {/* Nome Centralizado */}
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <h1 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light whitespace-nowrap">
-                Barbearia Costa Urbana
-              </h1>
-            </div>
-            
-            {/* Botões Direita */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative h-10 w-10 sm:h-12 sm:w-12 hover:bg-urbana-gold/20 hover:text-urbana-gold transition-all duration-300 rounded-xl"
-              >
-                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
-              </Button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="relative text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
+                >
+                  <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-urbana-gold rounded-full animate-pulse" />
+                </Button>
+              </div>
               
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="h-10 w-10 sm:h-12 sm:w-12 hover:bg-red-500/20 hover:text-red-400 transition-all duration-300 rounded-xl"
-              >
-                <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-              </Button>
+              <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
+                <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
+                <span className="text-xs sm:text-sm text-urbana-light font-medium">
+                  {cliente?.nome?.split(' ')[0]}
+                </span>
+              </div>
+              
+              <div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
+                >
+                  <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
