@@ -58,18 +58,15 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
   ];
 
   return (
-    <div className="h-full bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 flex flex-col overflow-hidden">
+    <div className="h-full bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 flex flex-col">
       {/* Header */}
-      <div className="p-3 lg:p-4 border-b border-gray-700/50 flex items-center justify-between flex-shrink-0">
+      <div className="p-2 border-b border-gray-700/50 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center shadow-lg">
-            <Scissors className="h-5 w-5 lg:h-6 lg:w-6 text-black" />
+          <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
+            <Scissors className="h-4 w-4 text-black" />
           </div>
           <div>
-            <h2 className="text-base lg:text-lg font-bold text-white">
-              Barbeiro
-            </h2>
-            <p className="text-xs text-gray-400 hidden lg:block">Painel Profissional</p>
+            <h2 className="text-sm font-bold text-white">Barbeiro</h2>
           </div>
         </div>
         {onClose && (
@@ -77,7 +74,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="text-gray-400 lg:hidden h-8 w-8"
+            className="text-gray-400 h-8 w-8"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -85,7 +82,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
       </div>
       
       {/* Navigation */}
-      <nav className="flex-1 p-2 lg:p-3 space-y-1 flex-shrink min-h-0">
+      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
@@ -93,35 +90,29 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             onClick={onClose}
             end={item.exact}
             className={({ isActive }) =>
-              `group flex items-center gap-2 lg:gap-3 p-2.5 lg:p-3 rounded-lg transition-all duration-200 relative overflow-hidden ${
+              `group flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                 isActive
                   ? 'bg-urbana-gold text-black shadow-lg font-medium'
-                  : 'text-gray-300'
+                  : 'text-gray-300 hover:bg-gray-800'
               }`
             }
           >
-            <div className="relative z-10 flex items-center gap-2 lg:gap-3">
-              {item.icon}
-              <span className="font-medium text-sm lg:text-base">{item.name}</span>
-            </div>
+            {item.icon}
+            <span className="text-sm font-medium">{item.name}</span>
           </NavLink>
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-2 lg:p-3 border-t border-gray-700/50 space-y-2 flex-shrink-0">
+      {/* Footer with Logout */}
+      <div className="p-2 border-t border-gray-700/50 flex-shrink-0">
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start gap-2 lg:gap-3 text-gray-300 hover:text-white hover:bg-red-500/20 h-auto py-2 lg:py-2.5"
+          className="w-full justify-start gap-2 text-gray-300 hover:text-white hover:bg-red-500/20 px-3 py-2"
         >
-          <LogOut className="h-4 w-4 lg:h-5 lg:w-5" />
-          <span className="font-medium text-sm lg:text-base">Sair</span>
+          <LogOut className="h-4 w-4" />
+          <span className="text-sm font-medium">Sair</span>
         </Button>
-        
-        <div className="text-xs text-gray-500 text-center py-1">
-          <p className="font-medium text-gray-400">Costa Urbana</p>
-        </div>
       </div>
     </div>
   );
