@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Clock, XCircle, AlertCircle, UserX } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface PainelAgendamento {
@@ -47,14 +47,20 @@ interface ClientAppointmentStatsProps {
 }
 
 const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appointments }) => {
-  // LEI PÉTREA: Calcular estatísticas baseadas nos 4 estados (3 automáticos + 1 manual)
+  // LEI PÉTREA: Calcular estatísticas baseadas nos estados (incluindo ausente)
   const getAppointmentStatus = (apt: PainelAgendamento): string => {
-    // Verificar se foi cancelado manualmente
-    const statusUpper = apt.status?.toUpperCase() || '';
-    if (statusUpper === 'CANCELADO') {
+    const statusLower = apt.status?.toLowerCase() || '';
+    
+    // PRIORIDADE 1: Status manual do banco (ausente, cancelado)
+    if (statusLower === 'ausente') {
+      return 'ausente';
+    }
+    
+    if (statusLower === 'cancelado') {
       return 'cancelado';
     }
 
+    // PRIORIDADE 2: Status baseado em check-in/check-out
     const hasCheckIn = apt.totem_sessions && 
       apt.totem_sessions.some(s => s.check_in_time);
     
@@ -71,18 +77,19 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
     agendados: appointments.filter(apt => getAppointmentStatus(apt) === 'agendado').length,
     checkInFinalizados: appointments.filter(apt => getAppointmentStatus(apt) === 'check_in_finalizado').length,
     concluidos: appointments.filter(apt => getAppointmentStatus(apt) === 'concluido').length,
+    ausentes: appointments.filter(apt => getAppointmentStatus(apt) === 'ausente').length,
     cancelados: appointments.filter(apt => getAppointmentStatus(apt) === 'cancelado').length,
   };
 
   const statCards = [
     {
-      title: 'Total de Agendamentos',
+      title: 'Total',
       value: stats.total,
       icon: Calendar,
       gradient: 'from-blue-500 to-cyan-500',
       iconBg: 'bg-blue-100',
       iconColor: 'text-blue-600',
-      description: 'todos os agendamentos'
+      description: 'agendamentos'
     },
     {
       title: 'Agendado',
@@ -94,7 +101,7 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
       description: 'check-in pendente'
     },
     {
-      title: 'Check-in Finalizado',
+      title: 'Check-in',
       value: stats.checkInFinalizados,
       icon: Clock,
       gradient: 'from-orange-500 to-amber-500',
@@ -109,7 +116,16 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
       gradient: 'from-green-500 to-emerald-500',
       iconBg: 'bg-green-100',
       iconColor: 'text-green-600',
-      description: 'atendimentos finalizados'
+      description: 'finalizados'
+    },
+    {
+      title: 'Ausente',
+      value: stats.ausentes,
+      icon: UserX,
+      gradient: 'from-gray-500 to-slate-500',
+      iconBg: 'bg-gray-100',
+      iconColor: 'text-gray-600',
+      description: 'não compareceu'
     },
     {
       title: 'Cancelado',
@@ -118,12 +134,12 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
       gradient: 'from-red-500 to-rose-500',
       iconBg: 'bg-red-100',
       iconColor: 'text-red-600',
-      description: 'agendamentos cancelados'
+      description: 'cancelados'
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
       {statCards.map((stat, index) => (
         <Card 
           key={stat.title} 
@@ -133,27 +149,27 @@ const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appoint
           {/* Gradiente de fundo sutil */}
           <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
           
-          <CardHeader className="pb-2 sm:pb-3 relative z-10 p-3 sm:p-4">
-            <div className="flex items-start justify-between gap-2">
+          <CardHeader className="pb-2 relative z-10 p-2.5 sm:p-3">
+            <div className="flex items-start justify-between gap-1.5">
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 mb-0.5 sm:mb-1 font-raleway leading-tight truncate">
+                <CardTitle className="text-[11px] sm:text-xs font-semibold text-gray-700 mb-0.5 font-raleway leading-tight truncate">
                   {stat.title}
                 </CardTitle>
-                <p className="text-[10px] sm:text-xs text-gray-500 font-raleway leading-tight truncate">{stat.description}</p>
+                <p className="text-[9px] sm:text-[10px] text-gray-500 font-raleway leading-tight truncate">{stat.description}</p>
               </div>
-              <div className={`p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl ${stat.iconBg} group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
-                <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ${stat.iconColor}`} />
+              <div className={`p-1.5 sm:p-2 rounded-lg ${stat.iconBg} group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
+                <stat.icon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${stat.iconColor}`} />
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-0 pb-3 sm:pb-4 px-3 sm:px-4 relative z-10">
-            <div className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent font-playfair`}>
+          <CardContent className="pt-0 pb-2.5 sm:pb-3 px-2.5 sm:px-3 relative z-10">
+            <div className={`text-xl sm:text-2xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent font-playfair`}>
               {stat.value}
             </div>
           </CardContent>
           
           {/* Barra decorativa no rodapé */}
-          <div className={`h-0.5 sm:h-1 w-full bg-gradient-to-r ${stat.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
+          <div className={`h-0.5 w-full bg-gradient-to-r ${stat.gradient} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`} />
         </Card>
       ))}
     </div>
