@@ -78,9 +78,9 @@ export default function PainelClientePerfil() {
 
   return (
     <ClientPageContainer key="perfil-2024-v2">
-      {/* Profile Card - Largura igual à Home */}
-      <div className="w-full">
-        <PainelClienteCard variant="highlight" className="w-full">
+      {/* Profile Card - Largura total compensando o padding do container */}
+      <div className="w-full -mx-4 md:-mx-6 lg:-mx-8">
+        <PainelClienteCard variant="highlight" className="w-full rounded-none md:rounded-lg">
           <PainelClienteCardHeader className="pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-urbana-gold/20 rounded-lg">
