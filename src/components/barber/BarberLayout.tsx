@@ -120,10 +120,14 @@ const BarberLayout: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsMobileMenuOpen(true)}
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   className="text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
                 >
-                  <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                  {isMobileMenuOpen ? (
+                    <X className="h-5 w-5 sm:h-6 sm:w-6" />
+                  ) : (
+                    <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -131,32 +135,41 @@ const BarberLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 z-[60] bg-black/80 md:hidden backdrop-blur-sm" 
-          onClick={() => setIsMobileMenuOpen(false)} 
-        />
-      )}
+      {/* Mobile Overlay - Animado */}
+      <div 
+        className={`fixed inset-0 z-[60] md:hidden transition-all duration-300 ease-in-out ${
+          isMobileMenuOpen 
+            ? 'bg-black/70 backdrop-blur-sm pointer-events-auto' 
+            : 'bg-black/0 backdrop-blur-none pointer-events-none'
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)} 
+      />
 
-      {/* Mobile Sidebar */}
-      <div className={`fixed inset-y-0 right-0 z-[70] w-[280px] bg-urbana-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 shadow-2xl ${
-        isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
-        <div className="flex items-center justify-between p-4 border-b border-urbana-gold/30">
-          <h2 className="text-lg font-semibold text-urbana-gold">Menu</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="text-urbana-gold hover:bg-urbana-gold/20 hover:text-urbana-gold"
-          >
-            <X className="h-6 w-6" />
-          </Button>
+      {/* Mobile Sidebar - Lado Esquerdo */}
+      <div className={`
+        fixed inset-y-0 left-0 z-[70] w-[75vw] max-w-[300px] 
+        bg-gradient-to-br from-urbana-black via-urbana-black to-urbana-black/95
+        transform transition-all duration-300 ease-out md:hidden 
+        border-r border-urbana-gold/30 shadow-2xl
+        ${isMobileMenuOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}
+      `}>
+        {/* Header do Menu */}
+        <div className="flex items-center justify-between p-5 border-b border-urbana-gold/30 bg-urbana-black/50 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-urbana-gold/10 rounded-lg border border-urbana-gold/20">
+              <Menu className="h-5 w-5 text-urbana-gold" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-urbana-gold">Menu</h2>
+              <p className="text-xs text-urbana-light/60">Navegação</p>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col p-4 h-full overflow-y-auto">
-          <div className="flex flex-col space-y-2 flex-1">
+        {/* Conteúdo do Menu */}
+        <div className="flex flex-col h-[calc(100%-73px)] overflow-y-auto">
+          {/* Navegação Principal */}
+          <div className="flex flex-col p-4 space-y-1 flex-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -169,46 +182,54 @@ const BarberLayout: React.FC = () => {
                     setIsMobileMenuOpen(false);
                   }}
                   className={`
-                    flex items-center space-x-3 py-3 px-4 rounded-xl transition-all duration-300
+                    group flex items-center space-x-3 py-3.5 px-4 rounded-xl 
+                    transition-all duration-200 relative overflow-hidden
                     ${isActive 
-                      ? 'bg-urbana-gold/20 text-urbana-gold border border-urbana-gold/30' 
-                      : 'text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10'
+                      ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/10' 
+                      : 'text-urbana-light/80 hover:text-urbana-gold hover:bg-urbana-gold/10 active:scale-95'
                     }
                   `}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-base font-medium">{item.name}</span>
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-urbana-gold rounded-r-full" />
+                  )}
+                  <Icon className={`h-5 w-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
+                  <span className="text-sm font-semibold">{item.name}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="border-t border-urbana-gold/30 pt-4 mt-4 space-y-3">
-            <div className="flex items-center gap-3 px-4 py-2 bg-urbana-black/50 rounded-xl border border-urbana-gold/20">
-              <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
-              <span className="text-sm text-urbana-light font-medium">
-                {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
-              </span>
+          {/* Footer do Menu */}
+          <div className="border-t border-urbana-gold/20 p-4 space-y-3 bg-gradient-to-t from-urbana-black/80 to-transparent">
+            {/* User Info */}
+            <div className="flex items-center gap-3 px-4 py-3 bg-urbana-gold/5 rounded-xl border border-urbana-gold/20">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-urbana-gold/20 border-2 border-urbana-gold/40 flex items-center justify-center">
+                  <span className="text-urbana-gold font-bold text-sm">
+                    {(user?.user_metadata?.name?.charAt(0) || 'B').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-urbana-light truncate">
+                  {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
+                </p>
+                <p className="text-xs text-urbana-light/50">Online</p>
+              </div>
             </div>
 
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 py-3 h-auto"
-            >
-              <Bell className="h-5 w-5 mr-3" />
-              <span className="text-base font-medium">Notificações</span>
-            </Button>
-
+            {/* Botão Sair */}
             <Button
               variant="outline"
               onClick={() => {
                 signOut();
                 setIsMobileMenuOpen(false);
               }}
-              className="w-full border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500 transition-all py-3 h-auto"
+              className="w-full border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500 transition-all py-3 h-auto group"
             >
-              <LogOut className="h-5 w-5 mr-3" />
-              <span className="text-base font-medium">Sair</span>
+              <LogOut className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-semibold">Sair</span>
             </Button>
           </div>
         </div>
