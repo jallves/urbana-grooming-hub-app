@@ -97,9 +97,10 @@ export default function PainelClientePerfil() {
   };
 
   return (
-    <ClientPageContainer>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+    <>
+      {/* Header - Largura Total */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
           <Button
             onClick={() => navigate('/painel-cliente/dashboard')}
             variant="ghost"
@@ -114,8 +115,12 @@ export default function PainelClientePerfil() {
               Editar Perfil
             </h1>
             <p className="text-urbana-light/70 text-sm sm:text-base mt-1 sm:mt-2 drop-shadow-md">Mantenha suas informações sempre atualizadas</p>
+          </div>
         </div>
       </div>
+
+      {/* Content - Com Container Limitado */}
+      <ClientPageContainer>
 
       {/* Profile Card */}
       <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">
@@ -269,6 +274,7 @@ export default function PainelClientePerfil() {
             </PainelClienteCardContent>
           </PainelClienteCard>
         </div>
-    </ClientPageContainer>
+      </ClientPageContainer>
+    </>
   );
 }
