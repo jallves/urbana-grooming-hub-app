@@ -9,37 +9,17 @@ export const useBannerImages = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Define default banners outside the effect for easier access
+  // Define default banners - usando apenas imagens que existem
   const defaultBanners: BannerImage[] = [
     {
       id: '1',
-      title: 'Experiência Premium',
-      subtitle: 'em Barbearia',
-      image_url: '/hero-background.jpg',
+      title: 'Costa Urbana Barbearia',
+      subtitle: 'Estilo & Elegância',
+      image_url: '/costa-urbana-logo.png',
       button_text: 'Agendar Agora',
       button_link: '/cliente/login',
       is_active: true,
       display_order: 1
-    },
-    {
-      id: '2',
-      title: 'Estilo & Precisão',
-      subtitle: 'para Cavalheiros',
-      image_url: '/banner-2.jpg',
-      button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
-      is_active: true,
-      display_order: 2
-    },
-    {
-      id: '3',
-      title: 'Ambiente Exclusivo',
-      subtitle: 'para Relaxar',
-      image_url: '/banner-3.jpg',
-      button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
-      is_active: true,
-      display_order: 3
     }
   ];
 
