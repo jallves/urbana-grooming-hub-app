@@ -124,31 +124,28 @@ export default function PainelClienteAgendamentos() {
 
   return (
     <ClientPageContainer>
-      {/* Subtítulo da página */}
-      <p className="text-urbana-light/70 text-sm sm:text-base mb-4 drop-shadow-md">
-        Acompanhe todos os seus agendamentos
-      </p>
+      {/* Filtros e Conteúdo */}
+      <div className="space-y-6">
+        {/* Botão Novo Agendamento */}
+        <div>
+          <button
+            onClick={() => navigate('/painel-cliente/agendar')}
+            className="flex items-center gap-2 bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold px-4 py-2.5 rounded-lg transition-all shadow-lg"
+          >
+            <Plus className="w-4 h-4" />
+            Novo Agendamento
+          </button>
+        </div>
 
-      {/* Botão Novo Agendamento */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/painel-cliente/agendar')}
-          className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white font-medium px-4 py-2 rounded-md hover:brightness-110 transition"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Agendamento
-        </button>
-      </div>
-
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-3 mb-6">
+        {/* Filtros */}
+        <div className="flex flex-wrap gap-3">
           {Object.entries(statusLabels).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setFiltro(key as keyof typeof statusLabels)}
-              className={`px-4 py-2 text-sm font-medium rounded-md border border-gray-700 transition ${
+              className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all ${
                 statusClasses[key as keyof typeof statusClasses]
-              } ${filtro === key ? 'ring-1 ring-urbana-gold' : ''}`}
+              } ${filtro === key ? 'ring-2 ring-urbana-gold border-urbana-gold' : 'border-urbana-gold/20'}`}
             >
               {label}
             </button>
@@ -157,83 +154,83 @@ export default function PainelClienteAgendamentos() {
 
         {/* Lista de agendamentos */}
         {filteredAgendamentos.length === 0 ? (
-          <Card className="bg-gray-900 border border-gray-700">
+          <Card className="bg-urbana-black/40 border-2 border-urbana-gold/20">
             <CardContent className="p-8 text-center">
-              <AlertCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <AlertCircle className="h-12 w-12 text-urbana-gold/50 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">
                 Nenhum agendamento encontrado
               </h3>
-              <p className="text-gray-400">
+              <p className="text-urbana-light/70">
                 Você ainda não possui agendamentos neste status.
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredAgendamentos.map((agendamento, index) => {
+            {filteredAgendamentos.map((agendamento) => {
               const StatusIcon = getStatusIcon(agendamento.status);
 
               return (
-                <div
+                <Card 
                   key={agendamento.id}
+                  className="bg-urbana-black/40 border-2 border-urbana-gold/20 hover:border-urbana-gold/50 transition-all"
                 >
-                  <Card className="bg-gray-900 border border-gray-700 hover:border-gray-500 transition-colors">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-white text-lg flex items-center gap-2">
-                          <StatusIcon className="h-5 w-5 text-urbana-gold" />
-                          {agendamento.painel_servicos.nome}
-                        </CardTitle>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            statusClasses[agendamento.status as keyof typeof statusClasses]
-                          }`}
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start gap-3">
+                      <CardTitle className="text-white text-base sm:text-lg flex items-center gap-2">
+                        <StatusIcon className="h-5 w-5 text-urbana-gold shrink-0" />
+                        <span className="break-words">{agendamento.painel_servicos.nome}</span>
+                      </CardTitle>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${
+                          statusClasses[agendamento.status as keyof typeof statusClasses]
+                        }`}
+                      >
+                        {statusLabels[agendamento.status as keyof typeof statusLabels]}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex items-center text-urbana-light/80">
+                        <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
+                        <span className="text-sm">
+                          {format(parseISO(agendamento.data), 'dd/MM/yyyy', { locale: ptBR })}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-urbana-light/80">
+                        <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
+                        <span className="text-sm">{agendamento.hora}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center text-urbana-light/80">
+                      <User className="h-4 w-4 mr-2 text-urbana-gold" />
+                      <span className="text-sm break-words">{agendamento.painel_barbeiros.nome}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                      <span className="text-urbana-gold font-semibold text-lg">
+                        R$ {agendamento.painel_servicos.preco.toFixed(2)}
+                      </span>
+                      {agendamento.status === 'concluido' ? (
+                        <span className="text-green-400 text-sm font-medium">
+                          ✨ Atendimento finalizado!
+                        </span>
+                      ) : agendamento.status === 'confirmado' ? (
+                        <button
+                          onClick={() => handleConcluirAgendamento(agendamento.id)}
+                          className="text-sm text-green-400 border border-green-400 px-3 py-1.5 rounded-lg hover:bg-green-400/10 transition font-medium"
                         >
-                          {statusLabels[agendamento.status as keyof typeof statusLabels]}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center text-gray-300">
-                          <Calendar className="h-4 w-4 mr-2 text-urbana-gold" />
-                          <span className="text-sm">
-                            {format(parseISO(agendamento.data), 'dd/MM/yyyy', { locale: ptBR })}
-                          </span>
-                        </div>
-                        <div className="flex items-center text-gray-300">
-                          <Clock className="h-4 w-4 mr-2 text-urbana-gold" />
-                          <span className="text-sm">{agendamento.hora}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center text-gray-300">
-                        <User className="h-4 w-4 mr-2 text-urbana-gold" />
-                        <span className="text-sm">{agendamento.painel_barbeiros.nome}</span>
-                      </div>
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-urbana-gold font-semibold">
-                          R$ {agendamento.painel_servicos.preco.toFixed(2)}
-                        </span>
-                        {agendamento.status === 'concluido' ? (
-                          <span className="text-green-400 text-sm font-medium">
-                            ✨ Atendimento finalizado!
-                          </span>
-                         ) : agendamento.status === 'confirmado' ? (
-                          <button
-                            onClick={() => handleConcluirAgendamento(agendamento.id)}
-                            className="text-sm text-green-400 border border-green-400 px-3 py-1 rounded-md hover:bg-green-400/10 transition font-medium"
-                          >
-                            Marcar como Concluído
-                          </button>
-                         ) : null}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                          Marcar como Concluído
+                        </button>
+                      ) : null}
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
         )}
+      </div>
     </ClientPageContainer>
   );
 }

@@ -75,8 +75,8 @@ export default function PainelClientePerfil() {
 
   return (
     <ClientPageContainer>
-      {/* Profile Card - Totalmente Responsivo */}
-      <div className="w-full max-w-2xl mx-auto">
+      {/* Profile Card - Largura igual à Home */}
+      <div className="w-full">
         <PainelClienteCard variant="highlight" className="w-full">
           <PainelClienteCardHeader className="pb-4">
             <div className="flex items-center gap-3">
@@ -93,7 +93,7 @@ export default function PainelClientePerfil() {
           </PainelClienteCardHeader>
 
           <PainelClienteCardContent className="p-4 sm:p-6">
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5 max-w-2xl">
               {erro && (
                 <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
                   <p className="text-red-400 text-sm">{erro}</p>
