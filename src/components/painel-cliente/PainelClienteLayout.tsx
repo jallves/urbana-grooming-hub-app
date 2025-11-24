@@ -4,10 +4,6 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Calendar, Home, Bell, Clock } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
-import { AnimatePresence } from 'framer-motion';
-import PageTransition from '@/components/transitions/PageTransition';
-import LoadingBar from '@/components/ui/loading/LoadingBar';
-import { usePageTransition } from '@/hooks/usePageTransition';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import { ClientGreetingHeader } from '@/components/painel-cliente/ClientGreetingHeader';
@@ -16,7 +12,6 @@ const PainelClienteLayout: React.FC = () => {
   const { cliente, logout } = usePainelClienteAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoading } = usePageTransition();
 
   // Log para debug - garante que este layout está sendo usado
   React.useEffect(() => {
@@ -74,10 +69,8 @@ const PainelClienteLayout: React.FC = () => {
       {/* Animated background effects */}
       <div className="fixed inset-0 overflow-hidden z-0">
         <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
-      
-      <LoadingBar isLoading={isLoading} />
       
       {/* Modern Header */}
       <header className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-2xl">
@@ -137,11 +130,11 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Enhanced Mobile Navigation */}
-      <nav className="lg:hidden sticky top-[68px] z-40 w-full backdrop-blur-2xl bg-urbana-black/60 border-b border-urbana-gold/20 shadow-xl">
+      {/* Enhanced Mobile Navigation - Fixed */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 w-full backdrop-blur-2xl bg-urbana-black/80 border-t border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-1 md:px-4">
           {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
+          <div className="grid grid-cols-4 gap-1 py-3 sm:py-4 pb-safe">
             {navigationItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -189,16 +182,6 @@ const PainelClienteLayout: React.FC = () => {
               );
             })}
           </div>
-          
-          {/* Mobile User Info Bar - Only visible on very small screens */}
-          <div className="md:hidden border-t border-urbana-gold/20 py-2">
-            <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-urbana-black/30 rounded-lg backdrop-blur-sm">
-              <div className="w-1.5 h-1.5 bg-urbana-gold rounded-full animate-pulse" />
-              <span className="text-xs text-urbana-light font-medium truncate">
-                Olá, {cliente?.nome?.split(' ')[0]}
-              </span>
-            </div>
-          </div>
         </div>
       </nav>
 
@@ -210,12 +193,8 @@ const PainelClienteLayout: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <main className="relative z-10 w-full pb-safe">
-        <AnimatePresence mode="wait">
-          <PageTransition mode="fade">
-            <Outlet />
-          </PageTransition>
-        </AnimatePresence>
+      <main className="relative z-10 w-full pb-24 lg:pb-4">
+        <Outlet />
       </main>
     </div>
   );
