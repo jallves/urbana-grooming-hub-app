@@ -6,6 +6,7 @@ import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
 import { TotemAuthProvider } from './contexts/TotemAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
+import { PWAUpdateManager } from './components/PWAUpdateManager';
 import AdminRoute from './components/auth/AdminRoute';
 import AdminRedirectGuard from './components/auth/AdminRedirectGuard';
 import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
@@ -443,6 +444,7 @@ function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 <PWAInstallPromptContext />
+                <PWAUpdateManager />
                 <Toaster />
                   </div>
                   </RealtimeProvider>

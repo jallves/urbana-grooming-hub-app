@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+      devOptions: {
+        enabled: true,
+        type: 'module'
+      },
       manifest: {
         name: 'Costa Urbana Barbearia',
         short_name: 'Costa Urbana',
@@ -41,39 +45,46 @@ export default defineConfig(({ mode }) => ({
         scope: '/'
       },
       workbox: {
-        navigateFallback: null,
-        navigateFallbackDenylist: [/^\/.*/],
-        // Não fazer cache de HTML/JS - sempre buscar versão nova
-        globPatterns: ['**/*.{ico,png,svg,jpg,jpeg,woff,woff2}'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
-        cleanupOutdatedCaches: true,
+        // Força atualização imediata sem esperar
         skipWaiting: true,
         clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        
+        // Não faz cache de HTML/JS/CSS para sempre pegar versão mais nova
+        globPatterns: ['**/*.{ico,png,svg,jpg,jpeg,woff,woff2}'],
+        navigateFallback: null,
+        
+        // Cache busting - força nova versão a cada build
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+        
         runtimeCaching: [
           {
-            // HTML/JS/CSS - sempre da rede, sem cache
-            urlPattern: /\.(?:html|js|css)$/,
+            // HTML/JS/CSS - SEMPRE da rede, NUNCA do cache
+            urlPattern: /\.(?:html|js|css|json)$/,
             handler: 'NetworkOnly',
           },
           {
+            // API Supabase - rede primeiro, cache como fallback
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'api-cache',
+              networkTimeoutSeconds: 10,
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 5 // 5 minutos apenas
               }
             }
           },
           {
+            // Imagens - cache primeiro para performance
             urlPattern: /\.(?:jpg|jpeg|png|svg|gif|webp)$/,
             handler: 'CacheFirst',
             options: {
               cacheName: 'images-cache',
               expiration: {
-                maxEntries: 60,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 dias
               }
             }
           }
@@ -89,6 +100,10 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
+        // Hash único para cada build - força atualização
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]',
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],

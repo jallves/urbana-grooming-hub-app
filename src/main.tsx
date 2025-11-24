@@ -3,62 +3,84 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Register service worker for PWA with aggressive update
+// Sistema de atualização automática do PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // Primeiro, limpa service workers antigos
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      console.log('[PWA] Service Workers encontrados:', registrations.length);
-      
-      // Desregistra todos os SWs antigos
-      for (const registration of registrations) {
-        await registration.unregister();
-        console.log('[PWA] Service Worker antigo removido');
-      }
-
-      // Aguarda um pouco para garantir que desregistrou
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Registra o PWA service worker
+      // Registra o PWA com atualização automática e imediata
       const { registerSW } = await import('virtual:pwa-register');
+      
       const updateSW = registerSW({
         immediate: true,
         onNeedRefresh() {
-          console.log('[PWA] Nova versão disponível, RECARREGANDO AUTOMATICAMENTE...');
-          // Força reload completo sem perguntar
-          window.location.reload();
+          console.log('[PWA] 🔄 Nova versão detectada - Atualizando automaticamente...');
+          
+          // Mostra notificação visual rápida antes de recarregar
+          const notification = document.createElement('div');
+          notification.innerHTML = '🔄 Atualizando aplicação...';
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #DAA520;
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            z-index: 99999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          `;
+          document.body.appendChild(notification);
+          
+          // Aguarda 500ms e recarrega
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
         },
         onOfflineReady() {
-          console.log('[PWA] App pronto para funcionar offline');
+          console.log('[PWA] ✅ Aplicação pronta para uso offline');
         },
         onRegistered(registration) {
-          console.log('[PWA] Service Worker registrado');
+          console.log('[PWA] ✅ Service Worker registrado com sucesso');
+          
           if (registration) {
-            // Força checagem de atualização a cada 10 segundos
+            // Verifica atualizações a cada 30 segundos
             setInterval(() => {
+              console.log('[PWA] 🔍 Verificando atualizações...');
               registration.update();
-            }, 10000);
+            }, 30000);
+            
+            // Verifica imediatamente ao registrar
+            registration.update();
           }
         },
         onRegisterError(error) {
-          console.error('[PWA] Erro ao registrar SW:', error);
+          console.error('[PWA] ❌ Erro ao registrar Service Worker:', error);
         }
       });
 
-      // Registra o service worker customizado para push notifications
-      if ('PushManager' in window) {
-        const swRegistration = await navigator.serviceWorker.register('/sw.js', {
-          scope: '/',
-          updateViaCache: 'none', // Nunca usa cache para o SW
-        });
-        console.log('[PWA] Service Worker de notificações registrado');
-        
-        // Força atualização imediata
-        swRegistration.update();
-      }
+      // Força atualização quando a aba ganha foco
+      document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden) {
+          console.log('[PWA] 👁️ Aba ativa - Verificando atualizações...');
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            registration.update();
+          }
+        }
+      });
+
+      // Verifica atualizações quando volta online
+      window.addEventListener('online', async () => {
+        console.log('[PWA] 🌐 Conexão restaurada - Verificando atualizações...');
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          registration.update();
+        }
+      });
+
     } catch (e) {
-      console.error('[PWA] Erro:', e);
+      console.error('[PWA] ❌ Erro na configuração do PWA:', e);
     }
   });
 }
