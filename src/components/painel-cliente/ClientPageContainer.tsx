@@ -10,6 +10,7 @@ interface ClientPageContainerProps {
 
 /**
  * ClientPageContainer - Container padrão para todas as páginas do Painel do Cliente
+ * Última atualização: 2024-11-26 - Header automático implementado
  * 
  * Define a largura, padding e responsividade oficial do painel.
  * TODAS as páginas do cliente devem usar este container para manter consistência visual.
@@ -37,6 +38,9 @@ export const ClientPageContainer: React.FC<ClientPageContainerProps> = ({
   hideHeader = false,
 }) => {
   const { cliente } = usePainelClienteAuth();
+
+  // Debug: verificar se o header está sendo renderizado
+  console.log('🔍 ClientPageContainer - hideHeader:', hideHeader, 'cliente:', cliente?.nome);
 
   return (
     <div className={cn(

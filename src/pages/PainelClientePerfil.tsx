@@ -77,7 +77,7 @@ export default function PainelClientePerfil() {
   console.log('✅ PainelClientePerfil - Versão atualizada (sem max-w-2xl)');
 
   return (
-    <ClientPageContainer>
+    <ClientPageContainer key="perfil-2024-v2">
       {/* Profile Card - Largura igual à Home */}
       <div className="w-full">
         <PainelClienteCard variant="highlight" className="w-full">
