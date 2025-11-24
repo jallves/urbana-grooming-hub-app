@@ -42,7 +42,7 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden font-poppins">
+    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
       {/* Background fixo da barbearia */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
