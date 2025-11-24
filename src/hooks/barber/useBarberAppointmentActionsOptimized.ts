@@ -12,15 +12,23 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
 
   const handleCancelAppointment = useCallback(async (appointmentId: string) => {
     try {
-      const { error } = await supabase
+      console.log('🔄 Cancelando agendamento:', appointmentId);
+      
+      const { data, error } = await supabase
         .from('painel_agendamentos')
         .update({ 
           status: 'cancelado',
           updated_at: new Date().toISOString()
         })
-        .eq('id', appointmentId);
+        .eq('id', appointmentId)
+        .select();
 
-      if (error) throw error;
+      console.log('📊 Resposta do cancelamento:', { data, error });
+
+      if (error) {
+        console.error('❌ Erro RLS no cancelamento:', error);
+        throw error;
+      }
 
       toast.success('Agendamento cancelado com sucesso');
       
@@ -28,7 +36,7 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
       queryClient.invalidateQueries({ queryKey: ['barber-appointments', barberId] });
       return true;
     } catch (error) {
-      console.error('Erro ao cancelar agendamento:', error);
+      console.error('❌ Erro ao cancelar agendamento:', error);
       toast.error('Erro ao cancelar agendamento');
       return false;
     }
@@ -36,15 +44,23 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
 
   const handleMarkAsAbsent = useCallback(async (appointmentId: string) => {
     try {
-      const { error } = await supabase
+      console.log('🔄 Marcando como ausente:', appointmentId);
+      
+      const { data, error } = await supabase
         .from('painel_agendamentos')
         .update({ 
           status: 'ausente',
           updated_at: new Date().toISOString()
         })
-        .eq('id', appointmentId);
+        .eq('id', appointmentId)
+        .select();
 
-      if (error) throw error;
+      console.log('📊 Resposta do update:', { data, error });
+
+      if (error) {
+        console.error('❌ Erro RLS:', error);
+        throw error;
+      }
 
       toast.warning('Cliente marcado como ausente', {
         description: 'Este agendamento não gerará receita ou comissão'
@@ -54,7 +70,7 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
       queryClient.invalidateQueries({ queryKey: ['barber-appointments', barberId] });
       return true;
     } catch (error) {
-      console.error('Erro ao marcar como ausente:', error);
+      console.error('❌ Erro ao marcar como ausente:', error);
       toast.error('Erro ao marcar como ausente');
       return false;
     }
