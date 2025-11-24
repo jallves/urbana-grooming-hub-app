@@ -81,7 +81,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
         )}
       </div>
       
-      {/* Navigation */}
+      {/* Navigation + Logout */}
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
@@ -101,19 +101,17 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
             <span className="text-sm font-medium">{item.name}</span>
           </NavLink>
         ))}
-      </nav>
-
-      {/* Footer with Logout */}
-      <div className="p-2 border-t border-gray-700/50 flex-shrink-0">
+        
+        {/* Logout Button */}
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="w-full justify-start gap-2 text-gray-300 hover:text-white hover:bg-red-500/20 px-3 py-2"
+          className="w-full justify-start gap-2 text-gray-300 hover:text-white hover:bg-red-500/20 px-3 py-2 rounded-lg"
         >
           <LogOut className="h-4 w-4" />
           <span className="text-sm font-medium">Sair</span>
         </Button>
-      </div>
+      </nav>
     </div>
   );
 };
