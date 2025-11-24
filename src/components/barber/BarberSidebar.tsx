@@ -60,14 +60,12 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
   return (
     <div className="h-full bg-gray-900/95 backdrop-blur-lg border-r border-gray-700/50 flex flex-col">
       {/* Header */}
-      <div className="p-2 border-b border-gray-700/50 flex items-center justify-between flex-shrink-0">
+      <div className="px-3 py-2 border-b border-gray-700/50 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-r from-urbana-gold to-yellow-500 rounded-lg flex items-center justify-center">
             <Scissors className="h-4 w-4 text-black" />
           </div>
-          <div>
-            <h2 className="text-sm font-bold text-white">Barbeiro</h2>
-          </div>
+          <h2 className="text-sm font-bold text-white">Barbeiro</h2>
         </div>
         {onClose && (
           <Button
@@ -81,8 +79,8 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
         )}
       </div>
       
-      {/* Navigation + Logout */}
-      <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+      {/* Navigation + Logout - SEM SCROLL */}
+      <nav className="flex-1 px-2 py-3 space-y-1 flex flex-col">
         {navItems.map((item) => (
           <NavLink
             key={item.name}
@@ -102,7 +100,7 @@ const BarberSidebar: React.FC<BarberSidebarProps> = ({ onClose }) => {
           </NavLink>
         ))}
         
-        {/* Logout Button */}
+        {/* Logout Button logo após os itens */}
         <Button
           onClick={handleLogout}
           variant="ghost"
