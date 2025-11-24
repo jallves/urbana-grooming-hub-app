@@ -19,7 +19,6 @@ import {
   PainelClienteCardContent 
 } from "@/components/painel-cliente/PainelClienteCard";
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
-import { ClientGreetingHeader } from "@/components/painel-cliente/ClientGreetingHeader";
 import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
