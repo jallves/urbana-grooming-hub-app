@@ -14,7 +14,7 @@ import {
   PainelClienteCardHeader,
   PainelClienteCardContent 
 } from "@/components/painel-cliente/PainelClienteCard";
-import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
+import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 
 export default function PainelClientePerfil() {
   const navigate = useNavigate();
@@ -97,7 +97,7 @@ export default function PainelClientePerfil() {
   };
 
   return (
-    <PainelClienteContentContainer>
+    <ClientPageContainer>
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Button
@@ -269,6 +269,6 @@ export default function PainelClientePerfil() {
             </PainelClienteCardContent>
           </PainelClienteCard>
         </div>
-    </PainelClienteContentContainer>
+    </ClientPageContainer>
   );
 }

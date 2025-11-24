@@ -18,7 +18,7 @@ import {
   PainelClienteCardHeader,
   PainelClienteCardContent 
 } from "@/components/painel-cliente/PainelClienteCard";
-import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
+import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 import { ClientGreetingHeader } from "@/components/painel-cliente/ClientGreetingHeader";
 import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,16 +135,16 @@ export default function PainelClienteDashboard() {
 
   if (loading) {
     return (
-      <PainelClienteContentContainer>
+      <ClientPageContainer>
         <div className="flex justify-center items-center h-64">
           <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
         </div>
-      </PainelClienteContentContainer>
+      </ClientPageContainer>
     );
   }
 
   return (
-    <PainelClienteContentContainer>
+    <ClientPageContainer>
       {/* Cabeçalho */}
       <div className="mb-4 sm:mb-6">
         <ClientGreetingHeader cliente={cliente} />
@@ -322,6 +322,6 @@ export default function PainelClienteDashboard() {
           </PainelClienteCard>
         ))}
       </div>
-    </PainelClienteContentContainer>
+    </ClientPageContainer>
   );
 }
