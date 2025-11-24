@@ -118,7 +118,7 @@ export default function PainelClientePerfil() {
       </div>
 
       {/* Profile Card */}
-      <div className="mt-4 sm:mt-6">
+      <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">
           <PainelClienteCard variant="highlight" icon={Edit3}>
             <PainelClienteCardHeader className="pb-6">
               <PainelClienteCardTitle>
@@ -257,7 +257,7 @@ export default function PainelClientePerfil() {
         </div>
 
         {/* Security Notice */}
-        <div className="mt-4 sm:mt-6">
+        <div className="mt-4 sm:mt-6 max-w-5xl mx-auto">
           <PainelClienteCard variant="info" icon={Shield}>
             <PainelClienteCardContent className="p-6">
               <div className="flex items-center gap-3">
