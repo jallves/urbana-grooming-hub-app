@@ -184,8 +184,48 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content - Com espaçamento para header e footer fixos */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] lg:pb-8">
+      {/* Desktop Navigation Sidebar - Visível apenas em desktop */}
+      <nav className="hidden lg:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 backdrop-blur-2xl bg-urbana-black/90 border-r border-urbana-gold/20 shadow-2xl flex-col">
+        <div className="flex-1 p-4 space-y-2">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            
+            return (
+              <Button
+                key={item.path}
+                variant="ghost"
+                onClick={() => navigate(item.path)}
+                className={`
+                  w-full flex items-center gap-3 justify-start
+                  p-4 rounded-xl transition-all duration-300
+                  ${isActive 
+                    ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30' 
+                    : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
+                  }
+                `}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-sm font-medium">{item.label}</span>
+              </Button>
+            );
+          })}
+        </div>
+        
+        {/* Desktop User Info */}
+        <div className="p-4 border-t border-urbana-gold/20">
+          <div className="flex items-center gap-3 px-4 py-3 bg-urbana-black/30 rounded-xl backdrop-blur-sm border border-urbana-gold/20">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-urbana-light">{cliente?.nome}</p>
+              <p className="text-xs text-urbana-light/60">{cliente?.email}</p>
+            </div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content - Com espaçamento para header, footer e sidebar */}
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] lg:pb-8 lg:pl-64">
         <Outlet />
       </main>
     </div>
