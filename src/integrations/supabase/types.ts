@@ -4297,6 +4297,15 @@ export type Database = {
         }
         Returns: Json
       }
+      create_client_profile_after_signup: {
+        Args: {
+          p_data_nascimento: string
+          p_nome: string
+          p_user_id: string
+          p_whatsapp: string
+        }
+        Returns: Json
+      }
       create_painel_agendamento: {
         Args: {
           barbeiro_id: string
