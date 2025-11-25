@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Eye, EyeOff, Lock, Check, X } from 'lucide-react';
+import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -91,36 +91,39 @@ export default function ChangePassword() {
 
   if (!isValidSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Lock className="w-6 h-6 text-primary" />
+      <AuthContainer>
+        <div className="w-full max-w-md mx-auto px-4">
+          <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-2xl shadow-2xl p-8">
+            <div className="text-center">
+              <div className="mx-auto mb-4 w-12 h-12 bg-urbana-gold/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-urbana-gold/30 animate-pulse">
+                <Lock className="w-6 h-6 text-urbana-gold" />
+              </div>
+              <h2 className="text-xl font-semibold text-urbana-light">Verificando sessão...</h2>
             </div>
-            <CardTitle>Verificando sessão...</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </AuthContainer>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <Lock className="w-6 h-6 text-primary" />
+    <AuthContainer>
+      <div className="w-full max-w-md mx-auto px-4">
+        <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-2xl shadow-2xl p-8">
+          <div className="text-center mb-6">
+            <div className="mx-auto mb-4 w-12 h-12 bg-urbana-gold/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-urbana-gold/30">
+              <Lock className="w-6 h-6 text-urbana-gold" />
+            </div>
+            <h2 className="text-2xl font-bold text-urbana-light mb-2">Redefinir Senha</h2>
+            <p className="text-urbana-light/70">
+              Crie uma nova senha segura para sua conta
+            </p>
           </div>
-          <CardTitle className="text-2xl">Redefinir Senha</CardTitle>
-          <CardDescription>
-            Crie uma nova senha segura para sua conta
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+
           <form onSubmit={handleChangePassword} className="space-y-6">
             {/* Nova Senha */}
             <div className="space-y-2">
-              <Label htmlFor="newPassword">Nova Senha</Label>
+              <Label htmlFor="newPassword" className="text-urbana-light">Nova Senha</Label>
               <div className="relative">
                 <Input
                   id="newPassword"
@@ -128,13 +131,13 @@ export default function ChangePassword() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Digite sua nova senha"
-                  className="pr-10"
+                  className="pr-10 bg-urbana-black/40 border-urbana-gold/30 text-urbana-light placeholder:text-urbana-light/40"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-urbana-light/50 hover:text-urbana-light"
                 >
                   {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -143,7 +146,7 @@ export default function ChangePassword() {
 
             {/* Confirmar Senha */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+              <Label htmlFor="confirmPassword" className="text-urbana-light">Confirmar Nova Senha</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -151,13 +154,13 @@ export default function ChangePassword() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Digite novamente sua nova senha"
-                  className="pr-10"
+                  className="pr-10 bg-urbana-black/40 border-urbana-gold/30 text-urbana-light placeholder:text-urbana-light/40"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-urbana-light/50 hover:text-urbana-light"
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -166,56 +169,56 @@ export default function ChangePassword() {
 
             {/* Requisitos de Senha */}
             {newPassword.length > 0 && (
-              <div className="space-y-2 p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium">Requisitos de senha:</p>
+              <div className="space-y-2 p-4 bg-urbana-black/30 backdrop-blur-sm border border-urbana-gold/10 rounded-lg">
+                <p className="text-sm font-medium text-urbana-light">Requisitos de senha:</p>
                 <ul className="space-y-1.5 text-sm">
                   <li className="flex items-center gap-2">
                     {hasMinLength ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <Check className="w-4 h-4 text-green-400" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground" />
+                      <X className="w-4 h-4 text-urbana-light/30" />
                     )}
-                    <span className={hasMinLength ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={hasMinLength ? 'text-green-400' : 'text-urbana-light/50'}>
                       Mínimo 8 caracteres
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
                     {hasUpperCase ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <Check className="w-4 h-4 text-green-400" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground" />
+                      <X className="w-4 h-4 text-urbana-light/30" />
                     )}
-                    <span className={hasUpperCase ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={hasUpperCase ? 'text-green-400' : 'text-urbana-light/50'}>
                       Uma letra maiúscula
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
                     {hasLowerCase ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <Check className="w-4 h-4 text-green-400" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground" />
+                      <X className="w-4 h-4 text-urbana-light/30" />
                     )}
-                    <span className={hasLowerCase ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={hasLowerCase ? 'text-green-400' : 'text-urbana-light/50'}>
                       Uma letra minúscula
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
                     {hasNumber ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <Check className="w-4 h-4 text-green-400" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground" />
+                      <X className="w-4 h-4 text-urbana-light/30" />
                     )}
-                    <span className={hasNumber ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={hasNumber ? 'text-green-400' : 'text-urbana-light/50'}>
                       Um número
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
                     {hasSpecialChar ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <Check className="w-4 h-4 text-green-400" />
                     ) : (
-                      <X className="w-4 h-4 text-muted-foreground" />
+                      <X className="w-4 h-4 text-urbana-light/30" />
                     )}
-                    <span className={hasSpecialChar ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={hasSpecialChar ? 'text-green-400' : 'text-urbana-light/50'}>
                       Um caractere especial (@$!%*?&)
                     </span>
                   </li>
@@ -228,13 +231,13 @@ export default function ChangePassword() {
               <div className="flex items-center gap-2 text-sm">
                 {passwordsMatch ? (
                   <>
-                    <Check className="w-4 h-4 text-green-600" />
-                    <span className="text-green-600">As senhas coincidem</span>
+                    <Check className="w-4 h-4 text-green-400" />
+                    <span className="text-green-400">As senhas coincidem</span>
                   </>
                 ) : (
                   <>
-                    <X className="w-4 h-4 text-destructive" />
-                    <span className="text-destructive">As senhas não coincidem</span>
+                    <X className="w-4 h-4 text-red-400" />
+                    <span className="text-red-400">As senhas não coincidem</span>
                   </>
                 )}
               </div>
@@ -243,14 +246,18 @@ export default function ChangePassword() {
             {/* Botão de submit */}
             <Button
               type="submit"
-              className="w-full"
+              className={`w-full font-semibold transition-all ${
+                canSubmit && !loading
+                  ? 'bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black shadow-lg shadow-urbana-gold/20'
+                  : 'bg-urbana-gold/30 text-urbana-black/50 cursor-not-allowed'
+              }`}
               disabled={!canSubmit || loading}
             >
-              {loading ? 'Alterando senha...' : 'Alterar Senha'}
+              {loading ? 'Alterando senha...' : 'Atualizar Senha'}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+    </AuthContainer>
   );
 }
