@@ -67,7 +67,10 @@ export default function ChangePassword() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('🔐 Iniciando alteração de senha...');
+
     if (!canSubmit) {
+      console.log('❌ Validação falhou');
       toast.error('Por favor, verifique os requisitos de senha');
       return;
     }
@@ -75,29 +78,43 @@ export default function ChangePassword() {
     setLoading(true);
 
     try {
+      console.log('📝 Chamando supabase.auth.updateUser...');
+      
       // Atualizar senha usando Supabase Auth
-      const { error } = await supabase.auth.updateUser({
+      const { data, error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
+      console.log('📊 Resposta do updateUser:', { data, error });
+
       if (error) {
+        console.error('❌ Erro do Supabase:', error);
         throw error;
       }
+
+      console.log('✅ Senha atualizada com sucesso!');
 
       toast.success('Senha alterada com sucesso!', {
         description: 'Você será redirecionado para o login.'
       });
 
       // Fazer logout para forçar novo login com a nova senha
+      console.log('🚪 Fazendo logout...');
       await supabase.auth.signOut();
 
       // Redirecionar para login após 2 segundos
       setTimeout(() => {
+        console.log('➡️ Redirecionando para login...');
         navigate('/painel-cliente/login');
       }, 2000);
 
     } catch (error: any) {
-      console.error('Erro ao alterar senha:', error);
+      console.error('💥 Erro ao alterar senha:', error);
+      console.error('💥 Detalhes do erro:', {
+        message: error.message,
+        status: error.status,
+        code: error.code
+      });
       toast.error('Erro ao alterar senha', {
         description: error.message || 'Tente novamente mais tarde.'
       });
