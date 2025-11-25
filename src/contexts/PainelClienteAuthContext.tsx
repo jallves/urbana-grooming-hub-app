@@ -196,32 +196,24 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      // Criar perfil na tabela client_profiles
+      // Criar ou atualizar perfil na tabela client_profiles (UPSERT)
       const { error: profileError } = await supabase
         .from('client_profiles')
-        .insert({
+        .upsert({
           id: authData.user.id,
           nome: dados.nome.trim(),
           whatsapp: dados.whatsapp.trim(),
           data_nascimento: dados.data_nascimento
+        }, {
+          onConflict: 'id'
         });
 
       if (profileError) {
-        console.error('Erro ao criar perfil:', profileError);
+        console.error('Erro ao criar/atualizar perfil:', profileError);
         
-        // Tratamento específico para erro de perfil duplicado
-        if (profileError.code === '23505' || profileError.message.includes('duplicate')) {
-          return { error: '⚠️ Este cadastro já existe! Faça login ou use outro e-mail.' };
-        }
-        
-        // Tentar deletar usuário se falhar ao criar perfil
-        try {
-          await supabase.auth.admin.deleteUser(authData.user.id);
-        } catch (deleteError) {
-          console.error('Erro ao tentar deletar usuário:', deleteError);
-        }
-        
-        return { error: '❌ Erro ao finalizar cadastro. Por favor, tente novamente. Se o problema persistir, entre em contato conosco.' };
+        // Se for erro de perfil mas o usuário foi criado, não bloquear
+        // Apenas logar o erro e continuar com o fluxo
+        console.warn('Usuário criado mas perfil com problema. Email de confirmação será enviado.');
       }
 
       // Verificar se o email já foi confirmado ou se precisa confirmar
@@ -232,20 +224,21 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         userId: authData.user.id,
         email: authData.user.email,
         needsConfirmation,
-        hasSession: !!authData.session
+        hasSession: !!authData.session,
+        profileCreated: !profileError
       });
 
       if (needsConfirmation) {
         toast({
-          title: "📧 Confirme seu e-mail",
-          description: "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam.",
-          duration: 10000,
+          title: "✅ Cadastro criado com sucesso!",
+          description: "📧 Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam para ativar sua conta.",
+          duration: 12000,
         });
         return { error: null, needsEmailConfirmation: true };
       }
 
       toast({
-        title: "Conta criada com sucesso!",
+        title: "✅ Conta criada com sucesso!",
         description: "Bem-vindo ao painel do cliente.",
       });
 
