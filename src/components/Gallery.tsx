@@ -45,10 +45,22 @@ const Gallery: React.FC = () => {
   ];
 
   useEffect(() => {
-    const fetchImages = async (retryCount = 0) => {
+    let mounted = true;
+    let timeoutId: NodeJS.Timeout;
+    
+    const fetchImages = async () => {
       try {
+        // Timeout de 8 segundos
+        timeoutId = setTimeout(() => {
+          console.warn('[Gallery] ⏱️ Timeout - usando fallback');
+          if (mounted) {
+            setImages(defaultImages);
+            setLoading(false);
+          }
+        }, 8000);
+
         setLoading(true);
-        console.log('[PWA Gallery] Tentativa:', retryCount + 1);
+        console.log('[Gallery] 🔍 Buscando...');
         
         const { data, error } = await supabase
           .from('gallery_images')
@@ -56,35 +68,36 @@ const Gallery: React.FC = () => {
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
+        clearTimeout(timeoutId);
+
+        if (!mounted) return;
+
         if (error) {
-          console.error('[PWA Gallery] Erro:', error.message);
-          
-          // Retry até 3 vezes
-          if (retryCount < 3) {
-            console.log('[PWA Gallery] Retry em 2s...');
-            setTimeout(() => fetchImages(retryCount + 1), 2000);
-            return;
-          }
-          
+          console.error('[Gallery] ❌ Erro:', error.message);
           setImages(defaultImages);
         } else if (data && data.length > 0) {
-          console.log('[PWA Gallery] ✅ Carregadas:', data.length);
+          console.log('[Gallery] ✅ Carregadas:', data.length);
           setImages(data);
         } else {
-          console.log('[PWA Gallery] Usando imagens padrão');
+          console.log('[Gallery] ⚠️ Vazio - usando fallback');
           setImages(defaultImages);
         }
-      } catch (error) {
-        console.error('[PWA Gallery] ❌ Falha:', error);
+      } catch (error: any) {
+        clearTimeout(timeoutId!);
+        if (!mounted) return;
+        
+        console.error('[Gallery] ❌ Exceção:', error?.message);
         setImages(defaultImages);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchImages();
 
-    // Real-time subscription para atualizações
+    // Real-time subscription
     const channel = supabase
       .channel('gallery_images_changes')
       .on(
@@ -95,13 +108,15 @@ const Gallery: React.FC = () => {
           table: 'gallery_images'
         },
         (payload) => {
-          console.log('🔄 Galeria atualizada em tempo real:', payload);
+          console.log('🔄 Galeria atualizada:', payload.eventType);
           fetchImages();
         }
       )
       .subscribe();
 
     return () => {
+      mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
   }, []);

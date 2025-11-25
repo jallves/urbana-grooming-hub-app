@@ -25,69 +25,54 @@ export const useBannerImages = () => {
   ];
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
+    let timeoutId: NodeJS.Timeout;
     
-    const fetchBannerImages = async (retryCount = 0) => {
+    const fetchBannerImages = async () => {
       try {
-        if (!isMounted) return;
-        
-        if (retryCount === 0) {
-          setLoading(true);
-        }
-        
-        console.log('[PWA Banner] 🔍 Tentativa:', retryCount + 1);
-        console.log('[PWA Banner] 🔧 Supabase client:', supabase ? 'OK' : 'ERRO');
+        // Timeout global de 8 segundos
+        timeoutId = setTimeout(() => {
+          console.warn('[Banner] ⏱️ Timeout após 8s - usando fallback');
+          if (mounted) {
+            setBannerImages(defaultBanners);
+            setLoading(false);
+          }
+        }, 8000);
+
+        setLoading(true);
+        console.log('[Banner] 🔍 Buscando banners...');
+        console.log('[Banner] 🔧 Supabase client:', supabase ? 'OK' : 'ERRO');
         
         const { data, error } = await supabase
           .from('banner_images')
           .select('*')
-          .order('display_order', { ascending: true })
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        clearTimeout(timeoutId);
+
+        if (!mounted) return;
         
-        console.log('[PWA Banner] 📡 Resposta recebida');
-        console.log('[PWA Banner] 📊 Data:', data?.length || 0, 'banners');
-        console.log('[PWA Banner] ❌ Error:', error?.message || 'nenhum');
-        
-        if (!isMounted) return;
+        console.log('[Banner] 📊 Resposta:', data?.length || 0, 'banners');
         
         if (error) {
-          console.error('[PWA Banner] ❌ Erro:', error.message);
-          
-          if (retryCount < 2) {
-            console.log('[PWA Banner] 🔄 Retry em 1s...');
-            setTimeout(() => {
-              if (isMounted) {
-                fetchBannerImages(retryCount + 1);
-              }
-            }, 1000);
-            return;
-          }
-          
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          console.log('[PWA Banner] ✅ Banners carregados:', data.length);
+          console.error('[Banner] ❌ Erro:', error.message);
+          setBannerImages(defaultBanners);
+        } else if (data && data.length > 0) {
+          console.log('[Banner] ✅ Sucesso');
           setBannerImages(data);
         } else {
-          console.log('[PWA Banner] ⚠️ Sem banners ativos, usando fallback');
+          console.log('[Banner] ⚠️ Sem dados - usando fallback');
           setBannerImages(defaultBanners);
         }
-      } catch (error) {
-        if (!isMounted) return;
+      } catch (error: any) {
+        clearTimeout(timeoutId!);
+        if (!mounted) return;
         
-        console.error('[PWA Banner] ❌ Falha crítica:', error);
+        console.error('[Banner] ❌ Exceção:', error?.message);
         setBannerImages(defaultBanners);
-        
-        if (retryCount >= 2) {
-          toast({
-            title: "Usando banners padrão",
-            description: "Não foi possível carregar os banners personalizados.",
-            variant: "default",
-          });
-        }
       } finally {
-        if (isMounted) {
+        if (mounted) {
           setLoading(false);
         }
       }
@@ -96,9 +81,10 @@ export const useBannerImages = () => {
     fetchBannerImages();
     
     return () => {
-      isMounted = false;
+      mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, []); // Remove toast das dependências para evitar loop infinito
+  }, []);
 
   return { bannerImages, loading };
 };
