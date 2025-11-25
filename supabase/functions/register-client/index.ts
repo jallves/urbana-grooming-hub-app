@@ -190,21 +190,31 @@ Deno.serve(async (req) => {
     // ===================================================================
     console.log('🔍 [4/4] Enviando email de confirmação...');
     
-    const { error: emailError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'signup',
-      email: email.trim().toLowerCase(),
-      options: {
-        redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/email-confirmado`
+    try {
+      // Usar inviteUserByEmail que REALMENTE envia o email
+      const { error: emailError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+        email.trim().toLowerCase(),
+        {
+          redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/email-confirmado`,
+          data: {
+            user_type: 'client',
+            nome: nome.trim(),
+            whatsapp: whatsapp.trim()
+          }
+        }
+      );
+
+      if (emailError) {
+        console.error('⚠️ Erro ao enviar email:', emailError);
+        // Não vamos bloquear o cadastro por erro de email
+        // O usuário pode fazer login e pedir reenvio depois
+      } else {
+        console.log('✅ Email de confirmação enviado com sucesso');
       }
-    });
-
-    if (emailError) {
-      console.error('⚠️ Erro ao enviar email:', emailError);
-      // Não vamos bloquear o cadastro por erro de email
-      // O usuário pode fazer login e pedir reenvio depois
+    } catch (emailException) {
+      console.error('⚠️ Exceção ao enviar email:', emailException);
+      // Não bloquear cadastro por erro de email
     }
-
-    console.log('✅ Email de confirmação enviado');
 
     // ===================================================================
     // SUCESSO COMPLETO!
