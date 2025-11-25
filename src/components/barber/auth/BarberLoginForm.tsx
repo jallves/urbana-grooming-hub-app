@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Mail, Lock, LogIn, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 
 interface BarberLoginFormProps {
   loading?: boolean;
@@ -18,7 +17,6 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -61,15 +59,6 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
       effectiveSetLoading(false);
     }
   };
-
-  if (showForgotPassword) {
-    return (
-      <ForgotPasswordForm 
-        onBack={() => setShowForgotPassword(false)}
-        redirectTo={`${window.location.origin}/barbeiro/login`}
-      />
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -141,17 +130,6 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
             Entrar
           </>
         )}
-      </Button>
-
-      <Button 
-        type="button"
-        variant="ghost" 
-        onClick={() => setShowForgotPassword(true)}
-        className="w-full text-gray-400 hover:text-urbana-gold hover:bg-gray-800/50 h-12 rounded-xl transition-all"
-        disabled={effectiveLoading}
-      >
-        <KeyRound className="h-4 w-4 mr-2" />
-        Esqueceu sua senha?
       </Button>
     </form>
   );
