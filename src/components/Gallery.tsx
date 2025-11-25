@@ -45,10 +45,10 @@ const Gallery: React.FC = () => {
   ];
 
   useEffect(() => {
-    const fetchImages = async () => {
+    const fetchImages = async (retryCount = 0) => {
       try {
         setLoading(true);
-        console.log('🔍 Buscando fotos da galeria da tabela gallery_images...');
+        console.log('[PWA Gallery] Tentativa:', retryCount + 1);
         
         const { data, error } = await supabase
           .from('gallery_images')
@@ -57,17 +57,25 @@ const Gallery: React.FC = () => {
           .order('display_order', { ascending: true });
 
         if (error) {
-          console.error('❌ Erro ao buscar fotos:', error);
+          console.error('[PWA Gallery] Erro:', error.message);
+          
+          // Retry até 3 vezes
+          if (retryCount < 3) {
+            console.log('[PWA Gallery] Retry em 2s...');
+            setTimeout(() => fetchImages(retryCount + 1), 2000);
+            return;
+          }
+          
           setImages(defaultImages);
         } else if (data && data.length > 0) {
-          console.log(`✅ ${data.length} fotos carregadas com sucesso da galeria`);
+          console.log('[PWA Gallery] ✅ Carregadas:', data.length);
           setImages(data);
         } else {
-          console.log('⚠️ Nenhuma foto ativa, usando imagens padrão');
+          console.log('[PWA Gallery] Usando imagens padrão');
           setImages(defaultImages);
         }
       } catch (error) {
-        console.error('❌ Erro crítico ao carregar galeria:', error);
+        console.error('[PWA Gallery] ❌ Falha:', error);
         setImages(defaultImages);
       } finally {
         setLoading(false);

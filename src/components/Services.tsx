@@ -102,6 +102,8 @@ const Services: React.FC = () => {
   const { data: services, isLoading, error } = useQuery<Array<{ id: string; nome: string; preco: number; duracao: number; show_on_home: boolean; display_order: number }>>({
     queryKey: ["featured-services"],
     queryFn: async () => {
+      console.log('[PWA Services] Buscando serviços...');
+      
       // Primeiro tenta buscar serviços marcados para exibição na home
       const { data: featuredData, error: featuredError } = await supabase
         .from("painel_servicos")
@@ -109,23 +111,33 @@ const Services: React.FC = () => {
         .eq("show_on_home", true)
         .order("display_order", { ascending: true });
 
-      if (featuredError) throw featuredError;
+      if (featuredError) {
+        console.error('[PWA Services] Erro:', featuredError.message);
+        throw featuredError;
+      }
       
       // Se não houver serviços marcados, busca os 6 primeiros por display_order
       if (!featuredData || featuredData.length === 0) {
-        console.log('[Services] Nenhum serviço marcado para home, buscando top 6...');
+        console.log('[PWA Services] Buscando fallback (top 6)...');
         const { data: fallbackData, error: fallbackError } = await supabase
           .from("painel_servicos")
           .select("*")
           .order("display_order", { ascending: true })
           .limit(6);
         
-        if (fallbackError) throw fallbackError;
+        if (fallbackError) {
+          console.error('[PWA Services] Erro fallback:', fallbackError.message);
+          throw fallbackError;
+        }
+        console.log('[PWA Services] ✅ Carregados (fallback):', fallbackData?.length || 0);
         return fallbackData || [];
       }
       
+      console.log('[PWA Services] ✅ Carregados:', featuredData.length);
       return featuredData || [];
     },
+    retry: 3,
+    retryDelay: 2000,
   });
 
   const formatPrice = (price: number) => `R$ ${price.toFixed(2).replace(".", ",")}`;
