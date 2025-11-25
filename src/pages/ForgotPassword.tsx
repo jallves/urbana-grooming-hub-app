@@ -25,8 +25,8 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      // URL completa para redirecionamento
-      const redirectUrl = 'https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/change-password';
+      // URL completa para redirecionamento (usa o domínio atual)
+      const redirectUrl = `${window.location.origin}/change-password`;
       
       console.log('📧 Enviando email de recuperação para:', email);
       console.log('🔗 Redirect URL:', redirectUrl);
