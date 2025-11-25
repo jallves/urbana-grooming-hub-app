@@ -164,7 +164,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
-      // Validações
+      // ===================================================================
+      // ETAPA 1: VALIDAÇÕES DE FORMATO
+      // ===================================================================
       if (!dados.nome?.trim()) {
         return { error: 'Nome é obrigatório' };
       }
@@ -191,32 +193,43 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
-      // 🔍 VALIDAÇÃO 1: Verificar se o WhatsApp já está cadastrado
-      console.log('🔍 Verificando WhatsApp único:', dados.whatsapp);
+      // ===================================================================
+      // ETAPA 2: VALIDAÇÃO DE WHATSAPP DUPLICADO (ANTES DO SIGNUP)
+      // ===================================================================
+      console.log('🔍 [1/3] Verificando WhatsApp único:', dados.whatsapp);
+      
       const { data: existingWhatsApp, error: whatsappCheckError } = await supabase
         .from('client_profiles')
         .select('nome, whatsapp')
         .eq('whatsapp', dados.whatsapp.trim())
         .maybeSingle();
 
+      // Tratar erros de consulta (exceto "não encontrado")
       if (whatsappCheckError && whatsappCheckError.code !== 'PGRST116') {
-        console.error('Erro ao verificar WhatsApp:', whatsappCheckError);
-        return { error: 'Erro ao verificar dados. Tente novamente.' };
+        console.error('❌ Erro ao verificar WhatsApp:', whatsappCheckError);
+        return { 
+          error: '⚠️ Não foi possível verificar seus dados neste momento.\n\nPor favor, aguarde alguns segundos e tente novamente.' 
+        };
       }
 
+      // Se WhatsApp já existe, bloquear cadastro
       if (existingWhatsApp) {
-        console.warn('⚠️ WhatsApp já cadastrado');
+        console.warn('⚠️ WhatsApp já cadastrado:', existingWhatsApp.whatsapp);
         return { 
           error: `📱 Este número de WhatsApp (${dados.whatsapp}) já está cadastrado em nosso sistema!\n\n` +
-                 `✅ Se você já possui cadastro, clique em "Já tenho conta" para fazer login.\n` +
+                 `Nome cadastrado: ${existingWhatsApp.nome}\n\n` +
+                 `✅ Se esta é sua conta, clique em "Já tenho conta" para fazer login.\n` +
                  `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
         };
       }
 
-      // 🔍 VALIDAÇÃO 2: E-mail duplicado será detectado automaticamente pelo Supabase Auth
-      // durante o signUp, que retornará erro específico se já existir
+      console.log('✅ WhatsApp disponível para cadastro');
 
-      // 📧 Criar usuário no auth.users com confirmação de email
+      // ===================================================================
+      // ETAPA 3: CRIAR USUÁRIO NO AUTH.USERS (VALIDA EMAIL DUPLICADO)
+      // ===================================================================
+      console.log('🔍 [2/3] Criando usuário no sistema de autenticação...');
+      
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: dados.email.trim().toLowerCase(),
         password: dados.senha,
@@ -232,9 +245,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       });
 
       if (signUpError) {
-        console.error('Erro ao criar usuário:', signUpError);
+        console.error('❌ Erro ao criar usuário:', signUpError);
         
-        // 🔍 Tratamento específico e didático de erros
+        // Tratamento específico e didático de erros
         if (signUpError.message.includes('already registered') || 
             signUpError.message.includes('User already registered') ||
             signUpError.message.includes('email_exists') ||
@@ -258,83 +271,63 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           return { error: '⚠️ Muitas tentativas. Aguarde alguns minutos e tente novamente.' };
         }
         
-        // Erro genérico com mensagem clara
-        return { error: `❌ Erro ao criar conta: ${signUpError.message}. Tente novamente ou entre em contato conosco.` };
+        return { error: `❌ Erro ao criar conta: ${signUpError.message}.\n\nTente novamente ou entre em contato conosco.` };
       }
 
-      // ✅ Criar perfil no client_profiles com dados do usuário
-      if (authData?.user) {
-        console.log('✅ Usuário criado no auth, criando perfil no client_profiles...');
-        
-        // Aguardar um pouco para garantir que o auth.uid() está disponível
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const { error: profileError } = await supabase
-          .from('client_profiles')
-          .insert({
-            id: authData.user.id,
-            nome: dados.nome.trim(),
-            whatsapp: dados.whatsapp.trim(),
-            data_nascimento: dados.data_nascimento
-          });
-
-        if (profileError) {
-          console.error('❌ Erro ao criar perfil:', profileError);
-          
-          // Se o WhatsApp duplicou (race condition), avisar
-          if (profileError.message?.includes('whatsapp')) {
-            return { 
-              error: `📱 Este número de WhatsApp já foi cadastrado por outro usuário.\n\n` +
-                     `Por favor, use um número diferente ou entre em contato conosco.`
-            };
-          }
-          
-          return { 
-            error: `❌ Não foi possível completar seu cadastro.\n\n` +
-                   `Tente novamente em instantes. Se o problema persistir, entre em contato conosco.\n\n` +
-                   `Detalhe técnico: ${profileError.message}`
-          };
-        }
-        console.log('✅ Perfil criado com sucesso!');
+      if (!authData?.user) {
+        return { error: '❌ Erro ao criar conta. Tente novamente.' };
       }
 
-      if (!authData.user) {
-        return { error: 'Erro ao criar conta. Tente novamente.' };
-      }
+      console.log('✅ Usuário criado no auth.users com ID:', authData.user.id);
 
-      // Criar ou atualizar perfil na tabela client_profiles (UPSERT)
-      const { error: profileError } = await supabase
-        .from('client_profiles')
-        .upsert({
-          id: authData.user.id,
-          nome: dados.nome.trim(),
-          whatsapp: dados.whatsapp.trim(),
-          data_nascimento: dados.data_nascimento
-        }, {
-          onConflict: 'id'
+      // ===================================================================
+      // ETAPA 4: CRIAR PERFIL DO CLIENTE (VIA FUNÇÃO SECURITY DEFINER)
+      // ===================================================================
+      console.log('🔍 [3/3] Criando perfil do cliente...');
+      
+      const { data: profileResult, error: profileRpcError } = await supabase
+        .rpc('create_client_profile_after_signup', {
+          p_user_id: authData.user.id,
+          p_nome: dados.nome.trim(),
+          p_whatsapp: dados.whatsapp.trim(),
+          p_data_nascimento: dados.data_nascimento
         });
 
-      if (profileError) {
-        console.error('Erro ao criar/atualizar perfil:', profileError);
-        
-        // Se for erro de perfil mas o usuário foi criado, não bloquear
-        // Apenas logar o erro e continuar com o fluxo
-        console.warn('Usuário criado mas perfil com problema. Email de confirmação será enviado.');
+      if (profileRpcError) {
+        console.error('❌ Erro ao chamar função de criação de perfil:', profileRpcError);
+        return { 
+          error: '❌ Não foi possível completar seu cadastro.\n\n' +
+                 'Sua conta foi criada mas faltam alguns dados. Por favor, entre em contato conosco para finalizar.'
+        };
       }
 
-      // Verificar se o email já foi confirmado ou se precisa confirmar
-      // Se o usuário foi criado mas não tem session, precisa confirmar email
+      // Verificar resposta da função
+      const result = profileResult as { success: boolean; error?: string; message?: string };
+      
+      if (!result.success) {
+        console.error('❌ Erro ao criar perfil:', result.error);
+        
+        // Se foi erro de WhatsApp duplicado (race condition)
+        if (result.error?.includes('WhatsApp')) {
+          return { error: result.error };
+        }
+        
+        return { 
+          error: '❌ Não foi possível completar seu cadastro.\n\n' +
+                 'Por favor, aguarde alguns instantes e tente novamente.\n\n' +
+                 'Se o problema persistir, entre em contato conosco.'
+        };
+      }
+
+      console.log('✅ Perfil criado com sucesso!');
+
+      // ===================================================================
+      // ETAPA 5: VERIFICAR SE PRECISA CONFIRMAR EMAIL
+      // ===================================================================
       const needsConfirmation = !authData.session;
 
-      console.log('Cadastro realizado:', {
-        userId: authData.user.id,
-        email: authData.user.email,
-        needsConfirmation,
-        hasSession: !!authData.session,
-        profileCreated: !profileError
-      });
-
       if (needsConfirmation) {
+        console.log('📧 Email de confirmação enviado');
         toast({
           title: "✅ Cadastro criado com sucesso!",
           description: "📧 Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam para ativar sua conta.",
@@ -343,6 +336,8 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: null, needsEmailConfirmation: true };
       }
 
+      // Se não precisa confirmar email, usuário já está logado
+      console.log('✅ Cadastro completo - usuário já está autenticado');
       toast({
         title: "✅ Conta criada com sucesso!",
         description: "Bem-vindo ao painel do cliente.",
@@ -351,8 +346,10 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       return { error: null, needsEmailConfirmation: false };
 
     } catch (error) {
-      console.error('Erro inesperado no cadastro:', error);
-      return { error: 'Erro inesperado. Tente novamente.' };
+      console.error('❌ Erro inesperado no cadastro:', error);
+      return { 
+        error: '❌ Erro inesperado ao criar conta.\n\nPor favor, tente novamente ou entre em contato conosco.' 
+      };
     }
   }, [toast]);
 
