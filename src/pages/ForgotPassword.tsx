@@ -25,15 +25,22 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      // Usar o domínio do projeto explicitamente
       const redirectUrl = 'https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/change-password';
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
+      // Usar a edge function para enviar o email com token confiável
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { 
+          email,
+          redirectTo: redirectUrl
+        }
       });
 
       if (error) {
         throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Erro ao enviar email');
       }
 
       setEmailSent(true);
