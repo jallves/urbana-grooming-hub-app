@@ -251,6 +251,25 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: `❌ Erro ao criar conta: ${signUpError.message}. Tente novamente ou entre em contato conosco.` };
       }
 
+      // Criar perfil no client_profiles manualmente
+      if (authData?.user) {
+        console.log('✅ Usuário criado, criando perfil...');
+        const { error: profileError } = await supabase
+          .from('client_profiles')
+          .insert({
+            id: authData.user.id,
+            nome: dados.nome.trim(),
+            whatsapp: dados.whatsapp.trim(),
+            data_nascimento: dados.data_nascimento
+          });
+
+        if (profileError) {
+          console.error('❌ Erro ao criar perfil:', profileError);
+          return { error: `❌ Erro ao criar perfil. Tente novamente. Detalhe: ${profileError.message}` };
+        }
+        console.log('✅ Perfil criado com sucesso!');
+      }
+
       if (!authData.user) {
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
