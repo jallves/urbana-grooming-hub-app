@@ -25,23 +25,23 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/change-password`;
+      // URL completa para redirecionamento
+      const redirectUrl = 'https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/change-password';
       
-      // Usar edge function para gerar link confiável via admin API
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
-        body: { 
-          email,
-          redirectTo: redirectUrl
-        }
+      console.log('📧 Enviando email de recuperação para:', email);
+      console.log('🔗 Redirect URL:', redirectUrl);
+      
+      // Usar método nativo do Supabase Auth
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
       });
 
       if (error) {
+        console.error('❌ Erro ao enviar email:', error);
         throw error;
       }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Erro ao enviar email');
-      }
+      
+      console.log('✅ Email enviado com sucesso!');
 
       setEmailSent(true);
       toast.success('E-mail enviado!', {
