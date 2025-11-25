@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Mail, ArrowLeft } from 'lucide-react';
+import AuthContainer from '@/components/ui/containers/AuthContainer';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -50,77 +50,79 @@ export default function ForgotPassword() {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <Mail className="w-8 h-8 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl">E-mail Enviado!</CardTitle>
-            <CardDescription className="text-base">
-              Enviamos um link de redefinição de senha para <strong>{email}</strong>
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                <strong>📧 Próximos passos:</strong>
-              </p>
-              <ol className="text-sm text-blue-700 mt-2 space-y-1 list-decimal list-inside">
-                <li>Verifique sua caixa de entrada</li>
-                <li>Clique no link do email</li>
-                <li>Crie sua nova senha</li>
-              </ol>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm text-yellow-800">
-                <strong>⏱️ Importante:</strong> O link expira em 1 hora
+      <AuthContainer>
+        <div className="w-full max-w-md mx-auto px-4">
+          <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-2xl shadow-2xl p-8">
+            <div className="text-center mb-6">
+              <div className="mx-auto mb-4 w-16 h-16 bg-green-500/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-green-500/30">
+                <Mail className="w-8 h-8 text-green-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-urbana-light mb-2">E-mail Enviado!</h2>
+              <p className="text-urbana-light/70">
+                Enviamos um link de redefinição de senha para <strong className="text-urbana-gold">{email}</strong>
               </p>
             </div>
 
-            <div className="pt-4 space-y-3">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate('/painel-cliente/login')}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar para o Login
-              </Button>
+            <div className="space-y-4">
+              <div className="bg-blue-500/10 backdrop-blur-sm border border-blue-500/20 rounded-lg p-4">
+                <p className="text-sm text-blue-300 font-semibold mb-2">
+                  📧 Próximos passos:
+                </p>
+                <ol className="text-sm text-blue-200/80 space-y-1 list-decimal list-inside">
+                  <li>Verifique sua caixa de entrada</li>
+                  <li>Clique no link do email</li>
+                  <li>Crie sua nova senha</li>
+                </ol>
+              </div>
 
-              <Button
-                variant="ghost"
-                className="w-full text-sm"
-                onClick={() => setEmailSent(false)}
-              >
-                Não recebeu o email? Tentar novamente
-              </Button>
+              <div className="bg-yellow-500/10 backdrop-blur-sm border border-yellow-500/20 rounded-lg p-4">
+                <p className="text-sm text-yellow-300">
+                  <strong>⏱️ Importante:</strong> O link expira em 1 hora
+                </p>
+              </div>
+
+              <div className="pt-4 space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full bg-urbana-black/40 border-urbana-gold/30 text-urbana-light hover:bg-urbana-gold/20 hover:border-urbana-gold/50"
+                  onClick={() => navigate('/painel-cliente/login')}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar para o Login
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full text-sm text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-black/20"
+                  onClick={() => setEmailSent(false)}
+                >
+                  Não recebeu o email? Tentar novamente
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </AuthContainer>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <Mail className="w-6 h-6 text-primary" />
+    <AuthContainer>
+      <div className="w-full max-w-md mx-auto px-4">
+        <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-2xl shadow-2xl p-8">
+          <div className="text-center mb-6">
+            <div className="mx-auto mb-4 w-12 h-12 bg-urbana-gold/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-urbana-gold/30">
+              <Mail className="w-6 h-6 text-urbana-gold" />
+            </div>
+            <h2 className="text-2xl font-bold text-urbana-light mb-2">Esqueceu sua senha?</h2>
+            <p className="text-urbana-light/70">
+              Digite seu e-mail e enviaremos um link para redefinir sua senha
+            </p>
           </div>
-          <CardTitle className="text-2xl">Esqueceu sua senha?</CardTitle>
-          <CardDescription>
-            Digite seu e-mail e enviaremos um link para redefinir sua senha
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email" className="text-urbana-light">E-mail</Label>
               <Input
                 id="email"
                 type="email"
@@ -129,12 +131,13 @@ export default function ForgotPassword() {
                 placeholder="seu@email.com"
                 disabled={loading}
                 autoFocus
+                className="bg-urbana-black/40 border-urbana-gold/30 text-urbana-light placeholder:text-urbana-light/40"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold"
               disabled={loading}
             >
               {loading ? 'Enviando...' : 'Enviar Link de Redefinição'}
@@ -143,7 +146,7 @@ export default function ForgotPassword() {
             <Button
               type="button"
               variant="ghost"
-              className="w-full"
+              className="w-full text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-black/20"
               onClick={() => navigate('/painel-cliente/login')}
               disabled={loading}
             >
@@ -151,8 +154,8 @@ export default function ForgotPassword() {
               Voltar para o Login
             </Button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </div>
+    </AuthContainer>
   );
 }
