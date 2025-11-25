@@ -179,26 +179,49 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      // Verificar se precisa confirmar email
-      const needsConfirmation = authData.user.identities?.length === 0;
+      // Criar perfil na tabela client_profiles
+      const { error: profileError } = await supabase
+        .from('client_profiles')
+        .insert({
+          id: authData.user.id,
+          nome: dados.nome.trim(),
+          whatsapp: dados.whatsapp.trim(),
+          data_nascimento: dados.data_nascimento
+        });
+
+      if (profileError) {
+        console.error('Erro ao criar perfil:', profileError);
+        // Deletar usuário se falhar ao criar perfil
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        return { error: 'Erro ao criar perfil. Tente novamente.' };
+      }
+
+      // Verificar se o email já foi confirmado ou se precisa confirmar
+      // Se o usuário foi criado mas não tem session, precisa confirmar email
+      const needsConfirmation = !authData.session;
+
+      console.log('Cadastro realizado:', {
+        userId: authData.user.id,
+        email: authData.user.email,
+        needsConfirmation,
+        hasSession: !!authData.session
+      });
 
       if (needsConfirmation) {
         toast({
           title: "📧 Confirme seu e-mail",
-          description: "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada.",
-          duration: 8000,
+          description: "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam.",
+          duration: 10000,
         });
-      } else {
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Bem-vindo ao painel do cliente.",
-        });
+        return { error: null, needsEmailConfirmation: true };
       }
 
-      // O perfil será criado automaticamente pelo trigger
-      // A sessão será gerenciada pelo onAuthStateChange
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Bem-vindo ao painel do cliente.",
+      });
 
-      return { error: null, needsEmailConfirmation: needsConfirmation };
+      return { error: null, needsEmailConfirmation: false };
 
     } catch (error) {
       console.error('Erro inesperado no cadastro:', error);
