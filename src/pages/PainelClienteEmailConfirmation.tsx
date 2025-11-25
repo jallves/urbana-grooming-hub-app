@@ -22,12 +22,18 @@ export default function PainelClienteEmailConfirmation() {
 
         {/* Mensagem Principal */}
         <div className="space-y-3">
+          <div className="inline-block px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-full mb-2">
+            <p className="text-green-400 font-semibold text-sm">✅ Cadastro Criado com Sucesso!</p>
+          </div>
+          
           <h2 className="text-2xl font-bold text-urbana-light">
-            Verifique seu E-mail
+            Confirme seu E-mail
           </h2>
           <p className="text-urbana-light/70 text-base leading-relaxed">
-            Enviamos um link de confirmação para o seu e-mail. 
-            Por favor, verifique sua caixa de entrada e clique no link para ativar sua conta.
+            Sua conta foi criada com sucesso! 🎉
+          </p>
+          <p className="text-urbana-light/70 text-base leading-relaxed">
+            Para ativar sua conta, basta clicar no link de confirmação que acabamos de enviar para o seu e-mail.
           </p>
         </div>
 
