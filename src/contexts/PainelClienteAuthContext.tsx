@@ -208,21 +208,23 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         }
       });
 
+      // ⚠️ Erro na chamada da função (problema de rede ou função indisponível)
       if (functionError) {
         console.error('❌ Erro ao chamar edge function:', functionError);
         return { 
-          error: '❌ Erro ao processar cadastro.\n\nPor favor, tente novamente.' 
+          error: '⚠️ Não foi possível processar seu cadastro neste momento.\n\nPor favor, verifique sua conexão e tente novamente.' 
         };
       }
 
-      // Verificar resposta da função
-      if (!result.success) {
-        console.error('❌ Edge function retornou erro:', result.error);
-        return { error: result.error };
+      // ⚠️ Verificar se a função retornou erro de validação
+      if (!result || !result.success) {
+        const errorMessage = result?.error || 'Erro ao processar cadastro. Tente novamente.';
+        console.error('❌ Edge function retornou erro:', errorMessage);
+        return { error: errorMessage };
       }
 
       // ===================================================================
-      // SUCESSO!
+      // ✅ SUCESSO!
       // ===================================================================
       console.log('✅ Cadastro realizado com sucesso via edge function');
       
