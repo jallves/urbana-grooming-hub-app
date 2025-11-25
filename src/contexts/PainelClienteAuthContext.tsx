@@ -16,7 +16,7 @@ interface Cliente {
 interface PainelClienteAuthContextType {
   cliente: Cliente | null;
   loading: boolean;
-  cadastrar: (dados: CadastroData) => Promise<{ error: string | null }>;
+  cadastrar: (dados: CadastroData) => Promise<{ error: string | null; needsEmailConfirmation?: boolean }>;
   login: (email: string, senha: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   atualizarPerfil: (dados: Partial<Cliente>) => Promise<{ error: string | null }>;
@@ -121,7 +121,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     return () => subscription.unsubscribe();
   }, [buscarPerfilCliente]);
 
-  const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null }> => {
+  const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
       // Validações
       if (!dados.nome?.trim()) {
@@ -150,12 +150,12 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
-      // Criar usuário no auth.users
+      // Criar usuário no auth.users com confirmação de email
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: dados.email.trim().toLowerCase(),
         password: dados.senha,
         options: {
-          emailRedirectTo: `${window.location.origin}/painel-cliente/dashboard`,
+          emailRedirectTo: `${window.location.origin}/painel-cliente/email-confirmado`,
           data: {
             user_type: 'client',
             nome: dados.nome.trim(),
@@ -179,15 +179,26 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao painel do cliente.",
-      });
+      // Verificar se precisa confirmar email
+      const needsConfirmation = authData.user.identities?.length === 0;
+
+      if (needsConfirmation) {
+        toast({
+          title: "📧 Confirme seu e-mail",
+          description: "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada.",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Bem-vindo ao painel do cliente.",
+        });
+      }
 
       // O perfil será criado automaticamente pelo trigger
       // A sessão será gerenciada pelo onAuthStateChange
 
-      return { error: null };
+      return { error: null, needsEmailConfirmation: needsConfirmation };
 
     } catch (error) {
       console.error('Erro inesperado no cadastro:', error);
