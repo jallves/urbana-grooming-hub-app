@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
                  `✅ Se esta é sua conta, clique em "Já tenho conta" para fazer login.\n` +
                  `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
                    `✅ Clique em "Já tenho conta" para fazer login.\n` +
                    `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
       }
       
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
             error: '📱 Este número de WhatsApp já está cadastrado em nosso sistema!\n\n' +
                    'Por favor, use um número diferente.'
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
       }
       
