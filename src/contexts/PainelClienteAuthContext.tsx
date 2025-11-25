@@ -191,25 +191,32 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
-      // Verificar se o WhatsApp já está cadastrado
+      // 🔍 VALIDAÇÃO 1: Verificar se o WhatsApp já está cadastrado
       console.log('🔍 Verificando WhatsApp único:', dados.whatsapp);
       const { data: existingWhatsApp, error: whatsappCheckError } = await supabase
         .from('client_profiles')
-        .select('id')
+        .select('nome, whatsapp')
         .eq('whatsapp', dados.whatsapp.trim())
         .maybeSingle();
 
-      if (whatsappCheckError) {
+      if (whatsappCheckError && whatsappCheckError.code !== 'PGRST116') {
         console.error('Erro ao verificar WhatsApp:', whatsappCheckError);
         return { error: 'Erro ao verificar dados. Tente novamente.' };
       }
 
       if (existingWhatsApp) {
         console.warn('⚠️ WhatsApp já cadastrado');
-        return { error: '📱 Este número de WhatsApp já está cadastrado! Se você já tem conta, faça login ou recupere sua senha.' };
+        return { 
+          error: `📱 Este número de WhatsApp (${dados.whatsapp}) já está cadastrado em nosso sistema!\n\n` +
+                 `✅ Se você já possui cadastro, clique em "Já tenho conta" para fazer login.\n` +
+                 `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
+        };
       }
 
-      // Criar usuário no auth.users com confirmação de email
+      // 🔍 VALIDAÇÃO 2: E-mail duplicado será detectado automaticamente pelo Supabase Auth
+      // durante o signUp, que retornará erro específico se já existir
+
+      // 📧 Criar usuário no auth.users com confirmação de email
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: dados.email.trim().toLowerCase(),
         password: dados.senha,
@@ -227,12 +234,16 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       if (signUpError) {
         console.error('Erro ao criar usuário:', signUpError);
         
-        // Tratamento específico de erros
+        // 🔍 Tratamento específico e didático de erros
         if (signUpError.message.includes('already registered') || 
             signUpError.message.includes('User already registered') ||
             signUpError.message.includes('email_exists') ||
             signUpError.status === 422) {
-          return { error: '⚠️ Este e-mail já possui cadastro! Use outro e-mail ou faça login com este e-mail.' };
+          return { 
+            error: `📧 Este e-mail (${dados.email}) já possui cadastro em nosso sistema!\n\n` +
+                   `✅ Clique em "Já tenho conta" para fazer login.\n` +
+                   `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
+          };
         }
         
         if (signUpError.message.includes('invalid email')) {
@@ -251,9 +262,13 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: `❌ Erro ao criar conta: ${signUpError.message}. Tente novamente ou entre em contato conosco.` };
       }
 
-      // Criar perfil no client_profiles manualmente
+      // ✅ Criar perfil no client_profiles com dados do usuário
       if (authData?.user) {
-        console.log('✅ Usuário criado, criando perfil...');
+        console.log('✅ Usuário criado no auth, criando perfil no client_profiles...');
+        
+        // Aguardar um pouco para garantir que o auth.uid() está disponível
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const { error: profileError } = await supabase
           .from('client_profiles')
           .insert({
@@ -265,7 +280,20 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
         if (profileError) {
           console.error('❌ Erro ao criar perfil:', profileError);
-          return { error: `❌ Erro ao criar perfil. Tente novamente. Detalhe: ${profileError.message}` };
+          
+          // Se o WhatsApp duplicou (race condition), avisar
+          if (profileError.message?.includes('whatsapp')) {
+            return { 
+              error: `📱 Este número de WhatsApp já foi cadastrado por outro usuário.\n\n` +
+                     `Por favor, use um número diferente ou entre em contato conosco.`
+            };
+          }
+          
+          return { 
+            error: `❌ Não foi possível completar seu cadastro.\n\n` +
+                   `Tente novamente em instantes. Se o problema persistir, entre em contato conosco.\n\n` +
+                   `Detalhe técnico: ${profileError.message}`
+          };
         }
         console.log('✅ Perfil criado com sucesso!');
       }
