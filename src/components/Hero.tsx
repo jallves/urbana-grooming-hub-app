@@ -13,7 +13,15 @@ const Hero: React.FC = () => {
   const y = useTransform(scrollY, [0, 500], [0, 150]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
 
-  console.log('Hero component rendering with', bannerImages.length, 'banners');
+  console.log('[Hero] 🎨 Componente renderizando');
+  console.log('[Hero] 📊 Banners:', bannerImages.length);
+  console.log('[Hero] 🔄 Loading:', loading);
+  
+  if (bannerImages.length > 0) {
+    console.log('[Hero] ✅ Banner atual:', bannerImages[0].title);
+  } else {
+    console.warn('[Hero] ⚠️ NENHUM BANNER CARREGADO!');
+  }
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
