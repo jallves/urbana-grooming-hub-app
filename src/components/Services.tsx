@@ -101,11 +101,17 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
 const Services: React.FC = () => {
   const { data: services, isLoading, error } = useQuery<Array<{ id: string; nome: string; preco: number; duracao: number; show_on_home: boolean; display_order: number; descricao?: string | null }>>({
     queryKey: ["featured-services"],
-    queryFn: async () => {
-      console.log('[PWA Services] 🔍 Iniciando busca de serviços...');
-      
+    queryFn: async ({ signal }) => {
+      // Timeout de 8 segundos
+      const timeoutId = setTimeout(() => {
+        console.error('[Services] ⏱️ Timeout após 8s');
+        signal?.dispatchEvent(new Event('abort'));
+      }, 8000);
+
       try {
-        // Primeiro tenta buscar serviços marcados para exibição na home
+        console.log('[Services] 🔍 Buscando...');
+        
+        // Buscar serviços ativos com show_on_home
         const { data: featuredData, error: featuredError } = await supabase
           .from("painel_servicos")
           .select("*")
@@ -113,14 +119,16 @@ const Services: React.FC = () => {
           .eq("is_active", true)
           .order("display_order", { ascending: true });
 
+        clearTimeout(timeoutId);
+
         if (featuredError) {
-          console.error('[PWA Services] ❌ Erro ao buscar serviços featured:', featuredError);
+          console.error('[Services] ❌ Erro featured:', featuredError.message);
           throw featuredError;
         }
         
-        // Se não houver serviços marcados, busca os 6 primeiros por display_order
+        // Fallback: buscar os 6 primeiros se não houver featured
         if (!featuredData || featuredData.length === 0) {
-          console.log('[PWA Services] 🔄 Sem serviços featured, buscando fallback...');
+          console.log('[Services] 🔄 Fallback...');
           const { data: fallbackData, error: fallbackError } = await supabase
             .from("painel_servicos")
             .select("*")
@@ -129,25 +137,26 @@ const Services: React.FC = () => {
             .limit(6);
           
           if (fallbackError) {
-            console.error('[PWA Services] ❌ Erro ao buscar fallback:', fallbackError);
+            console.error('[Services] ❌ Erro fallback:', fallbackError.message);
             throw fallbackError;
           }
           
-          console.log('[PWA Services] ✅ Serviços carregados (fallback):', fallbackData?.length || 0);
+          console.log('[Services] ✅ Fallback:', fallbackData?.length || 0);
           return fallbackData || [];
         }
         
-        console.log('[PWA Services] ✅ Serviços carregados (featured):', featuredData.length);
+        console.log('[Services] ✅ Featured:', featuredData.length);
         return featuredData;
-      } catch (err) {
-        console.error('[PWA Services] ❌ Erro fatal:', err);
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        console.error('[Services] ❌ Exceção:', err?.message);
         throw err;
       }
     },
-    retry: 2,
+    retry: 1, // Apenas 1 retry
     retryDelay: 1000,
-    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
-    gcTime: 10 * 60 * 1000, // Mantém em cache por 10 minutos
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const formatPrice = (price: number) => `R$ ${price.toFixed(2).replace(".", ",")}`;

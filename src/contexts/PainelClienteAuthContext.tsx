@@ -93,16 +93,34 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('[PainelClienteAuth] Auth state changed:', event, session?.user?.id);
+        console.log('[PainelClienteAuth] Auth event:', event);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Buscar perfil do cliente
-          const perfil = await buscarPerfilCliente(session.user.id);
-          if (mounted) {
-            setCliente(perfil);
-            setLoading(false);
+          // Buscar perfil do cliente com timeout
+          const timeoutId = setTimeout(() => {
+            console.warn('[PainelClienteAuth] ⏱️ Timeout ao buscar perfil');
+            if (mounted) {
+              setLoading(false);
+            }
+          }, 8000);
+
+          try {
+            const perfil = await buscarPerfilCliente(session.user.id);
+            clearTimeout(timeoutId);
+            
+            if (mounted) {
+              setCliente(perfil);
+              setLoading(false);
+            }
+          } catch (error) {
+            clearTimeout(timeoutId);
+            console.error('[PainelClienteAuth] Erro ao buscar perfil:', error);
+            if (mounted) {
+              setCliente(null);
+              setLoading(false);
+            }
           }
         } else {
           if (mounted) {
@@ -113,12 +131,21 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
     );
 
-    // Check for existing session IMEDIATAMENTE
+    // Check for existing session com timeout
     const initSession = async () => {
+      const initTimeoutId = setTimeout(() => {
+        console.warn('[PainelClienteAuth] ⏱️ Timeout ao inicializar sessão');
+        if (mounted) {
+          setLoading(false);
+        }
+      }, 10000);
+
       try {
-        console.log('[PainelClienteAuth] Verificando sessão existente...');
+        console.log('[PainelClienteAuth] Verificando sessão...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
+        clearTimeout(initTimeoutId);
+
         if (error) {
           console.error('[PainelClienteAuth] Erro ao buscar sessão:', error);
           if (mounted) {
@@ -133,21 +160,22 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          console.log('[PainelClienteAuth] Sessão encontrada, buscando perfil...');
+          console.log('[PainelClienteAuth] Sessão encontrada');
           const perfil = await buscarPerfilCliente(session.user.id);
           if (mounted) {
             setCliente(perfil);
-            console.log('[PainelClienteAuth] ✅ Perfil carregado:', perfil?.nome);
+            console.log('[PainelClienteAuth] ✅ Perfil:', perfil?.nome);
           }
         } else {
-          console.log('[PainelClienteAuth] Nenhuma sessão ativa');
+          console.log('[PainelClienteAuth] Sem sessão ativa');
         }
 
         if (mounted) {
           setLoading(false);
         }
       } catch (error) {
-        console.error('[PainelClienteAuth] Erro ao inicializar sessão:', error);
+        clearTimeout(initTimeoutId);
+        console.error('[PainelClienteAuth] Erro crítico:', error);
         if (mounted) {
           setLoading(false);
         }
@@ -160,7 +188,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [buscarPerfilCliente]);
+  }, []); // Remover buscarPerfilCliente das dependências
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {

@@ -12,35 +12,33 @@ const PainelClienteRoute: React.FC<PainelClienteRouteProps> = ({ children }) => 
   const [shouldRedirect, setShouldRedirect] = React.useState(false);
   const [timeoutReached, setTimeoutReached] = React.useState(false);
 
-  // Timeout de segurança - após 5 segundos, se ainda estiver carregando, forçar conclusão
+  // Timeout de segurança AUMENTADO - 8 segundos
   React.useEffect(() => {
     const safetyTimeout = setTimeout(() => {
       if (loading) {
-        console.warn('[PainelClienteRoute] Timeout de segurança atingido - forçando conclusão do loading');
+        console.warn('[PainelClienteRoute] ⏱️ Timeout atingido após 8s');
         setTimeoutReached(true);
       }
-    }, 5000);
+    }, 8000); // Aumentado de 5s para 8s
 
     return () => clearTimeout(safetyTimeout);
   }, [loading]);
 
-  // Aguardar um tempo razoável antes de redirecionar
+  // Aguardar tempo razoável antes de redirecionar
   React.useEffect(() => {
     if ((!loading || timeoutReached) && !cliente) {
-      // Se não está carregando e não tem cliente, aguardar 1 segundo antes de redirecionar
+      // Reduzir espera de 1s para 500ms
       const timer = setTimeout(() => {
-        console.log('[PainelClienteRoute] Sessão não encontrada, redirecionando para login');
+        console.log('[PainelClienteRoute] Redirecionando...');
         setShouldRedirect(true);
-      }, 1000);
+      }, 500);
 
       return () => clearTimeout(timer);
     } else if (cliente) {
-      // Se o cliente foi carregado, garantir que não vai redirecionar
       setShouldRedirect(false);
     }
   }, [loading, cliente, timeoutReached]);
 
-  // Se timeout foi atingido mas ainda loading, tratar como "não loading"
   const isActuallyLoading = loading && !timeoutReached;
 
   if (isActuallyLoading) {
