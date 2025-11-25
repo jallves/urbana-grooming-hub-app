@@ -39,9 +39,6 @@ const handler = async (req: Request): Promise<Response> => {
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email,
-      options: {
-        redirectTo: redirectTo || `${new URL(req.url).origin}/reset-password`
-      }
     });
 
     if (error) {
@@ -49,14 +46,22 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Não foi possível gerar o link de recuperação');
     }
 
-    const resetLink = data.properties?.action_link;
-
-    if (!resetLink) {
+    // Extrair apenas o token do link gerado
+    const actionLink = data.properties?.action_link;
+    if (!actionLink) {
       console.error('Link de reset não foi gerado');
       throw new Error('Não foi possível gerar o link de recuperação');
     }
 
-    console.log('Link de reset gerado com sucesso');
+    // Pegar apenas o hash com os tokens da URL
+    const url = new URL(actionLink);
+    const hash = url.hash; // Contém #access_token=xxx&type=recovery...
+    
+    // Construir o link com o domínio correto do projeto
+    const correctDomain = redirectTo || 'https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/change-password';
+    const resetLink = `${correctDomain}${hash}`;
+
+    console.log('Link de reset gerado com sucesso:', resetLink);
 
     // Verificar se a API key do Resend está configurada
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
