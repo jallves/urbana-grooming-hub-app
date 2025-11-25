@@ -302,7 +302,7 @@ export type Database = {
             foreignKeyName: "appointment_ratings_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes"
+            referencedRelation: "painel_clientes_legacy"
             referencedColumns: ["id"]
           },
         ]
@@ -1696,7 +1696,7 @@ export type Database = {
             foreignKeyName: "financial_records_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes"
+            referencedRelation: "painel_clientes_legacy"
             referencedColumns: ["id"]
           },
         ]
@@ -2118,7 +2118,7 @@ export type Database = {
             foreignKeyName: "notification_logs_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes"
+            referencedRelation: "painel_clientes_legacy"
             referencedColumns: ["id"]
           },
         ]
@@ -2279,6 +2279,13 @@ export type Database = {
             foreignKeyName: "painel_agendamentos_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
             referencedRelation: "painel_clientes"
             referencedColumns: ["id"]
           },
@@ -2350,7 +2357,7 @@ export type Database = {
           },
         ]
       }
-      painel_clientes: {
+      painel_clientes_legacy: {
         Row: {
           auth_user_id: string | null
           created_at: string
@@ -2831,7 +2838,7 @@ export type Database = {
             foreignKeyName: "push_notification_tokens_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes"
+            referencedRelation: "painel_clientes_legacy"
             referencedColumns: ["id"]
           },
         ]
@@ -3705,7 +3712,7 @@ export type Database = {
             foreignKeyName: "totem_product_sales_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes"
+            referencedRelation: "painel_clientes_legacy"
             referencedColumns: ["id"]
           },
         ]
@@ -3895,7 +3902,7 @@ export type Database = {
             foreignKeyName: "vendas_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes"
+            referencedRelation: "painel_clientes_legacy"
             referencedColumns: ["id"]
           },
           {
@@ -4042,6 +4049,18 @@ export type Database = {
         }
         Relationships: []
       }
+      painel_clientes: {
+        Row: {
+          created_at: string | null
+          data_nascimento: string | null
+          email: string | null
+          id: string | null
+          nome: string | null
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Relationships: []
+      }
       vw_agendamentos_sem_financeiro: {
         Row: {
           agendamento_data: string | null
@@ -4065,6 +4084,13 @@ export type Database = {
             columns: ["barbeiro_id"]
             isOneToOne: false
             referencedRelation: "painel_barbeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4137,7 +4163,7 @@ export type Database = {
             foreignKeyName: "vendas_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes"
+            referencedRelation: "painel_clientes_legacy"
             referencedColumns: ["id"]
           },
           {
@@ -4174,7 +4200,7 @@ export type Database = {
         }
         SetofOptions: {
           from: "*"
-          to: "painel_clientes"
+          to: "painel_clientes_legacy"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4319,7 +4345,7 @@ export type Database = {
         }
         SetofOptions: {
           from: "*"
-          to: "painel_clientes"
+          to: "painel_clientes_legacy"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4345,7 +4371,7 @@ export type Database = {
         }
         SetofOptions: {
           from: "*"
-          to: "painel_clientes"
+          to: "painel_clientes_legacy"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4485,7 +4511,7 @@ export type Database = {
         }
         SetofOptions: {
           from: "*"
-          to: "painel_clientes"
+          to: "painel_clientes_legacy"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4599,7 +4625,7 @@ export type Database = {
         }
         SetofOptions: {
           from: "*"
-          to: "painel_clientes"
+          to: "painel_clientes_legacy"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4625,7 +4651,7 @@ export type Database = {
         }
         SetofOptions: {
           from: "*"
-          to: "painel_clientes"
+          to: "painel_clientes_legacy"
           isOneToOne: true
           isSetofReturn: false
         }
