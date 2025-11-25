@@ -11,6 +11,7 @@ const PainelClienteLayout: React.FC = () => {
   const { cliente, logout } = usePainelClienteAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
   // Log para debug - garante que este layout está sendo usado
   React.useEffect(() => {
@@ -32,8 +33,21 @@ const PainelClienteLayout: React.FC = () => {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/painel-cliente/login');
+    try {
+      setIsLoggingOut(true);
+      console.log('🚪 [Layout] Iniciando processo de logout...');
+      
+      await logout();
+      
+      console.log('✅ [Layout] Logout concluído, navegando para login...');
+      navigate('/painel-cliente/login', { replace: true });
+    } catch (error) {
+      console.error('❌ [Layout] Erro no logout:', error);
+      // Mesmo com erro, redirecionar para login
+      navigate('/painel-cliente/login', { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const navigationItems = [
@@ -119,9 +133,12 @@ const PainelClienteLayout: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}
-                  className="text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20"
+                  disabled={isLoggingOut}
+                  className={`text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20 ${
+                    isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <LogOut className={`h-4 w-4 sm:h-5 sm:w-5 ${isLoggingOut ? 'animate-spin' : ''}`} />
                 </Button>
               </div>
             </div>
