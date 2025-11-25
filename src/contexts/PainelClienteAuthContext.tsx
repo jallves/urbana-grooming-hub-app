@@ -244,6 +244,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         }
       });
 
+      // ⚠️ SE DEU ERRO NO SIGNUP, PARAR AQUI (EMAIL NÃO FOI ENVIADO)
       if (signUpError) {
         console.error('❌ Erro ao criar usuário:', signUpError);
         
@@ -274,6 +275,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: `❌ Erro ao criar conta: ${signUpError.message}.\n\nTente novamente ou entre em contato conosco.` };
       }
 
+      // ⚠️ SE NÃO CRIOU USUÁRIO, PARAR AQUI
       if (!authData?.user) {
         return { error: '❌ Erro ao criar conta. Tente novamente.' };
       }
@@ -293,43 +295,56 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           p_data_nascimento: dados.data_nascimento
         });
 
+      // ⚠️ SE DEU ERRO NA CHAMADA DA FUNÇÃO, PARAR AQUI
       if (profileRpcError) {
         console.error('❌ Erro ao chamar função de criação de perfil:', profileRpcError);
+        
+        // ⚠️ IMPORTANTE: Usuário foi criado mas perfil falhou
+        // Email de confirmação JÁ foi enviado, mas cadastro está incompleto
         return { 
-          error: '❌ Não foi possível completar seu cadastro.\n\n' +
-                 'Sua conta foi criada mas faltam alguns dados. Por favor, entre em contato conosco para finalizar.'
+          error: '❌ Houve um problema ao finalizar seu cadastro.\n\n' +
+                 'Sua conta foi criada, mas faltam alguns dados. Entre em contato conosco para concluir seu cadastro.\n\n' +
+                 'Referência: ' + authData.user.email
         };
       }
 
       // Verificar resposta da função
       const result = profileResult as { success: boolean; error?: string; message?: string };
       
+      // ⚠️ SE FUNÇÃO RETORNOU ERRO (ex: WhatsApp duplicado em race condition)
       if (!result.success) {
         console.error('❌ Erro ao criar perfil:', result.error);
         
-        // Se foi erro de WhatsApp duplicado (race condition)
+        // ⚠️ IMPORTANTE: Usuário foi criado mas perfil falhou
+        // Email de confirmação JÁ foi enviado
         if (result.error?.includes('WhatsApp')) {
-          return { error: result.error };
+          return { 
+            error: '❌ Houve um problema ao finalizar seu cadastro.\n\n' +
+                   result.error + '\n\n' +
+                   'Entre em contato conosco para resolver este problema.\n\n' +
+                   'Referência: ' + authData.user.email
+          };
         }
         
         return { 
           error: '❌ Não foi possível completar seu cadastro.\n\n' +
                  'Por favor, aguarde alguns instantes e tente novamente.\n\n' +
-                 'Se o problema persistir, entre em contato conosco.'
+                 'Se o problema persistir, entre em contato conosco.\n\n' +
+                 'Referência: ' + authData.user.email
         };
       }
 
       console.log('✅ Perfil criado com sucesso!');
 
       // ===================================================================
-      // ETAPA 5: VERIFICAR SE PRECISA CONFIRMAR EMAIL
+      // ETAPA 5: ✅ TUDO VALIDADO - MOSTRAR MENSAGEM DE SUCESSO
       // ===================================================================
       const needsConfirmation = !authData.session;
 
       if (needsConfirmation) {
-        console.log('📧 Email de confirmação enviado');
+        console.log('✅ Cadastro completo - aguardando confirmação de email');
         toast({
-          title: "✅ Cadastro criado com sucesso!",
+          title: "✅ Cadastro realizado com sucesso!",
           description: "📧 Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam para ativar sua conta.",
           duration: 12000,
         });
