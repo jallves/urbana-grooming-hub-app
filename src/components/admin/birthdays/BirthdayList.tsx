@@ -48,7 +48,14 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
       return;
     }
 
-    const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+    // Limpar número e adicionar DDI +55 se não estiver presente
+    let cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+    
+    // Se o número não começa com 55 (código do Brasil), adicionar
+    if (!cleanPhoneNumber.startsWith('55')) {
+      cleanPhoneNumber = '55' + cleanPhoneNumber;
+    }
+    
     const message = encodeURIComponent(
       `Olá ${client.name}! 🎉 Feliz aniversário da equipe Urbana Barbearia! 🎂✨ Desejamos um dia repleto de alegria e realizações!`
     );

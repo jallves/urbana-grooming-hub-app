@@ -9,8 +9,14 @@ const WhatsAppButton: React.FC = () => {
   // Usar o número de telefone das configurações da barbearia ou um valor padrão
   const phoneNumber = shopSettings?.phone || '5511999999999';
   
-  // Remover caracteres não numéricos do número de telefone
-  const formattedPhone = phoneNumber.replace(/\D/g, '');
+  // Remover caracteres não numéricos do número de telefone e adicionar DDI +55 se necessário
+  let formattedPhone = phoneNumber.replace(/\D/g, '');
+  
+  // Se o número não começa com 55 (código do Brasil), adicionar
+  if (!formattedPhone.startsWith('55')) {
+    formattedPhone = '55' + formattedPhone;
+  }
+  
   const message = encodeURIComponent('Olá, gostaria de mais informações sobre a Urbana Barbearia!');
   const whatsappUrl = `https://wa.me/${formattedPhone}?text=${message}`;
 

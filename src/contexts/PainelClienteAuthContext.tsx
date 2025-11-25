@@ -191,6 +191,24 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
+      // Verificar se o WhatsApp já está cadastrado
+      console.log('🔍 Verificando WhatsApp único:', dados.whatsapp);
+      const { data: existingWhatsApp, error: whatsappCheckError } = await supabase
+        .from('client_profiles')
+        .select('id')
+        .eq('whatsapp', dados.whatsapp.trim())
+        .maybeSingle();
+
+      if (whatsappCheckError) {
+        console.error('Erro ao verificar WhatsApp:', whatsappCheckError);
+        return { error: 'Erro ao verificar dados. Tente novamente.' };
+      }
+
+      if (existingWhatsApp) {
+        console.warn('⚠️ WhatsApp já cadastrado');
+        return { error: '📱 Este número de WhatsApp já está cadastrado! Se você já tem conta, faça login ou recupere sua senha.' };
+      }
+
       // Criar usuário no auth.users com confirmação de email
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: dados.email.trim().toLowerCase(),
