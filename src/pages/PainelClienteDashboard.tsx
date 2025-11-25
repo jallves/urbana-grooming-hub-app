@@ -52,6 +52,7 @@ export default function PainelClienteDashboard() {
     concluidos: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Log para debug
   React.useEffect(() => {
@@ -128,15 +129,33 @@ export default function PainelClienteDashboard() {
   useClientDashboardRealtime(fetchStats);
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/painel-cliente/login");
+    try {
+      setIsLoggingOut(true);
+      console.log('🚪 Iniciando processo de logout...');
+      
+      await logout();
+      
+      console.log('✅ Logout concluído, navegando para login...');
+      
+      // Usar replace para evitar voltar para a página protegida
+      navigate("/painel-cliente/login", { replace: true });
+    } catch (error) {
+      console.error('❌ Erro no logout:', error);
+      // Mesmo com erro, redirecionar para login
+      navigate("/painel-cliente/login", { replace: true });
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
-  if (loading) {
+  if (loading || isLoggingOut) {
     return (
       <ClientPageContainer>
-        <div className="flex justify-center items-center h-64">
+        <div className="flex flex-col justify-center items-center h-64 gap-4">
           <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
+          {isLoggingOut && (
+            <p className="text-urbana-light/70 text-sm">Encerrando sessão...</p>
+          )}
         </div>
       </ClientPageContainer>
     );
@@ -296,7 +315,7 @@ export default function PainelClienteDashboard() {
             variant: "default" as const,
           },
           {
-            label: "Sair", 
+            label: isLoggingOut ? "Saindo..." : "Sair", 
             IconComponent: LogOut,
             action: handleLogout,
             variant: "warning" as const,
@@ -304,10 +323,13 @@ export default function PainelClienteDashboard() {
         ].map((item, index) => (
           <PainelClienteCard
             key={index}
-            onClick={item.action}
+            onClick={isLoggingOut && item.label.includes("Sai") ? undefined : item.action}
             variant={item.variant}
             icon={item.IconComponent}
-            className="p-6 flex flex-col items-center justify-center space-y-3 min-h-[120px]"
+            className={cn(
+              "p-6 flex flex-col items-center justify-center space-y-3 min-h-[120px]",
+              isLoggingOut && item.label.includes("Sai") && "opacity-50 cursor-not-allowed"
+            )}
           >
             <item.IconComponent className="h-8 w-8 text-urbana-light" />
             <span className="text-sm font-medium text-center text-urbana-light">

@@ -303,15 +303,52 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   }, [toast]);
 
   const logout = useCallback(async (): Promise<void> => {
-    await supabase.auth.signOut();
-    setCliente(null);
-    setUser(null);
-    setSession(null);
-    
-    toast({
-      title: "Logout realizado",
-      description: "Até a próxima!",
-    });
+    try {
+      console.log('[PainelClienteAuth] 🚪 Iniciando logout...');
+      
+      // Fazer logout no Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('[PainelClienteAuth] ❌ Erro ao fazer logout:', error);
+        throw error;
+      }
+      
+      console.log('[PainelClienteAuth] ✅ Logout do Supabase concluído');
+      
+      // Limpar estados locais
+      setCliente(null);
+      setUser(null);
+      setSession(null);
+      
+      // Limpar localStorage completamente
+      try {
+        localStorage.removeItem('supabase.auth.token');
+        console.log('[PainelClienteAuth] 🧹 LocalStorage limpo');
+      } catch (e) {
+        console.warn('[PainelClienteAuth] ⚠️ Erro ao limpar localStorage:', e);
+      }
+      
+      toast({
+        title: "✅ Logout realizado",
+        description: "Até a próxima!",
+      });
+      
+      console.log('[PainelClienteAuth] ✅ Logout completo');
+    } catch (error) {
+      console.error('[PainelClienteAuth] ❌ Erro crítico no logout:', error);
+      
+      // Mesmo com erro, limpar estados locais
+      setCliente(null);
+      setUser(null);
+      setSession(null);
+      
+      toast({
+        title: "⚠️ Sessão encerrada",
+        description: "Você será redirecionado ao login",
+        variant: "destructive"
+      });
+    }
   }, [toast]);
 
   const atualizarPerfil = useCallback(async (dados: Partial<Cliente>): Promise<{ error: string | null }> => {
