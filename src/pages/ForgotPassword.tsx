@@ -27,12 +27,20 @@ export default function ForgotPassword() {
     try {
       const redirectUrl = `${window.location.origin}/change-password`;
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
+      // Usar edge function para gerar link confiável via admin API
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { 
+          email,
+          redirectTo: redirectUrl
+        }
       });
 
       if (error) {
         throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Erro ao enviar email');
       }
 
       setEmailSent(true);
