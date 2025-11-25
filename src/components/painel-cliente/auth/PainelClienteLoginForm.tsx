@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, KeyRound } from 'lucide-react';
-import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 
 interface PainelClienteLoginFormProps {
   onSubmit: (email: string, senha: string) => Promise<void>;
@@ -15,21 +15,11 @@ const PainelClienteLoginForm: React.FC<PainelClienteLoginFormProps> = ({ onSubmi
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(email, senha);
   };
-
-  if (showForgotPassword) {
-    return (
-      <ForgotPasswordForm 
-        onBack={() => setShowForgotPassword(false)}
-        redirectTo={`${window.location.origin}/painel-cliente/dashboard`}
-      />
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -82,16 +72,17 @@ const PainelClienteLoginForm: React.FC<PainelClienteLoginFormProps> = ({ onSubmi
         {loading ? 'Entrando...' : 'Entrar'}
       </Button>
 
-      <Button 
-        type="button"
-        variant="ghost" 
-        onClick={() => setShowForgotPassword(true)}
-        className="w-full text-gray-600 hover:text-urbana-gold hover:bg-gray-50 h-12 rounded-xl transition-all"
-        disabled={loading}
-      >
-        <KeyRound className="h-4 w-4 mr-2" />
-        Esqueceu sua senha?
-      </Button>
+      <Link to="/painel-cliente/forgot-password">
+        <Button 
+          type="button"
+          variant="ghost" 
+          className="w-full text-gray-600 hover:text-urbana-gold hover:bg-gray-50 h-12 rounded-xl transition-all"
+          disabled={loading}
+        >
+          <KeyRound className="h-4 w-4 mr-2" />
+          Esqueceu sua senha?
+        </Button>
+      </Link>
     </form>
   );
 };
