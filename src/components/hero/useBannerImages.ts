@@ -36,12 +36,17 @@ export const useBannerImages = () => {
         }
         
         console.log('[PWA Banner] 🔍 Tentativa:', retryCount + 1);
+        console.log('[PWA Banner] 🔧 Supabase client:', supabase ? 'OK' : 'ERRO');
         
         const { data, error } = await supabase
           .from('banner_images')
           .select('*')
           .order('display_order', { ascending: true })
           .eq('is_active', true);
+        
+        console.log('[PWA Banner] 📡 Resposta recebida');
+        console.log('[PWA Banner] 📊 Data:', data?.length || 0, 'banners');
+        console.log('[PWA Banner] ❌ Error:', error?.message || 'nenhum');
         
         if (!isMounted) return;
         
