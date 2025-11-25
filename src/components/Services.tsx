@@ -99,45 +99,55 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
 };
 
 const Services: React.FC = () => {
-  const { data: services, isLoading, error } = useQuery<Array<{ id: string; nome: string; preco: number; duracao: number; show_on_home: boolean; display_order: number }>>({
+  const { data: services, isLoading, error } = useQuery<Array<{ id: string; nome: string; preco: number; duracao: number; show_on_home: boolean; display_order: number; descricao?: string | null }>>({
     queryKey: ["featured-services"],
     queryFn: async () => {
-      console.log('[PWA Services] Buscando serviços...');
+      console.log('[PWA Services] 🔍 Iniciando busca de serviços...');
       
-      // Primeiro tenta buscar serviços marcados para exibição na home
-      const { data: featuredData, error: featuredError } = await supabase
-        .from("painel_servicos")
-        .select("*")
-        .eq("show_on_home", true)
-        .order("display_order", { ascending: true });
-
-      if (featuredError) {
-        console.error('[PWA Services] Erro:', featuredError.message);
-        throw featuredError;
-      }
-      
-      // Se não houver serviços marcados, busca os 6 primeiros por display_order
-      if (!featuredData || featuredData.length === 0) {
-        console.log('[PWA Services] Buscando fallback (top 6)...');
-        const { data: fallbackData, error: fallbackError } = await supabase
+      try {
+        // Primeiro tenta buscar serviços marcados para exibição na home
+        const { data: featuredData, error: featuredError } = await supabase
           .from("painel_servicos")
           .select("*")
-          .order("display_order", { ascending: true })
-          .limit(6);
-        
-        if (fallbackError) {
-          console.error('[PWA Services] Erro fallback:', fallbackError.message);
-          throw fallbackError;
+          .eq("show_on_home", true)
+          .eq("is_active", true)
+          .order("display_order", { ascending: true });
+
+        if (featuredError) {
+          console.error('[PWA Services] ❌ Erro ao buscar serviços featured:', featuredError);
+          throw featuredError;
         }
-        console.log('[PWA Services] ✅ Carregados (fallback):', fallbackData?.length || 0);
-        return fallbackData || [];
+        
+        // Se não houver serviços marcados, busca os 6 primeiros por display_order
+        if (!featuredData || featuredData.length === 0) {
+          console.log('[PWA Services] 🔄 Sem serviços featured, buscando fallback...');
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from("painel_servicos")
+            .select("*")
+            .eq("is_active", true)
+            .order("display_order", { ascending: true })
+            .limit(6);
+          
+          if (fallbackError) {
+            console.error('[PWA Services] ❌ Erro ao buscar fallback:', fallbackError);
+            throw fallbackError;
+          }
+          
+          console.log('[PWA Services] ✅ Serviços carregados (fallback):', fallbackData?.length || 0);
+          return fallbackData || [];
+        }
+        
+        console.log('[PWA Services] ✅ Serviços carregados (featured):', featuredData.length);
+        return featuredData;
+      } catch (err) {
+        console.error('[PWA Services] ❌ Erro fatal:', err);
+        throw err;
       }
-      
-      console.log('[PWA Services] ✅ Carregados:', featuredData.length);
-      return featuredData || [];
     },
-    retry: 3,
-    retryDelay: 2000,
+    retry: 2,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+    gcTime: 10 * 60 * 1000, // Mantém em cache por 10 minutos
   });
 
   const formatPrice = (price: number) => `R$ ${price.toFixed(2).replace(".", ",")}`;
@@ -145,7 +155,7 @@ const Services: React.FC = () => {
   return (
     <section
       id="services"
-      className="relative min-h-screen py-8 text-urbana-light overflow-hidden"
+      className="relative w-full py-8 md:py-12 lg:py-16 text-urbana-light overflow-hidden"
     >
       {/* Modern background elements with enhanced glow */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -164,14 +174,14 @@ const Services: React.FC = () => {
         backgroundSize: '60px 60px'
       }} />
 
-      <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto relative z-10 px-4 md:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center mx-auto mb-16"
+          className="text-center mx-auto mb-12 md:mb-16"
         >
           <h2 
             className="text-6xl md:text-7xl lg:text-8xl font-playfair font-bold mb-6 leading-tight tracking-tight relative inline-block"
@@ -234,13 +244,13 @@ const Services: React.FC = () => {
             </p>
           </motion.div>
         ) : services && services.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {services.map((service, i) => (
               <ServiceCard
                 key={service.id}
                 title={service.nome}
                 price={formatPrice(service.preco)}
-                description={null}
+                description={service.descricao || null}
                 index={i}
               />
             ))}
