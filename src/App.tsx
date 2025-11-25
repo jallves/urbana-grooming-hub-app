@@ -96,9 +96,16 @@ import ResetPassword from './pages/ResetPassword';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutos - dados frescos
+      gcTime: 10 * 60 * 1000, // 10 minutos - mantém em cache
+      refetchOnWindowFocus: false, // Não refaz requisição ao focar janela
+      refetchOnMount: false, // Não refaz requisição ao montar se tiver cache
+      refetchOnReconnect: true, // Refaz ao reconectar
+      retry: 2, // Tenta 2 vezes em caso de erro
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000), // Delay exponencial
+    },
+    mutations: {
+      retry: 1, // Tenta 1 vez em caso de erro em mutations
     },
   },
 });
