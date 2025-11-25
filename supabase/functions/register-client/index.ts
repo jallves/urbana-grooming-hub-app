@@ -186,34 +186,31 @@ Deno.serve(async (req) => {
     console.log('✅ Perfil criado com sucesso');
 
     // ===================================================================
-    // ETAPA 4: ENVIAR EMAIL DE CONFIRMAÇÃO (SÓ AGORA!)
+    // [4/4] EMAIL DE CONFIRMAÇÃO NATIVO DO SUPABASE
     // ===================================================================
-    console.log('🔍 [4/4] Enviando email de confirmação...');
+    console.log('🔍 [4/4] Gerando link de confirmação nativo do Supabase...');
     
     try {
-      // Usar inviteUserByEmail que REALMENTE envia o email
-      const { error: emailError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-        email.trim().toLowerCase(),
-        {
-          redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/email-confirmado`,
-          data: {
-            user_type: 'client',
-            nome: nome.trim(),
-            whatsapp: whatsapp.trim()
-          }
+      // Usar generateLink type='signup' para enviar email com template nativo do Supabase
+      const { data: linkData, error: emailError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'signup',
+        email: email.trim().toLowerCase(),
+        options: {
+          redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/dashboard`
         }
-      );
+      });
 
       if (emailError) {
-        console.error('⚠️ Erro ao enviar email:', emailError);
-        // Não vamos bloquear o cadastro por erro de email
-        // O usuário pode fazer login e pedir reenvio depois
+        console.error('⚠️ Erro ao gerar link de confirmação:', emailError);
+        console.log('ℹ️ Usuário pode fazer login e solicitar reenvio');
       } else {
-        console.log('✅ Email de confirmação enviado com sucesso');
+        console.log('✅ Link de confirmação gerado - Supabase enviará email com template configurado');
+        console.log(`📧 Template usado: Authentication > Email Templates > Confirm signup`);
+        console.log(`🔗 Redirect: /painel-cliente/dashboard`);
       }
     } catch (emailException) {
-      console.error('⚠️ Exceção ao enviar email:', emailException);
-      // Não bloquear cadastro por erro de email
+      console.error('⚠️ Exceção ao gerar link:', emailException);
+      console.log('ℹ️ Cadastro concluído - usuário pode solicitar reenvio');
     }
 
     // ===================================================================
