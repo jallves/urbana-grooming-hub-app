@@ -989,6 +989,33 @@ export type Database = {
           },
         ]
       }
+      client_profiles: {
+        Row: {
+          created_at: string | null
+          data_nascimento: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_nascimento?: string | null
+          id: string
+          nome: string
+          updated_at?: string | null
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string | null
+          data_nascimento?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       client_reviews: {
         Row: {
           appointment_id: string | null
@@ -2325,6 +2352,7 @@ export type Database = {
       }
       painel_clientes: {
         Row: {
+          auth_user_id: string | null
           created_at: string
           data_nascimento: string | null
           email: string
@@ -2335,6 +2363,7 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
+          auth_user_id?: string | null
           created_at?: string
           data_nascimento?: string | null
           email: string
@@ -2345,6 +2374,7 @@ export type Database = {
           whatsapp: string
         }
         Update: {
+          auth_user_id?: string | null
           created_at?: string
           data_nascimento?: string | null
           email?: string
@@ -4132,6 +4162,7 @@ export type Database = {
       authenticate_painel_cliente: {
         Args: { email: string; senha_hash: string }
         Returns: {
+          auth_user_id: string | null
           created_at: string
           data_nascimento: string | null
           email: string
@@ -4276,6 +4307,7 @@ export type Database = {
           whatsapp: string
         }
         Returns: {
+          auth_user_id: string | null
           created_at: string
           data_nascimento: string | null
           email: string
@@ -4301,6 +4333,7 @@ export type Database = {
           whatsapp: string
         }
         Returns: {
+          auth_user_id: string | null
           created_at: string
           data_nascimento: string | null
           email: string
@@ -4440,6 +4473,7 @@ export type Database = {
       get_painel_cliente_by_id: {
         Args: { cliente_id: string }
         Returns: {
+          auth_user_id: string | null
           created_at: string
           data_nascimento: string | null
           email: string
@@ -4521,6 +4555,14 @@ export type Database = {
         Args: { p_error_log_id: string }
         Returns: undefined
       }
+      migrate_painel_clientes_to_auth: {
+        Args: never
+        Returns: {
+          error_count: number
+          errors: Json
+          migrated_count: number
+        }[]
+      }
       reprocess_failed_appointment: {
         Args: { p_agendamento_id: string }
         Returns: Json
@@ -4545,6 +4587,7 @@ export type Database = {
           whatsapp?: string
         }
         Returns: {
+          auth_user_id: string | null
           created_at: string
           data_nascimento: string | null
           email: string
@@ -4570,6 +4613,7 @@ export type Database = {
           whatsapp?: string
         }
         Returns: {
+          auth_user_id: string | null
           created_at: string
           data_nascimento: string | null
           email: string

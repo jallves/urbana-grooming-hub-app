@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { User, Session } from '@supabase/supabase-js';
 
 interface Cliente {
   id: string;
@@ -45,39 +46,80 @@ interface PainelClienteAuthProviderProps {
 
 export function PainelClienteAuthProvider({ children }: PainelClienteAuthProviderProps) {
   const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const verificarSessao = useCallback(async () => {
+  // Função para buscar perfil do cliente
+  const buscarPerfilCliente = useCallback(async (userId: string) => {
     try {
-      const token = localStorage.getItem('painel_cliente_token');
-      
-      if (!token) {
-        setLoading(false);
-        return;
+      const { data: profile, error } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar perfil:', error);
+        return null;
       }
 
-      const { data, error } = await supabase
-        .rpc('get_painel_cliente_by_id', { cliente_id: token });
+      if (!profile) return null;
 
-      if (error || !data) {
-        localStorage.removeItem('painel_cliente_token');
-        setCliente(null);
-      } else {
-        setCliente(data as Cliente);
-      }
+      // Buscar email do auth.users
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
+      return {
+        id: profile.id,
+        nome: profile.nome,
+        email: authUser?.email || '',
+        whatsapp: profile.whatsapp,
+        data_nascimento: profile.data_nascimento,
+        created_at: profile.created_at
+      } as Cliente;
     } catch (error) {
-      console.error('Erro ao verificar sessão:', error);
-      localStorage.removeItem('painel_cliente_token');
-      setCliente(null);
-    } finally {
-      setLoading(false);
+      console.error('Erro ao buscar perfil:', error);
+      return null;
     }
   }, []);
 
+  // Listener de mudanças de autenticação
   useEffect(() => {
-    verificarSessao();
-  }, [verificarSessao]);
+    // Setup auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          // Buscar perfil do cliente
+          const perfil = await buscarPerfilCliente(session.user.id);
+          setCliente(perfil);
+        } else {
+          setCliente(null);
+        }
+
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const perfil = await buscarPerfilCliente(session.user.id);
+        setCliente(perfil);
+      }
+
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [buscarPerfilCliente]);
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null }> => {
     try {
@@ -108,77 +150,42 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
-      // Verificar se email já existe
-      const { data: clienteExistente, error: checkError } = await supabase
-        .rpc('check_painel_cliente_email', { email_to_check: dados.email.trim().toLowerCase() });
+      // Criar usuário no auth.users
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: dados.email.trim().toLowerCase(),
+        password: dados.senha,
+        options: {
+          emailRedirectTo: `${window.location.origin}/painel-cliente/dashboard`,
+          data: {
+            user_type: 'client',
+            nome: dados.nome.trim(),
+            whatsapp: dados.whatsapp.trim(),
+            data_nascimento: dados.data_nascimento
+          }
+        }
+      });
 
-      if (checkError) {
-        console.error('Erro ao verificar email:', checkError);
-        return { error: 'Erro interno. Tente novamente.' };
-      }
-
-      if (clienteExistente) {
-        return { error: 'Este e-mail já está cadastrado' };
-      }
-
-      // Criar hash da senha
-      const senhaHash = btoa(dados.senha);
-
-      // Inserir cliente no painel_clientes usando query direta
-      const { data: novoCliente, error: insertError } = await supabase
-        .from('painel_clientes')
-        .insert({
-          nome: dados.nome.trim(),
-          email: dados.email.trim().toLowerCase(),
-          whatsapp: dados.whatsapp.trim(),
-          data_nascimento: dados.data_nascimento,
-          senha_hash: senhaHash
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Erro ao inserir cliente:', insertError);
+      if (signUpError) {
+        console.error('Erro ao criar usuário:', signUpError);
         
-        // Check for unique constraint violation on whatsapp
-        if (insertError.code === '23505' && insertError.message.includes('painel_clientes_whatsapp_unique')) {
-          return { error: 'Este número de WhatsApp já está cadastrado. Cada cliente deve ter um número único.' };
+        if (signUpError.message.includes('already registered')) {
+          return { error: 'Este e-mail já está cadastrado' };
         }
         
-        return { error: `Erro ao criar conta: ${insertError.message}` };
+        return { error: `Erro ao criar conta: ${signUpError.message}` };
       }
 
-      if (!novoCliente) {
+      if (!authData.user) {
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
-
-      // Replicar no módulo cliente do painel admin
-      const { error: replicationError } = await supabase
-        .from('clients')
-        .insert({
-          name: dados.nome.trim(),
-          email: dados.email.trim().toLowerCase(),
-          phone: dados.whatsapp.trim(),
-          whatsapp: dados.whatsapp.trim(),
-          birth_date: dados.data_nascimento,
-          password_hash: senhaHash,
-          email_verified: true
-        });
-
-      if (replicationError) {
-        console.warn('Erro ao replicar no módulo admin:', replicationError);
-        // Não falhamos o cadastro se a replicação falhar
-      }
-
-      // Login automático
-      const clienteData = novoCliente as Cliente;
-      localStorage.setItem('painel_cliente_token', clienteData.id);
-      setCliente(clienteData);
 
       toast({
         title: "Conta criada com sucesso!",
         description: "Bem-vindo ao painel do cliente.",
       });
+
+      // O perfil será criado automaticamente pelo trigger
+      // A sessão será gerenciada pelo onAuthStateChange
 
       return { error: null };
 
@@ -194,46 +201,32 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'E-mail e senha são obrigatórios' };
       }
 
-      // Primeiro, verificar se o email existe
-      const { data: emailExists, error: checkError } = await supabase
-        .rpc('check_painel_cliente_email', { email_to_check: email.trim().toLowerCase() });
-
-      if (checkError) {
-        console.error('Erro ao verificar email:', checkError);
-        return { error: 'Erro ao validar credenciais. Tente novamente.' };
-      }
-
-      // Se o email não existe, retornar mensagem amistosa
-      if (!emailExists) {
-        return { error: 'cadastro_nao_encontrado' };
-      }
-
-      // Email existe, agora tentar autenticar
-      const senhaHash = btoa(senha);
-
-      const { data: clienteData, error } = await supabase
-        .rpc('authenticate_painel_cliente', {
-          email: email.trim().toLowerCase(),
-          senha_hash: senhaHash
-        });
+      // Fazer login usando supabase.auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: senha
+      });
 
       if (error) {
-        console.error('Erro na consulta de login:', error);
-        return { error: 'senha_incorreta' };
+        console.error('Erro no login:', error);
+        
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: 'E-mail ou senha incorretos' };
+        }
+        
+        return { error: 'Erro ao fazer login. Tente novamente.' };
       }
 
-      if (!clienteData) {
-        return { error: 'senha_incorreta' };
+      if (!data.user) {
+        return { error: 'Erro ao fazer login. Tente novamente.' };
       }
-
-      const cliente = clienteData as Cliente;
-      localStorage.setItem('painel_cliente_token', cliente.id);
-      setCliente(cliente);
 
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
+
+      // O perfil será carregado automaticamente pelo onAuthStateChange
 
       return { error: null };
     } catch (error) {
@@ -243,8 +236,10 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   }, [toast]);
 
   const logout = useCallback(async (): Promise<void> => {
-    localStorage.removeItem('painel_cliente_token');
+    await supabase.auth.signOut();
     setCliente(null);
+    setUser(null);
+    setSession(null);
     
     toast({
       title: "Logout realizado",
@@ -253,34 +248,46 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   }, [toast]);
 
   const atualizarPerfil = useCallback(async (dados: Partial<Cliente>): Promise<{ error: string | null }> => {
-    if (!cliente) return { error: 'Cliente não autenticado' };
+    if (!user) return { error: 'Usuário não autenticado' };
 
     try {
-      // Usar query direta ao invés de RPC function para evitar erro de tipos
-      const { data: clienteAtualizado, error } = await supabase
-        .from('painel_clientes')
+      const { error } = await supabase
+        .from('client_profiles')
         .update({
           nome: dados.nome,
-          email: dados.email,
           whatsapp: dados.whatsapp,
           data_nascimento: dados.data_nascimento,
           updated_at: new Date().toISOString()
         })
-        .eq('id', cliente.id)
-        .select()
-        .single();
+        .eq('id', user.id);
 
       if (error) {
         return { error: error.message };
       }
 
-      setCliente(clienteAtualizado as Cliente);
+      // Atualizar email se necessário
+      if (dados.email && dados.email !== user.email) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          email: dados.email
+        });
+
+        if (updateError) {
+          return { error: updateError.message };
+        }
+      }
+
+      // Recarregar perfil
+      const perfil = await buscarPerfilCliente(user.id);
+      if (perfil) {
+        setCliente(perfil);
+      }
+
       return { error: null };
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
       return { error: 'Erro interno do servidor' };
     }
-  }, [cliente]);
+  }, [user, buscarPerfilCliente]);
 
   const value = {
     cliente,
