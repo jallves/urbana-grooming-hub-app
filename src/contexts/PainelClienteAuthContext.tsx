@@ -168,11 +168,28 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       if (signUpError) {
         console.error('Erro ao criar usuário:', signUpError);
         
-        if (signUpError.message.includes('already registered')) {
-          return { error: 'Este e-mail já está cadastrado' };
+        // Tratamento específico de erros
+        if (signUpError.message.includes('already registered') || 
+            signUpError.message.includes('User already registered') ||
+            signUpError.message.includes('email_exists') ||
+            signUpError.status === 422) {
+          return { error: '⚠️ Este e-mail já possui cadastro! Use outro e-mail ou faça login com este e-mail.' };
         }
         
-        return { error: `Erro ao criar conta: ${signUpError.message}` };
+        if (signUpError.message.includes('invalid email')) {
+          return { error: '⚠️ E-mail inválido. Por favor, verifique o formato do e-mail.' };
+        }
+        
+        if (signUpError.message.includes('password')) {
+          return { error: '⚠️ Senha inválida. Verifique os requisitos de senha.' };
+        }
+        
+        if (signUpError.message.includes('rate limit') || signUpError.message.includes('too many')) {
+          return { error: '⚠️ Muitas tentativas. Aguarde alguns minutos e tente novamente.' };
+        }
+        
+        // Erro genérico com mensagem clara
+        return { error: `❌ Erro ao criar conta: ${signUpError.message}. Tente novamente ou entre em contato conosco.` };
       }
 
       if (!authData.user) {
@@ -191,9 +208,20 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       if (profileError) {
         console.error('Erro ao criar perfil:', profileError);
-        // Deletar usuário se falhar ao criar perfil
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        return { error: 'Erro ao criar perfil. Tente novamente.' };
+        
+        // Tratamento específico para erro de perfil duplicado
+        if (profileError.code === '23505' || profileError.message.includes('duplicate')) {
+          return { error: '⚠️ Este cadastro já existe! Faça login ou use outro e-mail.' };
+        }
+        
+        // Tentar deletar usuário se falhar ao criar perfil
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+        } catch (deleteError) {
+          console.error('Erro ao tentar deletar usuário:', deleteError);
+        }
+        
+        return { error: '❌ Erro ao finalizar cadastro. Por favor, tente novamente. Se o problema persistir, entre em contato conosco.' };
       }
 
       // Verificar se o email já foi confirmado ou se precisa confirmar
@@ -244,11 +272,26 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       if (error) {
         console.error('Erro no login:', error);
         
-        if (error.message.includes('Invalid login credentials')) {
-          return { error: 'E-mail ou senha incorretos' };
+        // Tratamento específico de erros de login
+        if (error.message.includes('Invalid login credentials') || 
+            error.message.includes('invalid_credentials') ||
+            error.status === 400) {
+          return { error: '⚠️ E-mail ou senha incorretos. Verifique seus dados e tente novamente.' };
         }
         
-        return { error: 'Erro ao fazer login. Tente novamente.' };
+        if (error.message.includes('Email not confirmed')) {
+          return { error: '📧 Você precisa confirmar seu e-mail antes de fazer login. Verifique sua caixa de entrada.' };
+        }
+        
+        if (error.message.includes('rate limit') || error.message.includes('too many')) {
+          return { error: '⚠️ Muitas tentativas de login. Aguarde alguns minutos e tente novamente.' };
+        }
+        
+        if (error.message.includes('network') || error.message.includes('connection')) {
+          return { error: '⚠️ Erro de conexão. Verifique sua internet e tente novamente.' };
+        }
+        
+        return { error: '❌ Erro ao fazer login. Tente novamente ou entre em contato conosco.' };
       }
 
       if (!data.user) {

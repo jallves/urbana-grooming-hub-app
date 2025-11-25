@@ -65,8 +65,8 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {erro && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-          <p className="text-red-600 text-sm text-center">{erro}</p>
+        <div className="p-4 bg-red-50 border-2 border-red-400 rounded-xl shadow-md animate-in fade-in slide-in-from-top-2 duration-300">
+          <p className="text-red-700 text-sm font-medium text-center leading-relaxed">{erro}</p>
         </div>
       )}
 
