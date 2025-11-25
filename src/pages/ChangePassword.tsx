@@ -31,34 +31,51 @@ export default function ChangePassword() {
   // Verificar se há uma sessão válida (usuário veio do link do email)
   useEffect(() => {
     const checkSession = async () => {
-      // Primeiro, verificar se há um hash na URL (token de recuperação)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
+      try {
+        // Primeiro, verificar se há um hash na URL (token de recuperação)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const type = hashParams.get('type');
 
-      // Se houver um token de recuperação, o Supabase já processou e criou a sessão
-      if (accessToken && type === 'recovery') {
-        console.log('✅ Token de recuperação detectado, sessão válida');
+        console.log('🔍 Verificando sessão de recuperação...', { accessToken: !!accessToken, type });
+
+        // Se houver um token de recuperação, o Supabase já processou e criou a sessão
+        if (accessToken && type === 'recovery') {
+          console.log('✅ Token de recuperação detectado, sessão válida');
+          setIsValidSession(true);
+          return;
+        }
+
+        // Caso contrário, verificar se já existe uma sessão
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        console.log('📊 Resultado da verificação de sessão:', { session: !!session, error });
+        
+        if (error) {
+          console.error('❌ Erro ao verificar sessão:', error);
+          throw error;
+        }
+        
+        if (!session) {
+          console.log('❌ Nenhuma sessão válida encontrada');
+          toast.error('Link inválido ou expirado', {
+            description: 'Por favor, solicite um novo link de redefinição de senha.'
+          });
+          setTimeout(() => {
+            navigate('/painel-cliente/forgot-password');
+          }, 2000);
+          return;
+        }
+        
+        console.log('✅ Sessão válida encontrada');
         setIsValidSession(true);
-        return;
-      }
-
-      // Caso contrário, verificar se já existe uma sessão
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        console.log('❌ Nenhuma sessão válida encontrada');
-        toast.error('Link inválido ou expirado', {
-          description: 'Por favor, solicite um novo link de redefinição de senha.'
-        });
+      } catch (error) {
+        console.error('💥 Erro ao verificar sessão:', error);
+        toast.error('Erro ao verificar sessão');
         setTimeout(() => {
           navigate('/painel-cliente/forgot-password');
         }, 2000);
-        return;
       }
-      
-      console.log('✅ Sessão válida encontrada');
-      setIsValidSession(true);
     };
 
     checkSession();
