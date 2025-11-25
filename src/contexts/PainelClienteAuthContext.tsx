@@ -86,39 +86,80 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
   // Listener de mudanças de autenticação
   useEffect(() => {
+    let mounted = true;
+
     // Setup auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
+        if (!mounted) return;
+
+        console.log('[PainelClienteAuth] Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
           // Buscar perfil do cliente
           const perfil = await buscarPerfilCliente(session.user.id);
-          setCliente(perfil);
+          if (mounted) {
+            setCliente(perfil);
+            setLoading(false);
+          }
         } else {
-          setCliente(null);
+          if (mounted) {
+            setCliente(null);
+            setLoading(false);
+          }
         }
-
-        setLoading(false);
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Check for existing session IMEDIATAMENTE
+    const initSession = async () => {
+      try {
+        console.log('[PainelClienteAuth] Verificando sessão existente...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[PainelClienteAuth] Erro ao buscar sessão:', error);
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
+        }
 
-      if (session?.user) {
-        const perfil = await buscarPerfilCliente(session.user.id);
-        setCliente(perfil);
+        if (!mounted) return;
+
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          console.log('[PainelClienteAuth] Sessão encontrada, buscando perfil...');
+          const perfil = await buscarPerfilCliente(session.user.id);
+          if (mounted) {
+            setCliente(perfil);
+            console.log('[PainelClienteAuth] ✅ Perfil carregado:', perfil?.nome);
+          }
+        } else {
+          console.log('[PainelClienteAuth] Nenhuma sessão ativa');
+        }
+
+        if (mounted) {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('[PainelClienteAuth] Erro ao inicializar sessão:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
+    };
 
-      setLoading(false);
-    });
+    initSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [buscarPerfilCliente]);
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
