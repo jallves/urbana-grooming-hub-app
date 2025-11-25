@@ -23,35 +23,50 @@ export default function ChangePassword() {
 
   // Verificar sessão de recuperação usando PASSWORD_RECOVERY event
   useEffect(() => {
+    console.log('🔐 [ChangePassword] Iniciando verificação de sessão...');
+    
     // Listener para eventos de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 [ChangePassword] Auth event:', event, session ? 'Session exists' : 'No session');
+      
       if (event === 'PASSWORD_RECOVERY') {
+        console.log('✅ [ChangePassword] PASSWORD_RECOVERY event detectado!');
         setIsValidSession(true);
       }
     });
 
     // Verificar se já existe uma sessão válida
     const checkSession = async () => {
+      console.log('🔍 [ChangePassword] Verificando sessão atual...');
+      
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('📋 [ChangePassword] Sessão:', session ? 'Existe' : 'Não existe');
+      
+      // Verificar parâmetros na URL
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const type = hashParams.get('type');
+      
+      console.log('🔗 [ChangePassword] Hash params:', { 
+        hasAccessToken: !!accessToken, 
+        type,
+        fullHash: window.location.hash 
+      });
       
       if (session) {
+        console.log('✅ [ChangePassword] Sessão válida encontrada');
+        setIsValidSession(true);
+      } else if (accessToken && type === 'recovery') {
+        console.log('✅ [ChangePassword] Token de recovery encontrado na URL');
         setIsValidSession(true);
       } else {
-        // Verificar se há token na URL
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const type = hashParams.get('type');
-        
-        if (accessToken && type === 'recovery') {
-          setIsValidSession(true);
-        } else {
-          toast.error('Link inválido ou expirado', {
-            description: 'Por favor, solicite um novo link de redefinição de senha.'
-          });
-          setTimeout(() => {
-            navigate('/painel-cliente/forgot-password');
-          }, 2000);
-        }
+        console.log('❌ [ChangePassword] Nenhuma sessão válida encontrada. Redirecionando...');
+        toast.error('Link inválido ou expirado', {
+          description: 'Por favor, solicite um novo link de redefinição de senha.'
+        });
+        setTimeout(() => {
+          navigate('/painel-cliente/forgot-password');
+        }, 3000);
       }
     };
 
