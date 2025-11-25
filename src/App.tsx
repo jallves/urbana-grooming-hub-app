@@ -88,6 +88,7 @@ import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
 import { Toaster } from './components/ui/toaster';
 import ChangePassword from './pages/ChangePassword';
+import ResetPassword from './pages/ResetPassword';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,6 +126,7 @@ function App() {
                   {/* Admin Routes */}
                   <Route path="/auth" element={<AdminLogin />} />
                   <Route path="/change-password" element={<ChangePassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/admin" element={
                     <AdminRoute>
                       <AdminDashboard />
