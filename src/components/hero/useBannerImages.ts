@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 export const useBannerImages = () => {
   const [bannerImages, setBannerImages] = useState<BannerImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(true);
   const { toast } = useToast();
 
   // Define default banners - usando apenas imagens que existem
@@ -24,25 +25,36 @@ export const useBannerImages = () => {
   ];
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchBannerImages = async (retryCount = 0) => {
       try {
-        setLoading(true);
-        console.log('[PWA Banner] Tentativa:', retryCount + 1);
+        if (!isMounted) return;
         
-        // Improved Supabase query with proper error handling
+        if (retryCount === 0) {
+          setLoading(true);
+        }
+        
+        console.log('[PWA Banner] 🔍 Tentativa:', retryCount + 1);
+        
         const { data, error } = await supabase
           .from('banner_images')
           .select('*')
           .order('display_order', { ascending: true })
           .eq('is_active', true);
         
+        if (!isMounted) return;
+        
         if (error) {
-          console.error('[PWA Banner] Erro:', error.message);
+          console.error('[PWA Banner] ❌ Erro:', error.message);
           
-          // Retry até 3 vezes com delay
-          if (retryCount < 3) {
-            console.log('[PWA Banner] Retry em 2s...');
-            setTimeout(() => fetchBannerImages(retryCount + 1), 2000);
+          if (retryCount < 2) {
+            console.log('[PWA Banner] 🔄 Retry em 1s...');
+            setTimeout(() => {
+              if (isMounted) {
+                fetchBannerImages(retryCount + 1);
+              }
+            }, 1000);
             return;
           }
           
@@ -50,30 +62,38 @@ export const useBannerImages = () => {
         }
 
         if (data && data.length > 0) {
-          console.log('[PWA Banner] ✅ Carregados:', data.length);
+          console.log('[PWA Banner] ✅ Banners carregados:', data.length);
           setBannerImages(data);
         } else {
-          console.log('[PWA Banner] Usando fallback');
+          console.log('[PWA Banner] ⚠️ Sem banners ativos, usando fallback');
           setBannerImages(defaultBanners);
         }
       } catch (error) {
-        console.error('[PWA Banner] ❌ Falha total:', error);
+        if (!isMounted) return;
+        
+        console.error('[PWA Banner] ❌ Falha crítica:', error);
         setBannerImages(defaultBanners);
         
-        if (retryCount >= 3) {
+        if (retryCount >= 2) {
           toast({
             title: "Usando banners padrão",
-            description: "Verifique sua conexão.",
+            description: "Não foi possível carregar os banners personalizados.",
             variant: "default",
           });
         }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchBannerImages();
-  }, [toast]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Remove toast das dependências para evitar loop infinito
 
   return { bannerImages, loading };
 };
