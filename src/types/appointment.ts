@@ -1,9 +1,20 @@
 
 import { Database } from '@/integrations/supabase/types';
 
+// Tipo para a view painel_clientes (compatibilidade)
+export type PainelCliente = {
+  id: string;
+  nome: string;
+  email: string | null;
+  whatsapp: string;
+  data_nascimento: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 // Tipos do sistema unificado (painel)
 export type PainelAgendamento = Database['public']['Tables']['painel_agendamentos']['Row'] & {
-  cliente?: Database['public']['Tables']['painel_clientes']['Row'];
+  cliente?: PainelCliente;
   servico?: Database['public']['Tables']['painel_servicos']['Row'];
   barbeiro?: Database['public']['Tables']['painel_barbeiros']['Row'];
 };

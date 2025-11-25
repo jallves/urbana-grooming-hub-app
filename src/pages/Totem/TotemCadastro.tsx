@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Check, X, Eye, EyeOff, ArrowLeft } from 'lucide-react';
-import bcrypt from 'bcryptjs';
+import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 
 const TotemCadastro: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { cadastrar } = usePainelClienteAuth();
   const phoneFromSearch = (location.state as any)?.phone || '';
   const action = (location.state as any)?.action;
 
@@ -90,58 +91,20 @@ const TotemCadastro: React.FC = () => {
     setLoading(true);
 
     try {
-      // Verificar se email já existe
-      const { data: emailExistente } = await supabase
-        .from('painel_clientes')
-        .select('id')
-        .eq('email', formData.email.trim())
-        .maybeSingle();
+      // Criar usuário via Supabase Auth (o contexto PainelClienteAuthContext já usa o método correto)
+      const { error: signUpError } = await cadastrar({
+        nome: formData.nome.trim(),
+        email: formData.email.trim(),
+        whatsapp: formData.whatsapp,
+        data_nascimento: formData.data_nascimento,
+        senha: formData.senha
+      });
 
-      if (emailExistente) {
-        toast.error('E-mail já cadastrado', {
-          description: 'Este e-mail já está em uso. Use outro e-mail.',
-          duration: 5000
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Verificar se WhatsApp já existe
-      const { data: whatsappExistente } = await supabase
-        .from('painel_clientes')
-        .select('id')
-        .eq('whatsapp', formData.whatsapp)
-        .maybeSingle();
-
-      if (whatsappExistente) {
-        toast.error('WhatsApp já cadastrado', {
-          description: 'Este número já está em uso. Use outro número.',
-          duration: 5000
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Criptografar senha
-      const senhaCriptografada = await bcrypt.hash(formData.senha, 10);
-
-      // Inserir novo cliente
-      const { data: novoCliente, error } = await supabase
-        .from('painel_clientes')
-        .insert({
-          nome: formData.nome.trim(),
-          email: formData.email.trim(),
-          whatsapp: formData.whatsapp,
-          data_nascimento: formData.data_nascimento,
-          senha_hash: senhaCriptografada
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Erro ao cadastrar cliente:', error);
+      if (signUpError) {
+        console.error('Erro ao cadastrar:', signUpError);
         toast.error('Erro ao cadastrar', {
-          description: 'Não foi possível criar o cadastro. Tente novamente.'
+          description: signUpError || 'Não foi possível criar o cadastro.',
+          duration: 5000
         });
         setLoading(false);
         return;
@@ -151,6 +114,14 @@ const TotemCadastro: React.FC = () => {
         description: `Bem-vindo, ${formData.nome.split(' ')[0]}!`,
         duration: 3000
       });
+
+      // Buscar dados do cliente recém-criado
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: novoCliente } = await supabase
+        .from('painel_clientes')
+        .select('*')
+        .eq('email', formData.email.trim())
+        .single();
 
       // Redirecionar para o fluxo apropriado
       if (action === 'novo-agendamento') {
