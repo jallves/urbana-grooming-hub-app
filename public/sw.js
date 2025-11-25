@@ -31,12 +31,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
-  // Apenas POST para fila offline
-  if (request.method !== 'POST') {
-    return event.respondWith(fetch(request));
-  }
-
-  // URLs que devem ser enfileiradas
+  // URLs que devem ser enfileiradas (apenas totem)
   const queueableUrls = [
     '/functions/v1/totem-checkin',
     '/functions/v1/totem-checkout',
@@ -46,8 +41,10 @@ self.addEventListener('fetch', (event) => {
 
   const shouldQueue = queueableUrls.some(url => request.url.includes(url));
 
-  if (!shouldQueue) {
-    return event.respondWith(fetch(request));
+  // Apenas interceptar POST requests para URLs específicas do totem
+  // Deixa todas as outras requisições (incluindo Supabase) passarem normalmente
+  if (request.method !== 'POST' || !shouldQueue) {
+    return; // Não intercepta - deixa o Workbox ou navegador gerenciar
   }
 
   event.respondWith(
