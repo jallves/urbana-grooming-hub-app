@@ -25,6 +25,24 @@ export default function ChangePassword() {
   useEffect(() => {
     console.log('🔐 [ChangePassword] Iniciando verificação de sessão...');
     
+    // PRIMEIRO: Verificar tokens na URL (prioridade)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+    
+    console.log('🔗 [ChangePassword] URL Hash params:', { 
+      hasAccessToken: !!accessToken, 
+      type,
+      fullHash: window.location.hash 
+    });
+    
+    // Se houver token de recovery na URL, permitir acesso imediatamente
+    if (accessToken && type === 'recovery') {
+      console.log('✅ [ChangePassword] Token de recovery encontrado na URL - Acesso permitido!');
+      setIsValidSession(true);
+      return; // Sair do useEffect sem fazer mais verificações
+    }
+    
     // Listener para eventos de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('🔄 [ChangePassword] Auth event:', event, session ? 'Session exists' : 'No session');
@@ -42,22 +60,8 @@ export default function ChangePassword() {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('📋 [ChangePassword] Sessão:', session ? 'Existe' : 'Não existe');
       
-      // Verificar parâmetros na URL
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
-      
-      console.log('🔗 [ChangePassword] Hash params:', { 
-        hasAccessToken: !!accessToken, 
-        type,
-        fullHash: window.location.hash 
-      });
-      
       if (session) {
         console.log('✅ [ChangePassword] Sessão válida encontrada');
-        setIsValidSession(true);
-      } else if (accessToken && type === 'recovery') {
-        console.log('✅ [ChangePassword] Token de recovery encontrado na URL');
         setIsValidSession(true);
       } else {
         console.log('❌ [ChangePassword] Nenhuma sessão válida encontrada. Redirecionando...');
@@ -70,7 +74,10 @@ export default function ChangePassword() {
       }
     };
 
-    checkSession();
+    // Só verificar sessão se não houver tokens na URL
+    if (!accessToken || type !== 'recovery') {
+      checkSession();
+    }
 
     return () => {
       subscription.unsubscribe();
