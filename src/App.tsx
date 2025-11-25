@@ -105,29 +105,34 @@ function App() {
   return (
     <SidebarProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <PermissionsProvider>
-            <PainelClienteAuthProvider>
-              <TotemAuthProvider>
-                <QueryClientProvider client={queryClient}>
-                  <RealtimeProvider>
-                    <div className="min-h-screen bg-background">
-                <Routes>
-                  <Route path="/" element={
-                    <AdminRedirectGuard>
-                      <Index />
-                    </AdminRedirectGuard>
-                  } />
-                  <Route path="/pwa-install" element={
-                    <AdminRedirectGuard>
-                      <PWAInstall />
-                    </AdminRedirectGuard>
-                  } />
-                  
-                  {/* Admin Routes */}
-                  <Route path="/auth" element={<AdminLogin />} />
-                  <Route path="/change-password" element={<ChangePassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
+        <QueryClientProvider client={queryClient}>
+          <Routes>
+            {/* Rotas públicas SEM AuthProvider */}
+            <Route path="/change-password" element={<ChangePassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Todas as outras rotas COM AuthProvider */}
+            <Route path="/*" element={
+              <AuthProvider>
+                <PermissionsProvider>
+                  <PainelClienteAuthProvider>
+                    <TotemAuthProvider>
+                      <RealtimeProvider>
+                        <div className="min-h-screen bg-background">
+                          <Routes>
+                            <Route path="/" element={
+                              <AdminRedirectGuard>
+                                <Index />
+                              </AdminRedirectGuard>
+                            } />
+                            <Route path="/pwa-install" element={
+                              <AdminRedirectGuard>
+                                <PWAInstall />
+                              </AdminRedirectGuard>
+                            } />
+                            
+                            {/* Admin Routes */}
+                            <Route path="/auth" element={<AdminLogin />} />
                   <Route path="/admin" element={
                     <AdminRoute>
                       <AdminDashboard />
@@ -454,15 +459,17 @@ function App() {
                 <PWAInstallPromptContext />
                 <PWAUpdateManager />
                 <Toaster />
-                  </div>
-                  </RealtimeProvider>
-                </QueryClientProvider>
-              </TotemAuthProvider>
-            </PainelClienteAuthProvider>
-          </PermissionsProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </SidebarProvider>
+                      </div>
+                    </RealtimeProvider>
+                  </TotemAuthProvider>
+                </PainelClienteAuthProvider>
+              </PermissionsProvider>
+            </AuthProvider>
+          } />
+        </Routes>
+      </QueryClientProvider>
+    </BrowserRouter>
+  </SidebarProvider>
   );
 }
 
