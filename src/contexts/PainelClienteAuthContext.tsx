@@ -194,171 +194,48 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       // ===================================================================
-      // ETAPA 2: VALIDAÇÃO DE WHATSAPP DUPLICADO (ANTES DO SIGNUP)
+      // ETAPA 2: CHAMAR EDGE FUNCTION QUE CONTROLA TODO O FLUXO
       // ===================================================================
-      console.log('🔍 [1/3] Verificando WhatsApp único:', dados.whatsapp);
-      
-      const { data: existingWhatsApp, error: whatsappCheckError } = await supabase
-        .from('client_profiles')
-        .select('nome, whatsapp')
-        .eq('whatsapp', dados.whatsapp.trim())
-        .maybeSingle();
+      console.log('🚀 Enviando dados para edge function...');
 
-      // Tratar erros de consulta (exceto "não encontrado")
-      if (whatsappCheckError && whatsappCheckError.code !== 'PGRST116') {
-        console.error('❌ Erro ao verificar WhatsApp:', whatsappCheckError);
-        return { 
-          error: '⚠️ Não foi possível verificar seus dados neste momento.\n\nPor favor, aguarde alguns segundos e tente novamente.' 
-        };
-      }
-
-      // Se WhatsApp já existe, bloquear cadastro
-      if (existingWhatsApp) {
-        console.warn('⚠️ WhatsApp já cadastrado:', existingWhatsApp.whatsapp);
-        return { 
-          error: `📱 Este número de WhatsApp (${dados.whatsapp}) já está cadastrado em nosso sistema!\n\n` +
-                 `Nome cadastrado: ${existingWhatsApp.nome}\n\n` +
-                 `✅ Se esta é sua conta, clique em "Já tenho conta" para fazer login.\n` +
-                 `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
-        };
-      }
-
-      console.log('✅ WhatsApp disponível para cadastro');
-
-      // ===================================================================
-      // ETAPA 3: CRIAR USUÁRIO NO AUTH.USERS (VALIDA EMAIL DUPLICADO)
-      // ===================================================================
-      console.log('🔍 [2/3] Criando usuário no sistema de autenticação...');
-      
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: dados.email.trim().toLowerCase(),
-        password: dados.senha,
-        options: {
-          emailRedirectTo: `${window.location.origin}/painel-cliente/email-confirmado`,
-          data: {
-            user_type: 'client',
-            nome: dados.nome.trim(),
-            whatsapp: dados.whatsapp.trim(),
-            data_nascimento: dados.data_nascimento
-          }
+      const { data: result, error: functionError } = await supabase.functions.invoke('register-client', {
+        body: {
+          nome: dados.nome.trim(),
+          email: dados.email.trim().toLowerCase(),
+          whatsapp: dados.whatsapp.trim(),
+          data_nascimento: dados.data_nascimento,
+          senha: dados.senha
         }
       });
 
-      // ⚠️ SE DEU ERRO NO SIGNUP, PARAR AQUI (EMAIL NÃO FOI ENVIADO)
-      if (signUpError) {
-        console.error('❌ Erro ao criar usuário:', signUpError);
-        
-        // Tratamento específico e didático de erros
-        if (signUpError.message.includes('already registered') || 
-            signUpError.message.includes('User already registered') ||
-            signUpError.message.includes('email_exists') ||
-            signUpError.status === 422) {
-          return { 
-            error: `📧 Este e-mail (${dados.email}) já possui cadastro em nosso sistema!\n\n` +
-                   `✅ Clique em "Já tenho conta" para fazer login.\n` +
-                   `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
-          };
-        }
-        
-        if (signUpError.message.includes('invalid email')) {
-          return { error: '⚠️ E-mail inválido. Por favor, verifique o formato do e-mail.' };
-        }
-        
-        if (signUpError.message.includes('password')) {
-          return { error: '⚠️ Senha inválida. Verifique os requisitos de senha.' };
-        }
-        
-        if (signUpError.message.includes('rate limit') || signUpError.message.includes('too many')) {
-          return { error: '⚠️ Muitas tentativas. Aguarde alguns minutos e tente novamente.' };
-        }
-        
-        return { error: `❌ Erro ao criar conta: ${signUpError.message}.\n\nTente novamente ou entre em contato conosco.` };
-      }
-
-      // ⚠️ SE NÃO CRIOU USUÁRIO, PARAR AQUI
-      if (!authData?.user) {
-        return { error: '❌ Erro ao criar conta. Tente novamente.' };
-      }
-
-      console.log('✅ Usuário criado no auth.users com ID:', authData.user.id);
-
-      // ===================================================================
-      // ETAPA 4: CRIAR PERFIL DO CLIENTE (VIA FUNÇÃO SECURITY DEFINER)
-      // ===================================================================
-      console.log('🔍 [3/3] Criando perfil do cliente...');
-      
-      const { data: profileResult, error: profileRpcError } = await supabase
-        .rpc('create_client_profile_after_signup', {
-          p_user_id: authData.user.id,
-          p_nome: dados.nome.trim(),
-          p_whatsapp: dados.whatsapp.trim(),
-          p_data_nascimento: dados.data_nascimento
-        });
-
-      // ⚠️ SE DEU ERRO NA CHAMADA DA FUNÇÃO, PARAR AQUI
-      if (profileRpcError) {
-        console.error('❌ Erro ao chamar função de criação de perfil:', profileRpcError);
-        
-        // ⚠️ IMPORTANTE: Usuário foi criado mas perfil falhou
-        // Email de confirmação JÁ foi enviado, mas cadastro está incompleto
+      if (functionError) {
+        console.error('❌ Erro ao chamar edge function:', functionError);
         return { 
-          error: '❌ Houve um problema ao finalizar seu cadastro.\n\n' +
-                 'Sua conta foi criada, mas faltam alguns dados. Entre em contato conosco para concluir seu cadastro.\n\n' +
-                 'Referência: ' + authData.user.email
+          error: '❌ Erro ao processar cadastro.\n\nPor favor, tente novamente.' 
         };
       }
 
       // Verificar resposta da função
-      const result = profileResult as { success: boolean; error?: string; message?: string };
-      
-      // ⚠️ SE FUNÇÃO RETORNOU ERRO (ex: WhatsApp duplicado em race condition)
       if (!result.success) {
-        console.error('❌ Erro ao criar perfil:', result.error);
-        
-        // ⚠️ IMPORTANTE: Usuário foi criado mas perfil falhou
-        // Email de confirmação JÁ foi enviado
-        if (result.error?.includes('WhatsApp')) {
-          return { 
-            error: '❌ Houve um problema ao finalizar seu cadastro.\n\n' +
-                   result.error + '\n\n' +
-                   'Entre em contato conosco para resolver este problema.\n\n' +
-                   'Referência: ' + authData.user.email
-          };
-        }
-        
-        return { 
-          error: '❌ Não foi possível completar seu cadastro.\n\n' +
-                 'Por favor, aguarde alguns instantes e tente novamente.\n\n' +
-                 'Se o problema persistir, entre em contato conosco.\n\n' +
-                 'Referência: ' + authData.user.email
-        };
+        console.error('❌ Edge function retornou erro:', result.error);
+        return { error: result.error };
       }
 
-      console.log('✅ Perfil criado com sucesso!');
-
       // ===================================================================
-      // ETAPA 5: ✅ TUDO VALIDADO - MOSTRAR MENSAGEM DE SUCESSO
+      // SUCESSO!
       // ===================================================================
-      const needsConfirmation = !authData.session;
-
-      if (needsConfirmation) {
-        console.log('✅ Cadastro completo - aguardando confirmação de email');
-        toast({
-          title: "✅ Cadastro realizado com sucesso!",
-          description: "📧 Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam para ativar sua conta.",
-          duration: 12000,
-        });
-        return { error: null, needsEmailConfirmation: true };
-      }
-
-      // Se não precisa confirmar email, usuário já está logado
-      console.log('✅ Cadastro completo - usuário já está autenticado');
+      console.log('✅ Cadastro realizado com sucesso via edge function');
+      
       toast({
-        title: "✅ Conta criada com sucesso!",
-        description: "Bem-vindo ao painel do cliente.",
+        title: "✅ Cadastro realizado com sucesso!",
+        description: "📧 Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam para ativar sua conta.",
+        duration: 12000,
       });
 
-      return { error: null, needsEmailConfirmation: false };
+      return { 
+        error: null, 
+        needsEmailConfirmation: result.needsEmailConfirmation || true 
+      };
 
     } catch (error) {
       console.error('❌ Erro inesperado no cadastro:', error);

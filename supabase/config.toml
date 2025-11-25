@@ -1,5 +1,8 @@
 project_id = "bqftkknbvmggcbsubicl"
 
+[functions.register-client]
+verify_jwt = false
+
 [functions.create-test-appointment]
 verify_jwt = false
 
