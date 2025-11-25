@@ -3,11 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Mail, Lock, LogIn, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import ForgotPasswordForm from './ForgotPasswordForm';
 
 interface LoginFormProps {
   loading: boolean;
@@ -18,7 +17,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockTimeLeft, setBlockTimeLeft] = useState(0);
@@ -122,15 +120,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
     }
   };
 
-  if (showForgotPassword) {
-    return (
-      <ForgotPasswordForm 
-        onBack={() => setShowForgotPassword(false)}
-        redirectTo={`${window.location.origin}/auth`}
-      />
-    );
-  }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {isBlocked && (
@@ -216,17 +205,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             Entrar
           </>
         )}
-      </Button>
-
-      <Button 
-        type="button"
-        variant="ghost" 
-        onClick={() => setShowForgotPassword(true)}
-        className="w-full text-gray-600 hover:text-urbana-gold hover:bg-gray-50 h-12 rounded-xl transition-all"
-        disabled={loading || isBlocked}
-      >
-        <KeyRound className="h-4 w-4 mr-2" />
-        Esqueceu sua senha?
       </Button>
     </form>
   );
