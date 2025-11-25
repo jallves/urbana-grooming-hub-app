@@ -34,6 +34,8 @@ import AdminAnalytics from './pages/AdminAnalytics';
 import AdminSettings from './pages/AdminSettings';
 import PainelClienteLogin from './pages/PainelClienteLogin';
 import PainelClienteRegister from './pages/PainelClienteRegister';
+import PainelClienteEmailConfirmation from './pages/PainelClienteEmailConfirmation';
+import PainelClienteEmailConfirmed from './pages/PainelClienteEmailConfirmed';
 import PainelClienteDashboard from './pages/PainelClienteDashboard';
 import PainelClienteNovoAgendamento from './pages/PainelClienteNovoAgendamento';
 import PainelClienteAgendamentos from './pages/PainelClienteAgendamentos';
@@ -262,6 +264,16 @@ function App() {
                   <Route path="/painel-cliente/register" element={
                     <AdminRedirectGuard>
                       <PainelClienteRegister />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/painel-cliente/confirmar-email" element={
+                    <AdminRedirectGuard>
+                      <PainelClienteEmailConfirmation />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/painel-cliente/email-confirmado" element={
+                    <AdminRedirectGuard>
+                      <PainelClienteEmailConfirmed />
                     </AdminRedirectGuard>
                   } />
                   <Route path="/painel-cliente/forgot-password" element={

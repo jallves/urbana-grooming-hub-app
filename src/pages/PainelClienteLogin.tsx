@@ -45,13 +45,19 @@ export default function PainelClienteLogin() {
     setErro('');
     setLoading(true);
 
-    const { error } = await cadastrar(data);
+    const { error, needsEmailConfirmation } = await cadastrar(data);
 
     if (error) {
       setErro(error);
       setLoading(false);
     } else {
-      navigate('/painel-cliente/dashboard');
+      if (needsEmailConfirmation) {
+        // Redirecionar para página de confirmação de email
+        navigate('/painel-cliente/confirmar-email');
+      } else {
+        // Login automático se não precisar confirmar
+        navigate('/painel-cliente/dashboard');
+      }
     }
   };
 
