@@ -77,49 +77,59 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
       setIsLoading(true);
 
       if (clientId) {
+        // Atualizar client_profiles (tabela real)
         const { error } = await supabase
-          .from('painel_clientes')
+          .from('client_profiles')
           .update({
             nome: data.nome,
-            email: data.email || null,
             whatsapp: data.whatsapp,
             data_nascimento: data.data_nascimento || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', clientId);
 
+        // Atualizar email em auth.users se necessário
+        if (data.email) {
+          await supabase.auth.admin.updateUserById(clientId, {
+            email: data.email
+          });
+        }
+
         if (error) {
-          // Check for unique constraint violation on whatsapp
-          if (error.code === '23505' && error.message.includes('painel_clientes_whatsapp_unique')) {
-            toast.error('Erro ao atualizar cliente', {
-              description: 'Este número de WhatsApp já está cadastrado para outro cliente.',
-            });
-            return;
-          }
           throw error;
         }
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        const { error } = await supabase
-          .from('painel_clientes')
-          .insert({
+        // Criar usuário via Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: data.email || `${Date.now()}@temp.com`,
+          password: Math.random().toString(36).slice(-8),
+          email_confirm: true,
+          user_metadata: {
+            user_type: 'client',
             nome: data.nome,
-            email: data.email || '',
             whatsapp: data.whatsapp,
-            data_nascimento: data.data_nascimento || null,
-            senha_hash: 'admin_created',
-            updated_at: new Date().toISOString(),
-          });
-
-        if (error) {
-          // Check for unique constraint violation on whatsapp
-          if (error.code === '23505' && error.message.includes('painel_clientes_whatsapp_unique')) {
-            toast.error('Erro ao criar cliente', {
-              description: 'Este número de WhatsApp já está cadastrado. Cada cliente deve ter um número único.',
-            });
-            return;
+            data_nascimento: data.data_nascimento
           }
-          throw error;
+        });
+
+        if (authError) {
+          throw authError;
+        }
+
+        // O perfil será criado automaticamente pelo trigger
+        // Apenas precisamos garantir que os dados estejam corretos
+        const { error: profileError } = await supabase
+          .from('client_profiles')
+          .update({
+            nome: data.nome,
+            whatsapp: data.whatsapp,
+            data_nascimento: data.data_nascimento || null
+          })
+          .eq('id', authData.user.id);
+
+        if (profileError) {
+          throw profileError;
         }
         toast.success('Cliente criado com sucesso!');
       }
