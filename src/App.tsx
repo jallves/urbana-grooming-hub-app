@@ -87,6 +87,7 @@ import Install from './pages/Install';
 import InstallContext from './pages/InstallContext';
 import PWAInstallPromptContext from './components/PWAInstallPromptContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
 import { Toaster } from './components/ui/toaster';
@@ -112,9 +113,10 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <SidebarProvider>
-      <BrowserRouter>
-        <QueryClientProvider client={queryClient}>
+    <ErrorBoundary>
+      <SidebarProvider>
+        <BrowserRouter>
+          <QueryClientProvider client={queryClient}>
           <Routes>
             {/* Rotas públicas SEM AuthProvider */}
             <Route path="/change-password" element={<ChangePassword />} />
@@ -486,9 +488,10 @@ function App() {
             </AuthProvider>
           } />
         </Routes>
-      </QueryClientProvider>
-    </BrowserRouter>
-  </SidebarProvider>
+          </QueryClientProvider>
+        </BrowserRouter>
+      </SidebarProvider>
+    </ErrorBoundary>
   );
 }
 
