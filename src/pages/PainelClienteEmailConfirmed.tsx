@@ -7,12 +7,12 @@ import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 
 export default function PainelClienteEmailConfirmed() {
   const navigate = useNavigate();
-  const { cliente, authLoading } = usePainelClienteAuth();
+  const { cliente, loading } = usePainelClienteAuth();
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     // Verificar se o usuário está autenticado após confirmação
-    if (!authLoading && cliente) {
+    if (!loading && cliente) {
       // Iniciar countdown para redirecionar
       const timer = setInterval(() => {
         setCountdown(prev => {
@@ -27,9 +27,9 @@ export default function PainelClienteEmailConfirmed() {
 
       return () => clearInterval(timer);
     }
-  }, [authLoading, cliente, navigate]);
+  }, [loading, cliente, navigate]);
 
-  if (authLoading) {
+  if (loading) {
     return (
       <AuthContainer title="Costa Urbana" subtitle="Verificando...">
         <div className="flex flex-col items-center justify-center py-12 space-y-4">

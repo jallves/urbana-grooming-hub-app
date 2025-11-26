@@ -10,7 +10,7 @@ import { PWAUpdateManager } from './components/PWAUpdateManager';
 import AdminRoute from './components/auth/AdminRoute';
 import AdminRedirectGuard from './components/auth/AdminRedirectGuard';
 import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
-import PainelClienteRoute from './components/painel-cliente/PainelClienteRoute';
+import ClientRoute from './components/auth/ClientRoute';
 import BarberRoute from './components/auth/BarberRoute';
 import PainelClienteLayout from './components/painel-cliente/PainelClienteLayout';
 import BarberLayout from './components/barber/BarberLayout';
@@ -306,9 +306,9 @@ function App() {
                   
                   <Route path="/painel-cliente" element={
                     <AdminRedirectGuard>
-                      <PainelClienteRoute>
+                      <ClientRoute>
                         <PainelClienteLayout />
-                      </PainelClienteRoute>
+                      </ClientRoute>
                     </AdminRedirectGuard>
                   }>
                     <Route path="dashboard" element={<PainelClienteDashboard />} />

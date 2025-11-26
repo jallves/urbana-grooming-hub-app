@@ -20,6 +20,7 @@ import {
 } from "@/components/painel-cliente/PainelClienteCard";
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 import { usePainelClienteAuth } from "@/contexts/PainelClienteAuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,8 @@ interface AgendamentoStats {
 // ============================================================
 
 export default function PainelClienteDashboard() {
-  const { cliente, logout } = usePainelClienteAuth();
+  const { cliente } = usePainelClienteAuth();
+  const { signOut } = useAuth(); // Usar signOut do AuthContext unificado
   const navigate = useNavigate();
   const [stats, setStats] = useState<AgendamentoStats>({
     total: 0,
@@ -132,7 +134,7 @@ export default function PainelClienteDashboard() {
     setIsLoggingOut(true);
     try {
       console.log('[Dashboard] 🚪 Iniciando logout...');
-      await logout();
+      await signOut();
       console.log('[Dashboard] ✅ Logout concluído');
       // Aguardar um pouco para garantir que o logout foi processado
       setTimeout(() => {
