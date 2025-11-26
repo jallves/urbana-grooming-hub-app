@@ -41,22 +41,39 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   const hasAccess = isAdmin || (allowBarber && isBarber);
 
   if (!hasAccess) {
-    console.log('BarberRoute - Access DENIED for:', user.email);
+    console.log('[BarberRoute] Acesso NEGADO');
+    console.log('[BarberRoute] Usuário:', user.email);
+    console.log('[BarberRoute] isAdmin:', isAdmin);
+    console.log('[BarberRoute] isBarber:', isBarber);
+    console.log('[BarberRoute] allowBarber:', allowBarber);
+    
     return (
       <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-background">
         <div className="text-center space-y-6 max-w-md">
           <h2 className="text-2xl font-bold text-foreground">Acesso Negado</h2>
           <p className="text-muted-foreground">
-            Usuário não tem permissão para acessar o Painel do Barbeiro, entrar em contato com o administrador.
+            Você não tem acesso ao painel do barbeiro.
           </p>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="w-full sm:w-auto"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
+          <p className="text-sm text-muted-foreground/80">
+            Este painel é exclusivo para profissionais cadastrados. Entre em contato com o administrador.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
+            <Button
+              onClick={() => navigate('/')}
+              variant="default"
+              className="w-full sm:w-auto"
+            >
+              Voltar ao site
+            </Button>
+          </div>
         </div>
       </div>
     );
