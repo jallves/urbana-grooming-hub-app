@@ -16,15 +16,27 @@ const TotemLogin: React.FC = () => {
   }, []);
 
   const handlePinSubmit = async (pin: string) => {
-    const success = await login(pin);
+    console.log('📱 [TotemLogin] Iniciando handlePinSubmit com PIN:', pin);
+    try {
+      console.log('📱 [TotemLogin] Chamando login()...');
+      const success = await login(pin);
+      console.log('📱 [TotemLogin] Resultado do login:', success);
 
-    if (success) {
-      navigate('/totem/welcome', {
-        state: { staffName: 'Equipe Costa Urbana' }
-      });
-    } else {
-      toast.error('PIN incorreto', {
-        description: 'Verifique o PIN e tente novamente.'
+      if (success) {
+        console.log('📱 [TotemLogin] Login bem-sucedido, navegando...');
+        navigate('/totem/welcome', {
+          state: { staffName: 'Equipe Costa Urbana' }
+        });
+      } else {
+        console.log('📱 [TotemLogin] Login falhou, mostrando erro');
+        toast.error('PIN incorreto', {
+          description: 'Verifique o PIN e tente novamente.'
+        });
+      }
+    } catch (error) {
+      console.error('❌ [TotemLogin] Erro ao processar login:', error);
+      toast.error('Erro ao fazer login', {
+        description: 'Ocorreu um erro inesperado.'
       });
     }
   };
