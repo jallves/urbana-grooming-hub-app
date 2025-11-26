@@ -21,14 +21,17 @@ export default function PainelClienteLogin() {
   React.useEffect(() => {
     const forceLogoutOnLoginPage = async () => {
       if (authUser) {
-        console.log('[PainelClienteLogin] 🚪 Sessão ativa detectada - forçando logout');
-        await signOut();
-        await logout(); // Logout também do contexto de cliente
+        console.log('[PainelClienteLogin] 🚪 Sessão ativa detectada - forçando logout completo');
+        // Força logout em ambos os contextos
+        await Promise.all([
+          signOut(),
+          logout()
+        ]);
       }
     };
     
     forceLogoutOnLoginPage();
-  }, []);
+  }, [authUser, signOut, logout]);
 
   const handleLogin = async (email: string, senha: string) => {
     console.log('📱 [PainelClienteLogin] handleLogin chamado');
