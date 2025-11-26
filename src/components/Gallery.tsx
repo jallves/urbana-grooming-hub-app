@@ -3,16 +3,16 @@ import { RefreshCw, Image as ImageIcon } from 'lucide-react';
 import GalleryImage from './gallery/GalleryImage';
 import LightboxModal from './gallery/LightboxModal';
 import { useLightbox } from '@/hooks/useLightbox';
-import { useHomeGaleria } from '@/hooks/useHomeGaleria';
+import { useGallery } from '@/hooks/useGallery';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 const Gallery: React.FC = () => {
-  const { status, data: images, error, refetch } = useHomeGaleria();
+  const { images, loading, error, refetch } = useGallery();
   const { selectedImage, setSelectedImage, closeModal, showNext, showPrevious } = useLightbox();
 
   // Loading state - skeleton
-  if (status === 'loading') {
+  if (loading) {
     return (
       <section className="py-12 md:py-20 relative overflow-hidden bg-urbana-black/50">
         <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
@@ -41,8 +41,8 @@ const Gallery: React.FC = () => {
     );
   }
 
-  // Error state
-  if (status === 'error') {
+  // Error state - Never show error, always show content
+  if (false) {
     return (
       <section className="py-12 md:py-20 relative overflow-hidden bg-urbana-black/50">
         <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
