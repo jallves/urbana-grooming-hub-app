@@ -3836,6 +3836,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          last_activity_at: string
+          login_at: string
+          logout_at: string | null
+          session_token: string
+          updated_at: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+          user_type: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_activity_at?: string
+          login_at?: string
+          logout_at?: string | null
+          session_token: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_type: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_activity_at?: string
+          login_at?: string
+          logout_at?: string | null
+          session_token?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_type?: string
+        }
+        Relationships: []
+      }
       vendas: {
         Row: {
           agendamento_id: string | null
@@ -4277,6 +4334,7 @@ export type Database = {
             Returns: boolean
           }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
+      cleanup_expired_sessions: { Args: never; Returns: number }
       create_admin_manager_user:
         | {
             Args: {
@@ -4385,17 +4443,47 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_user_session: {
+        Args: {
+          p_device_info?: Json
+          p_expires_at?: string
+          p_ip_address?: string
+          p_session_token: string
+          p_user_agent?: string
+          p_user_email: string
+          p_user_id: string
+          p_user_name: string
+          p_user_type: string
+        }
+        Returns: string
+      }
       decrease_product_stock: {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
       }
       disable_barber_auth_user: { Args: { p_email: string }; Returns: Json }
+      force_logout_session: { Args: { p_session_id: string }; Returns: boolean }
       generate_payment_number: { Args: never; Returns: string }
       generate_qr_checkin: {
         Args: { p_agendamento_id: string; p_secret: string }
         Returns: string
       }
       generate_transaction_number: { Args: never; Returns: string }
+      get_active_sessions: {
+        Args: never
+        Returns: {
+          expires_at: string
+          id: string
+          ip_address: string
+          last_activity_at: string
+          login_at: string
+          user_agent: string
+          user_email: string
+          user_id: string
+          user_name: string
+          user_type: string
+        }[]
+      }
       get_admin_manager_details: {
         Args: never
         Returns: {
@@ -4578,6 +4666,10 @@ export type Database = {
         }
         Returns: string
       }
+      invalidate_session: {
+        Args: { p_session_token: string }
+        Returns: boolean
+      }
       is_admin:
         | { Args: { user_id: string }; Returns: boolean }
         | { Args: never; Returns: boolean }
@@ -4665,6 +4757,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_session_activity: {
+        Args: { p_session_token: string }
+        Returns: boolean
+      }
       update_staff_module_access: {
         Args: { module_ids_param: string[]; staff_id_param: string }
         Returns: undefined
@@ -4688,6 +4784,7 @@ export type Database = {
         Args: { p_qr_token: string; p_secret: string }
         Returns: boolean
       }
+      validate_session: { Args: { p_session_token: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user" | "barber" | "customer" | "manager" | "master"

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useCa
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Session } from '@supabase/supabase-js';
+import { sessionManager } from '@/hooks/useSessionManager';
 
 interface Cliente {
   id: string;
@@ -342,6 +343,15 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       console.log('[Auth] ✅ Login realizado com sucesso');
 
+      // Criar sessão
+      await sessionManager.createSession({
+        userId: data.user.id,
+        userType: 'painel_cliente',
+        userEmail: data.user.email,
+        userName: data.user.email,
+        expiresInHours: 24,
+      });
+
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
@@ -359,6 +369,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   const logout = useCallback(async (): Promise<void> => {
     try {
       console.log('[Auth] 🚪 Fazendo logout...');
+      
+      // Invalidar sessão
+      await sessionManager.invalidateSession('painel_cliente');
       
       await supabase.auth.signOut();
       

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { sessionManager } from '@/hooks/useSessionManager';
 
 interface AuthContextType {
   user: User | null;
@@ -114,7 +115,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (session?.user) {
           console.log('[AuthContext] 👤 Usuário encontrado:', session.user.email);
           setUser(session.user);
-          await checkUserRoles(session.user);
+          const role = await checkUserRoles(session.user);
+          
+          // Criar sessão
+          await sessionManager.createSession({
+            userId: session.user.id,
+            userType: (role === 'barber' ? 'barber' : 'admin') as any,
+            userEmail: session.user.email,
+            userName: session.user.email,
+            expiresInHours: 24,
+          });
         } else {
           console.log('[AuthContext] 👤 Nenhuma sessão ativa');
           setUser(null);
@@ -169,7 +179,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const checkUserRoles = async (user: User) => {
+  const checkUserRoles = async (user: User): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
     if (!user) {
       console.log('[AuthContext] ❌ Sem usuário, resetando roles');
       setIsAdmin(false);
@@ -179,7 +189,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserRole(null);
       setRolesChecked(true);
       setRequiresPasswordChange(false);
-      return;
+      return null;
     }
     
     console.log('[AuthContext] 🔍 Verificando role para:', user.email, 'User ID:', user.id);
@@ -271,6 +281,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       console.log('[AuthContext] ✅ Verificação completa - Role:', role);
+      return role;
     } catch (error) {
       console.error('[AuthContext] ❌ Erro ao verificar roles:', error);
       
@@ -278,9 +289,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (cachedRole) {
         console.warn('[AuthContext] ⚠️ Mantendo role do cache devido a erro:', cachedRole);
         applyRole(cachedRole);
+        return cachedRole;
       } else {
         console.error('[AuthContext] 🚫 Sem cache disponível, negando acesso temporariamente');
         applyRole(null);
+        return null;
       }
       
       setRequiresPasswordChange(false);
@@ -310,6 +323,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async () => {
     try {
       console.log('[AuthContext] 🚪 Iniciando logout...');
+      
+      // Invalidar sessão
+      const userType = isBarber ? 'barber' : 'admin';
+      await sessionManager.invalidateSession(userType);
       
       // Limpar cache
       clearRoleCache();

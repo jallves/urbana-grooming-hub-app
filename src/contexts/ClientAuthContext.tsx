@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { Client, ClientLoginData, ClientFormData } from '@/types/client';
 import { useToast } from '@/hooks/use-toast';
+import { sessionManager } from '@/hooks/useSessionManager';
 
 interface ClientAuthContextType {
   client: Client | null;
@@ -154,6 +155,15 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       localStorage.setItem('client_token', newClient.id);
       setClient(newClient);
 
+      // Criar sessão
+      await sessionManager.createSession({
+        userId: newClient.id,
+        userType: 'client',
+        userEmail: newClient.email || undefined,
+        userName: newClient.name,
+        expiresInHours: 24,
+      });
+
       toast({
         title: "Conta criada com sucesso!",
         description: "Bem-vindo à nossa barbearia.",
@@ -199,6 +209,15 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       localStorage.setItem('client_token', clientData.id);
       setClient(clientData);
 
+      // Criar sessão
+      await sessionManager.createSession({
+        userId: clientData.id,
+        userType: 'client',
+        userEmail: clientData.email || undefined,
+        userName: clientData.name,
+        expiresInHours: 24,
+      });
+
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
@@ -212,6 +231,9 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   };
 
   const signOut = async (): Promise<void> => {
+    // Invalidar sessão
+    await sessionManager.invalidateSession('client');
+    
     localStorage.removeItem('client_token');
     setClient(null);
     
