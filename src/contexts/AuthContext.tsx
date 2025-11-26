@@ -211,12 +211,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       // OTIMIZAÇÃO: Verificar rapidamente se é um cliente comum
-      // Clientes não têm entrada em user_roles, então verificamos painel_clientes primeiro
+      // Clientes não têm entrada em user_roles, então verificamos client_profiles primeiro
       console.log('[AuthContext] 🔍 Verificando se é cliente...');
       const { data: clientData } = await supabase
-        .from('painel_clientes')
+        .from('client_profiles')
         .select('id')
-        .eq('email', user.email)
+        .eq('id', user.id)
         .maybeSingle();
       
       if (clientData) {
