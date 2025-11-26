@@ -18,17 +18,14 @@ const defaultBanners: BannerImage[] = [
 ];
 
 export const useHomeBanner = () => {
-  const [status, setStatus] = useState<Status>('loading');
-  const [data, setData] = useState<BannerImage[]>([]);
+  const [status, setStatus] = useState<Status>('success');
+  const [data, setData] = useState<BannerImage[]>(defaultBanners);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
 
     const fetchBanners = async () => {
-      setStatus('loading');
-      setError(null);
-
       try {
         const { data: banners, error: fetchError } = await supabase
           .from('banner_images')
@@ -36,40 +33,28 @@ export const useHomeBanner = () => {
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
-        if (cancelled) return;
+        if (!mounted) return;
 
         if (fetchError) {
-          console.error('[Banner Hook] Erro:', fetchError.message);
-          setData(defaultBanners);
-          setStatus('success');
+          console.error('[Banner] Erro ao carregar:', fetchError.message);
         } else if (banners && banners.length > 0) {
-          console.log('[Banner Hook] ✅ Carregados:', banners.length, 'banners');
+          console.log('[Banner] ✅ Carregados:', banners.length);
           setData(banners);
-          setStatus('success');
-        } else {
-          console.log('[Banner Hook] ⚠️ Vazio - usando fallback');
-          setData(defaultBanners);
-          setStatus('success');
         }
       } catch (err: any) {
-        if (cancelled) return;
-        console.error('[Banner Hook] Exceção:', err?.message);
-        setData(defaultBanners);
-        setStatus('success');
+        if (!mounted) return;
+        console.error('[Banner] Exceção:', err?.message);
       }
     };
 
     fetchBanners();
 
     return () => {
-      cancelled = true;
+      mounted = false;
     };
   }, []);
 
   const refetch = async () => {
-    setStatus('loading');
-    setError(null);
-    
     try {
       const { data: banners, error: fetchError } = await supabase
         .from('banner_images')
@@ -78,18 +63,12 @@ export const useHomeBanner = () => {
         .order('display_order', { ascending: true });
 
       if (fetchError) {
-        setData(defaultBanners);
-        setStatus('success');
+        console.error('[Banner] Erro no refetch:', fetchError.message);
       } else if (banners && banners.length > 0) {
         setData(banners);
-        setStatus('success');
-      } else {
-        setData(defaultBanners);
-        setStatus('success');
       }
-    } catch {
-      setData(defaultBanners);
-      setStatus('success');
+    } catch (err: any) {
+      console.error('[Banner] Exceção no refetch:', err?.message);
     }
   };
 

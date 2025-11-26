@@ -40,73 +40,67 @@ const filterProfanity = (text: string): boolean => {
   return profanityList.some(word => lowerText.includes(word));
 };
 
+const calculateStats = (ratings: any[]): ReviewStats => {
+  const totalReviews = ratings.length;
+  const averageRating = totalReviews > 0 
+    ? ratings.reduce((sum, r) => sum + r.rating, 0) / totalReviews 
+    : 0;
+  
+  const fiveStarCount = ratings.filter(r => r.rating === 5).length;
+  const fourStarCount = ratings.filter(r => r.rating === 4).length;
+  const threeStarCount = ratings.filter(r => r.rating === 3).length;
+  const twoStarCount = ratings.filter(r => r.rating === 2).length;
+  const oneStarCount = ratings.filter(r => r.rating === 1).length;
+
+  const recentReviews = ratings
+    .filter(r => r.comment && r.comment.trim() !== '' && !filterProfanity(r.comment))
+    .slice(0, 3);
+
+  return {
+    totalReviews,
+    averageRating,
+    fiveStarCount,
+    fourStarCount,
+    threeStarCount,
+    twoStarCount,
+    oneStarCount,
+    recentReviews
+  };
+};
+
 export const useHomeAvaliacoes = () => {
-  const [status, setStatus] = useState<Status>('loading');
+  const [status, setStatus] = useState<Status>('success');
   const [data, setData] = useState<ReviewStats>(initialStats);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
 
     const fetchAvaliacoes = async () => {
-      setStatus('loading');
-      setError(null);
-
       try {
         const { data: ratings, error: fetchError } = await supabase
           .from('appointment_ratings')
           .select('rating, comment, created_at')
           .order('created_at', { ascending: false });
 
-        if (cancelled) return;
+        if (!mounted) return;
 
         if (fetchError) {
-          console.error('[Avaliações Hook] Erro:', fetchError.message);
-          setData(initialStats);
-          setStatus('success');
+          console.error('[Avaliações] Erro ao carregar:', fetchError.message);
         } else if (ratings && ratings.length > 0) {
-          console.log('[Avaliações Hook] ✅ Carregadas:', ratings.length, 'avaliações');
-          
-          const totalReviews = ratings.length;
-          const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
-          
-          const fiveStarCount = ratings.filter(r => r.rating === 5).length;
-          const fourStarCount = ratings.filter(r => r.rating === 4).length;
-          const threeStarCount = ratings.filter(r => r.rating === 3).length;
-          const twoStarCount = ratings.filter(r => r.rating === 2).length;
-          const oneStarCount = ratings.filter(r => r.rating === 1).length;
-
-          const recentReviews = ratings
-            .filter(r => r.comment && r.comment.trim() !== '' && !filterProfanity(r.comment))
-            .slice(0, 3);
-
-          setData({
-            totalReviews,
-            averageRating,
-            fiveStarCount,
-            fourStarCount,
-            threeStarCount,
-            twoStarCount,
-            oneStarCount,
-            recentReviews
-          });
-          setStatus('success');
+          console.log('[Avaliações] ✅ Carregadas:', ratings.length);
+          setData(calculateStats(ratings));
         } else {
-          console.log('[Avaliações Hook] ⚠️ Vazio');
           setData(initialStats);
-          setStatus('success');
         }
       } catch (err: any) {
-        if (cancelled) return;
-        console.error('[Avaliações Hook] Exceção:', err?.message);
-        setData(initialStats);
-        setStatus('success');
+        if (!mounted) return;
+        console.error('[Avaliações] Exceção:', err?.message);
       }
     };
 
     fetchAvaliacoes();
 
-    // Real-time subscription
     const channel = supabase
       .channel('reviews-updates')
       .on(
@@ -117,61 +111,33 @@ export const useHomeAvaliacoes = () => {
           table: 'appointment_ratings'
         },
         () => {
-          console.log('[Avaliações Hook] Atualização em tempo real');
-          if (!cancelled) fetchAvaliacoes();
+          if (mounted) fetchAvaliacoes();
         }
       )
       .subscribe();
 
     return () => {
-      cancelled = true;
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
 
   const refetch = async () => {
-    setStatus('loading');
-    setError(null);
-    
     try {
       const { data: ratings, error: fetchError } = await supabase
         .from('appointment_ratings')
         .select('rating, comment, created_at')
         .order('created_at', { ascending: false });
 
-      if (fetchError || !ratings || ratings.length === 0) {
+      if (fetchError) {
+        console.error('[Avaliações] Erro no refetch:', fetchError.message);
+      } else if (ratings && ratings.length > 0) {
+        setData(calculateStats(ratings));
+      } else {
         setData(initialStats);
-        setStatus('success');
-        return;
       }
-
-      const totalReviews = ratings.length;
-      const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
-      
-      const fiveStarCount = ratings.filter(r => r.rating === 5).length;
-      const fourStarCount = ratings.filter(r => r.rating === 4).length;
-      const threeStarCount = ratings.filter(r => r.rating === 3).length;
-      const twoStarCount = ratings.filter(r => r.rating === 2).length;
-      const oneStarCount = ratings.filter(r => r.rating === 1).length;
-
-      const recentReviews = ratings
-        .filter(r => r.comment && r.comment.trim() !== '' && !filterProfanity(r.comment))
-        .slice(0, 3);
-
-      setData({
-        totalReviews,
-        averageRating,
-        fiveStarCount,
-        fourStarCount,
-        threeStarCount,
-        twoStarCount,
-        oneStarCount,
-        recentReviews
-      });
-      setStatus('success');
-    } catch {
-      setData(initialStats);
-      setStatus('success');
+    } catch (err: any) {
+      console.error('[Avaliações] Exceção no refetch:', err?.message);
     }
   };
 
