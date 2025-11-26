@@ -30,11 +30,8 @@ const AdminRedirectGuard: React.FC<AdminRedirectGuardProps> = ({ children }) => 
     }
   }, [user, isMaster, isAdmin, isManager, loading, location.pathname, navigate]);
 
-  // Enquanto está carregando, não renderiza nada
-  if (loading) {
-    return null;
-  }
-
+  // Enquanto está carregando, renderiza os children
+  // (O loading interno de cada contexto específico cuidará do estado de carregamento)
   return <>{children}</>;
 };
 
