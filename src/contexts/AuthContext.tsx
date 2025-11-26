@@ -138,23 +138,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[AuthContext] 📦 Cache não encontrado, consultando banco...');
     
     try {
-      console.log('[AuthContext] 📡 Iniciando consulta com timeout agressivo de 1.5s...');
+      console.log('[AuthContext] 📡 Iniciando consulta (timeout: 8s)...');
       const startTime = Date.now();
       
-      // Timeout MUITO agressivo de 1.5 segundos
+      // Timeout de 8 segundos (compatível com instâncias Supabase free tier)
       const timeoutPromise = new Promise<never>((_, reject) => 
         setTimeout(() => {
-          console.error('[AuthContext] ⏰ TIMEOUT após 1.5s - instância Supabase MUITO lenta!');
-          reject(new Error('Query timeout após 1.5s'));
-        }, 1500)
+          console.error('[AuthContext] ⏰ TIMEOUT após 8s');
+          reject(new Error('Query timeout'));
+        }, 8000)
       );
       
-      // Consulta principal
+      // Consulta com maybeSingle() para evitar erro se não encontrar
       const queryPromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
       
@@ -162,13 +162,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log(`[AuthContext] ⏱️ Consulta completou em ${queryTime}ms`);
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('[AuthContext] ℹ️ Nenhuma role encontrada');
-          applyRole(null);
-        } else {
-          console.error('[AuthContext] ❌ Erro na consulta:', error);
-          applyRole(null);
-        }
+        console.error('[AuthContext] ❌ Erro na consulta:', error);
+        applyRole(null);
         setLoading(false);
         setRolesChecked(true);
         return null;
@@ -179,43 +174,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('[AuthContext] ✅ Role encontrada:', role);
         saveRoleToCache(user.id, role);
         applyRole(role);
-      } else {
-        console.log('[AuthContext] ℹ️ Sem role no resultado');
-        applyRole(null);
+        setLoading(false);
+        setRolesChecked(true);
+        return role;
       }
 
+      console.log('[AuthContext] ℹ️ Nenhuma role encontrada');
+      applyRole(null);
       setLoading(false);
       setRolesChecked(true);
-      return data?.role as any || null;
+      return null;
 
     } catch (error: any) {
-      console.error('[AuthContext] ❌ Erro/timeout na consulta:', error.message);
-      
-      // FALLBACK: Consultar staff table como alternativa
-      console.log('[AuthContext] 🔄 Tentando fallback via tabela staff...');
-      try {
-        const { data: staffData } = await supabase
-          .from('staff')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .single();
-        
-        if (staffData?.role === 'barber') {
-          console.log('[AuthContext] ✅ FALLBACK: Encontrado como barber na tabela staff');
-          const role = 'barber' as const;
-          saveRoleToCache(user.id, role);
-          applyRole(role);
-          setLoading(false);
-          setRolesChecked(true);
-          return role;
-        }
-      } catch (fallbackError) {
-        console.error('[AuthContext] ❌ Fallback também falhou:', fallbackError);
-      }
-      
-      // Se tudo falhou, assumir sem role
-      console.error('[AuthContext] ⚠️ AVISO: Instância Supabase muito lenta. Considere upgrade do plano.');
+      console.error('[AuthContext] ❌ Erro/timeout:', error.message);
       applyRole(null);
       setLoading(false);
       setRolesChecked(true);
