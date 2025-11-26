@@ -27,33 +27,24 @@ export const useGallery = () => {
 
   const fetchGallery = async () => {
     try {
-      console.log('🖼️ [useGallery] Iniciando busca...');
+      console.log('🖼️ [useGallery] Buscando galeria...');
       setLoading(true);
       setError(null);
       
-      // Timeout de 5 segundos para evitar travamento
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout ao buscar galeria')), 5000)
-      );
-      
-      const queryPromise = supabase
+      const { data, error: fetchError } = await supabase
         .from('gallery_images')
         .select('id, src, alt')
+        .eq('is_active', true)
         .order('display_order', { ascending: true });
 
-      const { data, error: fetchError } = await Promise.race([
-        queryPromise,
-        timeoutPromise
-      ]) as any;
-
       if (fetchError) {
-        console.error('❌ [useGallery] Erro:', fetchError.message);
+        console.error('❌ [useGallery] Erro:', fetchError);
         setError(fetchError.message);
         setImages(DEFAULT_IMAGES);
         return;
       }
 
-      console.log('✅ [useGallery] Carregadas:', data?.length || 0);
+      console.log('✅ [useGallery] Sucesso:', data?.length || 0, 'imagens');
 
       if (data && data.length > 0) {
         const mappedImages = data.map((item, index) => ({
@@ -63,11 +54,12 @@ export const useGallery = () => {
         }));
         setImages(mappedImages);
       } else {
+        console.log('⚠️ [useGallery] Nenhuma imagem ativa, usando defaults');
         setImages(DEFAULT_IMAGES);
       }
     } catch (err) {
-      console.error('❌ [useGallery] Erro:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao carregar');
+      console.error('❌ [useGallery] Exceção:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
       setImages(DEFAULT_IMAGES);
     } finally {
       setLoading(false);

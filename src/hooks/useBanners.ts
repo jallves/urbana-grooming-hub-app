@@ -20,42 +20,34 @@ export const useBanners = () => {
 
   const fetchBanners = async () => {
     try {
-      console.log('🎨 [useBanners] Iniciando busca...');
+      console.log('🎨 [useBanners] Buscando banners...');
       setLoading(true);
       setError(null);
       
-      // Timeout de 5 segundos para evitar travamento
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout ao buscar banners')), 5000)
-      );
-      
-      const queryPromise = supabase
+      const { data, error: fetchError } = await supabase
         .from('banner_images')
         .select('*')
+        .eq('is_active', true)
         .order('display_order', { ascending: true });
 
-      const { data, error: fetchError } = await Promise.race([
-        queryPromise,
-        timeoutPromise
-      ]) as any;
-
       if (fetchError) {
-        console.error('❌ [useBanners] Erro:', fetchError.message);
+        console.error('❌ [useBanners] Erro:', fetchError);
         setError(fetchError.message);
         setBanners([DEFAULT_BANNER]);
         return;
       }
 
-      console.log('✅ [useBanners] Carregados:', data?.length || 0);
+      console.log('✅ [useBanners] Sucesso:', data?.length || 0, 'banners');
       
       if (data && data.length > 0) {
         setBanners(data);
       } else {
+        console.log('⚠️ [useBanners] Nenhum banner ativo, usando default');
         setBanners([DEFAULT_BANNER]);
       }
     } catch (err) {
-      console.error('❌ [useBanners] Erro:', err);
-      setError(err instanceof Error ? err.message : 'Erro ao carregar');
+      console.error('❌ [useBanners] Exceção:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
       setBanners([DEFAULT_BANNER]);
     } finally {
       setLoading(false);
