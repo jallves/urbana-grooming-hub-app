@@ -19,27 +19,38 @@ const Auth: React.FC = () => {
   // Verifica se o usuário tem acesso administrativo (admin, manager ou master)
   const hasAdminAccess = isAdmin || isManager || isMaster;
 
-  // FORÇAR LOGOUT se usuário tentar acessar a página de login
+  // REDIRECIONAR usuário já logado para seu painel apropriado
   useEffect(() => {
-    const forceLogoutOnLoginPage = async () => {
-      if (!authLoading && user) {
-        console.log('[Auth] 🚪 Usuário tentando acessar login - forçando logout da sessão anterior');
-        await signOut();
-      }
-    };
-    
-    forceLogoutOnLoginPage();
-  }, []); // Executa apenas uma vez ao montar
+    // Aguardar verificação completa de roles
+    if (authLoading || !rolesChecked) {
+      return;
+    }
+
+    // Sem usuário = mostrar formulário de login
+    if (!user) {
+      return;
+    }
+
+    // Usuário autenticado - redirecionar para seu painel
+    if (hasAdminAccess) {
+      console.log('[Auth] ✅ Admin autenticado - redirecionando para dashboard admin');
+      navigate('/admin', { replace: true });
+    } else {
+      console.log('[Auth] ℹ️ Usuário não é admin - redirecionando para home');
+      navigate('/', { replace: true });
+    }
+  }, [user, hasAdminAccess, rolesChecked, authLoading, navigate]);
 
   // Credenciais de admin removidas por segurança
   // Use o Supabase Dashboard para criar usuários admin manualmente
 
-  if (authLoading && !rolesChecked) {
+  // Aguardar verificação de roles antes de mostrar loading
+  if (authLoading || !rolesChecked) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-600">Preparando login...</p>
+          <p className="text-gray-600">Verificando autenticação...</p>
         </div>
       </div>
     );
@@ -58,38 +69,14 @@ const Auth: React.FC = () => {
     }
   };
 
-  // Se ainda há usuário após o force logout, mostrar botão de logout manual
+  // Não deve chegar aqui com usuário logado (redirecionamento acima cuida disso)
+  // Mas mantemos como fallback de segurança
   if (user) {
     return (
-      <AuthContainer title="Costa Urbana" subtitle="Sessão Ativa">
-        <div className="w-full space-y-4">
-          <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
-            <p className="text-sm text-muted-foreground">Sessão detectada:</p>
-            <p className="text-foreground font-medium">{user.email}</p>
-          </div>
-
-          <div className="p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center space-y-2">
-            <p className="text-yellow-600 dark:text-yellow-400 font-semibold">
-              Você precisa fazer logout para acessar o login
-            </p>
-          </div>
-
-          <Button
-            onClick={handleLogout}
-            variant="default"
-            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl"
-          >
-            Fazer Logout
-          </Button>
-
-          <Button
-            onClick={handleGoHome}
-            variant="outline"
-            className="w-full h-12 rounded-xl"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Voltar ao site
-          </Button>
+      <AuthContainer title="Costa Urbana" subtitle="Redirecionando...">
+        <div className="w-full space-y-4 text-center">
+          <div className="w-12 h-12 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">Redirecionando...</p>
         </div>
       </AuthContainer>
     );
