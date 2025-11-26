@@ -62,27 +62,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     
     console.log('[AuthContext] 🔍 Buscando role para:', user.id);
+    console.log('[AuthContext] 🔍 Email:', user.email);
     
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-    
-    console.log('[AuthContext] 📊 Resultado:', { data, error });
+    try {
+      // Timeout de 3 segundos para evitar travamento
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout')), 3000)
+      );
+      
+      const queryPromise = supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+      
+      console.log('[AuthContext] ⏳ Aguardando resposta da query...');
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+      
+      console.log('[AuthContext] 📊 Resultado:', { data, error });
 
-    if (error || !data) {
-      console.error('[AuthContext] ❌ Sem role encontrada');
+      if (error || !data) {
+        console.error('[AuthContext] ❌ Sem role encontrada:', error);
+        applyRole(null);
+        setLoading(false);
+        return null;
+      }
+
+      const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
+      console.log('[AuthContext] ✅ Role aplicada:', role);
+      applyRole(role);
+      setLoading(false);
+      return role;
+      
+    } catch (err) {
+      console.error('[AuthContext] 💥 Erro ou timeout na query:', err);
       applyRole(null);
       setLoading(false);
       return null;
     }
-
-    const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
-    console.log('[AuthContext] ✅ Role aplicada:', role);
-    applyRole(role);
-    setLoading(false);
-    return role;
   };
 
   useEffect(() => {
