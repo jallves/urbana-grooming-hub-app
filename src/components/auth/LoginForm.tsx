@@ -61,7 +61,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔐 [LoginForm] Iniciando handleSubmit...');
+    
     if (isBlocked) {
+      console.warn('⚠️ [LoginForm] Login bloqueado');
       toast({
         title: "Acesso bloqueado",
         description: `Aguarde ${Math.floor(blockTimeLeft / 60)}:${(blockTimeLeft % 60).toString().padStart(2, '0')} minutos`,
@@ -70,17 +73,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       return;
     }
 
+    console.log('🔐 [LoginForm] Chamando setLoading(true)...');
     setLoading(true);
 
     try {
+      console.log('🔐 [LoginForm] Chamando supabase.auth.signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('🔐 [LoginForm] Resposta:', { hasUser: !!data.user, error });
+
       if (error) throw error;
 
       if (data.user) {
+        console.log('✅ [LoginForm] Login bem-sucedido!');
         // Limpar tentativas em caso de sucesso
         setLoginAttempts(0);
         localStorage.removeItem('loginBlock');
@@ -92,7 +100,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
         // Auth.tsx will handle the redirect based on user role
       }
     } catch (error: any) {
-      console.error('Erro no login:', error);
+      console.error('❌ [LoginForm] Erro no login:', error);
       
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);

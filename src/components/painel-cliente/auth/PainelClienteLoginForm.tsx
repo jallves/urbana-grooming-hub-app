@@ -18,6 +18,7 @@ const PainelClienteLoginForm: React.FC<PainelClienteLoginFormProps> = ({ onSubmi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📱 [PainelClienteLoginForm] handleSubmit chamado');
     await onSubmit(email, senha);
   };
 

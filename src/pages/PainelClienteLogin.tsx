@@ -16,12 +16,16 @@ export default function PainelClienteLogin() {
   const [erro, setErro] = useState('');
 
   const handleLogin = async (email: string, senha: string) => {
+    console.log('📱 [PainelClienteLogin] handleLogin chamado');
     setErro('');
     setLoading(true);
 
+    console.log('📱 [PainelClienteLogin] Chamando login()...');
     const { error } = await login(email, senha);
+    console.log('📱 [PainelClienteLogin] Resposta do login:', { error });
 
     if (error) {
+      console.log('❌ [PainelClienteLogin] Erro no login:', error);
       if (error === 'cadastro_nao_encontrado') {
         setErro('😊 Parece que você ainda não tem cadastro! Clique em "Criar conta" abaixo para se cadastrar e aproveitar nossos serviços.');
       } else if (error === 'senha_incorreta') {
@@ -31,6 +35,7 @@ export default function PainelClienteLogin() {
       }
       setLoading(false);
     } else {
+      console.log('✅ [PainelClienteLogin] Login bem-sucedido, navegando...');
       navigate('/painel-cliente/dashboard');
     }
   };
