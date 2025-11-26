@@ -34,7 +34,6 @@ export const useGallery = () => {
       const { data, error: fetchError } = await supabase
         .from('gallery_images')
         .select('id, src, alt')
-        .eq('is_active', true)
         .order('display_order', { ascending: true });
 
       if (fetchError) {

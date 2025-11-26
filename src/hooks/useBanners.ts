@@ -27,7 +27,6 @@ export const useBanners = () => {
       const { data, error: fetchError } = await supabase
         .from('banner_images')
         .select('*')
-        .eq('is_active', true)
         .order('display_order', { ascending: true });
 
       if (fetchError) {
