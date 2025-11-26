@@ -24,8 +24,10 @@ export const useHomeBanner = () => {
 
   useEffect(() => {
     let mounted = true;
+    console.log('[Banner Hook] 🚀 Inicializando...');
 
     const fetchBanners = async () => {
+      console.log('[Banner Hook] 📡 Buscando dados...');
       try {
         const { data: banners, error: fetchError } = await supabase
           .from('banner_images')
@@ -33,23 +35,30 @@ export const useHomeBanner = () => {
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
-        if (!mounted) return;
+        if (!mounted) {
+          console.log('[Banner Hook] ⚠️ Componente desmontado');
+          return;
+        }
 
         if (fetchError) {
-          console.error('[Banner] Erro ao carregar:', fetchError.message);
+          console.error('[Banner Hook] ❌ Erro:', fetchError.message);
         } else if (banners && banners.length > 0) {
-          console.log('[Banner] ✅ Carregados:', banners.length);
+          console.log('[Banner Hook] ✅ Carregados:', banners.length, 'banners');
+          console.log('[Banner Hook] 📦 Dados:', banners);
           setData(banners);
+        } else {
+          console.log('[Banner Hook] ⚠️ Nenhum banner ativo encontrado');
         }
       } catch (err: any) {
         if (!mounted) return;
-        console.error('[Banner] Exceção:', err?.message);
+        console.error('[Banner Hook] ❌ Exceção:', err?.message);
       }
     };
 
     fetchBanners();
 
     return () => {
+      console.log('[Banner Hook] 🔚 Desmontando...');
       mounted = false;
     };
   }, []);
