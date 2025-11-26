@@ -1,27 +1,17 @@
-
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { useBannerImages } from './hero/useBannerImages';
+import { useHomeBanner } from '@/hooks/useHomeBanner';
 import BannerSlide from './hero/BannerSlide';
 import { RippleButton } from '@/components/ui/ripple-button';
+import { Button } from '@/components/ui/button';
 
 const Hero: React.FC = () => {
-  const { bannerImages, loading } = useBannerImages();
+  const { status, data: bannerImages, error, refetch } = useHomeBanner();
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 500], [0, 150]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0]);
-
-  console.log('[Hero] 🎨 Componente renderizando');
-  console.log('[Hero] 📊 Banners:', bannerImages.length);
-  console.log('[Hero] 🔄 Loading:', loading);
-  
-  if (bannerImages.length > 0) {
-    console.log('[Hero] ✅ Banner atual:', bannerImages[0].title);
-  } else {
-    console.warn('[Hero] ⚠️ NENHUM BANNER CARREGADO!');
-  }
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
@@ -38,32 +28,41 @@ const Hero: React.FC = () => {
     }
   }, [bannerImages.length]);
 
-  if (loading) {
+  // Loading state
+  if (status === 'loading') {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-urbana-black">
-        <div className="text-urbana-gold text-xl">Carregando...</div>
-      </div>
-    );
-  }
-
-  if (bannerImages.length === 0) {
-    return (
-      <div className="relative min-h-screen flex items-center justify-center bg-urbana-black text-white">
-        <div className="text-center px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">Costa Urbana</h1>
-          <p className="text-xl mb-8">Barbearia Premium</p>
-          <RippleButton 
-            className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 px-8 py-6 text-lg font-semibold rounded-lg"
-            onClick={() => window.location.href = '/painel-cliente/login'}
-          >
-            <Calendar className="inline mr-2 h-4 w-4" />
-            Agendar Agora
-          </RippleButton>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-urbana-gold text-lg">Carregando conteúdo...</p>
         </div>
       </div>
     );
   }
 
+  // Error state
+  if (status === 'error') {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center bg-urbana-black">
+        <div className="text-center px-4 max-w-md">
+          <div className="w-20 h-20 bg-urbana-gold/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Calendar className="w-10 h-10 text-urbana-gold" />
+          </div>
+          <h2 className="text-3xl font-bold text-white mb-4">Costa Urbana</h2>
+          <p className="text-urbana-gold/70 mb-6">{error || 'Não foi possível carregar este conteúdo agora.'}</p>
+          <Button
+            onClick={refetch}
+            className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Success state
   const currentBanner = bannerImages[currentSlide];
 
   return (

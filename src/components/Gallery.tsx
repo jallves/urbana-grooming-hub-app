@@ -1,151 +1,85 @@
-
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React from 'react';
+import { RefreshCw, Image as ImageIcon } from 'lucide-react';
 import GalleryImage from './gallery/GalleryImage';
 import LightboxModal from './gallery/LightboxModal';
 import { useLightbox } from '@/hooks/useLightbox';
+import { useHomeGaleria } from '@/hooks/useHomeGaleria';
 import { motion } from 'framer-motion';
-
-interface GalleryPhoto {
-  id: string;
-  src: string;
-  alt: string;
-  is_active?: boolean;
-  display_order?: number;
-}
+import { Button } from '@/components/ui/button';
 
 const Gallery: React.FC = () => {
-  const [images, setImages] = useState<GalleryPhoto[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { status, data: images, error, refetch } = useHomeGaleria();
   const { selectedImage, setSelectedImage, closeModal, showNext, showPrevious } = useLightbox();
 
-  // Default images as fallback
-  const defaultImages: GalleryPhoto[] = [
-    {
-      id: '1',
-      src: 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Barbeiro trabalhando com precisão',
-      is_active: true,
-      display_order: 1,
-    },
-    {
-      id: '2',
-      src: 'https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Interior moderno e elegante da barbearia',
-      is_active: true,
-      display_order: 2,
-    },
-    {
-      id: '3',
-      src: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-      alt: 'Equipamentos de alta qualidade para barbearia',
-      is_active: true,
-      display_order: 3,
-    },
-  ];
-
-  useEffect(() => {
-    let mounted = true;
-    let timeoutId: NodeJS.Timeout;
-    
-    const fetchImages = async () => {
-      try {
-        // Timeout de 8 segundos
-        timeoutId = setTimeout(() => {
-          console.warn('[Gallery] ⏱️ Timeout - usando fallback');
-          if (mounted) {
-            setImages(defaultImages);
-            setLoading(false);
-          }
-        }, 8000);
-
-        setLoading(true);
-        console.log('[Gallery] 🔍 Buscando...');
-        
-        const { data, error } = await supabase
-          .from('gallery_images')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true });
-
-        clearTimeout(timeoutId);
-
-        if (!mounted) return;
-
-        if (error) {
-          console.error('[Gallery] ❌ Erro:', error.message);
-          setImages(defaultImages);
-        } else if (data && data.length > 0) {
-          console.log('[Gallery] ✅ Carregadas:', data.length);
-          setImages(data);
-        } else {
-          console.log('[Gallery] ⚠️ Vazio - usando fallback');
-          setImages(defaultImages);
-        }
-      } catch (error: any) {
-        clearTimeout(timeoutId!);
-        if (!mounted) return;
-        
-        console.error('[Gallery] ❌ Exceção:', error?.message);
-        setImages(defaultImages);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchImages();
-
-    // Real-time subscription
-    const channel = supabase
-      .channel('gallery_images_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'gallery_images'
-        },
-        (payload) => {
-          console.log('🔄 Galeria atualizada:', payload.eventType);
-          fetchImages();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      mounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  if (loading) {
+  // Loading state - skeleton
+  if (status === 'loading') {
     return (
-      <section className="py-20 bg-gray-900">
-        <div className="w-full mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-white mb-4">Nossa Galeria</h2>
-            <p className="text-xl text-gray-400">Conheça nosso trabalho</p>
+      <section className="py-12 md:py-20 relative overflow-hidden bg-urbana-black/50">
+        <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-urbana-gold font-playfair">
+              Nossa Galeria
+            </h2>
+            <p className="text-xl md:text-2xl text-gray-400">Carregando conteúdo...</p>
           </div>
-          <div className="flex justify-center items-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div
+                key={i}
+                className="aspect-square bg-urbana-black/80 rounded-lg animate-pulse"
+                style={{
+                  background: 'linear-gradient(90deg, rgba(30,30,30,0.5) 25%, rgba(50,50,50,0.5) 50%, rgba(30,30,30,0.5) 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 2s infinite'
+                }}
+              />
+            ))}
           </div>
         </div>
       </section>
     );
   }
 
+  // Error state
+  if (status === 'error') {
+    return (
+      <section className="py-12 md:py-20 relative overflow-hidden bg-urbana-black/50">
+        <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-urbana-gold font-playfair">
+              Nossa Galeria
+            </h2>
+            <p className="text-xl md:text-2xl text-gray-400">Conheça nosso trabalho</p>
+          </div>
+          
+          <div className="max-w-md mx-auto text-center">
+            <div className="w-20 h-20 bg-urbana-gold/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ImageIcon className="w-10 h-10 text-urbana-gold" />
+            </div>
+            <p className="text-urbana-gold/70 mb-6">{error || 'Não foi possível carregar este conteúdo agora.'}</p>
+            <Button
+              onClick={refetch}
+              className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Success state
   return (
     <section className="py-12 md:py-20 relative overflow-hidden">
-      {/* Geometric pattern background */}
+      {/* Background effects */}
       <div className="absolute inset-0 opacity-[0.02]" style={{
         backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 215, 0, 0.8) 1px, transparent 0)',
         backgroundSize: '32px 32px'
       }} />
       
-      {/* Golden glow orbs */}
       <div className="absolute top-40 left-20 w-64 h-64 bg-urbana-gold/10 rounded-full blur-3xl" />
       <div className="absolute bottom-40 right-20 w-80 h-80 bg-yellow-400/10 rounded-full blur-3xl" />
       
@@ -162,7 +96,6 @@ const Gallery: React.FC = () => {
             }}
           >
             Nossa Galeria
-            {/* Decorative underline */}
             <motion.div
               initial={{ scaleX: 0 }}
               whileInView={{ scaleX: 1 }}

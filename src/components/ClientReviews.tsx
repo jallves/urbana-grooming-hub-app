@@ -1,128 +1,78 @@
-import React, { useEffect, useState } from 'react';
-import { Star, Users, TrendingUp, MessageCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import React from 'react';
+import { Star, Users, TrendingUp, MessageCircle, RefreshCw } from 'lucide-react';
+import { useHomeAvaliacoes } from '@/hooks/useHomeAvaliacoes';
 import { motion } from 'framer-motion';
-
-interface ReviewStats {
-  totalReviews: number;
-  averageRating: number;
-  fiveStarCount: number;
-  fourStarCount: number;
-  threeStarCount: number;
-  twoStarCount: number;
-  oneStarCount: number;
-  recentReviews: Array<{
-    rating: number;
-    comment: string;
-    created_at: string;
-  }>;
-}
+import { Button } from '@/components/ui/button';
 
 export const ClientReviews: React.FC = () => {
-  const [stats, setStats] = useState<ReviewStats>({
-    totalReviews: 0,
-    averageRating: 0,
-    fiveStarCount: 0,
-    fourStarCount: 0,
-    threeStarCount: 0,
-    twoStarCount: 0,
-    oneStarCount: 0,
-    recentReviews: []
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchReviewStats();
-
-    const channel = supabase
-      .channel('reviews-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointment_ratings'
-        },
-        () => {
-          fetchReviewStats();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const fetchReviewStats = async () => {
-    try {
-      const { data: ratings, error } = await supabase
-        .from('appointment_ratings')
-        .select('rating, comment, created_at')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (ratings && ratings.length > 0) {
-        const totalReviews = ratings.length;
-        const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
-        
-        const fiveStarCount = ratings.filter(r => r.rating === 5).length;
-        const fourStarCount = ratings.filter(r => r.rating === 4).length;
-        const threeStarCount = ratings.filter(r => r.rating === 3).length;
-        const twoStarCount = ratings.filter(r => r.rating === 2).length;
-        const oneStarCount = ratings.filter(r => r.rating === 1).length;
-
-        const recentReviews = ratings
-          .filter(r => r.comment && r.comment.trim() !== '' && !filterProfanity(r.comment))
-          .slice(0, 3);
-
-        setStats({
-          totalReviews,
-          averageRating,
-          fiveStarCount,
-          fourStarCount,
-          threeStarCount,
-          twoStarCount,
-          oneStarCount,
-          recentReviews
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao buscar avaliações:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterProfanity = (text: string): boolean => {
-    const profanityList = [
-      'porra', 'caralho', 'merda', 'puta', 'foda', 'cu', 'cacete', 'buceta',
-      'viado', 'idiota', 'imbecil', 'desgraça', 'fdp', 'arrombado', 'pqp',
-      'fuck', 'shit', 'bitch', 'ass', 'damn', 'bastard', 'cunt'
-    ];
-    
-    const lowerText = text.toLowerCase();
-    return profanityList.some(word => lowerText.includes(word));
-  };
+  const { status, data: stats, error, refetch } = useHomeAvaliacoes();
 
   const getPercentage = (count: number) => {
     return stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
   };
 
-  if (loading) {
+  // Loading state - skeleton
+  if (status === 'loading') {
     return (
-      <section className="relative py-20 md:py-32 bg-gradient-to-b from-background via-urbana-black to-background">
-        <div className="text-center">
-          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-primary border-r-transparent"></div>
+      <section className="relative py-20 md:py-32 overflow-hidden">
+        <div className="w-full relative z-10">
+          <div className="text-center mb-16 px-4">
+            <h2 className="text-5xl md:text-6xl font-playfair font-bold mb-6 text-urbana-gold">
+              O Que Nossos Clientes Dizem
+            </h2>
+            <p className="text-urbana-light/70 text-xl">Carregando conteúdo...</p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 md:px-6 lg:px-8">
+            {[1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-96 bg-urbana-black/80 rounded-2xl animate-pulse border-2 border-urbana-gold/30"
+                style={{
+                  background: 'linear-gradient(90deg, rgba(30,30,30,0.8) 25%, rgba(50,50,50,0.8) 50%, rgba(30,30,30,0.8) 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 2s infinite'
+                }}
+              />
+            ))}
+          </div>
         </div>
       </section>
     );
   }
 
+  // Error state
+  if (status === 'error') {
+    return (
+      <section className="relative py-20 md:py-32 overflow-hidden">
+        <div className="w-full relative z-10">
+          <div className="text-center mb-16 px-4">
+            <h2 className="text-5xl md:text-6xl font-playfair font-bold mb-6 text-urbana-gold">
+              O Que Nossos Clientes Dizem
+            </h2>
+          </div>
+          
+          <div className="max-w-md mx-auto text-center px-4">
+            <div className="w-20 h-20 bg-urbana-gold/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <MessageCircle className="w-10 h-10 text-urbana-gold" />
+            </div>
+            <p className="text-urbana-gold/70 mb-6">{error || 'Não foi possível carregar este conteúdo agora.'}</p>
+            <Button
+              onClick={refetch}
+              className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Success state
   return (
     <section className="relative py-20 md:py-32 overflow-hidden">
-      {/* Sem background, apenas efeitos sutis */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute top-40 left-20 w-96 h-96 bg-gradient-radial from-urbana-gold via-urbana-gold/50 to-transparent rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-40 right-20 w-80 h-80 bg-gradient-radial from-urbana-gold/50 via-urbana-gold to-transparent rounded-full blur-3xl animate-pulse-slow" />
@@ -192,11 +142,11 @@ export const ClientReviews: React.FC = () => {
                     <span>Avaliação rápida</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
+                    <div className="w-2 h-2 bg-urbana-gold rounded-full" />
                     <span>100% anônimo</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
+                    <div className="w-2 h-2 bg-urbana-gold rounded-full" />
                     <span>Sua voz importa</span>
                   </div>
                 </div>
@@ -332,8 +282,8 @@ export const ClientReviews: React.FC = () => {
                             key={star}
                             className={`w-4 h-4 ${
                               star <= review.rating
-                                ? 'text-primary fill-primary'
-                                : 'text-primary/30'
+                                ? 'text-urbana-gold fill-urbana-gold'
+                                : 'text-urbana-gold/30'
                             }`}
                           />
                         ))}
@@ -357,9 +307,9 @@ export const ClientReviews: React.FC = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6 }}
                   viewport={{ once: true }}
-                  className="relative bg-background/40 backdrop-blur-xl border-2 border-border/50 rounded-xl p-8 text-center"
+                  className="relative bg-urbana-black/70 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl p-8 text-center"
                 >
-                  <p className="text-muted-foreground font-raleway text-lg">
+                  <p className="text-urbana-gold/70 font-raleway text-lg">
                     Seja o primeiro a deixar um comentário!
                   </p>
                 </motion.div>
