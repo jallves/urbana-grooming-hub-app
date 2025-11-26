@@ -22,27 +22,26 @@ export default function PainelClienteLogin() {
 
   // REDIRECIONAR se já estiver logado como cliente
   React.useEffect(() => {
-    // Não fazer NADA até as roles serem verificadas
+    // Aguardar verificação completa
     if (authLoading || !rolesChecked) {
-      console.log('[PainelClienteLogin] ⏳ Aguardando verificação de roles...');
       return;
     }
 
-    // Sem usuário, tudo ok - pode mostrar login
+    // Sem usuário = mostrar formulário de login
     if (!user) {
-      console.log('[PainelClienteLogin] ℹ️ Sem usuário - exibindo formulário de login');
       return;
     }
 
-    // Usuário existe E roles foram verificadas
+    // Usuário autenticado e é cliente = redirecionar para dashboard
     if (isClient) {
       console.log('[PainelClienteLogin] ✅ Cliente autenticado - redirecionando para dashboard');
       navigate('/painel-cliente/dashboard', { replace: true });
     } else {
-      console.log('[PainelClienteLogin] ⚠️ Usuário não é cliente - fazendo logout');
-      signOut();
+      // Usuário autenticado mas não é cliente = redirecionar para home
+      console.log('[PainelClienteLogin] ℹ️ Usuário não é cliente - redirecionando para home');
+      navigate('/', { replace: true });
     }
-  }, [user, isClient, rolesChecked, authLoading, navigate, signOut]);
+  }, [user, isClient, rolesChecked, authLoading, navigate]);
 
   const handleLogin = async (email: string, senha: string) => {
     setErro('');
