@@ -137,23 +137,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     console.log('[AuthContext] 📦 Cache não encontrado ou expirado, buscando do banco...');
     
-    // Criar timeout de segurança de 8 segundos
+    // Criar timeout de segurança de 15 segundos (aumentado)
     const safetyTimeout = setTimeout(() => {
       console.error('[AuthContext] ⏰ TIMEOUT DE SEGURANÇA - Forçando conclusão do loading');
       setLoading(false);
       setRolesChecked(true);
-    }, 8000);
+    }, 15000);
     
     try {
-      console.log('[AuthContext] 📡 Consultando user_roles via função SECURITY DEFINER...');
+      console.log('[AuthContext] 📡 Consultando user_roles diretamente...');
       
-      // Usar função SECURITY DEFINER para contornar RLS e evitar timeouts
-      const { data, error } = await supabase.rpc('get_user_role', {
-        p_user_id: user.id
-      });
+      // Consulta direta simples - mais rápida que RPC
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
       
       // Limpar timeout de segurança
       clearTimeout(safetyTimeout);
+      
+      console.log('[AuthContext] 📊 Resposta da consulta:', { data, error });
 
       if (error) {
         console.error('[AuthContext] ❌ Erro ao buscar role:', error);
@@ -164,9 +168,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null;
       }
 
-      if (data) {
-        console.log('[AuthContext] ✅ Role encontrada no banco:', data);
-        const role = data as 'master' | 'admin' | 'manager' | 'barber';
+      if (data?.role) {
+        console.log('[AuthContext] ✅ Role encontrada no banco:', data.role);
+        const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
         console.log('[AuthContext] 💾 Salvando role no cache:', role);
         saveRoleToCache(user.id, role);
         console.log('[AuthContext] 🎭 Aplicando role:', role);
@@ -183,7 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setRolesChecked(true);
       console.log('[AuthContext] ✅ Verificação de roles concluída');
 
-      return data as any || null;
+      return data?.role as any || null;
 
     } catch (error) {
       console.error('[AuthContext] ❌ Erro crítico ao buscar roles:', error);
