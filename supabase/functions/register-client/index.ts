@@ -97,44 +97,9 @@ Deno.serve(async (req) => {
     console.log('✅ WhatsApp disponível');
 
     // ===================================================================
-    // ETAPA 2: VERIFICAR EMAIL DUPLICADO
+    // ETAPA 2: CRIAR USUÁRIO COM CLIENTE ANÔNIMO (ENVIA EMAIL AUTOMATICAMENTE)
     // ===================================================================
-    console.log('🔍 [2/5] Verificando e-mail único:', email);
-    
-    const { data: { users: existingUsers }, error: emailCheckError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (emailCheckError) {
-      console.error('❌ Erro ao verificar e-mail:', emailCheckError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: '⚠️ Não foi possível verificar seus dados neste momento.\n\nPor favor, aguarde alguns segundos e tente novamente.' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    const emailExists = existingUsers?.some(user => user.email === email.trim().toLowerCase());
-    
-    if (emailExists) {
-      console.warn('⚠️ E-mail já cadastrado:', email);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `📧 Este e-mail (${email}) já possui cadastro em nosso sistema!\n\n` +
-                 `✅ Clique em "Já tenho conta" para fazer login.\n` +
-                 `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    console.log('✅ E-mail disponível');
-
-    // ===================================================================
-    // ETAPA 3: CRIAR USUÁRIO COM CLIENTE ANÔNIMO (ENVIA EMAIL AUTOMATICAMENTE)
-    // ===================================================================
-    console.log('🔍 [3/5] Criando usuário com signUp nativo (enviará e-mail automaticamente)...');
+    console.log('🔍 [2/4] Criando usuário com signUp nativo (enviará e-mail automaticamente)...');
     
     const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/dashboard`;
     
@@ -196,9 +161,9 @@ Deno.serve(async (req) => {
     console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
 
     // ===================================================================
-    // ETAPA 4: CRIAR PERFIL DO CLIENTE
+    // ETAPA 3: CRIAR PERFIL DO CLIENTE
     // ===================================================================
-    console.log('🔍 [4/5] Criando perfil do cliente...');
+    console.log('🔍 [3/4] Criando perfil do cliente...');
     
     const { error: profileError } = await supabaseAdmin
       .from('client_profiles')
@@ -239,9 +204,9 @@ Deno.serve(async (req) => {
     console.log('✅ Perfil criado com sucesso');
 
     // ===================================================================
-    // ETAPA 5: VERIFICAR STATUS DO EMAIL
+    // ETAPA 4: VERIFICAR STATUS DO EMAIL
     // ===================================================================
-    console.log('🔍 [5/5] Verificando status do e-mail de confirmação...');
+    console.log('🔍 [4/4] Verificando status do e-mail de confirmação...');
     
     if (authData.user.email_confirmed_at) {
       console.log('⚠️ E-mail foi confirmado automaticamente (modo dev ou configuração)');
