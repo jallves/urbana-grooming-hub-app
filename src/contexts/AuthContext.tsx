@@ -157,16 +157,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (data) {
         console.log('[AuthContext] ✅ Role encontrada no banco:', data);
         const role = data as 'master' | 'admin' | 'manager' | 'barber';
+        console.log('[AuthContext] 💾 Salvando role no cache:', role);
         saveRoleToCache(user.id, role);
+        console.log('[AuthContext] 🎭 Aplicando role:', role);
         applyRole(role);
+        console.log('[AuthContext] ✅ Role aplicada com sucesso!');
       } else {
         console.log('[AuthContext] ℹ️ Nenhuma role encontrada no banco');
         applyRole(null);
       }
 
       // CRÍTICO: Sempre marcar como completo
+      console.log('[AuthContext] 🏁 Marcando loading como false e rolesChecked como true');
       setLoading(false);
       setRolesChecked(true);
+      console.log('[AuthContext] ✅ Verificação de roles concluída');
 
       return data as any || null;
 
@@ -243,8 +248,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
             console.log('[AuthContext] ✅ Usuário logado/token atualizado:', session.user.email);
+            console.log('[AuthContext] 📝 Setando user no state...');
             setUser(session.user);
+            console.log('[AuthContext] 🔍 Iniciando checkUserRoles...');
             await checkUserRoles(session.user);
+            console.log('[AuthContext] ✅ checkUserRoles concluído');
           }
         } else if (event === 'USER_UPDATED') {
           console.log('[AuthContext] 🔄 Usuário atualizado');
