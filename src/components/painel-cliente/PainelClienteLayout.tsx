@@ -242,8 +242,10 @@ const PainelClienteLayout: React.FC = () => {
       </nav>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] lg:pb-8 lg:pl-64">
-        <Outlet />
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] lg:pb-12 lg:pl-64 px-4 md:px-6 lg:px-8">
+        <div className="w-full max-w-[1800px] mx-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

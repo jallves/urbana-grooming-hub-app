@@ -164,7 +164,7 @@ export default function PainelClienteDashboard() {
   return (
     <ClientPageContainer>
       {/* Estatísticas em Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6 mb-6 lg:mb-8">
         {[
           {
             label: "Total de Agendamentos",
@@ -243,11 +243,11 @@ export default function PainelClienteDashboard() {
 
       {/* Próximos Agendamentos */}
       {stats.agendamentosFuturos && stats.agendamentosFuturos.length > 0 && (
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-urbana-gold mb-3 sm:mb-4 drop-shadow-lg">
+        <div className="mb-6 lg:mb-8">
+          <h2 className="text-xl lg:text-2xl font-semibold text-urbana-gold mb-4 lg:mb-6 drop-shadow-lg">
             Próximos Agendamentos
           </h2>
-          <div className="space-y-3 sm:space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
             {stats.agendamentosFuturos.map((ag, index) => (
               <PainelClienteCard key={index} variant="info">
                 <PainelClienteCardHeader className="pb-2">
@@ -294,7 +294,7 @@ export default function PainelClienteDashboard() {
       )}
 
       {/* Ações Rápidas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {[
           {
             label: "Novo Agendamento",
@@ -327,12 +327,12 @@ export default function PainelClienteDashboard() {
             variant={item.variant}
             icon={item.IconComponent}
             className={cn(
-              "p-6 flex flex-col items-center justify-center space-y-3 min-h-[120px]",
+              "p-6 lg:p-8 flex flex-col items-center justify-center space-y-3 lg:space-y-4 min-h-[120px] lg:min-h-[140px]",
               isLoggingOut && item.label.includes("Sai") && "opacity-50 cursor-not-allowed"
             )}
           >
-            <item.IconComponent className="h-8 w-8 text-urbana-light" />
-            <span className="text-sm font-medium text-center text-urbana-light">
+            <item.IconComponent className="h-8 w-8 lg:h-10 lg:w-10 text-urbana-light" />
+            <span className="text-sm lg:text-base font-medium text-center text-urbana-light">
               {item.label}
             </span>
           </PainelClienteCard>

@@ -97,6 +97,39 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         setSession(session);
         setUser(session?.user ?? null);
 
+        // ===================================================================
+        // AUTO-LOGIN APÓS CONFIRMAÇÃO DE E-MAIL
+        // ===================================================================
+        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+          console.log('✅ [Auto-login] E-mail confirmado! Realizando login automático...');
+          // Buscar perfil com timeout
+          const timeoutId = setTimeout(() => {
+            console.warn('[PainelClienteAuth] ⏱️ Timeout ao buscar perfil no auto-login');
+            if (mounted) {
+              setLoading(false);
+            }
+          }, 8000);
+
+          try {
+            const perfil = await buscarPerfilCliente(session.user.id);
+            clearTimeout(timeoutId);
+            
+            if (mounted) {
+              setCliente(perfil);
+              setLoading(false);
+              console.log('✅ [Auto-login] Perfil carregado:', perfil?.nome);
+            }
+          } catch (error) {
+            clearTimeout(timeoutId);
+            console.error('[PainelClienteAuth] Erro no auto-login:', error);
+            if (mounted) {
+              setCliente(null);
+              setLoading(false);
+            }
+          }
+          return;
+        }
+
         if (session?.user) {
           // Buscar perfil do cliente com timeout
           const timeoutId = setTimeout(() => {
@@ -142,6 +175,8 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       try {
         console.log('[PainelClienteAuth] Verificando sessão...');
+        
+        // getSession() automaticamente detecta tokens na URL após confirmação de e-mail
         const { data: { session }, error } = await supabase.auth.getSession();
         
         clearTimeout(initTimeoutId);
@@ -160,6 +195,11 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         setUser(session?.user ?? null);
 
         if (session?.user) {
+          // Verificar se é um redirecionamento após confirmação de e-mail
+          if (session.user.email_confirmed_at) {
+            console.log('✅ [Init] E-mail confirmado detectado na sessão inicial');
+          }
+          
           console.log('[PainelClienteAuth] Sessão encontrada');
           const perfil = await buscarPerfilCliente(session.user.id);
           if (mounted) {
