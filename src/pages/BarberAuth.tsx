@@ -11,79 +11,78 @@ import { supabase } from '@/integrations/supabase/client';
 
 const BarberAuth: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const { user, isBarber, isAdmin, loading: authLoading } = useAuth();
+  const { user, isBarber, isAdmin, isMaster, isManager, loading: authLoading, rolesChecked, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect authenticated users with proper access
+  // FORÇAR LOGOUT se usuário tentar acessar a página de login
+  // Isso previne loops infinitos quando há sessões antigas
   useEffect(() => {
-    if (!authLoading && user && (isAdmin || isBarber)) {
-      console.log('✅ User has access - redirecting to dashboard');
-      navigate('/barbeiro', { replace: true });
-    }
-  }, [user, authLoading, isBarber, isAdmin, navigate]);
+    const forceLogoutOnLoginPage = async () => {
+      if (!authLoading && user) {
+        console.log('[BarberAuth] 🚪 Usuário tentando acessar login - forçando logout da sessão anterior');
+        await signOut();
+      }
+    };
+    
+    forceLogoutOnLoginPage();
+  }, []); // Executa apenas uma vez ao montar
 
   const handleLoginSuccess = async (userId: string) => {
     console.log('Login successful for user:', userId);
+    // Após login bem-sucedido, redirecionar para dashboard
+    navigate('/barbeiro/dashboard', { replace: true });
   };
 
   const handleGoHome = () => {
     navigate('/');
   };
 
-  // Show loading while checking auth
-  if (authLoading) {
-    return <AuthLoadingScreen message="Verificando acesso..." />;
+  // Show loading while checking auth (com timeout para evitar loop infinito)
+  if (authLoading && !rolesChecked) {
+    return <AuthLoadingScreen message="Preparando login..." />;
   }
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       console.log('[BarberAuth] 🚪 Logout realizado com sucesso');
-      navigate('/', { replace: true });
     } catch (error) {
       console.error('[BarberAuth] ❌ Erro ao fazer logout:', error);
     }
   };
 
-  // Show access denied message if user is logged in but doesn't have access
-  if (!authLoading && user && !isAdmin && !isBarber) {
+  // Se ainda há usuário após o force logout, mostrar botão de logout manual
+  if (user) {
     return (
-      <AuthContainer title="Costa Urbana" subtitle="Acesso Negado">
+      <AuthContainer title="Costa Urbana" subtitle="Sessão Ativa">
         <div className="w-full space-y-4">
-          {/* User info */}
           <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
-            <p className="text-sm text-muted-foreground">Logado como:</p>
+            <p className="text-sm text-muted-foreground">Sessão detectada:</p>
             <p className="text-foreground font-medium">{user.email}</p>
           </div>
 
-          {/* Error message */}
-          <div className="p-6 bg-destructive/10 border border-destructive/20 rounded-xl text-center space-y-2">
-            <Scissors className="h-12 w-12 mx-auto text-destructive/70" />
-            <p className="text-destructive font-semibold text-lg">Acesso Negado</p>
-            <p className="text-destructive/80 text-sm">
-              Você não tem permissão para acessar o painel do barbeiro.
+          <div className="p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center space-y-2">
+            <p className="text-yellow-600 dark:text-yellow-400 font-semibold">
+              Você precisa fazer logout para acessar o login
             </p>
           </div>
 
-          {/* Action buttons */}
-          <div className="space-y-3">
-            <Button
-              onClick={handleLogout}
-              variant="default"
-              className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl transition-all"
-            >
-              Fazer Logout
-            </Button>
+          <Button
+            onClick={handleLogout}
+            variant="default"
+            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl transition-all"
+          >
+            Fazer Logout
+          </Button>
 
-            <Button
-              onClick={handleGoHome}
-              variant="outline"
-              className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-urbana-gold/20 hover:text-urbana-gold hover:border-urbana-gold/50 h-12 rounded-xl transition-all"
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Voltar ao site
-            </Button>
-          </div>
+          <Button
+            onClick={handleGoHome}
+            variant="outline"
+            className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-urbana-gold/20 hover:text-urbana-gold hover:border-urbana-gold/50 h-12 rounded-xl transition-all"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Voltar ao site
+          </Button>
         </div>
       </AuthContainer>
     );

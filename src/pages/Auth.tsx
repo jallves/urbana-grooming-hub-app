@@ -14,58 +14,32 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, isAdmin, isManager, isMaster, loading: authLoading, rolesChecked } = useAuth();
+  const { user, isAdmin, isManager, isMaster, loading: authLoading, rolesChecked, signOut } = useAuth();
 
   // Verifica se o usuário tem acesso administrativo (admin, manager ou master)
   const hasAdminAccess = isAdmin || isManager || isMaster;
 
-  // Redireciona usuários com acesso administrativo para o painel
+  // FORÇAR LOGOUT se usuário tentar acessar a página de login
   useEffect(() => {
-    console.log('[Auth.tsx] Estado atual:', { 
-      authLoading, 
-      user: user?.email, 
-      isAdmin,
-      isManager,
-      isMaster,
-      hasAdminAccess,
-      hasUser: !!user,
-      rolesChecked,
-      redirectAttempted 
-    });
+    const forceLogoutOnLoginPage = async () => {
+      if (!authLoading && user) {
+        console.log('[Auth] 🚪 Usuário tentando acessar login - forçando logout da sessão anterior');
+        await signOut();
+      }
+    };
     
-    // Prevenir múltiplas tentativas de redirecionamento
-    if (redirectAttempted) {
-      console.log('[Auth.tsx] ⚠️ Redirecionamento já tentado, ignorando...');
-      return;
-    }
-    
-    // CRÍTICO: Só redirecionar quando:
-    // 1. authLoading é false (verificação completa)
-    // 2. rolesChecked é true (roles foram verificadas)
-    // 3. user existe
-    // 4. Tem acesso administrativo (admin, manager ou master)
-    // 5. Ainda não tentou redirecionar
-    if (!authLoading && rolesChecked && user && user.email && hasAdminAccess) {
-      console.log('[Auth.tsx] ✅ Acesso administrativo detectado, redirecionando para /admin');
-      setRedirectAttempted(true);
-      navigate('/admin', { replace: true });
-    }
-  }, [user, hasAdminAccess, authLoading, rolesChecked, redirectAttempted, isAdmin, isManager, isMaster]);
-
-  // Reset redirectAttempted quando o usuário muda
-  useEffect(() => {
-    setRedirectAttempted(false);
-  }, [user?.id]);
+    forceLogoutOnLoginPage();
+  }, []); // Executa apenas uma vez ao montar
 
   // Credenciais de admin removidas por segurança
   // Use o Supabase Dashboard para criar usuários admin manualmente
 
-  if (authLoading) {
+  if (authLoading && !rolesChecked) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-600">Verificando autenticação...</p>
+          <p className="text-gray-600">Preparando login...</p>
         </div>
       </div>
     );
@@ -75,22 +49,43 @@ const Auth: React.FC = () => {
     navigate('/');
   };
 
-  // Show access denied if user is logged in but has no admin access
-  if (!authLoading && user && rolesChecked && !hasAdminAccess) {
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      console.log('[Auth] 🚪 Logout realizado');
+    } catch (error) {
+      console.error('[Auth] ❌ Erro ao fazer logout:', error);
+    }
+  };
+
+  // Se ainda há usuário após o force logout, mostrar botão de logout manual
+  if (user) {
     return (
-      <AuthContainer 
-        title="Costa Urbana"
-        subtitle="Acesso Negado"
-      >
-        <div className="w-full space-y-6">
-          <div className="p-6 bg-red-50 border border-red-200 rounded-xl text-center">
-            <p className="text-red-600 font-medium">Você não tem acesso ao painel administrador.</p>
+      <AuthContainer title="Costa Urbana" subtitle="Sessão Ativa">
+        <div className="w-full space-y-4">
+          <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
+            <p className="text-sm text-muted-foreground">Sessão detectada:</p>
+            <p className="text-foreground font-medium">{user.email}</p>
+          </div>
+
+          <div className="p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center space-y-2">
+            <p className="text-yellow-600 dark:text-yellow-400 font-semibold">
+              Você precisa fazer logout para acessar o login
+            </p>
           </div>
 
           <Button
-            variant="outline"
-            className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-urbana-gold/20 hover:text-urbana-gold hover:border-urbana-gold/50 h-12 rounded-xl transition-all"
+            onClick={handleLogout}
+            variant="default"
+            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl"
+          >
+            Fazer Logout
+          </Button>
+
+          <Button
             onClick={handleGoHome}
+            variant="outline"
+            className="w-full h-12 rounded-xl"
           >
             <Home className="h-4 w-4 mr-2" />
             Voltar ao site
