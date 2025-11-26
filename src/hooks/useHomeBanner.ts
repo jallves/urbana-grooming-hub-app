@@ -56,13 +56,15 @@ export const useHomeBanner = () => {
       }
 
       if (fetchError) {
-        console.error('[Banner Hook] Erro:', fetchError.message);
+        console.error('[Banner Hook] ❌ Erro:', fetchError.message);
         setData(defaultBanners);
-        setStatus('success'); // Usar fallback sem mostrar erro
+        setStatus('success');
       } else if (banners && banners.length > 0) {
+        console.log('[Banner Hook] ✅ Carregados:', banners.length, 'banners');
         setData(banners);
         setStatus('success');
       } else {
+        console.log('[Banner Hook] ⚠️ Sem banners - usando fallback');
         setData(defaultBanners);
         setStatus('success');
       }
@@ -82,6 +84,7 @@ export const useHomeBanner = () => {
   }, []);
 
   useEffect(() => {
+    console.log('[useHomeBanner] 🚀 Iniciando fetch de banners...');
     fetchBanners();
   }, [fetchBanners]);
 
