@@ -60,16 +60,50 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         .from('client_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('[Auth] ❌ Erro ao buscar perfil:', error);
         return null;
       }
 
+      // FALLBACK: Se perfil não existe, criar um temporário
       if (!profile) {
-        console.error('[Auth] ❌ Perfil não encontrado');
-        return null;
+        console.warn('[Auth] ⚠️ Perfil não encontrado - criando automaticamente...');
+        
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        if (!authUser) {
+          console.error('[Auth] ❌ Usuário auth não encontrado');
+          return null;
+        }
+
+        // Criar perfil temporário
+        const { data: newProfile, error: insertError } = await supabase
+          .from('client_profiles')
+          .insert({
+            id: userId,
+            nome: authUser.email || 'Usuário',
+            whatsapp: `temp-${userId}`
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('[Auth] ❌ Erro ao criar perfil fallback:', insertError);
+          return null;
+        }
+
+        console.log('[Auth] ✅ Perfil fallback criado');
+
+        return {
+          id: newProfile.id,
+          nome: newProfile.nome,
+          email: authUser.email || '',
+          whatsapp: newProfile.whatsapp,
+          data_nascimento: newProfile.data_nascimento,
+          created_at: newProfile.created_at
+        };
       }
 
       // Buscar email do auth.users
@@ -233,14 +267,8 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Data de nascimento é obrigatória' };
       }
 
-      if (!dados.senha || dados.senha.length < 8) {
-        return { error: 'Senha deve ter pelo menos 8 caracteres' };
-      }
-
-      // Validar formato da senha
-      const senhaRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
-      if (!senhaRegex.test(dados.senha)) {
-        return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
+      if (!dados.senha || dados.senha.length < 6) {
+        return { error: 'Senha deve ter pelo menos 6 caracteres' };
       }
 
       console.log('[Auth] 🚀 Enviando dados para edge function...');
