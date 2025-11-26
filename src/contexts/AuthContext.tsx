@@ -97,279 +97,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [rolesChecked, setRolesChecked] = useState(false);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        console.log('[AuthContext] 🚀 Inicializando autenticação...');
-        
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('[AuthContext] ❌ Erro ao obter sessão:', sessionError);
-          throw sessionError;
-        }
-        
-        if (!mounted) return;
-
-        if (session?.user) {
-          console.log('[AuthContext] 👤 Usuário encontrado:', session.user.email);
-          setUser(session.user);
-          const role = await checkUserRoles(session.user);
-          
-          // Criar sessão (não bloqueante - não interrompe o login se falhar)
-          sessionManager.createSession({
-            userId: session.user.id,
-            userType: (role === 'barber' ? 'barber' : 'admin') as any,
-            userEmail: session.user.email,
-            userName: session.user.email,
-            expiresInHours: 24,
-          }).catch(err => console.warn('[AuthContext] ⚠️ Erro ao criar sessão (não crítico):', err));
-        } else {
-          console.log('[AuthContext] 👤 Nenhuma sessão ativa');
-          setUser(null);
-          setIsAdmin(false);
-          setIsBarber(false);
-          setIsMaster(false);
-          setIsManager(false);
-          setUserRole(null);
-          setRolesChecked(true);
-        }
-        
-        setLoading(false);
-        console.log('[AuthContext] ✅ Inicialização completa');
-      } catch (error) {
-        console.error('[AuthContext] ❌ Erro na inicialização:', error);
-        if (mounted) {
-          setLoading(false);
-          setRolesChecked(true);
-        }
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      
-      console.log('[AuthContext] 🔄 Auth state changed:', event);
-      
-      if (session?.user) {
-        setUser(session.user);
-        // Não aguardar verificação de roles para não bloquear navegação
-        checkUserRoles(session.user);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-        setIsBarber(false);
-        setIsMaster(false);
-        setIsManager(false);
-        setUserRole(null);
-        setRolesChecked(true);
-        clearRoleCache();
-      }
-      
-      setLoading(false);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const checkUserRoles = async (user: User): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
-    if (!user) {
-      console.log('[AuthContext] ❌ Sem usuário, resetando roles');
-      setIsAdmin(false);
-      setIsBarber(false);
-      setIsMaster(false);
-      setIsManager(false);
-      setUserRole(null);
-      setRolesChecked(true);
-      setRequiresPasswordChange(false);
-      return null;
-    }
-    
-    console.log('[AuthContext] 🔍 Verificando role para:', user.email, 'User ID:', user.id);
-    
-    // PRIMEIRO: Verificar localStorage para ver o cache
-    const cachedData = localStorage.getItem(ROLE_CACHE_KEY);
-    console.log('[AuthContext] 📦 Cache atual no localStorage:', cachedData);
-    
-    // SEGUNDO: Tentar carregar do cache para acesso imediato
-    const cachedRole = getRoleFromCache(user.id);
-    if (cachedRole) {
-      console.log('[AuthContext] ⚡ Usando role do cache:', cachedRole);
-      applyRole(cachedRole);
-      // Continuar verificação em background para atualizar cache
-    } else {
-      console.log('[AuthContext] 📦 Nenhum cache encontrado ou cache expirado, buscando do banco...');
-    }
-    
-    try {
-      // OTIMIZAÇÃO: Verificar rapidamente se é um cliente comum
-      // Clientes não têm entrada em user_roles, então verificamos client_profiles primeiro
-      console.log('[AuthContext] 🔍 Verificando se é cliente...');
-      const { data: clientData } = await supabase
-        .from('client_profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (clientData) {
-        console.log('[AuthContext] ✅ Usuário identificado como cliente - sem roles admin/staff');
-        applyRole(null);
-        return null;
-      }
-      
-      // Se não é cliente, buscar role da tabela user_roles
-      let role: 'master' | 'admin' | 'manager' | 'barber' | null = null;
-      let attempts = 0;
-      const maxAttempts = 2; // Reduzido para 2 tentativas
-      
-      while (attempts < maxAttempts && !role) {
-        attempts++;
-        console.log(`[AuthContext] 📡 Tentativa ${attempts}/${maxAttempts} de buscar role...`);
-        
-        try {
-          console.log('[AuthContext] 🔍 Executando query user_roles para user_id:', user.id);
-          console.log('[AuthContext] 🔍 Timestamp:', new Date().toISOString());
-          
-          const queryStart = performance.now();
-          
-          // Timeout de 2 segundos
-          const queryPromise = supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id)
-            .order('role', { ascending: true })
-            .limit(1)
-            .maybeSingle();
-          
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Query timeout')), 2000)
-          );
-          
-          const { data: userRoleData, error: userRoleError } = await Promise.race([
-            queryPromise,
-            timeoutPromise
-          ]) as any;
-          
-          const queryEnd = performance.now();
-
-          console.log('[AuthContext] 📊 Query completou em:', (queryEnd - queryStart).toFixed(2), 'ms');
-          console.log('[AuthContext] 📊 Resposta COMPLETA:', { 
-            data: userRoleData, 
-            error: userRoleError,
-            hasData: !!userRoleData,
-            hasError: !!userRoleError,
-            dataType: typeof userRoleData,
-            errorType: typeof userRoleError
-          });
-          
-          if (userRoleData) {
-            console.log('[AuthContext] ✅ DADOS RECEBIDOS:', JSON.stringify(userRoleData));
-          }
-
-          if (userRoleError) {
-            console.error(`[AuthContext] ⚠️ ERRO DETECTADO na tentativa ${attempts}:`, userRoleError);
-            console.error(`[AuthContext] ⚠️ Erro code:`, userRoleError.code);
-            console.error(`[AuthContext] ⚠️ Erro message:`, userRoleError.message);
-            console.error(`[AuthContext] ⚠️ Erro details:`, userRoleError.details);
-            console.error(`[AuthContext] ⚠️ Erro hint:`, userRoleError.hint);
-            
-            if (attempts < maxAttempts) {
-              // Aguardar antes de tentar novamente (backoff exponencial)
-              const delay = Math.min(1000 * Math.pow(2, attempts - 1), 3000);
-              console.log(`[AuthContext] ⏳ Aguardando ${delay}ms antes de retry...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            } else {
-              throw userRoleError;
-            }
-          }
-
-          if (userRoleData?.role) {
-            role = userRoleData.role as 'master' | 'admin' | 'manager' | 'barber';
-            console.log('[AuthContext] ✅ ✅ ✅ ROLE OBTIDO DO BANCO:', role, 'User ID:', user.id);
-            console.log('[AuthContext] ✅ Role type:', typeof role);
-            console.log('[AuthContext] ✅ Role value:', role);
-            break;
-          } else {
-            console.log('[AuthContext] ⚠️ NENHUMA ROLE encontrada no banco para user_id:', user.id);
-            console.log('[AuthContext] ⚠️ userRoleData:', userRoleData);
-            console.log('[AuthContext] ⚠️ userRoleData?.role:', userRoleData?.role);
-            break;
-          }
-        } catch (attemptError) {
-          console.error(`[AuthContext] ❌ Erro na tentativa ${attempts}:`, attemptError);
-          
-          // Se for timeout ou última tentativa, não retente
-          if ((attemptError as any)?.message === 'Query timeout' || attempts >= maxAttempts) {
-            console.log('[AuthContext] ⚠️ Timeout ou max attempts - assumindo usuário sem role de admin/staff');
-            break;
-          }
-          
-          // Aguardar antes de tentar novamente
-          const delay = Math.min(1000 * Math.pow(2, attempts - 1), 3000);
-          console.log(`[AuthContext] ⏳ Aguardando ${delay}ms antes de retry...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-      
-      // Aplicar role obtido
-      console.log('[AuthContext] 🎯 Aplicando role obtido do banco:', role);
-      applyRole(role);
-      
-      // Salvar em cache para próxima vez
-      if (role) {
-        saveRoleToCache(user.id, role);
-      }
-
-      // Verificar se precisa trocar senha
-      if (role && role !== 'master') {
-        try {
-          const { data: employeeData } = await supabase
-            .from('employees')
-            .select('requires_password_change')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          setRequiresPasswordChange(employeeData?.requires_password_change === true);
-        } catch (error) {
-          console.error('[AuthContext] ⚠️ Erro ao verificar troca de senha:', error);
-          setRequiresPasswordChange(false);
-        }
-      } else {
-        setRequiresPasswordChange(false);
-      }
-      
-      console.log('[AuthContext] ✅ Verificação completa - Role:', role);
-      return role;
-    } catch (error) {
-      console.error('[AuthContext] ❌ Erro ao verificar roles:', error);
-      
-      // CRÍTICO: Sempre setar rolesChecked mesmo em caso de erro
-      // para não bloquear usuários que não são admin/staff
-      if (cachedRole) {
-        console.warn('[AuthContext] ⚠️ Mantendo role do cache devido a erro:', cachedRole);
-        applyRole(cachedRole);
-        return cachedRole;
-      } else {
-        console.log('[AuthContext] ℹ️ Sem cache e sem role encontrado - assumindo usuário comum (cliente)');
-        applyRole(null);
-        return null;
-      }
-    } finally {
-      // Garantir que rolesChecked sempre seja true
-      setRolesChecked(true);
-      setRequiresPasswordChange(false);
-    }
-  };
-
   const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | null) => {
     console.log('[AuthContext] 🎭 === APLICANDO ROLE ===');
     console.log('[AuthContext] 🎭 Role recebido:', role);
@@ -379,16 +106,171 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAdmin(role === 'admin' || role === 'master');
     setIsManager(role === 'manager');
     setIsBarber(role === 'barber');
-    setRolesChecked(true); // CRÍTICO: Marcar como verificado imediatamente após aplicar
+    setRolesChecked(true);
     
     console.log('[AuthContext] 🎭 Roles aplicados:');
     console.log('[AuthContext] 🎭   - Master:', role === 'master');
     console.log('[AuthContext] 🎭   - Admin:', role === 'admin' || role === 'master');
     console.log('[AuthContext] 🎭   - Manager:', role === 'manager');
     console.log('[AuthContext] 🎭   - Barber:', role === 'barber');
-    console.log('[AuthContext] 🎭   - RolesChecked: true');
     console.log('[AuthContext] 🎭 === FIM APLICAÇÃO ===');
   };
+
+  const checkUserRoles = async (user: User): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
+    if (!user) {
+      console.log('[AuthContext] ❌ Sem usuário, resetando roles');
+      applyRole(null);
+      return null;
+    }
+    
+    console.log('[AuthContext] 🔍 Verificando role para:', user.email, 'User ID:', user.id);
+    
+    // Check cache first
+    const cachedRole = getRoleFromCache(user.id);
+    if (cachedRole) {
+      console.log('[AuthContext] 📦 ✅ Usando cache:', cachedRole);
+      applyRole(cachedRole);
+      setLoading(false);
+      setRolesChecked(true);
+      return cachedRole;
+    }
+
+    console.log('[AuthContext] 📦 Cache não encontrado ou expirado, buscando do banco...');
+    
+    try {
+      console.log('[AuthContext] 📡 Consultando user_roles...');
+      
+      // Timeout de 5 segundos para a consulta
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout na consulta de roles')), 5000)
+      );
+
+      const queryPromise = supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+      if (error) {
+        console.error('[AuthContext] ❌ Erro ao buscar role:', error);
+        // Em caso de erro, assume role null mas completa o loading
+        applyRole(null);
+        setLoading(false);
+        setRolesChecked(true);
+        return null;
+      }
+
+      if (data?.role) {
+        console.log('[AuthContext] ✅ Role encontrada no banco:', data.role);
+        saveRoleToCache(user.id, data.role as any);
+        applyRole(data.role as any);
+      } else {
+        console.log('[AuthContext] ℹ️ Nenhuma role encontrada no banco');
+        applyRole(null);
+      }
+
+      // CRÍTICO: Sempre marcar como completo
+      setLoading(false);
+      setRolesChecked(true);
+
+      return data?.role as any || null;
+
+    } catch (error) {
+      console.error('[AuthContext] ❌ Erro crítico ao buscar roles:', error);
+      // Mesmo em erro, completar o loading para não travar a UI
+      applyRole(null);
+      setLoading(false);
+      setRolesChecked(true);
+      return null;
+    }
+  };
+
+  // Initialize auth on mount
+  useEffect(() => {
+    console.log('[AuthContext] 🚀 Inicializando autenticação...');
+    
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        console.log('[AuthContext] 📋 Passo 1: Obtendo sessão...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('[AuthContext] ❌ Erro ao obter sessão:', sessionError);
+          if (mounted) {
+            setLoading(false);
+            setRolesChecked(true);
+          }
+          return;
+        }
+
+        if (!session?.user) {
+          console.log('[AuthContext] ℹ️ Nenhuma sessão encontrada');
+          if (mounted) {
+            setUser(null);
+            setLoading(false);
+            setRolesChecked(true);
+          }
+          return;
+        }
+
+        console.log('[AuthContext] ✅ Sessão encontrada para:', session.user.email);
+        if (mounted) {
+          setUser(session.user);
+          console.log('[AuthContext] 📋 Passo 2: Verificando roles...');
+          await checkUserRoles(session.user);
+        }
+      } catch (error) {
+        console.error('[AuthContext] ❌ Erro crítico na inicialização:', error);
+        if (mounted) {
+          setLoading(false);
+          setRolesChecked(true);
+        }
+      }
+    };
+
+    // Set up auth state listener
+    console.log('[AuthContext] 🎧 Configurando listener de auth...');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log(`[AuthContext] 🔄 Auth event: ${event}`);
+        
+        if (event === 'SIGNED_OUT') {
+          console.log('[AuthContext] 🚪 Usuário deslogado - limpando estados');
+          setUser(null);
+          applyRole(null);
+          setLoading(false);
+          setRolesChecked(true);
+          clearRoleCache();
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session?.user) {
+            console.log('[AuthContext] ✅ Usuário logado/token atualizado:', session.user.email);
+            setUser(session.user);
+            await checkUserRoles(session.user);
+          }
+        } else if (event === 'USER_UPDATED') {
+          console.log('[AuthContext] 🔄 Usuário atualizado');
+          if (session?.user) {
+            setUser(session.user);
+          }
+        }
+      }
+    );
+
+    // Initialize
+    initializeAuth();
+
+    return () => {
+      console.log('[AuthContext] 🧹 Limpando listener de auth');
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signOut = async () => {
     try {
