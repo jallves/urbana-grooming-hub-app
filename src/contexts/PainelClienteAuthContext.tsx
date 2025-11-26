@@ -342,6 +342,8 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       console.log('[Auth] ✅ Login realizado com sucesso');
+      console.log('[Auth] 👤 User ID:', data.user.id);
+      console.log('[Auth] 📧 Email:', data.user.email);
 
       // Criar sessão (não bloqueante - não interrompe o login se falhar)
       sessionManager.createSession({
@@ -353,8 +355,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }).catch(err => console.warn('[PainelCliente] ⚠️ Erro ao criar sessão (não crítico):', err));
 
       toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta!",
+        title: "✅ Login realizado!",
+        description: `Bem-vindo, ${data.user.email}`,
+        duration: 3000,
       });
 
       // O perfil será carregado automaticamente pelo onAuthStateChange

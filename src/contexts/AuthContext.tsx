@@ -51,6 +51,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const checkUserRoles = async (userId: string): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
+    console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', userId);
+    
     try {
       // 1. Verificar se é cliente (clientes não têm roles)
       const { data: clientData } = await supabase
@@ -60,7 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .maybeSingle();
 
       if (clientData) {
-        console.log('[AuthContext] Usuário é cliente - sem roles');
+        console.log('[AuthContext] ✅ Usuário identificado como CLIENTE - sem roles administrativas');
         return null;
       }
 
@@ -69,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userEmail = userData.user?.email;
 
       if (!userEmail) {
-        console.warn('[AuthContext] Email não encontrado');
+        console.warn('[AuthContext] ⚠️ Email não encontrado');
         return null;
       }
 
@@ -81,11 +83,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .maybeSingle();
 
       if (!staffData) {
-        console.log('[AuthContext] Usuário não é staff ativo');
+        console.log('[AuthContext] ℹ️ Usuário não é staff ativo (provavelmente é cliente)');
         return null;
       }
 
       // 3. Buscar role apenas se for staff
+      console.log('[AuthContext] 🔍 Usuário é staff - buscando role...');
+      
       const queryPromise = supabase
         .from('user_roles')
         .select('role')
@@ -103,19 +107,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data, error } = result;
 
       if (error) {
-        console.error('[AuthContext] Erro ao buscar role:', error.message);
+        console.error('[AuthContext] ❌ Erro ao buscar role:', error.message);
         return null;
       }
 
       if (!data) {
-        console.warn('[AuthContext] Staff sem role na user_roles');
+        console.warn('[AuthContext] ⚠️ Staff sem role na user_roles');
         return null;
       }
 
-      console.log('[AuthContext] Role encontrada:', data.role);
+      console.log('[AuthContext] ✅ Role encontrada:', data.role);
       return data.role as 'master' | 'admin' | 'manager' | 'barber';
     } catch (error: any) {
-      console.error('[AuthContext] Erro ao verificar roles:', error.message);
+      console.error('[AuthContext] ❌ Erro ao verificar roles:', error.message);
       return null;
     }
   };

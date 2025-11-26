@@ -47,8 +47,8 @@ export const AuthDebugPanel: React.FC = () => {
   }, [auth.user?.id]);
 
   return (
-    <Card className="fixed bottom-4 right-4 w-96 shadow-lg z-50">
-      <CardHeader>
+    <Card className="fixed bottom-4 right-4 w-96 shadow-2xl z-[9999] bg-background border-2 border-primary">
+      <CardHeader className="bg-primary/10">
         <CardTitle className="text-sm flex items-center justify-between">
           🔍 Auth Debug Panel
           <Button 
@@ -62,14 +62,24 @@ export const AuthDebugPanel: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-xs">
+        {/* User ID */}
+        {auth.user && (
+          <div className="space-y-1 pb-2 border-b">
+            <div className="font-semibold text-foreground">User ID:</div>
+            <div className="text-[10px] font-mono bg-muted p-2 rounded break-all">
+              {auth.user.id}
+            </div>
+          </div>
+        )}
+
         {/* Estado do Auth Context */}
         <div className="space-y-1">
           <div className="font-semibold text-foreground">Auth Context:</div>
           <div className="grid grid-cols-2 gap-2">
             <div>Loading: <Badge variant={auth.loading ? "destructive" : "default"}>{auth.loading ? "Sim" : "Não"}</Badge></div>
             <div>Roles Checked: <Badge variant={auth.rolesChecked ? "default" : "destructive"}>{auth.rolesChecked ? "Sim" : "Não"}</Badge></div>
-            <div>User: <Badge variant={auth.user ? "default" : "secondary"}>{auth.user?.email || "Não logado"}</Badge></div>
-            <div>Role: <Badge variant="outline">{auth.userRole || "Nenhuma"}</Badge></div>
+            <div className="col-span-2">User: <Badge variant={auth.user ? "default" : "secondary"}>{auth.user?.email || "Não logado"}</Badge></div>
+            <div className="col-span-2">Role: <Badge variant={auth.userRole ? "default" : "outline"}>{auth.userRole || "Nenhuma (Cliente)"}</Badge></div>
           </div>
         </div>
 
