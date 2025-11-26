@@ -36,17 +36,14 @@ const defaultImages: GalleryPhoto[] = [
 ];
 
 export const useHomeGaleria = () => {
-  const [status, setStatus] = useState<Status>('loading');
-  const [data, setData] = useState<GalleryPhoto[]>([]);
+  const [status, setStatus] = useState<Status>('success');
+  const [data, setData] = useState<GalleryPhoto[]>(defaultImages);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
 
     const fetchGaleria = async () => {
-      setStatus('loading');
-      setError(null);
-
       try {
         const { data: images, error: fetchError } = await supabase
           .from('gallery_images')
@@ -54,32 +51,22 @@ export const useHomeGaleria = () => {
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
-        if (cancelled) return;
+        if (!mounted) return;
 
         if (fetchError) {
-          console.error('[Galeria Hook] Erro:', fetchError.message);
-          setData(defaultImages);
-          setStatus('success');
+          console.error('[Galeria] Erro ao carregar:', fetchError.message);
         } else if (images && images.length > 0) {
-          console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
+          console.log('[Galeria] ✅ Carregadas:', images.length);
           setData(images);
-          setStatus('success');
-        } else {
-          console.log('[Galeria Hook] ⚠️ Vazio - usando fallback');
-          setData(defaultImages);
-          setStatus('success');
         }
       } catch (err: any) {
-        if (cancelled) return;
-        console.error('[Galeria Hook] Exceção:', err?.message);
-        setData(defaultImages);
-        setStatus('success');
+        if (!mounted) return;
+        console.error('[Galeria] Exceção:', err?.message);
       }
     };
 
     fetchGaleria();
 
-    // Real-time subscription
     const channel = supabase
       .channel('gallery_images_changes')
       .on(
@@ -90,22 +77,18 @@ export const useHomeGaleria = () => {
           table: 'gallery_images'
         },
         () => {
-          console.log('[Galeria Hook] Atualização em tempo real');
-          if (!cancelled) fetchGaleria();
+          if (mounted) fetchGaleria();
         }
       )
       .subscribe();
 
     return () => {
-      cancelled = true;
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
 
   const refetch = async () => {
-    setStatus('loading');
-    setError(null);
-    
     try {
       const { data: images, error: fetchError } = await supabase
         .from('gallery_images')
@@ -114,18 +97,12 @@ export const useHomeGaleria = () => {
         .order('display_order', { ascending: true });
 
       if (fetchError) {
-        setData(defaultImages);
-        setStatus('success');
+        console.error('[Galeria] Erro no refetch:', fetchError.message);
       } else if (images && images.length > 0) {
         setData(images);
-        setStatus('success');
-      } else {
-        setData(defaultImages);
-        setStatus('success');
       }
-    } catch {
-      setData(defaultImages);
-      setStatus('success');
+    } catch (err: any) {
+      console.error('[Galeria] Exceção no refetch:', err?.message);
     }
   };
 
