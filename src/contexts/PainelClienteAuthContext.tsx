@@ -96,10 +96,39 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     console.log('[Auth] 🚀 Inicializando autenticação...');
     
     let mounted = true;
+    let isInitialized = false;
 
-    // 1. Buscar sessão existente
+    // 1. Configurar listener PRIMEIRO
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        if (!mounted) return;
+
+        console.log('[Auth] 🔄 Evento:', event, '| Sessão:', currentSession ? '✅' : '❌');
+
+        // Atualizar sessão imediatamente
+        setSession(currentSession);
+
+        if (currentSession?.user) {
+          console.log('[Auth] ✅ Carregando perfil do usuário...');
+          const perfil = await buscarPerfilCliente(currentSession.user.id);
+          if (mounted) {
+            setCliente(perfil);
+            setAuthLoading(false);
+          }
+        } else {
+          console.log('[Auth] ❌ Sem usuário autenticado');
+          if (mounted) {
+            setCliente(null);
+            setAuthLoading(false);
+          }
+        }
+      }
+    );
+
+    // 2. DEPOIS verificar sessão existente
     const initSession = async () => {
       try {
+        console.log('[Auth] 📋 Verificando sessão existente...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -114,19 +143,24 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
         if (!mounted) return;
 
-        console.log('[Auth] Sessão encontrada:', session ? '✅ SIM' : '❌ NÃO');
-        setSession(session);
+        console.log('[Auth] 📋 Sessão:', session ? '✅ ENCONTRADA' : '❌ NÃO ENCONTRADA');
 
         if (session?.user) {
-          // Buscar perfil do cliente
+          console.log('[Auth] 🔍 Buscando perfil inicial...');
+          setSession(session);
           const perfil = await buscarPerfilCliente(session.user.id);
           if (mounted) {
             setCliente(perfil);
+            setAuthLoading(false);
+            isInitialized = true;
           }
-        }
-
-        if (mounted) {
-          setAuthLoading(false);
+        } else {
+          if (mounted) {
+            setSession(null);
+            setCliente(null);
+            setAuthLoading(false);
+            isInitialized = true;
+          }
         }
       } catch (error) {
         console.error('[Auth] ❌ Erro crítico na inicialização:', error);
@@ -138,43 +172,15 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
     };
 
-    // 2. Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        console.log('[Auth] 🔄 Evento de autenticação:', event);
-
-        setSession(session);
-
-        if (session?.user) {
-          console.log('[Auth] ✅ Usuário autenticado');
-          const perfil = await buscarPerfilCliente(session.user.id);
-          if (mounted) {
-            setCliente(perfil);
-          }
-        } else {
-          console.log('[Auth] ❌ Usuário não autenticado');
-          if (mounted) {
-            setCliente(null);
-          }
-        }
-
-        // Sempre desmarcar loading após processar evento
-        if (mounted && authLoading) {
-          setAuthLoading(false);
-        }
-      }
-    );
-
-    // Iniciar verificação de sessão
+    // Iniciar verificação
     initSession();
 
     return () => {
+      console.log('[Auth] 🧹 Limpando subscriptions...');
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Executar apenas uma vez no mount
+  }, [buscarPerfilCliente]); // Incluir dependência
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
