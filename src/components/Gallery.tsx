@@ -59,7 +59,7 @@ const Gallery: React.FC = () => {
             </div>
             <p className="text-urbana-gold/70 mb-6">{error || 'Não foi possível carregar este conteúdo agora.'}</p>
             <Button
-              onClick={refetch}
+              onClick={() => refetch()}
               className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
