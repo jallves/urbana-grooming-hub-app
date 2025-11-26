@@ -9,7 +9,8 @@ interface AuthContextType {
   isBarber: boolean;
   isMaster: boolean;
   isManager: boolean;
-  userRole: 'master' | 'admin' | 'manager' | 'barber' | null;
+  isClient: boolean;
+  userRole: 'master' | 'admin' | 'manager' | 'barber' | 'client' | null;
   rolesChecked: boolean;
   requiresPasswordChange: boolean;
   canAccessModule: (moduleName: string) => boolean;
@@ -37,88 +38,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isBarber, setIsBarber] = useState(false);
   const [isMaster, setIsMaster] = useState(false);
   const [isManager, setIsManager] = useState(false);
-  const [userRole, setUserRole] = useState<'master' | 'admin' | 'manager' | 'barber' | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [userRole, setUserRole] = useState<'master' | 'admin' | 'manager' | 'barber' | 'client' | null>(null);
   const [rolesChecked, setRolesChecked] = useState(false);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
 
-  const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | null) => {
+  const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | 'client' | null) => {
     setUserRole(role);
     setIsMaster(role === 'master');
     setIsAdmin(role === 'admin' || role === 'master');
     setIsManager(role === 'manager');
     setIsBarber(role === 'barber');
+    setIsClient(role === 'client');
     setRolesChecked(true);
   };
 
-  const checkUserRoles = async (userId: string): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
+  const checkUserRoles = async (userId: string): Promise<'master' | 'admin' | 'manager' | 'barber' | 'client' | null> => {
     console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', userId);
     
     try {
-      // 1. Verificar se é cliente (clientes não têm roles)
-      // Buscar em client_profiles que é a tabela correta para clientes
-      const { data: clientData } = await supabase
-        .from('client_profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (clientData) {
-        console.log('[AuthContext] ✅ Usuário identificado como CLIENTE - sem roles administrativas');
-        return null;
-      }
-
-      // 2. Verificar se é staff/employee
-      const { data: userData } = await supabase.auth.getUser();
-      const userEmail = userData.user?.email;
-
-      if (!userEmail) {
-        console.warn('[AuthContext] ⚠️ Email não encontrado');
-        return null;
-      }
-
-      const { data: staffData } = await supabase
-        .from('staff')
-        .select('id')
-        .eq('email', userEmail)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (!staffData) {
-        console.log('[AuthContext] ℹ️ Usuário não é staff ativo (provavelmente é cliente)');
-        return null;
-      }
-
-      // 3. Buscar role apenas se for staff
-      console.log('[AuthContext] 🔍 Usuário é staff - buscando role...');
-      
-      const queryPromise = supabase
+      // Buscar role diretamente na tabela user_roles (agora inclui 'client')
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) => 
-        setTimeout(() => resolve({ 
-          data: null, 
-          error: new Error('Timeout') 
-        }), 3000)
-      );
-
-      const result = await Promise.race([queryPromise, timeoutPromise]);
-      const { data, error } = result;
-
-      if (error) {
-        console.error('[AuthContext] ❌ Erro ao buscar role:', error.message);
+      if (roleError) {
+        console.error('[AuthContext] ❌ Erro ao buscar role:', roleError.message);
         return null;
       }
 
-      if (!data) {
-        console.warn('[AuthContext] ⚠️ Staff sem role na user_roles');
-        return null;
+      if (roleData) {
+        console.log('[AuthContext] ✅ Role encontrada:', roleData.role);
+        return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
       }
 
-      console.log('[AuthContext] ✅ Role encontrada:', data.role);
-      return data.role as 'master' | 'admin' | 'manager' | 'barber';
+      console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles');
+      return null;
     } catch (error: any) {
       console.error('[AuthContext] ❌ Erro ao verificar roles:', error.message);
       return null;
@@ -188,6 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsBarber(false);
     setIsMaster(false);
     setIsManager(false);
+    setIsClient(false);
     setUserRole(null);
     setUser(null);
     setRolesChecked(true);
@@ -210,6 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isBarber,
     isMaster,
     isManager,
+    isClient,
     userRole,
     rolesChecked,
     requiresPasswordChange,

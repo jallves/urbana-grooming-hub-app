@@ -4797,7 +4797,14 @@ export type Database = {
       validate_session: { Args: { p_session_token: string }; Returns: Json }
     }
     Enums: {
-      app_role: "admin" | "user" | "barber" | "customer" | "manager" | "master"
+      app_role:
+        | "admin"
+        | "user"
+        | "barber"
+        | "customer"
+        | "manager"
+        | "master"
+        | "client"
       payment_method:
         | "cash"
         | "credit_card"
@@ -4957,7 +4964,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "barber", "customer", "manager", "master"],
+      app_role: [
+        "admin",
+        "user",
+        "barber",
+        "customer",
+        "manager",
+        "master",
+        "client",
+      ],
       payment_method: [
         "cash",
         "credit_card",

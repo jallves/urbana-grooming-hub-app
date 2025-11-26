@@ -18,7 +18,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   allowBarber = true, 
   requiredModule 
 }) => {
-  const { user, loading, isAdmin, isBarber } = useAuth();
+  const { user, loading, rolesChecked, isAdmin, isBarber, isMaster, isManager } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -27,8 +27,8 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
     navigate('/barbeiro/login', { replace: true });
   };
 
-  // Show loading screen while checking authentication - sem mensagens para evitar flash
-  if (loading) {
+  // Show loading screen while checking authentication
+  if (loading || !rolesChecked) {
     return <AuthLoadingScreen message="Carregando..." />;
   }
 
@@ -37,13 +37,15 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
     return <Navigate to="/barbeiro/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Check access permissions
-  const hasAccess = isAdmin || (allowBarber && isBarber);
+  // Check access permissions (admin, master, manager ou barber se permitido)
+  const hasAccess = isMaster || isAdmin || isManager || (allowBarber && isBarber);
 
   if (!hasAccess) {
-    console.log('[BarberRoute] Acesso NEGADO');
+    console.log('[BarberRoute] ❌ Acesso NEGADO');
     console.log('[BarberRoute] Usuário:', user.email);
+    console.log('[BarberRoute] isMaster:', isMaster);
     console.log('[BarberRoute] isAdmin:', isAdmin);
+    console.log('[BarberRoute] isManager:', isManager);
     console.log('[BarberRoute] isBarber:', isBarber);
     console.log('[BarberRoute] allowBarber:', allowBarber);
     
