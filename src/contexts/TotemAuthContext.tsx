@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { sessionManager } from '@/hooks/useSessionManager';
 
 interface TotemAuthContextType {
   isAuthenticated: boolean;
@@ -92,6 +93,14 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
       localStorage.setItem('totem_auth_token', data.id);
       localStorage.setItem('totem_auth_expiry', expiryTime.toISOString());
       
+      // Criar sessão no sistema de controle
+      await sessionManager.createSession({
+        userId: data.id,
+        userType: 'totem',
+        userName: data.device_name,
+        expiresInHours: 8,
+      });
+      
       setIsAuthenticated(true);
       
       toast({
@@ -111,7 +120,9 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await sessionManager.invalidateSession('totem');
+    
     localStorage.removeItem('totem_auth_token');
     localStorage.removeItem('totem_auth_expiry');
     setIsAuthenticated(false);
