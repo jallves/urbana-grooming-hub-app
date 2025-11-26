@@ -36,7 +36,7 @@ const defaultImages: GalleryPhoto[] = [
 ];
 
 export const useHomeGaleria = () => {
-  const [status, setStatus] = useState<Status>('success');
+  const [status, setStatus] = useState<Status>('loading');
   const [data, setData] = useState<GalleryPhoto[]>(defaultImages);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,16 +60,20 @@ export const useHomeGaleria = () => {
 
         if (fetchError) {
           console.error('[Galeria Hook] ❌ Erro:', fetchError.message);
+          setStatus('success'); // Usa fallback
         } else if (images && images.length > 0) {
           console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
           console.log('[Galeria Hook] 📦 Dados:', images);
           setData(images);
+          setStatus('success');
         } else {
           console.log('[Galeria Hook] ⚠️ Nenhuma imagem ativa encontrada');
+          setStatus('success'); // Usa fallback
         }
       } catch (err: any) {
         if (!mounted) return;
         console.error('[Galeria Hook] ❌ Exceção:', err?.message);
+        setStatus('success'); // Usa fallback
       }
     };
 
