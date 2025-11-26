@@ -220,6 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log(`[AuthContext] 📡 Tentativa ${attempts}/${maxAttempts} de buscar role...`);
         
         try {
+          console.log('[AuthContext] 🔍 Executando query user_roles para user_id:', user.id);
           const { data: userRoleData, error: userRoleError } = await supabase
             .from('user_roles')
             .select('role')
@@ -227,6 +228,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             .order('role', { ascending: true })
             .limit(1)
             .maybeSingle();
+
+          console.log('[AuthContext] 📊 Resposta da query:', { 
+            data: userRoleData, 
+            error: userRoleError,
+            hasData: !!userRoleData,
+            hasError: !!userRoleError 
+          });
 
           if (userRoleError) {
             console.error(`[AuthContext] ⚠️ Erro na tentativa ${attempts}:`, userRoleError);
