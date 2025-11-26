@@ -39,6 +39,17 @@ export const PermissionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       };
     }
     
+    // Se não há role definido após verificação, é um usuário cliente (não admin/staff)
+    // Retornar false para tudo sem chamar canAccessModule
+    if (!userRole) {
+      console.log('[PermissionsContext] ℹ️ Usuário sem role admin/staff (cliente) - sem permissões de módulos');
+      return {
+        financeiro: false,
+        configuracoes: false,
+        erp: false,
+      };
+    }
+    
     console.log('[PermissionsContext] ✅ Calculando permissões para role:', userRole);
     return {
       financeiro: canAccessModule('financeiro'),
