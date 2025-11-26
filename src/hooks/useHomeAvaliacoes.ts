@@ -76,10 +76,11 @@ export const useHomeAvaliacoes = () => {
       }
 
       if (fetchError) {
-        console.error('[Avaliações Hook] Erro:', fetchError.message);
+        console.error('[Avaliações Hook] ❌ Erro:', fetchError.message);
         setData(initialStats);
         setStatus('success');
       } else if (ratings && ratings.length > 0) {
+        console.log('[Avaliações Hook] ✅ Carregadas:', ratings.length, 'avaliações');
         const totalReviews = ratings.length;
         const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
         
@@ -124,6 +125,7 @@ export const useHomeAvaliacoes = () => {
   }, []);
 
   useEffect(() => {
+    console.log('[useHomeAvaliacoes] 🚀 Iniciando fetch de avaliações...');
     fetchAvaliacoes();
 
     // Real-time subscription

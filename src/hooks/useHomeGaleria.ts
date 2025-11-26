@@ -72,13 +72,15 @@ export const useHomeGaleria = () => {
       }
 
       if (fetchError) {
-        console.error('[Galeria Hook] Erro:', fetchError.message);
+        console.error('[Galeria Hook] ❌ Erro:', fetchError.message);
         setData(defaultImages);
         setStatus('success');
       } else if (images && images.length > 0) {
+        console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
         setData(images);
         setStatus('success');
       } else {
+        console.log('[Galeria Hook] ⚠️ Sem imagens - usando fallback');
         setData(defaultImages);
         setStatus('success');
       }
@@ -98,6 +100,7 @@ export const useHomeGaleria = () => {
   }, []);
 
   useEffect(() => {
+    console.log('[useHomeGaleria] 🚀 Iniciando fetch de galeria...');
     fetchGaleria();
 
     // Real-time subscription
