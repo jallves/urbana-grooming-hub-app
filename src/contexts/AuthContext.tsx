@@ -138,20 +138,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[AuthContext] 📦 Cache não encontrado ou expirado, buscando do banco...');
     
     try {
-      console.log('[AuthContext] 📡 Consultando user_roles...');
+      console.log('[AuthContext] 📡 Consultando user_roles via função SECURITY DEFINER...');
       
-      // Timeout de 10 segundos para a consulta (aumentado para evitar timeouts em instâncias lentas)
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout na consulta de roles')), 10000)
-      );
-
-      const queryPromise = supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+      // Usar função SECURITY DEFINER para contornar RLS e evitar timeouts
+      const { data, error } = await supabase.rpc('get_user_role', {
+        p_user_id: user.id
+      });
 
       if (error) {
         console.error('[AuthContext] ❌ Erro ao buscar role:', error);
@@ -162,10 +154,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null;
       }
 
-      if (data?.role) {
-        console.log('[AuthContext] ✅ Role encontrada no banco:', data.role);
-        saveRoleToCache(user.id, data.role as any);
-        applyRole(data.role as any);
+      if (data) {
+        console.log('[AuthContext] ✅ Role encontrada no banco:', data);
+        const role = data as 'master' | 'admin' | 'manager' | 'barber';
+        saveRoleToCache(user.id, role);
+        applyRole(role);
       } else {
         console.log('[AuthContext] ℹ️ Nenhuma role encontrada no banco');
         applyRole(null);
@@ -175,7 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
       setRolesChecked(true);
 
-      return data?.role as any || null;
+      return data as any || null;
 
     } catch (error) {
       console.error('[AuthContext] ❌ Erro crítico ao buscar roles:', error);
