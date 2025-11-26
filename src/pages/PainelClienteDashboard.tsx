@@ -129,20 +129,18 @@ export default function PainelClienteDashboard() {
   useClientDashboardRealtime(fetchStats);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
-      console.log('🚪 Iniciando processo de logout...');
-      
+      console.log('[Dashboard] 🚪 Iniciando logout...');
       await logout();
-      
-      console.log('✅ Logout concluído, navegando para login...');
-      
-      // Usar replace para evitar voltar para a página protegida
-      navigate("/painel-cliente/login", { replace: true });
+      console.log('[Dashboard] ✅ Logout concluído');
+      // Aguardar um pouco para garantir que o logout foi processado
+      setTimeout(() => {
+        navigate('/painel-cliente/login', { replace: true });
+      }, 100);
     } catch (error) {
-      console.error('❌ Erro no logout:', error);
-      // Mesmo com erro, redirecionar para login
-      navigate("/painel-cliente/login", { replace: true });
+      console.error('[Dashboard] ❌ Erro ao fazer logout:', error);
+      navigate('/painel-cliente/login', { replace: true });
     } finally {
       setIsLoggingOut(false);
     }
