@@ -46,8 +46,8 @@ export const PainelClienteContentContainer: React.FC<PainelClienteContentContain
 
   return (
     <div className={cn(
-      'mx-auto w-full py-4 sm:py-6',
-      noPadding ? 'px-0' : 'px-0 md:px-6 lg:px-8',
+      'mx-auto w-full',
+      noPadding ? 'py-0' : 'py-4 lg:py-6',
       getMaxWidthClass(),
       className
     )}>
