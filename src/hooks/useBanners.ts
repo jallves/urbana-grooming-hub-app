@@ -20,50 +20,45 @@ export const useBanners = () => {
 
   const fetchBanners = async () => {
     try {
-      console.log('🎨 [useBanners] Iniciando busca de banners...');
-      console.log('🎨 [useBanners] Estado inicial - loading:', loading);
+      console.log('🎨 [useBanners] Iniciando busca...');
       setLoading(true);
       setError(null);
       
-      console.log('🎨 [useBanners] Fazendo query ao Supabase...');
-      const startTime = Date.now();
+      // Timeout de 5 segundos para evitar travamento
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout ao buscar banners')), 5000)
+      );
       
-      const { data, error: fetchError } = await supabase
+      const queryPromise = supabase
         .from('banner_images')
         .select('*')
         .order('display_order', { ascending: true });
 
-      const elapsed = Date.now() - startTime;
-      console.log(`🎨 [useBanners] Query completou em ${elapsed}ms`);
+      const { data, error: fetchError } = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
 
       if (fetchError) {
-        console.error('❌ [useBanners] Erro ao buscar banners:', fetchError);
-        console.error('❌ [useBanners] Detalhes do erro:', JSON.stringify(fetchError, null, 2));
+        console.error('❌ [useBanners] Erro:', fetchError.message);
         setError(fetchError.message);
         setBanners([DEFAULT_BANNER]);
         return;
       }
 
-      console.log('✅ [useBanners] Banners carregados:', data?.length || 0);
-      console.log('✅ [useBanners] Dados recebidos:', JSON.stringify(data, null, 2));
+      console.log('✅ [useBanners] Carregados:', data?.length || 0);
       
       if (data && data.length > 0) {
-        console.log('🎨 [useBanners] Definindo banners no estado...');
         setBanners(data);
-        console.log('🎨 [useBanners] Banners definidos com sucesso');
       } else {
-        console.log('⚠️ [useBanners] Nenhum banner encontrado, usando default');
         setBanners([DEFAULT_BANNER]);
       }
     } catch (err) {
-      console.error('❌ [useBanners] Erro inesperado:', err);
-      console.error('❌ [useBanners] Stack trace:', err instanceof Error ? err.stack : 'N/A');
-      setError('Erro ao carregar banners');
+      console.error('❌ [useBanners] Erro:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar');
       setBanners([DEFAULT_BANNER]);
     } finally {
-      console.log('🏁 [useBanners] Entrando no finally - setLoading(false)');
       setLoading(false);
-      console.log('🏁 [useBanners] Busca finalizada');
     }
   };
 
