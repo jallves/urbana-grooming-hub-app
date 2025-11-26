@@ -221,6 +221,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         try {
           console.log('[AuthContext] 🔍 Executando query user_roles para user_id:', user.id);
+          console.log('[AuthContext] 🔍 Timestamp:', new Date().toISOString());
+          
+          const queryStart = performance.now();
           const { data: userRoleData, error: userRoleError } = await supabase
             .from('user_roles')
             .select('role')
@@ -228,16 +231,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             .order('role', { ascending: true })
             .limit(1)
             .maybeSingle();
+          const queryEnd = performance.now();
 
-          console.log('[AuthContext] 📊 Resposta da query:', { 
+          console.log('[AuthContext] 📊 Query completou em:', (queryEnd - queryStart).toFixed(2), 'ms');
+          console.log('[AuthContext] 📊 Resposta COMPLETA:', { 
             data: userRoleData, 
             error: userRoleError,
             hasData: !!userRoleData,
-            hasError: !!userRoleError 
+            hasError: !!userRoleError,
+            dataType: typeof userRoleData,
+            errorType: typeof userRoleError
           });
+          
+          if (userRoleData) {
+            console.log('[AuthContext] ✅ DADOS RECEBIDOS:', JSON.stringify(userRoleData));
+          }
 
           if (userRoleError) {
-            console.error(`[AuthContext] ⚠️ Erro na tentativa ${attempts}:`, userRoleError);
+            console.error(`[AuthContext] ⚠️ ERRO DETECTADO na tentativa ${attempts}:`, userRoleError);
+            console.error(`[AuthContext] ⚠️ Erro code:`, userRoleError.code);
+            console.error(`[AuthContext] ⚠️ Erro message:`, userRoleError.message);
+            console.error(`[AuthContext] ⚠️ Erro details:`, userRoleError.details);
+            console.error(`[AuthContext] ⚠️ Erro hint:`, userRoleError.hint);
             
             if (attempts < maxAttempts) {
               // Aguardar antes de tentar novamente (backoff exponencial)
@@ -252,10 +267,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
           if (userRoleData?.role) {
             role = userRoleData.role as 'master' | 'admin' | 'manager' | 'barber';
-            console.log('[AuthContext] ✅ Role obtido do banco:', role, 'User ID:', user.id);
+            console.log('[AuthContext] ✅ ✅ ✅ ROLE OBTIDO DO BANCO:', role, 'User ID:', user.id);
+            console.log('[AuthContext] ✅ Role type:', typeof role);
+            console.log('[AuthContext] ✅ Role value:', role);
             break;
           } else {
-            console.log('[AuthContext] ⚠️ Nenhuma role encontrada no banco para user_id:', user.id);
+            console.log('[AuthContext] ⚠️ NENHUMA ROLE encontrada no banco para user_id:', user.id);
+            console.log('[AuthContext] ⚠️ userRoleData:', userRoleData);
+            console.log('[AuthContext] ⚠️ userRoleData?.role:', userRoleData?.role);
             break;
           }
         } catch (attemptError) {
