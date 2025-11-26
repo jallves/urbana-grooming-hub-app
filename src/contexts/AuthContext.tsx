@@ -52,18 +52,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkUserRoles = async (userId: string): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
     try {
-      // Query com timeout usando Promise.race
+      // Query com timeout robusto
       const queryPromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout - 5s')), 5000)
+      const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) => 
+        setTimeout(() => resolve({ 
+          data: null, 
+          error: new Error('Query timeout - 5s') 
+        }), 5000)
       );
 
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+      const { data, error } = result;
 
       if (error) {
         console.error('[AuthContext] Erro ao buscar role:', error.message);
