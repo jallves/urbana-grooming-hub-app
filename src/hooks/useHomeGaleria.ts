@@ -42,16 +42,31 @@ export const useHomeGaleria = () => {
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId: NodeJS.Timeout;
+    
     console.log('[Galeria Hook] 🚀 Inicializando...');
 
     const fetchGaleria = async () => {
       console.log('[Galeria Hook] 📡 Buscando dados...');
+      
       try {
-        const { data: images, error: fetchError } = await supabase
+        // Timeout de 10 segundos
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Timeout')), 10000);
+        });
+
+        const fetchPromise = supabase
           .from('gallery_images')
           .select('*')
           .eq('is_active', true)
           .order('display_order', { ascending: true });
+
+        const { data: images, error: fetchError } = await Promise.race([
+          fetchPromise,
+          timeoutPromise
+        ]) as any;
+
+        clearTimeout(timeoutId);
 
         if (!mounted) {
           console.log('[Galeria Hook] ⚠️ Componente desmontado');
@@ -63,7 +78,6 @@ export const useHomeGaleria = () => {
           setStatus('success'); // Usa fallback
         } else if (images && images.length > 0) {
           console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
-          console.log('[Galeria Hook] 📦 Dados:', images);
           setData(images);
           setStatus('success');
         } else {
@@ -71,8 +85,10 @@ export const useHomeGaleria = () => {
           setStatus('success'); // Usa fallback
         }
       } catch (err: any) {
+        clearTimeout(timeoutId);
         if (!mounted) return;
-        console.error('[Galeria Hook] ❌ Exceção:', err?.message);
+        
+        console.error('[Galeria Hook] ❌ Exceção:', err?.message || 'Erro desconhecido');
         setStatus('success'); // Usa fallback
       }
     };
@@ -98,6 +114,7 @@ export const useHomeGaleria = () => {
     return () => {
       console.log('[Galeria Hook] 🔚 Desmontando...');
       mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
   }, []);
