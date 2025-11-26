@@ -84,9 +84,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
+    let loadingTimeout: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       try {
+        // Timeout de segurança - após 10s, desiste e marca como não carregando
+        loadingTimeout = setTimeout(() => {
+          if (mounted) {
+            console.warn('[AuthContext] ⏱️ Timeout na verificação de auth - finalizando loading');
+            setLoading(false);
+            setRolesChecked(true);
+          }
+        }, 10000);
+
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!mounted) return;
@@ -97,16 +107,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (mounted) {
             applyRole(role);
             setLoading(false);
+            clearTimeout(loadingTimeout);
           }
         } else {
           setLoading(false);
           setRolesChecked(true);
+          clearTimeout(loadingTimeout);
         }
       } catch (error) {
         console.error('[AuthContext] Erro na inicialização:', error);
         if (mounted) {
           setLoading(false);
           setRolesChecked(true);
+          clearTimeout(loadingTimeout);
         }
       }
     };
@@ -136,6 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => {
       mounted = false;
+      clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);

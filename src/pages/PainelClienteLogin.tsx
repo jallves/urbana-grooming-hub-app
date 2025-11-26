@@ -3,17 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Home } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import AuthContainer from '@/components/ui/containers/AuthContainer';
 import PainelClienteLoginForm from '@/components/painel-cliente/auth/PainelClienteLoginForm';
 import PainelClienteCadastroForm from '@/components/painel-cliente/auth/PainelClienteCadastroForm';
 
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
-  const { login, cadastrar } = usePainelClienteAuth();
+  const { login, cadastrar, logout } = usePainelClienteAuth();
+  const { user: authUser, signOut } = useAuth(); // Usar AuthContext unificado também
 
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
+
+  // FORÇAR LOGOUT se houver sessão ativa ao acessar o login
+  React.useEffect(() => {
+    const forceLogoutOnLoginPage = async () => {
+      if (authUser) {
+        console.log('[PainelClienteLogin] 🚪 Sessão ativa detectada - forçando logout');
+        await signOut();
+        await logout(); // Logout também do contexto de cliente
+      }
+    };
+    
+    forceLogoutOnLoginPage();
+  }, []);
 
   const handleLogin = async (email: string, senha: string) => {
     console.log('📱 [PainelClienteLogin] handleLogin chamado');
