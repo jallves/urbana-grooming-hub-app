@@ -18,7 +18,7 @@ const defaultBanners: BannerImage[] = [
 ];
 
 export const useHomeBanner = () => {
-  const [status, setStatus] = useState<Status>('success');
+  const [status, setStatus] = useState<Status>('loading');
   const [data, setData] = useState<BannerImage[]>(defaultBanners);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,16 +42,20 @@ export const useHomeBanner = () => {
 
         if (fetchError) {
           console.error('[Banner Hook] ❌ Erro:', fetchError.message);
+          setStatus('success'); // Usa fallback
         } else if (banners && banners.length > 0) {
           console.log('[Banner Hook] ✅ Carregados:', banners.length, 'banners');
           console.log('[Banner Hook] 📦 Dados:', banners);
           setData(banners);
+          setStatus('success');
         } else {
           console.log('[Banner Hook] ⚠️ Nenhum banner ativo encontrado');
+          setStatus('success'); // Usa fallback
         }
       } catch (err: any) {
         if (!mounted) return;
         console.error('[Banner Hook] ❌ Exceção:', err?.message);
+        setStatus('success'); // Usa fallback
       }
     };
 
