@@ -55,8 +55,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       // 1. Verificar se é cliente (clientes não têm roles)
+      // Buscar em client_profiles que é a tabela correta para clientes
       const { data: clientData } = await supabase
-        .from('clients')
+        .from('client_profiles')
         .select('id')
         .eq('id', userId)
         .maybeSingle();
