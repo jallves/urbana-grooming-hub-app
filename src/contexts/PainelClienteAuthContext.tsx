@@ -96,7 +96,41 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     console.log('[Auth] 🚀 Inicializando autenticação...');
     
     let mounted = true;
-    let isInitialized = false;
+
+    // Função interna para buscar perfil (evita dependência externa)
+    const fetchProfile = async (userId: string): Promise<Cliente | null> => {
+      try {
+        console.log('[Auth] 🔍 Buscando perfil do cliente...');
+        
+        const { data: profile, error } = await supabase
+          .from('client_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error || !profile) {
+          console.error('[Auth] ❌ Erro ao buscar perfil:', error);
+          return null;
+        }
+
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+
+        const clienteData: Cliente = {
+          id: profile.id,
+          nome: profile.nome,
+          email: authUser?.email || '',
+          whatsapp: profile.whatsapp,
+          data_nascimento: profile.data_nascimento,
+          created_at: profile.created_at
+        };
+
+        console.log('[Auth] ✅ Perfil carregado:', clienteData.nome);
+        return clienteData;
+      } catch (error) {
+        console.error('[Auth] ❌ Erro crítico ao buscar perfil:', error);
+        return null;
+      }
+    };
 
     // 1. Configurar listener PRIMEIRO
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -105,12 +139,11 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
         console.log('[Auth] 🔄 Evento:', event, '| Sessão:', currentSession ? '✅' : '❌');
 
-        // Atualizar sessão imediatamente
         setSession(currentSession);
 
         if (currentSession?.user) {
           console.log('[Auth] ✅ Carregando perfil do usuário...');
-          const perfil = await buscarPerfilCliente(currentSession.user.id);
+          const perfil = await fetchProfile(currentSession.user.id);
           if (mounted) {
             setCliente(perfil);
             setAuthLoading(false);
@@ -148,18 +181,16 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         if (session?.user) {
           console.log('[Auth] 🔍 Buscando perfil inicial...');
           setSession(session);
-          const perfil = await buscarPerfilCliente(session.user.id);
+          const perfil = await fetchProfile(session.user.id);
           if (mounted) {
             setCliente(perfil);
             setAuthLoading(false);
-            isInitialized = true;
           }
         } else {
           if (mounted) {
             setSession(null);
             setCliente(null);
             setAuthLoading(false);
-            isInitialized = true;
           }
         }
       } catch (error) {
@@ -180,7 +211,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [buscarPerfilCliente]); // Incluir dependência
+  }, []); // Sem dependências - executa apenas uma vez
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
