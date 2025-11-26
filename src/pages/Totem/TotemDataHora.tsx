@@ -402,9 +402,6 @@ const TotemDataHora: React.FC = () => {
               >
                 {isValidating ? 'Validando...' : 'Confirmar Agendamento'}
               </TotemButton>
-              <p className="text-xs text-urbana-light/40 text-center mt-2">
-                Debug: selectedTime={selectedTime}, creating={String(creating)}, validating={String(isValidating)}
-              </p>
             </div>
           )}
         </div>

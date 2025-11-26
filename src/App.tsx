@@ -7,7 +7,6 @@ import { TotemAuthProvider } from './contexts/TotemAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { PWAUpdateManager } from './components/PWAUpdateManager';
-import { AuthDebugPanel } from './components/debug/AuthDebugPanel';
 import AdminRoute from './components/auth/AdminRoute';
 import AdminRedirectGuard from './components/auth/AdminRedirectGuard';
 import TotemProtectedRoute from './components/totem/TotemProtectedRoute';
@@ -129,7 +128,6 @@ function App() {
             <Route path="/*" element={
               <AuthProvider>
                 <PWAUpdateManager />
-                <AuthDebugPanel />
                 <PermissionsProvider>
                   <PainelClienteAuthProvider>
                     <TotemAuthProvider>
