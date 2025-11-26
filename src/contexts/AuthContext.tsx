@@ -224,13 +224,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('[AuthContext] 🔍 Timestamp:', new Date().toISOString());
           
           const queryStart = performance.now();
-          const { data: userRoleData, error: userRoleError } = await supabase
+          
+          // Adicionar timeout de 5 segundos para evitar travamento
+          const queryPromise = supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', user.id)
             .order('role', { ascending: true })
             .limit(1)
             .maybeSingle();
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Query timeout')), 5000)
+          );
+          
+          const { data: userRoleData, error: userRoleError } = await Promise.race([
+            queryPromise,
+            timeoutPromise
+          ]) as any;
+          
           const queryEnd = performance.now();
 
           console.log('[AuthContext] 📊 Query completou em:', (queryEnd - queryStart).toFixed(2), 'ms');
@@ -279,9 +291,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         } catch (attemptError) {
           console.error(`[AuthContext] ❌ Erro na tentativa ${attempts}:`, attemptError);
-          if (attempts >= maxAttempts) {
-            throw attemptError;
+          
+          // Se for timeout ou última tentativa, não retente
+          if ((attemptError as any)?.message === 'Query timeout' || attempts >= maxAttempts) {
+            console.log('[AuthContext] ⚠️ Timeout ou max attempts - assumindo usuário sem role de admin/staff');
+            break;
           }
+          
+          // Aguardar antes de tentar novamente
+          const delay = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+          console.log(`[AuthContext] ⏳ Aguardando ${delay}ms antes de retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
       
@@ -317,17 +337,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('[AuthContext] ❌ Erro ao verificar roles:', error);
       
-      // CRÍTICO: Manter role do cache se houver erro
+      // CRÍTICO: Sempre setar rolesChecked mesmo em caso de erro
+      // para não bloquear usuários que não são admin/staff
       if (cachedRole) {
         console.warn('[AuthContext] ⚠️ Mantendo role do cache devido a erro:', cachedRole);
         applyRole(cachedRole);
         return cachedRole;
       } else {
-        console.error('[AuthContext] 🚫 Sem cache disponível, negando acesso temporariamente');
+        console.log('[AuthContext] ℹ️ Sem cache e sem role encontrado - assumindo usuário comum (cliente)');
         applyRole(null);
         return null;
       }
-      
+    } finally {
+      // Garantir que rolesChecked sempre seja true
+      setRolesChecked(true);
       setRequiresPasswordChange(false);
     }
   };
