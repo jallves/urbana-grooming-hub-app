@@ -137,6 +137,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     console.log('[AuthContext] 📦 Cache não encontrado ou expirado, buscando do banco...');
     
+    // Criar timeout de segurança de 8 segundos
+    const safetyTimeout = setTimeout(() => {
+      console.error('[AuthContext] ⏰ TIMEOUT DE SEGURANÇA - Forçando conclusão do loading');
+      setLoading(false);
+      setRolesChecked(true);
+    }, 8000);
+    
     try {
       console.log('[AuthContext] 📡 Consultando user_roles via função SECURITY DEFINER...');
       
@@ -144,6 +151,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data, error } = await supabase.rpc('get_user_role', {
         p_user_id: user.id
       });
+      
+      // Limpar timeout de segurança
+      clearTimeout(safetyTimeout);
 
       if (error) {
         console.error('[AuthContext] ❌ Erro ao buscar role:', error);
@@ -177,6 +187,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     } catch (error) {
       console.error('[AuthContext] ❌ Erro crítico ao buscar roles:', error);
+      // Limpar timeout de segurança
+      clearTimeout(safetyTimeout);
       // Mesmo em erro, completar o loading para não travar a UI
       applyRole(null);
       setLoading(false);
