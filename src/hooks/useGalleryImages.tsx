@@ -11,11 +11,10 @@ export const useGalleryImages = () => {
       console.log('🖼️ Carregando galeria da homepage do banco de dados...');
       setLoading(true);
       
-      // Buscar fotos publicadas do banco de dados
+      // Buscar todas as fotos do banco de dados
       const { data, error } = await supabase
         .from('gallery_photos')
         .select('*')
-        .eq('published', true)
         .order('display_order', { ascending: true });
 
       if (error) {
