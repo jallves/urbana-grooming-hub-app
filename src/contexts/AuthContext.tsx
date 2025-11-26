@@ -63,12 +63,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       console.log('[AuthContext] 🔍 Verificando role para user:', user.id);
+      console.log('[AuthContext] 🔍 Email do usuário:', user.email);
       
+      const startTime = Date.now();
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
+      
+      const queryTime = Date.now() - startTime;
+      console.log(`[AuthContext] ⏱️ Query levou ${queryTime}ms`);
+      console.log('[AuthContext] 📊 Resposta da query - data:', data);
+      console.log('[AuthContext] 📊 Resposta da query - error:', error);
 
       if (error) {
         console.error('[AuthContext] ❌ Erro ao buscar role:', error);
@@ -78,7 +85,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (!data) {
-        console.log('[AuthContext] ⚠️ Nenhuma role encontrada para o usuário');
+        console.warn('[AuthContext] ⚠️ Query retornou NULL - usuário sem role na tabela user_roles');
+        console.warn('[AuthContext] ⚠️ User ID:', user.id);
         applyRole(null);
         setLoading(false);
         return null;
@@ -86,12 +94,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
       console.log('[AuthContext] ✅ Role encontrada:', role);
+      console.log('[AuthContext] ✅ Aplicando role...');
       applyRole(role);
       setLoading(false);
+      console.log('[AuthContext] ✅ Role aplicada com sucesso!');
       return role;
 
     } catch (error) {
-      console.error('[AuthContext] ❌ Erro na verificação de roles:', error);
+      console.error('[AuthContext] ❌ Erro FATAL na verificação de roles:', error);
       applyRole(null);
       setLoading(false);
       return null;
