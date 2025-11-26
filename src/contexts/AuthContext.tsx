@@ -394,35 +394,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 🚪 Iniciando logout...');
       
-      // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
-      const userType = isBarber ? 'barber' : 'admin';
-      sessionManager.invalidateSession(userType).catch(err => 
-        console.warn('[AuthContext] ⚠️ Erro ao invalidar sessão (não crítico):', err)
-      );
-      
-      // Limpar cache
-      clearRoleCache();
-      
-      // Limpar estados
+      // Limpar estados PRIMEIRO (antes de qualquer coisa que possa falhar)
       setIsAdmin(false);
       setIsBarber(false);
       setIsMaster(false);
       setIsManager(false);
       setUserRole(null);
       setUser(null);
+      setRolesChecked(true);
       
-      // Fazer logout no Supabase
-      const { error } = await supabase.auth.signOut();
+      // Limpar cache
+      clearRoleCache();
       
-      if (error) {
-        console.error('[AuthContext] ❌ Erro no logout:', error);
-        throw error;
+      // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
+      const userType = isBarber ? 'barber' : 'admin';
+      sessionManager.invalidateSession(userType).catch(err => 
+        console.warn('[AuthContext] ⚠️ Erro ao invalidar sessão (não crítico):', err)
+      );
+      
+      // Fazer logout no Supabase (não crítico - se falhar, usuário já foi deslogado localmente)
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.warn('[AuthContext] ⚠️ Erro no logout do Supabase (não crítico):', error);
+        } else {
+          console.log('[AuthContext] ✅ Logout do Supabase realizado com sucesso');
+        }
+      } catch (supabaseError) {
+        console.warn('[AuthContext] ⚠️ Erro ao fazer logout no Supabase (não crítico):', supabaseError);
       }
       
-      console.log('[AuthContext] ✅ Logout realizado com sucesso');
+      console.log('[AuthContext] ✅ Logout local concluído - usuário deslogado');
     } catch (error) {
-      console.error('[AuthContext] ❌ Error signing out:', error);
-      throw error;
+      console.error('[AuthContext] ❌ Erro no logout (mas continuando):', error);
+      // Mesmo com erro, garantir que estados estão limpos
+      setIsAdmin(false);
+      setIsBarber(false);
+      setIsMaster(false);
+      setIsManager(false);
+      setUserRole(null);
+      setUser(null);
+      setRolesChecked(true);
     }
   };
 

@@ -31,8 +31,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
-    navigate('/auth');
+    try {
+      console.log('[AdminLayout] Iniciando logout...');
+      await signOut();
+      console.log('[AdminLayout] Logout concluído, redirecionando...');
+      navigate('/auth', { replace: true });
+    } catch (error) {
+      console.error('[AdminLayout] Erro ao fazer logout:', error);
+      // Forçar navegação mesmo com erro
+      navigate('/auth', { replace: true });
+    }
   };
 
   const userInitials = displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'A';
