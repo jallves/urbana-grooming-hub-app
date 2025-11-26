@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { sessionManager } from '@/hooks/useSessionManager';
+import '@/utils/authDebug'; // Importar utilitários de debug
 
 interface AuthContextType {
   user: User | null;
@@ -194,14 +195,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     console.log('[AuthContext] 🔍 Verificando role para:', user.email, 'User ID:', user.id);
     
-    // PRIMEIRO: Tentar carregar do cache para acesso imediato
+    // PRIMEIRO: Verificar localStorage para ver o cache
+    const cachedData = localStorage.getItem(ROLE_CACHE_KEY);
+    console.log('[AuthContext] 📦 Cache atual no localStorage:', cachedData);
+    
+    // SEGUNDO: Tentar carregar do cache para acesso imediato
     const cachedRole = getRoleFromCache(user.id);
     if (cachedRole) {
       console.log('[AuthContext] ⚡ Usando role do cache:', cachedRole);
       applyRole(cachedRole);
       // Continuar verificação em background para atualizar cache
     } else {
-      console.log('[AuthContext] 📦 Nenhum cache encontrado, buscando do banco...');
+      console.log('[AuthContext] 📦 Nenhum cache encontrado ou cache expirado, buscando do banco...');
     }
     
     try {
