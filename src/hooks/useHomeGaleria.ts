@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 type Status = 'loading' | 'success' | 'error';
@@ -40,67 +40,43 @@ export const useHomeGaleria = () => {
   const [data, setData] = useState<GalleryPhoto[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchGaleria = useCallback(async () => {
-    let cancelled = false;
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    setStatus('loading');
-    setError(null);
-
-    try {
-      let timedOut = false;
-
-      timeoutId = setTimeout(() => {
-        timedOut = true;
-      }, 8000);
-
-      const { data: images, error: fetchError } = await supabase
-        .from('gallery_images')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (timeoutId) clearTimeout(timeoutId);
-
-      if (cancelled) return;
-
-      if (timedOut && !images) {
-        console.warn('[Galeria Hook] Timeout - usando fallback');
-        setData(defaultImages);
-        setStatus('success');
-        return;
-      }
-
-      if (fetchError) {
-        console.error('[Galeria Hook] ❌ Erro:', fetchError.message);
-        setData(defaultImages);
-        setStatus('success');
-      } else if (images && images.length > 0) {
-        console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
-        setData(images);
-        setStatus('success');
-      } else {
-        console.log('[Galeria Hook] ⚠️ Sem imagens - usando fallback');
-        setData(defaultImages);
-        setStatus('success');
-      }
-    } catch (err: any) {
-      if (cancelled) return;
-      if (timeoutId) clearTimeout(timeoutId);
-      
-      console.error('[Galeria Hook] Exceção:', err?.message);
-      setData(defaultImages);
-      setStatus('success');
-    }
-
-    return () => {
-      cancelled = true;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, []);
-
   useEffect(() => {
-    console.log('[useHomeGaleria] 🚀 Iniciando fetch de galeria...');
+    let cancelled = false;
+
+    const fetchGaleria = async () => {
+      setStatus('loading');
+      setError(null);
+
+      try {
+        const { data: images, error: fetchError } = await supabase
+          .from('gallery_images')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (cancelled) return;
+
+        if (fetchError) {
+          console.error('[Galeria Hook] Erro:', fetchError.message);
+          setData(defaultImages);
+          setStatus('success');
+        } else if (images && images.length > 0) {
+          console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
+          setData(images);
+          setStatus('success');
+        } else {
+          console.log('[Galeria Hook] ⚠️ Vazio - usando fallback');
+          setData(defaultImages);
+          setStatus('success');
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error('[Galeria Hook] Exceção:', err?.message);
+        setData(defaultImages);
+        setStatus('success');
+      }
+    };
+
     fetchGaleria();
 
     // Real-time subscription
@@ -115,19 +91,43 @@ export const useHomeGaleria = () => {
         },
         () => {
           console.log('[Galeria Hook] Atualização em tempo real');
-          fetchGaleria();
+          if (!cancelled) fetchGaleria();
         }
       )
       .subscribe();
 
     return () => {
+      cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [fetchGaleria]);
+  }, []);
 
-  const refetch = useCallback(() => {
-    fetchGaleria();
-  }, [fetchGaleria]);
+  const refetch = async () => {
+    setStatus('loading');
+    setError(null);
+    
+    try {
+      const { data: images, error: fetchError } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (fetchError) {
+        setData(defaultImages);
+        setStatus('success');
+      } else if (images && images.length > 0) {
+        setData(images);
+        setStatus('success');
+      } else {
+        setData(defaultImages);
+        setStatus('success');
+      }
+    } catch {
+      setData(defaultImages);
+      setStatus('success');
+    }
+  };
 
   return { status, data, error, refetch };
 };
