@@ -1,11 +1,11 @@
 
 import React, { useRef } from "react";
-import { Scissors } from "lucide-react";
+import { Scissors, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { motion, useInView } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { ArtDecoCorner } from "@/components/decorative/ArtDecoCorner";
+import { useHomeServices } from "@/hooks/useHomeServices";
 
 interface ServiceProps {
   title: string;
@@ -99,68 +99,64 @@ const ServiceCard: React.FC<ServiceProps> = ({ title, price, description, index 
 };
 
 const Services: React.FC = () => {
-  const { data: services, isLoading, error } = useQuery<Array<{ id: string; nome: string; preco: number; duracao: number; show_on_home: boolean; display_order: number; descricao?: string | null }>>({
-    queryKey: ["featured-services"],
-    queryFn: async ({ signal }) => {
-      // Timeout de 8 segundos
-      const timeoutId = setTimeout(() => {
-        console.error('[Services] ⏱️ Timeout após 8s');
-        signal?.dispatchEvent(new Event('abort'));
-      }, 8000);
-
-      try {
-        console.log('[Services] 🔍 Buscando...');
-        
-        // Buscar serviços ativos com show_on_home
-        const { data: featuredData, error: featuredError } = await supabase
-          .from("painel_servicos")
-          .select("*")
-          .eq("show_on_home", true)
-          .eq("is_active", true)
-          .order("display_order", { ascending: true });
-
-        clearTimeout(timeoutId);
-
-        if (featuredError) {
-          console.error('[Services] ❌ Erro featured:', featuredError.message);
-          throw featuredError;
-        }
-        
-        // Fallback: buscar os 6 primeiros se não houver featured
-        if (!featuredData || featuredData.length === 0) {
-          console.log('[Services] 🔄 Fallback...');
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from("painel_servicos")
-            .select("*")
-            .eq("is_active", true)
-            .order("display_order", { ascending: true })
-            .limit(6);
-          
-          if (fallbackError) {
-            console.error('[Services] ❌ Erro fallback:', fallbackError.message);
-            throw fallbackError;
-          }
-          
-          console.log('[Services] ✅ Fallback:', fallbackData?.length || 0);
-          return fallbackData || [];
-        }
-        
-        console.log('[Services] ✅ Featured:', featuredData.length);
-        return featuredData;
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        console.error('[Services] ❌ Exceção:', err?.message);
-        throw err;
-      }
-    },
-    retry: 1, // Apenas 1 retry
-    retryDelay: 1000,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-  });
+  const { status, data: services, error, refetch } = useHomeServices();
+  const isLoading = status === 'loading';
 
   const formatPrice = (price: number) => `R$ ${price.toFixed(2).replace(".", ",")}`;
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <section id="services" className="relative w-full py-8 md:py-12 lg:py-16 text-urbana-light overflow-hidden">
+        <div className="w-full max-w-7xl mx-auto relative z-10 px-4 md:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-6xl md:text-7xl font-playfair font-bold mb-6 text-urbana-gold">
+              Nossos Serviços
+            </h2>
+            <p className="text-urbana-light/70 text-xl">Carregando conteúdo...</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div
+                key={i}
+                className="h-80 bg-urbana-black/80 rounded-xl animate-pulse border-2 border-urbana-gold/30"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (status === 'error') {
+    return (
+      <section id="services" className="relative w-full py-8 md:py-12 lg:py-16 text-urbana-light overflow-hidden">
+        <div className="w-full max-w-7xl mx-auto relative z-10 px-4 md:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-6xl md:text-7xl font-playfair font-bold mb-6 text-urbana-gold">
+              Nossos Serviços
+            </h2>
+          </div>
+          <div className="max-w-md mx-auto text-center">
+            <div className="w-20 h-20 bg-urbana-gold/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Scissors className="w-10 h-10 text-urbana-gold" />
+            </div>
+            <p className="text-urbana-gold/70 mb-6">{error || 'Não foi possível carregar este conteúdo agora.'}</p>
+            <Button
+              onClick={refetch}
+              className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Success state
   return (
     <section
       id="services"
@@ -225,41 +221,14 @@ const Services: React.FC = () => {
         </motion.div>
 
         {/* Services Grid */}
-        {isLoading ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-16"
-          >
-            <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-urbana-gold border-r-transparent mb-6"></div>
-            <p className="text-urbana-gold text-xl font-bold font-playfair">
-              Carregando serviços premium...
-            </p>
-          </motion.div>
-        ) : error ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-16 max-w-md mx-auto"
-          >
-            <div className="w-20 h-20 bg-red-900/50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-red-400 text-4xl">⚠</span>
-            </div>
-            <p className="text-2xl font-playfair font-bold text-red-400 mb-3">
-              Erro ao carregar serviços
-            </p>
-            <p className="text-urbana-light/70 font-raleway text-lg">
-              Por favor, tente novamente mais tarde.
-            </p>
-          </motion.div>
-        ) : services && services.length > 0 ? (
+        {services && services.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {services.map((service, i) => (
               <ServiceCard
                 key={service.id}
-                title={service.nome}
-                price={formatPrice(service.preco)}
-                description={service.descricao || null}
+                title={service.name}
+                price={formatPrice(service.price)}
+                description={service.description || null}
                 index={i}
               />
             ))}
