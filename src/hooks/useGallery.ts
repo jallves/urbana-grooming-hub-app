@@ -27,6 +27,7 @@ export const useGallery = () => {
 
   const fetchGallery = async () => {
     try {
+      console.log('🖼️ [useGallery] Iniciando busca de imagens...');
       setLoading(true);
       setError(null);
       
@@ -37,11 +38,13 @@ export const useGallery = () => {
         .order('display_order', { ascending: true });
 
       if (fetchError) {
-        console.error('Erro ao buscar galeria:', fetchError);
+        console.error('❌ [useGallery] Erro ao buscar galeria:', fetchError);
         setError(fetchError.message);
         setImages(DEFAULT_IMAGES);
         return;
       }
+
+      console.log('✅ [useGallery] Imagens carregadas:', data?.length || 0);
 
       if (data && data.length > 0) {
         const mappedImages = data.map((item, index) => ({
@@ -49,16 +52,19 @@ export const useGallery = () => {
           src: item.src,
           alt: item.alt
         }));
+        console.log('🖼️ [useGallery] Definindo imagens:', mappedImages);
         setImages(mappedImages);
       } else {
+        console.log('⚠️ [useGallery] Nenhuma imagem encontrada, usando default');
         setImages(DEFAULT_IMAGES);
       }
     } catch (err) {
-      console.error('Erro inesperado:', err);
+      console.error('❌ [useGallery] Erro inesperado:', err);
       setError('Erro ao carregar galeria');
       setImages(DEFAULT_IMAGES);
     } finally {
       setLoading(false);
+      console.log('🏁 [useGallery] Busca finalizada');
     }
   };
 
