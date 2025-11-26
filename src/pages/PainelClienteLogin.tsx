@@ -13,24 +13,32 @@ import PainelClienteCadastroForm from '@/components/painel-cliente/auth/PainelCl
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
   const { cadastrar } = usePainelClienteAuth();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isClient } = useAuth();
   const { toast } = useToast();
 
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
-  // FORÇAR LOGOUT se houver sessão ativa ao acessar o login
+  // REDIRECIONAR se já estiver logado como cliente
   React.useEffect(() => {
-    const forceLogoutOnLoginPage = async () => {
-      if (user) {
-        console.log('[PainelClienteLogin] 🚪 Sessão ativa detectada - forçando logout');
+    const handleLoggedInUser = async () => {
+      if (!user) return;
+
+      // Aguardar um pouco para garantir que isClient foi carregado
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (isClient) {
+        console.log('[PainelClienteLogin] ✅ Cliente já logado - redirecionando para dashboard');
+        navigate('/painel-cliente/dashboard', { replace: true });
+      } else {
+        console.log('[PainelClienteLogin] ⚠️ Usuário logado mas não é cliente - fazendo logout');
         await signOut();
       }
     };
     
-    forceLogoutOnLoginPage();
-  }, [user, signOut]);
+    handleLoggedInUser();
+  }, [user, isClient, navigate, signOut]);
 
   const handleLogin = async (email: string, senha: string) => {
     setErro('');
