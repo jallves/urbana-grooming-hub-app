@@ -4,14 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Home } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import AuthContainer from '@/components/ui/containers/AuthContainer';
 import PainelClienteLoginForm from '@/components/painel-cliente/auth/PainelClienteLoginForm';
 import PainelClienteCadastroForm from '@/components/painel-cliente/auth/PainelClienteCadastroForm';
 
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
-  const { login, cadastrar, logout } = usePainelClienteAuth();
-  const { user: authUser, signOut } = useAuth(); // Usar AuthContext unificado também
+  const { cadastrar } = usePainelClienteAuth();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,41 +23,56 @@ export default function PainelClienteLogin() {
   // FORÇAR LOGOUT se houver sessão ativa ao acessar o login
   React.useEffect(() => {
     const forceLogoutOnLoginPage = async () => {
-      if (authUser) {
-        console.log('[PainelClienteLogin] 🚪 Sessão ativa detectada - forçando logout completo');
-        // Força logout em ambos os contextos
-        await Promise.all([
-          signOut(),
-          logout()
-        ]);
+      if (user) {
+        console.log('[PainelClienteLogin] 🚪 Sessão ativa detectada - forçando logout');
+        await signOut();
       }
     };
     
     forceLogoutOnLoginPage();
-  }, [authUser, signOut, logout]);
+  }, [user, signOut]);
 
   const handleLogin = async (email: string, senha: string) => {
-    console.log('📱 [PainelClienteLogin] handleLogin chamado');
     setErro('');
     setLoading(true);
 
-    console.log('📱 [PainelClienteLogin] Chamando login()...');
-    const { error } = await login(email, senha);
-    console.log('📱 [PainelClienteLogin] Resposta do login:', { error });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: senha
+      });
 
-    if (error) {
-      console.log('❌ [PainelClienteLogin] Erro no login:', error);
-      if (error === 'cadastro_nao_encontrado') {
-        setErro('😊 Parece que você ainda não tem cadastro! Clique em "Criar conta" abaixo para se cadastrar e aproveitar nossos serviços.');
-      } else if (error === 'senha_incorreta') {
-        setErro('Senha incorreta. Por favor, verifique sua senha e tente novamente.');
-      } else {
-        setErro(error);
+      if (error) {
+        console.error('[PainelClienteLogin] ❌ Erro no login:', error);
+        
+        if (error.message.includes('Invalid login credentials')) {
+          setErro('E-mail ou senha incorretos. Verifique seus dados e tente novamente.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setErro('📧 Você precisa confirmar seu e-mail antes de fazer login! Verifique sua caixa de entrada.');
+        } else {
+          setErro('Não foi possível fazer login. Tente novamente.');
+        }
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    } else {
-      console.log('✅ [PainelClienteLogin] Login bem-sucedido, navegando...');
+
+      if (!data.session) {
+        setErro('Erro ao estabelecer sessão. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      toast({
+        title: "✅ Login realizado com sucesso!",
+        description: "Bem-vindo de volta!",
+        duration: 3000,
+      });
+
       navigate('/painel-cliente/dashboard');
+    } catch (error) {
+      console.error('[PainelClienteLogin] ❌ Erro inesperado:', error);
+      setErro('Erro inesperado. Tente novamente.');
+      setLoading(false);
     }
   };
 

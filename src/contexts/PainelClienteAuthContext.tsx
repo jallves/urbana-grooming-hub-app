@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Session } from '@supabase/supabase-js';
-import { sessionManager } from '@/hooks/useSessionManager';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Cliente {
   id: string;
@@ -15,11 +14,8 @@ interface Cliente {
 
 interface PainelClienteAuthContextType {
   cliente: Cliente | null;
-  session: Session | null;
-  authLoading: boolean;
+  loading: boolean;
   cadastrar: (dados: CadastroData) => Promise<{ error: string | null; needsEmailConfirmation?: boolean }>;
-  login: (email: string, senha: string) => Promise<{ error: string | null }>;
-  logout: () => Promise<void>;
   atualizarPerfil: (dados: Partial<Cliente>) => Promise<{ error: string | null }>;
 }
 
@@ -47,206 +43,79 @@ interface PainelClienteAuthProviderProps {
 
 export function PainelClienteAuthProvider({ children }: PainelClienteAuthProviderProps) {
   const [cliente, setCliente] = useState<Cliente | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth(); // Depende do AuthContext unificado
 
-  // Função para buscar perfil do cliente
-  const buscarPerfilCliente = useCallback(async (userId: string): Promise<Cliente | null> => {
-    try {
-      console.log('[Auth] 🔍 Buscando perfil do cliente...');
-      
-      const { data: profile, error } = await supabase
-        .from('client_profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('[Auth] ❌ Erro ao buscar perfil:', error);
-        return null;
-      }
-
-      // FALLBACK: Se perfil não existe, criar um temporário
-      if (!profile) {
-        console.warn('[Auth] ⚠️ Perfil não encontrado - criando automaticamente...');
-        
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
-        if (!authUser) {
-          console.error('[Auth] ❌ Usuário auth não encontrado');
-          return null;
-        }
-
-        // Criar perfil temporário
-        const { data: newProfile, error: insertError } = await supabase
-          .from('client_profiles')
-          .insert({
-            id: userId,
-            nome: authUser.email || 'Usuário',
-            whatsapp: `temp-${userId}`
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('[Auth] ❌ Erro ao criar perfil fallback:', insertError);
-          return null;
-        }
-
-        console.log('[Auth] ✅ Perfil fallback criado');
-
-        return {
-          id: newProfile.id,
-          nome: newProfile.nome,
-          email: authUser.email || '',
-          whatsapp: newProfile.whatsapp,
-          data_nascimento: newProfile.data_nascimento,
-          created_at: newProfile.created_at
-        };
-      }
-
-      // Buscar email do auth.users
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-
-      const clienteData: Cliente = {
-        id: profile.id,
-        nome: profile.nome,
-        email: authUser?.email || '',
-        whatsapp: profile.whatsapp,
-        data_nascimento: profile.data_nascimento,
-        created_at: profile.created_at
-      };
-
-      console.log('[Auth] ✅ Perfil carregado:', clienteData.nome);
-      return clienteData;
-    } catch (error) {
-      console.error('[Auth] ❌ Erro crítico ao buscar perfil:', error);
-      return null;
-    }
-  }, []);
-
-  // Inicialização: Verificar sessão existente
+  // Carregar perfil quando houver sessão ativa (depende do AuthContext)
   useEffect(() => {
-    console.log('[Auth] 🚀 Inicializando autenticação...');
-    
     let mounted = true;
 
-    // Função interna para buscar perfil (evita dependência externa)
-    const fetchProfile = async (userId: string): Promise<Cliente | null> => {
+    const carregarPerfil = async () => {
+      if (!user) {
+        if (mounted) {
+          setCliente(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
-        console.log('[Auth] 🔍 Buscando perfil do cliente...');
+        console.log('[PainelClienteAuthContext] 🔍 Carregando perfil do cliente:', user.id);
         
         const { data: profile, error } = await supabase
           .from('client_profiles')
           .select('*')
-          .eq('id', userId)
-          .single();
+          .eq('id', user.id)
+          .maybeSingle();
 
-        if (error || !profile) {
-          console.error('[Auth] ❌ Erro ao buscar perfil:', error);
-          return null;
-        }
-
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-
-        const clienteData: Cliente = {
-          id: profile.id,
-          nome: profile.nome,
-          email: authUser?.email || '',
-          whatsapp: profile.whatsapp,
-          data_nascimento: profile.data_nascimento,
-          created_at: profile.created_at
-        };
-
-        console.log('[Auth] ✅ Perfil carregado:', clienteData.nome);
-        return clienteData;
-      } catch (error) {
-        console.error('[Auth] ❌ Erro crítico ao buscar perfil:', error);
-        return null;
-      }
-    };
-
-    // 1. Configurar listener PRIMEIRO
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) return;
-
-        console.log('[Auth] 🔄 Evento:', event, '| Sessão:', currentSession ? '✅' : '❌');
-
-        setSession(currentSession);
-
-        if (currentSession?.user) {
-          console.log('[Auth] ✅ Carregando perfil do usuário...');
-          const perfil = await fetchProfile(currentSession.user.id);
-          if (mounted) {
-            setCliente(perfil);
-            setAuthLoading(false);
-          }
-        } else {
-          console.log('[Auth] ❌ Sem usuário autenticado');
-          if (mounted) {
-            setCliente(null);
-            setAuthLoading(false);
-          }
-        }
-      }
-    );
-
-    // 2. DEPOIS verificar sessão existente
-    const initSession = async () => {
-      try {
-        console.log('[Auth] 📋 Verificando sessão existente...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
         if (error) {
-          console.error('[Auth] ❌ Erro ao buscar sessão:', error);
+          console.error('[PainelClienteAuthContext] ❌ Erro ao buscar perfil:', error);
           if (mounted) {
-            setSession(null);
             setCliente(null);
-            setAuthLoading(false);
+            setLoading(false);
           }
           return;
         }
 
-        if (!mounted) return;
-
-        console.log('[Auth] 📋 Sessão:', session ? '✅ ENCONTRADA' : '❌ NÃO ENCONTRADA');
-
-        if (session?.user) {
-          console.log('[Auth] 🔍 Buscando perfil inicial...');
-          setSession(session);
-          const perfil = await fetchProfile(session.user.id);
+        if (!profile) {
+          console.warn('[PainelClienteAuthContext] ⚠️ Perfil não encontrado');
           if (mounted) {
-            setCliente(perfil);
-            setAuthLoading(false);
-          }
-        } else {
-          if (mounted) {
-            setSession(null);
             setCliente(null);
-            setAuthLoading(false);
+            setLoading(false);
           }
+          return;
+        }
+
+        if (mounted) {
+          const clienteData: Cliente = {
+            id: profile.id,
+            nome: profile.nome,
+            email: user.email || '',
+            whatsapp: profile.whatsapp,
+            data_nascimento: profile.data_nascimento,
+            created_at: profile.created_at
+          };
+          
+          setCliente(clienteData);
+          setLoading(false);
+          console.log('[PainelClienteAuthContext] ✅ Perfil carregado:', clienteData.nome);
         }
       } catch (error) {
-        console.error('[Auth] ❌ Erro crítico na inicialização:', error);
+        console.error('[PainelClienteAuthContext] ❌ Erro crítico:', error);
         if (mounted) {
-          setSession(null);
           setCliente(null);
-          setAuthLoading(false);
+          setLoading(false);
         }
       }
     };
 
-    // Iniciar verificação
-    initSession();
+    carregarPerfil();
 
     return () => {
-      console.log('[Auth] 🧹 Limpando subscriptions...');
       mounted = false;
-      subscription.unsubscribe();
     };
-  }, []); // Sem dependências - executa apenas uma vez
+  }, [user]); // Recarregar quando user mudar
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
@@ -271,7 +140,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve ter pelo menos 6 caracteres' };
       }
 
-      console.log('[Auth] 🚀 Enviando dados para edge function...');
+      console.log('[PainelClienteAuthContext] 🚀 Enviando dados para edge function...');
 
       const { data: result, error: functionError } = await supabase.functions.invoke('register-client', {
         body: {
@@ -284,7 +153,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       });
 
       if (functionError) {
-        console.error('[Auth] ❌ Erro ao chamar edge function:', functionError);
+        console.error('[PainelClienteAuthContext] ❌ Erro ao chamar edge function:', functionError);
         return { 
           error: 'Não foi possível processar seu cadastro neste momento. Por favor, verifique sua conexão e tente novamente.' 
         };
@@ -292,11 +161,11 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       if (!result || !result.success) {
         const errorMessage = result?.error || 'Erro ao processar cadastro. Tente novamente.';
-        console.error('[Auth] ❌ Edge function retornou erro:', errorMessage);
+        console.error('[PainelClienteAuthContext] ❌ Edge function retornou erro:', errorMessage);
         return { error: errorMessage };
       }
 
-      console.log('[Auth] ✅ Cadastro realizado com sucesso');
+      console.log('[PainelClienteAuthContext] ✅ Cadastro realizado com sucesso');
       
       toast({
         title: "✅ Cadastro realizado com sucesso!",
@@ -310,129 +179,15 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       };
 
     } catch (error) {
-      console.error('[Auth] ❌ Erro inesperado no cadastro:', error);
+      console.error('[PainelClienteAuthContext] ❌ Erro inesperado no cadastro:', error);
       return { 
         error: 'Erro inesperado ao criar conta. Por favor, tente novamente ou entre em contato conosco.' 
       };
     }
   }, [toast]);
 
-  const login = useCallback(async (email: string, senha: string): Promise<{ error: string | null }> => {
-    try {
-      if (!email?.trim() || !senha) {
-        return { error: 'E-mail e senha são obrigatórios' };
-      }
-
-      console.log('[Auth] 🔐 Tentando fazer login...');
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password: senha
-      });
-
-      if (error) {
-        console.error('[Auth] ❌ Erro no login:', error);
-        
-        if (error.message.includes('Invalid login credentials') || 
-            error.message.includes('invalid_credentials') ||
-            error.status === 400) {
-          return { error: 'E-mail ou senha incorretos. Verifique seus dados e tente novamente.' };
-        }
-        
-        if (error.message.includes('Email not confirmed') || 
-            error.message.includes('email_not_confirmed') ||
-            error.message.includes('not confirmed')) {
-          return { 
-            error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n❓ Não recebeu o e-mail? Entre em contato conosco.'
-          };
-        }
-        
-        if (error.message.includes('rate limit') || error.message.includes('too many')) {
-          return { error: 'Muitas tentativas de login. Aguarde alguns minutos e tente novamente.' };
-        }
-        
-        if (error.message.includes('network') || error.message.includes('connection')) {
-          return { error: 'Erro de conexão. Verifique sua internet e tente novamente.' };
-        }
-        
-        return { error: 'Erro ao fazer login. Tente novamente ou entre em contato conosco.' };
-      }
-
-      if (!data.user) {
-        return { error: 'Erro ao fazer login. Tente novamente.' };
-      }
-
-      if (!data.user.email_confirmed_at) {
-        await supabase.auth.signOut();
-        return { 
-          error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n❓ Não recebeu o e-mail? Entre em contato conosco.'
-        };
-      }
-
-      console.log('[Auth] ✅ Login realizado com sucesso');
-      console.log('[Auth] 👤 User ID:', data.user.id);
-      console.log('[Auth] 📧 Email:', data.user.email);
-
-      // Criar sessão (não bloqueante - não interrompe o login se falhar)
-      sessionManager.createSession({
-        userId: data.user.id,
-        userType: 'painel_cliente',
-        userEmail: data.user.email,
-        userName: data.user.email,
-        expiresInHours: 24,
-      }).catch(err => console.warn('[PainelCliente] ⚠️ Erro ao criar sessão (não crítico):', err));
-
-      toast({
-        title: "✅ Login realizado!",
-        description: `Bem-vindo, ${data.user.email}`,
-        duration: 3000,
-      });
-
-      // O perfil será carregado automaticamente pelo onAuthStateChange
-
-      return { error: null };
-    } catch (error) {
-      console.error('[Auth] ❌ Erro inesperado no login:', error);
-      return { error: 'Erro inesperado. Tente novamente.' };
-    }
-  }, [toast]);
-
-  const logout = useCallback(async (): Promise<void> => {
-    try {
-      console.log('[Auth] 🚪 Fazendo logout...');
-      
-      // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
-      sessionManager.invalidateSession('painel_cliente').catch(err => 
-        console.warn('[PainelCliente] ⚠️ Erro ao invalidar sessão (não crítico):', err)
-      );
-      
-      await supabase.auth.signOut();
-      
-      setCliente(null);
-      setSession(null);
-      
-      console.log('[Auth] ✅ Logout concluído');
-      
-      toast({
-        title: "Logout realizado",
-        description: "Até a próxima!",
-      });
-    } catch (error) {
-      console.error('[Auth] ❌ Erro ao fazer logout:', error);
-      
-      setCliente(null);
-      setSession(null);
-      
-      toast({
-        title: "Sessão encerrada",
-        description: "Você será redirecionado ao login",
-        variant: "destructive"
-      });
-    }
-  }, [toast]);
-
   const atualizarPerfil = useCallback(async (dados: Partial<Cliente>): Promise<{ error: string | null }> => {
-    if (!session?.user) return { error: 'Usuário não autenticado' };
+    if (!user) return { error: 'Usuário não autenticado' };
 
     try {
       const { error } = await supabase
@@ -443,14 +198,14 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           data_nascimento: dados.data_nascimento,
           updated_at: new Date().toISOString()
         })
-        .eq('id', session.user.id);
+        .eq('id', user.id);
 
       if (error) {
         return { error: error.message };
       }
 
       // Atualizar email se necessário
-      if (dados.email && dados.email !== session.user.email) {
+      if (dados.email && dados.email !== user.email) {
         const { error: updateError } = await supabase.auth.updateUser({
           email: dados.email
         });
@@ -461,26 +216,41 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       // Recarregar perfil
-      const perfil = await buscarPerfilCliente(session.user.id);
-      if (perfil) {
-        setCliente(perfil);
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profile) {
+        setCliente({
+          id: profile.id,
+          nome: profile.nome,
+          email: user.email || '',
+          whatsapp: profile.whatsapp,
+          data_nascimento: profile.data_nascimento,
+          created_at: profile.created_at
+        });
       }
+
+      toast({
+        title: "✅ Perfil atualizado!",
+        description: "Suas informações foram atualizadas com sucesso.",
+        duration: 3000,
+      });
 
       return { error: null };
     } catch (error) {
-      console.error('[Auth] ❌ Erro ao atualizar perfil:', error);
+      console.error('[PainelClienteAuthContext] ❌ Erro ao atualizar perfil:', error);
       return { error: 'Erro interno do servidor' };
     }
-  }, [session, buscarPerfilCliente]);
+  }, [user, toast]);
 
   const value = {
     cliente,
-    session,
-    authLoading,
+    loading,
     cadastrar,
-    login,
-    logout,
-    atualizarPerfil
+    atualizarPerfil,
   };
 
   return (

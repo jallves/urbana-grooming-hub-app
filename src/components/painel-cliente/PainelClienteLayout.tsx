@@ -1,14 +1,15 @@
-
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Calendar, Home, Bell, Clock } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
 const PainelClienteLayout: React.FC = () => {
-  const { cliente, logout } = usePainelClienteAuth();
+  const { cliente } = usePainelClienteAuth();
+  const { signOut } = useAuth(); // Usar signOut do AuthContext unificado
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
@@ -37,7 +38,7 @@ const PainelClienteLayout: React.FC = () => {
       setIsLoggingOut(true);
       console.log('🚪 [Layout] Iniciando processo de logout...');
       
-      await logout();
+      await signOut();
       
       console.log('✅ [Layout] Logout concluído, navegando para login...');
       navigate('/painel-cliente/login', { replace: true });
