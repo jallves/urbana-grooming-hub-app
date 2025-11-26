@@ -14,11 +14,13 @@ const DEFAULT_BANNER: BannerImage = {
 };
 
 export const useBanners = () => {
+  console.log('🎯 [useBanners] Hook inicializado');
   const [banners, setBanners] = useState<BannerImage[]>([DEFAULT_BANNER]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBanners = async () => {
+    console.log('🚀 [useBanners] Iniciando fetch...');
     try {
       setLoading(true);
       setError(null);
@@ -28,6 +30,8 @@ export const useBanners = () => {
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
+      
+      console.log('📦 [useBanners] Resposta recebida:', { hasData: !!data, count: data?.length, hasError: !!fetchError });
 
       if (fetchError) {
         console.error('[useBanners] Erro:', fetchError);
