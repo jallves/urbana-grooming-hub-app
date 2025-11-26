@@ -51,7 +51,7 @@ const Hero: React.FC = () => {
           <h2 className="text-3xl font-bold text-white mb-4">Costa Urbana</h2>
           <p className="text-urbana-gold/70 mb-6">{error || 'Não foi possível carregar este conteúdo agora.'}</p>
           <Button
-            onClick={refetch}
+            onClick={() => refetch()}
             className="bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-semibold"
           >
             <RefreshCw className="w-4 h-4 mr-2" />

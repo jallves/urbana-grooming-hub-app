@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { BannerImage } from '@/types/settings';
 
@@ -13,79 +14,63 @@ const DEFAULT_BANNER: BannerImage = {
   display_order: 1
 };
 
+const fetchBanners = async (): Promise<BannerImage[]> => {
+  const { data, error } = await supabase
+    .from('banner_images')
+    .select('*')
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+
+  if (error) throw error;
+  return data && data.length > 0 ? data : [DEFAULT_BANNER];
+};
+
+// Singleton channel para evitar múltiplas subscriptions
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+let subscriberCount = 0;
+
 export const useBanners = () => {
-  const [banners, setBanners] = useState<BannerImage[]>([DEFAULT_BANNER]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const fetchingRef = useRef(false);
-  const mountedRef = useRef(true);
+  const queryClient = useQueryClient();
 
-  const fetchBanners = async () => {
-    // Evita fetches duplicados simultâneos
-    if (fetchingRef.current) {
-      console.log('🎯 [useBanners] Fetch já em andamento, ignorando...');
-      return;
-    }
-
-    fetchingRef.current = true;
-    console.log('🚀 [useBanners] Iniciando fetch...');
-    
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data, error: fetchError } = await supabase
-        .from('banner_images')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-      
-      if (!mountedRef.current) return;
-      
-      console.log('📦 [useBanners] Resposta:', { count: data?.length || 0 });
-
-      if (fetchError) {
-        console.error('[useBanners] Erro:', fetchError);
-        setError(fetchError.message);
-        setBanners([DEFAULT_BANNER]);
-      } else if (data && data.length > 0) {
-        console.log('[useBanners] ✅', data.length, 'banners carregados');
-        setBanners(data);
-      } else {
-        setBanners([DEFAULT_BANNER]);
-      }
-    } catch (err: any) {
-      if (!mountedRef.current) return;
-      console.error('[useBanners] Exceção:', err);
-      setError(err.message);
-      setBanners([DEFAULT_BANNER]);
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-      fetchingRef.current = false;
-    }
-  };
+  const { data: banners = [DEFAULT_BANNER], isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['banners'],
+    queryFn: fetchBanners,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
 
   useEffect(() => {
-    mountedRef.current = true;
-    fetchBanners();
+    subscriberCount++;
 
-    const channel = supabase
-      .channel('banners_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'banner_images' },
-        () => fetchBanners()
-      )
-      .subscribe();
+    // Cria channel apenas uma vez
+    if (!realtimeChannel) {
+      realtimeChannel = supabase
+        .channel('banners_realtime_singleton')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'banner_images' },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ['banners'] });
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
-      mountedRef.current = false;
-      fetchingRef.current = false;
-      supabase.removeChannel(channel);
+      subscriberCount--;
+      
+      // Remove channel apenas quando não há mais subscribers
+      if (subscriberCount === 0 && realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
     };
-  }, []);
+  }, [queryClient]);
 
-  return { banners, loading, error, refetch: fetchBanners };
+  return { 
+    banners, 
+    loading, 
+    error: error ? (error as Error).message : null, 
+    refetch 
+  };
 };

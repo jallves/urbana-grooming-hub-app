@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GalleryImage } from '@/types/settings';
 
@@ -20,84 +21,72 @@ const DEFAULT_IMAGES: GalleryImage[] = [
   },
 ];
 
+const fetchGalleryImages = async (): Promise<GalleryImage[]> => {
+  const { data, error } = await supabase
+    .from('gallery_images')
+    .select('id, src, alt')
+    .eq('is_active', true)
+    .order('display_order', { ascending: true });
+
+  if (error) throw error;
+  
+  if (data && data.length > 0) {
+    return data.map((item, index) => ({
+      id: index + 1,
+      src: item.src,
+      alt: item.alt
+    }));
+  }
+  
+  return DEFAULT_IMAGES;
+};
+
+// Singleton channel para evitar múltiplas subscriptions
+let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+let subscriberCount = 0;
+
 export const useGallery = () => {
-  const [images, setImages] = useState<GalleryImage[]>(DEFAULT_IMAGES);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const fetchingRef = useRef(false);
-  const mountedRef = useRef(true);
+  const queryClient = useQueryClient();
 
-  const fetchImages = async () => {
-    // Evita fetches duplicados simultâneos
-    if (fetchingRef.current) {
-      console.log('🎯 [useGallery] Fetch já em andamento, ignorando...');
-      return;
-    }
-
-    fetchingRef.current = true;
-    console.log('🚀 [useGallery] Iniciando fetch...');
-    
-    try {
-      setLoading(true);
-      setError(null);
-
-      const { data, error: fetchError } = await supabase
-        .from('gallery_images')
-        .select('id, src, alt')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-      
-      if (!mountedRef.current) return;
-      
-      console.log('📦 [useGallery] Resposta:', { count: data?.length || 0 });
-
-      if (fetchError) {
-        console.error('[useGallery] Erro:', fetchError);
-        setError(fetchError.message);
-        setImages(DEFAULT_IMAGES);
-      } else if (data && data.length > 0) {
-        console.log('[useGallery] ✅', data.length, 'imagens carregadas');
-        const formattedData = data.map((item, index) => ({
-          id: index + 1,
-          src: item.src,
-          alt: item.alt
-        }));
-        setImages(formattedData);
-      } else {
-        setImages(DEFAULT_IMAGES);
-      }
-    } catch (err: any) {
-      if (!mountedRef.current) return;
-      console.error('[useGallery] Exceção:', err);
-      setError(err.message);
-      setImages(DEFAULT_IMAGES);
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-      fetchingRef.current = false;
-    }
-  };
+  const { data: images = DEFAULT_IMAGES, isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['gallery'],
+    queryFn: fetchGalleryImages,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
 
   useEffect(() => {
-    mountedRef.current = true;
-    fetchImages();
+    subscriberCount++;
 
-    const channel = supabase
-      .channel('gallery_realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'gallery_images' },
-        () => fetchImages()
-      )
-      .subscribe();
+    // Cria channel apenas uma vez
+    if (!realtimeChannel) {
+      realtimeChannel = supabase
+        .channel('gallery_realtime_singleton')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'gallery_images' },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ['gallery'] });
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
-      mountedRef.current = false;
-      fetchingRef.current = false;
-      supabase.removeChannel(channel);
+      subscriberCount--;
+      
+      // Remove channel apenas quando não há mais subscribers
+      if (subscriberCount === 0 && realtimeChannel) {
+        supabase.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
     };
-  }, []);
+  }, [queryClient]);
 
-  return { images, loading, error, refetch: fetchImages };
+  return { 
+    images, 
+    loading, 
+    error: error ? (error as Error).message : null, 
+    refetch 
+  };
 };
