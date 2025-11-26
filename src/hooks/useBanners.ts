@@ -20,6 +20,7 @@ export const useBanners = () => {
 
   const fetchBanners = async () => {
     try {
+      console.log('🎨 [useBanners] Iniciando busca de banners...');
       setLoading(true);
       setError(null);
       
@@ -30,23 +31,28 @@ export const useBanners = () => {
         .order('display_order', { ascending: true });
 
       if (fetchError) {
-        console.error('Erro ao buscar banners:', fetchError);
+        console.error('❌ [useBanners] Erro ao buscar banners:', fetchError);
         setError(fetchError.message);
         setBanners([DEFAULT_BANNER]);
         return;
       }
 
+      console.log('✅ [useBanners] Banners carregados:', data?.length || 0);
+      
       if (data && data.length > 0) {
+        console.log('🎨 [useBanners] Definindo banners:', data);
         setBanners(data);
       } else {
+        console.log('⚠️ [useBanners] Nenhum banner encontrado, usando default');
         setBanners([DEFAULT_BANNER]);
       }
     } catch (err) {
-      console.error('Erro inesperado:', err);
+      console.error('❌ [useBanners] Erro inesperado:', err);
       setError('Erro ao carregar banners');
       setBanners([DEFAULT_BANNER]);
     } finally {
       setLoading(false);
+      console.log('🏁 [useBanners] Busca finalizada');
     }
   };
 
