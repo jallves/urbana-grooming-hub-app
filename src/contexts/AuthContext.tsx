@@ -52,7 +52,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkUserRoles = async (userId: string): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
     try {
-      // Query com timeout robusto
+      // 1. Verificar se é cliente (clientes não têm roles)
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (clientData) {
+        console.log('[AuthContext] Usuário é cliente - sem roles');
+        return null;
+      }
+
+      // 2. Verificar se é staff/employee
+      const { data: userData } = await supabase.auth.getUser();
+      const userEmail = userData.user?.email;
+
+      if (!userEmail) {
+        console.warn('[AuthContext] Email não encontrado');
+        return null;
+      }
+
+      const { data: staffData } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('email', userEmail)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!staffData) {
+        console.log('[AuthContext] Usuário não é staff ativo');
+        return null;
+      }
+
+      // 3. Buscar role apenas se for staff
       const queryPromise = supabase
         .from('user_roles')
         .select('role')
@@ -62,8 +95,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) => 
         setTimeout(() => resolve({ 
           data: null, 
-          error: new Error('Query timeout - 5s') 
-        }), 5000)
+          error: new Error('Timeout') 
+        }), 3000)
       );
 
       const result = await Promise.race([queryPromise, timeoutPromise]);
@@ -75,13 +108,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (!data) {
-        console.warn('[AuthContext] Usuário sem role definida');
+        console.warn('[AuthContext] Staff sem role na user_roles');
         return null;
       }
 
+      console.log('[AuthContext] Role encontrada:', data.role);
       return data.role as 'master' | 'admin' | 'manager' | 'barber';
     } catch (error: any) {
-      console.error('[AuthContext] Erro/timeout ao buscar role:', error.message);
+      console.error('[AuthContext] Erro ao verificar roles:', error.message);
       return null;
     }
   };
