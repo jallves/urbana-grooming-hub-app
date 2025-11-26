@@ -210,10 +210,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     
     try {
-      // Buscar role diretamente da tabela com retry
+      // OTIMIZAÇÃO: Verificar rapidamente se é um cliente comum
+      // Clientes não têm entrada em user_roles, então verificamos painel_clientes primeiro
+      console.log('[AuthContext] 🔍 Verificando se é cliente...');
+      const { data: clientData } = await supabase
+        .from('painel_clientes')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+      
+      if (clientData) {
+        console.log('[AuthContext] ✅ Usuário identificado como cliente - sem roles admin/staff');
+        applyRole(null);
+        return null;
+      }
+      
+      // Se não é cliente, buscar role da tabela user_roles
       let role: 'master' | 'admin' | 'manager' | 'barber' | null = null;
       let attempts = 0;
-      const maxAttempts = 3;
+      const maxAttempts = 2; // Reduzido para 2 tentativas
       
       while (attempts < maxAttempts && !role) {
         attempts++;
@@ -225,7 +240,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           const queryStart = performance.now();
           
-          // Adicionar timeout de 2 segundos (com índice, deve ser bem mais rápido)
+          // Timeout de 2 segundos
           const queryPromise = supabase
             .from('user_roles')
             .select('role')
@@ -268,7 +283,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             
             if (attempts < maxAttempts) {
               // Aguardar antes de tentar novamente (backoff exponencial)
-              const delay = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+              const delay = Math.min(1000 * Math.pow(2, attempts - 1), 3000);
               console.log(`[AuthContext] ⏳ Aguardando ${delay}ms antes de retry...`);
               await new Promise(resolve => setTimeout(resolve, delay));
               continue;
@@ -299,7 +314,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
           
           // Aguardar antes de tentar novamente
-          const delay = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+          const delay = Math.min(1000 * Math.pow(2, attempts - 1), 3000);
           console.log(`[AuthContext] ⏳ Aguardando ${delay}ms antes de retry...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
