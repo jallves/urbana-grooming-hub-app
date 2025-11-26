@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 
 interface Cliente {
   id: string;
@@ -15,7 +14,8 @@ interface Cliente {
 
 interface PainelClienteAuthContextType {
   cliente: Cliente | null;
-  loading: boolean;
+  session: Session | null;
+  authLoading: boolean;
   cadastrar: (dados: CadastroData) => Promise<{ error: string | null; needsEmailConfirmation?: boolean }>;
   login: (email: string, senha: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
@@ -46,14 +46,15 @@ interface PainelClienteAuthProviderProps {
 
 export function PainelClienteAuthProvider({ children }: PainelClienteAuthProviderProps) {
   const [cliente, setCliente] = useState<Cliente | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const { toast } = useToast();
 
   // Função para buscar perfil do cliente
-  const buscarPerfilCliente = useCallback(async (userId: string) => {
+  const buscarPerfilCliente = useCallback(async (userId: string): Promise<Cliente | null> => {
     try {
+      console.log('[Auth] 🔍 Buscando perfil do cliente...');
+      
       const { data: profile, error } = await supabase
         .from('client_profiles')
         .select('*')
@@ -61,180 +62,123 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         .single();
 
       if (error) {
-        console.error('Erro ao buscar perfil:', error);
+        console.error('[Auth] ❌ Erro ao buscar perfil:', error);
         return null;
       }
 
-      if (!profile) return null;
+      if (!profile) {
+        console.error('[Auth] ❌ Perfil não encontrado');
+        return null;
+      }
 
       // Buscar email do auth.users
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
-      return {
+      const clienteData: Cliente = {
         id: profile.id,
         nome: profile.nome,
         email: authUser?.email || '',
         whatsapp: profile.whatsapp,
         data_nascimento: profile.data_nascimento,
         created_at: profile.created_at
-      } as Cliente;
+      };
+
+      console.log('[Auth] ✅ Perfil carregado:', clienteData.nome);
+      return clienteData;
     } catch (error) {
-      console.error('Erro ao buscar perfil:', error);
+      console.error('[Auth] ❌ Erro crítico ao buscar perfil:', error);
       return null;
     }
   }, []);
 
-  // Listener de mudanças de autenticação
+  // Inicialização: Verificar sessão existente
   useEffect(() => {
+    console.log('[Auth] 🚀 Inicializando autenticação...');
+    
     let mounted = true;
 
-    // Setup auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-
-        console.log('[PainelClienteAuth] Auth event:', event);
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        // ===================================================================
-        // AUTO-LOGIN APÓS CONFIRMAÇÃO DE E-MAIL
-        // ===================================================================
-        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
-          console.log('✅ [Auto-login] E-mail confirmado! Realizando login automático...');
-          // Buscar perfil com timeout
-          const timeoutId = setTimeout(() => {
-            console.warn('[PainelClienteAuth] ⏱️ Timeout ao buscar perfil no auto-login');
-            if (mounted) {
-              setLoading(false);
-            }
-          }, 8000);
-
-          try {
-            const perfil = await buscarPerfilCliente(session.user.id);
-            clearTimeout(timeoutId);
-            
-            if (mounted) {
-              setCliente(perfil);
-              setLoading(false);
-              console.log('✅ [Auto-login] Perfil carregado:', perfil?.nome);
-            }
-          } catch (error) {
-            clearTimeout(timeoutId);
-            console.error('[PainelClienteAuth] Erro no auto-login:', error);
-            if (mounted) {
-              setCliente(null);
-              setLoading(false);
-            }
-          }
-          return;
-        }
-
-        if (session?.user) {
-          // Buscar perfil do cliente com timeout
-          const timeoutId = setTimeout(() => {
-            console.warn('[PainelClienteAuth] ⏱️ Timeout ao buscar perfil');
-            if (mounted) {
-              setLoading(false);
-            }
-          }, 8000);
-
-          try {
-            const perfil = await buscarPerfilCliente(session.user.id);
-            clearTimeout(timeoutId);
-            
-            if (mounted) {
-              setCliente(perfil);
-              setLoading(false);
-            }
-          } catch (error) {
-            clearTimeout(timeoutId);
-            console.error('[PainelClienteAuth] Erro ao buscar perfil:', error);
-            if (mounted) {
-              setCliente(null);
-              setLoading(false);
-            }
-          }
-        } else {
-          if (mounted) {
-            setCliente(null);
-            setLoading(false);
-          }
-        }
-      }
-    );
-
-    // Check for existing session com timeout
+    // 1. Buscar sessão existente
     const initSession = async () => {
-      const initTimeoutId = setTimeout(() => {
-        console.warn('[PainelClienteAuth] ⏱️ Timeout ao inicializar sessão');
-        if (mounted) {
-          setLoading(false);
-        }
-      }, 10000);
-
       try {
-        console.log('[PainelClienteAuth] Verificando sessão...');
-        
-        // getSession() automaticamente detecta tokens na URL após confirmação de e-mail
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        clearTimeout(initTimeoutId);
-
         if (error) {
-          console.error('[PainelClienteAuth] Erro ao buscar sessão:', error);
+          console.error('[Auth] ❌ Erro ao buscar sessão:', error);
           if (mounted) {
-            setLoading(false);
+            setSession(null);
+            setCliente(null);
+            setAuthLoading(false);
           }
           return;
         }
 
         if (!mounted) return;
 
+        console.log('[Auth] Sessão encontrada:', session ? '✅ SIM' : '❌ NÃO');
         setSession(session);
-        setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Verificar se é um redirecionamento após confirmação de e-mail
-          if (session.user.email_confirmed_at) {
-            console.log('✅ [Init] E-mail confirmado detectado na sessão inicial');
-          }
-          
-          console.log('[PainelClienteAuth] Sessão encontrada');
+          // Buscar perfil do cliente
           const perfil = await buscarPerfilCliente(session.user.id);
           if (mounted) {
             setCliente(perfil);
-            console.log('[PainelClienteAuth] ✅ Perfil:', perfil?.nome);
           }
-        } else {
-          console.log('[PainelClienteAuth] Sem sessão ativa');
         }
 
         if (mounted) {
-          setLoading(false);
+          setAuthLoading(false);
         }
       } catch (error) {
-        clearTimeout(initTimeoutId);
-        console.error('[PainelClienteAuth] Erro crítico:', error);
+        console.error('[Auth] ❌ Erro crítico na inicialização:', error);
         if (mounted) {
-          setLoading(false);
+          setSession(null);
+          setCliente(null);
+          setAuthLoading(false);
         }
       }
     };
 
+    // 2. Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log('[Auth] 🔄 Evento de autenticação:', event);
+
+        setSession(session);
+
+        if (session?.user) {
+          console.log('[Auth] ✅ Usuário autenticado');
+          const perfil = await buscarPerfilCliente(session.user.id);
+          if (mounted) {
+            setCliente(perfil);
+          }
+        } else {
+          console.log('[Auth] ❌ Usuário não autenticado');
+          if (mounted) {
+            setCliente(null);
+          }
+        }
+
+        // Sempre desmarcar loading após processar evento
+        if (mounted && authLoading) {
+          setAuthLoading(false);
+        }
+      }
+    );
+
+    // Iniciar verificação de sessão
     initSession();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Remover buscarPerfilCliente das dependências
+  }, []); // Executar apenas uma vez no mount
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
-      // ===================================================================
-      // ETAPA 1: VALIDAÇÕES DE FORMATO
-      // ===================================================================
+      // Validações de formato
       if (!dados.nome?.trim()) {
         return { error: 'Nome é obrigatório' };
       }
@@ -261,10 +205,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'Senha deve conter pelo menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial' };
       }
 
-      // ===================================================================
-      // ETAPA 2: CHAMAR EDGE FUNCTION QUE CONTROLA TODO O FLUXO
-      // ===================================================================
-      console.log('🚀 Enviando dados para edge function...');
+      console.log('[Auth] 🚀 Enviando dados para edge function...');
 
       const { data: result, error: functionError } = await supabase.functions.invoke('register-client', {
         body: {
@@ -276,25 +217,20 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         }
       });
 
-      // ⚠️ Erro na chamada da função (problema de rede ou função indisponível)
       if (functionError) {
-        console.error('❌ Erro ao chamar edge function:', functionError);
+        console.error('[Auth] ❌ Erro ao chamar edge function:', functionError);
         return { 
-          error: '⚠️ Não foi possível processar seu cadastro neste momento.\n\nPor favor, verifique sua conexão e tente novamente.' 
+          error: 'Não foi possível processar seu cadastro neste momento. Por favor, verifique sua conexão e tente novamente.' 
         };
       }
 
-      // ⚠️ Verificar se a função retornou erro de validação
       if (!result || !result.success) {
         const errorMessage = result?.error || 'Erro ao processar cadastro. Tente novamente.';
-        console.error('❌ Edge function retornou erro:', errorMessage);
+        console.error('[Auth] ❌ Edge function retornou erro:', errorMessage);
         return { error: errorMessage };
       }
 
-      // ===================================================================
-      // ✅ SUCESSO!
-      // ===================================================================
-      console.log('✅ Cadastro realizado com sucesso via edge function');
+      console.log('[Auth] ✅ Cadastro realizado com sucesso');
       
       toast({
         title: "✅ Cadastro realizado com sucesso!",
@@ -308,9 +244,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       };
 
     } catch (error) {
-      console.error('❌ Erro inesperado no cadastro:', error);
+      console.error('[Auth] ❌ Erro inesperado no cadastro:', error);
       return { 
-        error: '❌ Erro inesperado ao criar conta.\n\nPor favor, tente novamente ou entre em contato conosco.' 
+        error: 'Erro inesperado ao criar conta. Por favor, tente novamente ou entre em contato conosco.' 
       };
     }
   }, [toast]);
@@ -321,58 +257,53 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return { error: 'E-mail e senha são obrigatórios' };
       }
 
-      // Fazer login usando supabase.auth
+      console.log('[Auth] 🔐 Tentando fazer login...');
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password: senha
       });
 
       if (error) {
-        console.error('Erro no login:', error);
+        console.error('[Auth] ❌ Erro no login:', error);
         
-        // Tratamento específico de erros de login
         if (error.message.includes('Invalid login credentials') || 
             error.message.includes('invalid_credentials') ||
             error.status === 400) {
-          return { error: '⚠️ E-mail ou senha incorretos. Verifique seus dados e tente novamente.' };
+          return { error: 'E-mail ou senha incorretos. Verifique seus dados e tente novamente.' };
         }
         
-        // IMPORTANTE: Verificar se o e-mail não foi confirmado
         if (error.message.includes('Email not confirmed') || 
             error.message.includes('email_not_confirmed') ||
             error.message.includes('not confirmed')) {
           return { 
-            error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n' +
-                   '📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n' +
-                   '❓ Não recebeu o e-mail? Entre em contato conosco.'
+            error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n❓ Não recebeu o e-mail? Entre em contato conosco.'
           };
         }
         
         if (error.message.includes('rate limit') || error.message.includes('too many')) {
-          return { error: '⚠️ Muitas tentativas de login. Aguarde alguns minutos e tente novamente.' };
+          return { error: 'Muitas tentativas de login. Aguarde alguns minutos e tente novamente.' };
         }
         
         if (error.message.includes('network') || error.message.includes('connection')) {
-          return { error: '⚠️ Erro de conexão. Verifique sua internet e tente novamente.' };
+          return { error: 'Erro de conexão. Verifique sua internet e tente novamente.' };
         }
         
-        return { error: '❌ Erro ao fazer login. Tente novamente ou entre em contato conosco.' };
+        return { error: 'Erro ao fazer login. Tente novamente ou entre em contato conosco.' };
       }
 
       if (!data.user) {
         return { error: 'Erro ao fazer login. Tente novamente.' };
       }
 
-      // IMPORTANTE: Verificar se o e-mail foi confirmado
       if (!data.user.email_confirmed_at) {
-        // Fazer logout imediato
         await supabase.auth.signOut();
         return { 
-          error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n' +
-                 '📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n' +
-                 '❓ Não recebeu o e-mail? Entre em contato conosco.'
+          error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n❓ Não recebeu o e-mail? Entre em contato conosco.'
         };
       }
+
+      console.log('[Auth] ✅ Login realizado com sucesso');
 
       toast({
         title: "Login realizado com sucesso!",
@@ -383,54 +314,34 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       return { error: null };
     } catch (error) {
-      console.error('Erro inesperado no login:', error);
+      console.error('[Auth] ❌ Erro inesperado no login:', error);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
   }, [toast]);
 
   const logout = useCallback(async (): Promise<void> => {
     try {
-      console.log('[PainelClienteAuth] 🚪 Iniciando logout...');
+      console.log('[Auth] 🚪 Fazendo logout...');
       
-      // Fazer logout no Supabase
-      const { error } = await supabase.auth.signOut();
+      await supabase.auth.signOut();
       
-      if (error) {
-        console.error('[PainelClienteAuth] ❌ Erro ao fazer logout:', error);
-        throw error;
-      }
-      
-      console.log('[PainelClienteAuth] ✅ Logout do Supabase concluído');
-      
-      // Limpar estados locais
       setCliente(null);
-      setUser(null);
       setSession(null);
       
-      // Limpar localStorage completamente
-      try {
-        localStorage.removeItem('supabase.auth.token');
-        console.log('[PainelClienteAuth] 🧹 LocalStorage limpo');
-      } catch (e) {
-        console.warn('[PainelClienteAuth] ⚠️ Erro ao limpar localStorage:', e);
-      }
+      console.log('[Auth] ✅ Logout concluído');
       
       toast({
-        title: "✅ Logout realizado",
+        title: "Logout realizado",
         description: "Até a próxima!",
       });
-      
-      console.log('[PainelClienteAuth] ✅ Logout completo');
     } catch (error) {
-      console.error('[PainelClienteAuth] ❌ Erro crítico no logout:', error);
+      console.error('[Auth] ❌ Erro ao fazer logout:', error);
       
-      // Mesmo com erro, limpar estados locais
       setCliente(null);
-      setUser(null);
       setSession(null);
       
       toast({
-        title: "⚠️ Sessão encerrada",
+        title: "Sessão encerrada",
         description: "Você será redirecionado ao login",
         variant: "destructive"
       });
@@ -438,7 +349,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   }, [toast]);
 
   const atualizarPerfil = useCallback(async (dados: Partial<Cliente>): Promise<{ error: string | null }> => {
-    if (!user) return { error: 'Usuário não autenticado' };
+    if (!session?.user) return { error: 'Usuário não autenticado' };
 
     try {
       const { error } = await supabase
@@ -449,14 +360,14 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           data_nascimento: dados.data_nascimento,
           updated_at: new Date().toISOString()
         })
-        .eq('id', user.id);
+        .eq('id', session.user.id);
 
       if (error) {
         return { error: error.message };
       }
 
       // Atualizar email se necessário
-      if (dados.email && dados.email !== user.email) {
+      if (dados.email && dados.email !== session.user.email) {
         const { error: updateError } = await supabase.auth.updateUser({
           email: dados.email
         });
@@ -467,21 +378,22 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       }
 
       // Recarregar perfil
-      const perfil = await buscarPerfilCliente(user.id);
+      const perfil = await buscarPerfilCliente(session.user.id);
       if (perfil) {
         setCliente(perfil);
       }
 
       return { error: null };
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
+      console.error('[Auth] ❌ Erro ao atualizar perfil:', error);
       return { error: 'Erro interno do servidor' };
     }
-  }, [user, buscarPerfilCliente]);
+  }, [session, buscarPerfilCliente]);
 
   const value = {
     cliente,
-    loading,
+    session,
+    authLoading,
     cadastrar,
     login,
     logout,
