@@ -54,64 +54,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const checkUserRoles = async (user: User): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
-    console.log('[AuthContext] 🚀 INÍCIO checkUserRoles');
-    console.log('[AuthContext] 🚀 User recebido:', user ? 'SIM' : 'NÃO');
-    
     if (!user) {
-      console.log('[AuthContext] ❌ Sem usuário para verificar roles');
+      console.log('[AuthContext] ❌ User é null');
       applyRole(null);
       setLoading(false);
       return null;
     }
     
-    console.log('[AuthContext] 🔍 User ID:', user.id);
-    console.log('[AuthContext] 🔍 Email:', user.email);
-    console.log('[AuthContext] 🔍 Iniciando query no Supabase...');
+    console.log('[AuthContext] 🔍 Buscando role para:', user.id);
     
-    try {
-      const startTime = Date.now();
-      
-      console.log('[AuthContext] 📡 Fazendo query na tabela user_roles...');
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      const queryTime = Date.now() - startTime;
-      console.log(`[AuthContext] ⏱️ Query completou em ${queryTime}ms`);
-      console.log('[AuthContext] 📊 Data retornada:', JSON.stringify(data));
-      console.log('[AuthContext] 📊 Error retornado:', JSON.stringify(error));
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+    
+    console.log('[AuthContext] 📊 Resultado:', { data, error });
 
-      if (error) {
-        console.error('[AuthContext] ❌ ERRO na query:', error);
-        applyRole(null);
-        setLoading(false);
-        return null;
-      }
-
-      if (!data) {
-        console.error('[AuthContext] ⚠️ DATA É NULL! Usuário sem role no banco');
-        applyRole(null);
-        setLoading(false);
-        return null;
-      }
-
-      console.log('[AuthContext] ✅ DATA ENCONTRADA! Role:', data.role);
-      const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
-      
-      console.log('[AuthContext] 🎯 Aplicando role:', role);
-      applyRole(role);
-      setLoading(false);
-      console.log('[AuthContext] ✅ SUCESSO! Role aplicada');
-      return role;
-
-    } catch (error) {
-      console.error('[AuthContext] 💥 EXCEPTION capturada:', error);
+    if (error || !data) {
+      console.error('[AuthContext] ❌ Sem role encontrada');
       applyRole(null);
       setLoading(false);
       return null;
     }
+
+    const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
+    console.log('[AuthContext] ✅ Role aplicada:', role);
+    applyRole(role);
+    setLoading(false);
+    return role;
   };
 
   useEffect(() => {
