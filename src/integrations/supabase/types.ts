@@ -4666,6 +4666,7 @@ export type Database = {
         }
         Returns: string
       }
+      invalidate_all_sessions: { Args: never; Returns: undefined }
       invalidate_session: {
         Args: { p_session_token: string }
         Returns: boolean
