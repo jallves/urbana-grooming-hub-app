@@ -147,7 +147,7 @@ const PainelClienteLayout: React.FC = () => {
       </header>
 
       {/* Enhanced Mobile Navigation - FIXO */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
         <div className="w-full px-1 md:px-4">
           {/* Mobile Tab Navigation */}
           <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
@@ -201,9 +201,9 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Desktop Navigation Sidebar - Visível apenas em desktop */}
-      <nav className="hidden lg:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 backdrop-blur-2xl bg-urbana-black/90 border-r border-urbana-gold/20 shadow-2xl flex-col">
-        <div className="flex-1 p-4 space-y-2">
+      {/* Desktop Navigation Sidebar - Visível em tablets e desktop */}
+      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-48 md:w-56 lg:w-64 xl:w-72 backdrop-blur-2xl bg-urbana-black/90 border-r border-urbana-gold/20 shadow-2xl flex-col">
+        <div className="flex-1 p-2 md:p-3 lg:p-4 space-y-1 md:space-y-2">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -214,35 +214,35 @@ const PainelClienteLayout: React.FC = () => {
                 variant="ghost"
                 onClick={() => navigate(item.path)}
                 className={`
-                  w-full flex items-center gap-3 justify-start
-                  p-4 rounded-xl transition-all duration-300
+                  w-full flex items-center gap-2 md:gap-3 justify-start
+                  p-2 md:p-3 lg:p-4 rounded-lg md:rounded-xl transition-all duration-300
                   ${isActive 
                     ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30' 
                     : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
                   }
                 `}
               >
-                <Icon className="h-5 w-5" />
-                <span className="text-sm font-medium">{item.label}</span>
+                <Icon className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="text-xs md:text-sm font-medium">{item.label}</span>
               </Button>
             );
           })}
         </div>
         
         {/* Desktop User Info */}
-        <div className="p-4 border-t border-urbana-gold/20">
-          <div className="flex items-center gap-3 px-4 py-3 bg-urbana-black/30 rounded-xl backdrop-blur-sm border border-urbana-gold/20">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-urbana-light">{cliente?.nome}</p>
-              <p className="text-xs text-urbana-light/60">{cliente?.email}</p>
+        <div className="p-2 md:p-3 lg:p-4 border-t border-urbana-gold/20">
+          <div className="flex items-center gap-2 md:gap-3 px-2 md:px-3 lg:px-4 py-2 md:py-3 bg-urbana-black/30 rounded-lg md:rounded-xl backdrop-blur-sm border border-urbana-gold/20">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs md:text-sm font-medium text-urbana-light truncate">{cliente?.nome}</p>
+              <p className="text-[10px] md:text-xs text-urbana-light/60 truncate">{cliente?.email}</p>
             </div>
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
           </div>
         </div>
       </nav>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] lg:pb-12 lg:pl-64 px-4 md:px-6 lg:px-8">
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-48 lg:pl-56 xl:pl-72 px-4 md:px-6 lg:px-8">
         <div className="w-full max-w-[1800px] mx-auto">
           <Outlet />
         </div>
