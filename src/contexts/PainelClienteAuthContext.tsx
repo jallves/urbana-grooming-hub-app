@@ -297,8 +297,15 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           return { error: '⚠️ E-mail ou senha incorretos. Verifique seus dados e tente novamente.' };
         }
         
-        if (error.message.includes('Email not confirmed')) {
-          return { error: '📧 Você precisa confirmar seu e-mail antes de fazer login. Verifique sua caixa de entrada.' };
+        // IMPORTANTE: Verificar se o e-mail não foi confirmado
+        if (error.message.includes('Email not confirmed') || 
+            error.message.includes('email_not_confirmed') ||
+            error.message.includes('not confirmed')) {
+          return { 
+            error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n' +
+                   '📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n' +
+                   '❓ Não recebeu o e-mail? Entre em contato conosco.'
+          };
         }
         
         if (error.message.includes('rate limit') || error.message.includes('too many')) {
@@ -314,6 +321,17 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       if (!data.user) {
         return { error: 'Erro ao fazer login. Tente novamente.' };
+      }
+
+      // IMPORTANTE: Verificar se o e-mail foi confirmado
+      if (!data.user.email_confirmed_at) {
+        // Fazer logout imediato
+        await supabase.auth.signOut();
+        return { 
+          error: '📧 Você precisa confirmar seu e-mail antes de fazer login!\n\n' +
+                 '📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n' +
+                 '❓ Não recebeu o e-mail? Entre em contato conosco.'
+        };
       }
 
       toast({

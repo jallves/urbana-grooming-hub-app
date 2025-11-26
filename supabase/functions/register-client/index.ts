@@ -34,10 +34,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client (service role for admin operations)
+    // Initialize Supabase clients
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    // Cliente anônimo para signUp (envia e-mail automaticamente)
+    const supabaseAnon = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         auth: {
           autoRefreshToken: false,
@@ -85,26 +97,65 @@ Deno.serve(async (req) => {
     console.log('✅ WhatsApp disponível');
 
     // ===================================================================
-    // ETAPA 2: CRIAR USUÁRIO (SEM ENVIAR EMAIL AINDA)
+    // ETAPA 2: VERIFICAR EMAIL DUPLICADO
     // ===================================================================
-    console.log('🔍 [2/4] Criando usuário...');
+    console.log('🔍 [2/5] Verificando e-mail único:', email);
     
-    const { data: authData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: { users: existingUsers }, error: emailCheckError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (emailCheckError) {
+      console.error('❌ Erro ao verificar e-mail:', emailCheckError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: '⚠️ Não foi possível verificar seus dados neste momento.\n\nPor favor, aguarde alguns segundos e tente novamente.' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    const emailExists = existingUsers?.some(user => user.email === email.trim().toLowerCase());
+    
+    if (emailExists) {
+      console.warn('⚠️ E-mail já cadastrado:', email);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `📧 Este e-mail (${email}) já possui cadastro em nosso sistema!\n\n` +
+                 `✅ Clique em "Já tenho conta" para fazer login.\n` +
+                 `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    console.log('✅ E-mail disponível');
+
+    // ===================================================================
+    // ETAPA 3: CRIAR USUÁRIO COM CLIENTE ANÔNIMO (ENVIA EMAIL AUTOMATICAMENTE)
+    // ===================================================================
+    console.log('🔍 [3/5] Criando usuário com signUp nativo (enviará e-mail automaticamente)...');
+    
+    const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/dashboard`;
+    
+    const { data: authData, error: signUpError } = await supabaseAnon.auth.signUp({
       email: email.trim().toLowerCase(),
       password: senha,
-      email_confirm: false, // NÃO confirmar email automaticamente
-      user_metadata: {
-        user_type: 'client',
-        nome: nome.trim(),
-        whatsapp: whatsapp.trim(),
-        data_nascimento: data_nascimento
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          user_type: 'client',
+          nome: nome.trim(),
+          whatsapp: whatsapp.trim(),
+          data_nascimento: data_nascimento
+        }
       }
     });
 
     if (signUpError) {
       console.error('❌ Erro ao criar usuário:', signUpError);
       
-      // Email duplicado
+      // Email duplicado (fallback, já verificamos antes)
       if (signUpError.message.includes('already registered') || 
           signUpError.message.includes('User already registered') ||
           signUpError.message.includes('duplicate') ||
@@ -141,11 +192,13 @@ Deno.serve(async (req) => {
     }
 
     console.log('✅ Usuário criado com ID:', authData.user.id);
+    console.log('📧 E-mail de confirmação ENVIADO automaticamente pelo Supabase!');
+    console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
 
     // ===================================================================
-    // ETAPA 3: CRIAR PERFIL DO CLIENTE
+    // ETAPA 4: CRIAR PERFIL DO CLIENTE
     // ===================================================================
-    console.log('🔍 [3/4] Criando perfil do cliente...');
+    console.log('🔍 [4/5] Criando perfil do cliente...');
     
     const { error: profileError } = await supabaseAdmin
       .from('client_profiles')
@@ -160,7 +213,7 @@ Deno.serve(async (req) => {
       console.error('❌ Erro ao criar perfil:', profileError);
       
       // IMPORTANTE: Perfil falhou, DELETAR usuário criado
-      console.log('🗑️ Deletando usuário criado...');
+      console.log('🗑️ Deletando usuário criado (rollback)...');
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       
       if (profileError.message?.includes('whatsapp') || profileError.message?.includes('unique')) {
@@ -186,31 +239,17 @@ Deno.serve(async (req) => {
     console.log('✅ Perfil criado com sucesso');
 
     // ===================================================================
-    // [4/4] EMAIL DE CONFIRMAÇÃO NATIVO DO SUPABASE
+    // ETAPA 5: VERIFICAR STATUS DO EMAIL
     // ===================================================================
-    console.log('🔍 [4/4] Gerando link de confirmação nativo do Supabase...');
+    console.log('🔍 [5/5] Verificando status do e-mail de confirmação...');
     
-    try {
-      // Usar generateLink type='signup' para enviar email com template nativo do Supabase
-      const { data: linkData, error: emailError } = await supabaseAdmin.auth.admin.generateLink({
-        type: 'signup',
-        email: email.trim().toLowerCase(),
-        options: {
-          redirectTo: `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/dashboard`
-        }
-      });
-
-      if (emailError) {
-        console.error('⚠️ Erro ao gerar link de confirmação:', emailError);
-        console.log('ℹ️ Usuário pode fazer login e solicitar reenvio');
-      } else {
-        console.log('✅ Link de confirmação gerado - Supabase enviará email com template configurado');
-        console.log(`📧 Template usado: Authentication > Email Templates > Confirm signup`);
-        console.log(`🔗 Redirect: /painel-cliente/dashboard`);
-      }
-    } catch (emailException) {
-      console.error('⚠️ Exceção ao gerar link:', emailException);
-      console.log('ℹ️ Cadastro concluído - usuário pode solicitar reenvio');
+    if (authData.user.email_confirmed_at) {
+      console.log('⚠️ E-mail foi confirmado automaticamente (modo dev ou configuração)');
+    } else {
+      console.log('✅ E-mail pendente de confirmação - link enviado para:', email);
+      console.log('📬 Template usado: Authentication > Email Templates > Confirm signup');
+      console.log('⏰ E-mail pode levar alguns segundos/minutos para chegar');
+      console.log('📋 Instruir cliente a verificar: Caixa de entrada, Spam, Promoções');
     }
 
     // ===================================================================
@@ -220,7 +259,10 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true,
         needsEmailConfirmation: true,
-        message: '✅ Cadastro realizado com sucesso!\n\n📧 Enviamos um link de confirmação para o seu e-mail.'
+        message: '✅ Cadastro realizado com sucesso!\n\n' +
+                 '📧 Enviamos um link de confirmação para o seu e-mail.\n\n' +
+                 '📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n' +
+                 '⏰ O e-mail pode levar alguns minutos para chegar.'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
