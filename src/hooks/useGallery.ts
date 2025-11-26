@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { GalleryImage } from '@/types/settings';
 
@@ -21,13 +21,22 @@ const DEFAULT_IMAGES: GalleryImage[] = [
 ];
 
 export const useGallery = () => {
-  console.log('🎯 [useGallery] Hook inicializado');
   const [images, setImages] = useState<GalleryImage[]>(DEFAULT_IMAGES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const fetchImages = async () => {
+    // Evita fetches duplicados simultâneos
+    if (fetchingRef.current) {
+      console.log('🎯 [useGallery] Fetch já em andamento, ignorando...');
+      return;
+    }
+
+    fetchingRef.current = true;
     console.log('🚀 [useGallery] Iniciando fetch...');
+    
     try {
       setLoading(true);
       setError(null);
@@ -38,14 +47,16 @@ export const useGallery = () => {
         .eq('is_active', true)
         .order('display_order', { ascending: true });
       
-      console.log('📦 [useGallery] Resposta recebida:', { hasData: !!data, count: data?.length, hasError: !!fetchError });
+      if (!mountedRef.current) return;
+      
+      console.log('📦 [useGallery] Resposta:', { count: data?.length || 0 });
 
       if (fetchError) {
         console.error('[useGallery] Erro:', fetchError);
         setError(fetchError.message);
         setImages(DEFAULT_IMAGES);
       } else if (data && data.length > 0) {
-        console.log('[useGallery] Carregadas:', data.length, 'imagens');
+        console.log('[useGallery] ✅', data.length, 'imagens carregadas');
         const formattedData = data.map((item, index) => ({
           id: index + 1,
           src: item.src,
@@ -53,19 +64,23 @@ export const useGallery = () => {
         }));
         setImages(formattedData);
       } else {
-        console.log('[useGallery] Nenhuma imagem, usando defaults');
         setImages(DEFAULT_IMAGES);
       }
     } catch (err: any) {
+      if (!mountedRef.current) return;
       console.error('[useGallery] Exceção:', err);
       setError(err.message);
       setImages(DEFAULT_IMAGES);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      fetchingRef.current = false;
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchImages();
 
     const channel = supabase
@@ -78,6 +93,8 @@ export const useGallery = () => {
       .subscribe();
 
     return () => {
+      mountedRef.current = false;
+      fetchingRef.current = false;
       supabase.removeChannel(channel);
     };
   }, []);

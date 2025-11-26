@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { BannerImage } from '@/types/settings';
 
@@ -14,13 +14,22 @@ const DEFAULT_BANNER: BannerImage = {
 };
 
 export const useBanners = () => {
-  console.log('🎯 [useBanners] Hook inicializado');
   const [banners, setBanners] = useState<BannerImage[]>([DEFAULT_BANNER]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const fetchBanners = async () => {
+    // Evita fetches duplicados simultâneos
+    if (fetchingRef.current) {
+      console.log('🎯 [useBanners] Fetch já em andamento, ignorando...');
+      return;
+    }
+
+    fetchingRef.current = true;
     console.log('🚀 [useBanners] Iniciando fetch...');
+    
     try {
       setLoading(true);
       setError(null);
@@ -31,29 +40,35 @@ export const useBanners = () => {
         .eq('is_active', true)
         .order('display_order', { ascending: true });
       
-      console.log('📦 [useBanners] Resposta recebida:', { hasData: !!data, count: data?.length, hasError: !!fetchError });
+      if (!mountedRef.current) return;
+      
+      console.log('📦 [useBanners] Resposta:', { count: data?.length || 0 });
 
       if (fetchError) {
         console.error('[useBanners] Erro:', fetchError);
         setError(fetchError.message);
         setBanners([DEFAULT_BANNER]);
       } else if (data && data.length > 0) {
-        console.log('[useBanners] Carregados:', data.length, 'banners');
+        console.log('[useBanners] ✅', data.length, 'banners carregados');
         setBanners(data);
       } else {
-        console.log('[useBanners] Nenhum banner, usando default');
         setBanners([DEFAULT_BANNER]);
       }
     } catch (err: any) {
+      if (!mountedRef.current) return;
       console.error('[useBanners] Exceção:', err);
       setError(err.message);
       setBanners([DEFAULT_BANNER]);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      fetchingRef.current = false;
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchBanners();
 
     const channel = supabase
@@ -66,6 +81,8 @@ export const useBanners = () => {
       .subscribe();
 
     return () => {
+      mountedRef.current = false;
+      fetchingRef.current = false;
       supabase.removeChannel(channel);
     };
   }, []);
