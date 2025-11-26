@@ -343,14 +343,14 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       console.log('[Auth] ✅ Login realizado com sucesso');
 
-      // Criar sessão
-      await sessionManager.createSession({
+      // Criar sessão (não bloqueante - não interrompe o login se falhar)
+      sessionManager.createSession({
         userId: data.user.id,
         userType: 'painel_cliente',
         userEmail: data.user.email,
         userName: data.user.email,
         expiresInHours: 24,
-      });
+      }).catch(err => console.warn('[PainelCliente] ⚠️ Erro ao criar sessão (não crítico):', err));
 
       toast({
         title: "Login realizado com sucesso!",
@@ -370,8 +370,10 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     try {
       console.log('[Auth] 🚪 Fazendo logout...');
       
-      // Invalidar sessão
-      await sessionManager.invalidateSession('painel_cliente');
+      // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
+      sessionManager.invalidateSession('painel_cliente').catch(err => 
+        console.warn('[PainelCliente] ⚠️ Erro ao invalidar sessão (não crítico):', err)
+      );
       
       await supabase.auth.signOut();
       
