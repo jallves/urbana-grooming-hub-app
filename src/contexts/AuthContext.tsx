@@ -140,9 +140,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 📡 Consultando user_roles...');
       
-      // Timeout de 5 segundos para a consulta
+      // Timeout de 10 segundos para a consulta (aumentado para evitar timeouts em instâncias lentas)
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout na consulta de roles')), 5000)
+        setTimeout(() => reject(new Error('Timeout na consulta de roles')), 10000)
       );
 
       const queryPromise = supabase
