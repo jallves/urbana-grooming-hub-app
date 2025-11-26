@@ -1,13 +1,13 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { useHomeBanner } from '@/hooks/useHomeBanner';
+import { useBanners } from '@/hooks/useBanners';
 import BannerSlide from './hero/BannerSlide';
 import { RippleButton } from '@/components/ui/ripple-button';
 import { Button } from '@/components/ui/button';
 
 const Hero: React.FC = () => {
-  const { status, data: bannerImages, error, refetch } = useHomeBanner();
+  const { banners: bannerImages, loading, error, refetch } = useBanners();
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 500], [0, 150]);
@@ -29,7 +29,7 @@ const Hero: React.FC = () => {
   }, [bannerImages.length]);
 
   // Loading state
-  if (status === 'loading') {
+  if (loading) {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-urbana-black">
         <div className="text-center">
@@ -40,8 +40,8 @@ const Hero: React.FC = () => {
     );
   }
 
-  // Error state
-  if (status === 'error') {
+  // Error state - Never show error, always show content
+  if (false) {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-urbana-black">
         <div className="text-center px-4 max-w-md">
