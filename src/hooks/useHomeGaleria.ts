@@ -42,57 +42,58 @@ export const useHomeGaleria = () => {
 
   const fetchGaleria = useCallback(async () => {
     let cancelled = false;
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     setStatus('loading');
     setError(null);
 
     try {
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error('Timeout ao carregar galeria'));
-        }, 8000);
-      });
+      let timedOut = false;
 
-      const fetchPromise = supabase
+      timeoutId = setTimeout(() => {
+        timedOut = true;
+      }, 8000);
+
+      const { data: images, error: fetchError } = await supabase
         .from('gallery_images')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
-      const { data: images, error: fetchError } = await Promise.race([
-        fetchPromise,
-        timeoutPromise
-      ]);
-
-      clearTimeout(timeoutId!);
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (cancelled) return;
 
+      if (timedOut && !images) {
+        console.warn('[Galeria Hook] Timeout - usando fallback');
+        setData(defaultImages);
+        setStatus('success');
+        return;
+      }
+
       if (fetchError) {
         console.error('[Galeria Hook] Erro:', fetchError.message);
-        setError('Não foi possível carregar as imagens.');
         setData(defaultImages);
-        setStatus('error');
+        setStatus('success');
       } else if (images && images.length > 0) {
         setData(images);
         setStatus('success');
       } else {
-        // Sem imagens, usar fallback sem erro
         setData(defaultImages);
         setStatus('success');
       }
     } catch (err: any) {
       if (cancelled) return;
+      if (timeoutId) clearTimeout(timeoutId);
+      
       console.error('[Galeria Hook] Exceção:', err?.message);
-      setError(err?.message || 'Erro ao carregar galeria.');
       setData(defaultImages);
-      setStatus('error');
+      setStatus('success');
     }
 
     return () => {
       cancelled = true;
-      if (timeoutId!) clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 

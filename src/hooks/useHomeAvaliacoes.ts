@@ -47,37 +47,38 @@ export const useHomeAvaliacoes = () => {
 
   const fetchAvaliacoes = useCallback(async () => {
     let cancelled = false;
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     setStatus('loading');
     setError(null);
 
     try {
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error('Timeout ao carregar avaliações'));
-        }, 8000);
-      });
+      let timedOut = false;
 
-      const fetchPromise = supabase
+      timeoutId = setTimeout(() => {
+        timedOut = true;
+      }, 8000);
+
+      const { data: ratings, error: fetchError } = await supabase
         .from('appointment_ratings')
         .select('rating, comment, created_at')
         .order('created_at', { ascending: false });
 
-      const { data: ratings, error: fetchError } = await Promise.race([
-        fetchPromise,
-        timeoutPromise
-      ]);
-
-      clearTimeout(timeoutId!);
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (cancelled) return;
 
+      if (timedOut && !ratings) {
+        console.warn('[Avaliações Hook] Timeout - usando fallback');
+        setData(initialStats);
+        setStatus('success');
+        return;
+      }
+
       if (fetchError) {
         console.error('[Avaliações Hook] Erro:', fetchError.message);
-        setError('Não foi possível carregar as avaliações.');
         setData(initialStats);
-        setStatus('error');
+        setStatus('success');
       } else if (ratings && ratings.length > 0) {
         const totalReviews = ratings.length;
         const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
@@ -109,15 +110,16 @@ export const useHomeAvaliacoes = () => {
       }
     } catch (err: any) {
       if (cancelled) return;
+      if (timeoutId) clearTimeout(timeoutId);
+      
       console.error('[Avaliações Hook] Exceção:', err?.message);
-      setError(err?.message || 'Erro ao carregar avaliações.');
       setData(initialStats);
-      setStatus('error');
+      setStatus('success');
     }
 
     return () => {
       cancelled = true;
-      if (timeoutId!) clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 

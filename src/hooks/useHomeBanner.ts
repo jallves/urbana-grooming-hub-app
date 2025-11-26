@@ -24,58 +24,60 @@ export const useHomeBanner = () => {
 
   const fetchBanners = useCallback(async () => {
     let cancelled = false;
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     setStatus('loading');
     setError(null);
 
     try {
-      // Timeout de 8 segundos
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => {
-          reject(new Error('Timeout ao carregar banners'));
-        }, 8000);
-      });
+      let timedOut = false;
 
-      const fetchPromise = supabase
+      // Timeout de 8 segundos
+      timeoutId = setTimeout(() => {
+        timedOut = true;
+      }, 8000);
+
+      const { data: banners, error: fetchError } = await supabase
         .from('banner_images')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
-      const { data: banners, error: fetchError } = await Promise.race([
-        fetchPromise,
-        timeoutPromise
-      ]);
-
-      clearTimeout(timeoutId!);
+      if (timeoutId) clearTimeout(timeoutId);
 
       if (cancelled) return;
 
+      // Se deu timeout E não conseguiu dados
+      if (timedOut && !banners) {
+        console.warn('[Banner Hook] Timeout - usando fallback');
+        setData(defaultBanners);
+        setStatus('success');
+        return;
+      }
+
       if (fetchError) {
         console.error('[Banner Hook] Erro:', fetchError.message);
-        setError('Não foi possível carregar os banners.');
         setData(defaultBanners);
-        setStatus('error');
+        setStatus('success'); // Usar fallback sem mostrar erro
       } else if (banners && banners.length > 0) {
         setData(banners);
         setStatus('success');
       } else {
-        // Sem banners, usar fallback sem erro
         setData(defaultBanners);
         setStatus('success');
       }
     } catch (err: any) {
       if (cancelled) return;
+      if (timeoutId) clearTimeout(timeoutId);
+      
       console.error('[Banner Hook] Exceção:', err?.message);
-      setError(err?.message || 'Erro ao carregar banners.');
       setData(defaultBanners);
-      setStatus('error');
+      setStatus('success'); // Usar fallback sem mostrar erro
     }
 
     return () => {
       cancelled = true;
-      if (timeoutId!) clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 
