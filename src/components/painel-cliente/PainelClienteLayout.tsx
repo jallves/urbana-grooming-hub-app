@@ -201,48 +201,145 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Desktop Navigation Sidebar - Visível em tablets e desktop */}
-      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-48 md:w-56 lg:w-64 xl:w-72 backdrop-blur-2xl bg-urbana-black/90 border-r border-urbana-gold/20 shadow-2xl flex-col">
-        <div className="flex-1 p-2 md:p-3 lg:p-4 space-y-1 md:space-y-2">
-          {navigationItems.map((item) => {
+      {/* Desktop Navigation Sidebar - Premium Design */}
+      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
+        {/* Navigation Header */}
+        <div className="px-4 py-6 border-b border-urbana-gold/10">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/5 to-transparent rounded-xl blur-xl" />
+            <h2 className="text-lg font-semibold text-urbana-light relative z-10">Navegação</h2>
+            <p className="text-xs text-urbana-light/60 mt-1 relative z-10">Acesse suas funcionalidades</p>
+          </div>
+        </div>
+
+        {/* Navigation Items - Premium Cards */}
+        <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+          {navigationItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             
             return (
-              <Button
+              <div
                 key={item.path}
-                variant="ghost"
-                onClick={() => navigate(item.path)}
-                className={`
-                  w-full flex items-center gap-2 md:gap-3 justify-start
-                  p-2 md:p-3 lg:p-4 rounded-lg md:rounded-xl transition-all duration-300
-                  ${isActive 
-                    ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30' 
-                    : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
-                  }
-                `}
+                className="relative group"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <Icon className="h-4 w-4 md:h-5 md:w-5" />
-                <span className="text-xs md:text-sm font-medium">{item.label}</span>
-              </Button>
+                {/* Glow effect for active item */}
+                {isActive && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-vibrant/20 rounded-2xl blur-xl animate-pulse" />
+                )}
+                
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate(item.path)}
+                  className={`
+                    relative w-full flex items-center gap-4 justify-start
+                    p-4 lg:p-5 rounded-2xl transition-all duration-500
+                    border backdrop-blur-sm
+                    ${isActive 
+                      ? 'bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-vibrant/10 text-urbana-gold shadow-2xl shadow-urbana-gold/30 border-urbana-gold/40 scale-[1.02]' 
+                      : 'text-urbana-light/70 hover:text-urbana-gold hover:bg-urbana-gold/5 border-transparent hover:border-urbana-gold/20 hover:shadow-lg hover:shadow-urbana-gold/10 hover:scale-[1.01]'
+                    }
+                  `}
+                >
+                  {/* Icon Container with gradient background */}
+                  <div className={`
+                    relative flex items-center justify-center
+                    w-11 h-11 lg:w-12 lg:h-12 rounded-xl
+                    transition-all duration-500
+                    ${isActive 
+                      ? 'bg-gradient-to-br from-urbana-gold/30 to-urbana-gold-vibrant/20 shadow-lg shadow-urbana-gold/30' 
+                      : 'bg-urbana-black/40 group-hover:bg-urbana-gold/10 group-hover:shadow-md group-hover:shadow-urbana-gold/20'
+                    }
+                  `}>
+                    <Icon className={`
+                      h-5 w-5 lg:h-6 lg:w-6 transition-all duration-300
+                      ${isActive ? 'text-urbana-gold drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]' : 'text-urbana-light/70 group-hover:text-urbana-gold'}
+                    `} />
+                    
+                    {/* Active pulse ring */}
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-xl border-2 border-urbana-gold/30 animate-ping" />
+                    )}
+                  </div>
+                  
+                  {/* Label with description */}
+                  <div className="flex-1 text-left">
+                    <span className={`
+                      block text-sm lg:text-base font-semibold transition-colors duration-300
+                      ${isActive ? 'text-urbana-gold' : 'text-urbana-light group-hover:text-urbana-gold'}
+                    `}>
+                      {item.label}
+                    </span>
+                    <span className={`
+                      block text-xs transition-colors duration-300 mt-0.5
+                      ${isActive ? 'text-urbana-gold/70' : 'text-urbana-light/50 group-hover:text-urbana-gold/60'}
+                    `}>
+                      {item.label === 'Home' && 'Visão geral'}
+                      {item.label === 'Agendar' && 'Novo horário'}
+                      {item.label === 'Histórico' && 'Seus agendamentos'}
+                      {item.label === 'Perfil' && 'Suas informações'}
+                    </span>
+                  </div>
+                  
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="w-2 h-2 rounded-full bg-urbana-gold shadow-lg shadow-urbana-gold/50 animate-pulse" />
+                    </div>
+                  )}
+                </Button>
+              </div>
             );
           })}
         </div>
+
+        {/* Divider with gold accent */}
+        <div className="px-4 py-3">
+          <div className="h-px bg-gradient-to-r from-transparent via-urbana-gold/30 to-transparent" />
+        </div>
         
-        {/* Desktop User Info */}
-        <div className="p-2 md:p-3 lg:p-4 border-t border-urbana-gold/20">
-          <div className="flex items-center gap-2 md:gap-3 px-2 md:px-3 lg:px-4 py-2 md:py-3 bg-urbana-black/30 rounded-lg md:rounded-xl backdrop-blur-sm border border-urbana-gold/20">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs md:text-sm font-medium text-urbana-light truncate">{cliente?.nome}</p>
-              <p className="text-[10px] md:text-xs text-urbana-light/60 truncate">{cliente?.email}</p>
+        {/* Desktop User Info - Premium Card */}
+        <div className="p-4 border-t border-urbana-gold/10">
+          <div className="relative group">
+            {/* Glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold-vibrant/5 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="relative flex items-center gap-3 p-4 bg-gradient-to-br from-urbana-black/60 to-urbana-black/40 rounded-2xl backdrop-blur-sm border border-urbana-gold/20 hover:border-urbana-gold/40 transition-all duration-300 hover:shadow-lg hover:shadow-urbana-gold/10">
+              {/* Avatar/Icon */}
+              <div className="relative">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-vibrant/10 flex items-center justify-center border border-urbana-gold/30 shadow-lg shadow-urbana-gold/20">
+                  <User className="h-6 w-6 text-urbana-gold" />
+                </div>
+                {/* Online indicator */}
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-urbana-black shadow-lg shadow-green-500/50 animate-pulse" />
+              </div>
+              
+              {/* User Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-urbana-light truncate">
+                  {cliente?.nome || 'Usuário'}
+                </p>
+                <p className="text-xs text-urbana-light/60 truncate mt-0.5">
+                  {cliente?.email || 'email@exemplo.com'}
+                </p>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
+                  <span className="text-[10px] text-green-400 font-medium">Online</span>
+                </div>
+              </div>
             </div>
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
           </div>
+        </div>
+
+        {/* Footer decorative element */}
+        <div className="px-4 pb-4">
+          <div className="h-1 bg-gradient-to-r from-transparent via-urbana-gold/30 to-transparent rounded-full" />
         </div>
       </nav>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-48 lg:pl-56 xl:pl-72 px-4 md:px-6 lg:px-8">
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-64 lg:pl-72 xl:pl-80 px-4 md:px-6 lg:px-8 transition-all duration-300">
         <div className="w-full max-w-[1800px] mx-auto">
           <Outlet />
         </div>
