@@ -1,31 +1,17 @@
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, signOut: authSignOut } = useAuth();
 
-  // Get user from Supabase directly to avoid AuthProvider dependency
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -47,16 +33,17 @@ export const useNavbar = () => {
   }, []);
 
   const handleSignOut = async () => {
+    console.log('[useNavbar] 🚪 Iniciando logout...');
     try {
-      await supabase.auth.signOut();
-      setUser(null);
+      await authSignOut();
+      console.log('[useNavbar] ✅ Logout realizado com sucesso');
       toast({
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso.",
       });
-      navigate('/');
+      navigate('/auth');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('[useNavbar] ❌ Erro ao fazer logout:', error);
       toast({
         title: "Erro ao sair",
         description: "Ocorreu um erro ao tentar sair.",
