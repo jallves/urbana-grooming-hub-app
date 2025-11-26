@@ -13,7 +13,7 @@ import PainelClienteCadastroForm from '@/components/painel-cliente/auth/PainelCl
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
   const { cadastrar } = usePainelClienteAuth();
-  const { user, signOut, isClient } = useAuth();
+  const { user, signOut, isClient, rolesChecked, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [mostrarCadastro, setMostrarCadastro] = useState(false);
@@ -22,23 +22,27 @@ export default function PainelClienteLogin() {
 
   // REDIRECIONAR se já estiver logado como cliente
   React.useEffect(() => {
-    const handleLoggedInUser = async () => {
-      if (!user) return;
+    // Não fazer NADA até as roles serem verificadas
+    if (authLoading || !rolesChecked) {
+      console.log('[PainelClienteLogin] ⏳ Aguardando verificação de roles...');
+      return;
+    }
 
-      // Aguardar um pouco para garantir que isClient foi carregado
-      await new Promise(resolve => setTimeout(resolve, 500));
+    // Sem usuário, tudo ok - pode mostrar login
+    if (!user) {
+      console.log('[PainelClienteLogin] ℹ️ Sem usuário - exibindo formulário de login');
+      return;
+    }
 
-      if (isClient) {
-        console.log('[PainelClienteLogin] ✅ Cliente já logado - redirecionando para dashboard');
-        navigate('/painel-cliente/dashboard', { replace: true });
-      } else {
-        console.log('[PainelClienteLogin] ⚠️ Usuário logado mas não é cliente - fazendo logout');
-        await signOut();
-      }
-    };
-    
-    handleLoggedInUser();
-  }, [user, isClient, navigate, signOut]);
+    // Usuário existe E roles foram verificadas
+    if (isClient) {
+      console.log('[PainelClienteLogin] ✅ Cliente autenticado - redirecionando para dashboard');
+      navigate('/painel-cliente/dashboard', { replace: true });
+    } else {
+      console.log('[PainelClienteLogin] ⚠️ Usuário não é cliente - fazendo logout');
+      signOut();
+    }
+  }, [user, isClient, rolesChecked, authLoading, navigate, signOut]);
 
   const handleLogin = async (email: string, senha: string) => {
     setErro('');
