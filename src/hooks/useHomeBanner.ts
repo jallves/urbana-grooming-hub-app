@@ -24,31 +24,25 @@ export const useHomeBanner = () => {
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
     
     console.log('[Banner Hook] 🚀 Inicializando...');
 
     const fetchBanners = async () => {
-      console.log('[Banner Hook] 📡 Buscando dados...');
+      console.log('[Banner Hook] 📡 Buscando dados do Supabase...');
       
       try {
-        // Timeout de 10 segundos
-        const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Timeout')), 10000);
-        });
-
-        const fetchPromise = supabase
+        const { data: banners, error: fetchError } = await supabase
           .from('banner_images')
           .select('*')
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
-        const { data: banners, error: fetchError } = await Promise.race([
-          fetchPromise,
-          timeoutPromise
-        ]) as any;
-
-        clearTimeout(timeoutId);
+        console.log('[Banner Hook] 📦 Resposta recebida:', { 
+          hasData: !!banners, 
+          count: banners?.length, 
+          hasError: !!fetchError,
+          error: fetchError 
+        });
 
         if (!mounted) {
           console.log('[Banner Hook] ⚠️ Componente desmontado');
@@ -56,21 +50,27 @@ export const useHomeBanner = () => {
         }
 
         if (fetchError) {
-          console.error('[Banner Hook] ❌ Erro:', fetchError.message);
+          console.error('[Banner Hook] ❌ Erro Supabase:', fetchError);
+          setError(fetchError.message);
           setStatus('success'); // Usa fallback
         } else if (banners && banners.length > 0) {
-          console.log('[Banner Hook] ✅ Carregados:', banners.length, 'banners');
+          console.log('[Banner Hook] ✅ Banners carregados:', banners);
           setData(banners);
           setStatus('success');
         } else {
-          console.log('[Banner Hook] ⚠️ Nenhum banner ativo encontrado');
+          console.log('[Banner Hook] ⚠️ Nenhum banner encontrado');
           setStatus('success'); // Usa fallback
         }
       } catch (err: any) {
-        clearTimeout(timeoutId);
         if (!mounted) return;
         
-        console.error('[Banner Hook] ❌ Exceção:', err?.message || 'Erro desconhecido');
+        console.error('[Banner Hook] ❌ Exceção capturada:', {
+          message: err?.message,
+          name: err?.name,
+          stack: err?.stack,
+          full: err
+        });
+        setError(err?.message || 'Erro ao carregar banners');
         setStatus('success'); // Usa fallback
       }
     };
@@ -80,7 +80,6 @@ export const useHomeBanner = () => {
     return () => {
       console.log('[Banner Hook] 🔚 Desmontando...');
       mounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 

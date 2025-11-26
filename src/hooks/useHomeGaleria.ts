@@ -42,31 +42,25 @@ export const useHomeGaleria = () => {
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
     
     console.log('[Galeria Hook] 🚀 Inicializando...');
 
     const fetchGaleria = async () => {
-      console.log('[Galeria Hook] 📡 Buscando dados...');
+      console.log('[Galeria Hook] 📡 Buscando dados do Supabase...');
       
       try {
-        // Timeout de 10 segundos
-        const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Timeout')), 10000);
-        });
-
-        const fetchPromise = supabase
+        const { data: images, error: fetchError } = await supabase
           .from('gallery_images')
           .select('*')
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
-        const { data: images, error: fetchError } = await Promise.race([
-          fetchPromise,
-          timeoutPromise
-        ]) as any;
-
-        clearTimeout(timeoutId);
+        console.log('[Galeria Hook] 📦 Resposta recebida:', { 
+          hasData: !!images, 
+          count: images?.length, 
+          hasError: !!fetchError,
+          error: fetchError 
+        });
 
         if (!mounted) {
           console.log('[Galeria Hook] ⚠️ Componente desmontado');
@@ -74,21 +68,27 @@ export const useHomeGaleria = () => {
         }
 
         if (fetchError) {
-          console.error('[Galeria Hook] ❌ Erro:', fetchError.message);
+          console.error('[Galeria Hook] ❌ Erro Supabase:', fetchError);
+          setError(fetchError.message);
           setStatus('success'); // Usa fallback
         } else if (images && images.length > 0) {
-          console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
+          console.log('[Galeria Hook] ✅ Imagens carregadas:', images);
           setData(images);
           setStatus('success');
         } else {
-          console.log('[Galeria Hook] ⚠️ Nenhuma imagem ativa encontrada');
+          console.log('[Galeria Hook] ⚠️ Nenhuma imagem encontrada');
           setStatus('success'); // Usa fallback
         }
       } catch (err: any) {
-        clearTimeout(timeoutId);
         if (!mounted) return;
         
-        console.error('[Galeria Hook] ❌ Exceção:', err?.message || 'Erro desconhecido');
+        console.error('[Galeria Hook] ❌ Exceção capturada:', {
+          message: err?.message,
+          name: err?.name,
+          stack: err?.stack,
+          full: err
+        });
+        setError(err?.message || 'Erro ao carregar galeria');
         setStatus('success'); // Usa fallback
       }
     };
@@ -114,7 +114,6 @@ export const useHomeGaleria = () => {
     return () => {
       console.log('[Galeria Hook] 🔚 Desmontando...');
       mounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
   }, []);
