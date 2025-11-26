@@ -55,30 +55,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkUserRoles = async (user: User): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
     if (!user) {
+      console.log('[AuthContext] ❌ Sem usuário para verificar roles');
       applyRole(null);
       setLoading(false);
       return null;
     }
     
     try {
+      console.log('[AuthContext] 🔍 Verificando role para user:', user.id);
+      
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error('[AuthContext] ❌ Erro ao buscar role:', error);
+        applyRole(null);
+        setLoading(false);
+        return null;
+      }
+
+      if (!data) {
+        console.log('[AuthContext] ⚠️ Nenhuma role encontrada para o usuário');
         applyRole(null);
         setLoading(false);
         return null;
       }
 
       const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
+      console.log('[AuthContext] ✅ Role encontrada:', role);
       applyRole(role);
       setLoading(false);
       return role;
 
     } catch (error) {
+      console.error('[AuthContext] ❌ Erro na verificação de roles:', error);
       applyRole(null);
       setLoading(false);
       return null;
@@ -89,14 +102,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     let mounted = true;
 
     const initializeAuth = async () => {
+      console.log('[AuthContext] 🔄 Inicializando autenticação...');
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!mounted) return;
 
       if (session?.user) {
+        console.log('[AuthContext] ✅ Sessão encontrada:', session.user.email);
         setUser(session.user);
         await checkUserRoles(session.user);
       } else {
+        console.log('[AuthContext] ❌ Nenhuma sessão encontrada');
         setLoading(false);
         setRolesChecked(true);
       }
@@ -104,14 +120,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[AuthContext] 🔔 Evento de auth:', event);
+        
         if (!mounted) return;
         
         if (event === 'SIGNED_OUT') {
+          console.log('[AuthContext] 🚪 Usuário fez logout');
           setUser(null);
           applyRole(null);
           setLoading(false);
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
+            console.log('[AuthContext] ✅ Login/refresh detectado:', session.user.email);
             setUser(session.user);
             await checkUserRoles(session.user);
           }
