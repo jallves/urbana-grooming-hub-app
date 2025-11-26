@@ -225,7 +225,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           const queryStart = performance.now();
           
-          // Adicionar timeout de 5 segundos para evitar travamento
+          // Adicionar timeout de 2 segundos (com índice, deve ser bem mais rápido)
           const queryPromise = supabase
             .from('user_roles')
             .select('role')
@@ -235,7 +235,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             .maybeSingle();
           
           const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Query timeout')), 5000)
+            setTimeout(() => reject(new Error('Query timeout')), 2000)
           );
           
           const { data: userRoleData, error: userRoleError } = await Promise.race([
