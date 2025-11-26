@@ -137,22 +137,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     console.log('[AuthContext] 📦 Cache não encontrado ou expirado, buscando do banco...');
     
-    // Criar timeout de segurança de 15 segundos (aumentado)
+    // Criar timeout mais agressivo de 3 segundos
     const safetyTimeout = setTimeout(() => {
-      console.error('[AuthContext] ⏰ TIMEOUT DE SEGURANÇA - Forçando conclusão do loading');
+      console.error('[AuthContext] ⏰ TIMEOUT DE SEGURANÇA (3s) - Forçando conclusão do loading');
+      applyRole(null); // Assume sem role em caso de timeout
       setLoading(false);
       setRolesChecked(true);
-    }, 15000);
+    }, 3000);
     
     try {
-      console.log('[AuthContext] 📡 Consultando user_roles diretamente...');
+      console.log('[AuthContext] 📡 Consultando user_roles diretamente (políticas simplificadas)...');
+      const startTime = Date.now();
       
       // Consulta direta simples - mais rápida que RPC
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .single();
+      
+      const queryTime = Date.now() - startTime;
+      console.log(`[AuthContext] ⏱️ Tempo de consulta: ${queryTime}ms`);
       
       // Limpar timeout de segurança
       clearTimeout(safetyTimeout);
@@ -160,8 +165,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] 📊 Resposta da consulta:', { data, error });
 
       if (error) {
+        // Se não encontrou nenhum registro, não é erro crítico
+        if (error.code === 'PGRST116') {
+          console.log('[AuthContext] ℹ️ Nenhuma role encontrada para este usuário');
+          applyRole(null);
+          setLoading(false);
+          setRolesChecked(true);
+          return null;
+        }
+        
         console.error('[AuthContext] ❌ Erro ao buscar role:', error);
-        // Em caso de erro, assume role null mas completa o loading
         applyRole(null);
         setLoading(false);
         setRolesChecked(true);
