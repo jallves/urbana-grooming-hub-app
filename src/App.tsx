@@ -32,6 +32,7 @@ import AdminSupport from './pages/AdminSupport';
 import AdminCashFlow from './pages/AdminCashFlow';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminSettings from './pages/AdminSettings';
+import SessionsManagement from './pages/admin/SessionsManagement';
 import PainelClienteLogin from './pages/PainelClienteLogin';
 import PainelClienteRegister from './pages/PainelClienteRegister';
 import PainelClienteEmailConfirmation from './pages/PainelClienteEmailConfirmation';
@@ -222,6 +223,11 @@ function App() {
                   <Route path="/admin/configuracoes" element={
                     <AdminRoute requiredModule="configuracoes">
                       <AdminSettings />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/configuracoes/sessoes" element={
+                    <AdminRoute requiredModule="configuracoes">
+                      <SessionsManagement />
                     </AdminRoute>
                   } />
                   <Route path="/admin/agendamentos-clientes" element={

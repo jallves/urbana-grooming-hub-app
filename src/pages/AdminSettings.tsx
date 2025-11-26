@@ -1,10 +1,11 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Settings2, Users } from "lucide-react";
+import { CreditCard, Settings2, Users, Shield } from "lucide-react";
 import TEFHomologacao from '@/components/admin/tef/TEFHomologacao';
 import TEFSettingsForm from '@/components/admin/tef/TEFSettingsForm';
 import UserManagement from '@/components/admin/settings/UserManagement';
+import SessionsManagement from '@/pages/admin/SessionsManagement';
 
 const AdminSettings: React.FC = () => {
   return (
@@ -15,13 +16,20 @@ const AdminSettings: React.FC = () => {
     >
       <div className="w-full h-full p-6">
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="bg-white border border-gray-200 grid grid-cols-3">
+          <TabsList className="bg-white border border-gray-200 grid grid-cols-2 md:grid-cols-4">
             <TabsTrigger 
               value="users"
               className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white"
             >
               <Users className="h-4 w-4 mr-2" />
               Usuários
+            </TabsTrigger>
+            <TabsTrigger 
+              value="sessions"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Sessões
             </TabsTrigger>
             <TabsTrigger 
               value="tef-homologacao"
@@ -41,6 +49,10 @@ const AdminSettings: React.FC = () => {
 
           <TabsContent value="users" className="mt-6 h-[calc(100vh-250px)]">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="sessions" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
+            <SessionsManagement />
           </TabsContent>
 
           <TabsContent value="tef-homologacao" className="mt-6">
