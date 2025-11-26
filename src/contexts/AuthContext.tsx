@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,8 +30,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Versão simplificada - sem cache
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,51 +50,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setRolesChecked(true);
   };
 
-  const checkUserRoles = async (user: User): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
-    if (!user) {
-      console.log('[AuthContext] ❌ User é null');
-      applyRole(null);
-      setLoading(false);
-      return null;
-    }
-    
-    console.log('[AuthContext] 🔍 Buscando role para:', user.id);
-    console.log('[AuthContext] 🔍 Email:', user.email);
-    
+  const checkUserRoles = async (userId: string): Promise<'master' | 'admin' | 'manager' | 'barber' | null> => {
     try {
-      // Timeout de 3 segundos para evitar travamento
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout')), 3000)
-      );
-      
+      // Query com timeout usando Promise.race
       const queryPromise = supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', user.id)
-        .single();
-      
-      console.log('[AuthContext] ⏳ Aguardando resposta da query...');
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
-      
-      console.log('[AuthContext] 📊 Resultado:', { data, error });
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (error || !data) {
-        console.error('[AuthContext] ❌ Sem role encontrada:', error);
-        applyRole(null);
-        setLoading(false);
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout - 5s')), 5000)
+      );
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+      if (error) {
+        console.error('[AuthContext] Erro ao buscar role:', error.message);
         return null;
       }
 
-      const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
-      console.log('[AuthContext] ✅ Role aplicada:', role);
-      applyRole(role);
-      setLoading(false);
-      return role;
-      
-    } catch (err) {
-      console.error('[AuthContext] 💥 Erro ou timeout na query:', err);
-      applyRole(null);
-      setLoading(false);
+      if (!data) {
+        console.warn('[AuthContext] Usuário sem role definida');
+        return null;
+      }
+
+      return data.role as 'master' | 'admin' | 'manager' | 'barber';
+    } catch (error: any) {
+      console.error('[AuthContext] Erro/timeout ao buscar role:', error.message);
       return null;
     }
   };
@@ -106,38 +86,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     let mounted = true;
 
     const initializeAuth = async () => {
-      console.log('[AuthContext] 🔄 Inicializando autenticação...');
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!mounted) return;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
 
-      if (session?.user) {
-        console.log('[AuthContext] ✅ Sessão encontrada:', session.user.email);
-        setUser(session.user);
-        await checkUserRoles(session.user);
-      } else {
-        console.log('[AuthContext] ❌ Nenhuma sessão encontrada');
-        setLoading(false);
-        setRolesChecked(true);
+        if (session?.user) {
+          setUser(session.user);
+          const role = await checkUserRoles(session.user.id);
+          if (mounted) {
+            applyRole(role);
+            setLoading(false);
+          }
+        } else {
+          setLoading(false);
+          setRolesChecked(true);
+        }
+      } catch (error) {
+        console.error('[AuthContext] Erro na inicialização:', error);
+        if (mounted) {
+          setLoading(false);
+          setRolesChecked(true);
+        }
       }
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[AuthContext] 🔔 Evento de auth:', event);
-        
         if (!mounted) return;
         
         if (event === 'SIGNED_OUT') {
-          console.log('[AuthContext] 🚪 Usuário fez logout');
           setUser(null);
           applyRole(null);
           setLoading(false);
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
-            console.log('[AuthContext] ✅ Login/refresh detectado:', session.user.email);
             setUser(session.user);
-            await checkUserRoles(session.user);
+            const role = await checkUserRoles(session.user.id);
+            if (mounted) {
+              applyRole(role);
+              setLoading(false);
+            }
           }
         }
       }
