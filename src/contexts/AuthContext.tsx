@@ -57,25 +57,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', userId);
     
     try {
-      // Buscar role diretamente na tabela user_roles (agora inclui 'client')
-      const { data: roleData, error: roleError } = await supabase
+      // Timeout de 3 segundos para evitar loading infinito
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.warn('[AuthContext] ⏱️ Timeout na verificação de role');
+          resolve(null);
+        }, 3000);
+      });
+
+      // Buscar role diretamente na tabela user_roles
+      const rolePromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .maybeSingle();
+        .maybeSingle()
+        .then(({ data: roleData, error: roleError }) => {
+          if (roleError) {
+            console.error('[AuthContext] ❌ Erro ao buscar role:', roleError.message);
+            return null;
+          }
 
-      if (roleError) {
-        console.error('[AuthContext] ❌ Erro ao buscar role:', roleError.message);
-        return null;
-      }
+          if (roleData) {
+            console.log('[AuthContext] ✅ Role encontrada:', roleData.role);
+            return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
+          }
 
-      if (roleData) {
-        console.log('[AuthContext] ✅ Role encontrada:', roleData.role);
-        return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
-      }
+          console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles');
+          return null;
+        });
 
-      console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles');
-      return null;
+      // Usar Promise.race para garantir timeout
+      const result = await Promise.race([rolePromise, timeoutPromise]);
+      return result;
     } catch (error: any) {
       console.error('[AuthContext] ❌ Erro ao verificar roles:', error.message);
       return null;
@@ -88,14 +101,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        // Timeout de segurança - após 10s, desiste e marca como não carregando
+        // Timeout de segurança - após 5s, desiste e marca como não carregando
         loadingTimeout = setTimeout(() => {
           if (mounted) {
             console.warn('[AuthContext] ⏱️ Timeout na verificação de auth - finalizando loading');
             setLoading(false);
             setRolesChecked(true);
           }
-        }, 10000);
+        }, 5000);
 
         const { data: { session } } = await supabase.auth.getSession();
         
