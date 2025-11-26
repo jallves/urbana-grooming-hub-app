@@ -24,16 +24,31 @@ export const useHomeBanner = () => {
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId: NodeJS.Timeout;
+    
     console.log('[Banner Hook] 🚀 Inicializando...');
 
     const fetchBanners = async () => {
       console.log('[Banner Hook] 📡 Buscando dados...');
+      
       try {
-        const { data: banners, error: fetchError } = await supabase
+        // Timeout de 10 segundos
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Timeout')), 10000);
+        });
+
+        const fetchPromise = supabase
           .from('banner_images')
           .select('*')
           .eq('is_active', true)
           .order('display_order', { ascending: true });
+
+        const { data: banners, error: fetchError } = await Promise.race([
+          fetchPromise,
+          timeoutPromise
+        ]) as any;
+
+        clearTimeout(timeoutId);
 
         if (!mounted) {
           console.log('[Banner Hook] ⚠️ Componente desmontado');
@@ -45,7 +60,6 @@ export const useHomeBanner = () => {
           setStatus('success'); // Usa fallback
         } else if (banners && banners.length > 0) {
           console.log('[Banner Hook] ✅ Carregados:', banners.length, 'banners');
-          console.log('[Banner Hook] 📦 Dados:', banners);
           setData(banners);
           setStatus('success');
         } else {
@@ -53,8 +67,10 @@ export const useHomeBanner = () => {
           setStatus('success'); // Usa fallback
         }
       } catch (err: any) {
+        clearTimeout(timeoutId);
         if (!mounted) return;
-        console.error('[Banner Hook] ❌ Exceção:', err?.message);
+        
+        console.error('[Banner Hook] ❌ Exceção:', err?.message || 'Erro desconhecido');
         setStatus('success'); // Usa fallback
       }
     };
@@ -64,6 +80,7 @@ export const useHomeBanner = () => {
     return () => {
       console.log('[Banner Hook] 🔚 Desmontando...');
       mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 
