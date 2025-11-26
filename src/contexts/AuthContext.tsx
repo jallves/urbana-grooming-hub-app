@@ -135,37 +135,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return cachedRole;
     }
 
-    console.log('[AuthContext] 📦 Cache não encontrado ou expirado, buscando do banco...');
-    
-    // Criar timeout mais agressivo de 3 segundos
-    const safetyTimeout = setTimeout(() => {
-      console.error('[AuthContext] ⏰ TIMEOUT DE SEGURANÇA (3s) - Forçando conclusão do loading');
-      applyRole(null); // Assume sem role em caso de timeout
-      setLoading(false);
-      setRolesChecked(true);
-    }, 3000);
+    console.log('[AuthContext] 📦 Cache não encontrado, usando Promise.race com timeout...');
     
     try {
-      console.log('[AuthContext] 📡 Consultando user_roles diretamente (políticas simplificadas)...');
+      console.log('[AuthContext] 📡 Consultando user_roles com timeout de 2s...');
       const startTime = Date.now();
       
-      // Consulta direta simples - mais rápida que RPC
-      const { data, error } = await supabase
+      // Criar promise de timeout
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Query timeout após 2s')), 2000)
+      );
+      
+      // Criar promise da consulta
+      const queryPromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .single();
       
+      // Usar Promise.race para cancelar se demorar muito
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+      
       const queryTime = Date.now() - startTime;
       console.log(`[AuthContext] ⏱️ Tempo de consulta: ${queryTime}ms`);
-      
-      // Limpar timeout de segurança
-      clearTimeout(safetyTimeout);
-      
-      console.log('[AuthContext] 📊 Resposta da consulta:', { data, error });
 
       if (error) {
-        // Se não encontrou nenhum registro, não é erro crítico
+        // Se não encontrou nenhum registro
         if (error.code === 'PGRST116') {
           console.log('[AuthContext] ℹ️ Nenhuma role encontrada para este usuário');
           applyRole(null);
@@ -182,31 +177,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (data?.role) {
-        console.log('[AuthContext] ✅ Role encontrada no banco:', data.role);
+        console.log('[AuthContext] ✅ Role encontrada:', data.role);
         const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
-        console.log('[AuthContext] 💾 Salvando role no cache:', role);
         saveRoleToCache(user.id, role);
-        console.log('[AuthContext] 🎭 Aplicando role:', role);
         applyRole(role);
-        console.log('[AuthContext] ✅ Role aplicada com sucesso!');
       } else {
-        console.log('[AuthContext] ℹ️ Nenhuma role encontrada no banco');
+        console.log('[AuthContext] ℹ️ Sem role no resultado');
         applyRole(null);
       }
 
-      // CRÍTICO: Sempre marcar como completo
-      console.log('[AuthContext] 🏁 Marcando loading como false e rolesChecked como true');
       setLoading(false);
       setRolesChecked(true);
-      console.log('[AuthContext] ✅ Verificação de roles concluída');
-
       return data?.role as any || null;
 
-    } catch (error) {
-      console.error('[AuthContext] ❌ Erro crítico ao buscar roles:', error);
-      // Limpar timeout de segurança
-      clearTimeout(safetyTimeout);
-      // Mesmo em erro, completar o loading para não travar a UI
+    } catch (error: any) {
+      if (error.message?.includes('timeout')) {
+        console.error('[AuthContext] ❌ Requisição cancelada por timeout');
+      } else {
+        console.error('[AuthContext] ❌ Erro crítico:', error);
+      }
+      
+      // Em caso de erro ou timeout, completar o loading
       applyRole(null);
       setLoading(false);
       setRolesChecked(true);
