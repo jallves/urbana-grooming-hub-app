@@ -42,8 +42,10 @@ export const useHomeGaleria = () => {
 
   useEffect(() => {
     let mounted = true;
+    console.log('[Galeria Hook] 🚀 Inicializando...');
 
     const fetchGaleria = async () => {
+      console.log('[Galeria Hook] 📡 Buscando dados...');
       try {
         const { data: images, error: fetchError } = await supabase
           .from('gallery_images')
@@ -51,17 +53,23 @@ export const useHomeGaleria = () => {
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
-        if (!mounted) return;
+        if (!mounted) {
+          console.log('[Galeria Hook] ⚠️ Componente desmontado');
+          return;
+        }
 
         if (fetchError) {
-          console.error('[Galeria] Erro ao carregar:', fetchError.message);
+          console.error('[Galeria Hook] ❌ Erro:', fetchError.message);
         } else if (images && images.length > 0) {
-          console.log('[Galeria] ✅ Carregadas:', images.length);
+          console.log('[Galeria Hook] ✅ Carregadas:', images.length, 'imagens');
+          console.log('[Galeria Hook] 📦 Dados:', images);
           setData(images);
+        } else {
+          console.log('[Galeria Hook] ⚠️ Nenhuma imagem ativa encontrada');
         }
       } catch (err: any) {
         if (!mounted) return;
-        console.error('[Galeria] Exceção:', err?.message);
+        console.error('[Galeria Hook] ❌ Exceção:', err?.message);
       }
     };
 
@@ -77,12 +85,14 @@ export const useHomeGaleria = () => {
           table: 'gallery_images'
         },
         () => {
+          console.log('[Galeria Hook] 🔄 Atualização em tempo real');
           if (mounted) fetchGaleria();
         }
       )
       .subscribe();
 
     return () => {
+      console.log('[Galeria Hook] 🔚 Desmontando...');
       mounted = false;
       supabase.removeChannel(channel);
     };
