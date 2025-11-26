@@ -21,11 +21,13 @@ const DEFAULT_IMAGES: GalleryImage[] = [
 ];
 
 export const useGallery = () => {
+  console.log('🎯 [useGallery] Hook inicializado');
   const [images, setImages] = useState<GalleryImage[]>(DEFAULT_IMAGES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchImages = async () => {
+    console.log('🚀 [useGallery] Iniciando fetch...');
     try {
       setLoading(true);
       setError(null);
@@ -35,6 +37,8 @@ export const useGallery = () => {
         .select('id, src, alt')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
+      
+      console.log('📦 [useGallery] Resposta recebida:', { hasData: !!data, count: data?.length, hasError: !!fetchError });
 
       if (fetchError) {
         console.error('[useGallery] Erro:', fetchError);
