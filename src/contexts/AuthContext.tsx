@@ -135,50 +135,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return cachedRole;
     }
 
-    console.log('[AuthContext] 📦 Cache não encontrado, usando Promise.race com timeout...');
+    console.log('[AuthContext] 📦 Cache não encontrado, consultando banco...');
     
     try {
-      console.log('[AuthContext] 📡 Consultando user_roles com timeout de 2s...');
+      console.log('[AuthContext] 📡 Iniciando consulta com timeout agressivo de 1.5s...');
       const startTime = Date.now();
       
-      // Criar promise de timeout
+      // Timeout MUITO agressivo de 1.5 segundos
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout após 2s')), 2000)
+        setTimeout(() => {
+          console.error('[AuthContext] ⏰ TIMEOUT após 1.5s - instância Supabase MUITO lenta!');
+          reject(new Error('Query timeout após 1.5s'));
+        }, 1500)
       );
       
-      // Criar promise da consulta
+      // Consulta principal
       const queryPromise = supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .single();
       
-      // Usar Promise.race para cancelar se demorar muito
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
       
       const queryTime = Date.now() - startTime;
-      console.log(`[AuthContext] ⏱️ Tempo de consulta: ${queryTime}ms`);
+      console.log(`[AuthContext] ⏱️ Consulta completou em ${queryTime}ms`);
 
       if (error) {
-        // Se não encontrou nenhum registro
         if (error.code === 'PGRST116') {
-          console.log('[AuthContext] ℹ️ Nenhuma role encontrada para este usuário');
+          console.log('[AuthContext] ℹ️ Nenhuma role encontrada');
           applyRole(null);
-          setLoading(false);
-          setRolesChecked(true);
-          return null;
+        } else {
+          console.error('[AuthContext] ❌ Erro na consulta:', error);
+          applyRole(null);
         }
-        
-        console.error('[AuthContext] ❌ Erro ao buscar role:', error);
-        applyRole(null);
         setLoading(false);
         setRolesChecked(true);
         return null;
       }
 
       if (data?.role) {
-        console.log('[AuthContext] ✅ Role encontrada:', data.role);
         const role = data.role as 'master' | 'admin' | 'manager' | 'barber';
+        console.log('[AuthContext] ✅ Role encontrada:', role);
         saveRoleToCache(user.id, role);
         applyRole(role);
       } else {
@@ -191,13 +189,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return data?.role as any || null;
 
     } catch (error: any) {
-      if (error.message?.includes('timeout')) {
-        console.error('[AuthContext] ❌ Requisição cancelada por timeout');
-      } else {
-        console.error('[AuthContext] ❌ Erro crítico:', error);
+      console.error('[AuthContext] ❌ Erro/timeout na consulta:', error.message);
+      
+      // FALLBACK: Consultar staff table como alternativa
+      console.log('[AuthContext] 🔄 Tentando fallback via tabela staff...');
+      try {
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single();
+        
+        if (staffData?.role === 'barber') {
+          console.log('[AuthContext] ✅ FALLBACK: Encontrado como barber na tabela staff');
+          const role = 'barber' as const;
+          saveRoleToCache(user.id, role);
+          applyRole(role);
+          setLoading(false);
+          setRolesChecked(true);
+          return role;
+        }
+      } catch (fallbackError) {
+        console.error('[AuthContext] ❌ Fallback também falhou:', fallbackError);
       }
       
-      // Em caso de erro ou timeout, completar o loading
+      // Se tudo falhou, assumir sem role
+      console.error('[AuthContext] ⚠️ AVISO: Instância Supabase muito lenta. Considere upgrade do plano.');
       applyRole(null);
       setLoading(false);
       setRolesChecked(true);
