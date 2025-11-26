@@ -155,14 +155,14 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       localStorage.setItem('client_token', newClient.id);
       setClient(newClient);
 
-      // Criar sessão
-      await sessionManager.createSession({
+      // Criar sessão (não bloqueante - não interrompe o cadastro se falhar)
+      sessionManager.createSession({
         userId: newClient.id,
         userType: 'client',
         userEmail: newClient.email || undefined,
         userName: newClient.name,
         expiresInHours: 24,
-      });
+      }).catch(err => console.warn('[Client] ⚠️ Erro ao criar sessão (não crítico):', err));
 
       toast({
         title: "Conta criada com sucesso!",
@@ -209,14 +209,14 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       localStorage.setItem('client_token', clientData.id);
       setClient(clientData);
 
-      // Criar sessão
-      await sessionManager.createSession({
+      // Criar sessão (não bloqueante - não interrompe o login se falhar)
+      sessionManager.createSession({
         userId: clientData.id,
         userType: 'client',
         userEmail: clientData.email || undefined,
         userName: clientData.name,
         expiresInHours: 24,
-      });
+      }).catch(err => console.warn('[Client] ⚠️ Erro ao criar sessão (não crítico):', err));
 
       toast({
         title: "Login realizado com sucesso!",
@@ -231,8 +231,10 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   };
 
   const signOut = async (): Promise<void> => {
-    // Invalidar sessão
-    await sessionManager.invalidateSession('client');
+    // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
+    sessionManager.invalidateSession('client').catch(err => 
+      console.warn('[Client] ⚠️ Erro ao invalidar sessão (não crítico):', err)
+    );
     
     localStorage.removeItem('client_token');
     setClient(null);

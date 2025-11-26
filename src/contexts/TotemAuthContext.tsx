@@ -93,13 +93,13 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
       localStorage.setItem('totem_auth_token', data.id);
       localStorage.setItem('totem_auth_expiry', expiryTime.toISOString());
       
-      // Criar sessão no sistema de controle
-      await sessionManager.createSession({
+      // Criar sessão no sistema de controle (não bloqueante - não interrompe o login se falhar)
+      sessionManager.createSession({
         userId: data.id,
         userType: 'totem',
         userName: data.device_name,
         expiresInHours: 8,
-      });
+      }).catch(err => console.warn('[Totem] ⚠️ Erro ao criar sessão (não crítico):', err));
       
       setIsAuthenticated(true);
       
@@ -121,7 +121,10 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
   };
 
   const logout = async () => {
-    await sessionManager.invalidateSession('totem');
+    // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
+    sessionManager.invalidateSession('totem').catch(err => 
+      console.warn('[Totem] ⚠️ Erro ao invalidar sessão (não crítico):', err)
+    );
     
     localStorage.removeItem('totem_auth_token');
     localStorage.removeItem('totem_auth_expiry');

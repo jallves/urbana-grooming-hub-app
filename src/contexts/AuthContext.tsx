@@ -117,14 +117,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(session.user);
           const role = await checkUserRoles(session.user);
           
-          // Criar sessão
-          await sessionManager.createSession({
+          // Criar sessão (não bloqueante - não interrompe o login se falhar)
+          sessionManager.createSession({
             userId: session.user.id,
             userType: (role === 'barber' ? 'barber' : 'admin') as any,
             userEmail: session.user.email,
             userName: session.user.email,
             expiresInHours: 24,
-          });
+          }).catch(err => console.warn('[AuthContext] ⚠️ Erro ao criar sessão (não crítico):', err));
         } else {
           console.log('[AuthContext] 👤 Nenhuma sessão ativa');
           setUser(null);
@@ -324,9 +324,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] 🚪 Iniciando logout...');
       
-      // Invalidar sessão
+      // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
       const userType = isBarber ? 'barber' : 'admin';
-      await sessionManager.invalidateSession(userType);
+      sessionManager.invalidateSession(userType).catch(err => 
+        console.warn('[AuthContext] ⚠️ Erro ao invalidar sessão (não crítico):', err)
+      );
       
       // Limpar cache
       clearRoleCache();
