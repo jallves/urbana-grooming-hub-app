@@ -24,16 +24,27 @@ export const useBanners = () => {
       setLoading(true);
       setError(null);
       
-      const { data, error: fetchError } = await supabase
+      // Timeout de 5 segundos para garantir que não trava
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout ao buscar banners')), 5000)
+      );
+
+      const queryPromise = supabase
         .from('banner_images')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
+      const { data, error: fetchError } = await Promise.race([
+        queryPromise,
+        timeoutPromise
+      ]) as any;
+
       if (fetchError) {
         console.error('❌ [useBanners] Erro:', fetchError);
         setError(fetchError.message);
         setBanners([DEFAULT_BANNER]);
+        setLoading(false);
         return;
       }
 
@@ -45,11 +56,11 @@ export const useBanners = () => {
         console.log('⚠️ [useBanners] Nenhum banner ativo, usando default');
         setBanners([DEFAULT_BANNER]);
       }
+      setLoading(false);
     } catch (err) {
       console.error('❌ [useBanners] Exceção:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
       setBanners([DEFAULT_BANNER]);
-    } finally {
       setLoading(false);
     }
   };
