@@ -22,17 +22,18 @@ const ClientRoute: React.FC<ClientRouteProps> = ({ children }) => {
     // Aguardar verificação de roles
     if (!rolesChecked || loading) return;
 
-    // Se não há usuário, redirecionar para login
+    // Se não há usuário, redirecionar para login do painel cliente
     if (!user) {
       console.log('[ClientRoute] ❌ Usuário não autenticado - redirecionando para login');
       navigate('/painel-cliente/login', { replace: true });
       return;
     }
 
-    // Se usuário não é cliente, redirecionar para home
+    // CRÍTICO: Se usuário não é cliente, também redirecionar para login do painel
+    // NUNCA redirecionar para homepage - isso causa o bug de deslogamento
     if (!isClient) {
-      console.log('[ClientRoute] ❌ Usuário não é cliente - acesso negado');
-      navigate('/', { replace: true });
+      console.log('[ClientRoute] ❌ Usuário não é cliente - redirecionando para login do painel');
+      navigate('/painel-cliente/login', { replace: true });
     }
   }, [user, isClient, loading, rolesChecked, navigate]);
 
@@ -87,12 +88,12 @@ const ClientRoute: React.FC<ClientRouteProps> = ({ children }) => {
           </div>
 
           <Button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/painel-cliente/login')}
             variant="outline"
             className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-urbana-gold/20 hover:text-urbana-gold hover:border-urbana-gold/50 h-12 rounded-xl"
           >
             <Home className="h-4 w-4 mr-2" />
-            Voltar ao site
+            Fazer Login como Cliente
           </Button>
         </div>
       </AuthContainer>

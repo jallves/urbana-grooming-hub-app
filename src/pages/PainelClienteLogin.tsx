@@ -36,11 +36,9 @@ export default function PainelClienteLogin() {
     if (isClient) {
       console.log('[PainelClienteLogin] ✅ Cliente autenticado - redirecionando para dashboard');
       navigate('/painel-cliente/dashboard', { replace: true });
-    } else {
-      // Usuário autenticado mas não é cliente = redirecionar para home
-      console.log('[PainelClienteLogin] ℹ️ Usuário não é cliente - redirecionando para home');
-      navigate('/', { replace: true });
     }
+    // Se não é cliente, apenas mostrar o formulário de login normalmente
+    // Não redirecionar para lugar nenhum - deixar usuário tentar logar como cliente
   }, [user, isClient, rolesChecked, authLoading, navigate]);
 
   const handleLogin = async (email: string, senha: string) => {
