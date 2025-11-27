@@ -50,8 +50,8 @@ const BarberAuth: React.FC = () => {
   // Não mostrar loading - ir direto para formulário
   // O redirecionamento é feito pelo useEffect quando houver usuário autenticado
 
-  const handleLogout = () => {
-    signOut(); // signOut já redireciona para /auth
+  const handleLogout = async () => {
+    await signOut();
     console.log('[BarberAuth] 🚪 Logout realizado');
   };
 
