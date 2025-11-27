@@ -46,6 +46,8 @@ const SessionsManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [sessionToDelete, setSessionToDelete] = useState<ActiveSession | null>(null);
+  const [cleaningAll, setCleaningAll] = useState(false);
+  const [cleaningMy, setCleaningMy] = useState(false);
   const { toast } = useToast();
 
   const loadSessions = async () => {
@@ -154,6 +156,59 @@ const SessionsManagement: React.FC = () => {
       });
     } finally {
       setSessionToDelete(null);
+    }
+  };
+
+  const handleCleanupAllSessions = async () => {
+    setCleaningAll(true);
+    try {
+      const { error } = await supabase.rpc('cleanup_all_sessions');
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Todas as sessões limpas',
+        description: 'Todas as sessões ativas foram marcadas como inativas',
+      });
+      
+      await loadSessions();
+    } catch (error) {
+      console.error('Erro ao limpar sessões:', error);
+      toast({
+        title: 'Erro ao limpar sessões',
+        description: 'Não foi possível limpar as sessões',
+        variant: 'destructive',
+      });
+    } finally {
+      setCleaningAll(false);
+    }
+  };
+
+  const handleCleanupMySessions = async () => {
+    setCleaningMy(true);
+    try {
+      const { error } = await supabase.rpc('cleanup_my_sessions');
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Suas sessões foram limpas',
+        description: 'Recarregue a página e faça login novamente',
+        duration: 5000,
+      });
+      
+      // Aguardar 2 segundos e redirecionar para login
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 2000);
+    } catch (error) {
+      console.error('Erro ao limpar minhas sessões:', error);
+      toast({
+        title: 'Erro ao limpar sessões',
+        description: 'Não foi possível limpar suas sessões',
+        variant: 'destructive',
+      });
+      setCleaningMy(false);
     }
   };
 
@@ -268,10 +323,32 @@ const SessionsManagement: React.FC = () => {
             Monitore e gerencie todas as sessões ativas dos usuários
           </p>
         </div>
-        <Button onClick={loadSessions} disabled={loading} size="sm" className="md:size-default">
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button 
+            onClick={handleCleanupMySessions} 
+            disabled={cleaningMy}
+            variant="outline"
+            size="sm"
+            className="md:size-default"
+          >
+            <AlertCircle className={`mr-2 h-4 w-4 ${cleaningMy ? 'animate-spin' : ''}`} />
+            Limpar Minhas Sessões
+          </Button>
+          <Button 
+            onClick={handleCleanupAllSessions} 
+            disabled={cleaningAll}
+            variant="destructive"
+            size="sm"
+            className="md:size-default"
+          >
+            <XCircle className={`mr-2 h-4 w-4 ${cleaningAll ? 'animate-spin' : ''}`} />
+            Limpar Todas
+          </Button>
+          <Button onClick={loadSessions} disabled={loading} size="sm" className="md:size-default">
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -326,6 +403,37 @@ const SessionsManagement: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Help Card - Como resolver sessões presas */}
+      <Card className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+            <div className="flex-1">
+              <CardTitle className="text-base text-yellow-900 dark:text-yellow-100">
+                Como resolver sessões presas ou problemas de cache
+              </CardTitle>
+              <CardDescription className="mt-2 text-yellow-800 dark:text-yellow-200">
+                Se você está com problemas de sessão presa (banner ou galeria não carregam), use uma das opções:
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-yellow-900 dark:text-yellow-100">
+          <div className="flex items-start gap-2">
+            <span className="font-semibold min-w-[120px]">Opção 1:</span>
+            <span>Clique em <strong>"Limpar Minhas Sessões"</strong> (recomendado) - Limpa suas sessões e te redireciona para login</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-semibold min-w-[120px]">Opção 2:</span>
+            <span>Clique em <strong>"Limpar Todas"</strong> - Remove todas as sessões ativas (use com cuidado)</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="font-semibold min-w-[120px]">Opção 3:</span>
+            <span>Abra o console do navegador (F12) e digite: <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">window.clearAuthCache()</code></span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card>

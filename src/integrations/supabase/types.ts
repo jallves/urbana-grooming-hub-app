@@ -4377,6 +4377,11 @@ export type Database = {
           sessions_cleaned: number
         }[]
       }
+      cleanup_my_sessions: { Args: never; Returns: undefined }
+      cleanup_session_by_id: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       cleanup_sessions_by_type: {
         Args: { p_user_type: string }
         Returns: undefined
