@@ -51,8 +51,8 @@ const Auth: React.FC = () => {
     navigate('/');
   };
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    signOut(); // Não precisa await - é instantâneo
     console.log('[Auth] 🚪 Logout realizado');
   };
 
