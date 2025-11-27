@@ -1,11 +1,18 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthLoadingScreen from '@/components/auth/AuthLoadingScreen';
+import { Loader2, AlertCircle, LogOut, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { LogOut } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface BarberRouteProps {
   children: React.ReactNode;
@@ -18,12 +25,14 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   allowBarber = true, 
   requiredModule 
 }) => {
-  const { user, loading, rolesChecked, isAdmin, isBarber, isMaster, isManager } = useAuth();
+  const { user, loading, rolesChecked, isAdmin, isBarber, isMaster, isManager, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Persistência de rota: salvar rota atual quando mudar (somente se autenticado)
-  React.useEffect(() => {
+  useEffect(() => {
     if (!loading && rolesChecked && user) {
       const hasAccess = isMaster || isAdmin || isManager || (allowBarber && isBarber);
       if (hasAccess) {
@@ -32,16 +41,89 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
     }
   }, [location.pathname, loading, rolesChecked, user, isMaster, isAdmin, isManager, isBarber, allowBarber]);
 
-  const handleLogout = async () => {
-    localStorage.removeItem('barber_last_route');
-    await supabase.auth.signOut();
+  // Detectar loading infinito (mais de 8 segundos)
+  useEffect(() => {
+    if (loading || !rolesChecked) {
+      const timer = setTimeout(() => {
+        console.warn('[BarberRoute] ⚠️ Loading timeout detectado - mostrando dialog de recuperação');
+        setLoadingTimeout(true);
+        setShowRecoveryDialog(true);
+      }, 8000); // 8 segundos
+
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading, rolesChecked]);
+
+  const handleLogout = () => {
+    console.log('[BarberRoute] 🚪 Logout forçado');
+    localStorage.clear();
+    signOut();
     navigate('/barbeiro/login', { replace: true });
+  };
+
+  const handleGoToDashboard = () => {
+    console.log('[BarberRoute] 🏠 Redirecionando para dashboard do barbeiro');
+    setShowRecoveryDialog(false);
+    // Usar window.location para forçar reload completo
+    window.location.href = '/barbeiro/dashboard';
   };
 
   // Show loading screen while checking authentication
   // CRÍTICO: Durante loading, NUNCA redirecionar
   if (loading || !rolesChecked) {
-    return <AuthLoadingScreen message="Carregando..." />;
+    return (
+      <>
+        <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-background">
+          <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground text-base sm:text-lg font-medium animate-pulse">
+            Carregando...
+          </p>
+          {loadingTimeout && (
+            <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-4 animate-pulse">
+              Isso está demorando mais do que o normal...
+            </p>
+          )}
+        </div>
+
+        {/* Dialog de Recuperação para Loading Infinito */}
+        <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <AlertCircle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                <AlertDialogTitle className="text-xl">Carregamento Lento</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-base space-y-3">
+                <p>
+                  O carregamento está demorando mais do que o esperado. Isso pode ser um problema de sessão ou conexão.
+                </p>
+                <p className="font-semibold text-foreground">
+                  O que você gostaria de fazer?
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogAction
+                onClick={handleGoToDashboard}
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+              >
+                <Home className="mr-2 h-4 w-4" />
+                Ir para Dashboard
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={handleLogout}
+                className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Deslogar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
   }
 
   // Redirect to login if not authenticated
