@@ -33,11 +33,30 @@ export const useNavbar = () => {
   }, []);
 
   const handleSignOut = () => {
-    console.log('[useNavbar] 🚪 Iniciando logout da homepage...');
+    console.log('[useNavbar] 🚪 Logout COMPLETO iniciado da homepage...');
     console.log('[useNavbar] 📊 Usuário antes do logout:', user?.email);
+    
+    // 1. Limpar TODAS as sessões e caches locais IMEDIATAMENTE
+    localStorage.removeItem('admin_last_route');
+    localStorage.removeItem('barber_last_route');
+    localStorage.removeItem('client_last_route');
+    localStorage.removeItem('totem_last_route');
+    localStorage.removeItem('user_role_cache');
+    localStorage.removeItem('barber_session_token');
+    localStorage.removeItem('client_session_token');
+    
+    // 2. Limpar qualquer cache do Supabase
+    const supabaseKeys = Object.keys(localStorage).filter(key => 
+      key.startsWith('sb-') || key.includes('supabase')
+    );
+    supabaseKeys.forEach(key => localStorage.removeItem(key));
+    
+    // 3. Chamar o signOut do contexto
     authSignOut();
-    navigate('/auth', { replace: true });
-    console.log('[useNavbar] ✅ authSignOut() chamado');
+    
+    // 4. Forçar reload completo para garantir que tudo foi limpo
+    console.log('[useNavbar] ✅ Limpeza completa realizada, forçando reload...');
+    window.location.href = '/';
   };
 
   const handlePanelClick = () => {

@@ -147,7 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const signOut = () => {
-    console.log('[AuthContext] 🚪 Logout instantâneo - limpando estado');
+    console.log('[AuthContext] 🚪 Logout instantâneo - limpeza TOTAL');
     
     // 1. LIMPAR ESTADO LOCAL IMEDIATAMENTE (síncrono)
     setIsAdmin(false);
@@ -160,17 +160,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setRolesChecked(true);
     setLoading(false);
     
-    // 2. LIMPAR LOCALSTORAGE IMEDIATAMENTE (síncrono)
+    // 2. LIMPAR TODO O LOCALSTORAGE IMEDIATAMENTE (síncrono)
     localStorage.removeItem('admin_last_route');
     localStorage.removeItem('barber_last_route');
     localStorage.removeItem('client_last_route');
     localStorage.removeItem('totem_last_route');
     localStorage.removeItem('user_role_cache');
+    localStorage.removeItem('barber_session_token');
+    localStorage.removeItem('client_session_token');
     
-    // 3. Fazer logout do Supabase em background (sem await - não bloqueia)
+    // 3. Limpar TODAS as chaves do Supabase para garantir logout completo
+    try {
+      const supabaseKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith('sb-') || key.includes('supabase')
+      );
+      supabaseKeys.forEach(key => {
+        console.log('[AuthContext] 🧹 Limpando chave:', key);
+        localStorage.removeItem(key);
+      });
+    } catch (error) {
+      console.warn('[AuthContext] ⚠️ Erro ao limpar chaves do Supabase:', error);
+    }
+    
+    // 4. Fazer logout do Supabase em background (sem await - não bloqueia)
     supabase.auth.signOut().catch(err => {
       console.warn('[AuthContext] ⚠️ Erro ao fazer signOut do Supabase (background):', err);
     });
+    
+    console.log('[AuthContext] ✅ Limpeza total concluída');
   };
 
   const canAccessModule = (moduleName: string): boolean => {
