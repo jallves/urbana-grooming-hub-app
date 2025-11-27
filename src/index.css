@@ -20,14 +20,16 @@
   }
 
   html, body {
-    @apply text-gray-900 font-raleway;
+    @apply font-raleway;
     overflow-x: hidden;
     position: relative;
+    background: transparent;
   }
 
   body {
-    @apply text-gray-900 font-raleway;
+    @apply font-raleway;
     overflow-y: hidden; /* Remove scroll do body */
+    background: transparent;
   }
   
   /* Otimização de performance */
@@ -104,15 +106,21 @@
     @apply font-playfair font-bold text-gray-900;
   }
 
-  /* Ensure all main containers have white background and full width */
+  /* Ensure all main containers have transparent background and full width */
   #root {
-    @apply bg-white min-h-screen w-full;
+    @apply min-h-screen w-full;
     min-height: 100dvh;
+    background: transparent;
   }
 
   /* Light theme for admin panels - Clean and elegant */
-  .admin-panel, .barber-panel, .client-panel {
+  .admin-panel {
     @apply bg-white text-gray-900 w-full;
+  }
+  
+  .barber-panel, .client-panel {
+    @apply w-full;
+    background: transparent;
   }
 
   /* Custom scrollbar for mobile navigation */
