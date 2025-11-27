@@ -8,7 +8,7 @@ interface TotemAuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (pin: string) => Promise<boolean>;
-  logout: () => Promise<void>;
+  logout: () => void;
 }
 
 const TotemAuthContext = createContext<TotemAuthContextType | undefined>(undefined);
@@ -140,35 +140,32 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
     }
   };
 
-  const logout = async (): Promise<void> => {
-    console.log('[TotemAuthContext] 🚪 Iniciando logout do totem...');
+  const logout = (): void => {
+    console.log('[TotemAuthContext] 🚪 Iniciando logout IMEDIATO do totem...');
     
-    try {
-      // 1. Invalidar sessão (aguardar para garantir limpeza)
-      await sessionManager.invalidateSession('totem');
-      console.log('[TotemAuthContext] ✅ Sessão invalidada');
-    } catch (err) {
-      console.warn('[TotemAuthContext] Erro ao invalidar sessão:', err);
-    }
-    
-    // 2. Limpar localStorage
-    localStorage.removeItem('totem_auth_token');
-    localStorage.removeItem('totem_auth_expiry');
-    localStorage.removeItem('totem_last_route');
-    
-    // 3. Limpar estado
+    // 1. Limpar estado IMEDIATAMENTE
     setIsAuthenticated(false);
     setTotemUserId(null);
     setLoading(false);
     
-    // 4. Toast
+    // 2. Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
+    sessionManager.invalidateSession('totem').catch(err => 
+      console.warn('[TotemAuthContext] ⚠️ Erro ao invalidar sessão (não crítico):', err)
+    );
+    
+    // 3. Limpar localStorage
+    localStorage.removeItem('totem_auth_token');
+    localStorage.removeItem('totem_auth_expiry');
+    localStorage.removeItem('totem_last_route');
+    
+    // 4. Toast rápido
     toast({
       title: "Logout realizado",
       description: "Sessão do totem encerrada",
       duration: 2000,
     });
     
-    // 5. Redirecionar
+    // 5. Redirecionar IMEDIATAMENTE
     console.log('[TotemAuthContext] ✅ Logout concluído - redirecionando...');
     window.location.href = '/totem/login';
   };

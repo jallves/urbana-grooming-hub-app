@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 const AdminHeader: React.FC = () => {
   const { user, signOut } = useAuth();
   
-  const handleSignOut = async () => {
-    await signOut();
+  const handleSignOut = () => {
+    signOut(); // signOut já redireciona para /auth
   };
   
   const userName = user?.user_metadata?.full_name || user?.email || 'Admin';

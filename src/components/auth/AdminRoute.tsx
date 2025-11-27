@@ -62,27 +62,18 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     }
   }, [loading, rolesChecked]);
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Você foi deslogado com sucesso",
-      });
-      window.location.href = '/auth';
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-      toast({
-        title: "Erro ao deslogar",
-        description: "Tente novamente ou limpe o cache do navegador",
-        variant: "destructive",
-      });
-    }
+  const handleLogout = () => {
+    console.log('[AdminRoute] 🚪 Logout forçado');
+    // Limpar tudo e redirecionar IMEDIATAMENTE
+    localStorage.clear();
+    signOut(); // signOut já redireciona para /auth
   };
 
   const handleGoToDashboard = () => {
+    console.log('[AdminRoute] 🏠 Redirecionando para dashboard');
     setShowRecoveryDialog(false);
-    navigate('/admin', { replace: true });
+    // Usar window.location para forçar reload completo
+    window.location.href = '/admin';
   };
 
   // Durante loading OU enquanto roles não foram verificados, mostrar spinner
@@ -183,9 +174,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
             <Button 
-              onClick={async () => {
-                await signOut();
-                window.location.href = '/auth';
+              onClick={() => {
+                signOut(); // signOut já redireciona para /auth
               }}
               className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 font-raleway font-medium"
             >

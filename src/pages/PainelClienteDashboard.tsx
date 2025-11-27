@@ -130,22 +130,10 @@ export default function PainelClienteDashboard() {
 
   useClientDashboardRealtime(fetchStats);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setIsLoggingOut(true);
-    try {
-      console.log('[Dashboard] 🚪 Iniciando logout...');
-      await signOut();
-      console.log('[Dashboard] ✅ Logout concluído');
-      // Aguardar um pouco para garantir que o logout foi processado
-      setTimeout(() => {
-        navigate('/painel-cliente/login', { replace: true });
-      }, 100);
-    } catch (error) {
-      console.error('[Dashboard] ❌ Erro ao fazer logout:', error);
-      navigate('/painel-cliente/login', { replace: true });
-    } finally {
-      setIsLoggingOut(false);
-    }
+    console.log('[Dashboard] 🚪 Iniciando logout...');
+    signOut(); // signOut já redireciona para /painel-cliente/login
   };
 
   if (loading || isLoggingOut) {

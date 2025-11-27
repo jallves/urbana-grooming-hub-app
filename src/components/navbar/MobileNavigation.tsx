@@ -7,7 +7,7 @@ import { Shield, Scissors, Menu, Home, X, User, Monitor } from "lucide-react";
 interface MobileNavigationProps {
   user: any;
   handlePanelClick: (e?: React.MouseEvent) => void;
-  handleSignOut: () => Promise<void>;
+  handleSignOut: () => void;
 }
 
 const MobileNavigation: React.FC<MobileNavigationProps> = ({ 

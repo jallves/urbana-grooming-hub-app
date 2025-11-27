@@ -32,9 +32,9 @@ export const useNavbar = () => {
     };
   }, []);
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     console.log('[useNavbar] 🚪 Chamando signOut...');
-    await authSignOut();
+    authSignOut(); // signOut já redireciona para /auth
   };
 
   const handlePanelClick = () => {
