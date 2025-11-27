@@ -12,7 +12,7 @@ import {
 interface DesktopNavigationProps {
   user: any;
   handlePanelClick: (e: React.MouseEvent) => void;
-  handleSignOut: () => void; // Removido Promise<void>
+  handleSignOut: () => Promise<void>;
 }
 
 const DesktopNavigation: React.FC<DesktopNavigationProps> = ({ 

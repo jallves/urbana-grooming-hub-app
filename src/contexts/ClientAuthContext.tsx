@@ -12,8 +12,8 @@ interface ClientAuthContextType {
   loading: boolean;
   signUp: (data: ClientFormData) => Promise<{ error: string | null }>;
   signIn: (data: ClientLoginData) => Promise<{ error: string | null }>;
-  signOut: () => void; // Removido Promise<void>
-  logout: () => void; // Removido Promise<void>
+  signOut: () => Promise<void>;
+  logout: () => Promise<void>;
   updateClient: (data: Partial<Client>) => Promise<{ error: string | null }>;
 }
 
@@ -39,29 +39,32 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   // ========================================
   // SIGNOUT: Integrado com Supabase Auth
   // ========================================
-  const signOut = (): void => {
+  const signOut = async (): Promise<void> => {
     console.log('[ClientAuthContext] 🚪 Iniciando logout do cliente...');
     
-    // 1. Limpar estado IMEDIATAMENTE
-    setClient(null);
-    setLoading(false); // CRÍTICO: Parar loading
+    try {
+      // 1. Fazer logout do Supabase PRIMEIRO (aguardar)
+      await supabase.auth.signOut();
+      console.log('[ClientAuthContext] ✅ Supabase signOut concluído');
+    } catch (err) {
+      console.warn('[ClientAuthContext] Erro ao fazer signOut:', err);
+    }
     
     // 2. Limpar localStorage
     localStorage.removeItem('client_last_route');
     
-    // 3. Fazer logout do Supabase (não aguardar - não bloquear)
-    supabase.auth.signOut().catch(err => 
-      console.warn('[ClientAuthContext] Erro ao fazer signOut (não crítico):', err)
-    );
+    // 3. Limpar estado
+    setClient(null);
+    setLoading(false);
     
-    // 4. Toast rápido
+    // 4. Toast
     toast({
       title: "Logout realizado",
       description: "Até a próxima!",
       duration: 2000,
     });
 
-    // 5. Redirecionar IMEDIATAMENTE
+    // 5. Redirecionar
     console.log('[ClientAuthContext] ✅ Logout concluído - redirecionando...');
     window.location.href = '/painel-cliente/login';
   };
