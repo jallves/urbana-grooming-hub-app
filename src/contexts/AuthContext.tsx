@@ -147,7 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const signOut = () => {
-    console.log('[AuthContext] 🚪 Logout instantâneo - redirecionando imediatamente');
+    console.log('[AuthContext] 🚪 Logout instantâneo - limpando estado');
     
     // 1. LIMPAR ESTADO LOCAL IMEDIATAMENTE (síncrono)
     setIsAdmin(false);
@@ -167,10 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('totem_last_route');
     localStorage.removeItem('user_role_cache');
     
-    // 3. REDIRECIONAR IMEDIATAMENTE (antes do signOut do Supabase)
-    window.location.href = '/auth';
-    
-    // 4. Fazer logout do Supabase em background (sem await - não bloqueia)
+    // 3. Fazer logout do Supabase em background (sem await - não bloqueia)
     supabase.auth.signOut().catch(err => {
       console.warn('[AuthContext] ⚠️ Erro ao fazer signOut do Supabase (background):', err);
     });

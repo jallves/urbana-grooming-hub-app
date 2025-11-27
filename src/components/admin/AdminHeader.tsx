@@ -1,12 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 const AdminHeader: React.FC = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   
   const handleSignOut = () => {
-    signOut(); // Não precisa await - é instantâneo
+    signOut();
+    navigate('/auth', { replace: true });
   };
   
   const userName = user?.user_metadata?.full_name || user?.email || 'Admin';

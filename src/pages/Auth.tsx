@@ -52,7 +52,7 @@ const Auth: React.FC = () => {
   };
 
   const handleLogout = () => {
-    signOut(); // Não precisa await - é instantâneo
+    signOut();
     console.log('[Auth] 🚪 Logout realizado');
   };
 

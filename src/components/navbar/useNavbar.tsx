@@ -32,10 +32,11 @@ export const useNavbar = () => {
     };
   }, []);
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     console.log('[useNavbar] 🚪 Iniciando logout da homepage...');
     console.log('[useNavbar] 📊 Usuário antes do logout:', user?.email);
-    authSignOut(); // Não precisa await - é instantâneo
+    authSignOut();
+    navigate('/auth', { replace: true });
     console.log('[useNavbar] ✅ authSignOut() chamado');
   };
 
