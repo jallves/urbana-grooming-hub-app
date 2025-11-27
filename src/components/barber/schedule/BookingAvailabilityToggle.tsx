@@ -111,39 +111,39 @@ const BookingAvailabilityToggle: React.FC = () => {
 
   if (isLoadingBarber || isLoading || isAvailable === null) {
     return (
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+      <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-xl p-6">
         <div className="animate-pulse space-y-3">
-          <div className="h-6 bg-gray-700 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-700 rounded w-full"></div>
-          <div className="h-10 bg-gray-700 rounded w-1/3"></div>
+          <div className="h-6 bg-urbana-black/60 rounded w-3/4"></div>
+          <div className="h-4 bg-urbana-black/60 rounded w-full"></div>
+          <div className="h-10 bg-urbana-black/60 rounded w-1/3"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-3">
             {isAvailable ? (
               <UserCheck className="h-6 w-6 text-green-400" />
             ) : (
               <UserX className="h-6 w-6 text-orange-400" />
             )}
-            <h3 className="text-lg font-semibold text-white">
+            <h3 className="text-base sm:text-lg font-semibold text-urbana-light">
               Disponível para Novos Agendamentos
             </h3>
           </div>
           
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-xs sm:text-sm text-urbana-light/70 mb-4">
             Controle se você aparece como disponível quando clientes fazem novos agendamentos.
             Não afeta agendamentos já existentes, totem, vendas ou comissões.
           </p>
 
           <Alert className={`${isAvailable ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/10 border-orange-500/30'}`}>
             <AlertCircle className={`h-4 w-4 ${isAvailable ? 'text-green-400' : 'text-orange-400'}`} />
-            <AlertDescription className={`${isAvailable ? 'text-green-300' : 'text-orange-300'}`}>
+            <AlertDescription className={`${isAvailable ? 'text-green-300' : 'text-orange-300'} text-xs sm:text-sm`}>
               {isAvailable ? (
                 <>
                   <strong>Status Atual: Disponível</strong>
@@ -169,16 +169,16 @@ const BookingAvailabilityToggle: React.FC = () => {
             disabled={isSaving}
             className="data-[state=checked]:bg-green-500"
           />
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-urbana-light/60">
             {isAvailable ? 'ATIVO' : 'INATIVO'}
           </span>
         </div>
       </div>
 
       {!isAvailable && (
-        <div className="mt-4 pt-4 border-t border-gray-700">
-          <h4 className="text-sm font-medium text-white mb-2">O que continua funcionando:</h4>
-          <ul className="text-sm text-gray-400 space-y-1">
+        <div className="mt-4 pt-4 border-t border-urbana-gold/20">
+          <h4 className="text-sm font-medium text-urbana-light mb-2">O que continua funcionando:</h4>
+          <ul className="text-xs sm:text-sm text-urbana-light/70 space-y-1">
             <li>✅ Agendamentos já existentes</li>
             <li>✅ Check-in no totem</li>
             <li>✅ Finalização de atendimentos</li>

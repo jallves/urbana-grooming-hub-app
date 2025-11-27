@@ -163,26 +163,26 @@ const WorkingHoursManager: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-        <p className="text-sm text-blue-400">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+        <p className="text-xs sm:text-sm text-blue-300">
           <Clock className="h-4 w-4 inline mr-2" />
           Configure seus horários de trabalho para cada dia da semana. 
           Apenas os dias ativos aparecerão para agendamento.
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {workingHours.map((hour) => {
           const dayInfo = DAYS_OF_WEEK.find(d => d.value === hour.day_of_week);
           
           return (
             <div
               key={hour.day_of_week}
-              className={`p-4 rounded-lg border transition-all ${
+              className={`p-4 rounded-xl border transition-all ${
                 hour.is_active
-                  ? 'bg-gray-700/30 border-urbana-gold/30'
-                  : 'bg-gray-800/30 border-gray-700/50 opacity-50'
+                  ? 'backdrop-blur-sm bg-urbana-black/30 border-urbana-gold/30'
+                  : 'backdrop-blur-sm bg-urbana-black/20 border-urbana-gold/10 opacity-50'
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -194,7 +194,7 @@ const WorkingHoursManager: React.FC = () => {
                     }
                     className="data-[state=checked]:bg-urbana-gold"
                   />
-                  <Label className="text-white font-medium cursor-pointer">
+                  <Label className="text-urbana-light font-medium cursor-pointer text-sm sm:text-base">
                     {dayInfo?.label}
                   </Label>
                 </div>
@@ -202,26 +202,26 @@ const WorkingHoursManager: React.FC = () => {
                 {hour.is_active && (
                   <div className="flex items-center gap-4 flex-1">
                     <div className="flex-1">
-                      <Label className="text-gray-400 text-xs mb-1">Início</Label>
+                      <Label className="text-urbana-light/70 text-xs mb-1">Início</Label>
                       <Input
                         type="time"
                         value={hour.start_time}
                         onChange={(e) => 
                           handleUpdate(hour.day_of_week, 'start_time', e.target.value)
                         }
-                        className="bg-gray-700/50 border-gray-600 text-white"
+                        className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
                       />
                     </div>
-                    <span className="text-gray-400 mt-5">até</span>
+                    <span className="text-urbana-light/60 mt-5 text-sm">até</span>
                     <div className="flex-1">
-                      <Label className="text-gray-400 text-xs mb-1">Fim</Label>
+                      <Label className="text-urbana-light/70 text-xs mb-1">Fim</Label>
                       <Input
                         type="time"
                         value={hour.end_time}
                         onChange={(e) => 
                           handleUpdate(hour.day_of_week, 'end_time', e.target.value)
                         }
-                        className="bg-gray-700/50 border-gray-600 text-white"
+                        className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
                       />
                     </div>
                   </div>
@@ -236,7 +236,7 @@ const WorkingHoursManager: React.FC = () => {
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
+          className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90"
         >
           {saving ? (
             <>

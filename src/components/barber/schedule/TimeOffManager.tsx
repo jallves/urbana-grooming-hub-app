@@ -176,9 +176,9 @@ const TimeOffManager: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-        <p className="text-sm text-orange-400">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="backdrop-blur-sm bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
+        <p className="text-xs sm:text-sm text-orange-300">
           <AlertCircle className="h-4 w-4 inline mr-2" />
           Registre seus períodos de ausência. Durante esses períodos, você não aparecerá 
           como disponível para agendamentos.
@@ -188,44 +188,44 @@ const TimeOffManager: React.FC = () => {
       {!showForm ? (
         <Button
           onClick={() => setShowForm(true)}
-          className="w-full bg-urbana-gold text-black hover:bg-urbana-gold/90"
+          className="w-full bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90"
         >
           <Plus className="h-4 w-4 mr-2" />
           Registrar Nova Ausência
         </Button>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-gray-700/30 border border-gray-600 rounded-lg">
+        <form onSubmit={handleSubmit} className="space-y-4 p-4 backdrop-blur-sm bg-urbana-black/30 border border-urbana-gold/20 rounded-xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label className="text-gray-300">Data de Início</Label>
+              <Label className="text-urbana-light/70">Data de Início</Label>
               <Input
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
                 min={format(new Date(), 'yyyy-MM-dd')}
-                className="bg-gray-700/50 border-gray-600 text-white"
+                className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
                 required
               />
             </div>
             <div>
-              <Label className="text-gray-300">Data de Fim</Label>
+              <Label className="text-urbana-light/70">Data de Fim</Label>
               <Input
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
                 min={formData.start_date || format(new Date(), 'yyyy-MM-dd')}
-                className="bg-gray-700/50 border-gray-600 text-white"
+                className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
                 required
               />
             </div>
           </div>
 
           <div>
-            <Label className="text-gray-300">Tipo de Ausência</Label>
+            <Label className="text-urbana-light/70">Tipo de Ausência</Label>
             <select
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-              className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-md text-white"
+              className="w-full px-3 py-2 bg-urbana-black/40 border border-urbana-gold/20 rounded-md text-urbana-light"
             >
               <option value="folga">Folga</option>
               <option value="ferias">Férias</option>
@@ -235,12 +235,12 @@ const TimeOffManager: React.FC = () => {
           </div>
 
           <div>
-            <Label className="text-gray-300">Motivo (opcional)</Label>
+            <Label className="text-urbana-light/70">Motivo (opcional)</Label>
             <Textarea
               value={formData.reason}
               onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
               placeholder="Descreva o motivo da ausência..."
-              className="bg-gray-700/50 border-gray-600 text-white"
+              className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
               rows={3}
             />
           </div>
@@ -253,14 +253,14 @@ const TimeOffManager: React.FC = () => {
                 setShowForm(false);
                 setFormData({ start_date: '', end_date: '', reason: '', type: 'folga' });
               }}
-              className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="flex-1 border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-urbana-gold text-black hover:bg-urbana-gold/90"
+              className="flex-1 bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90"
             >
               {saving ? (
                 <>
