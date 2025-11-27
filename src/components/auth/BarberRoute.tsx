@@ -22,12 +22,24 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Persistência de rota: salvar rota atual quando mudar (somente se autenticado)
+  React.useEffect(() => {
+    if (!loading && rolesChecked && user) {
+      const hasAccess = isMaster || isAdmin || isManager || (allowBarber && isBarber);
+      if (hasAccess) {
+        localStorage.setItem('barber_last_route', location.pathname);
+      }
+    }
+  }, [location.pathname, loading, rolesChecked, user, isMaster, isAdmin, isManager, isBarber, allowBarber]);
+
   const handleLogout = async () => {
+    localStorage.removeItem('barber_last_route');
     await supabase.auth.signOut();
     navigate('/barbeiro/login', { replace: true });
   };
 
   // Show loading screen while checking authentication
+  // CRÍTICO: Durante loading, NUNCA redirecionar
   if (loading || !rolesChecked) {
     return <AuthLoadingScreen message="Carregando..." />;
   }

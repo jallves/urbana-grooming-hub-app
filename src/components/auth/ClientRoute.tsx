@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoaderPage } from '@/components/ui/loader-page';
 import { Button } from '@/components/ui/button';
@@ -17,10 +17,21 @@ interface ClientRouteProps {
 const ClientRoute: React.FC<ClientRouteProps> = ({ children }) => {
   const { user, isClient, loading, rolesChecked } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Persistência de rota: salvar rota atual quando mudar (somente se autenticado)
+  useEffect(() => {
+    if (!loading && rolesChecked && user && isClient) {
+      localStorage.setItem('client_last_route', location.pathname);
+    }
+  }, [location.pathname, loading, rolesChecked, user, isClient]);
 
   useEffect(() => {
-    // Aguardar verificação de roles
-    if (!rolesChecked || loading) return;
+    // CRÍTICO: Durante loading, NUNCA redirecionar - apenas aguardar
+    if (!rolesChecked || loading) {
+      console.log('[ClientRoute] ⏳ Aguardando verificação...');
+      return;
+    }
 
     // Se não há usuário, redirecionar para login do painel cliente
     if (!user) {
@@ -34,8 +45,10 @@ const ClientRoute: React.FC<ClientRouteProps> = ({ children }) => {
     if (!isClient) {
       console.log('[ClientRoute] ❌ Usuário não é cliente - redirecionando para login do painel');
       navigate('/painel-cliente/login', { replace: true });
+    } else {
+      console.log('[ClientRoute] ✅ Acesso autorizado - mantendo na rota atual:', location.pathname);
     }
-  }, [user, isClient, loading, rolesChecked, navigate]);
+  }, [user, isClient, loading, rolesChecked, navigate, location.pathname]);
 
   // Mostrar loading enquanto verifica
   if (loading || !rolesChecked) {

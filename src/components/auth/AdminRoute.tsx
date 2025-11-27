@@ -34,6 +34,13 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
+  // Persistência de rota: salvar rota atual quando mudar (somente se autenticado)
+  useEffect(() => {
+    if (!loading && rolesChecked && user) {
+      localStorage.setItem('admin_last_route', location.pathname);
+    }
+  }, [location.pathname, loading, rolesChecked, user]);
+
   // Usuário tem acesso se for admin, manager, master ou (barber quando permitido)
   const hasAccess = user ? (isAdmin || isManager || isMaster || (allowBarber && isBarber)) : false;
   
