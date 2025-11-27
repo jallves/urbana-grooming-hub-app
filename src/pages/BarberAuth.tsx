@@ -47,10 +47,8 @@ const BarberAuth: React.FC = () => {
     navigate('/');
   };
 
-  // Aguardar verificação de roles
-  if (authLoading || !rolesChecked) {
-    return <AuthLoadingScreen message="Verificando autenticação..." />;
-  }
+  // Não mostrar loading - ir direto para formulário
+  // O redirecionamento é feito pelo useEffect quando houver usuário autenticado
 
   const handleLogout = async () => {
     try {
@@ -61,18 +59,8 @@ const BarberAuth: React.FC = () => {
     }
   };
 
-  // Não deve chegar aqui com usuário logado (redirecionamento acima cuida disso)
-  // Mas mantemos como fallback de segurança
-  if (user) {
-    return (
-      <AuthContainer title="Costa Urbana" subtitle="Redirecionando...">
-        <div className="w-full space-y-4 text-center">
-          <div className="w-12 h-12 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Redirecionando...</p>
-        </div>
-      </AuthContainer>
-    );
-  }
+  // Se usuário logado, useEffect cuida do redirecionamento
+  // Sempre mostrar formulário imediatamente
 
   return (
     <AuthContainer 

@@ -15,7 +15,7 @@ interface AuthContextType {
   rolesChecked: boolean;
   requiresPasswordChange: boolean;
   canAccessModule: (moduleName: string) => boolean;
-  signOut: () => void; // Removido Promise<void>
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -146,19 +146,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const signOut = () => {
+  const signOut = async () => {
     console.log('[AuthContext] 🚪 Iniciando logout...');
     
-    // 1. Limpar IMEDIATAMENTE o estado local (não aguardar nada)
-    setIsAdmin(false);
-    setIsBarber(false);
-    setIsMaster(false);
-    setIsManager(false);
-    setIsClient(false);
-    setUserRole(null);
-    setUser(null);
-    setRolesChecked(true);
-    setLoading(false); // CRÍTICO: Parar loading
+    try {
+      // 1. Fazer logout do Supabase PRIMEIRO (aguardar para garantir limpeza)
+      await supabase.auth.signOut();
+      console.log('[AuthContext] ✅ Supabase signOut concluído');
+    } catch (err) {
+      console.warn('[AuthContext] Erro ao fazer signOut:', err);
+    }
     
     // 2. Limpar TODOS os localStorage relacionados
     localStorage.removeItem('admin_last_route');
@@ -167,12 +164,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('totem_last_route');
     localStorage.removeItem('user_role_cache');
     
-    // 3. Fazer logout do Supabase (não aguardar - usar catch para não bloquear)
-    supabase.auth.signOut().catch(err => 
-      console.warn('[AuthContext] Erro ao fazer signOut (não crítico):', err)
-    );
+    // 3. Limpar estado local
+    setIsAdmin(false);
+    setIsBarber(false);
+    setIsMaster(false);
+    setIsManager(false);
+    setIsClient(false);
+    setUserRole(null);
+    setUser(null);
+    setRolesChecked(true);
+    setLoading(false);
     
-    // 4. Redirecionar IMEDIATAMENTE
+    // 4. Redirecionar
     console.log('[AuthContext] ✅ Logout concluído - redirecionando...');
     window.location.href = '/auth';
   };
