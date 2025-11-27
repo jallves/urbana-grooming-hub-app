@@ -108,32 +108,23 @@ const ForceSignOutUser: React.FC = () => {
     setLoading(true);
 
     try {
-      console.log('🚪 Derrubando sessões do usuário:', userData.email);
+      console.log('🚪 Forçando logout do usuário:', userData.email);
 
-      // Obter token de autenticação
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Sessão não encontrada');
-      }
-
-      // Chamar edge function
-      const { data, error } = await supabase.functions.invoke('admin-signout-user', {
-        body: {
-          userId: userData.id,
-          reason: reason || 'Não especificada'
-        }
+      // Chamar função do banco de dados
+      const { data, error } = await supabase.rpc('force_user_logout', {
+        p_user_id: userData.id,
+        p_reason: reason || 'Não especificada'
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('✅ Resposta da edge function:', data);
+      const result = data as { success: boolean; user_email: string; sessions_invalidated: number };
+
+      console.log('✅ Logout forçado:', result);
 
       toast({
-        title: "✅ Sessões derrubadas com sucesso",
-        description: `Todas as sessões de ${userData.email} foram invalidadas. O usuário precisará fazer login novamente.`,
+        title: "✅ Sessão encerrada com sucesso",
+        description: `${result.sessions_invalidated} sessão(ões) de ${result.user_email} foi(ram) invalidada(s). O usuário será deslogado automaticamente.`,
         duration: 5000,
       });
 
@@ -144,10 +135,10 @@ const ForceSignOutUser: React.FC = () => {
       setShowConfirmDialog(false);
 
     } catch (error: any) {
-      console.error('❌ Erro ao derrubar sessões:', error);
+      console.error('❌ Erro ao forçar logout:', error);
       toast({
-        title: "Erro ao derrubar sessões",
-        description: error.message || "Ocorreu um erro ao invalidar as sessões do usuário",
+        title: "Erro ao encerrar sessão",
+        description: error.message || "Ocorreu um erro ao invalidar a sessão do usuário",
         variant: "destructive",
         duration: 5000,
       });

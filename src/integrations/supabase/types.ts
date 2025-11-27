@@ -1835,6 +1835,39 @@ export type Database = {
         }
         Relationships: []
       }
+      force_logout_notifications: {
+        Row: {
+          created_at: string | null
+          forced_by: string | null
+          id: string
+          processed: boolean | null
+          processed_at: string | null
+          reason: string | null
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          forced_by?: string | null
+          id?: string
+          processed?: boolean | null
+          processed_at?: string | null
+          reason?: string | null
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          forced_by?: string | null
+          id?: string
+          processed?: boolean | null
+          processed_at?: string | null
+          reason?: string | null
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gallery_images: {
         Row: {
           alt: string
@@ -4471,6 +4504,10 @@ export type Database = {
       }
       disable_barber_auth_user: { Args: { p_email: string }; Returns: Json }
       force_logout_session: { Args: { p_session_id: string }; Returns: boolean }
+      force_user_logout: {
+        Args: { p_reason?: string; p_user_id: string }
+        Returns: Json
+      }
       generate_payment_number: { Args: never; Returns: string }
       generate_qr_checkin: {
         Args: { p_agendamento_id: string; p_secret: string }
@@ -4693,6 +4730,10 @@ export type Database = {
       mark_error_resolved: {
         Args: { p_error_log_id: string }
         Returns: undefined
+      }
+      mark_logout_notification_processed: {
+        Args: { p_notification_id: string }
+        Returns: boolean
       }
       migrate_painel_clientes_to_auth: {
         Args: never
