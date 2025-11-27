@@ -280,13 +280,13 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         description: "Até a próxima!",
       });
 
-      // Redirect to homepage after logout
-      window.location.href = '/';
+      // Redirect to client login page after logout
+      window.location.href = '/painel-cliente/login';
     } catch (error) {
       console.error('[ClientAuthContext] Erro no logout:', error);
       // Mesmo com erro, limpar estado local
       setClient(null);
-      window.location.href = '/';
+      window.location.href = '/painel-cliente/login';
     }
   };
 
