@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { sessionManager, ActiveSession } from '@/hooks/useSessionManager';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   RefreshCw, 
   LogOut, 
@@ -68,10 +69,30 @@ const SessionsManagement: React.FC = () => {
   useEffect(() => {
     loadSessions();
     
-    // Atualizar a cada 10 segundos
-    const interval = setInterval(loadSessions, 10000);
+    // Configurar Realtime para atualizar automaticamente
+    const channel = supabase
+      .channel('sessions-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_sessions',
+        },
+        () => {
+          console.log('🔄 Sessão atualizada - recarregando...');
+          loadSessions();
+        }
+      )
+      .subscribe();
+
+    // Atualizar também a cada 30 segundos
+    const interval = setInterval(loadSessions, 30000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
@@ -101,12 +122,20 @@ const SessionsManagement: React.FC = () => {
 
   const handleForceLogout = async (session: ActiveSession) => {
     try {
-      const success = await sessionManager.forceLogoutSession(session.id);
+      // Chamar função do banco de dados
+      const { data, error } = await supabase.rpc('force_user_logout', {
+        p_user_id: session.user_id,
+        p_reason: 'Logout forçado pelo administrador'
+      });
+
+      if (error) throw error;
       
-      if (success) {
+      const result = data as { success: boolean; user_email: string; sessions_invalidated: number; message?: string };
+      
+      if (result && result.success) {
         toast({
           title: 'Sessão encerrada com sucesso',
-          description: `A sessão de ${session.user_name || session.user_email} foi encerrada`,
+          description: `${result.sessions_invalidated} sessão(ões) de ${result.user_email} foi(ram) encerrada(s)`,
         });
         loadSessions();
       } else {
@@ -194,12 +223,30 @@ const SessionsManagement: React.FC = () => {
   const getActivityStatus = (lastActivity: string) => {
     const diffMins = Math.floor((new Date().getTime() - new Date(lastActivity).getTime()) / 60000);
     
-    if (diffMins < 5) {
-      return { icon: <CheckCircle className="h-4 w-4 text-green-500" />, label: 'Ativo' };
-    } else if (diffMins < 15) {
-      return { icon: <AlertCircle className="h-4 w-4 text-yellow-500" />, label: 'Inativo' };
+    if (diffMins < 2) {
+      return { 
+        icon: <CheckCircle className="h-4 w-4 text-green-500" />, 
+        label: 'Ativo Agora', 
+        color: 'text-green-500' 
+      };
+    } else if (diffMins < 10) {
+      return { 
+        icon: <CheckCircle className="h-4 w-4 text-blue-500" />, 
+        label: 'Ativo', 
+        color: 'text-blue-500' 
+      };
+    } else if (diffMins < 30) {
+      return { 
+        icon: <AlertCircle className="h-4 w-4 text-yellow-500" />, 
+        label: 'Inativo Recente', 
+        color: 'text-yellow-500' 
+      };
     } else {
-      return { icon: <XCircle className="h-4 w-4 text-red-500" />, label: 'Muito Inativo' };
+      return { 
+        icon: <XCircle className="h-4 w-4 text-red-500" />, 
+        label: 'Muito Inativo', 
+        color: 'text-red-500' 
+      };
     }
   };
 
@@ -352,17 +399,17 @@ const SessionsManagement: React.FC = () => {
                     key={session.id}
                     className="flex flex-col gap-4 p-4 rounded-lg border bg-card md:flex-row md:items-center md:justify-between"
                   >
-                    <div className="space-y-3 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-sm md:text-base">
-                          {session.user_name || session.user_email || 'Usuário sem nome'}
-                        </span>
-                        {getUserTypeBadge(session.user_type)}
-                        <div className="flex items-center gap-1">
-                          {activityStatus.icon}
-                          <span className="text-xs text-muted-foreground">{activityStatus.label}</span>
+                      <div className="space-y-3 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-sm md:text-base">
+                            {session.user_name || session.user_email || 'Usuário sem nome'}
+                          </span>
+                          {getUserTypeBadge(session.user_type)}
+                          <div className={`flex items-center gap-1 ${activityStatus.color}`}>
+                            {activityStatus.icon}
+                            <span className="text-xs font-medium">{activityStatus.label}</span>
+                          </div>
                         </div>
-                      </div>
                       
                       <div className="grid gap-2 text-xs md:text-sm text-muted-foreground">
                         {session.user_email && (

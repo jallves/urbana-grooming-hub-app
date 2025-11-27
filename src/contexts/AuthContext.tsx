@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
 
 interface AuthContextType {
   user: User | null;
@@ -42,6 +43,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userRole, setUserRole] = useState<'master' | 'admin' | 'manager' | 'barber' | 'client' | null>(null);
   const [rolesChecked, setRolesChecked] = useState(false);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
+
+  // Listener para logout forçado (para admins, barbeiros, etc)
+  useForceLogoutListener(user?.id);
 
   const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | 'client' | null) => {
     setUserRole(role);

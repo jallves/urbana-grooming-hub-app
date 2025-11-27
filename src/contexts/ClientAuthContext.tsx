@@ -1,10 +1,11 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Client, ClientLoginData, ClientFormData } from '@/types/client';
 import { useToast } from '@/hooks/use-toast';
 import { sessionManager } from '@/hooks/useSessionManager';
+import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
 
 interface ClientAuthContextType {
   client: Client | null;
@@ -34,6 +35,36 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // ========================================
+  // SIGNOUT: Integrado com Supabase Auth
+  // ========================================
+  const signOut = async (): Promise<void> => {
+    try {
+      console.log('[ClientAuthContext] Logout via Supabase Auth');
+      
+      setClient(null);
+      
+      // Fazer logout do Supabase Auth (isso vai invalidar a sessão automaticamente)
+      await supabase.auth.signOut();
+      
+      toast({
+        title: "Logout realizado",
+        description: "Até a próxima!",
+      });
+
+      // Redirect to client login page after logout
+      window.location.href = '/painel-cliente/login';
+    } catch (error) {
+      console.error('[ClientAuthContext] Erro no logout:', error);
+      // Mesmo com erro, limpar estado local
+      setClient(null);
+      window.location.href = '/painel-cliente/login';
+    }
+  };
+
+  // Usar hook para escutar logout forçado
+  useForceLogoutListener(client?.id);
 
   // Sincronizar com Supabase Auth
   useEffect(() => {
@@ -260,33 +291,6 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     } catch (error) {
       console.error('[ClientAuthContext] Erro inesperado no login:', error);
       return { error: 'Erro inesperado. Tente novamente.' };
-    }
-  };
-
-  // ========================================
-  // SIGNOUT: Integrado com Supabase Auth
-  // ========================================
-  const signOut = async (): Promise<void> => {
-    try {
-      console.log('[ClientAuthContext] Logout via Supabase Auth');
-      
-      setClient(null);
-      
-      // Fazer logout do Supabase Auth (isso vai invalidar a sessão automaticamente)
-      await supabase.auth.signOut();
-      
-      toast({
-        title: "Logout realizado",
-        description: "Até a próxima!",
-      });
-
-      // Redirect to client login page after logout
-      window.location.href = '/painel-cliente/login';
-    } catch (error) {
-      console.error('[ClientAuthContext] Erro no logout:', error);
-      // Mesmo com erro, limpar estado local
-      setClient(null);
-      window.location.href = '/painel-cliente/login';
     }
   };
 

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sessionManager } from '@/hooks/useSessionManager';
+import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
 
 interface TotemAuthContextType {
   isAuthenticated: boolean;
@@ -26,8 +27,12 @@ interface TotemAuthProviderProps {
 
 export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [totemUserId, setTotemUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Listener para logout forçado
+  useForceLogoutListener(totemUserId || undefined);
 
   useEffect(() => {
     checkAuth();
@@ -43,6 +48,7 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
       
       if (now < expiryTime) {
         setIsAuthenticated(true);
+        setTotemUserId(totemToken);
       } else {
         localStorage.removeItem('totem_auth_token');
         localStorage.removeItem('totem_auth_expiry');
@@ -104,6 +110,7 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
       
       console.log('🔐 [TotemAuth] Definindo isAuthenticated = true');
       setIsAuthenticated(true);
+      setTotemUserId(data.id);
       
       console.log('🔐 [TotemAuth] Mostrando toast de sucesso');
       toast({
@@ -142,6 +149,7 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
     localStorage.removeItem('totem_auth_token');
     localStorage.removeItem('totem_auth_expiry');
     setIsAuthenticated(false);
+    setTotemUserId(null);
     
     toast({
       title: "Logout realizado",
