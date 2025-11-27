@@ -2,86 +2,44 @@
 
 ## IMPORTANTE: Background da Barbearia
 
-O Painel do Barbeiro tem a **MESMA** estrutura visual do Painel do Cliente:
+O Painel do Barbeiro tem uma estrutura visual **IDÊNTICA** ao Painel do Cliente que **NUNCA** deve ser alterada:
 
 ### 🎨 Design Obrigatório
 - **Background**: Imagem da barbearia (`barbershop-background.jpg`) com overlay escuro
-- **Cards**: Glassmorphism (fundo transparente com blur) via componentes `ResponsiveCard` e `StandardCard`
-- **Texto**: Cores claras (text-white, text-gray-300) para contraste com o fundo escuro
+- **Cards**: Glassmorphism (fundo transparente com blur) via `PainelBarbeiroCard`
+- **Texto**: Cores claras (text-urbana-light) para contraste com o fundo escuro
 - **Nunca use**: `bg-white`, `bg-background` ou qualquer fundo sólido nos componentes filhos
 
 ### 📁 Arquivos Principais (NÃO ALTERAR SEM CUIDADO)
 
 1. **`src/components/barber/BarberLayout.tsx`**
    - Gerencia o background da barbearia
-   - Contém o header e navegação (desktop, mobile, tablet)
-   - Wrapper para todas as páginas do painel do barbeiro
-   - **CRÍTICO**: Usa `min-h-screen` (não `h-screen`) e `overflow-x-hidden`
-   - Main content usa `relative z-10 w-full pb-safe` (sem flex complexos)
+   - Contém o header e navegação
+   - Wrapper para todas as páginas do painel
+   - **IDÊNTICO** ao PainelClienteLayout
 
-2. **`src/components/barber/layouts/StandardBarberLayout.tsx`**
-   - Container com padding responsivo
-   - NUNCA adicione flex ou min-h-0 aqui
+2. **`src/components/barber/BarberPageContainer.tsx`**
+   - Container padrão para conteúdo das páginas
+   - Define largura, padding e responsividade
+   - Inclui header automático com saudação
+   - **IDÊNTICO** ao ClientPageContainer
 
-3. **`src/components/barber/layouts/StandardCard.tsx`**
-   - Cards com glassmorphism (bg-urbana-black/40 backdrop-blur-2xl)
-   - Bordas com urbana-gold
-
-4. **`src/components/barber/layouts/ResponsiveCard.tsx`**
-   - Cards responsivos com padding adaptativo
+3. **`src/components/barber/PainelBarbeiroCard.tsx`**
+   - Cards com glassmorphism
+   - 5 variantes: default, highlight, success, warning, info
+   - **IDÊNTICO** ao PainelClienteCard
 
 ### 🔧 Páginas do Painel
 
-Todas as páginas abaixo DEVEM usar o layout padrão:
+Todas as páginas abaixo DEVEM usar os componentes padrão:
 - `src/pages/BarberDashboard.tsx`
 - `src/pages/BarberAppointments.tsx`
+- `src/pages/BarberSchedule.tsx`
 - `src/pages/BarberCommissions.tsx`
-
-### ✅ Estrutura de Layout CORRETA (baseada no PainelClienteLayout)
-
-```tsx
-// BarberLayout.tsx - Container principal
-<div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
-  {/* Background fixo */}
-  <div className="fixed inset-0 z-0 pointer-events-none">
-    <img src={barbershopBg} className="w-full h-full object-cover" />
-    <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85..." />
-  </div>
-  
-  {/* Header e Nav (sticky) */}
-  <header className="sticky top-0 z-50...">...</header>
-  <nav className="sticky top-[68px] z-40...">...</nav>
-  
-  {/* Main content - SIMPLES */}
-  <main className="relative z-10 w-full pb-safe">
-    {children}
-  </main>
-</div>
-
-// StandardBarberLayout.tsx - Container com padding
-<div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
-  {children}
-</div>
-
-// Página (ex: BarberDashboard.tsx)
-<BarberLayout title="Dashboard">
-  <StandardBarberLayout>
-    <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
-      {/* Conteúdo aqui */}
-    </div>
-  </StandardBarberLayout>
-</BarberLayout>
-```
 
 ### ❌ O QUE NUNCA FAZER
 
 ```tsx
-// ❌ ERRADO - Não use h-screen no container principal
-<div className="h-screen overflow-y-auto">
-
-// ❌ ERRADO - Não use flex complexos nas páginas
-<div className="flex-1 flex flex-col min-h-0">
-
 // ❌ ERRADO - Não adicione fundos brancos
 <div className="bg-white">
 
@@ -90,52 +48,82 @@ Todas as páginas abaixo DEVEM usar o layout padrão:
 
 // ❌ ERRADO - Não use cores escuras de texto
 <p className="text-black">
+
+// ❌ ERRADO - Não use StandardCard antigo (DEPRECADO)
+import StandardCard from './layouts/StandardCard';
 ```
 
 ### ✅ O QUE FAZER
 
 ```tsx
-// ✅ CORRETO - Use min-h-screen
-<div className="min-h-screen w-full overflow-x-hidden relative">
+// ✅ CORRETO - Use o container padrão
+import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
+<BarberPageContainer>
 
-// ✅ CORRETO - Main simples
-<main className="relative z-10 w-full pb-safe">
+// ✅ CORRETO - Use os cards com glassmorphism
+import { 
+  PainelBarbeiroCard,
+  PainelBarbeiroCardTitle,
+  PainelBarbeiroCardHeader,
+  PainelBarbeiroCardContent,
+  PainelBarbeiroCardFooter
+} from '@/components/barber/PainelBarbeiroCard';
 
-// ✅ CORRETO - Páginas com max-w e space-y
-<div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
-
-// ✅ CORRETO - Use cards com glassmorphism
-<ResponsiveCard title="Título">
+<PainelBarbeiroCard variant="highlight">
+  <PainelBarbeiroCardHeader>
+    <PainelBarbeiroCardTitle>Título</PainelBarbeiroCardTitle>
+  </PainelBarbeiroCardHeader>
+  <PainelBarbeiroCardContent>
+    Conteúdo aqui
+  </PainelBarbeiroCardContent>
+</PainelBarbeiroCard>
 
 // ✅ CORRETO - Use cores claras de texto
-<p className="text-white">
+<p className="text-urbana-light">
 ```
 
-### 🐛 Problemas de Responsividade
+### 📐 Dimensões e Layout
 
-Se o painel não estiver ocupando 100% da tela ou houver problemas de scroll:
+| Elemento | Mobile | Desktop |
+|----------|--------|---------|
+| Header altura | 72px | 80px |
+| Footer menu mobile | ~80px + safe area | N/A (sidebar) |
+| Sidebar desktop | N/A | 256-320px |
+| Padding top | 72px | 80px |
+| Padding bottom | 120px | 48px |
+| Max width conteúdo | 1280px (7xl) | 1280px (7xl) |
 
-1. **Verifique BarberLayout.tsx**:
-   - Main deve ser: `className="relative z-10 w-full pb-safe"`
-   - Container principal deve ser: `className="min-h-screen w-full overflow-x-hidden relative font-poppins"`
+### 🎨 Variantes dos Cards
 
-2. **Verifique StandardBarberLayout.tsx**:
-   - Deve ser apenas: `className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6"`
-   - SEM flex, SEM min-h-0, SEM overflow
+| Variante | Cor da Borda | Uso |
+|----------|--------------|-----|
+| `default` | urbana-light/20 | Cards neutros |
+| `highlight` | urbana-gold/30 | Ações principais, receita |
+| `success` | green-500/30 | Status concluído |
+| `warning` | yellow-500/30 | Alertas, status pendente |
+| `info` | blue-500/30 | Informações, agendamentos |
 
-3. **Verifique as páginas**:
-   - Container da página deve ser: `className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6"`
-   - SEM flex-1, SEM flex flex-col, SEM min-h-0, SEM overflow
+### 🐛 Se o Background Não Aparecer
 
-### 📏 Diferenças entre Painel do Cliente e Painel do Barbeiro
+1. Verifique o console para: `✅ BarberLayout carregado com background da barbearia`
+2. Limpe o cache do navegador (Ctrl+Shift+R ou Cmd+Shift+R)
+3. Verifique se `barbershop-background.jpg` existe em `src/assets/`
+4. Confirme que BarberLayout está nas rotas do App.tsx
 
-| Aspecto | Painel Cliente | Painel Barbeiro |
-|---------|----------------|-----------------|
-| Background | ✅ Barbershop BG | ✅ Barbershop BG |
-| Glassmorphism | ✅ PainelClienteCard | ✅ ResponsiveCard/StandardCard |
-| Layout Main | `pb-safe` | `pb-safe` |
-| Container Principal | `min-h-screen` | `min-h-screen` |
-| Responsividade | ✅ Mobile/Tablet/Web/PWA | ✅ Mobile/Tablet/Web/PWA |
+### 📝 Consistência com Painel do Cliente
+
+**IMPORTANTE**: O Painel do Barbeiro foi criado como **RÉPLICA EXATA** do Painel do Cliente.
+Qualquer mudança em um painel deve ser refletida no outro para manter consistência visual.
+
+| Componente Cliente | Componente Barbeiro |
+|-------------------|---------------------|
+| PainelClienteLayout | BarberLayout |
+| ClientPageContainer | BarberPageContainer |
+| PainelClienteCard | PainelBarbeiroCard |
+| PainelClienteCardTitle | PainelBarbeiroCardTitle |
+| PainelClienteCardHeader | PainelBarbeiroCardHeader |
+| PainelClienteCardContent | PainelBarbeiroCardContent |
+| PainelClienteCardFooter | PainelBarbeiroCardFooter |
 
 ### 🔍 Debug
 
@@ -148,15 +136,8 @@ console.log('Main content:', document.querySelector('main'));
 console.log('Background:', document.querySelector('img[alt*="Barbearia"]'));
 
 // Verificar scroll
-document.querySelector('main').style.border = '2px solid red'; // Ver área do main
+document.querySelector('main').style.border = '2px solid red';
 ```
-
-### 📝 Notas de Desenvolvimento
-
-- **Cache**: O navegador pode cachear a versão antiga. Sempre force refresh (Ctrl+Shift+R)
-- **Build**: Após mudanças, faça rebuild se necessário
-- **Mobile/PWA**: Teste sempre em mobile e PWA para garantir que ocupa 100% da tela
-- **Tablet**: Verifique orientação portrait e landscape
 
 ---
 
@@ -164,12 +145,11 @@ document.querySelector('main').style.border = '2px solid red'; // Ver área do m
 
 **Ao editar qualquer arquivo do painel do barbeiro, você DEVE:**
 1. Verificar que o background da barbearia continua visível
-2. Confirmar que os cards usam glassmorphism
-3. Testar em desktop, mobile, tablet e PWA
+2. Confirmar que os cards usam glassmorphism (PainelBarbeiroCard)
+3. Testar em desktop e mobile
 4. NÃO adicionar fundos brancos ou sólidos
-5. NÃO usar `h-screen` ou flex complexos
-6. SEMPRE usar a estrutura simples baseada no PainelClienteLayout
+5. Manter consistência com o Painel do Cliente
 
 **Se você precisar modificar o design visual, consulte este documento primeiro!**
 
-**IMPORTANTE**: Este painel segue EXATAMENTE a mesma estrutura do PainelClienteLayout para garantir consistência e responsividade total.
+**NOTA**: O antigo `StandardCard` e `ResponsiveCard` foram substituídos pelo `PainelBarbeiroCard`.

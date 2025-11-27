@@ -1,11 +1,18 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, TrendingUp, Clock, Package, Scissors } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useBarberCommissionsQuery } from '@/hooks/barber/queries/useBarberCommissionsQuery';
 import BarberCommissionsSkeleton from '@/components/ui/loading/BarberCommissionsSkeleton';
+import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
+import { 
+  PainelBarbeiroCard, 
+  PainelBarbeiroCardTitle,
+  PainelBarbeiroCardHeader,
+  PainelBarbeiroCardContent 
+} from '@/components/barber/PainelBarbeiroCard';
+import { cn } from '@/lib/utils';
 
 const BarberCommissionsComponent: React.FC = () => {
   const { data, isLoading } = useBarberCommissionsQuery();
@@ -31,71 +38,95 @@ const BarberCommissionsComponent: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-3 sm:space-y-4 md:space-y-6 mt-4 px-2 sm:px-0">
-      {/* Cards de Estatísticas - Mobile First Responsive */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
-        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-            <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium text-urbana-light/70">Total</CardTitle>
-            <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-urbana-gold flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-            <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light leading-tight">R$ {stats.total.toFixed(2)}</div>
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-urbana-light/60 leading-tight mt-0.5">Todas comissões</p>
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-            <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium text-urbana-light/70">Pendentes</CardTitle>
-            <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400 flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-            <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light leading-tight">R$ {stats.pending.toFixed(2)}</div>
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-urbana-light/60 leading-tight mt-0.5">A receber</p>
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-            <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium text-urbana-light/70">Pagas</CardTitle>
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400 flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-            <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light leading-tight">R$ {stats.paid.toFixed(2)}</div>
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-urbana-light/60 leading-tight mt-0.5">Recebidas</p>
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-            <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium text-urbana-light/70">Serviços</CardTitle>
-            <Scissors className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400 flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-            <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light leading-tight">R$ {stats.serviceCommissions.toFixed(2)}</div>
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-urbana-light/60 leading-tight mt-0.5">De serviços</p>
-          </CardContent>
-        </Card>
-
-        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
-            <CardTitle className="text-[10px] sm:text-xs md:text-sm font-medium text-urbana-light/70">Produtos</CardTitle>
-            <Package className="h-3 w-3 sm:h-4 sm:w-4 text-purple-400 flex-shrink-0" />
-          </CardHeader>
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-            <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light leading-tight">R$ {stats.productCommissions.toFixed(2)}</div>
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-urbana-light/60 leading-tight mt-0.5">De produtos</p>
-          </CardContent>
-        </Card>
+    <BarberPageContainer hideHeader>
+      {/* Header da página */}
+      <div className="mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-urbana-gold/20">
+        <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
+          Minhas Comissões
+        </h1>
+        <p className="text-urbana-light/70 text-sm sm:text-base drop-shadow-md mt-1">
+          Acompanhe seus ganhos
+        </p>
       </div>
 
-      {/* Lista de Comissões - Responsive */}
-      <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
-        <CardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-          <CardTitle className="text-sm sm:text-base md:text-lg text-urbana-light">Histórico de Comissões</CardTitle>
-        </CardHeader>
-        <CardContent className="px-3 sm:px-4 md:px-6">
+      {/* Cards de Estatísticas - Mobile First Responsive */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+        {[
+          {
+            label: "Total",
+            value: `R$ ${stats.total.toFixed(2)}`,
+            subtitle: "Todas comissões",
+            IconComponent: DollarSign,
+            variant: 'highlight' as const,
+          },
+          {
+            label: "Pendentes",
+            value: `R$ ${stats.pending.toFixed(2)}`,
+            subtitle: "A receber",
+            IconComponent: Clock,
+            variant: 'warning' as const,
+          },
+          {
+            label: "Pagas",
+            value: `R$ ${stats.paid.toFixed(2)}`,
+            subtitle: "Recebidas",
+            IconComponent: TrendingUp,
+            variant: 'success' as const,
+          },
+          {
+            label: "Serviços",
+            value: `R$ ${stats.serviceCommissions.toFixed(2)}`,
+            subtitle: "De serviços",
+            IconComponent: Scissors,
+            variant: 'info' as const,
+          },
+          {
+            label: "Produtos",
+            value: `R$ ${stats.productCommissions.toFixed(2)}`,
+            subtitle: "De produtos",
+            IconComponent: Package,
+            variant: 'default' as const,
+          },
+        ].map((stat, i) => {
+          const IconComp = stat.IconComponent;
+          return (
+            <PainelBarbeiroCard key={i} variant={stat.variant}>
+              <PainelBarbeiroCardHeader className="pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+                <div className="flex items-center justify-between">
+                  <PainelBarbeiroCardTitle className="text-[10px] sm:text-xs md:text-sm font-medium text-urbana-light/70">
+                    {stat.label}
+                  </PainelBarbeiroCardTitle>
+                  <IconComp className={cn(
+                    'h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0',
+                    stat.variant === 'highlight' && 'text-urbana-gold',
+                    stat.variant === 'warning' && 'text-yellow-400',
+                    stat.variant === 'success' && 'text-green-400',
+                    stat.variant === 'info' && 'text-blue-400',
+                    stat.variant === 'default' && 'text-purple-400'
+                  )} />
+                </div>
+              </PainelBarbeiroCardHeader>
+              <PainelBarbeiroCardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+                <div className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light leading-tight">
+                  {stat.value}
+                </div>
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-urbana-light/60 leading-tight mt-0.5">
+                  {stat.subtitle}
+                </p>
+              </PainelBarbeiroCardContent>
+            </PainelBarbeiroCard>
+          );
+        })}
+      </div>
+
+      {/* Lista de Comissões */}
+      <PainelBarbeiroCard variant="default">
+        <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-light">
+            Histórico de Comissões
+          </PainelBarbeiroCardTitle>
+        </PainelBarbeiroCardHeader>
+        <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
           {commissions.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
               <div>
@@ -106,8 +137,12 @@ const BarberCommissionsComponent: React.FC = () => {
           ) : (
             <div className="space-y-2 sm:space-y-3 md:space-y-4">
               {commissions.map((commission) => (
-                <Card key={commission.id} className="backdrop-blur-sm bg-urbana-black/30 border-urbana-gold/10 hover:bg-urbana-black/40 hover:border-urbana-gold/20 transition-all">
-                  <CardContent className="p-3 sm:p-4 md:pt-6">
+                <PainelBarbeiroCard 
+                  key={commission.id} 
+                  variant="default"
+                  className="hover:bg-urbana-black/40 hover:border-urbana-gold/20 transition-all"
+                >
+                  <PainelBarbeiroCardContent className="p-3 sm:p-4">
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
                       <div className="flex-1 w-full sm:w-auto">
                         <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
@@ -136,14 +171,14 @@ const BarberCommissionsComponent: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </PainelBarbeiroCardContent>
+                </PainelBarbeiroCard>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </PainelBarbeiroCardContent>
+      </PainelBarbeiroCard>
+    </BarberPageContainer>
   );
 };
 

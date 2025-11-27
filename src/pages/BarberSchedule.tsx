@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
 import BarberScheduleView from '@/components/barber/schedule/BarberScheduleView';
@@ -21,6 +20,7 @@ const BarberSchedule: React.FC = () => {
     );
   }
 
+  // O BarberScheduleView já usa BarberPageContainer internamente
   return <BarberScheduleView />;
 };
 
