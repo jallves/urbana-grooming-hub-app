@@ -23,22 +23,12 @@ export const useBanners = () => {
       console.log('🎨 [useBanners] Buscando banners...');
       setLoading(true);
       setError(null);
-      
-      // Timeout de 5 segundos para garantir que não trava
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout ao buscar banners')), 5000)
-      );
 
-      const queryPromise = supabase
+      const { data, error: fetchError } = await supabase
         .from('banner_images')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
-
-      const { data, error: fetchError } = await Promise.race([
-        queryPromise,
-        timeoutPromise
-      ]) as any;
 
       if (fetchError) {
         console.error('❌ [useBanners] Erro:', fetchError);

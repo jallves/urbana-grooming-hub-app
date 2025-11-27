@@ -4368,6 +4368,7 @@ export type Database = {
             Returns: boolean
           }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
+      cleanup_all_sessions: { Args: never; Returns: undefined }
       cleanup_expired_sessions: { Args: never; Returns: number }
       cleanup_inactive_sessions: {
         Args: never
@@ -4375,6 +4376,10 @@ export type Database = {
           details: Json
           sessions_cleaned: number
         }[]
+      }
+      cleanup_sessions_by_type: {
+        Args: { p_user_type: string }
+        Returns: undefined
       }
       create_admin_manager_user:
         | {
