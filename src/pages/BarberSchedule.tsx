@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
-import StandardBarberLayout from '@/components/barber/layouts/StandardBarberLayout';
 import BarberScheduleView from '@/components/barber/schedule/BarberScheduleView';
 import { LoaderPage } from '@/components/ui/loader-page';
 
@@ -14,23 +13,15 @@ const BarberSchedule: React.FC = () => {
 
   if (!barber) {
     return (
-      <StandardBarberLayout>
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="text-center py-8">
-            <div className="text-red-400 text-lg font-semibold">Acesso negado</div>
-          </div>
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-center py-8">
+          <div className="text-red-400 text-lg font-semibold">Acesso negado</div>
         </div>
-      </StandardBarberLayout>
+      </div>
     );
   }
 
-  return (
-    <StandardBarberLayout>
-      <div className="w-full h-full">
-        <BarberScheduleView />
-      </div>
-    </StandardBarberLayout>
-  );
+  return <BarberScheduleView />;
 };
 
 export default BarberSchedule;
