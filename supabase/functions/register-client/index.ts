@@ -198,7 +198,22 @@ Deno.serve(async (req) => {
       console.log('🗑️ Deletando usuário criado (rollback)...');
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       
-      if (profileError.message?.includes('whatsapp') || profileError.message?.includes('unique')) {
+      // Verificar se é erro de chave duplicada (ID já existe)
+      if (profileError.code === '23505' && profileError.message?.includes('client_profiles_pkey')) {
+        console.error('⚠️ ID do usuário já existe em client_profiles - possível tentativa duplicada');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: '⚠️ Detectamos uma tentativa de cadastro anterior.\n\n' +
+                   'Por favor, verifique seu e-mail para confirmar o cadastro.\n\n' +
+                   '📧 Se não recebeu o e-mail, aguarde alguns minutos e verifique sua pasta de SPAM.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+      
+      // Verificar se é erro de WhatsApp duplicado
+      if (profileError.code === '23505' && profileError.message?.includes('whatsapp')) {
         return new Response(
           JSON.stringify({ 
             success: false, 
