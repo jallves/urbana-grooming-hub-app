@@ -185,7 +185,7 @@ export default function PainelClienteMeusAgendamentos() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="w-full space-y-4 sm:space-y-6 px-2 md:px-6 lg:px-8"
+          className="w-full space-y-4 sm:space-y-6 px-2 md:px-6 lg:px-8 pt-6 md:pt-8"
         >
           {/* Header */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
