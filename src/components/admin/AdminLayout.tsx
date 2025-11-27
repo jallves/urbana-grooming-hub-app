@@ -31,7 +31,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
-    signOut(); // Não precisa await - é instantâneo
+    signOut();
+    navigate('/auth', { replace: true });
   };
 
   const userInitials = displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'A';

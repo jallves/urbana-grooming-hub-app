@@ -130,10 +130,11 @@ export default function PainelClienteDashboard() {
 
   useClientDashboardRealtime(fetchStats);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setIsLoggingOut(true);
     console.log('[Dashboard] 🚪 Iniciando logout...');
-    signOut(); // Não precisa await - é instantâneo
+    signOut();
+    navigate('/painel-cliente/login', { replace: true });
   };
 
   if (loading || isLoggingOut) {
