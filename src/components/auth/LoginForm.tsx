@@ -23,27 +23,33 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Rate limiting: bloquear após 5 tentativas por 15 minutos
+  // Rate limiting: bloquear após 5 tentativas por 15 minutos (POR USUÁRIO)
   const MAX_ATTEMPTS = 5;
   const BLOCK_DURATION = 15 * 60 * 1000; // 15 minutos em ms
 
+  // Verificar bloqueio específico do email atual
   useEffect(() => {
-    // Verificar se há bloqueio ativo
-    const blockData = localStorage.getItem('loginBlock');
+    if (!email) return;
+
+    // Bloqueio por usuário específico: loginBlock_email
+    const blockKey = `loginBlock_${email}`;
+    const blockData = localStorage.getItem(blockKey);
+    
     if (blockData) {
-      const { blockedUntil } = JSON.parse(blockData);
+      const { blockedUntil, attempts } = JSON.parse(blockData);
       const now = Date.now();
       
       if (now < blockedUntil) {
         setIsBlocked(true);
         setBlockTimeLeft(Math.ceil((blockedUntil - now) / 1000));
+        setLoginAttempts(attempts);
         
         const interval = setInterval(() => {
           const remaining = Math.ceil((blockedUntil - Date.now()) / 1000);
           if (remaining <= 0) {
             setIsBlocked(false);
             setBlockTimeLeft(0);
-            localStorage.removeItem('loginBlock');
+            localStorage.removeItem(blockKey);
             setLoginAttempts(0);
             clearInterval(interval);
           } else {
@@ -53,10 +59,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
         
         return () => clearInterval(interval);
       } else {
-        localStorage.removeItem('loginBlock');
+        // Bloqueio expirou, limpar
+        localStorage.removeItem(blockKey);
+        setIsBlocked(false);
+        setLoginAttempts(0);
       }
     }
-  }, []);
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +98,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
 
       if (data.user) {
         console.log('✅ [LoginForm] Login bem-sucedido!');
-        // Limpar tentativas em caso de sucesso
+        // Limpar tentativas em caso de sucesso (específico do usuário)
         setLoginAttempts(0);
-        localStorage.removeItem('loginBlock');
+        const blockKey = `loginBlock_${email}`;
+        localStorage.removeItem(blockKey);
         
         toast({
           title: "Login realizado!",
@@ -107,13 +117,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       
       if (newAttempts >= MAX_ATTEMPTS) {
         const blockedUntil = Date.now() + BLOCK_DURATION;
-        localStorage.setItem('loginBlock', JSON.stringify({ blockedUntil }));
+        const blockKey = `loginBlock_${email}`;
+        localStorage.setItem(blockKey, JSON.stringify({ 
+          blockedUntil, 
+          attempts: newAttempts,
+          email 
+        }));
         setIsBlocked(true);
         setBlockTimeLeft(BLOCK_DURATION / 1000);
         
         toast({
-          title: "Conta bloqueada temporariamente",
-          description: "Muitas tentativas de login. Aguarde 15 minutos.",
+          title: "Usuário bloqueado temporariamente",
+          description: `O usuário ${email} foi bloqueado por 15 minutos devido a múltiplas tentativas de login incorretas.`,
           variant: "destructive",
         });
       } else {
@@ -133,10 +148,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       {isBlocked && (
         <div className="bg-red-50 border border-red-300 rounded-xl p-4 text-center">
           <p className="text-red-600 font-semibold mb-2">
-            ⚠️ Conta bloqueada temporariamente
+            🔒 Usuário bloqueado temporariamente
+          </p>
+          <p className="text-red-500 text-sm mb-1">
+            O usuário <strong>{email}</strong> está bloqueado.
           </p>
           <p className="text-red-500 text-sm">
             Tempo restante: {Math.floor(blockTimeLeft / 60)}:{(blockTimeLeft % 60).toString().padStart(2, '0')}
+          </p>
+          <p className="text-gray-600 text-xs mt-2">
+            💡 Outros usuários podem fazer login normalmente
           </p>
         </div>
       )}
