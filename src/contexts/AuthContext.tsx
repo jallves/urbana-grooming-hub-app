@@ -15,7 +15,7 @@ interface AuthContextType {
   rolesChecked: boolean;
   requiresPasswordChange: boolean;
   canAccessModule: (moduleName: string) => boolean;
-  signOut: () => Promise<void>;
+  signOut: () => void; // Removido Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -146,7 +146,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const signOut = async () => {
+  const signOut = () => {
+    console.log('[AuthContext] 🚪 Iniciando logout...');
+    
+    // 1. Limpar IMEDIATAMENTE o estado local (não aguardar nada)
     setIsAdmin(false);
     setIsBarber(false);
     setIsMaster(false);
@@ -155,8 +158,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUserRole(null);
     setUser(null);
     setRolesChecked(true);
+    setLoading(false); // CRÍTICO: Parar loading
     
-    await supabase.auth.signOut();
+    // 2. Limpar TODOS os localStorage relacionados
+    localStorage.removeItem('admin_last_route');
+    localStorage.removeItem('barber_last_route');
+    localStorage.removeItem('client_last_route');
+    localStorage.removeItem('totem_last_route');
+    localStorage.removeItem('user_role_cache');
+    
+    // 3. Fazer logout do Supabase (não aguardar - usar catch para não bloquear)
+    supabase.auth.signOut().catch(err => 
+      console.warn('[AuthContext] Erro ao fazer signOut (não crítico):', err)
+    );
+    
+    // 4. Redirecionar IMEDIATAMENTE
+    console.log('[AuthContext] ✅ Logout concluído - redirecionando...');
+    window.location.href = '/auth';
   };
 
   const canAccessModule = (moduleName: string): boolean => {

@@ -32,24 +32,11 @@ export const useNavbar = () => {
     };
   }, []);
 
-  const handleSignOut = async () => {
-    console.log('[useNavbar] 🚪 Iniciando logout...');
-    try {
-      await authSignOut();
-      console.log('[useNavbar] ✅ Logout realizado com sucesso');
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso.",
-      });
-      navigate('/auth');
-    } catch (error) {
-      console.error('[useNavbar] ❌ Erro ao fazer logout:', error);
-      toast({
-        title: "Erro ao sair",
-        description: "Ocorreu um erro ao tentar sair.",
-        variant: "destructive",
-      });
-    }
+  const handleSignOut = () => {
+    console.log('[useNavbar] 🚪 Chamando signOut...');
+    // CRÍTICO: NÃO usar await - signOut já redireciona imediatamente
+    // Não precisa de toast ou navigate - já está no contexto
+    authSignOut();
   };
 
   const handlePanelClick = () => {

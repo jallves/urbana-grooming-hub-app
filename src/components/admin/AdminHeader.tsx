@@ -1,27 +1,13 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 
 const AdminHeader: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { toast } = useToast();
   
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast({
-        title: 'Logout realizado',
-        description: 'Você foi desconectado do sistema',
-      });
-    } catch (error) {
-      toast({
-        title: 'Erro ao fazer logout',
-        description: 'Ocorreu um erro ao tentar desconectar',
-        variant: 'destructive',
-      });
-    }
+  const handleSignOut = () => {
+    // CRÍTICO: NÃO usar await - signOut já redireciona imediatamente
+    signOut();
   };
   
   const userName = user?.user_metadata?.full_name || user?.email || 'Admin';
