@@ -13,7 +13,7 @@ const BarberScheduleManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('working-hours');
 
   return (
-    <div className="w-full space-y-1.5 max-w-[700px] mx-auto mt-1">
+    <div className="w-full space-y-1.5 max-w-[700px] mx-auto mt-4">
       {/* Toggle de Disponibilidade para Agendamentos */}
       <BookingAvailabilityToggle />
 

@@ -84,7 +84,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
 
   return (
     <>
-      <div className="w-full space-y-4 sm:space-y-6">
+      <div className="w-full space-y-4 sm:space-y-6 mt-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {statsCards.map((stat, index) => (

@@ -31,7 +31,7 @@ const BarberCommissionsComponent: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-4 sm:space-y-6">
+    <div className="w-full space-y-4 sm:space-y-6 mt-4">
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
