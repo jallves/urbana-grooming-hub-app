@@ -46,14 +46,14 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
+    <div className="min-h-screen w-full relative font-poppins">
       {/* 
         ⚠️ ATENÇÃO CRÍTICA - NÃO REMOVER ⚠️
         Background fixo da barbearia - ESSENCIAL para o design do painel
         Este fundo DEVE estar sempre presente em todas as páginas do painel do barbeiro
         NUNCA altere ou remova esta estrutura sem consulta prévia
       */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-0 w-screen h-screen pointer-events-none">
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
@@ -68,7 +68,7 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Animated background effects */}
-      <div className="fixed inset-0 overflow-hidden z-0">
+      <div className="fixed inset-0 w-screen h-screen overflow-hidden z-0">
         <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
