@@ -382,12 +382,14 @@ const TotemCheckout: React.FC = () => {
     setIsUpdating(needsRecalculation);
     
     try {
-      console.log('🛒 Iniciando checkout...');
+      console.log('🛒 [CHECKOUT] Iniciando checkout...');
       console.log('   📋 Agendamento ID:', appointment?.id);
       console.log('   🎫 Sessão ID:', session?.id);
       console.log('   👤 Cliente:', client?.nome);
 
       // Não precisa mais enviar extras, pois já estão na tabela appointment_extra_services
+      console.log('📡 [CHECKOUT] Chamando edge function totem-checkout...');
+      
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'start',
@@ -396,8 +398,10 @@ const TotemCheckout: React.FC = () => {
         }
       });
 
+      console.log('📥 [CHECKOUT] Resposta recebida:', { data, error });
+
       if (error) {
-        console.error('❌ Erro ao iniciar checkout:', error);
+        console.error('❌ [CHECKOUT] Erro ao iniciar checkout:', error);
         
         // Tratamento específico de erros
         let errorTitle = 'Erro ao processar checkout';
@@ -440,11 +444,11 @@ const TotemCheckout: React.FC = () => {
         return;
       }
 
-      console.log('📦 Resposta da edge function:', data);
+      console.log('📦 [CHECKOUT] Resposta da edge function:', data);
 
       // Se recebeu uma resposta de fila, tentar buscar a venda existente
       if (data?.queued || !data?.success) {
-        console.log('⏳ Requisição enfileirada ou falhou, buscando venda existente...');
+        console.log('⏳ [CHECKOUT] Requisição enfileirada ou falhou, buscando venda existente...');
         
         // Aguardar um pouco para o backend processar
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -509,7 +513,11 @@ const TotemCheckout: React.FC = () => {
         return;
       }
 
-      console.log('✅ Checkout iniciado:', data);
+      console.log('✅ [CHECKOUT] Checkout iniciado:', data);
+      console.log('   💰 Venda ID:', data.venda_id);
+      console.log('   🎫 Session ID:', data.session_id);
+      console.log('   💵 Total:', data.resumo.total);
+      
       setVendaId(data.venda_id);
       setSessionId(data.session_id);
       setResumo(data.resumo);
@@ -629,7 +637,13 @@ const TotemCheckout: React.FC = () => {
   };
 
   const handlePaymentMethod = async (method: 'pix' | 'card') => {
+    console.log('💳 [PAYMENT] Iniciando pagamento:', method);
+    console.log('   💰 Venda ID:', vendaId);
+    console.log('   🎫 Session ID:', sessionId);
+    console.log('   💵 Total:', resumo?.total);
+    
     if (!vendaId || !sessionId || !resumo) {
+      console.error('❌ [PAYMENT] Dados do checkout ausentes:', { vendaId, sessionId, resumo });
       toast.error('Erro', {
         description: 'Dados do checkout não encontrados'
       });
@@ -637,6 +651,7 @@ const TotemCheckout: React.FC = () => {
     }
 
     if (needsRecalculation) {
+      console.warn('⚠️ [PAYMENT] Total precisa ser atualizado');
       toast.warning('Atualize o total primeiro', {
         description: 'Clique em "Atualizar Total" para recalcular com os novos serviços'
       });
@@ -693,6 +708,11 @@ const TotemCheckout: React.FC = () => {
       }
       
       const totalWithProducts = resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+
+      console.log('✅ [PAYMENT] Navegando para tela de pagamento:', method);
+      console.log('   💰 Venda ID:', vendaId);
+      console.log('   🎫 Session ID:', sessionId);
+      console.log('   💵 Total com produtos:', totalWithProducts);
 
       if (method === 'pix') {
         navigate('/totem/payment-pix', {
