@@ -66,13 +66,13 @@ const BarberAppointmentsWithModal: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full px-4 space-y-4 sm:space-y-6">
+      <div className="w-full space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <StandardCard key={i}>
               <div className="animate-pulse">
-                <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-700 rounded w-1/2"></div>
+                <div className="h-4 bg-urbana-black/60 rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-urbana-black/60 rounded w-1/2"></div>
               </div>
             </StandardCard>
           ))}
@@ -84,18 +84,18 @@ const BarberAppointmentsWithModal: React.FC = () => {
 
   return (
     <>
-      <div className="w-full px-4 space-y-4 sm:space-y-6">
+      <div className="w-full space-y-4 sm:space-y-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {statsCards.map((stat, index) => (
             <StandardCard key={index}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-300">{stat.title}</p>
-                  <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-xs sm:text-sm font-medium text-urbana-light/70">{stat.title}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-urbana-light">{stat.value}</p>
                 </div>
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br ${stat.bgGradient} flex items-center justify-center`}>
+                  <stat.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.color}`} />
                 </div>
               </div>
             </StandardCard>
@@ -105,24 +105,24 @@ const BarberAppointmentsWithModal: React.FC = () => {
         {/* Appointments List */}
         <StandardCard>
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-white">Meus Agendamentos</h2>
-            <p className="text-sm text-gray-400 mt-1">
+            <h2 className="text-lg sm:text-xl font-bold text-urbana-light">Meus Agendamentos</h2>
+            <p className="text-xs sm:text-sm text-urbana-light/70 mt-1">
               Gerencie seus atendimentos - Edite horários ou marque ausências
             </p>
           </div>
           
           {appointments.length === 0 ? (
             <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-300 mb-2">
+              <Calendar className="h-12 w-12 text-urbana-light/40 mx-auto mb-4" />
+              <h3 className="text-base sm:text-lg font-medium text-urbana-light mb-2">
                 Nenhum agendamento encontrado
               </h3>
-              <p className="text-gray-500">
+              <p className="text-sm text-urbana-light/60">
                 Seus agendamentos aparecerão aqui quando forem criados.
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {appointments.map((appointment) => (
                 <AppointmentCardOptimized
                   key={appointment.id}
