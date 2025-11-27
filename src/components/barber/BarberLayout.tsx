@@ -157,18 +157,17 @@ const BarberLayout: React.FC = () => {
       />
 
       {/* Desktop Sidebar - Premium Design FIXO */}
-      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
+      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-56 lg:w-60 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
         {/* Navigation Header */}
-        <div className="px-4 py-8 border-b border-urbana-gold/10">
+        <div className="px-3 py-4 border-b border-urbana-gold/10">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/5 to-transparent rounded-xl blur-xl" />
-            <h2 className="text-lg font-semibold text-urbana-light relative z-10">Navegação</h2>
-            <p className="text-xs text-urbana-light/60 mt-1 relative z-10">Acesse suas funcionalidades</p>
+            <h2 className="text-sm font-semibold text-urbana-light">Navegação</h2>
+            <p className="text-[10px] text-urbana-light/60 mt-0.5">Acesse suas funcionalidades</p>
           </div>
         </div>
 
         {/* Navigation Items - Premium Cards */}
-        <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+        <div className="flex-1 p-2 space-y-1 overflow-y-auto">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -182,8 +181,8 @@ const BarberLayout: React.FC = () => {
                   variant="ghost"
                   onClick={() => navigate(item.path)}
                   className={`
-                    relative w-full flex items-center gap-4 justify-start
-                    p-4 lg:p-5 rounded-2xl transition-colors duration-200
+                    relative w-full flex items-center gap-3 justify-start
+                    p-2.5 rounded-xl transition-colors duration-200
                     border backdrop-blur-sm
                     ${isActive 
                       ? 'bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-vibrant/10 text-urbana-gold border-urbana-gold/40' 
@@ -194,7 +193,7 @@ const BarberLayout: React.FC = () => {
                   {/* Icon Container with gradient background */}
                   <div className={`
                     relative flex items-center justify-center
-                    w-11 h-11 lg:w-12 lg:h-12 rounded-xl
+                    w-8 h-8 rounded-lg
                     transition-colors duration-200
                     ${isActive 
                       ? 'bg-gradient-to-br from-urbana-gold/30 to-urbana-gold-vibrant/20' 
@@ -202,7 +201,7 @@ const BarberLayout: React.FC = () => {
                     }
                   `}>
                     <Icon className={`
-                      h-5 w-5 lg:h-6 lg:w-6 transition-colors duration-200
+                      h-4 w-4 transition-colors duration-200
                       ${isActive ? 'text-urbana-gold' : 'text-urbana-light/70'}
                     `} />
                   </div>
@@ -210,26 +209,26 @@ const BarberLayout: React.FC = () => {
                   {/* Label with description */}
                   <div className="flex-1 text-left">
                     <span className={`
-                      block text-sm lg:text-base font-semibold transition-colors duration-200
+                      block text-xs font-semibold transition-colors duration-200
                       ${isActive ? 'text-urbana-gold' : 'text-urbana-light'}
                     `}>
                       {item.name}
                     </span>
                     <span className={`
-                      block text-xs transition-colors duration-200 mt-0.5
+                      block text-[10px] transition-colors duration-200 mt-0.5
                       ${isActive ? 'text-urbana-gold/70' : 'text-urbana-light/50'}
                     `}>
                       {item.name === 'Início' && 'Visão geral'}
                       {item.name === 'Agenda' && 'Seus agendamentos'}
-                      {item.name === 'Horários' && 'Gerenciar disponibilidade'}
+                      {item.name === 'Horários' && 'Disponibilidade'}
                       {item.name === 'Comissões' && 'Seus ganhos'}
                     </span>
                   </div>
                   
                   {/* Active indicator */}
                   {isActive && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="w-2 h-2 rounded-full bg-urbana-gold" />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-urbana-gold" />
                     </div>
                   )}
                 </Button>
@@ -239,36 +238,36 @@ const BarberLayout: React.FC = () => {
         </div>
 
         {/* Divider with gold accent */}
-        <div className="px-4 py-3">
+        <div className="px-2 py-1.5">
           <div className="h-px bg-gradient-to-r from-transparent via-urbana-gold/30 to-transparent" />
         </div>
         
         {/* Desktop User Info + Logout - Premium Card */}
-        <div className="p-4 border-t border-urbana-gold/10 space-y-3">
+        <div className="p-2 border-t border-urbana-gold/10 space-y-2">
           <div className="relative">
-            <div className="relative flex items-center gap-3 p-4 bg-gradient-to-br from-urbana-black/60 to-urbana-black/40 rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
+            <div className="relative flex items-center gap-2 p-2.5 bg-gradient-to-br from-urbana-black/60 to-urbana-black/40 rounded-xl backdrop-blur-sm border border-urbana-gold/20">
               {/* Avatar/Icon */}
               <div className="relative">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-vibrant/10 flex items-center justify-center border border-urbana-gold/30 shadow-lg shadow-urbana-gold/20">
-                  <span className="text-urbana-gold font-bold text-sm">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-vibrant/10 flex items-center justify-center border border-urbana-gold/30 shadow-lg shadow-urbana-gold/20">
+                  <span className="text-urbana-gold font-bold text-xs">
                     {(user?.user_metadata?.name?.charAt(0) || 'B').toUpperCase()}
                   </span>
                 </div>
                 {/* Online indicator */}
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-urbana-black shadow-lg shadow-green-500/50 animate-pulse" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-urbana-black shadow-lg shadow-green-500/50 animate-pulse" />
               </div>
               
               {/* User Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-urbana-light truncate">
+                <p className="text-xs font-semibold text-urbana-light truncate">
                   {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
                 </p>
-                <p className="text-xs text-urbana-light/60 truncate mt-0.5">
+                <p className="text-[10px] text-urbana-light/60 truncate">
                   {user?.email || 'email@exemplo.com'}
                 </p>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
-                  <span className="text-[10px] text-green-400 font-medium">Online</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <div className="w-1 h-1 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
+                  <span className="text-[9px] text-green-400 font-medium">Online</span>
                 </div>
               </div>
             </div>
@@ -278,16 +277,16 @@ const BarberLayout: React.FC = () => {
           <Button
             variant="outline"
             onClick={signOut}
-            className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/50 transition-all py-3 h-auto group flex items-center justify-center gap-2"
+            className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/50 transition-all py-2 h-auto group flex items-center justify-center gap-2"
           >
-            <LogOut className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            <span className="text-sm font-semibold">Sair</span>
+            <LogOut className="h-3 w-3 group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold">Sair</span>
           </Button>
         </div>
 
         {/* Footer decorative element */}
-        <div className="px-4 pb-4">
-          <div className="h-1 bg-gradient-to-r from-transparent via-urbana-gold/30 to-transparent rounded-full" />
+        <div className="px-3 pb-2">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-urbana-gold/30 to-transparent rounded-full" />
         </div>
       </nav>
 
@@ -434,8 +433,8 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-20 md:pt-[72px] pb-[100px] md:pb-8 md:pl-64 lg:pl-72 xl:pl-80 px-4 md:px-6 lg:px-8 transition-all duration-300" style={{ minHeight: '100vh' }}>
-        <div className="w-full max-w-[1400px] mx-auto">
+      <main className="relative z-10 w-full pt-20 md:pt-[72px] pb-[80px] md:pb-6 md:pl-56 lg:pl-60 px-3 md:px-4 transition-all duration-300" style={{ minHeight: '100vh', maxWidth: '100vw', overflowX: 'hidden' }}>
+        <div className="w-full max-w-[1200px] mx-auto">
           <Outlet />
         </div>
       </main>
