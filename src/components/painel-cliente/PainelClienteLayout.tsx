@@ -222,24 +222,18 @@ const PainelClienteLayout: React.FC = () => {
             return (
               <div
                 key={item.path}
-                className="relative group"
-                style={{ animationDelay: `${index * 50}ms` }}
+                className="relative"
               >
-                {/* Glow effect for active item */}
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-vibrant/20 rounded-2xl blur-xl animate-pulse" />
-                )}
-                
                 <Button
                   variant="ghost"
                   onClick={() => navigate(item.path)}
                   className={`
                     relative w-full flex items-center gap-4 justify-start
-                    p-4 lg:p-5 rounded-2xl transition-all duration-500
+                    p-4 lg:p-5 rounded-2xl transition-colors duration-200
                     border backdrop-blur-sm
                     ${isActive 
-                      ? 'bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-vibrant/10 text-urbana-gold shadow-2xl shadow-urbana-gold/30 border-urbana-gold/40 scale-[1.02]' 
-                      : 'text-urbana-light/70 hover:text-urbana-gold hover:bg-urbana-gold/5 border-transparent hover:border-urbana-gold/20 hover:shadow-lg hover:shadow-urbana-gold/10 hover:scale-[1.01]'
+                      ? 'bg-gradient-to-r from-urbana-gold/20 to-urbana-gold-vibrant/10 text-urbana-gold border-urbana-gold/40' 
+                      : 'text-urbana-light/70 hover:text-urbana-gold hover:bg-urbana-gold/5 border-transparent hover:border-urbana-gold/20'
                     }
                   `}
                 >
@@ -247,34 +241,29 @@ const PainelClienteLayout: React.FC = () => {
                   <div className={`
                     relative flex items-center justify-center
                     w-11 h-11 lg:w-12 lg:h-12 rounded-xl
-                    transition-all duration-500
+                    transition-colors duration-200
                     ${isActive 
-                      ? 'bg-gradient-to-br from-urbana-gold/30 to-urbana-gold-vibrant/20 shadow-lg shadow-urbana-gold/30' 
-                      : 'bg-urbana-black/40 group-hover:bg-urbana-gold/10 group-hover:shadow-md group-hover:shadow-urbana-gold/20'
+                      ? 'bg-gradient-to-br from-urbana-gold/30 to-urbana-gold-vibrant/20' 
+                      : 'bg-urbana-black/40'
                     }
                   `}>
                     <Icon className={`
-                      h-5 w-5 lg:h-6 lg:w-6 transition-all duration-300
-                      ${isActive ? 'text-urbana-gold drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]' : 'text-urbana-light/70 group-hover:text-urbana-gold'}
+                      h-5 w-5 lg:h-6 lg:w-6 transition-colors duration-200
+                      ${isActive ? 'text-urbana-gold' : 'text-urbana-light/70'}
                     `} />
-                    
-                    {/* Active pulse ring */}
-                    {isActive && (
-                      <div className="absolute inset-0 rounded-xl border-2 border-urbana-gold/30 animate-ping" />
-                    )}
                   </div>
                   
                   {/* Label with description */}
                   <div className="flex-1 text-left">
                     <span className={`
-                      block text-sm lg:text-base font-semibold transition-colors duration-300
-                      ${isActive ? 'text-urbana-gold' : 'text-urbana-light group-hover:text-urbana-gold'}
+                      block text-sm lg:text-base font-semibold transition-colors duration-200
+                      ${isActive ? 'text-urbana-gold' : 'text-urbana-light'}
                     `}>
                       {item.label}
                     </span>
                     <span className={`
-                      block text-xs transition-colors duration-300 mt-0.5
-                      ${isActive ? 'text-urbana-gold/70' : 'text-urbana-light/50 group-hover:text-urbana-gold/60'}
+                      block text-xs transition-colors duration-200 mt-0.5
+                      ${isActive ? 'text-urbana-gold/70' : 'text-urbana-light/50'}
                     `}>
                       {item.label === 'Home' && 'Visão geral'}
                       {item.label === 'Agendar' && 'Novo horário'}
@@ -286,7 +275,7 @@ const PainelClienteLayout: React.FC = () => {
                   {/* Active indicator */}
                   {isActive && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="w-2 h-2 rounded-full bg-urbana-gold shadow-lg shadow-urbana-gold/50 animate-pulse" />
+                      <div className="w-2 h-2 rounded-full bg-urbana-gold" />
                     </div>
                   )}
                 </Button>
@@ -302,11 +291,8 @@ const PainelClienteLayout: React.FC = () => {
         
         {/* Desktop User Info - Premium Card */}
         <div className="p-4 border-t border-urbana-gold/10">
-          <div className="relative group">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold-vibrant/5 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <div className="relative flex items-center gap-3 p-4 bg-gradient-to-br from-urbana-black/60 to-urbana-black/40 rounded-2xl backdrop-blur-sm border border-urbana-gold/20 hover:border-urbana-gold/40 transition-all duration-300 hover:shadow-lg hover:shadow-urbana-gold/10">
+          <div className="relative">
+            <div className="relative flex items-center gap-3 p-4 bg-gradient-to-br from-urbana-black/60 to-urbana-black/40 rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
               {/* Avatar/Icon */}
               <div className="relative">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-vibrant/10 flex items-center justify-center border border-urbana-gold/30 shadow-lg shadow-urbana-gold/20">

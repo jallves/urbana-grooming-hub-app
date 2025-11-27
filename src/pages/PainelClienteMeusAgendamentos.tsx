@@ -284,20 +284,19 @@ export default function PainelClienteMeusAgendamentos() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
                 <AnimatePresence>
                   {agendamentosFiltrados.map((agendamento, index) => (
                     <motion.div
                       key={agendamento.id}
                       layout
-                      initial={{ opacity: 0, scale: 0.9 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      whileHover={{ scale: 1.02, y: -5 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, delay: index * 0.03 }}
                       className="group"
                     >
-                      <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl hover:border-slate-600/70 transition-all duration-300 shadow-xl hover:shadow-2xl">
+                      <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/60 border border-slate-700/50 backdrop-blur-xl hover:border-slate-600/70 transition-colors duration-200 shadow-xl">
                         <CardHeader className="pb-6">
                           <div className="flex justify-between items-start gap-4">
                             <CardTitle className="text-white text-xl sm:text-2xl font-semibold group-hover:text-urbana-gold transition-colors truncate pr-2 flex-1">
