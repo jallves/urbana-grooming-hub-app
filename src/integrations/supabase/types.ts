@@ -1703,7 +1703,14 @@ export type Database = {
             foreignKeyName: "financial_records_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes_legacy"
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
             referencedColumns: ["id"]
           },
         ]
