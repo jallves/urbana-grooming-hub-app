@@ -45,27 +45,36 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden relative font-poppins">
-      {/* Background fixo da barbearia */}
-      <div className="fixed inset-0 z-0 pointer-events-none w-full max-w-[100vw]">
+    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
+      {/* 
+        ⚠️ ATENÇÃO CRÍTICA - NÃO REMOVER ⚠️
+        Background fixo da barbearia - ESSENCIAL para o design do painel
+        Este fundo DEVE estar sempre presente em todas as páginas do painel do barbeiro
+        NUNCA altere ou remova esta estrutura sem consulta prévia
+      */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
           className="w-full h-full object-cover"
+          onError={(e) => {
+            console.error('❌ Erro ao carregar background da barbearia');
+            e.currentTarget.style.display = 'none';
+          }}
         />
-        {/* Dark overlay */}
+        {/* Dark overlay - Garante contraste e legibilidade */}
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
       </div>
 
       {/* Animated background effects */}
-      <div className="fixed inset-0 overflow-hidden z-0 w-full max-w-[100vw]">
+      <div className="fixed inset-0 overflow-hidden z-0">
         <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
       {/* Modern Header - FIXO */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full max-w-[100vw] backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="w-full max-w-full px-3 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-3">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="relative">
@@ -145,8 +154,8 @@ const BarberLayout: React.FC = () => {
         onClick={() => setIsMobileMenuOpen(false)} 
       />
 
-      {/* Desktop Sidebar - Premium Design com espaçamento do topo */}
-      <nav className="hidden md:flex fixed left-0 top-[88px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
+      {/* Desktop Sidebar - Premium Design FIXO (não rola) */}
+      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-hidden">
         {/* Navigation Header */}
         <div className="px-4 py-8 border-b border-urbana-gold/10">
           <div className="relative">

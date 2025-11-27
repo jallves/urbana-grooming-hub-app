@@ -31,82 +31,82 @@ const BarberCommissionsComponent: React.FC = () => {
   }
 
   return (
-    <div className="w-full px-4 space-y-4 sm:space-y-6">
+    <div className="w-full space-y-4 sm:space-y-6">
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-urbana-light/70">Total</CardTitle>
             <DollarSign className="h-4 w-4 text-urbana-gold" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">R$ {stats.total.toFixed(2)}</div>
-            <p className="text-xs text-gray-400">Todas as comissões</p>
+            <div className="text-2xl font-bold text-urbana-light">R$ {stats.total.toFixed(2)}</div>
+            <p className="text-xs text-urbana-light/60">Todas as comissões</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Pendentes</CardTitle>
+            <CardTitle className="text-sm font-medium text-urbana-light/70">Pendentes</CardTitle>
             <Clock className="h-4 w-4 text-yellow-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">R$ {stats.pending.toFixed(2)}</div>
-            <p className="text-xs text-gray-400">A receber</p>
+            <div className="text-2xl font-bold text-urbana-light">R$ {stats.pending.toFixed(2)}</div>
+            <p className="text-xs text-urbana-light/60">A receber</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Pagas</CardTitle>
+            <CardTitle className="text-sm font-medium text-urbana-light/70">Pagas</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">R$ {stats.paid.toFixed(2)}</div>
-            <p className="text-xs text-gray-400">Recebidas</p>
+            <div className="text-2xl font-bold text-urbana-light">R$ {stats.paid.toFixed(2)}</div>
+            <p className="text-xs text-urbana-light/60">Recebidas</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Serviços</CardTitle>
+            <CardTitle className="text-sm font-medium text-urbana-light/70">Serviços</CardTitle>
             <Scissors className="h-4 w-4 text-blue-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">R$ {stats.serviceCommissions.toFixed(2)}</div>
-            <p className="text-xs text-gray-400">Comissões de serviços</p>
+            <div className="text-2xl font-bold text-urbana-light">R$ {stats.serviceCommissions.toFixed(2)}</div>
+            <p className="text-xs text-urbana-light/60">Comissões de serviços</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-gray-900 border-gray-700">
+        <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Produtos</CardTitle>
+            <CardTitle className="text-sm font-medium text-urbana-light/70">Produtos</CardTitle>
             <Package className="h-4 w-4 text-purple-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">R$ {stats.productCommissions.toFixed(2)}</div>
-            <p className="text-xs text-gray-400">Comissões de produtos</p>
+            <div className="text-2xl font-bold text-urbana-light">R$ {stats.productCommissions.toFixed(2)}</div>
+            <p className="text-xs text-urbana-light/60">Comissões de produtos</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Lista de Comissões */}
-      <Card className="bg-gray-900 border-gray-700">
+      <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
         <CardHeader>
-          <CardTitle className="text-white">Histórico de Comissões</CardTitle>
+          <CardTitle className="text-urbana-light">Histórico de Comissões</CardTitle>
         </CardHeader>
         <CardContent>
           {commissions.length === 0 ? (
             <div className="text-center py-12">
               <div>
-                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">Nenhuma comissão encontrada</p>
+                <DollarSign className="h-12 w-12 text-urbana-light/40 mx-auto mb-4" />
+                <p className="text-urbana-light/60">Nenhuma comissão encontrada</p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               {commissions.map((commission) => (
-                <Card key={commission.id} className="bg-gray-800 border-gray-700">
+                <Card key={commission.id} className="backdrop-blur-sm bg-urbana-black/30 border-urbana-gold/10 hover:bg-urbana-black/40 hover:border-urbana-gold/20 transition-all">
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -116,11 +116,11 @@ const BarberCommissionsComponent: React.FC = () => {
                           ) : (
                             <Package className="h-4 w-4 text-purple-400" />
                           )}
-                          <p className="font-medium text-white">
+                          <p className="font-medium text-urbana-light">
                             {commission.item_name || (commission.commission_type === 'service' ? 'Serviço' : 'Produto')}
                           </p>
                         </div>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm text-urbana-light/60">
                           {format(new Date(commission.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                         </p>
                         <div className="mt-2 flex gap-2">
