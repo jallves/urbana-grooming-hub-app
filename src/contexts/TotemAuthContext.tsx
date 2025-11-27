@@ -141,20 +141,33 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
   };
 
   const logout = async () => {
-    // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
+    console.log('[TotemAuthContext] 🚪 Iniciando logout do totem...');
+    
+    // 1. Limpar estado IMEDIATAMENTE
+    setIsAuthenticated(false);
+    setTotemUserId(null);
+    setLoading(false); // CRÍTICO: Parar loading
+    
+    // 2. Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
     sessionManager.invalidateSession('totem').catch(err => 
       console.warn('[Totem] ⚠️ Erro ao invalidar sessão (não crítico):', err)
     );
     
+    // 3. Limpar localStorage
     localStorage.removeItem('totem_auth_token');
     localStorage.removeItem('totem_auth_expiry');
-    setIsAuthenticated(false);
-    setTotemUserId(null);
+    localStorage.removeItem('totem_last_route');
     
+    // 4. Toast rápido
     toast({
       title: "Logout realizado",
       description: "Sessão do totem encerrada",
+      duration: 2000,
     });
+    
+    // 5. Redirecionar IMEDIATAMENTE
+    console.log('[TotemAuthContext] ✅ Logout concluído - redirecionando...');
+    window.location.href = '/totem/login';
   };
 
   return (

@@ -12,8 +12,8 @@ interface ClientAuthContextType {
   loading: boolean;
   signUp: (data: ClientFormData) => Promise<{ error: string | null }>;
   signIn: (data: ClientLoginData) => Promise<{ error: string | null }>;
-  signOut: () => Promise<void>;
-  logout: () => Promise<void>; // Added for backward compatibility
+  signOut: () => void; // Removido Promise<void>
+  logout: () => void; // Removido Promise<void>
   updateClient: (data: Partial<Client>) => Promise<{ error: string | null }>;
 }
 
@@ -39,28 +39,31 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   // ========================================
   // SIGNOUT: Integrado com Supabase Auth
   // ========================================
-  const signOut = async (): Promise<void> => {
-    try {
-      console.log('[ClientAuthContext] Logout via Supabase Auth');
-      
-      setClient(null);
-      
-      // Fazer logout do Supabase Auth (isso vai invalidar a sessão automaticamente)
-      await supabase.auth.signOut();
-      
-      toast({
-        title: "Logout realizado",
-        description: "Até a próxima!",
-      });
+  const signOut = (): void => {
+    console.log('[ClientAuthContext] 🚪 Iniciando logout do cliente...');
+    
+    // 1. Limpar estado IMEDIATAMENTE
+    setClient(null);
+    setLoading(false); // CRÍTICO: Parar loading
+    
+    // 2. Limpar localStorage
+    localStorage.removeItem('client_last_route');
+    
+    // 3. Fazer logout do Supabase (não aguardar - não bloquear)
+    supabase.auth.signOut().catch(err => 
+      console.warn('[ClientAuthContext] Erro ao fazer signOut (não crítico):', err)
+    );
+    
+    // 4. Toast rápido
+    toast({
+      title: "Logout realizado",
+      description: "Até a próxima!",
+      duration: 2000,
+    });
 
-      // Redirect to client login page after logout
-      window.location.href = '/painel-cliente/login';
-    } catch (error) {
-      console.error('[ClientAuthContext] Erro no logout:', error);
-      // Mesmo com erro, limpar estado local
-      setClient(null);
-      window.location.href = '/painel-cliente/login';
-    }
+    // 5. Redirecionar IMEDIATAMENTE
+    console.log('[ClientAuthContext] ✅ Logout concluído - redirecionando...');
+    window.location.href = '/painel-cliente/login';
   };
 
   // Usar hook para escutar logout forçado
