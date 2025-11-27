@@ -4262,6 +4262,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      auto_cleanup_expired_sessions: { Args: never; Returns: undefined }
       check_appointment_conflict: {
         Args: {
           p_end_time: string
@@ -4575,6 +4576,7 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      get_client_ip: { Args: never; Returns: string }
       get_painel_barbeiros: {
         Args: never
         Returns: {

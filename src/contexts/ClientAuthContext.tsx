@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Client, ClientLoginData, ClientFormData } from '@/types/client';
 import { useToast } from '@/hooks/use-toast';
@@ -34,135 +35,165 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Sincronizar com Supabase Auth
   useEffect(() => {
-    checkSession();
+    let mounted = true;
+
+    const syncWithSupabaseAuth = async () => {
+      try {
+        // Verificar sessão atual do Supabase Auth
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (session?.user) {
+          // Buscar dados do cliente na tabela clients
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('email', session.user.email)
+            .maybeSingle();
+
+          if (clientData && mounted) {
+            setClient(clientData);
+          }
+        } else {
+          setClient(null);
+        }
+      } catch (error) {
+        console.error('[ClientAuthContext] Erro ao sincronizar:', error);
+        if (mounted) {
+          setClient(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        console.log('[ClientAuthContext] Auth event:', event);
+
+        if (event === 'SIGNED_OUT') {
+          setClient(null);
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          if (session?.user) {
+            // Buscar dados atualizados do cliente
+            const { data: clientData } = await supabase
+              .from('clients')
+              .select('*')
+              .eq('email', session.user.email)
+              .maybeSingle();
+
+            if (clientData && mounted) {
+              setClient(clientData);
+            }
+          }
+        }
+      }
+    );
+
+    syncWithSupabaseAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const checkSession = async () => {
-    try {
-      const token = localStorage.getItem('client_token');
-      
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('id', token)
-        .maybeSingle();
-
-      if (error || !data) {
-        localStorage.removeItem('client_token');
-        setClient(null);
-      } else {
-        setClient(data);
-      }
-    } catch (error) {
-      console.error('Erro ao verificar sessão:', error);
-      localStorage.removeItem('client_token');
-      setClient(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ========================================
+  // SIGNUP: Integrado com Supabase Auth
+  // ========================================
   const signUp = async (data: ClientFormData): Promise<{ error: string | null }> => {
     try {
-      console.log('Iniciando cadastro com dados:', { ...data, password: '[HIDDEN]' });
+      console.log('[ClientAuthContext] Iniciando cadastro via Supabase Auth');
 
-      // Validar se todos os campos obrigatórios estão preenchidos
-      if (!data.name?.trim()) {
-        return { error: 'Nome é obrigatório' };
-      }
-
-      if (!data.email?.trim()) {
-        return { error: 'Email é obrigatório' };
-      }
-
-      if (!data.phone?.trim()) {
-        return { error: 'Telefone é obrigatório' };
-      }
-
+      // Validações básicas
+      if (!data.name?.trim()) return { error: 'Nome é obrigatório' };
+      if (!data.email?.trim()) return { error: 'Email é obrigatório' };
+      if (!data.phone?.trim()) return { error: 'Telefone é obrigatório' };
       if (!data.password || data.password.length < 6) {
         return { error: 'Senha deve ter pelo menos 6 caracteres' };
       }
-
       if (data.password !== data.confirmPassword) {
         return { error: 'As senhas não coincidem' };
       }
 
-      // Verificar se email já existe
-      console.log('Verificando se email já existe:', data.email);
-      const { data: existingClient, error: checkError } = await supabase
+      // Verificar se email já existe na tabela clients
+      const { data: existingClient } = await supabase
         .from('clients')
         .select('id')
         .eq('email', data.email.trim().toLowerCase())
         .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Erro ao verificar email existente:', checkError);
-        return { error: 'Erro interno. Tente novamente.' };
-      }
-
       if (existingClient) {
-        console.log('Email já existe no banco');
         return { error: 'Este email já está cadastrado' };
       }
 
-      // Criar hash simples da senha
-      const passwordHash = btoa(data.password);
-
-      // Preparar dados do cliente
-      const clientData = {
-        name: data.name.trim(),
+      // Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email.trim().toLowerCase(),
-        phone: data.phone.trim(),
-        birth_date: data.birth_date || null,
-        password_hash: passwordHash,
-        email_verified: false,
-        whatsapp: data.whatsapp?.trim() || null
-      };
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/painel-cliente/dashboard`,
+          data: {
+            full_name: data.name.trim(),
+          }
+        }
+      });
 
-      console.log('Inserindo cliente no banco:', { ...clientData, password_hash: '[HIDDEN]' });
-
-      // Inserir cliente no banco usando conexão anônima
-      const { data: newClient, error: insertError } = await supabase
-        .from('clients')
-        .insert([clientData])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Erro ao inserir cliente:', insertError);
-        
-        if (insertError.code === '23505') {
+      if (authError) {
+        console.error('[ClientAuthContext] Erro no signup:', authError);
+        if (authError.message.includes('already registered')) {
           return { error: 'Este email já está cadastrado' };
         }
-        
-        return { error: `Erro ao criar conta: ${insertError.message}` };
+        return { error: `Erro ao criar conta: ${authError.message}` };
       }
 
-      if (!newClient) {
-        console.error('Cliente não retornado após inserção');
+      if (!authData.user) {
         return { error: 'Erro ao criar conta. Tente novamente.' };
       }
 
-      console.log('Cliente criado com sucesso:', newClient.id);
+      // Criar registro na tabela clients (sincronizado)
+      const { data: newClient, error: clientError } = await supabase
+        .from('clients')
+        .insert([{
+          id: authData.user.id, // Usar mesmo ID do auth.users
+          name: data.name.trim(),
+          email: data.email.trim().toLowerCase(),
+          phone: data.phone.trim(),
+          birth_date: data.birth_date || null,
+          whatsapp: data.whatsapp?.trim() || null,
+          email_verified: false,
+        }])
+        .select()
+        .single();
 
-      // Fazer login automático
-      localStorage.setItem('client_token', newClient.id);
+      if (clientError) {
+        console.error('[ClientAuthContext] Erro ao criar registro de cliente:', clientError);
+        // Reverter criação do usuário se falhar
+        await supabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
+        return { error: 'Erro ao finalizar cadastro' };
+      }
+
+      // Criar role de client
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: authData.user.id,
+          role: 'client'
+        }]);
+
+      if (roleError) {
+        console.warn('[ClientAuthContext] Role já existe ou erro ao criar:', roleError);
+      }
+
       setClient(newClient);
-
-      // Criar sessão (não bloqueante - não interrompe o cadastro se falhar)
-      sessionManager.createSession({
-        userId: newClient.id,
-        userType: 'client',
-        userEmail: newClient.email || undefined,
-        userName: newClient.name,
-        expiresInHours: 24,
-      }).catch(err => console.warn('[Client] ⚠️ Erro ao criar sessão (não crítico):', err));
 
       toast({
         title: "Conta criada com sucesso!",
@@ -172,51 +203,53 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
       return { error: null };
 
     } catch (error) {
-      console.error('Erro inesperado no cadastro:', error);
+      console.error('[ClientAuthContext] Erro inesperado no cadastro:', error);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
   };
 
+  // ========================================
+  // SIGNIN: Integrado com Supabase Auth
+  // ========================================
   const signIn = async (data: ClientLoginData): Promise<{ error: string | null }> => {
     try {
-      console.log('Tentando fazer login com email:', data.email);
+      console.log('[ClientAuthContext] Login via Supabase Auth');
 
       if (!data.email?.trim() || !data.password) {
         return { error: 'Email e senha são obrigatórios' };
       }
 
-      const passwordHash = btoa(data.password);
+      // Login via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email.trim().toLowerCase(),
+        password: data.password,
+      });
 
-      const { data: clientData, error } = await supabase
+      if (authError) {
+        console.error('[ClientAuthContext] Erro no login:', authError);
+        if (authError.message.includes('Invalid login credentials')) {
+          return { error: 'Email ou senha incorretos' };
+        }
+        if (authError.message.includes('Email not confirmed')) {
+          return { error: '📧 Você precisa confirmar seu e-mail antes de fazer login!' };
+        }
+        return { error: 'Erro ao fazer login. Tente novamente.' };
+      }
+
+      if (!authData.user) {
+        return { error: 'Erro ao estabelecer sessão' };
+      }
+
+      // Buscar dados do cliente
+      const { data: clientData } = await supabase
         .from('clients')
         .select('*')
-        .eq('email', data.email.trim().toLowerCase())
-        .eq('password_hash', passwordHash)
+        .eq('email', authData.user.email)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Erro na consulta de login:', error);
-        return { error: 'Erro interno do servidor' };
+      if (clientData) {
+        setClient(clientData);
       }
-
-      if (!clientData) {
-        console.log('Cliente não encontrado ou senha incorreta');
-        return { error: 'Email ou senha incorretos' };
-      }
-
-      console.log('Login realizado com sucesso para:', clientData.email);
-
-      localStorage.setItem('client_token', clientData.id);
-      setClient(clientData);
-
-      // Criar sessão (não bloqueante - não interrompe o login se falhar)
-      sessionManager.createSession({
-        userId: clientData.id,
-        userType: 'client',
-        userEmail: clientData.email || undefined,
-        userName: clientData.name,
-        expiresInHours: 24,
-      }).catch(err => console.warn('[Client] ⚠️ Erro ao criar sessão (não crítico):', err));
 
       toast({
         title: "Login realizado com sucesso!",
@@ -225,27 +258,36 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       return { error: null };
     } catch (error) {
-      console.error('Erro inesperado no login:', error);
+      console.error('[ClientAuthContext] Erro inesperado no login:', error);
       return { error: 'Erro inesperado. Tente novamente.' };
     }
   };
 
+  // ========================================
+  // SIGNOUT: Integrado com Supabase Auth
+  // ========================================
   const signOut = async (): Promise<void> => {
-    // Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
-    sessionManager.invalidateSession('client').catch(err => 
-      console.warn('[Client] ⚠️ Erro ao invalidar sessão (não crítico):', err)
-    );
-    
-    localStorage.removeItem('client_token');
-    setClient(null);
-    
-    toast({
-      title: "Logout realizado",
-      description: "Até a próxima!",
-    });
+    try {
+      console.log('[ClientAuthContext] Logout via Supabase Auth');
+      
+      setClient(null);
+      
+      // Fazer logout do Supabase Auth (isso vai invalidar a sessão automaticamente)
+      await supabase.auth.signOut();
+      
+      toast({
+        title: "Logout realizado",
+        description: "Até a próxima!",
+      });
 
-    // Redirect to homepage after logout
-    window.location.href = '/';
+      // Redirect to homepage after logout
+      window.location.href = '/';
+    } catch (error) {
+      console.error('[ClientAuthContext] Erro no logout:', error);
+      // Mesmo com erro, limpar estado local
+      setClient(null);
+      window.location.href = '/';
+    }
   };
 
   // Alias for backward compatibility
