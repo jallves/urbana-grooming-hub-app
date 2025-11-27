@@ -45,19 +45,18 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-screen overflow-x-hidden relative font-poppins" style={{ background: 'transparent', maxWidth: '100vw' }}>
+    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
       {/* 
         ⚠️ ATENÇÃO CRÍTICA - NÃO REMOVER ⚠️
         Background fixo da barbearia - ESSENCIAL para o design do painel
         Este fundo DEVE estar sempre presente em todas as páginas do painel do barbeiro
         NUNCA altere ou remova esta estrutura sem consulta prévia
       */}
-      <div className="fixed inset-0 z-0 pointer-events-none w-screen h-screen" style={{ background: 'transparent' }}>
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
           className="w-full h-full object-cover"
-          style={{ width: '100vw', height: '100vh', maxWidth: 'none' }}
           onLoad={() => console.log('✅ Background do barbeiro carregado com sucesso')}
           onError={(e) => {
             console.error('❌ Erro ao carregar background da barbearia');
@@ -65,7 +64,7 @@ const BarberLayout: React.FC = () => {
           }}
         />
         {/* Dark overlay - Garante contraste e legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" style={{ width: '100%', height: '100%' }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
       </div>
 
       {/* Animated background effects */}
@@ -74,11 +73,8 @@ const BarberLayout: React.FC = () => {
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Modern Header - FIXO COM SAFE AREA TOP */}
-      <header 
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl w-screen" 
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
-      >
+      {/* Modern Header - FIXO */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="w-full px-4 md:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 md:gap-4">
@@ -293,16 +289,11 @@ const BarberLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Enhanced Mobile Navigation - FIXO COM SAFE AREA */}
-      <nav 
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl"
-        style={{ 
-          paddingBottom: 'env(safe-area-inset-bottom)'
-        }}
-      >
-        <div className="w-full px-1">
+      {/* Enhanced Mobile Navigation - FIXO */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
+        <div className="w-full px-1 md:px-4">
           {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
+          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -440,16 +431,9 @@ const BarberLayout: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content - SCROLL ENTRE HEADER E FOOTER FIXOS */}
-      <main 
-        className="relative z-10 w-full min-h-screen overflow-y-auto overflow-x-hidden pt-[72px] md:pt-[88px] md:pl-56 lg:pl-60 px-2 md:px-3"
-        style={{ 
-          paddingTop: 'calc(72px + env(safe-area-inset-top))',
-          paddingBottom: 'calc(88px + env(safe-area-inset-bottom))',
-          maxWidth: '100vw'
-        }}
-      >
-        <div className="w-full max-w-[750px] mx-auto py-4 md:py-6">
+      {/* Main Content - Com espaçamento para header, footer e sidebar */}
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-56 lg:pl-60 px-4 md:px-6 lg:px-8 transition-all duration-300">
+        <div className="w-full max-w-[1800px] mx-auto">
           <Outlet />
         </div>
       </main>
