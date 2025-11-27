@@ -11,15 +11,14 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Full-screen layout configuration + Mobile Safe Areas */
+  /* Full-screen layout configuration */
   html, body, #root {
     height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     max-width: 100vw;
-    /* Safe area for iOS notch */
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* CRÍTICO: Não usar padding de safe-area aqui - os componentes tratam individualmente */
   }
 
   html, body {
