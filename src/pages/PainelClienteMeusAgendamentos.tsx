@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,38 +39,7 @@ export default function PainelClienteMeusAgendamentos() {
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (cliente) {
-      fetchData();
-
-      const channel = supabase
-        .channel('painel_agendamentos_realtime')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'painel_agendamentos',
-            filter: `cliente_id=eq.${cliente.id}`
-          },
-          () => {
-            fetchAgendamentos();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [cliente]);
-
-  const fetchData = async () => {
-    await fetchAgendamentos();
-    setLoading(false);
-  };
-
-  const fetchAgendamentos = async () => {
+  const fetchAgendamentos = useCallback(async () => {
     if (!cliente) return;
 
     const { data, error } = await supabase
@@ -81,7 +50,34 @@ export default function PainelClienteMeusAgendamentos() {
       .order('hora', { ascending: false });
 
     if (!error) setAgendamentos(data || []);
-  };
+  }, [cliente]);
+
+  useEffect(() => {
+    if (!cliente) return;
+    
+    setLoading(true);
+    fetchAgendamentos().finally(() => setLoading(false));
+
+    const channel = supabase
+      .channel('painel_agendamentos_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'painel_agendamentos',
+          filter: `cliente_id=eq.${cliente.id}`
+        },
+        () => {
+          fetchAgendamentos();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [cliente, fetchAgendamentos]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
