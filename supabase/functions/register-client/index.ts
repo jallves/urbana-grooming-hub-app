@@ -68,46 +68,9 @@ Deno.serve(async (req) => {
     );
 
     // ===================================================================
-    // ETAPA 1: VALIDAR E-MAIL DUPLICADO NO AUTH (ANTES DE CRIAR USUÁRIO)
+    // ETAPA 1: VALIDAR WHATSAPP DUPLICADO (ANTES DE CRIAR USUÁRIO)
     // ===================================================================
-    console.log('🔍 [1/5] Verificando e-mail único no auth.users...');
-    
-    const { data: existingAuthUser, error: authCheckError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (authCheckError) {
-      console.error('❌ Erro ao verificar e-mail no auth:', authCheckError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: '⚠️ Não foi possível verificar seus dados neste momento.\n\nPor favor, aguarde alguns segundos e tente novamente.' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    const emailExists = existingAuthUser?.users?.some(
-      user => user.email?.toLowerCase() === email.trim().toLowerCase()
-    );
-
-    if (emailExists) {
-      console.warn('⚠️ E-mail já cadastrado no auth.users:', email);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `📧 Este e-mail (${email}) já possui cadastro em nosso sistema!\n\n` +
-                 `✅ Clique em "Já tenho conta" para fazer login.\n` +
-                 `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
-    }
-
-    console.log('✅ E-mail disponível no auth.users');
-
-    // ===================================================================
-    // ETAPA 2: VALIDAR WHATSAPP DUPLICADO EM TODAS AS TABELAS
-    // ===================================================================
-    console.log('🔍 [2/5] Verificando WhatsApp único em todas as tabelas...');
+    console.log('🔍 [1/4] Verificando WhatsApp único em todas as tabelas...');
     
     // Verificar em client_profiles (excluir temporários temp-*)
     const { data: existingInProfiles, error: profilesCheckError } = await supabaseAdmin
@@ -150,9 +113,9 @@ Deno.serve(async (req) => {
     console.log('✅ WhatsApp disponível em todas as tabelas');
 
     // ===================================================================
-    // ETAPA 3: CRIAR USUÁRIO COM CLIENTE ANÔNIMO (ENVIA EMAIL AUTOMATICAMENTE)
+    // ETAPA 2: CRIAR USUÁRIO COM CLIENTE ANÔNIMO (ENVIA EMAIL AUTOMATICAMENTE)
     // ===================================================================
-    console.log('🔍 [3/5] ✅ Todas as validações passaram! Criando usuário...');
+    console.log('🔍 [2/4] ✅ WhatsApp validado! Criando usuário...');
     
     // Redirecionar para página de confirmação de e-mail após clicar no link
     const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/email-confirmado`;
@@ -215,9 +178,9 @@ Deno.serve(async (req) => {
     console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
 
     // ===================================================================
-    // ETAPA 4: CRIAR PERFIL DO CLIENTE
+    // ETAPA 3: CRIAR PERFIL DO CLIENTE
     // ===================================================================
-    console.log('🔍 [4/5] Criando perfil do cliente...');
+    console.log('🔍 [3/4] Criando perfil do cliente...');
     
     const { error: profileError } = await supabaseAdmin
       .from('client_profiles')
@@ -258,9 +221,9 @@ Deno.serve(async (req) => {
     console.log('✅ Perfil criado com sucesso');
 
     // ===================================================================
-    // ETAPA 5: VERIFICAR STATUS DO EMAIL
+    // ETAPA 4: VERIFICAR STATUS DO EMAIL
     // ===================================================================
-    console.log('🔍 [5/5] Verificando status do e-mail de confirmação...');
+    console.log('🔍 [4/4] Verificando status do e-mail de confirmação...');
     
     if (authData.user.email_confirmed_at) {
       console.log('⚠️ E-mail foi confirmado automaticamente (modo dev ou configuração)');
