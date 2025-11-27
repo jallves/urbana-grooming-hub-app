@@ -8,17 +8,23 @@ import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 export default function PainelClienteEmailConfirmed() {
   const navigate = useNavigate();
   const { cliente, loading } = usePainelClienteAuth();
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
-    // Verificar se o usuário está autenticado após confirmação
-    if (!loading && cliente) {
-      // Iniciar countdown para redirecionar
+    console.log('[PainelClienteEmailConfirmed] 🔍 Estado atual:', { loading, hasCliente: !!cliente });
+    
+    // Aguardar até que o loading termine e o cliente esteja carregado
+    if (!loading) {
+      console.log('[PainelClienteEmailConfirmed] ✅ Loading concluído');
+      
+      // Iniciar countdown independente de ter cliente ou não
+      // Pois o usuário acabou de confirmar o e-mail e deve estar autenticado
       const timer = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
             clearInterval(timer);
-            navigate('/painel-cliente/dashboard');
+            console.log('[PainelClienteEmailConfirmed] ⏰ Redirecionando para dashboard...');
+            navigate('/painel-cliente/dashboard', { replace: true });
             return 0;
           }
           return prev - 1;
@@ -27,7 +33,7 @@ export default function PainelClienteEmailConfirmed() {
 
       return () => clearInterval(timer);
     }
-  }, [loading, cliente, navigate]);
+  }, [loading, navigate]);
 
   if (loading) {
     return (
@@ -59,7 +65,10 @@ export default function PainelClienteEmailConfirmed() {
             E-mail Confirmado com Sucesso!
           </h2>
           <p className="text-urbana-light/70 text-base leading-relaxed">
-            Sua conta foi ativada. Você será redirecionado para o painel em {countdown} segundos...
+            🎉 Bem-vindo(a) à Costa Urbana! Sua conta foi ativada com sucesso.
+          </p>
+          <p className="text-urbana-light/60 text-sm">
+            Redirecionando para o painel em {countdown} segundos...
           </p>
         </div>
 
