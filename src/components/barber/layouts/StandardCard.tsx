@@ -15,11 +15,11 @@ const StandardCard: React.FC<StandardCardProps> = ({ title, children, className 
   return (
     <Card className={`w-full bg-urbana-black/40 backdrop-blur-2xl border border-urbana-gold/20 shadow-2xl shadow-urbana-black/50 ${cardProps.className}`} {...(onClick && { onClick })}>
       {title && (
-        <CardHeader className="pb-1 px-2 sm:px-3 pt-2 sm:pt-3 border-b border-urbana-gold/10">
-          <CardTitle className="text-xs sm:text-sm font-bold text-urbana-light">{title}</CardTitle>
+        <CardHeader className="pb-0.5 px-1.5 sm:px-2 pt-1.5 sm:pt-2 border-b border-urbana-gold/10">
+          <CardTitle className="text-[10px] sm:text-xs font-bold text-urbana-light">{title}</CardTitle>
         </CardHeader>
       )}
-      <CardContent className="p-2 sm:p-3 flex flex-col h-full">
+      <CardContent className="p-1.5 sm:p-2 flex flex-col h-full">
         {children}
       </CardContent>
     </Card>
