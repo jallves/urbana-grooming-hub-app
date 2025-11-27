@@ -178,42 +178,34 @@ Deno.serve(async (req) => {
     console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
 
     // ===================================================================
-    // ETAPA 3: CRIAR PERFIL DO CLIENTE
+    // ETAPA 3: CRIAR/ATUALIZAR PERFIL DO CLIENTE (UPSERT)
     // ===================================================================
-    console.log('🔍 [3/4] Criando perfil do cliente...');
+    console.log('🔍 [3/4] Criando/atualizando perfil do cliente...');
     
+    // IMPORTANTE: Usar UPSERT pois pode haver um trigger que já criou o perfil
     const { error: profileError } = await supabaseAdmin
       .from('client_profiles')
-      .insert({
+      .upsert({
         id: authData.user.id,
         nome: nome.trim(),
         whatsapp: whatsapp.trim(),
-        data_nascimento: data_nascimento
+        data_nascimento: data_nascimento,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: false
       });
 
     if (profileError) {
-      console.error('❌ Erro ao criar perfil:', profileError);
+      console.error('❌ Erro ao criar/atualizar perfil:', profileError);
       
       // IMPORTANTE: Perfil falhou, DELETAR usuário criado
       console.log('🗑️ Deletando usuário criado (rollback)...');
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       
-      // Verificar se é erro de chave duplicada (ID já existe)
-      if (profileError.code === '23505' && profileError.message?.includes('client_profiles_pkey')) {
-        console.error('⚠️ ID do usuário já existe em client_profiles - possível tentativa duplicada');
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: '⚠️ Detectamos uma tentativa de cadastro anterior.\n\n' +
-                   'Por favor, verifique seu e-mail para confirmar o cadastro.\n\n' +
-                   '📧 Se não recebeu o e-mail, aguarde alguns minutos e verifique sua pasta de SPAM.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
-      
       // Verificar se é erro de WhatsApp duplicado
       if (profileError.code === '23505' && profileError.message?.includes('whatsapp')) {
+        console.error('⚠️ WhatsApp duplicado detectado ao atualizar perfil');
         return new Response(
           JSON.stringify({ 
             success: false, 
