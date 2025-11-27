@@ -19,12 +19,17 @@ const TotemPaymentCard: React.FC = () => {
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
+    console.log('💳 [CARD] Iniciando pagamento com cartão:', type);
+    console.log('   💰 Venda ID:', venda_id);
+    console.log('   🎫 Session ID:', session_id);
+    console.log('   💵 Total:', total);
+    
     setPaymentType(type);
     setProcessing(true);
     setSimulationTimer(10); // Reset timer
 
     try {
-      console.log(`🔄 Processando pagamento ${type === 'credit' ? 'crédito' : 'débito'}...`);
+      console.log(`🔄 [CARD] Processando pagamento ${type === 'credit' ? 'crédito' : 'débito'}...`);
 
       // Criar registro de pagamento
       const { data: payment, error: paymentError } = await supabase
@@ -40,14 +45,14 @@ const TotemPaymentCard: React.FC = () => {
         .single();
 
       if (paymentError) {
-        console.error('❌ Erro ao criar registro de pagamento:', paymentError);
+        console.error('❌ [CARD] Erro ao criar registro de pagamento:', paymentError);
         toast.error('Erro ao processar', {
           description: 'Não foi possível iniciar o pagamento. Tente novamente.'
         });
         throw paymentError;
       }
 
-      console.log('✅ Registro de pagamento criado:', payment.id);
+      console.log('✅ [CARD] Registro de pagamento criado:', payment.id);
 
       // Integrar com API da maquininha (Stone, Cielo, etc)
       toast.info('Aguarde...', {
@@ -87,7 +92,10 @@ const TotemPaymentCard: React.FC = () => {
 
   const finalizePayment = async (paymentId: string) => {
     try {
-      console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
+      console.log('✅ [CARD] Pagamento no cartão aprovado! Finalizando venda...');
+      console.log('   💰 Payment ID:', paymentId);
+      console.log('   💰 Venda ID:', venda_id);
+      console.log('   🎫 Session ID:', session_id);
       
       // Atualizar status do pagamento
       const { error: paymentError } = await supabase
@@ -98,10 +106,16 @@ const TotemPaymentCard: React.FC = () => {
         })
         .eq('id', paymentId);
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error('❌ [CARD] Erro ao atualizar pagamento:', paymentError);
+        throw paymentError;
+      }
+
+      console.log('✅ [CARD] Pagamento atualizado para completed');
 
       // Se é venda direta, usar edge function específica
       if (isDirect) {
+        console.log('📡 [CARD] Chamando totem-direct-sale para finalizar venda direta...');
         const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
           body: {
             action: 'finish',
@@ -109,19 +123,26 @@ const TotemPaymentCard: React.FC = () => {
             payment_id: paymentId
           }
         });
-        if (finishError) console.error('Erro ao finalizar venda direta:', finishError);
+        if (finishError) {
+          console.error('❌ [CARD] Erro ao finalizar venda direta:', finishError);
+        } else {
+          console.log('✅ [CARD] Venda direta finalizada');
+        }
       } else {
         // Atualizar estoque dos produtos
         if (selectedProducts && selectedProducts.length > 0) {
+          console.log('📦 [CARD] Atualizando estoque de', selectedProducts.length, 'produtos...');
           for (const product of selectedProducts) {
             await supabase.rpc('decrease_product_stock', {
               p_product_id: product.product_id,
               p_quantity: product.quantidade
             });
           }
+          console.log('✅ [CARD] Estoque atualizado');
         }
 
         // Finalizar checkout de serviço - a edge function totem-checkout agora integra com ERP
+        console.log('📡 [CARD] Chamando totem-checkout para finalizar checkout de serviço...');
         const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
           body: {
             action: 'finish',
@@ -130,9 +151,14 @@ const TotemPaymentCard: React.FC = () => {
             payment_id: paymentId
           }
         });
-        if (finishError) console.error('Erro ao finalizar checkout:', finishError);
+        if (finishError) {
+          console.error('❌ [CARD] Erro ao finalizar checkout:', finishError);
+        } else {
+          console.log('✅ [CARD] Checkout finalizado');
+        }
       }
 
+      console.log('✅ [CARD] Navegando para tela de sucesso...');
       toast.success('Pagamento aprovado!');
       navigate('/totem/payment-success', { 
         state: { 
@@ -144,7 +170,7 @@ const TotemPaymentCard: React.FC = () => {
         } 
       });
     } catch (error) {
-      console.error('Erro ao finalizar pagamento:', error);
+      console.error('❌ [CARD] Erro ao finalizar pagamento:', error);
       toast.error('Erro ao processar pagamento');
       setProcessing(false);
     }

@@ -28,7 +28,7 @@ const TotemPaymentPix: React.FC = () => {
   const isProcessingPaymentRef = useRef<boolean>(false);
 
   useEffect(() => {
-    console.log('🎬 TotemPaymentPix montado - Estado recebido:', {
+    console.log('🎬 [PIX] TotemPaymentPix montado - Estado recebido:', {
       venda_id,
       total,
       session_id,
@@ -40,7 +40,7 @@ const TotemPaymentPix: React.FC = () => {
     });
 
     if (!venda_id || !total) {
-      console.error('❌ Dados incompletos - venda_id ou total ausente');
+      console.error('❌ [PIX] Dados incompletos - venda_id ou total ausente');
       toast.error('Erro', {
         description: 'Dados de pagamento incompletos'
       });
@@ -51,33 +51,34 @@ const TotemPaymentPix: React.FC = () => {
     // Iniciar processos de forma assíncrona
     const initializePayment = async () => {
       // 🔒 ROBUSTEZ: Gerar PIX e obter payment_id ANTES de iniciar timer
+      console.log('🔄 [PIX] Inicializando pagamento PIX...');
       const finalPaymentId = await generatePixCode();
       
       if (!finalPaymentId) {
-        console.error('❌ Falha ao gerar payment_id');
+        console.error('❌ [PIX] Falha ao gerar payment_id');
         toast.error('Erro ao inicializar pagamento PIX');
         return null;
       }
       
-      console.log('✅ Payment ID confirmado antes do timer:', finalPaymentId);
+      console.log('✅ [PIX] Payment ID confirmado antes do timer:', finalPaymentId);
       
       // Iniciar timer de expiração
       startTimer();
       
-      console.log('⏱️ Iniciando timer de simulação (10 segundos)');
+      console.log('⏱️ [PIX] Iniciando timer de simulação (10 segundos)');
       setIsSimulationActive(true);
       
       // ⏱️ Timer de simulação: aprovar pagamento após 10 segundos
       let countdown = 10;
       const simulationInterval = setInterval(() => {
         countdown--;
-        console.log(`⏱️ Simulação: ${countdown}s restantes`);
+        console.log(`⏱️ [PIX] Simulação: ${countdown}s restantes`);
         setSimulationTimer(countdown);
         
         if (countdown <= 0) {
           clearInterval(simulationInterval);
-          console.log('🤖 SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
-          console.log('🔒 Payment ID no momento da aprovação:', paymentIdRef.current);
+          console.log('🤖 [PIX] SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
+          console.log('🔒 [PIX] Payment ID no momento da aprovação:', paymentIdRef.current);
           setIsSimulationActive(false);
           toast.info('Modo Teste', {
             description: '✅ Pagamento PIX aprovado automaticamente',
@@ -172,7 +173,7 @@ const TotemPaymentPix: React.FC = () => {
   const handlePaymentSuccess = async () => {
     // 🔒 PROTEÇÃO: Evitar execução duplicada
     if (isProcessingPaymentRef.current) {
-      console.log('⏭️ Pagamento já está sendo processado, ignorando chamada duplicada');
+      console.log('⏭️ [PIX] Pagamento já está sendo processado, ignorando chamada duplicada');
       return;
     }
     
@@ -182,7 +183,7 @@ const TotemPaymentPix: React.FC = () => {
       // 🔒 ROBUSTEZ: Usar paymentIdRef para garantir valor correto
       const finalPaymentId = paymentIdRef.current || payment_id;
       
-      console.log('✅ Pagamento PIX confirmado! Finalizando venda...', {
+      console.log('✅ [PIX] Pagamento PIX confirmado! Finalizando venda...', {
         paymentIdRef: paymentIdRef.current,
         paymentIdState: paymentId,
         payment_id_prop: payment_id,
@@ -195,7 +196,7 @@ const TotemPaymentPix: React.FC = () => {
 
       // Verificar se tem payment_id antes de atualizar
       if (!finalPaymentId) {
-        console.error('❌ Nenhum payment_id disponível');
+        console.error('❌ [PIX] Nenhum payment_id disponível');
         isProcessingPaymentRef.current = false;
         toast.error('Erro no pagamento', {
           description: 'ID de pagamento não encontrado'
