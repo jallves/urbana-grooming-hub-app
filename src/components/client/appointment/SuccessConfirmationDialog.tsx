@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Calendar, Clock, User, Scissors, Info, AlertCircle } from 'lucide-react';
@@ -23,6 +24,7 @@ const SuccessConfirmationDialog: React.FC<SuccessConfirmationDialogProps> = ({
   onClose,
   appointmentDetails
 }) => {
+  const navigate = useNavigate();
   const formattedDate = format(appointmentDetails.date, "EEEE, dd 'de' MMMM", { locale: ptBR });
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
@@ -131,7 +133,7 @@ const SuccessConfirmationDialog: React.FC<SuccessConfirmationDialogProps> = ({
               <Button 
                 onClick={() => {
                   onClose();
-                  window.location.href = '/painel-cliente/agendamentos';
+                  navigate('/painel-cliente/agendamentos');
                 }}
                 className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
               >
