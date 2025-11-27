@@ -33,8 +33,10 @@ export const useNavbar = () => {
   }, []);
 
   const handleSignOut = () => {
-    console.log('[useNavbar] 🚪 Chamando signOut...');
-    authSignOut(); // signOut já redireciona para /auth
+    console.log('[useNavbar] 🚪 Iniciando logout da homepage...');
+    console.log('[useNavbar] 📊 Usuário antes do logout:', user?.email);
+    authSignOut(); // signOut limpa estado, localStorage e redireciona para /auth
+    console.log('[useNavbar] ✅ authSignOut() chamado - aguardando redirecionamento...');
   };
 
   const handlePanelClick = () => {

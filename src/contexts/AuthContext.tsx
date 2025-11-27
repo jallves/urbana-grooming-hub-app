@@ -147,9 +147,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const signOut = () => {
-    console.log('[AuthContext] 🚪 Iniciando logout IMEDIATO...');
+    console.log('[AuthContext] 🚪 ============ INICIANDO LOGOUT ============');
+    console.log('[AuthContext] 📊 Estado antes do logout:', {
+      user: user?.email,
+      isAdmin,
+      loading,
+      rolesChecked
+    });
     
     // 1. Limpar estado local IMEDIATAMENTE (não aguardar nada)
+    console.log('[AuthContext] 🧹 Limpando estado local...');
     setIsAdmin(false);
     setIsBarber(false);
     setIsMaster(false);
@@ -161,6 +168,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false);
     
     // 2. Limpar TODOS os localStorage relacionados
+    console.log('[AuthContext] 🧹 Limpando localStorage...');
     localStorage.removeItem('admin_last_route');
     localStorage.removeItem('barber_last_route');
     localStorage.removeItem('client_last_route');
@@ -168,12 +176,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('user_role_cache');
     
     // 3. Fazer logout do Supabase (não aguardar - usar catch para não bloquear)
+    console.log('[AuthContext] 🚪 Fazendo logout do Supabase...');
     supabase.auth.signOut().catch(err => 
       console.warn('[AuthContext] ⚠️ Erro ao fazer signOut do Supabase (não crítico):', err)
     );
     
     // 4. Redirecionar IMEDIATAMENTE
-    console.log('[AuthContext] ✅ Logout concluído - redirecionando...');
+    console.log('[AuthContext] ✅ ============ LOGOUT CONCLUÍDO ============');
+    console.log('[AuthContext] 🔄 Redirecionando para /auth...');
     window.location.href = '/auth';
   };
 
