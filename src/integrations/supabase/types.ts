@@ -3992,7 +3992,14 @@ export type Database = {
             foreignKeyName: "vendas_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes_legacy"
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
             referencedColumns: ["id"]
           },
           {
@@ -4253,7 +4260,14 @@ export type Database = {
             foreignKeyName: "vendas_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes_legacy"
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
             referencedColumns: ["id"]
           },
           {
