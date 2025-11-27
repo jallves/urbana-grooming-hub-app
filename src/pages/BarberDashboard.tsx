@@ -5,6 +5,7 @@ import { Calendar, DollarSign, Clock, CheckCircle, TrendingUp, ArrowRight } from
 import { useNavigate } from 'react-router-dom';
 import { useBarberDashboardMetrics } from '@/hooks/useBarberDashboardMetrics';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
+import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
 
 const BarberDashboard: React.FC = () => {
   const { displayName } = useBarberAuth();
@@ -77,7 +78,7 @@ const BarberDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="w-full space-y-3 sm:space-y-4 md:space-y-6 mt-4 px-2 sm:px-0">
+    <BarberPageContainer>
       {/* Welcome Section - Fully Responsive */}
       <div className="w-full">
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-light mb-1 sm:mb-2 leading-tight">
@@ -144,7 +145,7 @@ const BarberDashboard: React.FC = () => {
           </StandardCard>
         ))}
       </div>
-    </div>
+    </BarberPageContainer>
   );
 };
 
