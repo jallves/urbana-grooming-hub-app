@@ -163,65 +163,64 @@ const WorkingHoursManager: React.FC = () => {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/30 rounded-lg p-2">
-        <p className="text-[10px] text-blue-300">
-          <Clock className="h-3 w-3 inline mr-1" />
-          Configure seus horários de trabalho para cada dia da semana. 
-          Apenas os dias ativos aparecerão para agendamento.
+    <div className="space-y-1.5">
+      <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/30 rounded-md p-1.5">
+        <p className="text-[9px] text-blue-300 leading-tight">
+          <Clock className="h-2.5 w-2.5 inline mr-1" />
+          Configure horários de trabalho. Dias ativos aparecerão para agendamento.
         </p>
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {workingHours.map((hour) => {
           const dayInfo = DAYS_OF_WEEK.find(d => d.value === hour.day_of_week);
           
           return (
             <div
               key={hour.day_of_week}
-              className={`p-2 rounded-lg border transition-all ${
+              className={`p-1.5 rounded-md border transition-all ${
                 hour.is_active
                   ? 'backdrop-blur-sm bg-urbana-black/30 border-urbana-gold/30'
                   : 'backdrop-blur-sm bg-urbana-black/20 border-urbana-gold/10 opacity-50'
               }`}
             >
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <div className="flex items-center gap-2 min-w-[120px]">
+              <div className="flex flex-col md:flex-row md:items-center gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-[100px]">
                   <Switch
                     checked={hour.is_active}
                     onCheckedChange={(checked) => 
                       handleUpdate(hour.day_of_week, 'is_active', checked)
                     }
-                    className="data-[state=checked]:bg-urbana-gold scale-75"
+                    className="data-[state=checked]:bg-urbana-gold scale-[0.65]"
                   />
-                  <Label className="text-urbana-light font-medium cursor-pointer text-[11px]">
+                  <Label className="text-urbana-light font-medium cursor-pointer text-[10px]">
                     {dayInfo?.label}
                   </Label>
                 </div>
 
                 {hour.is_active && (
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="flex-1 max-w-[110px]">
-                      <Label className="text-urbana-light/70 text-[10px] mb-0.5">Início</Label>
+                  <div className="flex items-center gap-1.5 flex-1">
+                    <div className="flex-1 max-w-[90px]">
+                      <Label className="text-urbana-light/70 text-[9px] mb-0.5">Início</Label>
                       <Input
                         type="time"
                         value={hour.start_time}
                         onChange={(e) => 
                           handleUpdate(hour.day_of_week, 'start_time', e.target.value)
                         }
-                        className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light h-8 text-xs"
+                        className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light h-7 text-[10px] px-1.5"
                       />
                     </div>
-                    <span className="text-urbana-light/60 mt-4 text-[10px]">até</span>
-                    <div className="flex-1 max-w-[110px]">
-                      <Label className="text-urbana-light/70 text-[10px] mb-0.5">Fim</Label>
+                    <span className="text-urbana-light/60 mt-3.5 text-[9px]">até</span>
+                    <div className="flex-1 max-w-[90px]">
+                      <Label className="text-urbana-light/70 text-[9px] mb-0.5">Fim</Label>
                       <Input
                         type="time"
                         value={hour.end_time}
                         onChange={(e) => 
                           handleUpdate(hour.day_of_week, 'end_time', e.target.value)
                         }
-                        className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light h-8 text-xs"
+                        className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light h-7 text-[10px] px-1.5"
                       />
                     </div>
                   </div>
@@ -232,22 +231,22 @@ const WorkingHoursManager: React.FC = () => {
         })}
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end pt-1.5">
         <Button
           onClick={handleSave}
           disabled={saving}
           size="sm"
-          className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-8 text-xs px-3"
+          className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-7 text-[10px] px-2.5"
         >
           {saving ? (
             <>
-              <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+              <Loader2 className="h-2.5 w-2.5 animate-spin mr-1" />
               Salvando...
             </>
           ) : (
             <>
-              <Save className="h-3 w-3 mr-1.5" />
-              Salvar Horários
+              <Save className="h-2.5 w-2.5 mr-1" />
+              Salvar
             </>
           )}
         </Button>
