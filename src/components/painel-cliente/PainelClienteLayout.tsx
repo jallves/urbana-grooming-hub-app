@@ -205,7 +205,7 @@ const PainelClienteLayout: React.FC = () => {
       {/* Desktop Navigation Sidebar - Premium Design */}
       <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
         {/* Navigation Header */}
-        <div className="px-4 py-6 border-b border-urbana-gold/10">
+        <div className="px-4 py-8 border-b border-urbana-gold/10">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/5 to-transparent rounded-xl blur-xl" />
             <h2 className="text-lg font-semibold text-urbana-light relative z-10">Navegação</h2>
