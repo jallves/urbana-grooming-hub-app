@@ -99,8 +99,8 @@ import ResetPassword from './pages/ResetPassword';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos - dados frescos
-      gcTime: 10 * 60 * 1000, // 10 minutos - mantém em cache
+      staleTime: 30 * 60 * 1000, // 30 minutos - dados frescos por mais tempo
+      gcTime: 60 * 60 * 1000, // 60 minutos - mantém em cache por 1 hora
       refetchOnWindowFocus: false, // Não refaz requisição ao focar janela
       refetchOnMount: false, // Não refaz requisição ao montar se tiver cache
       refetchOnReconnect: true, // Refaz ao reconectar

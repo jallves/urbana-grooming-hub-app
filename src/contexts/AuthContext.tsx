@@ -57,38 +57,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', userId);
     
     try {
-      // Timeout de 3 segundos para evitar loading infinito
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.warn('[AuthContext] ⏱️ Timeout na verificação de role');
-          resolve(null);
-        }, 3000);
-      });
-
-      // Buscar role diretamente na tabela user_roles
-      const rolePromise = supabase
+      // Buscar role diretamente na tabela user_roles sem timeout agressivo
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .maybeSingle()
-        .then(({ data: roleData, error: roleError }) => {
-          if (roleError) {
-            console.error('[AuthContext] ❌ Erro ao buscar role:', roleError.message);
-            return null;
-          }
+        .maybeSingle();
 
-          if (roleData) {
-            console.log('[AuthContext] ✅ Role encontrada:', roleData.role);
-            return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
-          }
+      if (roleError) {
+        console.error('[AuthContext] ❌ Erro ao buscar role:', roleError.message);
+        return null;
+      }
 
-          console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles');
-          return null;
-        });
+      if (roleData) {
+        console.log('[AuthContext] ✅ Role encontrada:', roleData.role);
+        return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
+      }
 
-      // Usar Promise.race para garantir timeout
-      const result = await Promise.race([rolePromise, timeoutPromise]);
-      return result;
+      console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles');
+      return null;
     } catch (error: any) {
       console.error('[AuthContext] ❌ Erro ao verificar roles:', error.message);
       return null;
@@ -97,19 +84,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
-    let loadingTimeout: NodeJS.Timeout;
 
     const initializeAuth = async () => {
       try {
-        // Timeout de segurança - após 5s, desiste e marca como não carregando
-        loadingTimeout = setTimeout(() => {
-          if (mounted) {
-            console.warn('[AuthContext] ⏱️ Timeout na verificação de auth - finalizando loading');
-            setLoading(false);
-            setRolesChecked(true);
-          }
-        }, 5000);
-
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!mounted) return;
@@ -120,19 +97,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (mounted) {
             applyRole(role);
             setLoading(false);
-            clearTimeout(loadingTimeout);
           }
         } else {
           setLoading(false);
           setRolesChecked(true);
-          clearTimeout(loadingTimeout);
         }
       } catch (error) {
         console.error('[AuthContext] Erro na inicialização:', error);
         if (mounted) {
           setLoading(false);
           setRolesChecked(true);
-          clearTimeout(loadingTimeout);
         }
       }
     };
@@ -141,11 +115,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       async (event, session) => {
         if (!mounted) return;
         
+        console.log('[AuthContext] 🔔 Auth event:', event);
+        
         if (event === 'SIGNED_OUT') {
           setUser(null);
           applyRole(null);
           setLoading(false);
-        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           if (session?.user) {
             setUser(session.user);
             const role = await checkUserRoles(session.user.id);
@@ -162,7 +138,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => {
       mounted = false;
-      clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);

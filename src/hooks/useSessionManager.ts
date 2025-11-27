@@ -193,10 +193,10 @@ class SessionManager {
   private startActivityUpdater() {
     if (this.activityInterval) return;
 
-    // Atualizar atividade a cada 5 minutos
+    // Atualizar atividade a cada 15 minutos (aumentado para evitar conflitos)
     this.activityInterval = setInterval(() => {
       this.updateActivity();
-    }, 5 * 60 * 1000);
+    }, 15 * 60 * 1000);
   }
 
   private stopActivityUpdater() {
