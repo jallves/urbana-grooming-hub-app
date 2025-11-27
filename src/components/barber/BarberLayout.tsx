@@ -45,7 +45,7 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
+    <div className="min-h-screen w-full relative font-poppins">
       {/* 
         ⚠️ ATENÇÃO CRÍTICA - NÃO REMOVER ⚠️
         Background fixo da barbearia - ESSENCIAL para o design do painel
