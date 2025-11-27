@@ -35,8 +35,8 @@ export const useNavbar = () => {
   const handleSignOut = async () => {
     console.log('[useNavbar] 🚪 Iniciando logout da homepage...');
     console.log('[useNavbar] 📊 Usuário antes do logout:', user?.email);
-    await authSignOut(); // Aguardar logout completo antes de continuar
-    console.log('[useNavbar] ✅ authSignOut() concluído');
+    authSignOut(); // Não precisa await - é instantâneo
+    console.log('[useNavbar] ✅ authSignOut() chamado');
   };
 
   const handlePanelClick = () => {
