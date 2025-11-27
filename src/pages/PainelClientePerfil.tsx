@@ -78,25 +78,25 @@ export default function PainelClientePerfil() {
 
   return (
     <ClientPageContainer key="perfil-2024-v2">
-      {/* Profile Card - Largura total compensando o padding do container */}
-      <div className="w-full -mx-4 md:-mx-6 lg:-mx-8">
-        <PainelClienteCard variant="highlight" className="w-full rounded-none md:rounded-lg">
-          <PainelClienteCardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-urbana-gold/20 rounded-lg">
-                <User className="h-5 w-5 text-urbana-gold" />
+      {/* Profile Card - Mobile First Responsive */}
+      <div className="w-full">
+        <PainelClienteCard variant="highlight" className="w-full">
+          <PainelClienteCardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-urbana-gold/20 rounded-lg">
+                <User className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
               </div>
-              <div>
-                <PainelClienteCardTitle className="text-lg sm:text-xl">
+              <div className="min-w-0">
+                <PainelClienteCardTitle className="text-base sm:text-lg lg:text-xl truncate">
                   Meu Perfil
                 </PainelClienteCardTitle>
-                <p className="text-xs sm:text-sm text-urbana-light/70">Suas informações pessoais</p>
+                <p className="text-[11px] sm:text-xs lg:text-sm text-urbana-light/70 truncate">Suas informações pessoais</p>
               </div>
             </div>
           </PainelClienteCardHeader>
 
-          <PainelClienteCardContent className="p-4 sm:p-6">
-            <form onSubmit={handleSubmit} className="space-y-5">
+          <PainelClienteCardContent className="p-4 sm:p-6 lg:p-8">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               {erro && (
                 <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
                   <p className="text-red-400 text-sm">{erro}</p>
@@ -104,9 +104,9 @@ export default function PainelClientePerfil() {
               )}
 
               {/* Nome */}
-              <div className="space-y-2">
-                <Label htmlFor="nome" className="text-urbana-light text-sm font-medium flex items-center gap-2">
-                  <User className="h-4 w-4 text-urbana-gold" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="nome" className="text-urbana-light text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                  <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-urbana-gold flex-shrink-0" />
                   Nome Completo
                 </Label>
                 <Input
@@ -114,16 +114,16 @@ export default function PainelClientePerfil() {
                   type="text"
                   value={formData.nome}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-11 sm:h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all text-sm sm:text-base"
                   placeholder="Seu nome completo"
                   required
                 />
               </div>
 
               {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-urbana-light text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-urbana-gold" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="email" className="text-urbana-light text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                  <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-urbana-gold flex-shrink-0" />
                   E-mail
                 </Label>
                 <Input
@@ -131,16 +131,16 @@ export default function PainelClientePerfil() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-11 sm:h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all text-sm sm:text-base"
                   placeholder="seu.email@exemplo.com"
                   required
                 />
               </div>
 
               {/* WhatsApp */}
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp" className="text-urbana-light text-sm font-medium flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-urbana-gold" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="whatsapp" className="text-urbana-light text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                  <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-urbana-gold flex-shrink-0" />
                   WhatsApp
                 </Label>
                 <Input
@@ -148,7 +148,7 @@ export default function PainelClientePerfil() {
                   type="tel"
                   value={formData.whatsapp}
                   onChange={handleWhatsAppChange}
-                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-11 sm:h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all text-sm sm:text-base"
                   placeholder="(11) 99999-9999"
                   maxLength={15}
                   required
@@ -156,9 +156,9 @@ export default function PainelClientePerfil() {
               </div>
 
               {/* Data de Nascimento */}
-              <div className="space-y-2">
-                <Label htmlFor="data_nascimento" className="text-urbana-light text-sm font-medium flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-urbana-gold" />
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="data_nascimento" className="text-urbana-light text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                  <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-urbana-gold flex-shrink-0" />
                   Data de Nascimento
                 </Label>
                 <Input
@@ -166,16 +166,16 @@ export default function PainelClientePerfil() {
                   type="date"
                   value={formData.data_nascimento}
                   onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
-                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all"
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-11 sm:h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all text-sm sm:text-base"
                   required
                 />
               </div>
 
-              {/* Submit Button */}
-              <div className="pt-4">
+              {/* Submit Button - Mobile Optimized */}
+              <div className="pt-3 sm:pt-4">
                 <Button
                   type="submit"
-                  className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold h-12 rounded-lg shadow-lg transition-all duration-300"
+                  className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-black font-semibold h-11 sm:h-12 rounded-lg shadow-lg transition-all duration-300 text-sm sm:text-base touch-manipulation"
                   disabled={loading}
                 >
                   {loading ? (

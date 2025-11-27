@@ -410,74 +410,74 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   return (
     <ClientPageContainer>
-      {/* Indicador de Progresso */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between max-w-2xl mx-auto">
+      {/* Indicador de Progresso - Mobile Responsive */}
+      <div className="mb-4 sm:mb-6 lg:mb-8">
+        <div className="flex items-center justify-between max-w-2xl mx-auto px-2">
           {/* Passo 1 */}
           <div className="flex flex-col items-center flex-1">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all mb-2 ${
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all mb-1 sm:mb-2 ${
               step === 'service' ? 'bg-urbana-gold text-black scale-110' : selectedService ? 'bg-urbana-gold/30 text-white' : 'bg-white/20 text-white/50'
             }`}>
-              {selectedService ? <Check className="w-5 h-5" /> : '1'}
+              {selectedService ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : '1'}
             </div>
-            <p className={`text-xs text-center font-medium ${step === 'service' ? 'text-urbana-gold' : 'text-white/60'}`}>
+            <p className={`text-[10px] sm:text-xs text-center font-medium leading-tight ${step === 'service' ? 'text-urbana-gold' : 'text-white/60'}`}>
               Serviço
             </p>
           </div>
 
           {/* Linha 1-2 */}
-          <div className={`h-1 flex-1 mx-2 rounded transition-all ${selectedService ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+          <div className={`h-0.5 sm:h-1 flex-1 mx-1 sm:mx-2 rounded transition-all ${selectedService ? 'bg-urbana-gold' : 'bg-white/20'}`} />
 
           {/* Passo 2 */}
           <div className="flex flex-col items-center flex-1">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all mb-2 ${
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all mb-1 sm:mb-2 ${
               step === 'barber' ? 'bg-urbana-gold text-black scale-110' : selectedBarber ? 'bg-urbana-gold/30 text-white' : 'bg-white/20 text-white/50'
             }`}>
-              {selectedBarber ? <Check className="w-5 h-5" /> : '2'}
+              {selectedBarber ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : '2'}
             </div>
-            <p className={`text-xs text-center font-medium ${step === 'barber' ? 'text-urbana-gold' : 'text-white/60'}`}>
+            <p className={`text-[10px] sm:text-xs text-center font-medium leading-tight ${step === 'barber' ? 'text-urbana-gold' : 'text-white/60'}`}>
               Profissional
             </p>
           </div>
 
           {/* Linha 2-3 */}
-          <div className={`h-1 flex-1 mx-2 rounded transition-all ${selectedBarber ? 'bg-urbana-gold' : 'bg-white/20'}`} />
+          <div className={`h-0.5 sm:h-1 flex-1 mx-1 sm:mx-2 rounded transition-all ${selectedBarber ? 'bg-urbana-gold' : 'bg-white/20'}`} />
 
           {/* Passo 3 */}
           <div className="flex flex-col items-center flex-1">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all mb-2 ${
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all mb-1 sm:mb-2 ${
               step === 'datetime' ? 'bg-urbana-gold text-black scale-110' : (selectedDate && selectedTime) ? 'bg-urbana-gold/30 text-white' : 'bg-white/20 text-white/50'
             }`}>
-              {(selectedDate && selectedTime) ? <Check className="w-5 h-5" /> : '3'}
+              {(selectedDate && selectedTime) ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : '3'}
             </div>
-            <p className={`text-xs text-center font-medium ${step === 'datetime' ? 'text-urbana-gold' : 'text-white/60'}`}>
+            <p className={`text-[10px] sm:text-xs text-center font-medium leading-tight ${step === 'datetime' ? 'text-urbana-gold' : 'text-white/60'}`}>
               Data e Hora
             </p>
           </div>
         </div>
       </div>
 
-      {/* Resumo das Seleções */}
+      {/* Resumo das Seleções - Mobile Optimized */}
       {(selectedService || selectedBarber || (selectedDate && selectedTime)) && (
-        <Card className="mb-6 bg-white/5 backdrop-blur-sm border border-urbana-gold/20">
-          <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4">
+        <Card className="mb-4 sm:mb-6 bg-white/5 backdrop-blur-sm border border-urbana-gold/20">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-wrap gap-2 sm:gap-3 lg:gap-4">
               {selectedService && (
-                <div className="flex items-center gap-2 bg-urbana-gold/10 px-3 py-2 rounded-lg">
-                  <Scissors className="w-4 h-4 text-urbana-gold" />
-                  <span className="text-sm font-medium text-white">{selectedService.nome}</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-urbana-gold/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
+                  <Scissors className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-urbana-gold flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium text-white truncate">{selectedService.nome}</span>
                 </div>
               )}
               {selectedBarber && (
-                <div className="flex items-center gap-2 bg-urbana-gold/10 px-3 py-2 rounded-lg">
-                  <User className="w-4 h-4 text-urbana-gold" />
-                  <span className="text-sm font-medium text-white">{selectedBarber.nome}</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-urbana-gold/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-urbana-gold flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium text-white truncate">{selectedBarber.nome}</span>
                 </div>
               )}
               {selectedDate && selectedTime && (
-                <div className="flex items-center gap-2 bg-urbana-gold/10 px-3 py-2 rounded-lg">
-                  <Clock className="w-4 h-4 text-urbana-gold" />
-                  <span className="text-sm font-medium text-white">
+                <div className="flex items-center gap-1.5 sm:gap-2 bg-urbana-gold/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-urbana-gold flex-shrink-0" />
+                  <span className="text-xs sm:text-sm font-medium text-white whitespace-nowrap">
                     {format(selectedDate, "dd/MM", { locale: ptBR })} às {selectedTime}
                   </span>
                 </div>
@@ -487,13 +487,13 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         </Card>
       )}
 
-      {/* Botão Voltar */}
+      {/* Botão Voltar - Mobile Optimized */}
       <Button
         onClick={handleBack}
         variant="ghost"
-        className="mb-4 text-white hover:text-urbana-gold hover:bg-white/10"
+        className="mb-3 sm:mb-4 text-white hover:text-urbana-gold hover:bg-white/10 h-10 sm:h-11 px-3 sm:px-4 text-sm sm:text-base touch-manipulation"
       >
-        <ArrowLeft className="w-4 h-4 mr-2" />
+        <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
         Voltar
       </Button>
 
