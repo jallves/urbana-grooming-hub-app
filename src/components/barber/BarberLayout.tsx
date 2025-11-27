@@ -45,7 +45,7 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins" style={{ background: 'transparent' }}>
+    <div className="min-h-screen w-screen overflow-x-hidden relative font-poppins" style={{ background: 'transparent', maxWidth: '100vw' }}>
       {/* 
         ⚠️ ATENÇÃO CRÍTICA - NÃO REMOVER ⚠️
         Background fixo da barbearia - ESSENCIAL para o design do painel
@@ -75,24 +75,24 @@ const BarberLayout: React.FC = () => {
       </div>
       
       {/* Modern Header - FIXO */}
-      <header className="fixed top-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl" style={{ width: '100vw', paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="w-full px-4 md:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <div className="relative">
-                <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
+                <div className="relative p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl border border-urbana-gold/20">
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana" 
-                    className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
+                    className="h-10 w-10 md:h-12 md:w-12 object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
+                <h1 className="text-base md:text-xl font-bold text-urbana-light drop-shadow-lg">
                   Barbearia Costa Urbana
                 </h1>
-                <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Barbeiro</p>
+                <p className="text-xs text-urbana-light/70 hidden sm:block">Painel do Barbeiro</p>
               </div>
             </div>
             
@@ -434,8 +434,8 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-64 lg:pl-72 xl:pl-80 pl-4 md:pl-64 lg:pl-72 xl:pl-80 pr-4 md:pr-6 lg:pr-8 transition-all duration-300" style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
-        <div className="w-full max-w-[1800px] mx-auto" style={{ maxWidth: '1800px' }}>
+      <main className="relative z-10 w-full pt-20 md:pt-[72px] pb-[100px] md:pb-8 md:pl-64 lg:pl-72 xl:pl-80 px-4 md:px-6 lg:px-8 transition-all duration-300" style={{ minHeight: '100vh' }}>
+        <div className="w-full max-w-[1400px] mx-auto">
           <Outlet />
         </div>
       </main>
