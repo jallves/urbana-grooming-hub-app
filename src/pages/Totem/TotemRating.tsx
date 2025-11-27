@@ -58,6 +58,15 @@ const TotemRating: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    console.log('[RATING] Iniciando envio de avaliação...');
+    console.log('[RATING] Dados:', {
+      appointment_id: appointment?.id,
+      client_id: client?.id,
+      barber_id: appointment?.barbeiro_id,
+      rating,
+      comment
+    });
+
     if (rating === 0) {
       toast.error('Selecione uma avaliação', {
         description: 'Por favor, escolha de 1 a 5 estrelas'
@@ -68,7 +77,9 @@ const TotemRating: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
+      console.log('[RATING] Inserindo avaliação no banco...');
+      
+      const { data, error } = await supabase
         .from('appointment_ratings')
         .insert({
           appointment_id: appointment.id,
@@ -76,10 +87,15 @@ const TotemRating: React.FC = () => {
           barber_id: appointment.barbeiro_id,
           rating: rating,
           comment: comment || null
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[RATING] Erro do Supabase:', error);
+        throw error;
+      }
 
+      console.log('[RATING] ✅ Avaliação salva com sucesso:', data);
       setSubmitted(true);
       
       toast.success('Avaliação enviada!', {
@@ -88,11 +104,12 @@ const TotemRating: React.FC = () => {
 
       // Mostrar pergunta sobre agendamento
       setTimeout(() => {
+        console.log('[RATING] Mostrando pergunta de agendamento');
         setShowScheduleQuestion(true);
       }, 2000);
       
     } catch (error: any) {
-      console.error('Erro ao enviar avaliação:', error);
+      console.error('[RATING] ❌ Erro ao enviar avaliação:', error);
       toast.error('Erro ao enviar avaliação', {
         description: error.message || 'Tente novamente'
       });
