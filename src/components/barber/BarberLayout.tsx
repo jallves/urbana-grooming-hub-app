@@ -52,7 +52,7 @@ const BarberLayout: React.FC = () => {
         Este fundo DEVE estar sempre presente em todas as páginas do painel do barbeiro
         NUNCA altere ou remova esta estrutura sem consulta prévia
       */}
-      <div className="fixed inset-0 z-0 pointer-events-none" style={{ width: '100vw', height: '100vh', background: 'transparent' }}>
+      <div className="fixed inset-0 z-0 pointer-events-none w-screen h-screen" style={{ background: 'transparent' }}>
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
@@ -74,8 +74,11 @@ const BarberLayout: React.FC = () => {
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Modern Header - FIXO */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl" style={{ width: '100vw', paddingTop: 'env(safe-area-inset-top)' }}>
+      {/* Modern Header - FIXO COM SAFE AREA TOP */}
+      <header 
+        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl w-screen" 
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
         <div className="w-full px-4 md:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 md:gap-4">
@@ -290,11 +293,16 @@ const BarberLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Enhanced Mobile Navigation - FIXO */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl">
-        <div className="w-full px-1 md:px-4">
+      {/* Enhanced Mobile Navigation - FIXO COM SAFE AREA */}
+      <nav 
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 w-full backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl"
+        style={{ 
+          paddingBottom: 'env(safe-area-inset-bottom)'
+        }}
+      >
+        <div className="w-full px-1">
           {/* Mobile Tab Navigation */}
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3 pb-safe">
+          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -432,9 +440,16 @@ const BarberLayout: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[68px] md:pt-[74px] pb-[70px] md:pb-1 md:pl-56 lg:pl-60 px-2 md:px-3 transition-all duration-300 safe-area-inset" style={{ minHeight: '100vh', maxHeight: '100vh', maxWidth: '100vw', overflowX: 'hidden', overflowY: 'auto' }}>
-        <div className="w-full max-w-[750px] mx-auto">
+      {/* Main Content - SCROLL ENTRE HEADER E FOOTER FIXOS */}
+      <main 
+        className="relative z-10 w-full min-h-screen overflow-y-auto overflow-x-hidden pt-[72px] md:pt-[88px] md:pl-56 lg:pl-60 px-2 md:px-3"
+        style={{ 
+          paddingTop: 'calc(72px + env(safe-area-inset-top))',
+          paddingBottom: 'calc(88px + env(safe-area-inset-bottom))',
+          maxWidth: '100vw'
+        }}
+      >
+        <div className="w-full max-w-[750px] mx-auto py-4 md:py-6">
           <Outlet />
         </div>
       </main>
