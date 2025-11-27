@@ -101,7 +101,8 @@ Deno.serve(async (req) => {
     // ===================================================================
     console.log('🔍 [2/4] Criando usuário com signUp nativo (enviará e-mail automaticamente)...');
     
-    const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/dashboard`;
+    // Redirecionar para página de confirmação de e-mail após clicar no link
+    const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/email-confirmado`;
     
     const { data: authData, error: signUpError } = await supabaseAnon.auth.signUp({
       email: email.trim().toLowerCase(),
