@@ -51,8 +51,8 @@ const Auth: React.FC = () => {
     navigate('/');
   };
 
-  const handleLogout = () => {
-    signOut(); // signOut já redireciona para /auth
+  const handleLogout = async () => {
+    await signOut();
     console.log('[Auth] 🚪 Logout realizado');
   };
 

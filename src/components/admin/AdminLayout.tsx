@@ -30,8 +30,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = () => {
-    signOut(); // signOut já redireciona para /auth
+  const handleLogout = async () => {
+    await signOut();
   };
 
   const userInitials = displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'A';

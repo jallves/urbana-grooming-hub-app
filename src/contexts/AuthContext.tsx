@@ -15,7 +15,7 @@ interface AuthContextType {
   rolesChecked: boolean;
   requiresPasswordChange: boolean;
   canAccessModule: (moduleName: string) => boolean;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -146,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const signOut = () => {
+  const signOut = async () => {
     console.log('[AuthContext] 🚪 ============ INICIANDO LOGOUT ============');
     console.log('[AuthContext] 📊 Estado antes do logout:', {
       user: user?.email,
@@ -155,7 +155,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       rolesChecked
     });
     
-    // 1. Limpar estado local IMEDIATAMENTE (não aguardar nada)
+    try {
+      // 1. Fazer logout do Supabase PRIMEIRO (aguardar para garantir limpeza completa)
+      console.log('[AuthContext] 🚪 Fazendo logout do Supabase (AGUARDANDO)...');
+      await supabase.auth.signOut();
+      console.log('[AuthContext] ✅ Logout do Supabase concluído');
+    } catch (err) {
+      console.warn('[AuthContext] ⚠️ Erro ao fazer signOut do Supabase:', err);
+    }
+    
+    // 2. Limpar estado local DEPOIS do Supabase
     console.log('[AuthContext] 🧹 Limpando estado local...');
     setIsAdmin(false);
     setIsBarber(false);
@@ -167,7 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setRolesChecked(true);
     setLoading(false);
     
-    // 2. Limpar TODOS os localStorage relacionados
+    // 3. Limpar TODOS os localStorage relacionados
     console.log('[AuthContext] 🧹 Limpando localStorage...');
     localStorage.removeItem('admin_last_route');
     localStorage.removeItem('barber_last_route');
@@ -175,13 +184,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('totem_last_route');
     localStorage.removeItem('user_role_cache');
     
-    // 3. Fazer logout do Supabase (não aguardar - usar catch para não bloquear)
-    console.log('[AuthContext] 🚪 Fazendo logout do Supabase...');
-    supabase.auth.signOut().catch(err => 
-      console.warn('[AuthContext] ⚠️ Erro ao fazer signOut do Supabase (não crítico):', err)
-    );
-    
-    // 4. Redirecionar IMEDIATAMENTE
+    // 4. Redirecionar SOMENTE DEPOIS de tudo limpo
     console.log('[AuthContext] ✅ ============ LOGOUT CONCLUÍDO ============');
     console.log('[AuthContext] 🔄 Redirecionando para /auth...');
     window.location.href = '/auth';

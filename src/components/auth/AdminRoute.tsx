@@ -62,11 +62,10 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     }
   }, [loading, rolesChecked]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     console.log('[AdminRoute] 🚪 Logout forçado');
-    // Limpar tudo e redirecionar IMEDIATAMENTE
     localStorage.clear();
-    signOut(); // signOut já redireciona para /auth
+    await signOut();
   };
 
   const handleGoToDashboard = () => {
@@ -174,8 +173,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
             <Button 
-              onClick={() => {
-                signOut(); // signOut já redireciona para /auth
+              onClick={async () => {
+                await signOut();
               }}
               className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white hover:from-urbana-gold/90 hover:to-yellow-600 font-raleway font-medium"
             >

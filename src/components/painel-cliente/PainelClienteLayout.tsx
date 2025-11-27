@@ -33,10 +33,10 @@ const PainelClienteLayout: React.FC = () => {
     setTimeout(verificarBackground, 500);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggingOut(true);
     console.log('🚪 [Layout] Iniciando processo de logout...');
-    signOut(); // signOut já redireciona para /painel-cliente/login
+    await signOut();
   };
 
   const navigationItems = [
