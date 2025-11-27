@@ -1,12 +1,17 @@
-
 import React, { useState, useMemo } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isToday, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useBarberAppointments } from '@/hooks/useBarberAppointments';
+import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
+import { 
+  PainelBarbeiroCard, 
+  PainelBarbeiroCardTitle,
+  PainelBarbeiroCardHeader,
+  PainelBarbeiroCardContent 
+} from '@/components/barber/PainelBarbeiroCard';
 
 const BarberScheduleView: React.FC = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -62,19 +67,21 @@ const BarberScheduleView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
-      </div>
+      <BarberPageContainer>
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="w-8 h-8 border-2 border-urbana-gold border-t-transparent rounded-full animate-spin" />
+        </div>
+      </BarberPageContainer>
     );
   }
 
   return (
-    <div className="w-full space-y-4 sm:space-y-6">
+    <BarberPageContainer hideHeader>
       {/* Header com navegação */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-urbana-gold/20">
         <div className="flex items-center gap-2 sm:gap-3">
           <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold" />
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold font-playfair">
             {format(currentWeek, "MMMM 'de' yyyy", { locale: ptBR })}
           </h2>
         </div>
@@ -110,7 +117,7 @@ const BarberScheduleView: React.FC = () => {
       </div>
 
       {/* Calendar Grid */}
-      <div className="w-full">
+      <div className="w-full mb-4 sm:mb-6 lg:mb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 sm:gap-4">
           {weekDays.map((day) => {
             const dayKey = format(day, 'yyyy-MM-dd');
@@ -118,14 +125,15 @@ const BarberScheduleView: React.FC = () => {
             const isCurrentDay = isToday(day);
 
             return (
-              <Card 
+              <PainelBarbeiroCard 
                 key={dayKey} 
-                className={`backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20 transition-all duration-300 hover:bg-urbana-black/60 hover:border-urbana-gold/40 flex flex-col min-h-[400px] ${
-                  isCurrentDay ? 'ring-2 ring-urbana-gold/60 border-urbana-gold/60' : ''
+                variant={isCurrentDay ? 'highlight' : 'default'}
+                className={`flex flex-col min-h-[400px] ${
+                  isCurrentDay ? 'ring-2 ring-urbana-gold/60' : ''
                 }`}
               >
-                <CardHeader className="pb-3 flex-shrink-0 p-4 border-b border-urbana-gold/10">
-                  <CardTitle className="text-sm sm:text-base font-semibold">
+                <PainelBarbeiroCardHeader className="pb-3 flex-shrink-0 p-4 border-b border-urbana-gold/10">
+                  <PainelBarbeiroCardTitle className="text-sm sm:text-base font-semibold">
                     <div className="flex items-center justify-between">
                       <span className={`capitalize ${isCurrentDay ? 'text-urbana-gold' : 'text-urbana-light'}`}>
                         {format(day, 'EEE', { locale: ptBR })}
@@ -134,10 +142,10 @@ const BarberScheduleView: React.FC = () => {
                         {format(day, 'dd')}
                       </span>
                     </div>
-                  </CardTitle>
-                </CardHeader>
+                  </PainelBarbeiroCardTitle>
+                </PainelBarbeiroCardHeader>
                 
-                <CardContent className="flex-1 flex flex-col space-y-2 p-3 sm:p-4 overflow-y-auto">
+                <PainelBarbeiroCardContent className="flex-1 flex flex-col space-y-2 p-3 sm:p-4 overflow-y-auto">
                   {dayAppointments.length === 0 ? (
                     <div className="flex-1 flex items-center justify-center">
                       <p className="text-xs sm:text-sm text-urbana-light/40 text-center">
@@ -177,19 +185,21 @@ const BarberScheduleView: React.FC = () => {
                       ))}
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </PainelBarbeiroCardContent>
+              </PainelBarbeiroCard>
             );
           })}
         </div>
       </div>
 
       {/* Resumo da semana */}
-      <Card className="backdrop-blur-xl bg-urbana-black/40 border-urbana-gold/20">
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-sm sm:text-base text-urbana-light">Resumo da Semana</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0">
+      <PainelBarbeiroCard variant="default">
+        <PainelBarbeiroCardHeader className="p-4 sm:p-6">
+          <PainelBarbeiroCardTitle className="text-sm sm:text-base text-urbana-light">
+            Resumo da Semana
+          </PainelBarbeiroCardTitle>
+        </PainelBarbeiroCardHeader>
+        <PainelBarbeiroCardContent className="p-4 sm:p-6 pt-0">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-xl sm:text-2xl font-bold text-urbana-light">
@@ -210,9 +220,9 @@ const BarberScheduleView: React.FC = () => {
               <p className="text-xs sm:text-sm text-urbana-light/60 mt-1">Confirmados</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </PainelBarbeiroCardContent>
+      </PainelBarbeiroCard>
+    </BarberPageContainer>
   );
 };
 
