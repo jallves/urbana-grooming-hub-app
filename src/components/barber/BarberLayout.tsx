@@ -45,25 +45,27 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins">
+    <div className="min-h-screen w-full overflow-x-hidden relative font-poppins" style={{ background: 'transparent' }}>
       {/* 
         ⚠️ ATENÇÃO CRÍTICA - NÃO REMOVER ⚠️
         Background fixo da barbearia - ESSENCIAL para o design do painel
         Este fundo DEVE estar sempre presente em todas as páginas do painel do barbeiro
         NUNCA altere ou remova esta estrutura sem consulta prévia
       */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-0 pointer-events-none" style={{ width: '100vw', height: '100vh', background: 'transparent' }}>
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
           className="w-full h-full object-cover"
+          style={{ width: '100vw', height: '100vh', maxWidth: 'none' }}
+          onLoad={() => console.log('✅ Background do barbeiro carregado com sucesso')}
           onError={(e) => {
             console.error('❌ Erro ao carregar background da barbearia');
             e.currentTarget.style.display = 'none';
           }}
         />
         {/* Dark overlay - Garante contraste e legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
+        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" style={{ width: '100%', height: '100%' }} />
       </div>
 
       {/* Animated background effects */}
@@ -432,8 +434,8 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-64 lg:pl-72 xl:pl-80 px-4 md:px-6 lg:px-8 transition-all duration-300">
-        <div className="w-full max-w-[1800px] mx-auto">
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-64 lg:pl-72 xl:pl-80 pl-4 md:pl-64 lg:pl-72 xl:pl-80 pr-4 md:pr-6 lg:pr-8 transition-all duration-300" style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
+        <div className="w-full max-w-[1800px] mx-auto" style={{ maxWidth: '1800px' }}>
           <Outlet />
         </div>
       </main>
