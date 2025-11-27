@@ -93,14 +93,14 @@ const FinancialMetricsCards: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {[1, 2, 3, 4, 5, 6].map(i => (
           <Card key={i} className="bg-white border-gray-200">
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
+            <CardHeader className="pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+              <Skeleton className="h-3 sm:h-4 w-20 sm:w-24" />
             </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-32" />
+            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <Skeleton className="h-6 sm:h-8 w-24 sm:w-32" />
             </CardContent>
           </Card>
         ))}
@@ -161,20 +161,20 @@ const FinancialMetricsCards: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="flex justify-end">
         <Button
           variant="ghost"
           size="sm"
           onClick={handleRefresh}
           disabled={isLoading}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground min-h-[44px] touch-manipulation text-xs sm:text-sm"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
+          <RefreshCw className={`h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">Atualizar</span>
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {cards.map((card, index) => {
         const Icon = card.icon;
         const isPositiveTrend = (card.trend || 0) > 0;
@@ -182,32 +182,32 @@ const FinancialMetricsCards: React.FC = () => {
 
         return (
           <Card key={index} className="bg-white border-gray-200 hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600 truncate pr-2">
                 {card.title}
               </CardTitle>
-              <div className={`w-10 h-10 rounded-lg ${card.bgColor} flex items-center justify-center`}>
-                <Icon className={`h-5 w-5 ${card.color}`} />
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${card.bgColor} flex items-center justify-center flex-shrink-0`}>
+                <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
+            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">
                 {card.value}
               </div>
               
               {card.trend !== undefined && (
-                <div className={`flex items-center mt-1 text-xs ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`}>
-                  <TrendIcon className="h-3 w-3 mr-1" />
-                  <span>{Math.abs(card.trend).toFixed(1)}% vs mês anterior</span>
+                <div className={`flex items-center mt-0.5 sm:mt-1 text-[10px] sm:text-xs ${isPositiveTrend ? 'text-green-600' : 'text-red-600'}`}>
+                  <TrendIcon className="h-3 w-3 mr-0.5 sm:mr-1 flex-shrink-0" />
+                  <span className="truncate">{Math.abs(card.trend).toFixed(1)}% vs mês anterior</span>
                 </div>
               )}
               
-              <p className="text-xs text-gray-500 mt-2">{card.subtitle}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-2 truncate">{card.subtitle}</p>
               
               {card.alert && (
-                <div className="flex items-center mt-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  {card.alert}
+                <div className="flex items-center mt-1 sm:mt-2 text-[10px] sm:text-xs text-orange-600 bg-orange-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+                  <AlertCircle className="h-3 w-3 mr-0.5 sm:mr-1 flex-shrink-0" />
+                  <span className="truncate">{card.alert}</span>
                 </div>
               )}
             </CardContent>

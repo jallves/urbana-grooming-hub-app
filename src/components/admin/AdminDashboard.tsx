@@ -7,13 +7,13 @@ import QuickActionsGrid from './dashboard/QuickActionsGrid';
 
 export default function AdminDashboard() {
   return (
-    <div className="flex flex-col space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6 bg-gray-50 min-h-screen">
-      {/* Header Section */}
-      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+    <div className="flex flex-col space-y-3 sm:space-y-4 lg:space-y-6 p-2 sm:p-3 lg:p-6 bg-gray-50 min-h-screen">
+      {/* Header Section - Mobile First */}
+      <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 lg:p-6 border border-gray-200">
+        <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900">
           Dashboard Financeiro
         </h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">
+        <p className="text-xs sm:text-sm lg:text-base text-gray-600 mt-0.5 sm:mt-1">
           Visão completa e gerencial do desempenho financeiro da empresa
         </p>
       </div>
