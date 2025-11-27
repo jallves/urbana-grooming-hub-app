@@ -154,10 +154,10 @@ const BarberLayout: React.FC = () => {
         onClick={() => setIsMobileMenuOpen(false)} 
       />
 
-      {/* Desktop Sidebar - Premium Design FIXO (não rola) */}
-      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-hidden">
+      {/* Desktop Sidebar - Premium Design FIXO */}
+      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
         {/* Navigation Header */}
-        <div className="flex-shrink-0 px-4 py-6 border-b border-urbana-gold/10">
+        <div className="px-4 py-8 border-b border-urbana-gold/10">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/5 to-transparent rounded-xl blur-xl" />
             <h2 className="text-base font-semibold text-urbana-light relative z-10">Navegação</h2>
@@ -165,8 +165,8 @@ const BarberLayout: React.FC = () => {
           </div>
         </div>
 
-        {/* Navigation Items - Premium Cards - SEM SCROLL */}
-        <div className="flex-1 p-3 space-y-2 overflow-hidden">
+        {/* Navigation Items - Premium Cards */}
+        <div className="flex-1 p-3 space-y-2 overflow-y-auto">
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -420,8 +420,10 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-64 lg:pl-72 xl:pl-80 transition-all duration-300">
-        <Outlet />
+      <main className="relative z-10 w-full pt-[72px] sm:pt-[80px] pb-[120px] md:pb-12 md:pl-64 lg:pl-72 xl:pl-80 px-4 md:px-6 lg:px-8 transition-all duration-300">
+        <div className="w-full max-w-[1800px] mx-auto">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
