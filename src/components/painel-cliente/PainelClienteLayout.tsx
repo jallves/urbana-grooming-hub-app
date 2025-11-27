@@ -33,22 +33,10 @@ const PainelClienteLayout: React.FC = () => {
     setTimeout(verificarBackground, 500);
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      console.log('🚪 [Layout] Iniciando processo de logout...');
-      
-      await signOut();
-      
-      console.log('✅ [Layout] Logout concluído, navegando para login...');
-      navigate('/painel-cliente/login', { replace: true });
-    } catch (error) {
-      console.error('❌ [Layout] Erro no logout:', error);
-      // Mesmo com erro, redirecionar para login
-      navigate('/painel-cliente/login', { replace: true });
-    } finally {
-      setIsLoggingOut(false);
-    }
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    console.log('🚪 [Layout] Iniciando processo de logout...');
+    signOut(); // signOut já redireciona para /painel-cliente/login
   };
 
   const navigationItems = [

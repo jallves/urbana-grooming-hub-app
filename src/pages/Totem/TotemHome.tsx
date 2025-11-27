@@ -21,9 +21,9 @@ const TotemHome: React.FC = () => {
     timeout: 5 * 60 * 1000, // 5 minutos
     warningTime: 30 * 1000, // Avisar 30s antes
     enabled: false, // Desabilitado na home (reativado nas outras telas)
-    onTimeout: async () => {
+    onTimeout: () => {
       toast.info('Sessão encerrada por inatividade');
-      await logout();
+      logout();
     },
   });
 
@@ -51,8 +51,8 @@ const TotemHome: React.FC = () => {
     navigate('/totem/search');
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
   };
 
   const menuItems = [

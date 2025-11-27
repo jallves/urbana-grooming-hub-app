@@ -51,13 +51,9 @@ const Auth: React.FC = () => {
     navigate('/');
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      console.log('[Auth] 🚪 Logout realizado');
-    } catch (error) {
-      console.error('[Auth] ❌ Erro ao fazer logout:', error);
-    }
+  const handleLogout = () => {
+    signOut(); // signOut já redireciona para /auth
+    console.log('[Auth] 🚪 Logout realizado');
   };
 
   // Se usuário logado, useEffect cuida do redirecionamento
