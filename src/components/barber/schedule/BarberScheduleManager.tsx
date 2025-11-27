@@ -13,43 +13,43 @@ const BarberScheduleManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('working-hours');
 
   return (
-    <div className="w-full space-y-2 max-w-[800px] mx-auto">
+    <div className="w-full space-y-1.5 max-w-[700px] mx-auto mt-1">
       {/* Toggle de Disponibilidade para Agendamentos */}
       <BookingAvailabilityToggle />
 
       <StandardCard>
-        <div className="mb-2">
-          <h2 className="text-sm md:text-base font-bold text-urbana-light mb-0.5">Gerenciar Meus Horários</h2>
-          <p className="text-[9px] md:text-[10px] text-urbana-light/70">
-            Configure seus horários de trabalho e registre suas ausências
+        <div className="mb-1.5">
+          <h2 className="text-xs md:text-sm font-bold text-urbana-light mb-0.5 leading-tight">Gerenciar Horários</h2>
+          <p className="text-[8px] md:text-[9px] text-urbana-light/70 leading-tight">
+            Configure horários e ausências
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-urbana-black/40 backdrop-blur-sm border border-urbana-gold/20 mb-2 h-8">
+          <TabsList className="grid w-full grid-cols-2 bg-urbana-black/40 backdrop-blur-sm border border-urbana-gold/20 mb-1.5 h-7">
             <TabsTrigger 
               value="working-hours"
-              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black text-urbana-light text-[10px] py-1 h-7"
+              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black text-urbana-light text-[9px] py-0.5 h-6"
             >
-              <Clock className="h-2.5 w-2.5 mr-1" />
-              Horários Semanais
+              <Clock className="h-2 w-2 mr-1" />
+              Horários
             </TabsTrigger>
             <TabsTrigger 
               value="time-off"
-              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black text-urbana-light text-[10px] py-1 h-7"
+              className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black text-urbana-light text-[9px] py-0.5 h-6"
             >
-              <Calendar className="h-2.5 w-2.5 mr-1" />
-              Ausências/Folgas
+              <Calendar className="h-2 w-2 mr-1" />
+              Folgas
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="working-hours" className="space-y-2 mt-2">
+          <TabsContent value="working-hours" className="space-y-1.5 mt-1">
             <Suspense fallback={<BarberScheduleSkeleton />}>
               <WorkingHoursManager />
             </Suspense>
           </TabsContent>
 
-          <TabsContent value="time-off" className="space-y-2 mt-2">
+          <TabsContent value="time-off" className="space-y-1.5 mt-1">
             <Suspense fallback={<BarberScheduleSkeleton />}>
               <TimeOffManager />
             </Suspense>
