@@ -302,7 +302,14 @@ export type Database = {
             foreignKeyName: "appointment_ratings_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "painel_clientes_legacy"
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_ratings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
             referencedColumns: ["id"]
           },
         ]
