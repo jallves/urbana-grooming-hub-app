@@ -77,7 +77,7 @@ const BarberDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="w-full space-y-6 mt-6">
+    <div className="w-full space-y-6 mt-4">
       {/* Welcome Section */}
       <div className="w-full">
         <h2 className="text-2xl md:text-3xl font-bold text-urbana-light mb-2">
