@@ -433,7 +433,7 @@ const BarberLayout: React.FC = () => {
       </div>
 
       {/* Main Content - Com espaçamento para header, footer e sidebar */}
-      <main className="relative z-10 w-full pt-[68px] md:pt-[74px] pb-[70px] md:pb-1 md:pl-56 lg:pl-60 px-2 md:px-3 transition-all duration-300" style={{ minHeight: '100vh', maxHeight: '100vh', maxWidth: '100vw', overflowX: 'hidden', overflowY: 'hidden' }}>
+      <main className="relative z-10 w-full pt-[68px] md:pt-[74px] pb-[70px] md:pb-1 md:pl-56 lg:pl-60 px-2 md:px-3 transition-all duration-300 safe-area-inset" style={{ minHeight: '100vh', maxHeight: '100vh', maxWidth: '100vw', overflowX: 'hidden', overflowY: 'auto' }}>
         <div className="w-full max-w-[750px] mx-auto">
           <Outlet />
         </div>

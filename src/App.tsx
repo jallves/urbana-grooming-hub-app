@@ -16,6 +16,7 @@ import PainelClienteLayout from './components/painel-cliente/PainelClienteLayout
 import BarberLayout from './components/barber/BarberLayout';
 import Index from './pages/Index';
 import PWAInstall from './pages/PWAInstall';
+import InstallPWA from './pages/InstallPWA';
 import AdminDashboard from './pages/Admin';
 import AdminLogin from './pages/Auth';
 import AdminAppointments from './pages/AdminAppointments';
@@ -142,6 +143,11 @@ function App() {
                             <Route path="/pwa-install" element={
                               <AdminRedirectGuard>
                                 <PWAInstall />
+                              </AdminRedirectGuard>
+                            } />
+                            <Route path="/install" element={
+                              <AdminRedirectGuard>
+                                <InstallPWA />
                               </AdminRedirectGuard>
                             } />
                             
