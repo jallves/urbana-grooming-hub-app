@@ -82,55 +82,11 @@ const TotemCheckoutSearch: React.FC = () => {
       const cliente = clientesFiltrados[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // PRIORIDADE 1: Buscar sessões com checkout pendente (check-in feito, sem checkout)
-      // @ts-ignore - Evitar erro de tipos infinitos do Supabase
-      const pendingResponse = await supabase
-        .from('totem_sessions')
-        .select('*')
-        .eq('cliente_whatsapp', cleanPhone)
-        .not('checkin_at', 'is', null)
-        .is('checkout_at', null)
-        .order('checkin_at', { ascending: false });
-      
-      const { data: pendingSessions, error: pendingError } = pendingResponse;
-
-      if (pendingError) {
-        console.error('⚠️ Erro ao buscar checkouts pendentes:', pendingError);
-      }
-
-      // Se encontrou checkout pendente, buscar detalhes do agendamento
-      if (pendingSessions && pendingSessions.length > 0) {
-        const pendingSession = pendingSessions[0];
-        console.log('✅ Checkout pendente encontrado');
-
-        // Buscar detalhes do agendamento
-        const { data: appointment } = await supabase
-          .from('painel_agendamentos')
-          .select(`
-            *,
-            servico:painel_servicos(*),
-            barbeiro:painel_barbeiros(*),
-            cliente:painel_clientes(*)
-          `)
-          .eq('id', pendingSession.appointment_id)
-          .single();
-
-        navigate('/totem/checkout', {
-          state: {
-            session: pendingSession,
-            client: cliente,
-            appointment: appointment
-          }
-        });
-        return;
-      }
-
-      // PRIORIDADE 2: Buscar sessões ativas normais (check-in do dia)
+      // Buscar agendamentos do cliente
       const { data: agendamentos, error: agendError } = await supabase
         .from('painel_agendamentos')
-        .select('id')
+        .select('id, status_totem')
         .eq('cliente_id', cliente.id)
-        .in('status_totem', ['CHEGOU'])
         .order('created_at', { ascending: false });
 
       if (agendError) {
@@ -155,7 +111,7 @@ const TotemCheckoutSearch: React.FC = () => {
         navigate('/totem/error', {
           state: {
             title: 'Checkout não disponível',
-            message: 'Cliente não possui checkout, favor realizar agendamento ou check-in primeiro',
+            message: 'Você não possui agendamentos. Favor realizar agendamento ou check-in primeiro.',
             type: 'warning',
             showRetry: false,
             showGoHome: true
@@ -164,14 +120,17 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      // Buscar sessão ativa baseada nos agendamentos encontrados
+      // Buscar sessões com check-in mas sem check-out para esses agendamentos
       const appointmentIds = agendamentos.map(a => a.id);
+      console.log('🔍 Buscando sessões para agendamentos:', appointmentIds);
+      
       const { data: sessionData, error: sessionError } = await supabase
         .from('totem_sessions')
         .select('*')
         .in('appointment_id', appointmentIds)
-        .in('status', ['check_in', 'in_service'])
-        .order('created_at', { ascending: false })
+        .not('check_in_time', 'is', null)
+        .is('check_out_time', null)
+        .order('check_in_time', { ascending: false })
         .limit(1);
 
       if (sessionError) {
@@ -190,13 +149,15 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
+      console.log('📊 Sessões encontradas:', sessionData);
+
       if (!sessionData || sessionData.length === 0) {
         setIsSearching(false);
         
         navigate('/totem/error', {
           state: {
             title: 'Checkout não disponível',
-            message: 'Cliente não possui checkout, favor realizar agendamento ou check-in primeiro',
+            message: 'Você ainda não fez check-in. Favor realizar o check-in primeiro para poder fazer o checkout.',
             type: 'warning',
             showRetry: false,
             showGoHome: true
@@ -206,7 +167,7 @@ const TotemCheckoutSearch: React.FC = () => {
       }
 
       const session = sessionData[0];
-      console.log('✅ Sessão ativa encontrada');
+      console.log('✅ Sessão ativa encontrada para checkout:', session);
 
       // Buscar detalhes do agendamento
       const { data: appointment } = await supabase
